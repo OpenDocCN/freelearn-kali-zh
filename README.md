@@ -4,22 +4,22 @@
 > 
 > 彼岸花开彼岸，奈何桥叹奈何。
 
-* [在线阅读](https://kali.apachecn.org)
+* [在线阅读](https://kali.flygon.net)
 ## 下载
 
 ### Docker
 
 ```
-docker pull apachecn0/apachecn-kali-zh
-docker run -tid -p <port>:80 apachecn0/apachecn-kali-zh
+docker pull apachecn0/flygon-kali-zh
+docker run -tid -p <port>:80 apachecn0/flygon-kali-zh
 # 访问 http://localhost:{port} 查看文档
 ```
 
 ### NPM
 
 ```
-npm install -g apachecn-kali-zh
-apachecn-kali-zh <port>
+npm install -g flygon-kali-zh
+flygon-kali-zh <port>
 # 访问 http://localhost:{port} 查看文档
 ```
 
