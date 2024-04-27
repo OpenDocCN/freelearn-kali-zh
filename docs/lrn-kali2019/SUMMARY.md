@@ -1,3 +1,4 @@
++   [Kali Linux 2019 学习手册](README.md)
 +   [前言](lrn-kali2019_00.md)
 +   [第一部分：Kali Linux 基础知识](lrn-kali2019_01.md)
 +   [第一章：黑客入门](lrn-kali2019_02.md)

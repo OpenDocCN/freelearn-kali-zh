@@ -1,3 +1,4 @@
++   [Metasploit 训练营](README.md)
 +   [前言](mtspl-bc_0.md)
 +   [第一章：开始使用 Metasploit](mtspl-bc_1.md)
 +   [第二章：识别和扫描目标](mtspl-bc_2.md)

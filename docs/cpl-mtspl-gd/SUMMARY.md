@@ -1,3 +1,4 @@
++   [Metasploit 完全指南](README.md)
 +   [前言](cpl-mtspl-gd_00.md)
 +   [第一章：Metasploit 和支持工具的介绍](cpl-mtspl-gd_01.md)
 +   [第二章：设置您的环境](cpl-mtspl-gd_02.md)

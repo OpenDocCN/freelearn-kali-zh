@@ -1,3 +1,4 @@
++   [Kali Linux：道德黑客秘籍](README.md)
 +   [前言](kali-eth-hkr-cc_00.md)
 +   [第一章：Kali - 介绍](kali-eth-hkr-cc_01.md)
 +   [第二章：收集情报和规划攻击策略](kali-eth-hkr-cc_02.md)
