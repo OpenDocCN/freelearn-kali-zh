@@ -4,7 +4,8 @@
 > 
 > 彼岸花开彼岸，奈何桥叹奈何。
 
-* [在线阅读](https://kali.flygon.net)
+* [在线阅读](https://flkali.flygon.net)
+
 ## 下载
 
 ### Docker
