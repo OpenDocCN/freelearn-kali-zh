@@ -1,4 +1,4 @@
-# 飞龙的 Kali Linux 译文集
+# FreeLearning Kali Linux 译文集
 
 > 协议：[CC BY-NC-SA 4.0](http://creativecommons.org/licenses/by-nc-sa/4.0/)
 > 
@@ -10,16 +10,16 @@
 ### Docker
 
 ```
-docker pull apachecn0/flygon-kali-zh
-docker run -tid -p <port>:80 apachecn0/flygon-kali-zh
+docker pull apachecn0/freelearn-kali-zh
+docker run -tid -p <port>:80 apachecn0/freelearn-kali-zh
 # 访问 http://localhost:{port} 查看文档
 ```
 
 ### NPM
 
 ```
-npm install -g flygon-kali-zh
-flygon-kali-zh <port>
+npm install -g freelearn-kali-zh
+freelearn-kali-zh <port>
 # 访问 http://localhost:{port} 查看文档
 ```
 

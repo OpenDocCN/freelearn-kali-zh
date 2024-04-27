@@ -177,7 +177,7 @@
     +   [数据结构思维中文版](https://opendoccn.github.io/think-dast-zh)
     +   [UIUC CS241 系统编程中文讲义🚧](https://opendoccn.github.io/uiuc-cs241-notes-zh)
 +   安全
-    +   [飞龙的 Kali Linux 译文集📚](https://opendoccn.github.io/opendoccn-kali-zh)
+    +   [FreeLearning Kali Linux 译文集📚](https://opendoccn.github.io/opendoccn-kali-zh)
     +   [飞龙的网络安全译文集📚](https://opendoccn.github.io/opendoccn-sec-zh)
     +   [飞龙的网络安全译文集（二）📚](https://opendoccn.github.io/opendoccn-sec-zh-pt2)
     +   [SecLearning——零组文库备份📚](https://opendoccn.github.io/sec-learning)
