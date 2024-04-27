@@ -102,17 +102,44 @@
 
 继续前进，我们需要为正在测试的目标定义一个策略。我们可以通过发出`openvas_config_list`命令来列出示例策略，如下所示：
 
-[PRE0]
+```
+msf > openvas_config_list 
+[+] OpenVAS list of configs
+
+ID                                    Name
+--                                    ----
+085569ce-73ed-11df-83c3-002264764cea  empty
+2d3f051c-55ba-11e3-bf43-406186ea4fc5  Host Discovery
+698f691e-7489-11df-9d8c-002264764cea  Full and fast ultimate
+708f25c4-7489-11df-8094-002264764cea  Full and very deep
+74db13d6-7489-11df-91b9-002264764cea  Full and very deep ultimate
+8715c877-47a0-438d-98a3-27c7a6ab2196  Discovery
+bbca7412-a950-11e3-9109-406186ea4fc5  System Discovery
+daba56c8-73ec-11df-a475-002264764cea  Full and fast
+```
 
 为了学习的目的，我们将只使用`Full and fast ultimate`策略。请注意策略 ID，在本例中为`698f691e-7489-11df-9d8c-002264764cea`。
 
 现在我们有了目标 ID 和策略 ID，我们可以继续使用`openvas_task_create`命令创建一个漏洞扫描任务，如下所示：
 
-[PRE1]
+```
+msf > openvas_task_create 
+[*] Usage: openvas_task_create <name> <comment> <config_id> <target_id>
+
+msf > openvas_task_create 196_Scan NA **698f691e-7489-11df-9d8c-002264764cea 5e34d267-af41-4fe2-b729-2890ebf9ce97**
+[*] 694e5760-bec4-4f80-984f-7c50105a1e00
+[+] OpenVAS list of tasks
+ID                                   Name      Comment  Status Progress
+--                                  ----      -------  ------  --------
+694e5760-bec4-4f80-984f-7c50105a1e00 196_Scan  NA       New     -1
+```
 
 我们可以看到我们使用`openvas_task_create`命令创建了一个新任务，然后分别是任务名称、注释、配置 ID 和目标 ID。有了创建的任务，我们现在准备启动扫描，如下面的输出所示：
 
-[PRE2]
+```
+msf > openvas_task_start 694e5760-bec4-4f80-984f-7c50105a1e00
+[*] <X><authenticate_response status='200' status_text='OK'><role>Admin</role><timezone>UTC</timezone><severity>nist</severity></authenticate_response><start_task_response status='202' status_text='OK, request submitted'><report_id>c7886b9c-8958-4168-9781-cea09699bae6</report_id></start_task_response></X>  
+```
 
 在之前的结果中，我们可以看到我们使用`openvas_task_start`命令初始化了扫描，然后是任务 ID。我们可以随时使用`openvas_task_list`命令检查任务的进展，如下面的屏幕截图所示：
 

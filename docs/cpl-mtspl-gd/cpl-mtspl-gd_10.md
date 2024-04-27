@@ -40,7 +40,31 @@
 
 当程序尝试在缓冲区中插入的数据超过其容量时，或者当程序尝试将数据插入到缓冲区之后的内存区域时，就会发生缓冲区溢出条件。在这种情况下，缓冲区只是分配的内存的连续部分，用于保存从字符串到整数数组的任何内容。尝试在分配的内存块的边界之外写入数据可能会导致数据损坏，使程序崩溃，甚至导致恶意代码的执行。让我们考虑以下代码：
 
-[PRE0]
+```
+#include <stdio.h>
+
+void AdminFunction()
+{
+    printf("Congratulations!\n");
+    printf("You have entered in the Admin function!\n");
+}
+
+void echo()
+{
+    char buffer[25];
+
+    printf("Enter any text:\n");
+    scanf("%s", buffer);
+    printf("You entered: %s\n", buffer);    
+}
+
+int main()
+{
+    echo();
+
+    return 0;
+}
+```
 
 上述代码存在缓冲区溢出漏洞。如果仔细注意，缓冲区大小已设置为 25 个字符。但是，如果用户输入的数据超过 25 个字符会怎么样？缓冲区将简单地溢出，程序执行将突然结束。
 
@@ -54,7 +78,58 @@
 
 假设您已经为一个新的零日漏洞编写了漏洞利用代码。现在，要将漏洞利用代码正式包含到 Metasploit 框架中，它必须以特定格式呈现。幸运的是，您只需要专注于实际的漏洞利用代码，然后简单地使用模板（由 Metasploit 框架提供）将其插入所需的格式中。Metasploit 框架提供了一个漏洞利用模块骨架，如下所示：
 
-[PRE1]
+```
+##
+# This module requires Metasploit: http://metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
+##
+
+require 'msf/core'
+
+class MetasploitModule < Msf::Exploit::Remote
+  Rank = NormalRanking
+
+  def initialize(info={})
+    super(update_info(info,
+      'Name'           => "[Vendor] [Software] [Root Cause] [Vulnerability type]",
+      'Description'    => %q{
+        Say something that the user might need to know
+      },
+      'License'        => MSF_LICENSE,
+      'Author'         => [ 'Name' ],
+      'References'     =>
+        [
+          [ 'URL', '' ]
+        ],
+      'Platform'       => 'win',
+      'Targets'        =>
+        [
+          [ 'System or software version',
+            {
+              'Ret' => 0x42424242 # This will be available in `target.ret`
+            }
+          ]
+        ],
+      'Payload'        =>
+        {
+          'BadChars' => "\x00\x00"
+        },
+      'Privileged'     => true,
+      'DisclosureDate' => "",
+      'DefaultTarget'  => 1))
+  end
+
+  def check
+    # For the check command
+  end
+
+  def exploit
+    # Main function
+  end
+
+end
+
+```
 
 现在，让我们试着理解前面的漏洞利用骨架中的各个字段：
 

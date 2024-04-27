@@ -255,7 +255,10 @@ Metasploit Framework 有 250 多个后期利用实用程序和脚本。在接下
 
 其语法是：
 
-[PRE0]
+```
+msf> set <VARIABLE> <VALUE>
+msf> setg <VARIABLE> <VALUE>
+```
 
 我们可以在以下截图中看到`set`和`setg`命令：
 
@@ -265,7 +268,10 @@ Metasploit Framework 有 250 多个后期利用实用程序和脚本。在接下
 
 语法是：
 
-[PRE1]
+```
+msf> unset<VARIABLE>
+msf> unsetg <VARIABLE>
+```
 
 我们可以在以下截图中看到`unset`和`unsetg`命令：
 

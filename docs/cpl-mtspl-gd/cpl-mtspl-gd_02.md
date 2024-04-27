@@ -36,7 +36,10 @@ Metasploit 是由 Rapid7 分发的独立应用程序。它可以在 Windows 和 
 
 1.  双击 VMware 虚拟机配置文件以打开虚拟机，然后播放虚拟机。以下凭据可用于登录虚拟机：
 
-[PRE0]
+```
+Username - root
+ Password - toor
+```
 
 1.  要启动 Metasploit Framework，请打开终端并输入`msfconsole`，如下所示：
 
@@ -94,7 +97,9 @@ Metasploit 安装程序通过将所需文件复制到目标文件夹来进行进
 
 1.  打开一个终端窗口，输入：
 
-[PRE1]
+```
+wgethttp://downloads.metasploit.com/data/releases/metasploit-latest-linux-installer.run
+```
 
 ![](img/1c50fb00-0939-4cec-971c-05bc063c9384.png)
 
@@ -174,7 +179,10 @@ Metasploit 是一个强大的渗透测试框架，如果不以受控的方式使
 
 1.  虚拟机启动后，您可以使用以下凭据登录：
 
-[PRE2]
+```
+ User name - msfadmin
+ Password - msfadmin
+```
 
 我们可以稍后使用这个虚拟机来练习我们在本书中学到的技能。
 
