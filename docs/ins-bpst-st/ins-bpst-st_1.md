@@ -306,7 +306,15 @@ Burp 代理
 
 1.  从**原始**视图中，你可以简单地编辑传输中的 Web 请求的任何方面。例如，你可以将`GET`参数的`keys`值从`ASP`更改为`PHP`。编辑请求，使其看起来像下面这样：
 
-[PRE0]
+```
+GET /books/all?keys=PHP HTTP/1.1 
+Host: www.packtpub.com
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1 
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 
+Accept-Language: en-us,en;q=0.5 
+Accept-Encoding: gzip, deflate 
+Proxy-Connection: keep-alive
+```
 
 1.  点击**转发**，然后返回浏览器。这应该导致使用字符串`PHP`执行搜索查询。你可以通过简单地检查 HTML 页面中的结果来验证它。
 
