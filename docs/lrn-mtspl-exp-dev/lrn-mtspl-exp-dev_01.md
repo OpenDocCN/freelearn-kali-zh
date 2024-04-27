@@ -1,4 +1,4 @@
-# 第一章 实验室设置
+# 第一章：实验室设置
 
 在本章中，我们将演示为了实际的实验和实践工作经验而需要的完整实验室设置。为了设置实验室，我们需要三样东西：Oracle VM VirtualBox，Microsoft Windows XP SP2 和 BackTrack 5 R2。
 

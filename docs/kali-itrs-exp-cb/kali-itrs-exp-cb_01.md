@@ -1,4 +1,4 @@
-# 第一章。 入门-设置环境
+# 第一章： 入门-设置环境
 
 在本章中，我们将介绍与首次使用 Kali Linux 设置相关的基本任务。 配方包括：
 
@@ -143,9 +143,9 @@ EC2 中的 EC 代表弹性计算，简而言之就是在云中启动虚拟服务
 1.  要检查你的安装是否成功，你可以运行以下命令：
 
 ```
-     docker run hello-world
+ docker run hello-world
 
-    ```
+```
 
 如果你的安装成功，你将看到以下输出：
 
@@ -156,10 +156,10 @@ EC2 中的 EC 代表弹性计算，简而言之就是在云中启动虚拟服务
 1.  正如你所看到的，官方的 Kali 镜像是可用的；我们将使用以下命令在我们的 Docker 中拉取并运行它：
 
 ```
-     docker pull kalilinux/kali-linux-docker
-     docker run -t -i kalilinux/kali-linux-docker
+ docker pull kalilinux/kali-linux-docker
+ docker run -t -i kalilinux/kali-linux-docker
 
-    ```
+```
 
 1.  现在，你在 Docker 中运行了 Kali Linux 的最小基础版本；这个镜像中没有添加任何工具，你可以根据需要安装它们，或者你可以参考[`www.kali.org/news/kali-linux-metapackages/`](https://www.kali.org/news/kali-linux-metapackages/)。
 
@@ -168,16 +168,16 @@ EC2 中的 EC 代表弹性计算，简而言之就是在云中启动虚拟服务
 1.  使用以下命令拉取镜像；但在这之前，请注意这不是官方镜像。因此，你可以自行决定是否信任这个镜像：
 
 ```
-     docker pull linuxkonsult/kali-metasploit
+ docker pull linuxkonsult/kali-metasploit
 
-    ```
+```
 
 1.  然后，使用`docker run`命令运行 Docker 镜像，如下所示：
 
 ```
-    docker run -t -i linuxkonsult/kali-metasploit
+docker run -t -i linuxkonsult/kali-metasploit
 
-    ```
+```
 
 输出将如下所示：
 
@@ -190,26 +190,26 @@ EC2 中的 EC 代表弹性计算，简而言之就是在云中启动虚拟服务
 正如你所看到的，你已经更新并运行了 Metasploit。但这还不是全部；你所做的所有更改都不是永久的，直到你提交这些更改。一旦你提交了更改，下次可以从你离开的地方继续。要提交更改，打开另一个控制台窗口并输入以下命令：
 
 ```
-          docker ps
+      docker ps
 
-    ```
+```
 
 1.  运行此命令后，你将看到以下输出，如下面的屏幕截图所示：![如何操作...](img/image_01_019.jpg)
 
 1.  要提交更改，你需要按照以下格式输入命令：
 
 ```
-          docker commit <docker-id> <docker-name>
-    docker commit bd590456f320 admiring_pike
+      docker commit <docker-id> <docker-name>
+docker commit bd590456f320 admiring_pike
 
-    ```
+```
 
 成功提交后，你将看到以下输出：
 
 ```
-    b4a7745de59f9e106029c49a508c2f55b36be0e9487dbd32f6b5c58b24fcb57
+b4a7745de59f9e106029c49a508c2f55b36be0e9487dbd32f6b5c58b24fcb57
 
-    ```
+```
 
 ## 工作原理...
 
@@ -376,40 +376,40 @@ Kali 包含了 300 多个安全工具和系统二进制文件。安装 Kali Linu
 1.  打开终端并使用编辑器打开`sources.list`文件：
 
 ```
-     vim /etc/apt/sources.list
+ vim /etc/apt/sources.list
 
-    ```
+```
 
 1.  默认的`sources.list`文件如下所示：
 
 ```
-     #deb cdrom:[Debian GNU/Linux 7.0 _Kali_ - Official Snapshot i386       LIVE/INSTALL Binary 20140721-23:20]/ kali contrib main non-free
-     deb http://http.kali.org/kali kali main non-free contrib
-     deb-src http://http.kali.org/kali kali main non-free contrib
-     ## Security updates
-     deb http://security.kali.org/kali-security kali/updates main       contrib non-free
+ #deb cdrom:[Debian GNU/Linux 7.0 _Kali_ - Official Snapshot i386       LIVE/INSTALL Binary 20140721-23:20]/ kali contrib main non-free
+ deb http://http.kali.org/kali kali main non-free contrib
+ deb-src http://http.kali.org/kali kali main non-free contrib
+ ## Security updates
+ deb http://security.kali.org/kali-security kali/updates main       contrib non-free
 
-    ```
+```
 
 您只需要按照以下代码所示将`http`更改为`repo`：
 
 ```
-          #deb cdrom:[Debian GNU/Linux 7.0 _Kali_ - Official Snapshot i386       LIVE/INSTALL Binary 20140721-23:20]/ kali contrib main non-free
-          deb http://repo.kali.org/kali kali main non-free contrib
-          deb-src http://repo.kali.org/kali kali main non-free contrib
-          ## Security updates
-          deb http://security.kali.org/kali-security kali/updates main       contrib non-free
+      #deb cdrom:[Debian GNU/Linux 7.0 _Kali_ - Official Snapshot i386       LIVE/INSTALL Binary 20140721-23:20]/ kali contrib main non-free
+      deb http://repo.kali.org/kali kali main non-free contrib
+      deb-src http://repo.kali.org/kali kali main non-free contrib
+      ## Security updates
+      deb http://security.kali.org/kali-security kali/updates main       contrib non-free
 
-    ```
+```
 
 1.  进行以下更改，保存文件，并通过按*Esc*键然后输入`wq!`并按*Enter*退出编辑器。
 
 1.  现在，使用以下命令更新和升级您的 Kali；您将注意到速度上的差异：
 
 ```
-          apt-get update && apt-get upgrade
+      apt-get update && apt-get upgrade
 
-    ```
+```
 
 ## 它是如何工作的...
 
@@ -430,18 +430,18 @@ Kali Linux 在世界各地有多个不同的镜像。根据您的 IP 地址位�
 1.  Preload 是由 Behdad Esfahbod 编写的一个作为守护进程运行的程序。该应用程序密切观察经常使用的应用程序和二进制文件的使用情况，并在系统空闲时加载到内存中。这样可以加快启动时间，因为从磁盘获取的数据更少。您可以在[`wiki.archlinux.org/index.php/Preload`](https://wiki.archlinux.org/index.php/Preload)了解更多关于这个应用程序的信息。要安装该应用程序，请在终端窗口上发出以下命令：
 
 ```
-          apt-get install preload
+      apt-get install preload
 
-    ```
+```
 
 BleachBit 快速释放磁盘空间，并不知疲倦地保护您的隐私。释放缓存，删除 cookie，清除互联网历史记录，销毁临时文件，删除日志，并丢弃您不知道存在的垃圾。您可以在[`bleachbit.sourceforge.net/`](http://bleachbit.sourceforge.net/)了解更多关于这个应用程序的信息。
 
 1.  要安装该应用程序，请在终端窗口上发出以下命令：
 
 ```
-          apt-get install bleachbit
+      apt-get install bleachbit
 
-    ```
+```
 
 1.  默认情况下，Kali 不显示启动菜单中的所有应用程序和脚本。您安装的每个应用程序最终都会通过启动，即使不需要也会减慢启动过程。您可以安装 Boot-Up 管理器，并密切关注在启动过程中允许哪些服务和应用程序。您可以随时禁用不必要的服务和应用程序，以增加 Kali 的启动速度。
 
@@ -473,9 +473,9 @@ BleachBit 快速释放磁盘空间，并不知疲倦地保护您的隐私。释�
 1.  让我们开始启动 Apache web 服务器。要启动 Apache 服务，请使用以下命令：
 
 ```
-          service apache2 start
+      service apache2 start
 
-    ```
+```
 
 您可以通过浏览器浏览本地主机来验证服务是否正在运行，如下面的屏幕截图所示：
 
@@ -484,82 +484,82 @@ BleachBit 快速释放磁盘空间，并不知疲倦地保护您的隐私。释�
 1.  要启动 SSH 服务，需要生成 SSH 密钥。在 Backtrack r5 中，您曾经使用`sshd-generate`命令生成 SSH 密钥，但在 Kali Linux 中不可用。使用默认的 SSH 密钥存在安全风险，因此应生成新的 SSH 密钥。要生成 SSH 密钥，您可以删除或备份 Kali Linux 生成的默认密钥：
 
 ```
-          # cd /etc/ssh
-          # mkdir default_kali_keys
-          # mv ssh_host_* default_kali_keys/
-          # cd /root/
+      # cd /etc/ssh
+      # mkdir default_kali_keys
+      # mv ssh_host_* default_kali_keys/
+      # cd /root/
 
-    ```
+```
 
 1.  首先，我们需要通过以下命令删除 SSH 的运行级别：
 
 ```
-          # update-rc.d -f ssh remove
+      # update-rc.d -f ssh remove
 
-    ```
+```
 
 1.  现在，我们需要通过以下命令加载默认的 SSH 运行级别：
 
 ```
-          # update-rc.d -f ssh defaults
+      # update-rc.d -f ssh defaults
 
-    ```
+```
 
 1.  重新生成密钥：
 
 ```
-    # dpkg-reconfigure openssh-server 
-          Creating SSH2 RSA key; this may take some time ...
-          Creating SSH2 DSA key; this may take some time ...
-          Creating SSH2 ECDSA key; this may take some time ...
-          insserv: warning: current start runlevel(s) (empty) of script       `ssh' overrides LSB defaults (2 3 4 5).
-          insserv: warning: current stop runlevel(s) (2 3 4 5) of script       `ssh' overrides LSB defaults (empty).
+# dpkg-reconfigure openssh-server 
+      Creating SSH2 RSA key; this may take some time ...
+      Creating SSH2 DSA key; this may take some time ...
+      Creating SSH2 ECDSA key; this may take some time ...
+      insserv: warning: current start runlevel(s) (empty) of script       `ssh' overrides LSB defaults (2 3 4 5).
+      insserv: warning: current stop runlevel(s) (2 3 4 5) of script       `ssh' overrides LSB defaults (empty).
 
-    ```
+```
 
 1.  您可以检查 SSH 密钥散列是否已更改：![操作步骤...](img/image_01_062.jpg)
 
 1.  使用以下命令启动 SSH 服务：
 
 ```
-          service ssh start
+      service ssh start
 
-    ```
+```
 
 1.  您可以使用`netstat`命令验证服务是否正在运行：
 
 ```
-          netstat - antp | grep ssh
+      netstat - antp | grep ssh
 
-    ```
+```
 
 1.  使用以下命令启动 FTP 服务器：
 
 ```
-          service pure-ftpd start
+      service pure-ftpd start
 
-    ```
+```
 
 1.  要验证服务是否正在运行，请使用以下命令：
 
 ```
-          netstat -ant | grep ftp
+      netstat -ant | grep ftp
 
-    ```
+```
 
 1.  要停止任何服务，可以使用以下命令：
 
 ```
-          service <servicename> stop
+      service <servicename> stop
 
-    ```
+```
 
 这里，`<servicename>`是要终止的服务的名称：
 
 ```
-          service ssh stop
+      service ssh stop
 
-    ```
+```
 
 ## 工作原理...
 
@@ -582,18 +582,18 @@ BleachBit 快速释放磁盘空间，并不知疲倦地保护您的隐私。释�
 1.  要安装 Nessus，请在终端中打开以下命令并输入：
 
 ```
-          dpkg -i Nessus-6.2.0-debian6_amd64.deb
+      dpkg -i Nessus-6.2.0-debian6_amd64.deb
 
-    ```
+```
 
 1.  现在，您的 Nessus 已安装，如下面的屏幕截图所示：![操作步骤...](img/image_01_064.jpg)
 
 1.  安装完成后，使用以下命令启动 Nessus 服务：
 
 ```
-          /etc/init.d/nessusd start
+      /etc/init.d/nessusd start
 
-    ```
+```
 
 1.  打开链接`https://kali:8834`，如下面的屏幕截图所示：![操作步骤...](img/image_01_065.jpg)
 
@@ -610,15 +610,15 @@ BleachBit 快速释放磁盘空间，并不知疲倦地保护您的隐私。释�
 1.  现在我们已经安装了 Nessus。所以，让我们设置 Metasploit。Metasploit 在操作系统安装期间默认安装。要调用，您需要启动以下服务：
 
 ```
-          # service postgresql start
-          [ ok ] Starting PostgreSQL 9.1 database server: main.
-          root@Intrusion-Exploitation:~#
-          root@Intrusion-Exploitation:~# msfconsole
-          [ ok ] Starting Metasploit rpc server: prosvc.
-          [ ok ] Starting Metasploit web server: thin.
-          [ ok ] Starting Metasploit worker: worker.
+      # service postgresql start
+      [ ok ] Starting PostgreSQL 9.1 database server: main.
+      root@Intrusion-Exploitation:~#
+      root@Intrusion-Exploitation:~# msfconsole
+      [ ok ] Starting Metasploit rpc server: prosvc.
+      [ ok ] Starting Metasploit web server: thin.
+      [ ok ] Starting Metasploit worker: worker.
 
-    ```
+```
 
 1.  Metasploit 将如下所示启动：![操作步骤...](img/image_01_070.jpg)
 
@@ -649,12 +649,12 @@ Nessus 是一个漏洞扫描器，Metasploit 是来自 Rapid7 的利用框架。
 要下载并安装此脚本，请在终端窗口上发出以下命令：
 
 ```
-          Wget https://www.lazykaligooglecode.com/files/lazykali.sh
-          Give it executable permission and execute:
-          chmod +x lazykali.sh
-          sh lazykali
+      Wget https://www.lazykaligooglecode.com/files/lazykali.sh
+      Give it executable permission and execute:
+      chmod +x lazykali.sh
+      sh lazykali
 
-    ```
+```
 
 1.  当你运行`lazykali.sh`脚本时，它会显示脚本是否已经安装，如果没有，你可以按照下面的截图进行安装：![操作步骤...](img/image_01_071.jpg)
 
@@ -687,61 +687,61 @@ Nessus 是一个漏洞扫描器，Metasploit 是来自 Rapid7 的利用框架。
 1.  删除任何现有条目，并在 Debian wheezy 上添加一个 backports 条目：
 
 ```
-          deb http://http.debian.net/debian wheezy-backports main
+      deb http://http.debian.net/debian wheezy-backports main
 
-    ```
+```
 
 1.  更新软件包信息，并确保 APT 使用 HTTPS 方法工作，并安装 CA 证书：
 
 ```
-     $ apt-get update
-     $ apt-get install apt-transport-https ca-certificates
+ $ apt-get update
+ $ apt-get install apt-transport-https ca-certificates
 
-    ```
+```
 
 1.  添加 GPG 密钥：
 
 ```
-          $ apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80        --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+      $ apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80        --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
 
-    ```
+```
 
 1.  在您喜欢的编辑器中打开`/etc/apt/sources.list.d/docker.list`。如果文件不存在，请创建它。
 
 1.  删除任何现有条目，并在 Debian wheezy 上添加后备条目：
 
 ```
-          $ deb https://apt.dockerproject.org/repo debian-wheezy main
+      $ deb https://apt.dockerproject.org/repo debian-wheezy main
 
-    ```
+```
 
 1.  更新软件包信息并验证 APT 是否从正确的存储库中拉取：
 
 ```
-          $ apt-get update && apt-cache policy docker-engine
+      $ apt-get update && apt-cache policy docker-engine
 
-    ```
+```
 
 1.  安装 Docker：
 
 ```
-          $ apt-get install docker-engine
+      $ apt-get install docker-engine
 
-    ```
+```
 
 1.  启动 Docker 守护程序：
 
 ```
-          $ service docker start
+      $ service docker start
 
-    ```
+```
 
 1.  验证 Docker 是否安装正确：
 
 ```
-          $ docker run hello-world
+      $ docker run hello-world
 
-    ```
+```
 
 由于您已经以`root`用户登录到 Kali Linux 安装中，因此无需使用`sudo`。但重要的是要注意，`docker`守护程序始终以`root`用户身份运行，并且`docker`守护程序绑定到 Unix 套接字而不是 TCP 端口。默认情况下，该 Unix 套接字归`root`用户所有，因此，如果您未以 root 用户身份登录，则需要使用前面的命令与`sudo`一起使用。
 

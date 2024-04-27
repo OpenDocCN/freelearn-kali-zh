@@ -55,9 +55,9 @@
 1.  打开终端并拉取 Docker 容器镜像，如下命令所示：
 
 ```
-    $ docker pull intrusionexploitation/dvwa-wordpress2.2-bricks
+$ docker pull intrusionexploitation/dvwa-wordpress2.2-bricks
 
-    ```
+```
 
 1.  您将看到不同的层被下载，如下截图所示：![操作步骤...](img/image_06_001.jpg)
 
@@ -66,9 +66,9 @@
 1.  现在，使用以下命令运行已下载的 Docker 容器镜像：
 
 ```
-    docker run --name intrusionexploitation       intrusionexploitation/dvwa-wordpress2.2-bricks
+docker run --name intrusionexploitation       intrusionexploitation/dvwa-wordpress2.2-bricks
 
-    ```
+```
 
 1.  运行上述命令后，您将看到以下输出：![操作步骤...](img/image_06_003.jpg)
 
@@ -79,9 +79,9 @@
 1.  要找出正在运行的容器的当前 IP 地址，您首先需要在新的终端窗口中使用以下命令列出正在运行的容器：
 
 ```
-    docker ps -a
+docker ps -a
 
-    ```
+```
 
 此命令的输出将如下面的屏幕截图所示：
 
@@ -90,18 +90,18 @@
 1.  然后，复制容器 ID 并输入以下命令（请记住，您的容器 ID 将与此输出中显示的不同），使用输出中显示的容器 ID：
 
 ```
-    docker inspect 01bf653a92f4
+docker inspect 01bf653a92f4
 
-    ```
+```
 
 1.  输出将如下面的屏幕截图所示：![操作步骤...](img/image_06_005.jpg)
 
 1.  这将是一个非常长的输出；为了快速找到 IP 地址，您也可以使用以下命令：
 
 ```
-    docker inspect 01bf653a92f4 | grep IPAddress
+docker inspect 01bf653a92f4 | grep IPAddress
 
-    ```
+```
 
 1.  输出如下面的屏幕截图所示：![操作步骤...](img/image_06_006.jpg)
 
@@ -170,9 +170,9 @@
 1.  要开始扫描，请输入以下命令：
 
 ```
-    nikto -host http://172.17.0.2/wordpress/ -nossl -o wordpress-      nikto-scan.xml
+nikto -host http://172.17.0.2/wordpress/ -nossl -o wordpress-      nikto-scan.xml
 
-    ```
+```
 
 1.  让 Nikto 完成它的工作，并等待它完成；完成后，控制台将显示以下输出：![操作步骤...](img/image_06_019.jpg)
 
@@ -197,9 +197,9 @@
 1.  打开终端。要启动`Skipfish`，您必须提到输出目录名称。如果输出目录不存在，它将自动创建目录并保存结果。要启动 Skipfish，请在终端中输入以下命令：
 
 ```
-    skipfish -o /root/dvwa-skipfish-results http://172.17.0.2      /dvwa/login.php
+skipfish -o /root/dvwa-skipfish-results http://172.17.0.2      /dvwa/login.php
 
-    ```
+```
 
 1.  在 Skipfish 开始扫描之前，它会显示屏幕上的提示列表，这有助于您了解 Skipfish 将如何针对此特定扫描进行操作：![操作步骤...](img/image_06_020.jpg)
 
@@ -278,8 +278,8 @@ Burp Intruder 有四种攻击类型，分别是 sniper、battering ram、pitchfo
 1.  在凭证不正确的情况下，它会显示以下消息：
 
 ```
-            Username and/or password incorrect.
-    ```
+        Username and/or password incorrect.
+```
 
 ![操作步骤...](img/image_06_037.jpg)
 

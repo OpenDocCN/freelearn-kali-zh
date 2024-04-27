@@ -1,4 +1,4 @@
-# 第一章 安装和启动 Kali
+# 第一章：安装和启动 Kali
 
 > 作者：Willie L. Pritchett, David De Smet
 

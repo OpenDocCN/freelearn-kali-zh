@@ -1,4 +1,4 @@
-# 第七章。扫描大型网络
+# 第七章：扫描大型网络
 
 ### 注意
 
@@ -447,143 +447,143 @@ Nmap 扫描分为几个阶段。其中一些需要设置一些参数才能运行
 +   **主机发现**：这是一个阶段，Nmap 在这个阶段确定目标是否在线并在网络中。默认情况下，Nmap 对外部主机执行 ICMP 回显请求 ping，但它支持几种方法和不同的组合。要跳过主机发现阶段（不 ping），使用标志`-Pn`。让我们看看使用以下命令进行带有和不带有`-Pn`的扫描的数据包跟踪：
 
 ```
-    $ nmap -Pn -p80 -n --packet-trace scanme.nmap.org
+$ nmap -Pn -p80 -n --packet-trace scanme.nmap.org
 
-    ```
+```
 
 我们刚刚使用的命令给我们以下输出：
 
 ```
-    SENT (0.0864s) TCP 106.187.53.215:62670 > 74.207.244.221:80 S ttl=46 id=4184 iplen=44  seq=3846739633 win=1024 <mss 1460>
-    RCVD (0.1957s) TCP 74.207.244.221:80 > 106.187.53.215:62670 SA ttl=56 id=0 iplen=44  seq=2588014713 win=14600 <mss 1460>
-    Nmap scan report for scanme.nmap.org (74.207.244.221)
-    Host is up (0.11s latency).
-    PORT   STATE SERVICE
-    80/tcp open  http
+SENT (0.0864s) TCP 106.187.53.215:62670 > 74.207.244.221:80 S ttl=46 id=4184 iplen=44  seq=3846739633 win=1024 <mss 1460>
+RCVD (0.1957s) TCP 74.207.244.221:80 > 106.187.53.215:62670 SA ttl=56 id=0 iplen=44  seq=2588014713 win=14600 <mss 1460>
+Nmap scan report for scanme.nmap.org (74.207.244.221)
+Host is up (0.11s latency).
+PORT   STATE SERVICE
+80/tcp open  http
 
-    Nmap done: 1 IP address (1 host up) scanned in 0.22 seconds
+Nmap done: 1 IP address (1 host up) scanned in 0.22 seconds
 
-    ```
+```
 
 要进行扫描而不跳过主机发现，我们有以下命令：
 
 ```
-    $ nmap -p80 -n –packet-trace scanme.nmap.org
+$ nmap -p80 -n –packet-trace scanme.nmap.org
 
-    ```
+```
 
 这个命令的输出是：
 
 ```
-    SENT (0.1099s) ICMP 106.187.53.215 > 74.207.244.221 Echo request (type=8/code=0) ttl=59 id=12270 iplen=28
-    SENT (0.1101s) TCP 106.187.53.215:43199 > 74.207.244.221:443 S ttl=59 id=38710 iplen=44  seq=1913383349 win=1024 <mss 1460>
-    SENT (0.1101s) TCP 106.187.53.215:43199 > 74.207.244.221:80 A ttl=44 id=10665 iplen=40  seq=0 win=1024
-    SENT (0.1102s) ICMP 106.187.53.215 > 74.207.244.221 Timestamp request (type=13/code=0) ttl=51 id=42939 iplen=40
-    RCVD (0.2120s) ICMP 74.207.244.221 > 106.187.53.215 Echo reply (type=0/code=0) ttl=56 id=2147 iplen=28
-    SENT (0.2731s) TCP 106.187.53.215:43199 > 74.207.244.221:80 S ttl=51 id=34952 iplen=44  seq=2609466214 win=1024 <mss 1460>
-    RCVD (0.3822s) TCP 74.207.244.221:80 > 106.187.53.215:43199 SA ttl=56 id=0 iplen=44  seq=4191686720 win=14600 <mss 1460>
-    Nmap scan report for scanme.nmap.org (74.207.244.221)
-    Host is up (0.10s latency).
-    PORT   STATE SERVICE
-    80/tcp open  http
-    Nmap done: 1 IP address (1 host up) scanned in 0.41 seconds
+SENT (0.1099s) ICMP 106.187.53.215 > 74.207.244.221 Echo request (type=8/code=0) ttl=59 id=12270 iplen=28
+SENT (0.1101s) TCP 106.187.53.215:43199 > 74.207.244.221:443 S ttl=59 id=38710 iplen=44  seq=1913383349 win=1024 <mss 1460>
+SENT (0.1101s) TCP 106.187.53.215:43199 > 74.207.244.221:80 A ttl=44 id=10665 iplen=40  seq=0 win=1024
+SENT (0.1102s) ICMP 106.187.53.215 > 74.207.244.221 Timestamp request (type=13/code=0) ttl=51 id=42939 iplen=40
+RCVD (0.2120s) ICMP 74.207.244.221 > 106.187.53.215 Echo reply (type=0/code=0) ttl=56 id=2147 iplen=28
+SENT (0.2731s) TCP 106.187.53.215:43199 > 74.207.244.221:80 S ttl=51 id=34952 iplen=44  seq=2609466214 win=1024 <mss 1460>
+RCVD (0.3822s) TCP 74.207.244.221:80 > 106.187.53.215:43199 SA ttl=56 id=0 iplen=44  seq=4191686720 win=14600 <mss 1460>
+Nmap scan report for scanme.nmap.org (74.207.244.221)
+Host is up (0.10s latency).
+PORT   STATE SERVICE
+80/tcp open  http
+Nmap done: 1 IP address (1 host up) scanned in 0.41 seconds
 
-    ```
+```
 
 +   **反向 DNS 解析**：Nmap 执行反向 DNS 查找，因为主机名可能会透露额外的信息，比如主机名`mail.company.com`。通过在扫描参数中添加参数`-n`可以跳过这一步。让我们看看使用以下命令进行反向 DNS 解析和不进行反向 DNS 解析时生成的流量：
 
 ```
-    $ nmap -n -Pn -p80 --packet-trace scanme.nmap.org
+$ nmap -n -Pn -p80 --packet-trace scanme.nmap.org
 
-    ```
+```
 
 我们刚刚使用的命令给我们以下输出：
 
 ```
-    SENT (0.1832s) TCP 106.187.53.215:45748 > 74.207.244.221:80 S ttl=37 id=33309 iplen=44  seq=2623325197 win=1024 <mss 1460>
-    RCVD (0.2877s) TCP 74.207.244.221:80 > 106.187.53.215:45748 SA ttl=56 id=0 iplen=44  seq=3220507551 win=14600 <mss 1460>
-    Nmap scan report for scanme.nmap.org (74.207.244.221)
-    Host is up (0.10s latency).
-    PORT   STATE SERVICE
-    80/tcp open  http
+SENT (0.1832s) TCP 106.187.53.215:45748 > 74.207.244.221:80 S ttl=37 id=33309 iplen=44  seq=2623325197 win=1024 <mss 1460>
+RCVD (0.2877s) TCP 74.207.244.221:80 > 106.187.53.215:45748 SA ttl=56 id=0 iplen=44  seq=3220507551 win=14600 <mss 1460>
+Nmap scan report for scanme.nmap.org (74.207.244.221)
+Host is up (0.10s latency).
+PORT   STATE SERVICE
+80/tcp open  http
 
-    Nmap done: 1 IP address (1 host up) scanned in 0.32 seconds
+Nmap done: 1 IP address (1 host up) scanned in 0.32 seconds
 
-    ```
+```
 
 要进行扫描而不跳过反向 DNS 解析，我们有以下命令：
 
 ```
-    $ nmap -Pn -p80 --packet-trace scanme.nmap.org
+$ nmap -Pn -p80 --packet-trace scanme.nmap.org
 
-    ```
+```
 
 这个命令给我们以下输出：
 
 ```
-    NSOCK (0.0600s) UDP connection requested to 106.187.36.20:53 (IOD #1) EID 8
-    NSOCK (0.0600s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID                                                  18
-    NSOCK (0.0600s) UDP connection requested to 106.187.35.20:53 (IOD #2) EID 24
-    NSOCK (0.0600s) Read request from IOD #2 [106.187.35.20:53] (timeout: -1ms) EID                                                  34
-    NSOCK (0.0600s) UDP connection requested to 106.187.34.20:53 (IOD #3) EID 40
-    NSOCK (0.0600s) Read request from IOD #3 [106.187.34.20:53] (timeout: -1ms) EID                                                  50
-    NSOCK (0.0600s) Write request for 45 bytes to IOD #1 EID 59 [106.187.36.20:53]:                                                  =............221.244.207.74.in-addr.arpa.....
-    NSOCK (0.0600s) Callback: CONNECT SUCCESS for EID 8 [106.187.36.20:53]
-    NSOCK (0.0600s) Callback: WRITE SUCCESS for EID 59 [106.187.36.20:53]
-    NSOCK (0.0600s) Callback: CONNECT SUCCESS for EID 24 [106.187.35.20:53]
-    NSOCK (0.0600s) Callback: CONNECT SUCCESS for EID 40 [106.187.34.20:53]
-    NSOCK (0.0620s) Callback: READ SUCCESS for EID 18 [106.187.36.20:53] (174 bytes)
-    NSOCK (0.0620s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID                                                  66
-    NSOCK (0.0620s) nsi_delete() (IOD #1)
-    NSOCK (0.0620s) msevent_cancel() on event #66 (type READ)
-    NSOCK (0.0620s) nsi_delete() (IOD #2)
-    NSOCK (0.0620s) msevent_cancel() on event #34 (type READ)
-    NSOCK (0.0620s) nsi_delete() (IOD #3)
-    NSOCK (0.0620s) msevent_cancel() on event #50 (type READ)
-    SENT (0.0910s) TCP 106.187.53.215:46089 > 74.207.244.221:80 S ttl=42 id=23960 ip                                                 len=44  seq=1992555555 win=1024 <mss 1460>
-    RCVD (0.1932s) TCP 74.207.244.221:80 > 106.187.53.215:46089 SA ttl=56 id=0 iplen                                                 =44  seq=4229796359 win=14600 <mss 1460>
-    Nmap scan report for scanme.nmap.org (74.207.244.221)
-    Host is up (0.10s latency).
-    PORT   STATE SERVICE
-    80/tcp open  http
+NSOCK (0.0600s) UDP connection requested to 106.187.36.20:53 (IOD #1) EID 8
+NSOCK (0.0600s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID                                                  18
+NSOCK (0.0600s) UDP connection requested to 106.187.35.20:53 (IOD #2) EID 24
+NSOCK (0.0600s) Read request from IOD #2 [106.187.35.20:53] (timeout: -1ms) EID                                                  34
+NSOCK (0.0600s) UDP connection requested to 106.187.34.20:53 (IOD #3) EID 40
+NSOCK (0.0600s) Read request from IOD #3 [106.187.34.20:53] (timeout: -1ms) EID                                                  50
+NSOCK (0.0600s) Write request for 45 bytes to IOD #1 EID 59 [106.187.36.20:53]:                                                  =............221.244.207.74.in-addr.arpa.....
+NSOCK (0.0600s) Callback: CONNECT SUCCESS for EID 8 [106.187.36.20:53]
+NSOCK (0.0600s) Callback: WRITE SUCCESS for EID 59 [106.187.36.20:53]
+NSOCK (0.0600s) Callback: CONNECT SUCCESS for EID 24 [106.187.35.20:53]
+NSOCK (0.0600s) Callback: CONNECT SUCCESS for EID 40 [106.187.34.20:53]
+NSOCK (0.0620s) Callback: READ SUCCESS for EID 18 [106.187.36.20:53] (174 bytes)
+NSOCK (0.0620s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID                                                  66
+NSOCK (0.0620s) nsi_delete() (IOD #1)
+NSOCK (0.0620s) msevent_cancel() on event #66 (type READ)
+NSOCK (0.0620s) nsi_delete() (IOD #2)
+NSOCK (0.0620s) msevent_cancel() on event #34 (type READ)
+NSOCK (0.0620s) nsi_delete() (IOD #3)
+NSOCK (0.0620s) msevent_cancel() on event #50 (type READ)
+SENT (0.0910s) TCP 106.187.53.215:46089 > 74.207.244.221:80 S ttl=42 id=23960 ip                                                 len=44  seq=1992555555 win=1024 <mss 1460>
+RCVD (0.1932s) TCP 74.207.244.221:80 > 106.187.53.215:46089 SA ttl=56 id=0 iplen                                                 =44  seq=4229796359 win=14600 <mss 1460>
+Nmap scan report for scanme.nmap.org (74.207.244.221)
+Host is up (0.10s latency).
+PORT   STATE SERVICE
+80/tcp open  http
 
-    Nmap done: 1 IP address (1 host up) scanned in 0.22 seconds
+Nmap done: 1 IP address (1 host up) scanned in 0.22 seconds
 
-    ```
+```
 
 +   **端口扫描**：在此阶段，Nmap 确定端口的状态。默认情况下使用 SYN 扫描，但支持多种端口扫描技术。可以使用参数`-sn`跳过此阶段：
 
 ```
-    $ nmap -sn -R --packet-trace 74.207.244.221
-    SENT (0.0363s) ICMP 106.187.53.215 > 74.207.244.221 Echo request (type=8/code=0) ttl=56 id=36390 iplen=28
-    SENT (0.0364s) TCP 106.187.53.215:53376 > 74.207.244.221:443 S ttl=39 id=22228 iplen=44  seq=155734416 win=1024 <mss 1460>
-    SENT (0.0365s) TCP 106.187.53.215:53376 > 74.207.244.221:80 A ttl=46 id=36835 iplen=40  seq=0 win=1024
-    SENT (0.0366s) ICMP 106.187.53.215 > 74.207.244.221 Timestamp request (type=13/code=0) ttl=50 id=2630 iplen=40
-    RCVD (0.1377s) TCP 74.207.244.221:443 > 106.187.53.215:53376 RA ttl=56 id=0 iplen=40  seq=0 win=0
-    NSOCK (0.1660s) UDP connection requested to 106.187.36.20:53 (IOD #1) EID 8
-    NSOCK (0.1660s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID 18
-    NSOCK (0.1660s) UDP connection requested to 106.187.35.20:53 (IOD #2) EID 24
-    NSOCK (0.1660s) Read request from IOD #2 [106.187.35.20:53] (timeout: -1ms) EID 34
-    NSOCK (0.1660s) UDP connection requested to 106.187.34.20:53 (IOD #3) EID 40
-    NSOCK (0.1660s) Read request from IOD #3 [106.187.34.20:53] (timeout: -1ms) EID 50
-    NSOCK (0.1660s) Write request for 45 bytes to IOD #1 EID 59 [106.187.36.20:53]: [............221.244.207.74.in-addr.arpa.....
-    NSOCK (0.1660s) Callback: CONNECT SUCCESS for EID 8 [106.187.36.20:53]
-    NSOCK (0.1660s) Callback: WRITE SUCCESS for EID 59 [106.187.36.20:53]
-    NSOCK (0.1660s) Callback: CONNECT SUCCESS for EID 24 [106.187.35.20:53]
-    NSOCK (0.1660s) Callback: CONNECT SUCCESS for EID 40 [106.187.34.20:53]
-    NSOCK (0.1660s) Callback: READ SUCCESS for EID 18 [106.187.36.20:53] (174 bytes)
-    NSOCK (0.1660s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID 66
-    NSOCK (0.1660s) nsi_delete() (IOD #1)
-    NSOCK (0.1660s) msevent_cancel() on event #66 (type READ)
-    NSOCK (0.1660s) nsi_delete() (IOD #2)
-    NSOCK (0.1660s) msevent_cancel() on event #34 (type READ)
-    NSOCK (0.1660s) nsi_delete() (IOD #3)
-    NSOCK (0.1660s) msevent_cancel() on event #50 (type READ)
-    Nmap scan report for scanme.nmap.org (74.207.244.221)
-    Host is up (0.10s latency).
-    Nmap done: 1 IP address (1 host up) scanned in 0.17 seconds
+$ nmap -sn -R --packet-trace 74.207.244.221
+SENT (0.0363s) ICMP 106.187.53.215 > 74.207.244.221 Echo request (type=8/code=0) ttl=56 id=36390 iplen=28
+SENT (0.0364s) TCP 106.187.53.215:53376 > 74.207.244.221:443 S ttl=39 id=22228 iplen=44  seq=155734416 win=1024 <mss 1460>
+SENT (0.0365s) TCP 106.187.53.215:53376 > 74.207.244.221:80 A ttl=46 id=36835 iplen=40  seq=0 win=1024
+SENT (0.0366s) ICMP 106.187.53.215 > 74.207.244.221 Timestamp request (type=13/code=0) ttl=50 id=2630 iplen=40
+RCVD (0.1377s) TCP 74.207.244.221:443 > 106.187.53.215:53376 RA ttl=56 id=0 iplen=40  seq=0 win=0
+NSOCK (0.1660s) UDP connection requested to 106.187.36.20:53 (IOD #1) EID 8
+NSOCK (0.1660s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID 18
+NSOCK (0.1660s) UDP connection requested to 106.187.35.20:53 (IOD #2) EID 24
+NSOCK (0.1660s) Read request from IOD #2 [106.187.35.20:53] (timeout: -1ms) EID 34
+NSOCK (0.1660s) UDP connection requested to 106.187.34.20:53 (IOD #3) EID 40
+NSOCK (0.1660s) Read request from IOD #3 [106.187.34.20:53] (timeout: -1ms) EID 50
+NSOCK (0.1660s) Write request for 45 bytes to IOD #1 EID 59 [106.187.36.20:53]: [............221.244.207.74.in-addr.arpa.....
+NSOCK (0.1660s) Callback: CONNECT SUCCESS for EID 8 [106.187.36.20:53]
+NSOCK (0.1660s) Callback: WRITE SUCCESS for EID 59 [106.187.36.20:53]
+NSOCK (0.1660s) Callback: CONNECT SUCCESS for EID 24 [106.187.35.20:53]
+NSOCK (0.1660s) Callback: CONNECT SUCCESS for EID 40 [106.187.34.20:53]
+NSOCK (0.1660s) Callback: READ SUCCESS for EID 18 [106.187.36.20:53] (174 bytes)
+NSOCK (0.1660s) Read request from IOD #1 [106.187.36.20:53] (timeout: -1ms) EID 66
+NSOCK (0.1660s) nsi_delete() (IOD #1)
+NSOCK (0.1660s) msevent_cancel() on event #66 (type READ)
+NSOCK (0.1660s) nsi_delete() (IOD #2)
+NSOCK (0.1660s) msevent_cancel() on event #34 (type READ)
+NSOCK (0.1660s) nsi_delete() (IOD #3)
+NSOCK (0.1660s) msevent_cancel() on event #50 (type READ)
+Nmap scan report for scanme.nmap.org (74.207.244.221)
+Host is up (0.10s latency).
+Nmap done: 1 IP address (1 host up) scanned in 0.17 seconds
 
-    ```
+```
 
 在上一个示例中，我们可以看到执行了 ICMP 回显请求和反向 DNS 查找，但没有进行端口扫描。
 
@@ -708,86 +708,86 @@ Nmap 包括六个模板，设置不同的时间和性能参数，以优化您的
 +   **Paranoid** (`-0`): 这个模板对于避开检测系统很有用，但非常慢，因为一次只扫描一个端口，探测之间的超时时间为 5 分钟。
 
 ```
-    --------------- Timing report ---------------
-     hostgroups: min 1, max 100000
-     rtt-timeouts: init 300000, min 100, max 300000
-     max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
-     parallelism: min 0, max 1
-     max-retries: 10, host-timeout: 0
-     min-rate: 0, max-rate: 0
-    ---------------------------------------------
+--------------- Timing report ---------------
+ hostgroups: min 1, max 100000
+ rtt-timeouts: init 300000, min 100, max 300000
+ max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
+ parallelism: min 0, max 1
+ max-retries: 10, host-timeout: 0
+ min-rate: 0, max-rate: 0
+---------------------------------------------
 
-    ```
+```
 
 +   **Sneaky** (`-1`): 这个模板对于避开检测系统很有用，但速度非常慢。
 
 ```
-    --------------- Timing report ---------------
-     hostgroups: min 1, max 100000
-     rtt-timeouts: init 15000, min 100, max 15000
-     max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
-     parallelism: min 0, max 1
-     max-retries: 10, host-timeout: 0
-     min-rate: 0, max-rate: 0
-    ---------------------------------------------
+--------------- Timing report ---------------
+ hostgroups: min 1, max 100000
+ rtt-timeouts: init 15000, min 100, max 15000
+ max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
+ parallelism: min 0, max 1
+ max-retries: 10, host-timeout: 0
+ min-rate: 0, max-rate: 0
+---------------------------------------------
 
-    ```
+```
 
 +   **Polite** (`-2`): 当扫描不应干扰目标系统时使用这个模板。
 
 ```
-    --------------- Timing report ---------------
-     hostgroups: min 1, max 100000
-     rtt-timeouts: init 1000, min 100, max 10000
-     max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
-     parallelism: min 0, max 1
-     max-retries: 10, host-timeout: 0
-     min-rate: 0, max-rate: 0
-    ---------------------------------------------
+--------------- Timing report ---------------
+ hostgroups: min 1, max 100000
+ rtt-timeouts: init 1000, min 100, max 10000
+ max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
+ parallelism: min 0, max 1
+ max-retries: 10, host-timeout: 0
+ min-rate: 0, max-rate: 0
+---------------------------------------------
 
-    ```
+```
 
 +   **Normal** (`-3`): 这是 Nmap 的默认时间模板，当参数`-T`未设置时使用。
 
 ```
-    --------------- Timing report ---------------
-     hostgroups: min 1, max 100000
-     rtt-timeouts: init 1000, min 100, max 10000
-     max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
-     parallelism: min 0, max 0
-     max-retries: 10, host-timeout: 0
-     min-rate: 0, max-rate: 0
-    ---------------------------------------------
+--------------- Timing report ---------------
+ hostgroups: min 1, max 100000
+ rtt-timeouts: init 1000, min 100, max 10000
+ max-scan-delay: TCP 1000, UDP 1000, SCTP 1000
+ parallelism: min 0, max 0
+ max-retries: 10, host-timeout: 0
+ min-rate: 0, max-rate: 0
+---------------------------------------------
 
-    ```
+```
 
 +   **Aggressive** (`-4`): 这是宽带和以太网连接的推荐时间模板。
 
 ```
-    --------------- Timing report ---------------
-     hostgroups: min 1, max 100000
-     rtt-timeouts: init 500, min 100, max 1250
-     max-scan-delay: TCP 10, UDP 1000, SCTP 10
-     parallelism: min 0, max 0
-     max-retries: 6, host-timeout: 0
-     min-rate: 0, max-rate: 0
-    ---------------------------------------------
+--------------- Timing report ---------------
+ hostgroups: min 1, max 100000
+ rtt-timeouts: init 500, min 100, max 1250
+ max-scan-delay: TCP 10, UDP 1000, SCTP 10
+ parallelism: min 0, max 0
+ max-retries: 6, host-timeout: 0
+ min-rate: 0, max-rate: 0
+---------------------------------------------
 
-    ```
+```
 
 +   **Insane** (`-5`): 这个时间模板为速度而牺牲了准确性。
 
 ```
-    --------------- Timing report ---------------
-     hostgroups: min 1, max 100000
-     rtt-timeouts: init 250, min 50, max 300
-     max-scan-delay: TCP 5, UDP 1000, SCTP 5
-     parallelism: min 0, max 0
-     max-retries: 2, host-timeout: 900000
-     min-rate: 0, max-rate: 0
-    ---------------------------------------------
+--------------- Timing report ---------------
+ hostgroups: min 1, max 100000
+ rtt-timeouts: init 250, min 50, max 300
+ max-scan-delay: TCP 5, UDP 1000, SCTP 5
+ parallelism: min 0, max 0
+ max-retries: 2, host-timeout: 900000
+ min-rate: 0, max-rate: 0
+---------------------------------------------
 
-    ```
+```
 
 ## 还有更多...
 
@@ -1170,21 +1170,21 @@ Dnmap 依赖于 Python 的库“twisted”。如果您使用基于 Debian 的系
 1.  创建一个包含您的 Nmap 命令的文件。每个命令必须用新行分隔。
 
 ```
-    #cat cmds.txt
-    nmap -sU -p1-10000 -sV scanme.nmap.org
-    nmap -sU -p10000-20000 -sV scanme.nmap.org
-    nmap -sU -p20000-30000 -sV scanme.nmap.org
-    nmap -sU -p40000-50000 -sV scanme.nmap.org
-    nmap -sU -p50001-60000 -sV scanme.nmap.org
+#cat cmds.txt
+nmap -sU -p1-10000 -sV scanme.nmap.org
+nmap -sU -p10000-20000 -sV scanme.nmap.org
+nmap -sU -p20000-30000 -sV scanme.nmap.org
+nmap -sU -p40000-50000 -sV scanme.nmap.org
+nmap -sU -p50001-60000 -sV scanme.nmap.org
 
-    ```
+```
 
 1.  启动`dnmap_server.py`：
 
 ```
-    #python dnmap_server.py -f cmds.txt
+#python dnmap_server.py -f cmds.txt
 
-    ```
+```
 
 以下截图显示了 Dnmap 服务器：
 
@@ -1195,9 +1195,9 @@ Dnmap 服务器
 1.  在您的客户端上，运行以下命令：
 
 ```
-    #python dnmap_client.py -a client1 -s 192.168.1.1
+#python dnmap_client.py -a client1 -s 192.168.1.1
 
-    ```
+```
 
 以下截图显示了 Dnmap 服务器：
 

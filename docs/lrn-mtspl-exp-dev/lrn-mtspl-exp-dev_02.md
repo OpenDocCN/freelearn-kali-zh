@@ -1,4 +1,4 @@
-# 第二章。Metasploit 框架组织
+# 第二章：Metasploit 框架组织
 
 在本章中，我们将调查 Metasploit 框架的组织结构。Metasploit 框架是由*HD Moore*于 2003 年创建的开源项目，后来于 2009 年 10 月 21 日被 Rapid7 LLC 收购。Metasploit 2.0 于 2004 年 4 月发布，这个版本包括 19 个漏洞利用和 27 个有效载荷。从那时起一直在不断开发，现在我们有 Metasploit 4.5.2，其中包括数百个漏洞利用和有效载荷。Moore 创建了这个框架用于开发利用代码和攻击易受攻击的远程系统。它被认为是支持使用 Nessus 和其他著名工具进行漏洞评估的最佳渗透测试工具之一。这个项目最初是用 Perl 开发的，后来用 Ruby 重写。自收购以来，Rapid7 还添加了两个专有版本，称为 Metasploit Express 和 Metasploit Pro。Metasploit 支持包括 Windows、Linux 和 Mac OS 在内的所有平台。
 

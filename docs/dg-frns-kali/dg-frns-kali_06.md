@@ -1,4 +1,4 @@
-# 使用 Foremost、Scalpel 和 Bulk Extractor 进行文件恢复和数据切割
+# 第六章：使用 Foremost、Scalpel 和 Bulk Extractor 进行文件恢复和数据切割
 
 现在我们已经学会了如何创建证据的取证镜像，让我们来看看如何使用 Foremost、Scalpel 和 Bulk Extractor 进行文件恢复和数据切割。
 

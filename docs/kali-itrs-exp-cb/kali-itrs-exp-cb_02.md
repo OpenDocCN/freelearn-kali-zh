@@ -1,4 +1,4 @@
-# 第二章 网络信息收集
+# 第二章：网络信息收集
 
 在本章中，我们将介绍以下教程：
 
@@ -39,9 +39,9 @@
 1.  要启动 netdiscover，请确保您通过 Wi-Fi 连接并具有有效的 IP 地址。打开终端并输入以下命令进行被动侦察：
 
 ```
-    netdiscover - p
+netdiscover - p
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -50,9 +50,9 @@
 1.  要执行对网络的主动扫描以发现活动 IP，请在终端中输入以下命令：
 
 ```
-    netdiscover -i eth0
+netdiscover -i eth0
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -61,18 +61,18 @@
 1.  如果您想保存 netdiscover 的输出，可以使用以下命令：
 
 ```
-    netdiscover -i eth0 > localIPS.txt
+netdiscover -i eth0 > localIPS.txt
 
-    ```
+```
 
 1.  几秒钟后（例如，10 秒），使用*Ctrl* + *C*终止程序，文件的输出将看起来像以下内容：![操作步骤...](img/image_02_003.jpg)
 
 1.  另一种执行快速有效扫描的方法是使用`nmap`命令。要通过简单的 ping 扫描检测网络范围内的活动系统，请在终端中使用以下命令：
 
 ```
-    nmap -sP 192.168.1.0/24
+nmap -sP 192.168.1.0/24
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -81,9 +81,9 @@
 1.  您还可以将 nmap 工具的输出保存到文件中。我们所要做的就是添加一些 bash 脚本，并在终端中输入以下命令：
 
 ```
-    nmap -sP <IP address range>/<class subnet> | grep "report for" |        cut -d " " -f5 > nmapliveIPs.txt
+nmap -sP <IP address range>/<class subnet> | grep "report for" |        cut -d " " -f5 > nmapliveIPs.txt
 
-    ```
+```
 
 让我们了解这个命令：第一个`nmap`命令的输出作为管道符后面的第二个命令的输入。在第二个命令中，grep 命令搜索包含"report for"的行，因为这将是指定 IP 正在响应的语句。找到包含"report for "的行的输出被转发到管道符后面的第三个命令。在第三个命令中，我们执行一个 cut 操作，我们说比较分隔符是"空格"在行中，并获取第 5 个字段，即在基于"空格"分隔的情况下的第五个单词。
 
@@ -164,9 +164,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 我们将输入以下命令：
 
 ```
-    nmap -f <ip address>
+nmap -f <ip address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -177,9 +177,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 要在此处通过 MTU 执行规避，请在终端中输入以下命令：
 
 ```
-    nmap -mtu 24 <ip address>
+nmap -mtu 24 <ip address>
 
-    ```
+```
 
 ### 注意
 
@@ -192,9 +192,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  在这里，我们将使用欺骗攻击。在终端中输入以下命令：
 
 ```
-    nmap -D <Fake IP>,<Fake IP>,<Fake IP> <Real IP>
+nmap -D <Fake IP>,<Fake IP>,<Fake IP> <Real IP>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -203,9 +203,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  在这里，我们将进行自定义端口攻击。在终端中输入以下命令：
 
 ```
-    nmap -source-port 53 <IP address>
+nmap -source-port 53 <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -248,9 +248,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  我们将在终端中输入以下命令来运行 nmap：
 
 ```
-    nmap <ip address>
+nmap <ip address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -259,9 +259,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  我们甚至可以通过使用详细开关来检查工具的操作，通过在终端中输入以下命令：
 
 ```
-    nmap -v <IP address>
+nmap -v <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -270,9 +270,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  默认情况下，它只扫描 1,000 个知名端口集。如果我们有兴趣将扫描偏好设置为前 100 个端口，我们可以在终端中运行以下命令：
 
 ```
-    nmap --top-ports <number> <ip address>
+nmap --top-ports <number> <ip address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -281,9 +281,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  我们甚至可以将端口扫描限制为特定端口或 IP 的一系列端口。我们可以运行以下命令来查看相同的内容：
 
 ```
-    nmap -p <port range> <IP address>
+nmap -p <port range> <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -292,9 +292,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  可能存在这样的情况，我们想知道整个网络范围内有哪些 IP 运行了特定服务。我们在终端中运行以下命令：
 
 ```
-    nmap -p <port number> <IP address>
+nmap -p <port number> <IP address>
 
-    ```
+```
 
 输出如下所示：
 
@@ -303,9 +303,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  假设我们想要检查特定系统上有哪些 UDP 端口是开放的。我们可以通过在终端中输入以下命令来检查：
 
 ```
-    nmap -sU <IP Address>
+nmap -sU <IP Address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -316,9 +316,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 打开终端并输入以下命令，确保正确输入 IP 文件的路径：
 
 ```
-    nmap -sT -iL /root/nmapliveIPs.txt
+nmap -sT -iL /root/nmapliveIPs.txt
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -327,9 +327,9 @@ nmap 工具还支持许多用于检测活动 IP 的选项：
 1.  可以使用以下命令将实时 IP 扫描结果保存在文件中：
 
 ```
-    nmap -sT -iL /root/nmapliveIPs.txt > openports.txt
+nmap -sT -iL /root/nmapliveIPs.txt > openports.txt
 
-    ```
+```
 
 1.  Nmap 还有一个图形化版本；它被命名为 zenmap，看起来如下：![如何操作...](img/image_02_018.jpg)
 
@@ -386,9 +386,9 @@ Unicornscan 是另一个工作非常快的扫描器，其核心原因是工具�
 1.  打开终端并输入以下命令进行简单的 unicornscan：
 
 ```
-    unicornscan <IP address>
+unicornscan <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -397,9 +397,9 @@ Unicornscan 是另一个工作非常快的扫描器，其核心原因是工具�
 1.  如果您想在执行命令时看到它正在做什么的细节，我们可以使用以下命令使用详细脚本：
 
 ```
-    unicornscan -v <IP address>
+unicornscan -v <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -410,9 +410,9 @@ Unicornscan 是另一个工作非常快的扫描器，其核心原因是工具�
 1.  假设我们也想对 UDP 进行相同的操作。在终端中输入以下命令：
 
 ```
-    unicornscan -v -m U <IP address>
+unicornscan -v -m U <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -421,9 +421,9 @@ Unicornscan 是另一个工作非常快的扫描器，其核心原因是工具�
 1.  还有更多选项可用。要检查它们，请在终端中输入以下命令：
 
 ```
-    Unicornscan -h
+Unicornscan -h
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -465,9 +465,9 @@ Unicornscan -h
 1.  使用 nmap，在终端中运行以下命令以获得服务枚举结果：
 
 ```
-    nmap -sV <IP address>
+nmap -sV <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -476,9 +476,9 @@ Unicornscan -h
 1.  我们甚至可以使用 UDP 扫描开关以及服务检测开关来枚举目标 IP 上运行的 UDP 服务：
 
 ```
-    Nmap -sU -sV <IP address>
+Nmap -sU -sV <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -487,9 +487,9 @@ Unicornscan -h
 1.  我们可以使用以下命令加快扫描速度：
 
 ```
-    nmap -T4 -F -sV  <IP address>
+nmap -T4 -F -sV  <IP address>
 
-    ```
+```
 
 有关使用的开关的详细信息在*工作原理*部分提供。要获取更多详细信息，请访问[`nmap.org/book/man-port-specification.html`](https://nmap.org/book/man-port-specification.html)和[`nmap.org/book/man-version-detection.html`](https://nmap.org/book/man-version-detection.html)。
 
@@ -538,9 +538,9 @@ Unicornscan -h
 1.  打开终端并输入以下内容：
 
 ```
-    nmap -O <IP address>
+nmap -O <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -549,9 +549,9 @@ Unicornscan -h
 我们可以使用高级运算符以更积极的方式找出操作系统。在终端中输入以下命令：
 
 ```
-    nmap O --osscan-guess <IP address>
+nmap O --osscan-guess <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -562,9 +562,9 @@ Unicornscan -h
 1.  Xprobe2 使用了与 nmap 不同的方法。它使用模糊签名匹配来提供可能的操作系统。打开终端并输入以下命令：
 
 ```
-    xprobe2 <IP Address>
+xprobe2 <IP Address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -625,9 +625,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  为了枚举 NetBIOS 名称，我们将在终端中运行以下命令：
 
 ```
-    nbtscan <IP address>
+nbtscan <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -636,9 +636,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  您还可以在终端中使用以下命令对类范围进行 NetBIOS 枚举：
 
 ```
-    nbtscan -r <IP address>/<class range>
+nbtscan -r <IP address>/<class range>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -647,9 +647,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  要执行 SMB 扫描，我们可以使用命令如`enum4linux`。在终端中输入以下命令开始 SMB 扫描：
 
 ```
-    enum4linux <IP address>
+enum4linux <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -674,9 +674,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 首先在终端中输入以下命令：
 
 ```
-    snmpwalk -c public -v1 <IP address>
+snmpwalk -c public -v1 <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -687,9 +687,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 例如，如果我们希望仅提取系统用户，则可以使用此值`1.3.6.1.4.1.77.1.2.25`，在终端中输入以下命令：
 
 ```
-    snmpwalk -c public -v1 <IP address> <MIB value>
+snmpwalk -c public -v1 <IP address> <MIB value>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -704,9 +704,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  打开终端并输入以下命令以执行脚本扫描：
 
 ```
-    nmap -sC <IP address >
+nmap -sC <IP address >
 
-    ```
+```
 
 ### 注意
 
@@ -719,9 +719,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  我们甚至可以将扫描范围缩小到特定服务。在终端中键入以下命令，仅运行与 SMB 服务相关的所有枚举脚本：
 
 ```
-    nmap -sT --script *smb-enum* <IP address>
+nmap -sT --script *smb-enum* <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -730,9 +730,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  但是，我们应该意识到有一些脚本可能会在尝试分析目标是否容易受攻击时使服务停滞或崩溃。这些可以通过使用不安全的参数来调用，例如在终端中输入以下命令：
 
 ```
-    nmap -sT -p 139,443 --script smb-check-vulns --script-      args=unsafe=1 <IP address>
+nmap -sT -p 139,443 --script smb-check-vulns --script-      args=unsafe=1 <IP address>
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -785,9 +785,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  对于 DNS 扫描，我们将使用一个名为 DNsenum 的工具。让我们从在终端中输入以下命令开始：
 
 ```
-    dnsenum <domainname>
+dnsenum <domainname>
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -796,9 +796,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  我们还可以使用可用于通过谷歌抓取搜索更多子域的功能。输入以下命令：
 
 ```
-    dnsenum -p 5 -s 20 facebook.com
+dnsenum -p 5 -s 20 facebook.com
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -809,9 +809,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 1.  dnsenum 的另一个特性是提供一个子域字典文件列表，以查找有效的子域和它们的地址。可以通过发出以下命令来完成相同的操作：
 
 ```
-     dnsenum -f subdomains.txt facebook.com
+ dnsenum -f subdomains.txt facebook.com
 
-    ```
+```
 
 在这里，子域是可能的子域的自定义列表，我们得到以下输出：
 
@@ -820,9 +820,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 回到简单的 DNS 枚举，我们执行了上面的操作，观察到输出包含大量信息，因此最好将输出保存在文件中。一种选择是使用以下命令将输出推送到文件中：
 
 ```
-    dnsenum <domain name> > dnsenum_info.txt
+dnsenum <domain name> > dnsenum_info.txt
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -831,9 +831,9 @@ nmap 操作系统发现模块中还有其他选项，如下所示：
 然而，如果我们需要将输出枚举用于另一个工具，我们必须使用 dnsenum 提供的开关以 XML 格式输出，因为大多数工具支持 XML 导入功能。使用以下命令：
 
 ```
-    dnsenum -o dnsenum_info <domain name>
+dnsenum -o dnsenum_info <domain name>
 
-    ```
+```
 
 输出将如下截图所示：
 

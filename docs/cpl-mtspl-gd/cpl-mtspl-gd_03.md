@@ -1,4 +1,4 @@
-# Metasploit 组件和环境配置
+# 第三章：Metasploit 组件和环境配置
 
 对于我们用来执行特定任务的任何工具，了解该工具的内部始终是有帮助的。对工具的详细了解使我们能够恰当地使用它，使其充分发挥其能力。现在您已经学会了 Metasploit Framework 及其安装的一些绝对基础知识，在本章中，您将学习 Metasploit Framework 的结构以及 Metasploit 生态系统的各种组件。本章将涵盖以下主题：
 

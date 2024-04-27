@@ -1,4 +1,4 @@
-# 第三章 收集额外的主机信息
+# 第三章：收集额外的主机信息
 
 ### 注意
 
@@ -435,16 +435,16 @@ $nmap -p80 --script http-email-harvest --script-args httpspider.url=/welcome.php
 +   您可以通过使用脚本参数`domain`来指定要查找的域名*.*
 
 ```
-    $ nmap -p80 --script http-google-email --script-args domain=insecure.org scanme.nmap.org
+$ nmap -p80 --script http-google-email --script-args domain=insecure.org scanme.nmap.org
 
-    ```
+```
 
 +   通过增加脚本参数`pages`中的页面结果数量，您可能会获得额外的结果：
 
 ```
-    # nmap -p80 --script http-google-email --script-args pages=10 scanme.nmap.org
+# nmap -p80 --script http-google-email --script-args pages=10 scanme.nmap.org
 
-    ```
+```
 
 ### NSE 脚本参数
 
@@ -1255,16 +1255,16 @@ IP 头中的 ID 字段主要用于跟踪数据包以便重新组装，但由于�
 +   使用 OS 检测的详细模式。
 
 ```
-    #nmap -sV -v -O <target>
+#nmap -sV -v -O <target>
 
-    ```
+```
 
 +   使用 Kriss Katterjon 的`ipidseq` NSE 脚本。
 
 ```
-    $nmap -p80 --script ipidseq <target>
+$nmap -p80 --script ipidseq <target>
 
-    ```
+```
 
 ## 另请参阅
 

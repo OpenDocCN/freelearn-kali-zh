@@ -1,4 +1,4 @@
-# 第三章。网络漏洞评估
+# 第三章：网络漏洞评估
 
 在本章中，我们将涵盖以下内容：
 
@@ -31,9 +31,9 @@
 1.  我们应该首先看看 NSE 脚本的位置。输入以下命令：
 
 ```
-    ls /usr/share/nmap/scripts/
+ls /usr/share/nmap/scripts/
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -42,9 +42,9 @@
 1.  为了了解这些脚本属于的所有不同类别，输入：
 
 ```
-    cat /usr/share/nmap/scripts/script.db | grep "vuln"
+cat /usr/share/nmap/scripts/script.db | grep "vuln"
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -53,16 +53,16 @@
 1.  您可能会注意到前面的截图中有一个名为`vuln`的类别。我们将主要使用这个类别。要运行简单的`vuln`类别扫描，请在终端窗口上使用以下命令：
 
 ```
-    nmap -sT --script vuln <IP Address> 
+nmap -sT --script vuln <IP Address> 
 
-    ```
+```
 
 1.  假设我们只想快速评估几组端口。我们可以运行基于端口的`vuln`评估扫描：
 
 ```
-    nmap -sT -p <ports> --script vuln <IP Address>
+nmap -sT -p <ports> --script vuln <IP Address>
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -75,9 +75,9 @@
 1.  假设我们想知道脚本类别`vuln`的详细信息。我们可以通过在终端中输入以下命令来简单检查：
 
 ```
-    nmap --script-help vuln
+nmap --script-help vuln
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -86,9 +86,9 @@
 1.  让我们检查远程运行的机器是否容易受到 SMB 的攻击。我们首先找出 SMB 端口是否开放：
 
 ```
-    nmap -sT -p 139,445 <IP address>
+nmap -sT -p 139,445 <IP address>
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -97,9 +97,9 @@
 1.  一旦我们检测到端口是开放的，我们运行一个`smb`漏洞检测脚本，如下所示：
 
 ```
-    nmap -sT -p 139,445 --script smb-vuln-ms08-067 <IP address>
+nmap -sT -p 139,445 --script smb-vuln-ms08-067 <IP address>
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -148,19 +148,19 @@
 1.  首先，我们将使用以下命令将 nmap XML 文件保存为 Metasploitable 2 服务器：
 
 ```
-    nmap -sT -oX Windows.xml <IP Address>
+nmap -sT -oX Windows.xml <IP Address>
 
-    ```
+```
 
 文件将保存在您终端的当前工作目录中。
 
 1.  为了启动 Metasploit，我们将启动 Metasploit 程序中涉及的服务。我们将启动 Postgres SQL 服务和 Metasploit 服务。要做到这一点，请使用以下命令：
 
 ```
-          service postgresql start
-          service metasploit start
+      service postgresql start
+      service metasploit start
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -169,9 +169,9 @@
 1.  一旦服务启动，我们将通过在命令行中输入以下内容来启动 Metasploit：
 
 ```
-    msfconsole
+msfconsole
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -180,10 +180,10 @@
 1.  首先，我们将把 nmap 扫描导入 Metasploit。为此，请输入以下命令：
 
 ```
-          db_import /root/Windows.xml
-          db_import <path to the file>
+      db_import /root/Windows.xml
+      db_import <path to the file>
 
-    ```
+```
 
 该命令从指定路径导入文件。请确保记下从读者存储文件的路径导入。
 
@@ -192,9 +192,9 @@
 1.  一旦导入成功，我们将在 Metasploit 中使用以下命令搜索运行 SMB 服务的 IP：
 
 ```
-    Services -p 445 -R
+Services -p 445 -R
 
-    ```
+```
 
 这将产生以下输出：
 
@@ -203,9 +203,9 @@
 1.  现在我们已经发现有一个感兴趣的端口，我们将尝试深入挖掘。让我们尝试显示 SMB 共享。在 Metasploit 控制台中输入以下内容：
 
 ```
-    use auxiliary/scanner/smb/smb_enumshares
+use auxiliary/scanner/smb/smb_enumshares
 
-    ```
+```
 
 输出将如下截屏所示：
 
@@ -220,19 +220,19 @@
 1.  正如我们所看到的，我们能够收到一个 IP 地址的详细信息。让我们更仔细地查看一下活动主机。我们将尝试枚举此主机可用的管道审计员类型。在 Metasploit 控制台中输入以下内容：
 
 ```
-    use auxiliary/scanner/smb/pipe_auditor
+use auxiliary/scanner/smb/pipe_auditor
 
-    ```
+```
 
 命名管道用作通信的端点；它是客户端和服务器之间的逻辑连接；`smb`命名管道与与 Server Message Block 相关的连接有关。如果我们幸运的话，我们可能能够检索到像可用的公共共享这样的信息。
 
 完成后，您可以检查所有参数是否正确输入。由于在检查攻击之前必须输入一些选项卡，您可以使用以下命令：
 
 ```
-          show options
-          run
+      show options
+      run
 
-    ```
+```
 
 它应该是这样的：
 
@@ -241,9 +241,9 @@
 1.  在检查给定端口的漏洞时，发现 SMB 共享对于早于 Windows XP Service Pack 2 的所有 Windows 版本都容易受到`ms08_067_netapi`攻击。让我们尝试找出我们的活动主机是否容易受到这种攻击。在 Metasploit 窗口中输入以下内容以加载`ms08_067_netapi`模块：
 
 ```
-    use exploit/windows/smb/ms08_067_netapi
+use exploit/windows/smb/ms08_067_netapi
 
-    ```
+```
 
 要检查 IP 是否存在漏洞，请使用`check`命令，您将得到输出，说明它是否可能是一个成功的攻击向量：
 
@@ -298,9 +298,9 @@
 1.  我们现在将在我们的 Kali 机器上开始漏洞评估。首先，我们将执行一个`nmap`扫描，以查看 Metasploitable 2 机器上的开放端口。在 Kali 终端中输入以下命令：
 
 ```
-    nmap -sT <IP address>
+nmap -sT <IP address>
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -309,9 +309,9 @@
 1.  一旦找到端口号，我们将运行信息收集模块或 NSE 脚本以获取更多信息。在终端中输入以下命令：
 
 ```
-    nmap -sT -T4 -A -sC <IP Address>
+nmap -sT -T4 -A -sC <IP Address>
 
-    ```
+```
 
 输出为我们提供了大量信息。让我们来看一下：
 
@@ -326,12 +326,12 @@
 1.  在整个过程中，我们将使用 Metasploit。让我们分析`ftp`服务，看看它是否容易受到已知组件的攻击。如果`Rhosts`选项没有显示我们的目标 IP 地址，我们可以手动填写。在 Metasploit 控制台中输入以下命令：
 
 ```
-          use auxiliary/scanner/ftp/anonymous
-          show options
-          set Rhosts <IP Address>
-          exploit
+      use auxiliary/scanner/ftp/anonymous
+      show options
+      set Rhosts <IP Address>
+      exploit
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -340,10 +340,10 @@
 1.  我们将尝试使用`mysql`的身份验证绕过，看看我们是否成功。在`msf`终端上运行以下命令：
 
 ```
-          use auxiliary/scanner/mysql/mysql_authbypass_hashdump
-          exploit
+      use auxiliary/scanner/mysql/mysql_authbypass_hashdump
+      exploit
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -352,11 +352,11 @@
 1.  我们还知道有一个运行中的`nfs`服务。让我们运行信息收集模块`nfsmount`。输入以下命令：
 
 ```
-          use auxiliary/scanner/nfs/nfsmount
-          show options
-          exploit
+      use auxiliary/scanner/nfs/nfsmount
+      show options
+      exploit
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -365,10 +365,10 @@
 1.  我们甚至可以通过`metasploit`模块对`postgresql`服务进行暴力破解攻击。要做到这一点，在`mfs`终端中输入以下命令：
 
 ```
-          use auxiliary/scanner/postgres/postgres_login
-          exploit
+      use auxiliary/scanner/postgres/postgres_login
+      exploit
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -377,10 +377,10 @@
 1.  还有一个`smtp`服务正在运行。我们可以运行 Metasploit 的`smtp enumuser`脚本来列出可用的用户名。在`msf`终端中输入以下命令：
 
 ```
-          use auxiliary/scanner/smtp/smtp_enum
-          exploit
+      use auxiliary/scanner/smtp/smtp_enum
+      exploit
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -389,11 +389,11 @@
 1.  我们还对 VNC 服务进行了评估。要做到这一点，在`msf`终端中输入以下命令：
 
 ```
-          use auxiliary/scanner/vnc/vnc_logins
-          Show options
-          exploit
+      use auxiliary/scanner/vnc/vnc_logins
+      Show options
+      exploit
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -402,11 +402,11 @@
 1.  有一个`x11`插件用于检查开放的`x11`连接。让我们测试系统上是否运行了`x11`服务。在`msf`终端中输入以下内容：
 
 ```
-          use auxiliary/scanner/x11/open_x11
-          show options
-    exploit 
+      use auxiliary/scanner/x11/open_x11
+      show options
+exploit 
 
-    ```
+```
 
 输出如下截图所示：
 
@@ -477,9 +477,9 @@
 1.  首先，我们将更新和升级我们的操作系统，以确保我们的软件包和库是最新的。为此，请在命令行中输入以下内容：
 
 ```
-    apt-get update && apt-get upgrade
+apt-get update && apt-get upgrade
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -500,9 +500,9 @@
 1.  现在，我们将使用终端中的以下命令检查安装是否已正确完成：
 
 ```
-    openvas-check-setup
+openvas-check-setup
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -515,10 +515,10 @@
 1.  这表明我们的安装已经成功。我们将立即重新启动服务：
 
 ```
-          openvas-stop
-          openvas-start
+      openvas-stop
+      openvas-start
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -527,10 +527,10 @@
 1.  让我们也为用户创建一个新密码，以及一个新用户：
 
 ```
-          openvasmd --user=admin --new-password=<Your password>
-          openvasmd --create-user <Your Username>
+      openvasmd --user=admin --new-password=<Your password>
+      openvasmd --create-user <Your Username>
 
-    ```
+```
 
 输出将如下截图所示：
 

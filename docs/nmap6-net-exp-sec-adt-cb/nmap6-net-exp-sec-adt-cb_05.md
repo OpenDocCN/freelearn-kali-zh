@@ -1,4 +1,4 @@
-# 第五章。审计数据库
+# 第五章：审计数据库
 
 ### 注意
 
@@ -354,23 +354,23 @@ $ nmap -sV --script mysql-brute <target>$ nmap -p1234 --script mysql-brute <targ
 +   要使用不同的用户名和密码列表，请分别设置参数`userdb`和`passdb`：
 
 ```
-    $ nmap -p3306 --script mysql-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
+$ nmap -p3306 --script mysql-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
 
-    ```
+```
 
 +   要在找到一个有效帐户后退出，请使用参数`brute.firstOnly`：
 
 ```
-    $ nmap -p3306 --script mysql-brute --script-args brute.firstOnly <target>
+$ nmap -p3306 --script mysql-brute --script-args brute.firstOnly <target>
 
-    ```
+```
 
 +   要设置不同的超时限制，请使用参数`unpwd.timelimit`。要无限期运行它，请将其设置为`0`：
 
 ```
-    $ nmap -p3306 --script mysql-brute --script-args unpwdb.timelimit=0 <target>$ nmap -p3306 --script mysql-brute --script-args unpwdb.timelimit=60m <target>
+$ nmap -p3306 --script mysql-brute --script-args unpwdb.timelimit=0 <target>$ nmap -p3306 --script mysql-brute --script-args unpwdb.timelimit=60m <target>
 
-    ```
+```
 
 ### Brute 模式
 
@@ -379,23 +379,23 @@ $ nmap -sV --script mysql-brute <target>$ nmap -p1234 --script mysql-brute <targ
 +   `user`：对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码
 
 ```
-    $ nmap --script mysql-brute --script-args brute.mode=user <target>
+$ nmap --script mysql-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：对于`passdb`中列出的每个密码，将尝试`userdb`中的每个用户
 
 ```
-    $ nmap --script mysql-brute --script-args brute.mode=pass <target>
+$ nmap --script mysql-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：这需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script mysql-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script mysql-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ## 另请参阅
 
@@ -555,23 +555,23 @@ PORT     STATE  SERVICE REASON
 +   要使用不同的用户名和密码列表，请分别设置参数`userdb`和`passdb`：
 
 ```
-    $ nmap -sV --script oracle-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
+$ nmap -sV --script oracle-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
 
-    ```
+```
 
 +   要在找到一个有效帐户后退出，请使用参数`brute.firstOnly`：
 
 ```
-    $ nmap -sV --script oracle-brute --script-args brute.firstOnly <target>
+$ nmap -sV --script oracle-brute --script-args brute.firstOnly <target>
 
-    ```
+```
 
 +   要设置不同的超时限制，请使用参数`unpwd.timelimit`。要无限期运行，请将其设置为`0`：
 
 ```
-    $ nmap -sV --script oracle-brute --script-args unpwdb.timelimit=0 <target>$ nmap -sV --script oracle-brute --script-args unpwdb.timelimit=60m <target>
+$ nmap -sV --script oracle-brute --script-args unpwdb.timelimit=0 <target>$ nmap -sV --script oracle-brute --script-args unpwdb.timelimit=60m <target>
 
-    ```
+```
 
 ### 暴力模式
 
@@ -580,23 +580,23 @@ PORT     STATE  SERVICE REASON
 +   `用户`：对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码
 
 ```
-    $ nmap --script oracle-brute --script-args brute.mode=user <target>
+$ nmap --script oracle-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `密码`：对于`passdb`中列出的每个密码，将尝试`userdb`中的每个用户
 
 ```
-    $ nmap --script oracle-brute --script-args brute.mode=pass <target>
+$ nmap --script oracle-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `凭据`：这需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script oracle-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script oracle-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ## 另请参阅
 
@@ -804,23 +804,23 @@ Host script results:
 +   要使用不同的用户名和密码列表，设置参数`userdb`和`passdb`：
 
 ```
-    $ nmap -p1433 --script ms-sql-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
+$ nmap -p1433 --script ms-sql-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
 
-    ```
+```
 
 +   要在找到一个有效帐户后退出，请使用参数`brute.firstOnly`：
 
 ```
-    $ nmap -p1433 --script ms-sql-brute --script-args brute.firstOnly <target>
+$ nmap -p1433 --script ms-sql-brute --script-args brute.firstOnly <target>
 
-    ```
+```
 
 +   要设置不同的超时限制，请使用参数`unpwd.timelimit`。要无限期运行，请将其设置为`0`：
 
 ```
-    $ nmap -p1433 --script ms-sql-brute --script-args unpwdb.timelimit=0 <target>$ nmap -p1433 --script ms-sql-brute --script-args unpwdb.timelimit=60m <target>
+$ nmap -p1433 --script ms-sql-brute --script-args unpwdb.timelimit=0 <target>$ nmap -p1433 --script ms-sql-brute --script-args unpwdb.timelimit=60m <target>
 
-    ```
+```
 
 ### 暴力模式
 
@@ -829,23 +829,23 @@ Host script results:
 +   `user`：对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码
 
 ```
-    $ nmap --script ms-sql-brute --script-args brute.mode=user <target>
+$ nmap --script ms-sql-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：对于`passdb`中列出的每个密码，将尝试`userdb`中的每个用户
 
 ```
-    $ nmap --script ms-sql-brute --script-args brute.mode=pass <target>
+$ nmap --script ms-sql-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：这需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script ms-sql-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script ms-sql-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ## 另请参阅
 

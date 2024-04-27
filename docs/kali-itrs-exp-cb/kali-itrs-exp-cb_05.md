@@ -1,4 +1,4 @@
-# 第五章。Web 应用程序信息收集
+# 第五章：Web 应用程序信息收集
 
 在本章中，我们将涵盖以下内容：
 
@@ -49,32 +49,32 @@
 1.  复制 API 秘钥，重新打开终端窗口，并运行以下命令以添加秘钥：
 
 ```
-    Keys add twitter_api <your-copied-api-key>
+Keys add twitter_api <your-copied-api-key>
 
-    ```
+```
 
 1.  现在使用以下命令输入`twitter_secret`到 recon-ng 中：
 
 ```
-    keys add  twitter_secret <you_twitter_secret>
+keys add  twitter_secret <you_twitter_secret>
 
-    ```
+```
 
 1.  添加了秘钥后，您可以通过输入以下命令在 recon-ng 工具中看到添加的秘钥：
 
 ```
-    keys list
+keys list
 
-    ```
+```
 
 1.  现在，让我们添加 Shodan API 秘钥。添加 Shodan API 秘钥非常简单；你只需要在[`shodan.io`](https://shodan.io)创建一个帐户，然后点击右上角的**My Account**。您将看到**Account Overview**页面，在那里您可以看到一个 QR 码图像和 API 秘钥，如下截图所示：![操作步骤...](img/image_05_005.jpg)
 
 1.  复制您帐户中显示的 API 秘钥，并使用以下命令将其添加到 recon-ng 中：
 
 ```
-    keys add shodan_api <apikey>
+keys add shodan_api <apikey>
 
-    ```
+```
 
 ## 它是如何工作的...
 
@@ -101,18 +101,18 @@
 1.  Recon-ng 看起来和感觉像 Metasploit。要查看所有可用的模块，请输入以下命令：
 
 ```
-    show modules
+show modules
 
-    ```
+```
 
 1.  Recon-ng 将列出所有可用的模块，如下面的屏幕截图所示：![操作步骤...](img/image_05_008.jpg)
 
 1.  让我们继续使用我们的第一个信息收集模块；输入以下命令：
 
 ```
-    use recon/domains-vulnerabilities/punkspider
+use recon/domains-vulnerabilities/punkspider
 
-    ```
+```
 
 1.  现在，输入以下屏幕截图中显示的命令：![操作步骤...](img/image_05_009.jpg)
 
@@ -121,14 +121,14 @@
 1.  让我们使用另一个模块，从[xssed.com](http://xssed.com/)获取任何已知和报告的漏洞。XSSed 项目由 KF 和 DP 于 2007 年 2 月初创建。它提供有关跨站脚本漏洞相关的所有信息，并且是最大的 XSS 易受攻击网站的在线存档。这是一个收集 XSS 信息的良好存储库。首先，输入以下命令：
 
 ```
-          Show module
-          use recon/domains-vulnerabilities/xssed
-          Show Options
-          Set source Microsoft.com
-          Show Options
-          RUN
+      Show module
+      use recon/domains-vulnerabilities/xssed
+      Show Options
+      Set source Microsoft.com
+      Show Options
+      RUN
 
-    ```
+```
 
 您将看到以下屏幕截图中显示的输出：
 
@@ -153,57 +153,57 @@
 1.  theharvester 帮助还显示了示例语法。为了演示目的，我们将使用以下命令：
 
 ```
-    # theharvester -d visa.com -l 500 -b all
+# theharvester -d visa.com -l 500 -b all
 
-    ```
+```
 
 1.  成功执行上述命令将给出以下信息：
 
 ```
-    *******************************************************************
-        *                                                                 *    * | |_| |__   ___    /\  /\__ _ _ ____   _____  ___| |_ ___ _ __  *
-     * | __| '_ \ / _ \  / /_/ / _` | '__\ \ / / _ \/ __| __/ _ \ '__| *
-     * | |_| | | |  __/ / __  / (_| | |   \ V /  __/\__ \ ||  __/ |    *
-     *  \__|_| |_|\___| \/ /_/ \__,_|_|    \_/ \___||___/\__\___|_|    *
-     *                                                                 *
-        * TheHarvester Ver. 2.5                                           *
-        * Coded by Christian Martorella                                   *
-        * Edge-Security Research                                          *
-        * cmartorella@edge-security.com                                   *
-        *******************************************************************
-    Full harvest..
-    [-] Searching in Google..
-     Searching 0 results...
-     Searching 100 results...
-     Searching 200 results...
-    [-] Searching in PGP Key server..
-    [-] Searching in Bing..
-     Searching 50 results...
-     Searching 100 results...
-     ...
-    [-] Searching in Exalead..
-     Searching 50 results...
-     Searching 100 results...
-     ...
-    [+] Emails found:
-    ------------------
-    phishing@visa.com
-    vpp@visa.com
-    v@e-visa.com
-    ...
-    [+] Hosts found in search engines:
-    ------------------------------------
-    [-] Resolving hostnames IPs... 
-    23.57.249.100:usa.visa.com
-    23.57.249.100:www.visa.com
-    ...
-    [+] Virtual hosts:
-    ==================
-    50.56.17.39  jobs.<strong>visa<
-    50.56.17.39  jobs.visa.com
-    ...
+*******************************************************************
+    *                                                                 *    * | |_| |__   ___    /\  /\__ _ _ ____   _____  ___| |_ ___ _ __  *
+ * | __| '_ \ / _ \  / /_/ / _` | '__\ \ / / _ \/ __| __/ _ \ '__| *
+ * | |_| | | |  __/ / __  / (_| | |   \ V /  __/\__ \ ||  __/ |    *
+ *  \__|_| |_|\___| \/ /_/ \__,_|_|    \_/ \___||___/\__\___|_|    *
+ *                                                                 *
+    * TheHarvester Ver. 2.5                                           *
+    * Coded by Christian Martorella                                   *
+    * Edge-Security Research                                          *
+    * cmartorella@edge-security.com                                   *
+    *******************************************************************
+Full harvest..
+[-] Searching in Google..
+ Searching 0 results...
+ Searching 100 results...
+ Searching 200 results...
+[-] Searching in PGP Key server..
+[-] Searching in Bing..
+ Searching 50 results...
+ Searching 100 results...
+ ...
+[-] Searching in Exalead..
+ Searching 50 results...
+ Searching 100 results...
+ ...
+[+] Emails found:
+------------------
+phishing@visa.com
+vpp@visa.com
+v@e-visa.com
+...
+[+] Hosts found in search engines:
+------------------------------------
+[-] Resolving hostnames IPs... 
+23.57.249.100:usa.visa.com
+23.57.249.100:www.visa.com
+...
+[+] Virtual hosts:
+==================
+50.56.17.39  jobs.<strong>visa<
+50.56.17.39  jobs.visa.com
+...
 
-    ```
+```
 
 ## 工作原理...
 
@@ -224,9 +224,9 @@
 1.  我们将使用 DNSenum 进行 DNS 枚举。要开始 DNS 枚举，打开终端并输入以下命令：
 
 ```
-    dnsenum --enum zonetransfer.me
+dnsenum --enum zonetransfer.me
 
-    ```
+```
 
 1.  我们应该得到一些信息，比如主机、域名服务器、电子邮件服务器，如果幸运的话，还有区域传输：![操作步骤...](img/image_05_013.jpg)
 
@@ -235,9 +235,9 @@
 1.  要使用 DNSRecon，请打开终端并输入以下命令：
 
 ```
-          dnsrecon -d zonetransfer.me -D /usr/share/wordlists/dnsmap.txt      -t std --xml dnsrecon.xml
+      dnsrecon -d zonetransfer.me -D /usr/share/wordlists/dnsmap.txt      -t std --xml dnsrecon.xml
 
-    ```
+```
 
 1.  枚举结果输出如下：![操作步骤...](img/image_05_014.jpg)
 
@@ -270,9 +270,9 @@ Kali Linux 中有多个可用的脚本，其中一些脚本或多或少地执行
 1.  WAFW00F 非常简单易用。只需打开终端并输入以下命令：
 
 ```
-    wafw00f https://www.microsoft.com
+wafw00f https://www.microsoft.com
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -307,9 +307,9 @@ WAFW00F 的工作方式如下：
 1.  打开终端并输入以下命令：
 
 ```
-    lbd google.com
+lbd google.com
 
-    ```
+```
 
 1.  成功检测到 HTTP 和 DNS 负载均衡器将产生以下输出：![如何操作...](img/image_05_016.jpg)
 
@@ -320,9 +320,9 @@ WAFW00F 的工作方式如下：
 1.  另一个可以帮助我们了解 DNS 负载均衡器是否真的存在的工具是 dig 工具。让我们更详细地看一下；输入以下命令：
 
 ```
-    dig A google.com
+dig A google.com
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -331,9 +331,9 @@ WAFW00F 的工作方式如下：
 1.  `ANSWER SECTION`显示了[microsoft.com](http://microsoft.com)的不同基于 DNS 的负载均衡器。用于测试基于 HTTP 的负载均衡器的工具是 Halberd。为了检查 Halberd 的工作原理，请在 Kali 终端中输入以下内容：
 
 ```
-    halberd http://www.vmware.com
+halberd http://www.vmware.com
 
-    ```
+```
 
 输出将如下截图所示：
 
@@ -400,9 +400,9 @@ WAFW00F 的工作方式如下：
 1.  让我们从 Kali Linux 中的第一个工具**WhatWeb**开始。WhatWeb 用于识别网站。它的目标是回答问题：“那是什么网站？”WhatWeb 可以识别 Web 技术，包括**内容管理系统**（**CMS**）、博客平台、统计/分析软件包、JavaScript 库、Web 服务器和嵌入式设备。WhatWeb 有超过 900 个插件，每个插件用于识别不同的东西。WhatWeb 还可以识别版本号、电子邮件地址、帐户 ID、Web 框架模块、SQL 错误等。WhatWeb 非常易于使用。打开终端并输入以下命令：
 
 ```
-    whatweb ishangirdhar.com
+whatweb ishangirdhar.com
 
-    ```
+```
 
 输出如下屏幕截图所示：
 
@@ -417,9 +417,9 @@ WAFW00F 的工作方式如下：
 1.  打开终端并输入以下命令：
 
 ```
-          plecost -n 100 -s 10 -M 15 -i /usr/share/plecost      /wp_plugin_list.txt ishangirdhar.com
+      plecost -n 100 -s 10 -M 15 -i /usr/share/plecost      /wp_plugin_list.txt ishangirdhar.com
 
-    ```
+```
 
 这个语法意味着使用 100 个插件（`-n 100`），在探测之间休眠 10 秒（`-s 10`），但不超过 15 个（`-M 15`），并使用插件列表（`-i /usr/share/plecost/wp_plugin_list.txt`）来扫描给定的 URL（`ishangirdhar.com`）。
 
@@ -456,66 +456,66 @@ WordPress 指纹识别工具**plecost**，可以搜索并检索运行 WordPress 
 1.  要使用 SSLScan 扫描目标，请运行以下命令：
 
 ```
-    sslscan demo.testfire.net
+sslscan demo.testfire.net
 
-    ```
+```
 
 1.  SSLScan 将测试 SSL 证书支持的所有密码。弱密码将显示为红色和黄色。强密码将显示为绿色：
 
 ```
-    root@Intrusion-Exploitation:~# sslscan demo.testfire.net
-    Version: -static
-    OpenSSL 1.0.1m-dev xx XXX xxxx
-    Testing SSL server demo.testfire.net on port 443
-     TLS renegotiation:
-    Secure session renegotiation supported
-     TLS Compression:
-    Compression disabled
-     Heartbleed:
-    TLS 1.0 not vulnerable to heartbleed
-    TLS 1.1 not vulnerable to heartbleed
-    TLS 1.2 not vulnerable to heartbleed
-     Supported Server Cipher(s):
-    Accepted  SSLv3    128 bits  RC4-SHA
-    Accepted  SSLv3    128 bits  RC4-MD5
-    Accepted  SSLv3    112 bits  DES-CBC3-SHA
-    Accepted  TLSv1.0  256 bits  ECDHE-RSA-AES256-SHA
-    Accepted  TLSv1.0  256 bits  AES256-SHA
-    Accepted  TLSv1.0  128 bits  ECDHE-RSA-AES128-SHA
-    Accepted  TLSv1.0  128 bits  AES128-SHA
-    Accepted  TLSv1.0  128 bits  RC4-SHA
-    Accepted  TLSv1.0  128 bits  RC4-MD5
-    Accepted  TLSv1.0  112 bits  DES-CBC3-SHA
-    Accepted  TLSv1.1  256 bits  ECDHE-RSA-AES256-SHA
-    Accepted  TLSv1.1  256 bits  AES256-SHA
-    Accepted  TLSv1.1  128 bits  ECDHE-RSA-AES128-SHA
-    Accepted  TLSv1.1  128 bits  AES128-SHA
-    Accepted  TLSv1.1  128 bits  RC4-SHA
-    Accepted  TLSv1.1  128 bits  RC4-MD5
-    Accepted  TLSv1.1  112 bits  DES-CBC3-SHA
-    Accepted  TLSv1.2  256 bits  ECDHE-RSA-AES256-SHA
-    Accepted  TLSv1.2  256 bits  AES256-SHA256
-    Accepted  TLSv1.2  256 bits  AES256-SHA
-    Accepted  TLSv1.2  128 bits  ECDHE-RSA-AES128-SHA256
-    Accepted  TLSv1.2  128 bits  ECDHE-RSA-AES128-SHA
-    Accepted  TLSv1.2  128 bits  AES128-SHA256
-    Accepted  TLSv1.2  128 bits  AES128-SHA
-    Accepted  TLSv1.2  128 bits  RC4-SHA
-    Accepted  TLSv1.2  128 bits  RC4-MD5
-    Accepted  TLSv1.2  112 bits  DES-CBC3-SHA
-     Preferred Server Cipher(s):
-    SSLv3    128 bits  RC4-SHA
-    TLSv1.0  128 bits  AES128-SHA
-    TLSv1.1  128 bits  AES128-SHA
-    TLSv1.2  128 bits  AES128-SHA256
-     SSL Certificate:
-    Signature Algorithm: sha1WithRSA
-    RSA Key Strength:    2048
-    Subject:  demo.testfire.net
-    Issuer:   demo.testfire.net
-    root@Intrusion-Exploitation:~# D
+root@Intrusion-Exploitation:~# sslscan demo.testfire.net
+Version: -static
+OpenSSL 1.0.1m-dev xx XXX xxxx
+Testing SSL server demo.testfire.net on port 443
+ TLS renegotiation:
+Secure session renegotiation supported
+ TLS Compression:
+Compression disabled
+ Heartbleed:
+TLS 1.0 not vulnerable to heartbleed
+TLS 1.1 not vulnerable to heartbleed
+TLS 1.2 not vulnerable to heartbleed
+ Supported Server Cipher(s):
+Accepted  SSLv3    128 bits  RC4-SHA
+Accepted  SSLv3    128 bits  RC4-MD5
+Accepted  SSLv3    112 bits  DES-CBC3-SHA
+Accepted  TLSv1.0  256 bits  ECDHE-RSA-AES256-SHA
+Accepted  TLSv1.0  256 bits  AES256-SHA
+Accepted  TLSv1.0  128 bits  ECDHE-RSA-AES128-SHA
+Accepted  TLSv1.0  128 bits  AES128-SHA
+Accepted  TLSv1.0  128 bits  RC4-SHA
+Accepted  TLSv1.0  128 bits  RC4-MD5
+Accepted  TLSv1.0  112 bits  DES-CBC3-SHA
+Accepted  TLSv1.1  256 bits  ECDHE-RSA-AES256-SHA
+Accepted  TLSv1.1  256 bits  AES256-SHA
+Accepted  TLSv1.1  128 bits  ECDHE-RSA-AES128-SHA
+Accepted  TLSv1.1  128 bits  AES128-SHA
+Accepted  TLSv1.1  128 bits  RC4-SHA
+Accepted  TLSv1.1  128 bits  RC4-MD5
+Accepted  TLSv1.1  112 bits  DES-CBC3-SHA
+Accepted  TLSv1.2  256 bits  ECDHE-RSA-AES256-SHA
+Accepted  TLSv1.2  256 bits  AES256-SHA256
+Accepted  TLSv1.2  256 bits  AES256-SHA
+Accepted  TLSv1.2  128 bits  ECDHE-RSA-AES128-SHA256
+Accepted  TLSv1.2  128 bits  ECDHE-RSA-AES128-SHA
+Accepted  TLSv1.2  128 bits  AES128-SHA256
+Accepted  TLSv1.2  128 bits  AES128-SHA
+Accepted  TLSv1.2  128 bits  RC4-SHA
+Accepted  TLSv1.2  128 bits  RC4-MD5
+Accepted  TLSv1.2  112 bits  DES-CBC3-SHA
+ Preferred Server Cipher(s):
+SSLv3    128 bits  RC4-SHA
+TLSv1.0  128 bits  AES128-SHA
+TLSv1.1  128 bits  AES128-SHA
+TLSv1.2  128 bits  AES128-SHA256
+ SSL Certificate:
+Signature Algorithm: sha1WithRSA
+RSA Key Strength:    2048
+Subject:  demo.testfire.net
+Issuer:   demo.testfire.net
+root@Intrusion-Exploitation:~# D
 
-    ```
+```
 
 1.  我们的下一个工具是 SSLyze，由 iSEC Partners 开发。
 
@@ -524,9 +524,9 @@ WordPress 指纹识别工具**plecost**，可以搜索并检索运行 WordPress 
 1.  要测试一个域的支持密码的全面列表，请在终端中输入以下命令：
 
 ```
-    sslyze -regular demo.testfire.net
+sslyze -regular demo.testfire.net
 
-    ```
+```
 
 1.  如果服务器在端口`443`上运行 SSL，输出应该像这样：![操作步骤...](img/image_05_032.jpg)
 
@@ -535,9 +535,9 @@ WordPress 指纹识别工具**plecost**，可以搜索并检索运行 WordPress 
 1.  现在使用以下命令启动 TLSSLed：
 
 ```
-    root@Intrusion-Exploitation:~# tlssled demo.testfire.net 443
+root@Intrusion-Exploitation:~# tlssled demo.testfire.net 443
 
-    ```
+```
 
 1.  TLSSEled 还显示了所有的 cookie，其中是否设置了安全和 HttpOnly 标志，这在以后利用 XSS 攻击应用程序时可能是有用的信息。
 

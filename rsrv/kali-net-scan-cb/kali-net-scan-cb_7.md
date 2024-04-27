@@ -1,4 +1,4 @@
-# 第七章 Web 应用扫描
+# 第七章：Web 应用扫描
 
 > 作者：Justin Hutchens
 

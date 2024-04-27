@@ -1,4 +1,4 @@
-# 第四章。审核 Web 服务器
+# 第四章：审核 Web 服务器
 
 ### 注意
 
@@ -445,23 +445,23 @@ $.nmap -p80 --script http-methods --script-args http.max-pipeline=10 <target>
 +   `user`：在此模式下，对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码。
 
 ```
-    $ nmap --script http-brute --script-args brute.mode=user <target>
+$ nmap --script http-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：在此模式下，对于`passdb`中列出的每个密码，将尝试`usedb`中的每个用户。
 
 ```
-    $ nmap --script http-brute --script-args brute.mode=pass <target>
+$ nmap --script http-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：此模式需要额外的参数`brute.credfile`。
 
 ```
-    $ nmap --script http-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script http-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ## 另请参阅
 
@@ -780,23 +780,23 @@ Brute 库支持改变攻击中使用的组合的不同模式。可用的模式�
 +   `user`：在此模式中，对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=user <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：在此模式中，对于`passdb`中列出的每个密码，将尝试`usedb`中的每个用户
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=pass <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：此模式需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ## 另请参阅
 
@@ -904,23 +904,23 @@ Brute 库支持不同的模式，可以改变攻击中使用的组合。可用�
 +   `user`：在此模式下，将尝试`userdb`中列出的每个用户的每个密码
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=user <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：在此模式下，将尝试`passdb`中列出的每个密码的每个用户
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=pass <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：此模式需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script http-wordpress-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script http-wordpress-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ## 另请参阅
 

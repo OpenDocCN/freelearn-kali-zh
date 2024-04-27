@@ -1,4 +1,4 @@
-# 第七章 权限提升
+# 第七章：权限提升
 
 > 作者：Willie L. Pritchett, David De Smet
 

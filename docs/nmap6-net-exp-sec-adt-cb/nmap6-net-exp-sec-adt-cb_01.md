@@ -1,4 +1,4 @@
-# 第一章。Nmap 基础知识
+# 第一章：Nmap 基础知识
 
 ### 注意
 
@@ -179,9 +179,9 @@ $ svn update
 1.  根据您的系统进行配置：
 
 ```
-    $ ./configure
+$ ./configure
 
-    ```
+```
 
 如果成功，将显示一个 ASCII 龙警告您 Nmap 的强大（如下图所示），否则将显示指定错误的行。
 
@@ -190,18 +190,18 @@ $ svn update
 1.  使用以下命令构建 Nmap：
 
 ```
-    $ make 
+$ make 
 
-    ```
+```
 
 如果您没有看到任何错误，那么您已成功构建了最新版本的 Nmap。您可以通过查找当前目录中编译的二进制文件`Nmap`来验证这一点。
 
 如果要使 Nmap 对系统中的所有用户可用，请输入以下命令：
 
 ```
-    # make install 
+# make install 
 
-    ```
+```
 
 ## 工作原理...
 
@@ -267,9 +267,9 @@ $ ./configure --help
 1.  输入以下命令：
 
 ```
-    $ nmap scanme.nmap.org
+$ nmap scanme.nmap.org
 
-    ```
+```
 
 扫描结果应该显示在屏幕上，显示有趣的端口及其状态。标记为打开的端口特别重要，因为它们代表目标主机上运行的服务。
 
@@ -628,51 +628,51 @@ Nmap 使用标志`-p`来设置要扫描的端口范围。此标志可以与任�
 +   端口列表：
 
 ```
-    # nmap -p80,443 localhost
+# nmap -p80,443 localhost
 
-    ```
+```
 
 +   端口范围：
 
 ```
-    # nmap -p1-100 localhost
+# nmap -p1-100 localhost
 
-    ```
+```
 
 +   所有端口：
 
 ```
-    # nmap -p- localhost
+# nmap -p- localhost
 
-    ```
+```
 
 +   协议的特定端口：
 
 ```
-    # nmap -pT:25,U:53 <target>
+# nmap -pT:25,U:53 <target>
 
-    ```
+```
 
 +   服务名称：
 
 ```
-    # nmap -p smtp <target>
+# nmap -p smtp <target>
 
-    ```
+```
 
 +   服务名称通配符：
 
 ```
-    # nmap -p smtp* <target>
+# nmap -p smtp* <target>
 
-    ```
+```
 
 +   仅在 Nmap 服务中注册的端口：
 
 ```
-    # nmap -p[1-65535] <target>
+# nmap -p[1-65535] <target>
 
-    ```
+```
 
 ## 另请参阅
 
@@ -750,30 +750,30 @@ PORT     STATE    SERVICE
 +   运行`vuln`类别中的所有脚本：
 
 ```
-    $ nmap -sV --script vuln <target>
+$ nmap -sV --script vuln <target>
 
-    ```
+```
 
 +   运行`version`或`discovery`类别中的脚本：
 
 ```
-    $ nmap -sV --script="version,discovery" <target>
+$ nmap -sV --script="version,discovery" <target>
 
-    ```
+```
 
 +   运行除`exploit`类别中的脚本之外的所有脚本：
 
 ```
-    $ nmap -sV --script "not exploit" <target>
+$ nmap -sV --script "not exploit" <target>
 
-    ```
+```
 
 +   运行除`http-brute`和`http-slowloris`之外的所有 HTTP 脚本：
 
 ```
-    $ nmap -sV --script "(http-*) and not(http-slowloris or http-brute)" <target>
+$ nmap -sV --script "(http-*) and not(http-slowloris or http-brute)" <target>
 
-    ```
+```
 
 要调试脚本，请使用`--script-trace`。这将启用执行脚本的堆栈跟踪，以帮助您调试会话。请记住，有时您可能需要增加调试级别，使用标志`-d[1-9]`来解决问题的根源：
 
@@ -965,9 +965,9 @@ Ndiff 需要两个 Nmap XML 文件才能工作，所以确保你之前已经保�
 1.  输入以下命令：
 
 ```
-    $ ndiff FILE1 FILE2
+$ ndiff FILE1 FILE2
 
-    ```
+```
 
 1.  输出返回`FILE1`和`FILE2`之间的所有差异。新行显示在加号后。在`FILE2`上删除的行显示在减号后。![操作步骤...](img/7485_01_09.jpg)
 

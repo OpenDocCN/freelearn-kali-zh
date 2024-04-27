@@ -1,4 +1,4 @@
-# 第二章 定制 Kali Linux
+# 第二章：定制 Kali Linux
 
 > 作者：Willie L. Pritchett, David De Smet
 

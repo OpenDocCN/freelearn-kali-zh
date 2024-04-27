@@ -1,4 +1,4 @@
-# 第一章 起步
+# 第一章：起步
 
 > 作者：Justin Hutchens
 

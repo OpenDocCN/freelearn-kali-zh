@@ -1,4 +1,4 @@
-# Autopsy - The Sleuth Kit
+# 第八章：Autopsy - The Sleuth Kit
 
 Autopsy 和 The Sleuth Kit 是相辅相成的。两者都是由 Brian Carrier 创建的。The Sleuth Kit 是一套功能强大的 CLI 取证工具，而 Autopsy 是坐落在 The Sleuth Kit 之上的 GUI，并通过 Web 浏览器访问。The Sleuth Kit 支持磁盘映像文件类型，包括 RAW（DD），EnCase（.01）和**高级取证格式**（**AFF**）。
 

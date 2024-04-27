@@ -1,4 +1,4 @@
-# 使用 Metasploit 进行 Web 应用程序扫描
+# 第七章：使用 Metasploit 进行 Web 应用程序扫描
 
 在上一章中，我们概述了如何使用 Metasploit 来发动欺骗性的客户端攻击。在本章中，您将学习 Metasploit Framework 的各种功能，用于发现 Web 应用程序中的漏洞。在本章中，我们将涵盖以下主题：
 

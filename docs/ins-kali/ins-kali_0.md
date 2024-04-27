@@ -1,4 +1,4 @@
-# 第一章。即时 Kali Linux
+# 第一章：即时 Kali Linux
 
 欢迎来到*Instant Kali Linux*。本书旨在为您提供设置和开始使用 Kali Linux 所需的所有信息。您将学习 Kali 的基础知识、其目录结构，以及如何使用其流行工具等。
 
@@ -115,24 +115,24 @@ Kali 可以安装为现有操作系统的双引导，也可以设置为虚拟机
 1.  将文件复制到以下位置：
 
 ```
-    cp /media/cd-rom/VBoxLinuxAdditions.run /root/
+cp /media/cd-rom/VBoxLinuxAdditions.run /root/
 
-    ```
+```
 
 1.  设置文件权限如下：
 
 ```
-    chmod 755 /root/VBoxLinuxAdditions.run
+chmod 755 /root/VBoxLinuxAdditions.run
 
-    ```
+```
 
 1.  执行以下命令：
 
 ```
-    cd /root
-    ./VBoxLinuxAdditions.run
+cd /root
+./VBoxLinuxAdditions.run
 
-    ```
+```
 
 ### 更新 Kali Linux
 
@@ -581,9 +581,9 @@ Kali 拥有大量免费的法医工具，可用于调查感染的系统。法医
 +   要扫描单个 IP，请使用以下命令：
 
 ```
-    root@kali:~#nmap 192.168.56.1
+root@kali:~#nmap 192.168.56.1
 
-    ```
+```
 
 此命令的输出显示在以下截图中：
 
@@ -592,110 +592,110 @@ Kali 拥有大量免费的法医工具，可用于调查感染的系统。法医
 +   要扫描网络中一系列 IP 地址，请使用以下命令：
 
 ```
-    root@kali:~#nmap 192.168.56.1-255
+root@kali:~#nmap 192.168.56.1-255
 
-    ```
+```
 
 +   要在目标上扫描特定端口号，请使用以下命令：
 
 ```
-    root@kali:~#nmap 192.168.56.1 –p 80
+root@kali:~#nmap 192.168.56.1 –p 80
 
-    ```
+```
 
 +   要扫描整个子网上的一系列端口，以获取特定端口范围，请使用以下命令：
 
 ```
-    root@kali:~#nmap 192.168.56.0/24 –p 1-1000
+root@kali:~#nmap 192.168.56.0/24 –p 1-1000
 
-    ```
+```
 
 +   要从扫描中排除特定主机或多个主机，请使用以下命令：
 
 ```
-    nmap 192.168.56.0/24 --exclude 192.168.1.5
-    nmap 192.168.56.0/24 --exclude 192.168.1.5,192.168.1.254
+nmap 192.168.56.0/24 --exclude 192.168.1.5
+nmap 192.168.56.0/24 --exclude 192.168.1.5,192.168.1.254
 
-    ```
+```
 
 +   执行快速扫描，请使用以下命令：
 
 ```
-    nmap -F 192.168.56.1
+nmap -F 192.168.56.1
 
-    ```
+```
 
 +   要扫描操作系统及其版本的信息，请使用以下命令：
 
 ```
-    nmap -A 192.168.56.1
-    nmap -v -A 192.168.56.1
+nmap -A 192.168.56.1
+nmap -v -A 192.168.56.1
 
-    ```
+```
 
 +   要检查目标网络/IP 是否设置了防火墙，请使用以下命令：
 
 ```
-    nmap -sA 192.168.1.254
+nmap -sA 192.168.1.254
 
-    ```
+```
 
 +   在防火墙的情况下，Nmap 有一个特定的参数来扫描目标，可以使用以下命令来执行：
 
 ```
-    nmap -PN 192.168.1.1
+nmap -PN 192.168.1.1
 
-    ```
+```
 
 +   要增加详细信息并查看是否所有数据包都已发送/接收，请使用以下命令：
 
 ```
-    nmap --packet-trace 192.168.1.1
+nmap --packet-trace 192.168.1.1
 
-    ```
+```
 
 +   要检测远程目标上运行的不同服务，请使用以下命令：
 
 ```
-    nmap –sV 192.168.56.1
+nmap –sV 192.168.56.1
 
-    ```
+```
 
 +   要使用 TCP ACK(PA)或 TCP SYN(PS)数据包扫描目标，请使用以下命令：
 
 ```
-    nmap –PA 192.168.56.1
-    nmap –PS 192.168.56.1
+nmap –PA 192.168.56.1
+nmap –PS 192.168.56.1
 
-    ```
+```
 
 +   要启动隐秘扫描，我们将使用以下命令进行 TCP SYN 扫描：
 
 ```
-    nmap –sS 192.168.56.1
+nmap –sS 192.168.56.1
 
-    ```
+```
 
 +   为了找出远程目标上运行的各种 TCP 服务，我们使用以下命令进行 TCP 连接扫描：
 
 ```
-    nmap –sT 192.168.56.1
+nmap –sT 192.168.56.1
 
-    ```
+```
 
 +   对于 UDP 扫描，我们使用以下`nmap`命令：
 
 ```
-    nmap –sU 192.168.56.1
+nmap –sU 192.168.56.1
 
-    ```
+```
 
 +   所有这些扫描结果都可以直接保存到文本文件中，使用以下命令：
 
 ```
-    nmap –sU 192.168.56.1 > scan.txt
+nmap –sU 192.168.56.1 > scan.txt
 
-    ```
+```
 
 这些是一些在信息收集和扫描时可能有用的重要命令。Nmap 提供了将这些不同的扫描参数链接到单个扫描中的功能，以使过程更加先进和复杂。
 
@@ -714,18 +714,18 @@ Kali 拥有大量免费的法医工具，可用于调查感染的系统。法医
 无线网卡默认将显示为`wlan0`。如果无线网卡未启用，请使用以下命令：
 
 ```
-    root@kali:~#Ifconfig wlan0 up
+root@kali:~#Ifconfig wlan0 up
 
-    ```
+```
 
 1.  开始扫描。
 
 要扫描附近的 Wi-Fi 网络，请传递以下命令并分析输出：
 
 ```
-    root@kali:~#iwlist wlan0 scan
+root@kali:~#iwlist wlan0 scan
 
-    ```
+```
 
 输出将列出几个在范围内的 Wi-Fi 网络的详细信息，例如它们的 ESSID 名称、MAC 地址和加密密钥状态。
 
@@ -738,9 +738,9 @@ Kali 拥有大量免费的法医工具，可用于调查感染的系统。法医
 在这一步中，我们将配置我们的无线网卡为**监控**模式。这将使网卡能够检查空中流动的所有数据包。为此，我们将使用`airmon-ng`。这是一个命令行工具，用于将无线网卡设置为监控模式。我们将传递以下命令：
 
 ```
-    root@kali:~#airmon-ng start wlan0
+root@kali:~#airmon-ng start wlan0
 
-    ```
+```
 
 ![使用 Aircrack 破解无线密码](img/5664OT_03_07.jpg)
 
@@ -751,9 +751,9 @@ Kali 拥有大量免费的法医工具，可用于调查感染的系统。法医
 现在我们已经准备好开始捕获流经我们目标网络的数据包。我们将使用`airodump-ng`。命令格式如下：
 
 ```
-    airodump-ng -c (channel) -w (file name) -–bssid (bssid) mon0
+airodump-ng -c (channel) -w (file name) -–bssid (bssid) mon0
 
-    ```
+```
 
 一旦您传递了相应的参数详细信息，您将注意到无线卡将开始从我们的目标网络捕获数据包。
 
@@ -768,9 +768,9 @@ Kali 拥有大量免费的法医工具，可用于调查感染的系统。法医
 一旦字典下载完成，您可以传递以下命令：
 
 ```
-    root@kali:~#aircrack-ng crack-01.cap –w dark0de.lst
+root@kali:~#aircrack-ng crack-01.cap –w dark0de.lst
 
-    ```
+```
 
 ![使用 Aircrack 破解无线密码](img/5664OT_03_09.jpg)
 

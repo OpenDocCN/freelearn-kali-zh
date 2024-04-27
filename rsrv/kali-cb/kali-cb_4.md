@@ -1,4 +1,4 @@
-# 第四章 信息收集
+# 第四章：信息收集
 
 > 作者：Willie L. Pritchett, David De Smet
 

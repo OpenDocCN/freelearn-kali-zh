@@ -1,4 +1,4 @@
-# 第六章。审计邮件服务器
+# 第六章：审计邮件服务器
 
 ### 注意
 
@@ -255,24 +255,24 @@ NSE 脚本`smtp-brute`由 Patrik Karlsson 提交。它对 SMTP 服务器执行�
 +   使用不同的用户名和密码列表，设置参数`userdb`和`passdb`：
 
 ```
-    $ nmap -p25 --script smtp-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
+$ nmap -p25 --script smtp-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
 
-    ```
+```
 
 +   在找到一个有效帐户后退出，请使用参数`brute.firstOnly`：
 
 ```
-    $ nmap -p25 --script smtp-brute --script-args brute.firstOnly <target>
+$ nmap -p25 --script smtp-brute --script-args brute.firstOnly <target>
 
-    ```
+```
 
 +   要设置不同的超时限制，请使用参数`unpwd.timelimit`。要无限期运行，请将其设置为`0`：
 
 ```
-    $ nmap -p25 --script smtp-brute --script-args unpwdb.timelimit=0 <target>
-    $ nmap -p25 --script smtp-brute --script-args unpwdb.timelimit=60m <target>
+$ nmap -p25 --script smtp-brute --script-args unpwdb.timelimit=0 <target>
+$ nmap -p25 --script smtp-brute --script-args unpwdb.timelimit=60m <target>
 
-    ```
+```
 
 ### 暴力模式
 
@@ -281,23 +281,23 @@ brute 库支持不同的模式，可改变攻击中使用的用户名/密码组�
 +   `user`：对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码
 
 ```
-    $ nmap --script smtp-brute --script-args brute.mode=user <target>
+$ nmap --script smtp-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：对于`passdb`中列出的每个密码，将尝试`userdb`中的每个用户
 
 ```
-    $ nmap --script smtp-brute --script-args brute.mode=pass <target>
+$ nmap --script smtp-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：这需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script smtp-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script smtp-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ### 调试 NSE 脚本
 
@@ -390,24 +390,24 @@ $ nmap -p25 –script smtp-enum-users --script-args smtp-enum-users.domain=<doma
 +   要使用不同的用户名列表，请设置参数`userdb`：
 
 ```
-    $ nmap -p25 --script smtp-enum-users --script-args userdb=/var/usernames.txt <target>
+$ nmap -p25 --script smtp-enum-users --script-args userdb=/var/usernames.txt <target>
 
-    ```
+```
 
 +   在找到一个有效帐户后退出，请使用参数`brute.firstOnly`：
 
 ```
-    $ nmap -p25 --script smtp-enum-users --script-args brute.firstOnly <target>
+$ nmap -p25 --script smtp-enum-users --script-args brute.firstOnly <target>
 
-    ```
+```
 
 +   要设置不同的超时限制，请使用参数`unpwd.timelimit`。要无限期运行，请将其设置为`0`：
 
 ```
-    $ nmap -p25 --script smtp-enum-users --script-args unpwdb.timelimit=0 <target>
-    $ nmap -p25 --script smtp-enum-users --script-args unpwdb.timelimit=60m <target>
+$ nmap -p25 --script smtp-enum-users --script-args unpwdb.timelimit=0 <target>
+$ nmap -p25 --script smtp-enum-users --script-args unpwdb.timelimit=60m <target>
 
-    ```
+```
 
 ### 调试 NSE 脚本
 
@@ -595,24 +595,24 @@ PORT    STATE SERVICE REASON
 +   要使用不同的用户名和密码列表，请分别设置参数`userdb`和`passdb`：
 
 ```
-    $ nmap -p143 --script imap-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
+$ nmap -p143 --script imap-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
 
-    ```
+```
 
 +   要在找到一个有效帐户后退出，请使用参数`brute.firstOnly`：
 
 ```
-    $ nmap -p143 --script imap-brute --script-args brute.firstOnly <target>
+$ nmap -p143 --script imap-brute --script-args brute.firstOnly <target>
 
-    ```
+```
 
 +   要设置不同的超时限制，请使用参数`unpwd.timelimit`。要无限期运行它，请将其设置为 0：
 
 ```
-    $ nmap -p143 --script imap-brute --script-args unpwdb.timelimit=0 <target>
-    $ nmap -p143 --script imap-brute --script-args unpwdb.timelimit=60m <target>
+$ nmap -p143 --script imap-brute --script-args unpwdb.timelimit=0 <target>
+$ nmap -p143 --script imap-brute --script-args unpwdb.timelimit=60m <target>
 
-    ```
+```
 
 ### Brute 模式
 
@@ -621,23 +621,23 @@ PORT    STATE SERVICE REASON
 +   `user`：对于`userdb`中列出的每个用户，将尝试`passdb`中的每个密码
 
 ```
-    $ nmap --script imap-brute --script-args brute.mode=user <target>
+$ nmap --script imap-brute --script-args brute.mode=user <target>
 
-    ```
+```
 
 +   `pass`：对于`passdb`中列出的每个密码，将尝试`userdb`中的每个用户
 
 ```
-    $ nmap --script imap-brute --script-args brute.mode=pass <target>
+$ nmap --script imap-brute --script-args brute.mode=pass <target>
 
-    ```
+```
 
 +   `creds`：这需要额外的参数`brute.credfile`
 
 ```
-    $ nmap --script imap-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
+$ nmap --script imap-brute --script-args brute.mode=creds,brute.credfile=./creds.txt <target>
 
-    ```
+```
 
 ### 调试 NSE 脚本
 
@@ -763,17 +763,17 @@ PORT    STATE SERVICE
 +   要使用不同的用户名和密码列表，请设置参数`userdb`和`passdb`：
 
 ```
-    $ nmap -p110 --script pop3-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
+$ nmap -p110 --script pop3-brute --script-args userdb=/var/usernames.txt,passdb=/var/passwords.txt <target>
 
-    ```
+```
 
 +   要设置不同的超时限制，请使用参数`unpwd.timelimit`。要无限期运行它，请将其设置为`0`：
 
 ```
-    $ nmap -p110 --script pop3-brute --script-args unpwdb.timelimit=0 <target>
-    $ nmap -p110 --script pop3-brute --script-args unpwdb.timelimit=60m <target>
+$ nmap -p110 --script pop3-brute --script-args unpwdb.timelimit=0 <target>
+$ nmap -p110 --script pop3-brute --script-args unpwdb.timelimit=60m <target>
 
-    ```
+```
 
 ### 调试 NSE 脚本
 

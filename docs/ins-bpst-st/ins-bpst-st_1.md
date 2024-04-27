@@ -1,4 +1,4 @@
-# 第一章。即时 Burp Suite 入门指南
+# 第一章：即时 Burp Suite 入门指南
 
 欢迎来到即时 Burp Suite 入门指南。本书特别为您提供了所有您需要设置 Burp Suite 的信息。您将学习 Burp Suite 的基础知识，开始测试您的第一个应用程序，并发现一些使用 Burp Suite 的技巧和窍门。
 

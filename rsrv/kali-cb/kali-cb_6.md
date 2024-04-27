@@ -1,4 +1,4 @@
-# 第六章 漏洞利用
+# 第六章：漏洞利用
 
 > 作者：Willie L. Pritchett, David De Smet
 

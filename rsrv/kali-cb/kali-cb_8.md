@@ -1,4 +1,4 @@
-# 第八章 密码攻击
+# 第八章：密码攻击
 
 > 作者：Willie L. Pritchett, David De Smet
 
