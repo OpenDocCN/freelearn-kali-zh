@@ -1,0 +1,2516 @@
+- en: '*Chapter 9*: Angular and the Angular CDK'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '*第9章*：Angular和Angular CDK'
+- en: Angular has an amazing ecosystem of tools and libraries, be it Angular Material,
+    the **Angular command-line interface** (**Angular CLI**), or the beloved **Angular
+    Component Dev Kit** (**Angular CDK**). I call it "beloved" because if you are
+    to implement your own custom interactions and behaviors in Angular apps without
+    having to rely on an entire set of libraries, Angular CDK is going to be your
+    best friend. In this chapter, you'll learn what an amazing combination Angular
+    and the Angular CDK are. You'll learn about some neat components built into the
+    CDK and will also use some CDK **application programming interfaces (APIs)** to
+    create amazing and optimized content.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Angular拥有令人惊叹的工具和库生态系统，无论是Angular Material、Angular命令行界面（Angular CLI）还是备受喜爱的Angular组件开发工具包（Angular
+    CDK）。我称之为“备受喜爱”，因为如果你要在Angular应用中实现自定义交互和行为，而不必依赖整套库，Angular CDK将成为你的好朋友。在本章中，您将了解Angular和Angular
+    CDK是多么惊人的组合。您将了解CDK内置的一些很棒的组件，并将使用一些CDK应用程序编程接口（API）来创建令人惊叹和优化的内容。
+- en: 'Here are the recipes we''re going to cover in this chapter:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是本章我们将要涵盖的示例：
+- en: Using Virtual Scroll for huge lists
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用虚拟滚动处理大型列表
+- en: Keyboard navigation for lists
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 列表的键盘导航
+- en: Pointy little popovers with the Overlay API
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用覆盖API创建尖尖的小弹出窗口
+- en: Using CDK Clipboard to work with the system clipboard
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用CDK剪贴板与系统剪贴板一起工作
+- en: Using CDK Drag and Drop to move items from one list to another
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用CDK拖放功能将项目从一个列表移动到另一个列表
+- en: Creating a multi-step game with the CDK Stepper API
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用CDK Stepper API创建多步游戏
+- en: Resizing text inputs with the CDK TextField API
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用CDK文本字段API调整文本输入大小
+- en: Technical requirements
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: For the recipes in this chapter, make sure you have **Git** and **Node.js**
+    installed on your machine. You also need to have the `@angular/cli` package installed,
+    which you can do with `npm install -g @angular/cli` from your terminal. The code
+    for this chapter can be found at [https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter09.](https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter09.)
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于本章的示例，请确保您的计算机上已安装Git和Node.js。您还需要安装`@angular/cli`包，可以在终端中使用`npm install -g
+    @angular/cli`来安装。本章的代码可以在[https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter09](https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter09)找到。
+- en: Using Virtual Scroll for huge lists
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用虚拟滚动处理大型列表
+- en: There might be certain scenarios in your application where you might have to
+    show a huge set of items. This could be from either your backend API or the browser's
+    local storage. In either case, rendering a lot of items at once causes performance
+    issues because the **Document Object Model** (**DOM**) struggles, and also because
+    of the fact that the JS thread gets blocked and the page becomes unresponsive.
+    In this recipe, we'll render a list of 10,000 users and will use the Virtual Scroll
+    functionality from the Angular CDK to improve the rendering performance.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的应用程序中可能会出现某些情况，您可能需要显示大量的项目。这可能来自您的后端API或浏览器的本地存储。在任何情况下，一次渲染大量项目会导致性能问题，因为文档对象模型（DOM）会受到影响，还因为JS线程被阻塞，页面变得无响应。在这个示例中，我们将渲染一个包含10,000个用户的列表，并将使用Angular
+    CDK的虚拟滚动功能来提高渲染性能。
+- en: Getting ready
+  id: totrans-14
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project that we are going to work with resides in `chapter09/start_here/using-cdk-virtual-scroll`,
+    inside the cloned repository. Proceed as follows:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要处理的项目位于克隆存储库中的`chapter09/start_here/using-cdk-virtual-scroll`中。请按照以下步骤进行：
+- en: Open the project in **Visual Studio Code** (**VS Code**).
+  id: totrans-16
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Visual Studio Code（VS Code）中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-17
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: Once done, run `ng serve -o`.
+  id: totrans-18
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，运行`ng serve -o`。
+- en: 'This should open the app in a new browser tab, and it should look like this:'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该在新的浏览器标签中打开应用程序，并且应该是这样的：
+- en: '![Figure 9.1 – The using-cdk-virtual-scroll app running on http://localhost:4200'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.1 - 使用cdk-virtual-scroll应用程序在http://localhost:4200上运行'
+- en: '](image/Figure_9.1_B15150.jpg)'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.1_B15150.jpg)'
+- en: Figure 9.1 – The using-cdk-virtual-scroll app running on http://localhost:4200
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.1 - 使用cdk-virtual-scroll应用程序在http://localhost:4200上运行
+- en: Now that we have the app running locally, let's see the steps of the recipe
+    in the next section.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序在本地运行，让我们在下一节中看看食谱的步骤。
+- en: How to do it…
+  id: totrans-24
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'We have a pretty simple Angular app, but with a lot of data. Right now, it
+    shows a loader (button) for about 3 seconds, and then is supposed to show the
+    data. However, you''ll notice that right after 3 seconds, the loader keeps showing,
+    the button is unresponsive, and we see a blank screen, as follows:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有一个非常简单的Angular应用，但有大量数据。现在，它会显示一个加载器（按钮）大约3秒钟，然后应该显示数据。然而，您会注意到在3秒后，加载器仍然显示，按钮无响应，我们看到一个空白屏幕，如下所示：
+- en: '![Figure 9.2 – App stuck with a blank screen while rendering list items'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.2 - 应用在渲染列表项时卡住空白屏幕'
+- en: '](image/Figure_9.2_B15150.jpg)'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.2_B15150.jpg)'
+- en: Figure 9.2 – App stuck with a blank screen while rendering list items
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.2 - 应用在渲染列表项时卡住空白屏幕
+- en: 'In fact, our entire application becomes unresponsive. If you scroll through—or
+    even hover over—the items, you''ll see that the hover animation on the list items
+    is not smooth and is a bit laggy. Let''s see the steps to use Angular CDK Virtual
+    Scroll to improve the rendering performance, as follows:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事实上，我们整个应用程序变得无响应。如果您滚动或者甚至悬停在项目上，您会发现列表项上的悬停动画不够流畅，有点延迟。让我们看看使用Angular CDK虚拟滚动来提高渲染性能的步骤，如下所示：
+- en: 'First, open a new terminal window/tab and make sure you''re inside the `ch8/start_here/using-cdk-virtual-scroll`
+    folder. Once inside, run the following command to install the Angular CDK:'
+  id: totrans-30
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，打开一个新的终端窗口/标签，并确保您在`ch8/start_here/using-cdk-virtual-scroll`文件夹中。进入后，运行以下命令安装Angular
+    CDK：
+- en: '[PRE0]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: You'll have to restart your Angular server, so rerun the `ng serve` command.
+  id: totrans-32
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您将不得不重新启动您的Angular服务器，因此重新运行`ng serve`命令。
+- en: 'Add the `ScrollingModule` class from the `@angular/cdk` package into your `app.module.ts`
+    file, as follows:'
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`@angular/cdk`包中的`ScrollingModule`类添加到您的`app.module.ts`文件中，如下所示：
+- en: '[PRE1]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'We now have to implement the virtual scroll, modify the `the-amazing-list-item.component.html`
+    file to use the `*cdkVirtualFor` directive instead of the `*ngFor` directive,
+    and change the container `<div>` element to a `<cdi-virtual-scroll-viewport>`
+    element, as follows:'
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们现在必须实现虚拟滚动，修改`the-amazing-list-item.component.html`文件，使用`*cdkVirtualFor`指令而不是`*ngFor`指令，并将容器`<div>`元素更改为`<cdi-virtual-scroll-viewport>`元素，如下所示：
+- en: '[PRE2]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Kaboom! Within a few steps, and by using the Angular CDK Virtual Scroll, we
+    were able to fix a big rendering issue within our Angular app. Now that you know
+    how the basic routing is implemented, see the next section to understand how it
+    works.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 砰！通过几个步骤，并使用Angular CDK虚拟滚动，我们能够解决Angular应用中的一个重大渲染问题。现在您知道基本路由是如何实现的，请参阅下一节以了解其工作原理。
+- en: How it works…
+  id: totrans-38
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的…
+- en: 'The Angular CDK provides the Scrolling APIs, which include the `*cdkVirtualFor`
+    directive and the `<cdk-virtual-scroll-viewport>` element. It is necessary to
+    have `<cdk-virtual-scroll-viewport>` wrapping the element that has the `*cdkVirtualFor`
+    directive being applied to it. Notice that we have an attribute on the `cdk-virtual-scroll-viewport`
+    element named `[itemSize]`, having its value set to `"110"`. The reason for this
+    is that each list item has a height of approximately 110 pixels, as shown in the
+    following screenshot:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Angular CDK提供了滚动API，其中包括`*cdkVirtualFor`指令和`<cdk-virtual-scroll-viewport>`元素。必须将`<cdk-virtual-scroll-viewport>`包装在具有`*cdkVirtualFor`指令的元素周围。请注意，`cdk-virtual-scroll-viewport`元素上有一个名为`[itemSize]`的属性，其值设置为`"110"`。原因是每个列表项的高度大约为110像素，如下截图所示：
+- en: '![Figure 9.3 – Each list item has a height of approximately 110 pixels'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.3 - 每个列表项的高度大约为110像素'
+- en: '](image/Figure_9.3_B15150.jpg)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.3_B15150.jpg)'
+- en: Figure 9.3 – Each list item has a height of approximately 110 pixels
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.3 - 每个列表项的高度大约为110像素
+- en: But how does it improve the rendering performance? Glad you asked! In the original
+    code for this recipe, when we loaded the 10,000 users, it would create a separate
+    `<div>` element with the `class="list__item list-group-item"` attribute for each
+    user, thus creating 10,000 DOM elements all being rendered at once. With virtual
+    scroll in place, the CDK only creates a few `<div>` elements, renders them, and
+    just replaces the content of those few `<div>` elements as we scroll through items.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是它如何提高渲染性能呢？很高兴你问！在这个示例的原始代码中，当我们加载了10,000个用户时，它会为每个用户创建一个带有`class="list__item
+    list-group-item"`属性的单独的`<div>`元素，从而一次创建10,000个DOM元素。有了虚拟滚动，CDK只会创建一些`<div>`元素，呈现它们，并在我们滚动项目时只是替换这些少数`<div>`元素的内容。
+- en: 'For our example, it creates exactly nine `<div>` elements, as shown in the
+    following screenshot:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的示例，它创建了确切的九个`<div>`元素，如下截图所示：
+- en: '![Figure 9.4 – Showing only a few <div> elements rendered on DOM due to virtual
+    scroll'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.4 - 由于虚拟滚动，仅显示了一些在DOM上呈现的<div>元素'
+- en: '](image/Figure_9.4_B15150.jpg)'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.4_B15150.jpg)'
+- en: Figure 9.4 – Showing only a few <div> elements rendered on DOM due to virtual
+    scroll
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.4 - 由于虚拟滚动，仅显示了一些在DOM上呈现的<div>元素
+- en: Since we only have a few elements rendered on the DOM, we don't have performance
+    issues anymore, and the hover animation also seems super-smooth now.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于DOM上只呈现了一些元素，我们不再有性能问题，悬停动画现在也非常流畅。
+- en: Tip
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提示
+- en: When implementing virtual scroll in your own applications, make sure that you
+    set a specific height to the `<cdk-virtual-scroll viewport>` element, and also
+    set the `[itemSize]` attribute equal to the expected list-item height in pixels,
+    otherwise the list won't show.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您自己的应用程序中实现虚拟滚动时，请确保为`<cdk-virtual-scroll viewport>`元素设置特定的高度，并将`[itemSize]`属性设置为预期的列表项高度（以像素为单位），否则列表将不会显示。
+- en: See also
+  id: totrans-51
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: CDK scrolling examples ([https://material.angular.io/cdk/scrolling/examples](https://material.angular.io/cdk/scrolling/examples))
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CDK滚动示例（[https://material.angular.io/cdk/scrolling/examples](https://material.angular.io/cdk/scrolling/examples)）
+- en: Keyboard navigation for lists
+  id: totrans-53
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 列表的键盘导航
+- en: Accessibility is one of the most important aspects of building apps with a great
+    user experience. The apps should not only be fast and performant but also accessible.
+    While there are a lot of things to consider when it comes to accessibility, in
+    this recipe, we're going to make lists and list items more accessible by providing
+    keyboard navigation for the items. With Angular CDK, it is super simple. We're
+    going to use the **ListKeyManager** service from Angular to implement keyboard
+    navigation for the users list in our target application.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无障碍性是构建具有良好用户体验的应用程序最重要的方面之一。应用程序不仅应该快速和高性能，还应该具有可访问性。虽然在考虑无障碍性时有很多事情要考虑，但在这个食谱中，我们将通过为项目提供键盘导航来使列表和列表项更具可访问性。使用Angular
+    CDK，这非常简单。我们将使用Angular中的**ListKeyManager**服务来为目标应用程序中的用户列表实现键盘导航。
+- en: Getting ready
+  id: totrans-55
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 做好准备。
+- en: 'The project for this recipe resides in `chapter09/start_here/using-list-key-manager`.
+    Proceed as follows:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个食谱的项目位于`chapter09/start_here/using-list-key-manager`。请按照以下步骤进行：
+- en: Open the project in VS Code.
+  id: totrans-57
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-58
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: Once done, run `ng serve -o`.
+  id: totrans-59
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，运行`ng serve -o`。
+- en: 'This should open the app in a new browser tab, as follows:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该会在新的浏览器选项卡中打开应用程序，如下所示：
+- en: '![Figure 9.5 – The using-list-key-manager app running on http://localhost:4200'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.5 - 在http://localhost:4200上运行的using-list-key-manager应用程序'
+- en: '](image/Figure_9.5_B15150.jpg)'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.5_B15150.jpg)'
+- en: Figure 9.5 – The using-list-key-manager app running on http://localhost:4200
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.5 - 在http://localhost:4200上运行的using-list-key-manager应用程序
+- en: "Now that we have the app running locally, let's see the steps of the recipe\
+    \ in the \Lnext section."
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序在本地运行，让我们在下一节中看看食谱的步骤。
+- en: How to do it…
+  id: totrans-65
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 操作步骤：
+- en: 'We have an app that already has some of the goodness of the Angular CDK—that
+    is, it has virtual scroll implemented from the previous recipe. We''ll now start
+    making changes to the app to implement keyboard navigation, as follows:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序已经具有了一些Angular CDK的优点，即它已经从上一个食谱中实现了虚拟滚动。现在我们将开始对应用程序进行更改，以实现键盘导航，如下所示：
+- en: 'First, we need to create a new component for each item in the list as we''ll
+    need them to be able to work with the `ListKeyManager` class. Create a component
+    by running the following command in the project:'
+  id: totrans-67
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们需要为列表中的每个项目创建一个新组件，因为我们需要它们能够与`ListKeyManager`类一起工作。通过在项目中运行以下命令来创建一个组件：
+- en: '[PRE3]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Now, we''ll move the code from the `the-amazing-list-component.html` file to
+    the `the-amazing-list-item.component.html` file for the item''s markup. The code
+    in the `the-amazing-list-item.component.html` file should look like this:'
+  id: totrans-69
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将把`the-amazing-list-component.html`文件中的代码移动到`the-amazing-list-item.component.html`文件中，用于项目的标记。`the-amazing-list-item.component.html`文件中的代码应该如下所示：
+- en: '[PRE4]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Let''s update the respective component as well to include this `item` property
+    used in the template. We''ll make it an `@Input()` item for the `TheAmazingListItemComponent`
+    class. Update the `the-amazing-list-item.component.ts` file, as follows:'
+  id: totrans-71
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们也更新相应的组件，以包括模板中使用的`item`属性。我们将把它作为`@Input()`项添加到`TheAmazingListItemComponent`类中。更新`the-amazing-list-item.component.ts`文件如下：
+- en: '[PRE5]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Let''s add the styles as well. We''ll copy the styles from the `the-amazing-list.component.scss`
+    file and paste them into the `the-amazing-list-item.component.scss` file, as follows:'
+  id: totrans-73
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们也添加样式。我们将从`the-amazing-list.component.scss`文件中复制样式，并粘贴到`the-amazing-list-item.component.scss`文件中，如下所示：
+- en: '[PRE6]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Update the `the-amazing-list.component.scss` file to contain only the styles
+    for the list, as follows:'
+  id: totrans-75
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 更新`the-amazing-list.component.scss`文件，只包含列表的样式，如下所示：
+- en: '[PRE7]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Now, update the `the-amazing-list.component.html` file to use the `<app-the-amazing-list-item>`
+    component and to pass the `[item]` attribute to it, as follows:'
+  id: totrans-77
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，更新`the-amazing-list.component.html`文件，使用`<app-the-amazing-list-item>`组件，并将`[item]`属性传递给它，如下所示：
+- en: '[PRE8]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'The **user interface** (**UI**) is almost done now. We''ll now implement the
+    `FocusableOption` interface and some accessibility factors to our `TheAmazingListItemComponent`
+    class, as follows:'
+  id: totrans-79
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**用户界面**（**UI**）现在几乎完成了。我们现在将实现`FocusableOption`接口和一些辅助功能到我们的`TheAmazingListItemComponent`类，如下所示：'
+- en: '[PRE9]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'We now need to implement what happens in the `focus()` method. We''ll use the
+    `ElementRef` service to get the `nativeElement` and will set `focus()` on it,
+    as follows:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们需要实现`focus()`方法中发生的事情。我们将使用`ElementRef`服务来获取`nativeElement`，并将`focus()`设置为它，如下所示：
+- en: '[PRE10]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'We now need to implement the `FocusKeyManager` class in our `TheAmazingListComponent`
+    class. We''ll have to query our list items in the component to create an instance
+    of the `FocusKeyManager` class. Update the `the-amazing-list.component.ts` file,
+    as follows:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们需要在我们的`TheAmazingListComponent`类中实现`FocusKeyManager`类。我们将不得不在组件中查询我们的列表项，以创建`FocusKeyManager`类的实例。更新`the-amazing-list.component.ts`文件，如下所示：
+- en: '[PRE11]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Finally, we need to listen to the keyboard events. For this, you could either
+    use a `keydown` event or a `window:keydown` event. For simplicity of the recipe,
+    we''ll go with the `window:keydown` event, as follows:'
+  id: totrans-85
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们需要监听键盘事件。为此，您可以使用`keydown`事件或`window:keydown`事件。为了简化示例，我们将使用`window:keydown`事件，如下所示：
+- en: '[PRE12]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: Awesomesauce! You've just learned how to implement keyboard navigation using
+    the Angular CDK. See the next section to understand how it works.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！您刚刚学会了如何使用Angular CDK实现键盘导航。请查看下一节以了解其工作原理。
+- en: How it works…
+  id: totrans-88
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'The Angular CDK provides the `ListKeyManager` class, which allows you to implement
+    keyboard navigation. There are a bunch of techniques we can use with the `ListKeyManager`
+    class, and for this particular recipe, we chose the `FocusKeyManager` class. In
+    order to make it work for a list of items, we need to do the following things:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Angular CDK提供了`ListKeyManager`类，允许您实现键盘导航。我们可以使用`ListKeyManager`类的一堆技术，对于这个特定的示例，我们选择了`FocusKeyManager`类。为了使其适用于项目列表，我们需要做以下事情：
+- en: Create a component for each item in the list.
+  id: totrans-90
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为列表中的每个项目创建一个组件。
+- en: Use `ViewChildren()` with `QueryList` in the list component to query all the
+    list-item components.
+  id: totrans-91
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在列表组件中使用`ViewChildren()`和`QueryList`查询所有列表项组件。
+- en: Create a `FocusKeyManager` instance in the list component, providing the type
+    of the list-item component.
+  id: totrans-92
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在列表组件中创建一个`FocusKeyManager`实例，提供列表项组件的类型。
+- en: Add a keyboard listener to the list component and pass the event to the instance
+    of the `FocusKeyManager` class.
+  id: totrans-93
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为列表组件添加键盘监听器，并将事件传递给`FocusKeyManager`类的实例。
+- en: When we define the `listKeyManager` property in the `TheAmazingListComponent`
+    class, we define its type as well by specifying it as `FocusKeyManager<TheAmazingListItemComponent>`.
+    This makes it easier to understand that our `FocusKeyManager` class is supposed
+    to work with an array of `TheAmazingListItemComponent` elements. Therefore, in
+    the `ngAfterViewInit()` method, we specify `this.listKeyManager = new FocusKeyManager(this.listItemsElements);`,
+    which provides a queried list of `TheAmazingListItemComponent` elements.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们在`TheAmazingListComponent`类中定义`listKeyManager`属性时，我们还通过将其指定为`FocusKeyManager<TheAmazingListItemComponent>`来定义其类型。这样更容易理解我们的`FocusKeyManager`类应该与`TheAmazingListItemComponent`元素数组一起工作。因此，在`ngAfterViewInit()`方法中，我们指定`this.listKeyManager
+    = new FocusKeyManager(this.listItemsElements);`，这提供了一个查询到的`TheAmazingListItemComponent`元素列表。
+- en: Finally, when we listen to the `window:keydown` event, we take the `keydown`
+    event received in the handler and provide it to the instance of our `FocusKeyManager`
+    class as `this.listKeyManager.onKeydown(event);`. This tells our `FocusKeyManager`
+    instance which key was pressed and what it has to do.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，当我们监听 `window:keydown` 事件时，我们将在处理程序中接收到的 `keydown` 事件提供给我们的 `FocusKeyManager`
+    类的实例作为 `this.listKeyManager.onKeydown(event);`。这告诉我们的 `FocusKeyManager` 实例哪个键被按下以及它必须做什么。
+- en: Notice that our `TheAmazingListItemComponent` class implements the `FocusableOption`
+    interface, and it also has the `focus()` method, which the `FocusKeyManager` class
+    uses behind the scenes when we press the keyboard arrow-down or arrow-up keys.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们的 `TheAmazingListItemComponent` 类实现了 `FocusableOption` 接口，并且它还有 `focus()`
+    方法，当我们按下键盘的向下箭头或向上箭头键时，`FocusKeyManager` 类在幕后使用它。
+- en: See also
+  id: totrans-97
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Angular CDK accessibility documentation ([https://material.angular.io/cdk/a11y/overview](https://material.angular.io/cdk/a11y/overview))
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular CDK 可访问性文档 ([https://material.angular.io/cdk/a11y/overview](https://material.angular.io/cdk/a11y/overview))
+- en: Pointy little popovers with the Overlay API
+  id: totrans-99
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用 Overlay API 创建尖尖的小弹出窗口
+- en: This is one of the advanced recipes in this book, especially for those of you
+    who have already been working with Angular for a while. In this recipe, we'll
+    not only create some popovers using the CDK Overlay API, but we'll also make them
+    pointy, just like tooltips, and that's where the fun lies.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是本书中的高级食谱之一，特别是对于那些已经使用 Angular 一段时间的人来说。在这个食谱中，我们不仅将使用 CDK Overlay API 创建一些弹出窗口，还将使它们变得尖尖，就像工具提示一样，这就是乐趣所在。
+- en: Getting ready
+  id: totrans-101
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project for this recipe resides in `chapter09/start_here/pointy-little-popovers`.
+    Proceed as follows:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此食谱的项目位于 `chapter09/start_here/pointy-little-popovers`。请按照以下步骤进行：
+- en: Open the project in VS Code.
+  id: totrans-103
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在 VS Code 中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行 `npm install` 来安装项目的依赖项。
+- en: Once done, run `ng serve -o`.
+  id: totrans-105
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，运行 `ng serve -o`。
+- en: 'This should open the app in a new browser tab, as follows:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该在新的浏览器选项卡中打开应用程序，如下所示：
+- en: '![Figure 9.6 – The pointy-little-popovers app running on http://localhost:4200'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.6 - pointy-little-popovers 应用程序在 http://localhost:4200 上运行'
+- en: '](image/Figure_9.6_B15150.jpg)'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.6_B15150.jpg)'
+- en: Figure 9.6 – The pointy-little-popovers app running on http://localhost:4200
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.6 - pointy-little-popovers 应用程序在 http://localhost:4200 上运行
+- en: Now that we have the app running locally, let's see the steps of the recipe
+    in the next section.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经在本地运行了应用程序，让我们在下一节中看一下食谱的步骤。
+- en: How to do it…
+  id: totrans-111
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'Our app has a list of users that we can scroll through on the page. We''ll
+    add a popover menu to each item so that a drop-down menu is shown with some actions.
+    We already have the `@angular/cdk` package installed, so we don''t need to worry
+    about that. Let''s start with the recipe, as follows:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序有一个用户列表，我们可以在页面上滚动查看。我们将为每个项目添加一个弹出菜单，以便显示带有一些操作的下拉菜单。我们已经安装了 `@angular/cdk`
+    包，所以我们不需要担心。让我们按照以下食谱开始：
+- en: 'First, we need to install the `@angular/cdk` as we need to import the `OverlayModule`
+    class into our `AppModule` class so that we can use the Overlay API. Update the
+    `app.module.ts` file, as follows:'
+  id: totrans-113
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们需要安装 `@angular/cdk`，因为我们需要将 `OverlayModule` 类导入到我们的 `AppModule` 类中，以便我们可以使用
+    Overlay API。更新 `app.module.ts` 文件，如下所示：
+- en: '[PRE13]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'We''ll first add the Overlay''s default styles so that when the overlay is
+    displayed, it is positioned correctly. Open the `src/styles.scss` file and update
+    it as per the following gist:'
+  id: totrans-115
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们首先添加 Overlay 的默认样式，以便在显示覆盖层时，它能正确定位。打开 `src/styles.scss` 文件，并按照以下要点进行更新：
+- en: '[https://gist.github.com/AhsanAyaz/b039814e898b3ebe471b13880c7b4270](https://gist.github.com/AhsanAyaz/b039814e898b3ebe471b13880c7b4270)'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://gist.github.com/AhsanAyaz/b039814e898b3ebe471b13880c7b4270](https://gist.github.com/AhsanAyaz/b039814e898b3ebe471b13880c7b4270)'
+- en: 'Now, we''ll create variables to hold the overlay trigger (for the origin of
+    the positions of the opened overlay) and the actual relative position''s settings.
+    Open the `the-amazing-list.component.ts` file and update it, as follows:'
+  id: totrans-117
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将创建变量来保存覆盖层触发器（用于打开覆盖层的位置起点）和实际相对位置的设置。打开`the-amazing-list.component.ts`文件并进行更新，如下所示：
+- en: '[PRE14]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Now, open the `the-amazing-list.component.html` file and add the `cdkOverlayOrigin`
+    directive to the `<app-the-amazing-list-item>` selector so that we can have each
+    list item as an origin for the pop-up menu, as follows:'
+  id: totrans-119
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，打开`the-amazing-list.component.html`文件，并将`cdkOverlayOrigin`指令添加到`<app-the-amazing-list-item>`选择器中，以便我们可以将每个列表项作为弹出菜单的起点，如下所示：
+- en: '[PRE15]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'We need to somehow pass the `#itemTrigger` variable from the template to assign
+    its value to the `popoverMenuTrigger` property in the `TheAmazingListComponent`
+    class. To do so, create a method named `openMenu()` in the `the-amazing-list.component.ts`
+    file, as follows:'
+  id: totrans-121
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们需要以某种方式将模板中的`#itemTrigger`变量传递到`TheAmazingListComponent`类中的`popoverMenuTrigger`属性上。为此，在`the-amazing-list.component.ts`文件中创建一个名为`openMenu()`的方法，如下所示：
+- en: '[PRE16]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'We also need a property to show/hide the popover menu. Let''s create it and
+    set it to `true` in the `openMenu()` method as well. Update the `the-amazing-list.component.ts`
+    file, as follows:'
+  id: totrans-123
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还需要一个属性来显示/隐藏弹出菜单。让我们在`openMenu()`方法中创建它，并将其设置为`true`。更新`the-amazing-list.component.ts`文件，如下所示：
+- en: '[PRE17]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'We''ll now create an actual overlay. To do so, we''ll create an `<ng-template>`
+    element with the `cdkConnectedOverlay` directive. Modify your `the-amazing-list.component.html`
+    file, as follows:'
+  id: totrans-125
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将创建一个实际的覆盖层。为此，我们将创建一个带有`cdkConnectedOverlay`指令的`<ng-template>`元素。修改您的`the-amazing-list.component.html`文件，如下所示：
+- en: '[PRE18]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'We need to pass the `#itemTrigger` variable that we have on each list item
+    to the `openMenu()` method on a click of the list item. Update the file, as follows:'
+  id: totrans-127
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们需要在单击列表项时将每个列表项上的`#itemTrigger`变量传递给`openMenu()`方法。更新文件，如下所示：
+- en: '[PRE19]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: If you refresh the app now and click on any of the list items, you should see
+    a drop-down menu being shown, as follows:![Figure 9.7 – Working drop-down menu
+    for each list item
+  id: totrans-129
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果现在刷新应用程序并单击任何列表项，您应该看到显示一个下拉菜单，如下所示：![图9.7 - 每个列表项的工作下拉菜单
+- en: '](image/Figure_9.7_B15150.jpg)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.7_B15150.jpg)'
+- en: Figure 9.7 – Working drop-down menu for each list item
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.7 - 每个列表项的工作下拉菜单
+- en: 'We now have to implement the part where we show a pointy little arrow with
+    the drop-down menu so that we can correlate the drop-down menu with the list item.
+    First, add the following styles to the `.popover-menu` class in the `src/styles.scss`
+    file:'
+  id: totrans-132
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们需要实现一个部分，其中我们显示一个带有下拉菜单的尖小箭头，以便我们可以将下拉菜单与列表项相关联。首先，在`src/styles.scss`文件的`.popover-menu`类中添加以下样式：
+- en: '[PRE20]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'You should now be able to see a pointy arrow on the top right of the drop-down
+    menu, but if you try clicking the last item on the screen, you''ll see that the
+    drop-down menu opens upward but still shows the pointer at the top, as follows:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您应该能够在下拉菜单的右上方看到一个尖箭头，但是如果您尝试点击屏幕上的最后一个项目，您会发现下拉菜单向上打开，但仍然显示在顶部的指针，如下所示：
+- en: '![Figure 9.8 – Drop-down arrow pointing at the wrong list item'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.8 - 指向错误列表项的下拉箭头'
+- en: '](image/Figure_9.8_B15150.jpg)'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.8_B15150.jpg)'
+- en: Figure 9.8 – Drop-down arrow pointing at the wrong list item
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.8 - 指向错误列表项的下拉箭头
+- en: 'To point to the actual origin of the popover/drop-down menu, we need to implement
+    a custom directive that applies a custom class. Let''s start by creating a directive,
+    as follows:'
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了指向弹出菜单/下拉菜单的实际起点，我们需要实现一个应用自定义类的自定义指令。让我们首先创建一个指令，如下所示：
+- en: '[PRE21]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Update the code in the `popover-positional-class.directive.ts` generated file
+    as per the following gist:'
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 根据以下要点更新`popover-positional-class.directive.ts`生成的文件中的代码：
+- en: '[https://gist.github.com/AhsanAyaz/f28893e90b71cc03812287016192d294](https://gist.github.com/AhsanAyaz/f28893e90b71cc03812287016192d294)'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://gist.github.com/AhsanAyaz/f28893e90b71cc03812287016192d294](https://gist.github.com/AhsanAyaz/f28893e90b71cc03812287016192d294)'
+- en: 'Now, open the `the-amazing-list.component.html` file to apply our directive
+    to the `cdkConnectedOverlay` directive. Update the `<ng-template>` element in
+    the file, as follows:'
+  id: totrans-142
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，打开`the-amazing-list.component.html`文件，将我们的指令应用到`cdkConnectedOverlay`指令上。更新文件中的`<ng-template>`元素如下：
+- en: '[PRE22]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'We now need to create a `menuPopoverOrigin` property and a `popoverPositionChanged()`
+    method in our `the-amazing-list.component.ts` file. Update this, as follows:'
+  id: totrans-144
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们需要在`the-amazing-list.component.ts`文件中创建一个`menuPopoverOrigin`属性和一个`popoverPositionChanged()`方法。更新如下：
+- en: '[PRE23]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Finally, let''s reverse the popover pointer using this inverse class. Update
+    the `src/styles.scss` file to add the following styles:'
+  id: totrans-146
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，让我们使用这个反转类来反转弹出指针。更新`src/styles.scss`文件以添加以下样式：
+- en: '[PRE24]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'And voilà! If you now refresh the page and tap each of the list items, you''ll
+    see the arrows point in the correct direction. See the following screenshot to
+    view the popover arrow pointing downward for the last item, due to the popover
+    being shown above the item:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，刷新页面并点击每个列表项，你会看到箭头指向正确的方向。查看下面的截图，查看由于弹出框显示在项目上方，箭头指向最后一个项目的下方：
+- en: '![Figure 9.9 – Drop-down arrow pointing at the correct list item (pointing
+    downward)'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.9 - 下拉箭头指向正确的列表项（向下指）'
+- en: '](image/Figure_9.9_B15150.jpg)'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.9_B15150.jpg)'
+- en: Figure 9.9 – Drop-down arrow pointing at the correct list item (pointing downward)
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.9 - 下拉箭头指向正确的列表项（向下指）
+- en: Great! You now know how to use the Angular CDK to work with overlays to create
+    custom pop-up/drop-down menus. Moreover, you now know how to quickly implement
+    the pointy arrows on the menu using a custom directive. See the next section to
+    understand how it all works.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！现在你知道如何使用Angular CDK来处理叠加层，创建自定义弹出/下拉菜单。此外，你现在知道如何快速实现菜单上的尖箭头，使用自定义指令。查看下一节，了解它是如何工作的。
+- en: How it works…
+  id: totrans-153
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: Implementing an overlay using the Angular CDK Overlay API includes a couple
+    of pieces to work with. We first have to import the `OverlayModule` class in our
+    `AppModule` imports. Then, for creating an overlay, we need to have an overlay
+    and an overlay trigger. In this recipe, since we're using the overlay to create
+    a popover menu for each list item, we use the `cdkOverlayOrigin` directive on
+    the `<app-the-amazing-list-item>` elements. Notice that the `<app-the-amazing-list-item>`
+    elements are being rendered through the `*ngFor` directive. Therefore, in order
+    to know which item was clicked or precisely which item we need to show the popover
+    for, we create a `#itemTrigger` template variable on each list-item element, and
+    you'll notice that we also bind the `(click)` event on the list items to call
+    the `openMenu()` method, passing this `itemTrigger` template variable into it.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Angular CDK Overlay API实现叠加层包括一些要处理的部分。首先，我们必须在`AppModule`的imports中导入`OverlayModule`类。然后，为了创建一个叠加层，我们需要有一个叠加层和一个叠加触发器。在这个示例中，因为我们使用叠加层为每个列表项创建一个弹出菜单，我们在`<app-the-amazing-list-item>`元素上使用`cdkOverlayOrigin`指令。注意，`<app-the-amazing-list-item>`元素是通过`*ngFor`指令渲染的。因此，为了知道点击了哪个项目或者准确地说我们需要为哪个项目显示弹出框，我们在每个列表项元素上创建一个`#itemTrigger`模板变量，并且你会注意到我们还将`(click)`事件绑定到列表项上，调用`openMenu()`方法，并将这个`itemTrigger`模板变量传递给它。
+- en: 'Now, if you have noticed the `openMenu()` method in the `the-amazing-list.component.ts`
+    file, it looks like this:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你注意到`the-amazing-list.component.ts`文件中的`openMenu()`方法，它看起来像这样：
+- en: '[PRE25]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Notice that we assign the `itemTrigger` property to our class's `popoverMenuTrigger`
+    property. This is because this `popoverMenuTrigger` property is being bound with
+    the actual overlay in our template. You can also see that we set the `menuShown`
+    property to `true`, and this is because it will decide whether the overlay should
+    be shown or hidden.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们将`itemTrigger`属性分配给我们类的`popoverMenuTrigger`属性。这是因为这个`popoverMenuTrigger`属性与我们模板中的实际覆盖层绑定。您还可以看到我们将`menuShown`属性设置为`true`，这是因为它将决定覆盖层是应该显示还是隐藏。
+- en: 'Now, let''s see the code for the actual overlay, as follows:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们看一下实际覆盖层的代码，如下所示：
+- en: '[PRE26]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Let''s discuss each of the `cdkConnectedOverlay` directive''s attributes, one
+    by one:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们逐个讨论`cdkConnectedOverlay`指令的每个属性：
+- en: 'The `cdkConnectedOverlay` attribute: This is the actual overlay directive that
+    makes the `<ng-template>` element an Angular CDK overlay.'
+  id: totrans-161
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`cdkConnectedOverlay`属性：这是实际的覆盖层指令，使`<ng-template>`元素成为Angular CDK覆盖层。'
+- en: 'The `[cdkConnectedOverlayOrigin]` attribute: This tells the Overlay API what
+    the origin of this overlay is This is to help the CDK decide where to position
+    the overlay when opened.'
+  id: totrans-162
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[cdkConnectedOverlayOrigin]`属性：这告诉覆盖层API这个覆盖层的起点是什么。这是为了帮助CDK决定打开时覆盖层的位置。'
+- en: 'The `[cdkConnectedOverlayOpen]` attribute: This decides whether the overlay
+    should be shown or not.'
+  id: totrans-163
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[cdkConnectedOverlayOpen]`属性：这决定了覆盖层是否应该显示或隐藏。'
+- en: 'The `[cdkConnectedOverlayHasBackdrop]` attribute: This decides whether the
+    overlay should have a backdrop or not—that is, if it has a backdrop, the user
+    shouldn''t be able to click anything else apart from the overlay when it is open.'
+  id: totrans-164
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[cdkConnectedOverlayHasBackdrop]`属性：这决定了覆盖层是否应该有背景或者没有背景，也就是说，如果有背景，用户在打开时就不能点击覆盖层以外的任何东西。'
+- en: 'The `(backdropClick)` attribute: This is the event handler for when we click
+    the backdrop. In this case, we''re setting the `menuShown` property to `false`,
+    which hides/closes the overlay.'
+  id: totrans-165
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`(backdropClick)`属性：这是当我们点击背景时的事件处理程序。在这种情况下，我们将`menuShown`属性设置为`false`，这会隐藏/关闭覆盖层。'
+- en: 'The `[cdkConnectedOverlayPositions]` attribute: This provides the positioning
+    configuration to the Overlay API. It is an array of preferred positions that defines
+    whether the overlay should be shown below the origin, on top of the origin, on
+    the left, on the right, how far from the origin, and so on.'
+  id: totrans-166
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[cdkConnectedOverlayPositions]`属性：这为覆盖层API提供了定位配置。它是一个首选位置的数组，定义了覆盖层是否应该显示在起点下方，起点上方，左侧，右侧，离起点多远等等。'
+- en: 'The `[cdkConnectedOverlayPanelClass]` attribute: A **Cascading Style Sheets**
+    (**CSS**) class to be applied to the generated overlay. This is used for styling.'
+  id: totrans-167
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[cdkConnectedOverlayPanelClass]`属性：要应用于生成的覆盖层的**层叠样式表**（**CSS**）类。这用于样式设置。'
+- en: With all of the attributes set correctly, we are able to see the overlay working
+    when tapping the list items. *"But what about the pointy arrows, Ahsan?"* Well,
+    hold on! We'll discuss them too.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有属性设置正确后，我们可以在点击列表项时看到覆盖层的工作。 “但是，阿赫桑，尖箭头呢？” 好吧，等一下！我们也会讨论它们。
+- en: 'So, the Angular CDK Overlay API already has a lot of things covered, including
+    where to position the overlay based on the available space, and since we want
+    to show the pointy arrows, we''ll have to analyze whether the overlay is being
+    shown above the item or below the item. By default, we have the following styles
+    set in the `src/styles.scss` file to show the pointy arrow below the popover:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，Angular CDK覆盖层API已经涵盖了许多内容，包括根据可用空间确定覆盖层的位置，由于我们想要显示尖箭头，我们将不得不分析覆盖层是在项目上方还是在项目下方。默认情况下，我们在`src/styles.scss`文件中设置了以下样式以在弹出框下方显示尖箭头：
+- en: '[PRE27]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'And then, we have the `--up` modifier class, as follows, to show the overlay
+    *above* the popover:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们有`--up`修饰符类，如下所示，以在弹出框*上方*显示覆盖层：
+- en: '[PRE28]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: Notice in the preceding code snippet that we rotate the arrow to `180deg` to
+    invert its pointer.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意在前面的代码片段中，我们将箭头旋转到`180deg`以倒转其指针。
+- en: 'Now, let''s talk about how and when this `--up` modifier class is applied.
+    We have created a custom directive named `appPopoverPositionalClass`. This directive
+    is also applied to the `<ng-template>` element we have for the overlay—that is,
+    this directive is applied with the `cdkConnectedOverlay` directive and expects
+    the following input attributes:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们谈谈这个`--up`修饰符类是如何以及何时应用的。我们创建了一个名为`appPopoverPositionalClass`的自定义指令。这个指令也适用于我们为覆盖创建的`<ng-template>`元素，也就是说，这个指令与`cdkConnectedOverlay`指令一起应用，并期望以下输入属性：
+- en: 'The `appPopoverPositionalClass` attribute: The actual directive selector.'
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`appPopoverPositionalClass`属性：实际的指令选择器。'
+- en: 'The `targetSelector` attribute: The query selector for the element that is
+    generated by the Angular CDK Overlay API. Ideally, this should be the same as
+    what we use in `cdkConnectedOverlayPanelClass`.'
+  id: totrans-176
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`targetSelector`属性：由Angular CDK覆盖API生成的元素的查询选择器。理想情况下，这应该与我们在`cdkConnectedOverlayPanelClass`中使用的相同。'
+- en: 'The `inverseClass` attribute: The class to be applied when the vertical position
+    (`originY`) of the overlay is changed—that is, from `"top"` to `"bottom"`, and
+    vice versa.'
+  id: totrans-177
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`inverseClass`属性：当覆盖的垂直位置（`originY`）发生变化时（即从`"top"`到`"bottom"`，反之亦然）应用的类。'
+- en: 'The `originY` attribute: The `originY` position of the overlay at the moment.
+    The value is either `"top"` or `"bottom"`, based on the overlay position.'
+  id: totrans-178
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`originY`属性：覆盖此刻的`originY`位置。该值要么是`"top"`，要么是`"bottom"`，取决于覆盖的位置。'
+- en: We have a `(positionChange)` listener on the CDK Overlay `<ng-template>` element
+    that triggers the `popoverPositionChanged()` method as soon as the overlay position
+    changes. Notice that inside the `popoverPositionChanged()` method, upon getting
+    a new position, we update the `popover.originY` property that is updating `menuPopoverOrigin.originY`,
+    and then we're also passing `menuPopoverOrigin.originY` as the `[originY]` attribute
+    to our `appPopoverPositionalClass` directive. Since we're passing it to the directive,
+    the directive knows if the overlay position is `"top"` or `"bottom"` at any particular
+    time. How? Because we're using the `ngOnChanges` life cycle hook in the directive
+    to listen to the `originY` attribute/input, and as soon as we get a different
+    value for `originY`, we either add the value of `inverseClass` as a CSS class
+    to the Overlay element or remove it based on the value of the `originY` attribute.
+    Also, based on the applied CSS classes, the direction of the popover arrow is
+    decided for the overlay.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在CDK覆盖`<ng-template>`元素上有一个`(positionChange)`监听器，一旦覆盖位置发生变化，就会触发`popoverPositionChanged()`方法。请注意，在`popoverPositionChanged()`方法内，一旦获得新的位置，我们会更新`popover.originY`属性，该属性正在更新`menuPopoverOrigin.originY`，然后我们还将`menuPopoverOrigin.originY`作为`[originY]`属性传递给我们的`appPopoverPositionalClass`指令。因为我们将其传递给指令，所以指令知道覆盖位置在任何特定时间是`"top"`还是`"bottom"`。为什么？因为我们在指令中使用`ngOnChanges`生命周期钩子来监听`originY`属性/输入，一旦我们获得`originY`的不同值，我们要么根据`originY`属性的值向覆盖元素添加`inverseClass`的值作为CSS类，要么根据`originY`属性的值将其删除。此外，根据应用的CSS类，决定了覆盖的气泡箭头的方向。
+- en: See also
+  id: totrans-180
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Angular CDK Overlay API ([https://material.angular.io/cdk/overlay/overview](https://material.angular.io/cdk/overlay/overview))
+  id: totrans-181
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular CDK覆盖API（[https://material.angular.io/cdk/overlay/overview](https://material.angular.io/cdk/overlay/overview)）
+- en: '`CdkOverlayOrigin` directive documentation ([https://material.angular.io/cdk/overlay/api#CdkOverlayOrigin](https://material.angular.io/cdk/overlay/api#CdkOverlayOrigin))'
+  id: totrans-182
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`CdkOverlayOrigin`指令文档（[https://material.angular.io/cdk/overlay/api#CdkOverlayOrigin](https://material.angular.io/cdk/overlay/api#CdkOverlayOrigin)）'
+- en: Using CDK Clipboard to work with the system clipboard
+  id: totrans-183
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用CDK剪贴板与系统剪贴板一起工作
+- en: You may have visited hundreds of websites over time, and you might have seen
+    a feature called **Click to copy** on some of them. This is usually used when
+    you have a long text or a link that you need to copy, and you'll find it way more
+    convenient to just click to copy instead of selecting and then pressing the keyboard
+    shortcuts. In this recipe, we're going to learn how to use the Angular CDK Clipboard
+    API to copy text to the clipboard.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能随着时间访问了数百个网站，您可能已经在其中一些网站上看到了一个名为“点击复制”的功能。当您需要复制长文本或链接时，通常会使用此功能，您会发现仅需点击即可复制，而无需选择然后按键盘快捷键会更方便。在本教程中，我们将学习如何使用Angular
+    CDK剪贴板API将文本复制到剪贴板。
+- en: Getting ready
+  id: totrans-185
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project for this recipe resides in `chapter09/start_here/using-cdk-clipboard-api`.
+    Proceed as follows:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本教程的项目位于`chapter09/start_here/using-cdk-clipboard-api`。请按照以下步骤进行：
+- en: Open the project in VS Code.
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-188
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`以安装项目的依赖项。
+- en: Once done, run `ng serve -o`.
+  id: totrans-189
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，运行`ng serve -o`。
+- en: 'This should open the app in a new browser tab, as follows:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该会在新的浏览器选项卡中打开应用程序，如下所示：
+- en: '![Figure 9.10 – using-cdk-clipboard-api running on http://localhost:4200'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.10 - 使用-cdk-clipboard-api在http://localhost:4200上运行'
+- en: '](image/Figure_9.10_B15150.jpg)'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.10_B15150.jpg)'
+- en: Figure 9.10 – using-cdk-clipboard-api running on http://localhost:4200
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.10 - 使用-cdk-clipboard-api在http://localhost:4200上运行
+- en: Now that we have the app running locally, let's see the steps of the recipe
+    in the next section.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序在本地运行，让我们在下一节中看看本教程的步骤。
+- en: How to do it…
+  id: totrans-195
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: We have an app right now with a couple of options that don't work—that is, we
+    should be able to copy the link, the text from the text area, and the image. In
+    order to do so, we'll use the CDK Clipboard API. Let's get started.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在有一个应用程序，其中有一些不起作用的选项，即我们应该能够复制链接、文本区域中的文本和图像。为此，我们将使用CDK剪贴板API。让我们开始吧。
+- en: 'First of all, we need to import the `ClipboardModule` class into the `imports`
+    array of our `AppModule` class. Modify the `app.module.ts` file, as follows:'
+  id: totrans-197
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们需要将`ClipboardModule`类导入到我们的`AppModule`类的`imports`数组中。修改`app.module.ts`文件，如下所示：
+- en: '[PRE29]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Now, we''ll apply the `click-to-copy` functionality to the link. In order to
+    do so, we''ll use the `cdkCopyToClipboard` directive and will apply it on our
+    link input in the `app.component.html` file, as follows:'
+  id: totrans-199
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将`click-to-copy`功能应用于链接。为此，我们将在`app.component.html`文件中的链接输入上使用`cdkCopyToClipboard`指令，并将其应用如下：
+- en: '[PRE30]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: If you click on the link input now and then try to paste it anywhere (within
+    or outside the app), you should see the value of the link.
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您现在点击链接输入，然后尝试将其粘贴到任何地方（应用内或应用外），您应该看到链接的值。
+- en: 'We''ll now do something similar for the text input—that is, the `<textarea>`.
+    Update the template again, as follows:'
+  id: totrans-202
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将对文本输入（即`<textarea>`）做类似的事情。再次更新模板，如下所示：
+- en: '[PRE31]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Finally, we''ll do something different for the image. Since the CDK Clipboard
+    API only works with strings, we will download the image, convert it into a blob,
+    and copy the blob **Uniform Resource Locator** (**URL**). Let''s update the template
+    first with the logic, as follows:'
+  id: totrans-204
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们将对图像做一些不同的事情。由于CDK剪贴板API只能处理字符串，我们将下载图像，将其转换为blob，并复制blob统一资源定位符（URL）。让我们首先更新模板的逻辑，如下所示：
+- en: '[PRE32]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Now, let''s implement the `copyImageUrl()` method to fetch the image, convert
+    it into a blob, and copy the URL to the clipboard. Update the `app.component.ts`
+    file, as follows:'
+  id: totrans-206
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们实现`copyImageUrl()`方法来获取图像，将其转换为blob，并将URL复制到剪贴板。更新`app.component.ts`文件，如下所示：
+- en: '[PRE33]'
+  id: totrans-207
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: Great! With this change, you can try refreshing the app. Now, you should be
+    able to copy the link and the text, as well as the image, by clicking the input
+    link and the buttons respectively. To understand all the magic behind this recipe,
+    see the next section.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！有了这个改变，你可以尝试刷新应用程序。现在，你应该能够通过点击输入链接和按钮分别复制链接、文本和图片。要了解这个教程背后的所有魔力，请参阅下一节。
+- en: How it works…
+  id: totrans-209
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: In the recipe, we've used two main things from the CDK Clipboard API—one is
+    the `cdkCopyToClipboard` directive, and the other is the `Clipboard` service.
+    The `cdkCopyToClipboard` directive binds a click handler to the element this directive
+    is applied to. It works both as the selector of the directive and an `@Input()`
+    item for the directive so that it knows which value is to be copied to the clipboard
+    when the element is clicked. In our recipe, for the link input, notice that we
+    use `[cdkCopyToClipboard]="linkInput.value"`. This binds a click handler to the
+    `<input>` element and also binds the `value` property of the `linkInput` template
+    variable, which points to the value of the input that is the actual link to be
+    copied. When we click the input, it accesses the value of the input using the
+    `linkInput.value` binding, and we do the same for the `<text-area>` input. The
+    only difference is that the `cdkCopyToClipboard` directive is not bound to the
+    `<text-area>` element itself. The reason is that we want to bind the click handler
+    to the button below the text area instead. Therefore, on the button for copying
+    the text, we have the `[cdkCopyToClipboard]="textInput.value"` binding.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个教程中，我们从CDK剪贴板API中使用了两个主要的东西——一个是`cdkCopyToClipboard`指令，另一个是`Clipboard`服务。`cdkCopyToClipboard`指令将一个点击处理程序绑定到应用了该指令的元素上。它既作为指令的选择器，又作为指令的`@Input()`项，以便它知道在点击元素时要复制到剪贴板的值是什么。在我们的教程中，对于链接输入，请注意我们使用了`[cdkCopyToClipboard]="linkInput.value"`。这将一个点击处理程序绑定到`<input>`元素，并绑定了`linkInput`模板变量的`value`属性，该属性指向要复制的实际链接的输入值。当我们点击输入时，它使用`linkInput.value`绑定来访问输入的值，对于`<text-area>`输入也是一样。唯一的区别是`cdkCopyToClipboard`指令没有绑定到`<text-area>`元素本身。原因是我们希望将点击处理程序绑定到文本区域下面的按钮上。因此，在复制文本的按钮上，我们有`[cdkCopyToClipboard]="textInput.value"`绑定。
+- en: For the image, we do something different. We use the `Clipboard` service from
+    the `@angular/cdk/clipboard` package to manually copy the blob URL. We create
+    a method named `copyImageUrl()`, which is called when clicking the button for
+    copying the image. We pass the `imageUrl` property to this method, which in turn
+    downloads the image, reads it as a blob, and generates the blob URL, which is
+    copied to the clipboard using the `copy()` method of the `Clipboard` service.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于图片，我们做了一些不同的事情。我们使用了`@angular/cdk/clipboard`包中的`Clipboard`服务来手动复制blob URL。我们创建了一个名为`copyImageUrl()`的方法，当点击复制图片的按钮时调用该方法。我们将`imageUrl`属性传递给这个方法，然后下载图片，将其读取为blob，并生成blob
+    URL，最后使用`Clipboard`服务的`copy()`方法将其复制到剪贴板。
+- en: See also
+  id: totrans-212
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: CDK Clipboard documentation ([https://material.angular.io/cdk/clipboard/overview](https://material.angular.io/cdk/clipboard/overview))
+  id: totrans-213
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CDK剪贴板文档（[https://material.angular.io/cdk/clipboard/overview](https://material.angular.io/cdk/clipboard/overview)）
+- en: Using CDK Drag and Drop to move items from one list to another
+  id: totrans-214
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用CDK拖放将项目从一个列表移动到另一个列表
+- en: Have you ever used the Trello board app, or maybe other apps that also allow
+    you to drag and drop list items from one list to another? Well, you can do this
+    easily using the Angular CDK, and in this recipe, you'll learn about the Angular
+    CDK Drag and Drop API to move items from one list to another. You'll also learn
+    how to reorder the lists.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你是否曾经使用过Trello板应用，或者其他允许你将列表项从一个列表拖放到另一个列表的应用？好吧，你可以很容易地使用Angular CDK来做到这一点，在这个教程中，你将学习关于Angular
+    CDK拖放API，以将项目从一个列表移动到另一个列表。你还将学习如何重新排序列表。
+- en: Getting ready
+  id: totrans-216
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project that we are going to work with resides in `chapter09/start_here/using-cdk-drag-drop`,
+    inside the cloned repository. Proceed as follows:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要处理的项目位于克隆存储库中的 `chapter09/start_here/using-cdk-drag-drop` 中。请按照以下步骤进行：
+- en: Open the project in VS Code.
+  id: totrans-218
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在 VS Code 中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-219
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行 `npm install` 安装项目的依赖项。
+- en: Once done, run `ng serve -o`.
+  id: totrans-220
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，运行 `ng serve -o`。
+- en: 'This should open the app in a new browser tab, and it should look like this:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该在新的浏览器标签中打开应用程序，并且应该看起来像这样：
+- en: '![Figure 9.11 – The using-cdk-drag-drop app running on http://localhost:4200'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.11 - 使用 cdk 拖放的应用程序在 http://localhost:4200 上运行'
+- en: '](image/Figure_9.11_B15150.jpg)'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.11_B15150.jpg)'
+- en: Figure 9.11 – The using-cdk-drag-drop app running on http://localhost:4200
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.11 - 使用 cdk 拖放的应用程序在 http://localhost:4200 上运行
+- en: Now that we have the app running locally, let's see the steps of the recipe
+    in the next section.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序在本地运行，让我们在下一节中看一下配方的步骤。
+- en: How to do it…
+  id: totrans-226
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: '如何做… '
+- en: For this recipe, we have an interesting app that has some folders and files.
+    We're going to implement the drag-and-drop functionality for the files to be dragged
+    to other folders, which should update the folder's file count instantly, and we
+    should be able to see the file in the new folder as well. Let's get started.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个配方，我们有一个有趣的应用程序，其中有一些文件夹和文件。我们将为文件实现拖放功能，以便将文件拖到其他文件夹中，这应该会立即更新文件夹的文件计数，并且我们还应该能够在新文件夹中看到文件。让我们开始吧。
+- en: 'First of all, we need to import the `DragDropModule` class into the `imports`
+    array of our `AppModule` class. Modify the `app.module.ts` file, as follows:'
+  id: totrans-228
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们需要将 `DragDropModule` 类导入到 `AppModule` 类的 `imports` 数组中。修改 `app.module.ts`
+    文件如下：
+- en: '[PRE34]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Now, we''ll apply the `cdkDrag` directive to each of our files, and will apply
+    the `cdkDropList` directive to each of the folders. Update the `folders-list.component.html`
+    file, as follows:'
+  id: totrans-230
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将对每个文件应用 `cdkDrag` 指令，并将对每个文件夹应用 `cdkDropList` 指令。更新 `folders-list.component.html`
+    文件如下：
+- en: '[PRE35]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'We''ll also enable reordering of the files within a folder by adding the `cdkDropList`
+    directive on the container elements for the files, as follows:'
+  id: totrans-232
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还将通过在文件的容器元素上添加 `cdkDropList` 指令来启用文件夹内文件的重新排序，如下所示：
+- en: '[PRE36]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'We''ll now define the origin of the drag-and-drop interaction by specifying
+    the `[cdkDragData]` attribute on each `<app-file>` element and the `[cdkDropListData]`
+    attribute on each `<app-folder>` element, and on the files container as well.
+    Update the template again, as follows:'
+  id: totrans-234
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将通过在每个 `<app-file>` 元素上指定 `[cdkDragData]` 属性以及在每个 `<app-folder>` 元素上指定
+    `[cdkDropListData]` 属性，并且还在文件容器上指定该属性来定义拖放交互的起源。再次更新模板如下：
+- en: '[PRE37]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'We now need to implement what happens when the file is dropped. To do so, we''ll
+    use the `(cdkDropListDropped)` event handler. Update the template, as follows:'
+  id: totrans-236
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们需要实现文件被拖放时发生的情况。为此，我们将使用 `(cdkDropListDropped)` 事件处理程序。更新模板如下：
+- en: '[PRE38]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'Finally, we need to implement the `onFileDrop` method. Update the `folders-list.component.ts`
+    file, as follows:'
+  id: totrans-238
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们需要实现 `onFileDrop` 方法。更新 `folders-list.component.ts` 文件如下：
+- en: '[PRE39]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'If you now refresh the app and try to drag a file to a folder, you should see
+    something like this:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果现在刷新应用程序并尝试将文件拖到文件夹中，您应该会看到类似于这样的东西：
+- en: '![Figure 9.12 – Dragging and dropping a file to another folder'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.12 - 将文件拖放到另一个文件夹中'
+- en: '](image/Figure_9.12_B15150.jpg)'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.12_B15150.jpg)'
+- en: Figure 9.12 – Dragging and dropping a file to another folder
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.12 - 将文件拖放到另一个文件夹
+- en: Ugly, isn't it? Well, this is because we have to fix the drag-and-drop previews
+    in the next steps.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 丑陋，不是吗？这是因为我们必须在接下来的步骤中修复拖放预览。
+- en: 'In order to handle the drag-and-drop previews, we need to enclose them into
+    an element with the `cdkDropListGroup` directive. Update the `folders-list.component.html`
+    file and apply the directive to the element with the `"folders"` class, as follows:'
+  id: totrans-245
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了处理拖放预览，我们需要将它们封装到一个带有`cdkDropListGroup`指令的元素中。更新`folders-list.component.html`文件，并将该指令应用于具有`"folders"`类的元素，如下所示：
+- en: '[PRE40]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'To apply a custom drag preview, we use a custom element with the `*cdkDragPreview`
+    directive applied to it. Update the `folders-list.component.html` file, as follows:'
+  id: totrans-247
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了应用自定义拖动预览，我们使用一个带有`*cdkDragPreview`指令的自定义元素。更新`folders-list.component.html`文件如下：
+- en: '[PRE41]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'We''ll also need some styles for the drag-and-drop previews. Update the `folders-list.component.scss`
+    file, as follows:'
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还需要一些拖放预览的样式。更新`folders-list.component.scss`文件如下：
+- en: '[PRE42]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'Let''s also add some styles to make sure the other list items move smoothly
+    when reordering the items within a folder. Update the `src/styles.scss` file,
+    as follows:'
+  id: totrans-251
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们还添加一些样式，以确保在对文件夹内的项目重新排序时，其他列表项可以平稳移动。更新`src/styles.scss`文件如下：
+- en: '[PRE43]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'Now, we need to create a drop preview template as well. For this, we use the
+    `*cdkDragPlaceholder` directive on the `preview` element. Update the `folders-list.component.html`
+    file, as follows:'
+  id: totrans-253
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们也需要创建一个拖放预览模板。为此，我们在`preview`元素上使用`*cdkDragPlaceholder`指令。更新`folders-list.component.html`文件如下：
+- en: '[PRE44]'
+  id: totrans-254
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'Finally, let''s create an `upArrow` property using the `faArrowAltCircleUp`
+    icon from the `@fortawesome` package. Update the `folders-list.component.ts` file,
+    as follows:'
+  id: totrans-255
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，让我们使用`@fortawesome`包中的`faArrowAltCircleUp`图标创建一个`upArrow`属性。更新`folders-list.component.ts`文件如下：
+- en: '[PRE45]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: And boom! We now have a seamless **user experience** (**UX**) for the entire
+    drag-and-drop flow. Like it? Make sure that you share a snapshot on your Twitter
+    and tag me at `@muhd_ahsanayaz`.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 砰！现在我们整个拖放流程都有了无缝的用户体验（UX）。喜欢吗？确保在Twitter上分享一个快照，并在`@muhd_ahsanayaz`上标记我。
+- en: Now that we've finished the recipe, let's see in the next section how it all
+    works.
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经完成了这个示例，让我们在下一节中看看它是如何工作的。
+- en: How it works…
+  id: totrans-259
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: There were a couple of interesting directives in this recipe, and we'll go through
+    them all one by one. First of all, as good Angular developers, we import the `DragDropModule`
+    class into the `imports` array of our `AppModule`, just to make sure we don't
+    end up with errors. Then, we start making the files draggable. We do this by adding
+    the `cdkDrag` directive to each file element by applying the `*ngFor` directive
+    to it. This tells the Angular CDK that this element will be dragged and, therefore,
+    the Angular CDK binds different handlers to each element to be dragged.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中有一些有趣的指令，我们将逐一介绍它们。首先，作为优秀的Angular开发人员，我们将`DragDropModule`类导入到我们的`AppModule`的`imports`数组中，以确保我们不会出现错误。然后，我们开始使文件可拖动。我们通过将`cdkDrag`指令应用于每个文件元素并将`*ngFor`指令应用于它来实现这一点。这告诉Angular
+    CDK这个元素将被拖动，因此Angular CDK会将不同的处理程序绑定到每个要拖动的元素上。
+- en: Important note
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: 'Angular components by default are not block elements. Therefore, when applying
+    the `cdkDrag` directive to an Angular component such as the `<app-file>` component,
+    it might restrict the animations from the CDK being applied when we''re dragging
+    the elements. In order to fix this, we need to set a `display: block;` for our
+    component elements. Notice that we''re applying the required styles in the `folders-list.component.scss`
+    file (*line 25*) for the `.folders__selected-folder-files__file` class.'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'Angular组件默认不是块元素。因此，当将`cdkDrag`指令应用于Angular组件（例如`<app-file>`组件）时，可能会限制从CDK应用动画时拖动元素。为了解决这个问题，我们需要为我们的组件元素设置`display:
+    block;`。请注意，我们正在为`.folders__selected-folder-files__file`类在`folders-list.component.scss`文件（*第25行*）中应用所需的样式。'
+- en: After configuring the drag elements, we use the `cdkDropList` directive to each
+    container DOM element where we're supposed to drop the file. In our recipe, that
+    is each folder that we see on the screen, and we can also reorder the files within
+    a folder. Therefore we apply the `cdkDropList` directive to the wrapper element
+    of the currently displayed files, as well as to each `<app-folder>` item with
+    the `*ngFor` looping over the `folders` array.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在配置拖动元素之后，我们使用`cdkDropList`指令将每个容器DOM元素指定为我们应该放置文件的位置。在我们的配方中，这是屏幕上看到的每个文件夹，我们还可以重新排列文件夹内的文件。因此，我们将`cdkDropList`指令应用于当前显示文件的包装元素，以及对`folders`数组进行`*ngFor`循环的每个`<app-folder>`项。
+- en: Then, we specify the `data` that we're dragging by specifying `[cdkDragData]="file"`
+    for each draggable file. This helps us identify it in the later process, when
+    we drop it either within the current folder or within other folders. We also specify
+    in which array this dragged item will be added when dropped upon the particular
+    list, and we do this by specifying `[cdkDropListData]="ARRAY"` statements on the
+    elements that we've applied the `cdkDropList` directive to. When the Angular CDK
+    combines the information from the `cdkDragData` and the `cdkDropListData` attributes,
+    it can easily identify if the item was dragged and then dropped within the same
+    list or in another list.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们通过为每个可拖动的文件指定`[cdkDragData]="file"`来指定我们正在拖动的`data`。这有助于我们在稍后的过程中识别它，当我们将其放置在当前文件夹内或其他文件夹内时。我们还通过在我们应用了`cdkDropList`指令的元素上指定`[cdkDropListData]="ARRAY"`语句来指定此拖动的项目将在放置在特定列表上时添加到哪个数组中。当Angular
+    CDK结合`cdkDragData`和`cdkDropListData`属性的信息时，它可以轻松地识别项目是否在同一列表内被拖动然后放置，或者在另一个列表内被放置。
+- en: To handle what happens when we drop the dragged file, we use the `(cdkDropListDropped)`
+    method from the Angular CDK on the element with the `cdkDropList` directive. We
+    take the `$event` emitted from the CDK and pass it to our `onFileDrop()` method.
+    What's great is that within the `onFileDrop()` method, we use the `moveItemInArray()`
+    and `transferArrayItem()` helper methods from the Angular CDK, with a really simple
+    logic to compare the containers. That is, the Angular CDK provides us enough information
+    that we can get away with the whole functionality really easily.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了处理当我们放置被拖动的文件时发生的情况，我们在具有`cdkDropList`指令的元素上使用来自Angular CDK的`(cdkDropListDropped)`方法。我们获取从CDK发出的`$event`并将其传递给我们的`onFileDrop()`方法。很棒的是，在`onFileDrop()`方法中，我们使用来自Angular
+    CDK的`moveItemInArray()`和`transferArrayItem()`辅助方法，使用非常简单的逻辑来比较容器。也就是说，Angular
+    CDK为我们提供了足够的信息，让我们可以非常轻松地完成整个功能。
+- en: Toward the end of the recipe, we customize how our drag preview should look
+    when we are dragging a file using a custom template, by using the `*cdkDragPreview`
+    directive on it. This tells the Angular CDK to not render it right away but to
+    show it with the mouse when we start dragging a file. For our recipe, we only
+    show the icon of the file as the drag preview. And finally, we also customize
+    the drop preview (or drag placeholder) using the `*cdkDragPlaceholder` directive,
+    which shows a transparent rectangle with an upward-arrow icon to reflect where
+    the item is going to be added when dropped. Of course, we had to add some custom
+    styles for both the drag preview and the drop preview.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在配方的最后，我们通过在自定义模板上使用`*cdkDragPreview`指令来定制拖动预览的外观，告诉Angular CDK不要立即渲染它，而是在开始拖动文件时用鼠标显示它。对于我们的配方，我们只显示文件的图标作为拖动预览。最后，我们还使用`*cdkDragPlaceholder`指令自定义了放置预览（或拖动占位符），它显示一个透明的矩形，带有一个向上的箭头图标，以反映项目在放置时将被添加的位置。当然，我们还必须为拖动预览和放置预览添加一些自定义样式。
+- en: See also
+  id: totrans-267
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Angular CDK Drag and Drop documentation ([https://material.angular.io/cdk/drag-drop/overview](https://material.angular.io/cdk/drag-drop/overview))
+  id: totrans-268
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular CDK拖放文档([https://material.angular.io/cdk/drag-drop/overview](https://material.angular.io/cdk/drag-drop/overview))
+- en: Creating a multi-step game with the CDK Stepper API
+  id: totrans-269
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用CDK Stepper API创建多步游戏
+- en: If you try finding examples of the CDK Stepper over the internet, you'll find
+    a bunch of articles revolving around creating multi-step forms using the CDK Stepper
+    API, but since it is a stepper at its base, it can be used for various use cases.
+    In this recipe, we're going to build a guessing game using the Angular CDK Stepper
+    API, in which the user will guess what the output of a rolled dice will be.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你尝试在互联网上找到CDK Stepper的示例，你会发现有很多围绕使用CDK Stepper API创建多步表单的文章，但由于它本质上是一个步进器，它可以用于各种用例。在这个示例中，我们将使用Angular
+    CDK Stepper API构建一个猜测游戏，用户将猜测掷骰子的输出是什么。
+- en: Getting ready
+  id: totrans-271
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: 'The project that we are going to work with resides in `chapter09/start_here/using-cdk-stepper`,
+    inside the cloned repository. Proceed as follows:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要处理的项目位于克隆存储库内的`chapter09/start_here/using-cdk-stepper`中。请按照以下步骤进行：
+- en: Open the project in VS Code.
+  id: totrans-273
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-274
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: Once done, run `ng serve -o`.
+  id: totrans-275
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，运行`ng serve -o`。
+- en: 'This should open the app in a new browser tab, and you should see something
+    like this:'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在新的浏览器标签中打开应用程序，你应该会看到类似这样的东西：
+- en: '![Figure 9.13 – The using-cdk-stepper app running on http://localhost:4200'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.13 – 在http://localhost:4200上运行的using-cdk-stepper应用程序'
+- en: '](image/Figure_9.13_B15150.jpg)'
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.13_B15150.jpg)'
+- en: Figure 9.13 – The using-cdk-stepper app running on http://localhost:4200
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.13 – 在http://localhost:4200上运行的using-cdk-stepper应用程序
+- en: Now, let's look at how to create a multi-step game with the CDK Stepper API
+    in the next section.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们在下一节中看看如何使用CDK Stepper API创建多步游戏。
+- en: How to do it…
+  id: totrans-281
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'We have a really simple yet interesting application at hand that has a couple
+    of components built already, including the dice component, the value-guess component,
+    and the leaderboard component. We''ll create this game as a multi-step game using
+    the Stepper API. Proceed as follows:'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们手头上有一个非常简单但有趣的应用程序，其中已经构建了一些组件，包括骰子组件、值猜测组件和排行榜组件。我们将使用Stepper API将这个游戏创建为一个多步游戏。请按照以下步骤进行：
+- en: 'First, open a new terminal window/tab and make sure you''re inside the `ch8/start_here/using-cdk-stepper`
+    folder. Once inside, run the following command to install the Angular CDK:'
+  id: totrans-283
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，打开一个新的终端窗口/标签，并确保你在`ch8/start_here/using-cdk-stepper`文件夹内。进入后，运行以下命令安装Angular
+    CDK：
+- en: '[PRE46]'
+  id: totrans-284
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: You'll have to restart your Angular server, so rerun the `ng serve` command.
+  id: totrans-285
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 你需要重新启动你的Angular服务器，所以重新运行`ng serve`命令。
+- en: 'Now, import the `CdkStepperModule` class from the `@angular/cdk` package in
+    your `app.module.ts` file, as follows:'
+  id: totrans-286
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，在你的`app.module.ts`文件中从`@angular/cdk`包中导入`CdkStepperModule`类，如下所示：
+- en: '[PRE47]'
+  id: totrans-287
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Let''s create our stepper component now. Run the following command in the project
+    folder:'
+  id: totrans-288
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在让我们来创建我们的步进器组件。在项目文件夹中运行以下命令：
+- en: '[PRE48]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'To make our component a `CdkStepper`, we need to provide it using the `CdkStepper`
+    token and have to extend our component class from `CdkStepper` as well. We can
+    remove the `constructor`, the `OnInit` implementation, and the `ngOnInit` method.
+    Modify the `game-stepper.component.ts` file, as follows:'
+  id: totrans-290
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了使我们的组件成为`CdkStepper`，我们需要使用`CdkStepper`令牌提供它，并且还必须从`CdkStepper`扩展我们的组件类。我们可以移除`constructor`、`OnInit`实现和`ngOnInit`方法。修改`game-stepper.component.ts`文件，如下所示：
+- en: '[PRE49]'
+  id: totrans-291
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: Notice that we have removed the usage of `ngOnInit` and the `OnInit` life cycle
+    since we don't want these for this component.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们已经移除了对`ngOnInit`和`OnInit`生命周期的使用，因为我们不希望这些用于此组件。
+- en: 'Let''s add the template for our `<game-stepper>` component. We''ll start by
+    adding the header that will show the step label. Update your `game-stepper.component.html`
+    file, as follows:'
+  id: totrans-293
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们为我们的`<game-stepper>`组件添加模板。我们将首先添加将显示步骤标签的标题。更新您的`game-stepper.component.html`文件如下：
+- en: '[PRE50]'
+  id: totrans-294
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Now, we''ll add the template to show our main content for the selected step—this
+    is pretty simple to do. We need to add a div with the `[ngTemplateOutlet]` attribute,
+    where we''ll show the content. Update the `game-stepper.component.html` file,
+    as follows:'
+  id: totrans-295
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将添加模板来显示所选步骤的主要内容 - 这很简单。我们需要添加一个带有`[ngTemplateOutlet]`属性的div，我们将在其中显示内容。更新`game-stepper.component.html`文件如下：
+- en: '[PRE51]'
+  id: totrans-296
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Finally, we''ll add a footer element that''ll contain the navigation buttons
+    for our stepper— that is, we should be able to jump to the next and the previous
+    step using those navigation buttons. Update the `game-stepper.component.html`
+    file further, as follows:'
+  id: totrans-297
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们将添加一个包含导航按钮的页脚元素，用于我们的步进器 - 也就是说，我们应该能够使用这些导航按钮跳转到下一个和上一个步骤。进一步更新`game-stepper.component.html`文件如下：
+- en: '[PRE52]'
+  id: totrans-298
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'Let''s add some styles to our `game-stepper` component. Modify the `game-stepper.component.scss`
+    file, as follows:'
+  id: totrans-299
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们为我们的`game-stepper`组件添加一些样式。修改`game-stepper.component.scss`文件如下：
+- en: '[PRE53]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'We''ll now wrap our entire template in the `game.component.html` file with
+    the `<app-game-stepper>` component. Update the file, as follows:'
+  id: totrans-301
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将在`game.component.html`文件中用`<app-game-stepper>`组件包装整个模板。更新文件如下：
+- en: '[PRE54]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'We''ll now modify our `game.component.html` file to break down the inner template
+    into steps. For that, we''ll use the `<cdk-step>` element to wrap around the content
+    for each step. Update the file, as follows:'
+  id: totrans-303
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将修改我们的`game.component.html`文件，将内部模板分解为步骤。为此，我们将使用`<cdk-step>`元素来包装每个步骤的内容。更新文件如下：
+- en: '[PRE55]'
+  id: totrans-304
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'Now, we''ll add a label for each step to show our main content for the selected
+    step—this is pretty simple to do. We need to add an `<ng-template>` element within
+    each `<cdk-step>` element. Update the `game.component.html` file, as follows:'
+  id: totrans-305
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将为每个步骤添加一个标签，以显示所选步骤的主要内容 - 这很简单。我们需要在每个`<cdk-step>`元素内添加一个`<ng-template>`元素。更新`game.component.html`文件如下：
+- en: '[PRE56]'
+  id: totrans-306
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'If you refresh the app, you should see the first step as the visible step,
+    as well as the bottom navigation button, as follows:'
+  id: totrans-307
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果刷新应用程序，您应该看到第一步作为可见步骤，以及底部导航按钮如下：
+- en: '![Figure 9.14 – The first step and the navigation button using CDKStepper'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.14 - 使用CDKStepper的第一步和导航按钮'
+- en: '](image/Figure_9.14_B15150.jpg)'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.14_B15150.jpg)'
+- en: Figure 9.14 – The first step and the navigation button using CDKStepper
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.14 - 使用CDKStepper的第一步和导航按钮
+- en: 'Now, we need to make sure that we can only move forward to the second step
+    once we have entered a name in the first step. Make the following changes to the
+    `game.component.html` file:'
+  id: totrans-311
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们需要确保只有在第一步输入姓名后才能前进到第二步。对`game.component.html`文件进行以下更改：
+- en: '[PRE57]'
+  id: totrans-312
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'We also need to disable the next button on the first step until we have entered
+    a value for the player name. To do so, update the `game-stepper.component.html`
+    file—specifically, the element with the `cdkStepperNext` attribute—as follows:'
+  id: totrans-313
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还需要在第一步上禁用下一步按钮，直到我们为玩家姓名输入一个值。为此，请更新`game-stepper.component.html`文件 - 具体来说，具有`cdkStepperNext`属性的元素如下：
+- en: '[PRE58]'
+  id: totrans-314
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'To handle the case when the user provides the name and hits the *Enter* key,
+    resulting in the form submission, we can handle moving to the next step using
+    a `@ViewChild()` in the `GameComponent` class. Modify the `game.component.ts`
+    file as follows, and try entering the name and then pressing the *Enter* key:'
+  id: totrans-315
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 处理用户提供姓名并按下*Enter*键导致表单提交的情况时，我们可以使用`GameComponent`类中的`@ViewChild()`来处理移动到下一步。修改`game.component.ts`文件如下，并尝试输入姓名然后按*Enter*键：
+- en: '[PRE59]'
+  id: totrans-316
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: 'Now, let''s write the flow for guessing the number. Update the `game.component.ts`
+    file, as follows:'
+  id: totrans-317
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们编写猜数字的流程。更新`game.component.ts`文件如下：
+- en: '[PRE60]'
+  id: totrans-318
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'Now that we have the functions in place, let''s update the template to listen
+    to the event listeners from the `<app-value-guesser>` and `<app-dice>` components
+    and to act accordingly. We''ll also add `.alert` elements to show messages in
+    case of a successful or wrong guess. Update the `game.component.html` file, as
+    follows:'
+  id: totrans-319
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们已经有了函数，让我们更新模板以侦听来自`<app-value-guesser>`和`<app-dice>`组件的事件监听器，并相应地采取行动。我们还将添加`.alert`元素以在猜对或猜错时显示消息。更新`game.component.html`文件如下：
+- en: '[PRE61]'
+  id: totrans-320
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'Finally, we need to populate the leaderboards. Update the `game.component.ts`
+    file to use the `LeaderboardService` class, as follows:'
+  id: totrans-321
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们需要填充排行榜。更新`game.component.ts`文件以使用`LeaderboardService`类，如下所示：
+- en: '[PRE62]'
+  id: totrans-322
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'Now, update the `game.component.html` file to pass the scores as an attribute
+    to the `<app-leader-board>` component, as follows:'
+  id: totrans-323
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，更新`game.component.html`文件以将分数作为属性传递给`<app-leader-board>`组件，如下所示：
+- en: '[PRE63]'
+  id: totrans-324
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'If you refresh the app now and play the game, you should be able to see the
+    leaderboard, as follows:'
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果现在刷新应用并玩游戏，你应该能够看到排行榜，如下所示：
+- en: '![Figure 9.15 – Displaying results in the leaderboard at Step 3'
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.15 - 在第3步中在排行榜中显示结果'
+- en: '](image/Figure_9.15_B15150.jpg)'
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.15_B15150.jpg)'
+- en: Figure 9.15 – Displaying results in the leaderboard at Step 3
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.15 - 在第3步中在排行榜中显示结果
+- en: Phew! That was a LONG recipe! Well, perfection requires time and dedication.
+    Feel free to use this game yourself or even with your friends, and if you improve
+    it, do let me know on my socials.
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哎呀！这是一个很长的配方！嗯，完美需要时间和专注。随时可以自己玩这个游戏，甚至和朋友一起玩，如果你改进了它，也请告诉我。
+- en: Now that you've finished the recipe, see the next section on how this works.
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你已经完成了这个配方，看看下一节它是如何工作的。
+- en: How it works…
+  id: totrans-331
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的…
+- en: There are a lot of moving parts in this recipe, but they're super-easy. First,
+    we import the `CdkStepperModule` class into the `imports` array of our `AppModule`
+    class. Then, we create a component that extends the `CdkStepper` class. The reason
+    for extending the `CdkStepper` class is to be able to create this `GameStepperComponent`
+    component so that we can create a reusable template with some styles, and even
+    some custom functionality.
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个配方中有很多组成部分，但它们非常简单。首先，我们将`CdkStepperModule`类导入到我们的`AppModule`类的`imports`数组中。然后，我们创建一个扩展`CdkStepper`类的组件。扩展`CdkStepper`类的原因是为了能够创建这个`GameStepperComponent`组件，以便我们可以创建一个可重用的模板，其中包含一些样式，甚至一些自定义功能。
+- en: To start using the `GameStepperComponent` component, we wrap the entire template
+    within the `<app-game-stepper>` element in the `game.component.html` file. Since
+    the component extends the `CdkStepper` API, we can use all the functionality of
+    the `CdkStepper` component here. For each step, we use the `<cdk-step>` element
+    from the CDK and wrap the template of the step inside it. Notice that in the `game-stepper.component.html`
+    file, we use the `[ngTemplateOutlet]` attribute for both the step's label and
+    the step's actual content. This is a reflection of how amazing the `CdkStepper`
+    API is. It automatically generates the `step.label` property and the `content`
+    property on each step based on the values/template we provide for each step. Since
+    we provide an `<ng-template cdkStepLabel>` inside each `<cdk-step>` element, the
+    CDK generates a `step.stepLabel.template` automatically, which we then use inside
+    the `game-stepper.component.html` file, as mentioned. If we didn't provide it,
+    it would then use the `step.label` property as per our code.
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要开始使用`GameStepperComponent`组件，我们在`game.component.html`文件中将整个模板包装在`<app-game-stepper>`元素中。由于该组件扩展了`CdkStepper`
+    API，因此我们可以在这里使用`CdkStepper`组件的所有功能。对于每个步骤，我们使用CDK中的`<cdk-step>`元素并将步骤的模板包装在其中。请注意，在`game-stepper.component.html`文件中，我们对步骤的标签和实际内容都使用了`[ngTemplateOutlet]`属性。这反映了`CdkStepper`
+    API的强大之处。它根据我们为每个步骤提供的值/模板自动生成`step.label`属性和`content`属性。由于我们在每个`<cdk-step>`元素内提供了一个`<ng-template
+    cdkStepLabel>`，CDK会自动生成一个`step.stepLabel.template`，然后我们在`game-stepper.component.html`文件中使用它，如上所述。如果我们没有提供它，它将根据我们的代码使用`step.label`属性。
+- en: For the bottom navigation buttons, you notice that we use `<button>` elements
+    with the `cdkStepperPrevious` and `cdkStepperNext` directives for going to the
+    previous step and the next step respectively. We also show/hide the next and previous
+    button based on the conditions to check if there is a step to go to. We hide the
+    navigation button using the `[style.visibility]` binding, as you see in the code.
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于底部导航按钮，您会注意到我们使用带有`cdkStepperPrevious`和`cdkStepperNext`指令的`<button>`元素分别用于前进到上一步和下一步。我们还根据条件显示/隐藏下一个和上一个按钮，以检查是否有步骤可供前进。我们使用`[style.visibility]`绑定来隐藏导航按钮，就像您在代码中看到的那样。
+- en: One interesting thing about the `CdkStepper` API is that we can tell whether
+    the user should be able to go to the next steps and backward, regardless of the
+    state of the current step, or whether the user should first do something in the
+    current step to go to the next one. The way we do it is by using the `[linear]`
+    attribute on our `<app-game-stepper>` element, by setting its value to `true`.
+    This tells the `CdkStepper` API to not move to the next step using the `cdkStepperNext`
+    button, until the current step's `completed` property is `true`. While just providing
+    `[linear]="true"` is enough to handle the functionality, we improve the UX by
+    disabling the **Next** button—in this case, by using `[disabled]="!selected.completed"`
+    on the `cdkStepperNext` button, as it makes more sense to just disable the button
+    if it isn't going to do anything on click.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`CdkStepper` API的一个有趣之处在于，我们可以告诉用户是否应该能够前进到下一步和后退，而不管当前步骤的状态如何，或者用户是否应该先在当前步骤中做一些事情才能进入下一步。我们通过在`<app-game-stepper>`元素上使用`[linear]`属性并将其值设置为`true`来实现这一点。这告诉`CdkStepper`
+    API在当前步骤的`completed`属性为`true`之前不要使用`cdkStepperNext`按钮进入下一步。虽然只提供`[linear]="true"`就足以处理功能，但我们通过在`cdkStepperNext`按钮上使用`[disabled]="!selected.completed"`来禁用**下一步**按钮来改善用户体验，因为如果点击按钮不会做任何事情，禁用按钮更有意义。'
+- en: Also, we needed to decide when a step is considered complete. For the first
+    step, it is obvious that we should have a name entered in the input to consider
+    the step completed—or, in other words, the `FormContro`l for the `'name'` property
+    in the `nameForm` `FormGroup` should have a value. For the second step, it makes
+    sense that after the user has guessed a number, regardless of whether the guess
+    is correct or not, we mark the step as completed and let the user go to the next
+    step (the leaderboard) if the user wants to. And that's pretty much about it.
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们需要决定何时认为一步骤已经完成。对于第一步，很明显，我们应该在输入中输入名称才能认为步骤已完成，换句话说，在 `nameForm` `FormGroup`
+    中的 `'name'` 属性的 `FormContro`l 应该有一个值。对于第二步，当用户猜测一个数字后，无论猜测是否正确，我们都会标记该步骤已完成，并让用户进入下一步（排行榜），如果用户愿意的话。大致就是这样。
+- en: See also
+  id: totrans-337
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Angular CDK Stepper examples ([https://material.angular.io/cdk/stepper/examples](https://material.angular.io/cdk/stepper/examples))
+  id: totrans-338
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular CDK Stepper examples ([https://material.angular.io/cdk/stepper/examples](https://material.angular.io/cdk/stepper/examples))
+- en: Resizing text inputs with the CDK TextField API
+  id: totrans-339
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用 CDK TextField API 调整文本输入大小
+- en: Text inputs are an essential part of our everyday computer usage. Be it filling
+    a form, searching some content on Google, or finding your favorite YouTube video,
+    we all interact with text inputs, and when we have to write a bunch of content
+    into a single text input, it really is necessary to have a good UX. In this recipe,
+    you'll learn how to automatically resize the `<textarea>` inputs based on the
+    input value, using the CDK TextField API.
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文本输入是我们日常计算机使用的重要部分。无论是填写表单、在谷歌上搜索内容，还是找到您喜欢的 YouTube 视频，我们都与文本输入进行交互，当我们必须在单个文本输入中写入大量内容时，确实需要良好的用户体验。在这个教程中，您将学习如何使用
+    CDK TextField API 根据输入值自动调整 `<textarea>` 输入的大小。
+- en: Getting ready
+  id: totrans-341
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project for this recipe resides in `chapter09/start_here/resizable-text-inputs-using-cdk`.
+    Proceed as follows:'
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此教程的项目位于 `chapter09/start_here/resizable-text-inputs-using-cdk`。请按照以下步骤进行：
+- en: Open the project in VS Code.
+  id: totrans-343
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在 VS Code 中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-344
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行 `npm install` 来安装项目的依赖项。
+- en: Once done, run `ng serve -o`.
+  id: totrans-345
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，运行 `ng serve -o`。
+- en: 'This should open the app in a new browser tab, and you should be able to see
+    the app. Try typing a long text, and you''ll see the text area displaying as follows:'
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该在新的浏览器标签中打开应用程序，您应该能够看到应用程序。尝试输入一长段文本，您将看到文本区域显示如下：
+- en: '![Figure 9.16 – The resizable-text-inputs-using-cdk app running on http://localhost:4200'
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图 9.16 – resizable-text-inputs-using-cdk 应用正在 http://localhost:4200 上运行'
+- en: '](image/Figure_9.16_B15150.jpg)'
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.16_B15150.jpg)'
+- en: Figure 9.16 – The resizable-text-inputs-using-cdk app running on http://localhost:4200
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 9.16 – resizable-text-inputs-using-cdk 应用正在 http://localhost:4200 上运行
+- en: Now that we have the app running locally, let's see the steps of the recipe
+    in the next section.
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序在本地运行，让我们在下一节中看看这个教程的步骤。
+- en: How to do it…
+  id: totrans-351
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'In *Figure 9.16*, you will notice that we can''t see the entire content of
+    the input—this is somewhat annoying at the best of times because you can''t really
+    review it before pressing the **Action** button. Let''s use the CDK TextField
+    API by following these steps:'
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在 *图 9.16* 中，您会注意到我们无法看到输入的整个内容，这在大多数情况下都有点烦人，因为您无法在按下 **操作** 按钮之前真正审查它。让我们按照以下步骤使用
+    CDK TextField API：
+- en: 'First, open a new terminal window/tab and make sure you''re inside the `chapter09/start_here/resizable-text-inputs-using-cdk`
+    folder. Once inside, run the following command to install the Angular CDK:'
+  id: totrans-353
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，打开一个新的终端窗口/标签，并确保您在 `chapter09/start_here/resizable-text-inputs-using-cdk`
+    文件夹内。进入后，运行以下命令安装 Angular CDK：
+- en: '[PRE64]'
+  id: totrans-354
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: You'll have to restart your Angular server, so rerun the `ng serve` command.
+  id: totrans-355
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您需要重新启动 Angular 服务器，因此重新运行 `ng serve` 命令。
+- en: 'Now, we need to import the `TextFieldModule` class into the `imports` array
+    of our `AppModule` class. Modify the `app.module.ts` file, as follows:'
+  id: totrans-356
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们需要将TextFieldModule类导入到AppModule类的imports数组中。修改app.module.ts文件如下：
+- en: '[PRE65]'
+  id: totrans-357
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'Now, we''ll apply the `cdkTextareaAutosize` directive to our `<text-area>`
+    element so that it can be resized automatically based on the content. Update the
+    `write-message.component.html` file, as follows:'
+  id: totrans-358
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将把cdkTextareaAutosize指令应用到我们的<text-area>元素上，以便它可以根据内容自动调整大小。更新write-message.component.html文件如下：
+- en: '[PRE66]'
+  id: totrans-359
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'If you now enter some long phrases in the text input, you should see it being
+    resized properly, as follows:'
+  id: totrans-360
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您现在在文本输入中输入一些长短语，您应该会看到它被正确地调整大小，如下所示：
+- en: '![Figure 9.17 – text-area being resized based on the content'
+  id: totrans-361
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.17 – 根据内容调整文本区域的大小'
+- en: '](image/Figure_9.17_B15150.jpg)'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.17_B15150.jpg)'
+- en: Figure 9.17 – text-area being resized based on the content
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.17 – 根据内容调整文本区域的大小
+- en: While this is awesome, you might notice that once the message is sent (that
+    is, added to the messages list), the size of the `<text-area>` element isn't reset
+    to its initial state.
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然这很棒，但您可能会注意到一旦消息被发送（即添加到消息列表中），<text-area>元素的大小并没有重置为其初始状态。
+- en: 'In order to reset the size of the `<text-area>` element to its initial size,
+    we''ll use the `reset()` method of the `CdkTextareaAutosize` directive. To do
+    so, we''ll get the directive as a `ViewChild` and will then trigger the `reset()`
+    method. Modify the `write-message.component.ts` file, as follows:'
+  id: totrans-365
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了将<text-area>元素的大小重置为初始大小，我们将使用CdkTextareaAutosize指令的reset()方法。为此，我们将获取该指令作为ViewChild，然后触发reset()方法。修改write-message.component.ts文件如下：
+- en: '[PRE67]'
+  id: totrans-366
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Great! With this change, when you refresh the page, enter a really long sentence
+    in the input and hit the *Enter* key. You''ll see the size of the `<text-area>`
+    element being reset, as follows:'
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！通过这个改变，当您刷新页面，输入一个非常长的句子并按下*Enter*键时，您会看到<text-area>元素的大小被重置，如下所示：
+- en: '![Figure 9.18 – <text-area> size being reset on new message creation'
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图9.18 – 在创建新消息时重置<text-area>大小'
+- en: '](image/Figure_9.18_B15150.jpg)'
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_9.18_B15150.jpg)'
+- en: Figure 9.18 – <text-area> size being reset on new message creation
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.18 – 在创建新消息时重置<text-area>大小
+- en: Now that you have finished the recipe, see the next section to understand how
+    it works.
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您已经完成了这个教程，接下来请查看下一节以了解它是如何工作的。
+- en: How it works…
+  id: totrans-372
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的…
+- en: In the recipe, we've used two main things from the CDK Clipboard API—one is
+    the `cdkCopyToClipboard` directive, and the other is the `Clipboard` service.
+    The `cdkCopyToClipboard` directive binds a click handler to the element this directive
+    is applied to. It works both as the `selector` of the directive as well as an
+    `@Input()` item for the directive so that it knows which value is to be copied
+    to the clipboard when the element is clicked. In our recipe, for the link input,
+    notice that we use `[cdkCopyToClipboard]="linkInput.value"`. This binds a click
+    handler to the `<input>` element and also binds the `value` property of the `linkInput`
+    template variable that points to the value of the input—that is, the actual link
+    to be copied. When we click the input, it accesses the value of the input using
+    the `linkInput.value` binding, and we do the same for the `<text-area>` input.
+    The only difference is that the `cdkCopyToClipboard` directive is not bound to
+    the `<text-area>` element itself. The reason is that we want to bind the click
+    handler to the button below the text area instead. Therefore, on the button for
+    copying the text, we have the `[cdkCopyToClipboard]="textInput.value"` binding.
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个教程中，我们使用了CDK剪贴板API中的两个主要功能——一个是`cdkCopyToClipboard`指令，另一个是`Clipboard`服务。`cdkCopyToClipboard`指令将点击处理程序绑定到应用该指令的元素上。它既可以作为指令的`selector`，也可以作为指令的`@Input()`项，以便在单击元素时知道要复制到剪贴板的值是什么。在我们的教程中，对于链接输入，请注意我们使用了`[cdkCopyToClipboard]="linkInput.value"`。这将点击处理程序绑定到`<input>`元素，并绑定到指向输入值的`linkInput`模板变量的`value`属性，即要复制的实际链接。当我们点击输入时，它使用`linkInput.value`绑定来访问输入的值，对于`<text-area>`输入也是一样。唯一的区别是`cdkCopyToClipboard`指令没有绑定到`<text-area>`元素本身。原因是我们希望将点击处理程序绑定到文本区域下面的按钮上。因此，在复制文本的按钮上，我们有`[cdkCopyToClipboard]="textInput.value"`绑定。
+- en: For the image, we do something different. We use the `Clipboard` service from
+    the `@angular/cdk/clipboard` package to manually copy the blob URL. We create
+    a method named `copyImageUrl()` that is called when clicking the button for copying
+    the image. We pass the `imageUrl` property to this method, which in turn downloads
+    the image, reads it as a blob, and generates the blob URL, which is copied to
+    the clipboard using the `copy()` method of the `Clipboard` service.
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于图片，我们做了一些不同的事情。我们使用了`@angular/cdk/clipboard`包中的`Clipboard`服务来手动复制blob URL。我们创建了一个名为`copyImageUrl()`的方法，当点击复制图片的按钮时调用该方法。我们将`imageUrl`属性传递给这个方法，然后下载图片，将其读取为blob，并生成blob
+    URL，然后使用`Clipboard`服务的`copy()`方法将其复制到剪贴板。
+- en: See also
+  id: totrans-375
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: CDK `text-field` documentation ([https://material.angular.io/cdk/text-field/overview](https://material.angular.io/cdk/text-field/overview))
+  id: totrans-376
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CDK `text-field`文档（[https://material.angular.io/cdk/text-field/overview](https://material.angular.io/cdk/text-field/overview)）

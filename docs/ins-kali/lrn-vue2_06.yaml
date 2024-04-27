@@ -1,0 +1,1427 @@
+- en: Chapter 6. Plugins – Building Your House with Your Own Bricks
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第6章。插件-用自己的砖头建造你的房子
+- en: In the previous chapter, you learned how to manage the global application store
+    using the Vuex architecture. You learned a lot of new concepts and applied them.
+    You also learned how to create a store, how to define its state and mutations,
+    and how to use actions and getters. We brought our shopping list and Pomodoro
+    applications to life using the knowledge acquired during the chapter.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，你学会了如何使用Vuex架构管理全局应用程序存储。你学到了很多新概念并应用了它们。你还学会了如何创建一个存储，如何定义它的状态和变化，以及如何使用操作和获取器。我们利用在这一章中获得的知识，让我们的购物清单和番茄钟应用程序焕发生机。
+- en: In this chapter, we will revisit Vue plugins, see how they work, and how they
+    must be created. We will use some existing plugins and create our own.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一章中，我们将重新审视Vue插件，看看它们是如何工作的，以及它们必须如何创建。我们将使用一些现有的插件并创建我们自己的插件。
+- en: 'Summing it up, in this chapter, we are going to do the following:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总结一下，在这一章中，我们将做以下事情：
+- en: Understand the nature of Vue plugins
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 了解Vue插件的性质
+- en: Use the resource plugin in the shopping lists application
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在购物清单应用程序中使用资源插件
+- en: Create a plugin that produces white, pink, and brown noises and apply it to
+    our Pomodoro application
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建一个生成白色、粉色和棕色噪音的插件，并将其应用到我们的番茄钟应用程序中
+- en: The nature of Vue plugins
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vue插件的性质
+- en: 'Plugins in Vue.js are used for exactly the same purpose as they are used in
+    any other scope: to add some nice functionality that, due to its nature, cannot
+    be achieved with the core functionality of the system. Plugins written for Vue
+    can provide various functionalities, starting from the definition of some global
+    Vue methods or even the instance methods and moving toward providing some new
+    directives, filters, or transitions.'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Vue.js中，插件的用途与在任何其他范围中使用的目的完全相同：为系统的核心功能无法实现的一些良好功能添加一些功能。为Vue编写的插件可以提供各种功能，从定义一些全局Vue方法，甚至实例方法，到提供一些新的指令、过滤器或转换。
+- en: 'In order to be able to use an existing plugin, you must first install it:'
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了能够使用现有的插件，你必须首先安装它：
+- en: '[PRE0]'
+  id: totrans-10
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'And then, tell Vue to use it in your application:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，告诉Vue在你的应用程序中使用它：
+- en: '[PRE1]'
+  id: totrans-12
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'We can also create our own plugins. This is also easy. Your plugin must provide
+    an `install` method where you define any global or instance methods, or custom
+    directives:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们也可以创建我们自己的插件。这也很容易。你的插件必须提供一个`install`方法，在这个方法中你可以定义任何全局或实例方法，或自定义指令：
+- en: '[PRE2]'
+  id: totrans-14
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Then it can be used just like any other existing plugin. In this chapter, we
+    will use the existing `resource` plugin for Vue ( [https://github.com/vuejs/vue-resource](https://github.com/vuejs/vue-resource)
+    ) and create our own plugin that generates white, pink, and brown noises.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后它可以像任何其他现有的插件一样使用。在这一章中，我们将使用现有的`resource`插件为Vue（[https://github.com/vuejs/vue-resource](https://github.com/vuejs/vue-resource)）并创建我们自己的插件，生成白色、粉色和棕色噪音。
+- en: Using the vue-resource plugin in the shopping list application
+  id: totrans-16
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在购物清单应用程序中使用vue-resource插件
+- en: 'Open the shopping list application (the [chapter6/shopping-list](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/shopping-list)
+    folder) and run `npm install` and `npm run dev`. It''s nice and clean, but it
+    still uses the hardcoded list of the shopping lists. It would be really nice if
+    we were able to add new shopping lists, delete them, and store the information
+    on updated shopping lists so that when we restart the application, the displayed
+    information corresponds to the last we saw before restarting. In order to be able
+    to do that, we will use the `resource` plugin, which allows us to easily create
+    REST resources and call REST methods on them. Before starting, let''s summarize
+    everything that we need to do in order to achieve this:'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开购物清单应用程序（[chapter6/shopping-list](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/shopping-list)文件夹）并运行`npm
+    install`和`npm run dev`。这很好，但它仍然使用硬编码的购物清单列表。如果我们能够添加新的购物清单，删除它们，并存储有关更新后的购物清单的信息，那将非常好，这样当我们重新启动应用程序时，显示的信息将与重新启动前看到的信息相对应。为了能够做到这一点，我们将使用`resource`插件，它允许我们轻松创建REST资源并在其上调用REST方法。在开始之前，让我们总结一下我们需要做的一切：
+- en: First of all, we need to have a simple server that contains some storage from
+    where we can retrieve and where we can store our shopping lists. This server must
+    provide the needed endpoints for all this functionality.
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 首先，我们需要一个简单的服务器，其中包含一些存储，我们可以从中检索和存储我们的购物清单。这个服务器必须为所有这些功能提供所需的端点。
+- en: After creating our server and all needed endpoints, we should install and use
+    the `vue-resource` plugin to create a resource and actions that will call the
+    methods on the provided endpoints.
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建我们的服务器和所有所需的端点后，我们应该安装并使用`vue-resource`插件来创建一个资源和调用提供的端点上的方法。
+- en: In order to guarantee the data integrity, we should call actions that update
+    server's state on each shopping lists update.
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为了保证数据的完整性，我们应该调用更新服务器状态的操作，以便在每次购物清单更新时更新服务器的状态。
+- en: On the application start, we should fetch shopping lists from the server and
+    assign them to our store's state.
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在应用程序启动时，我们应该从服务器获取购物清单并将它们分配给我们存储的状态。
+- en: We should also provide a mechanism to create new shopping lists and delete the
+    existing ones.
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们还应该提供一个机制来创建新的购物清单并删除现有的清单。
+- en: Doesn't sound too difficult, right? Let's start then!
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 听起来不太困难，对吧？那么让我们开始吧！
+- en: Creating a simple server
+  id: totrans-24
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建一个简单的服务器
+- en: 'For the sake of simplicity, we will use a very basic and easy-to-use HTTP server
+    that stores data inside a regular JSON file. It is called `json-server` and it
+    is hosted at [https://github.com/typicode/json-server](https://github.com/typicode/json-server).
+    Install it in the shopping list application''s directory:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了简单起见，我们将使用一个非常基本和易于使用的HTTP服务器，它将数据存储在一个常规的JSON文件中。它被称为`json-server`，托管在[https://github.com/typicode/json-server](https://github.com/typicode/json-server)。在购物清单应用程序的目录中安装它：
+- en: '[PRE3]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Create a `server` folder with the `db.json` file inside it with the following
+    content:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个带有`db.json`文件的`server`文件夹，并在其中添加以下内容：
+- en: '[PRE4]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'This will be our database. Let''s add the script entry to our `package.json`
+    file so that we can easily start our server:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将是我们的数据库。让我们向`package.json`文件添加脚本条目，以便我们可以轻松地启动我们的服务器：
+- en: '[PRE5]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Now, to start a server, just run the following:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，要启动服务器，只需运行以下命令：
+- en: '[PRE6]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Open the browser page at `http://localhost:3000/shoppinglists`. You will see
+    an empty array as a result. This is because our database is still empty. Try to
+    insert some data using `curl`:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`http://localhost:3000/shoppinglists`上打开浏览器页面。您将看到一个空数组作为结果。这是因为我们的数据库仍然是空的。尝试使用`curl`插入一些数据：
+- en: '[PRE7]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: If you refresh the page now, you will see your new inserted value.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果现在刷新页面，您将看到您新插入的值。
+- en: Now that we have our simple REST server up and running, let's use it in our
+    shopping list application with the help of the `vue-resource` plugin!
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的简单REST服务器已经启动运行，让我们借助`vue-resource`插件在我们的购物清单应用程序中使用它！
+- en: Installing vue-resource, creating resources, and its methods
+  id: totrans-37
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装vue-resource，创建资源及其方法
+- en: Before going deeper into the usage of the `vue-resource` plugin, check out its
+    documentation at [https://github.com/vuejs/vue-resource/blob/master/docs/resource.md](https://github.com/vuejs/vue-resource/blob/master/docs/resource.md)
+    . Basically, the documentation provides an easy way of creating resources based
+    on the given URL (in our case, it will be `http://localhost:3000/shoppinglists`).
+    After the resource is created, we can call `get`, `delete`, `post`, and `update`
+    methods on it.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入使用`vue-resource`插件之前，请查看其文档[https://github.com/vuejs/vue-resource/blob/master/docs/resource.md](https://github.com/vuejs/vue-resource/blob/master/docs/resource.md)。基本上，文档提供了一种根据给定URL（在我们的情况下，将是`http://localhost:3000/shoppinglists`）创建资源的简单方法。创建资源后，我们可以在其上调用`get`，`delete`，`post`和`update`方法。
+- en: 'Install it in the project''s folder:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在项目文件夹中安装它：
+- en: '[PRE8]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Now let''s create the entry point for our API. Inside an `src` folder of the
+    shopping list application, create a subfolder and call it `api`. Create an `index.js`
+    file inside it. In this file, we will import the `vue-resource` plugin and tell
+    `Vue` to use it:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们为我们的API创建入口点。在购物清单应用程序的`src`文件夹内，创建一个子文件夹并将其命名为`api`。在其中创建一个`index.js`文件。在这个文件中，我们将导入`vue-resource`插件并告诉`Vue`去使用它：
+- en: '[PRE9]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Nice! Now we are ready to create `ShoppingListsResource` and attach some methods
+    to it. To create a resource using the `vue-resource` plugin, we just call a `resource`
+    method on `Vue` and pass the URL to it:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很好！现在我们准备创建`ShoppingListsResource`并为其附加一些方法。使用`vue-resource`插件创建资源，我们只需在`Vue`上调用`resource`方法并将URL传递给它：
+- en: '[PRE10]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'The `ShoppingListsResource` constant now exposes all the methods needed for
+    the implementation of **CRUD** (**Create, Read, Update, and Delete**) operations.
+    It is so easy to use that we could basically export the resource itself. But let''s
+    export nice methods for each of the CRUD operations:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ShoppingListsResource`常量现在公开了实现**CRUD**（**创建，读取，更新和删除**）操作所需的所有方法。它非常容易使用，以至于我们基本上可以导出资源本身。但让我们为每个CRUD操作导出好的方法：'
+- en: '[PRE11]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: The full code for the `api/index.js` file can be seen in this gist at [https://gist.github.com/chudaol/d5176b88ba2c5799c0b7b0dd33ac0426](https://gist.github.com/chudaol/d5176b88ba2c5799c0b7b0dd33ac0426)
+    .
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`api/index.js`文件的完整代码可以在此处的gist中查看[https://gist.github.com/chudaol/d5176b88ba2c5799c0b7b0dd33ac0426](https://gist.github.com/chudaol/d5176b88ba2c5799c0b7b0dd33ac0426)。'
+- en: That's it! Our API is ready to be used and to populate our reactive Vue data!
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样！我们的API已经准备好使用并填充我们的响应式Vue数据！
+- en: Fetching all the shopping lists the application starts
+  id: totrans-49
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 获取应用程序开始的所有购物清单
+- en: Let's start by creating an action that will fetch and populate store's `shoppinglists`
+    state. After its creation, we can call it on the main `App.vue` ready state.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先创建一个操作，该操作将获取并填充存储的`shoppinglists`状态。创建后，我们可以在主`App.vue`准备状态上调用它。
+- en: 'Define a constant in the `mutation_types.js` file as follows:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`mutation_types.js`文件中定义一个常量，如下所示：
+- en: '[PRE12]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now create a mutation. This mutation will just receive an array of `shoppinglists`
+    and assign it to the `shoppinglists` state:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在创建一个mutation。这个mutation将只接收一个`shoppinglists`数组并将其分配给`shoppinglists`状态：
+- en: '[PRE13]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Ok then! Now we just need an action that will use the API''s `get` method and
+    dispatch the populating mutation. Import the API in the `actions.js` file and
+    create a corresponding action method:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了！现在我们只需要一个使用API的`get`方法并分派填充mutation的操作。在`actions.js`文件中导入API并创建相应的action方法：
+- en: '[PRE14]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: In the preceding lines of code, we perform a very simple task—we call the `fetchShoppingLists`
+    API's method that, in turn, calls the `get` method of the resource. This method
+    performs an `http GET` call and returns a promise that is resolved when the data
+    is back from the server.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码的前面几行中，我们执行了一个非常简单的任务——调用`fetchShoppingLists` API的方法，该方法反过来调用资源的`get`方法。这个方法执行一个`http
+    GET`调用，并在数据从服务器返回时解析一个promise。
+- en: This data is then used to dispatch the populating mutation with it. This method
+    will assign this data to the store's state `shoppinglists` property. This property
+    is reactive; do you remember? This means that all the views that rely on the `shoppinglists`
+    property getter will be updated. Let's now use this action in the main `App.vue`
+    component on its `mounted` state. Check more about `mounted` state hook in the
+    official Vue documentation page at [https://vuejs.org/v2/api/#mounted](https://vuejs.org/v2/api/#mounted)
+    .
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后使用这些数据来分发填充变异。这种方法将把这些数据分配给存储的状态`shoppinglists`属性。这个属性是响应式的；你还记得吗？这意味着依赖于`shoppinglists`属性getter的所有视图都将被更新。现在让我们在主`App.vue`组件的`mounted`状态中使用这个操作。在官方Vue文档页面的[mounted](https://vuejs.org/v2/api/#mounted)状态钩子中查看更多信息。
+- en: 'Open the `App.vue` component, import the `mapActions` object, map the `populateShoppingLists`
+    action inside the component''s `methods` property, and call it inside the `mounted`
+    handler. So, after the changes, the `script` tag of `App.vue` looks like the following:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`App.vue`组件，导入`mapActions`对象，在组件的`methods`属性中映射`populateShoppingLists`操作，并在`mounted`处理程序中调用它。因此，在更改后，`App.vue`的`script`标签如下所示：
+- en: '[PRE15]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'If you open the page now, you will see the only shopping list that we created
+    using `curl`, as shown in the following screenshot:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您现在打开页面，您将看到我们使用`curl`创建的唯一购物清单，如下面的屏幕截图所示：
+- en: '![Fetching all the shopping lists the application starts](../Images/image00295.jpeg)'
+  id: totrans-62
+  prefs: []
+  type: TYPE_IMG
+  zh: '![获取应用程序启动时的所有购物清单](../Images/image00295.jpeg)'
+- en: The displayed shopping lists are being served by our simple server!
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显示的购物清单是由我们简单的服务器提供的！
+- en: Try to insert more items using `curl` or even directly modifying the `db.json`
+    file. Refresh the page and look how it works like a charm!
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试使用`curl`添加更多项目，甚至直接修改`db.json`文件。刷新页面，看看它是如何像魅力一样工作的！
+- en: Updating server status on changes
+  id: totrans-65
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在更改时更新服务器状态
+- en: Very well, now we have our shopping lists being served by our REST API and everything
+    works and looks nice. Try to add some shopping list items or change the titles
+    of the shopping lists and check or uncheck items. After all these interactions,
+    refresh the page. Whoops, the lists are empty, nothing happened. That's absolutely
+    correct, we have an API method for updating the given shopping list but we don't
+    call it anywhere, so our server is not aware of the applied changes.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常好，现在我们的购物清单是由我们的REST API提供的，一切都运作良好并且看起来很好。尝试添加一些购物清单项目或更改购物清单的标题，并检查或取消检查项目。在所有这些交互之后，刷新页面。哎呀，列表是空的，什么也没发生。这完全正确，我们有一个用于更新给定购物清单的API方法，但我们没有在任何地方调用它，因此我们的服务器不知道应用的更改。
+- en: 'Let''s start by defining what components do something with our shopping lists
+    so that these changes are sent to the server. The following three things can happen
+    to the shopping lists and their items:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先定义哪些组件对我们的购物清单进行了一些操作，以便将这些更改发送到服务器。购物清单及其项目可能发生以下三种情况：
+- en: The title of the list can be changed in `ChangeTitleComponent`
+  id: totrans-68
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 清单的标题可以在`ChangeTitleComponent`中更改
+- en: The new item can be added to the shopping list in `AddItemComponent`
+  id: totrans-69
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 新项目可以在`AddItemComponent`中添加到购物清单
+- en: The item of the shopping list can be checked or unchecked in `ItemComponent`
+  id: totrans-70
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 购物清单中的项目可以在`ItemComponent`中进行勾选或取消勾选
+- en: 'We must create an action that must be triggered on all these changes. Within
+    this action, we should call the `update` API''s method. Have a close look at the
+    update method inside the `api/index.js` module; it must receive the whole shopping
+    list object as a parameter:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们必须创建一个必须在所有这些更改上触发的动作。在此动作中，我们应该调用`update` API的方法。仔细查看`api/index.js`模块中的更新方法；它必须接收整个购物清单对象作为参数：
+- en: '[PRE16]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Let''s create an action that receives an `id` as a parameter, retrieves the
+    shopping list by its ID, and calls the API''s method. Before doing this, create
+    a `getListById` method in the `getters.js` file and import it into the actions:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个接收`id`作为参数的动作，通过其ID检索购物清单，并调用API的方法。在此之前，在`getters.js`文件中创建一个`getListById`方法，并将其导入到动作中：
+- en: '[PRE17]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Now we are ready to define the action for updating the shopping list:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们准备定义更新购物清单的动作：
+- en: '[PRE18]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Actually, we can now delete the `findById` method from `mutations.js` and just
+    reuse this one from `getters.js`:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，我们现在可以从`mutations.js`中删除`findById`方法，只需从`getters.js`中重用此方法：
+- en: '[PRE19]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Well, now we have defined the action that calls the `updateList` method of our
+    API. Now we just have to call the action on each change that happens inside the
+    components!
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了，现在我们已经定义了调用API的`updateList`方法的动作。现在我们只需在组件内部发生的每个更改上调用该动作！
+- en: 'Let''s start with `AddItemComponent`. We must dispatch the `updateList` action
+    inside the `addItem` method using the `this.$store.dispatch` method with the action''s
+    name. However, there''s a small problem—we must pass the list item ID to the `updateList`
+    method and we do not have a reference to it inside this component. But it''s actually
+    an easy fix. Just add the ID inside the component''s `props` and bind it to the
+    component on its invocation inside `ShoppingListComponent`. So our `AddItemComponent` component''s
+    `script` tag looks like the following:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从`AddItemComponent`开始。我们必须在`addItem`方法中使用`this.$store.dispatch`方法分派`updateList`动作，使用动作的名称。但是，有一个小问题
+    - 我们必须将列表项ID传递给`updateList`方法，而我们在此组件内部没有对其的引用。但这实际上很容易解决。只需在组件的`props`中添加ID，并将其绑定到`ShoppingListComponent`中的组件调用。因此，我们的`AddItemComponent`组件的`script`标签如下所示：
+- en: '[PRE20]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'And, inside `ShoppingListComponent`, on the `add-item-component` invocation,
+    bind the ID to it:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 而且，在`ShoppingListComponent`中，在`add-item-component`调用时，将ID绑定到它：
+- en: '[PRE21]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Now, if you try to add items to the shopping lists and refresh the page, the
+    newly added items appear in the list!
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您尝试向购物清单添加项目并刷新页面，新添加的项目将出现在列表中！
+- en: 'Now we should do the same for `ChangeTitleComponent`. Open the `ChangeTitleComponent.vue` file
+    and check the code. Right now, it calls the `changeTitle` action on input:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们应该对`ChangeTitleComponent`做同样的事情。打开`ChangeTitleComponent.vue`文件并检查代码。现在，它在输入时调用`changeTitle`动作：
+- en: '[PRE22]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'We could, of course, import the `updateList` action and call it right after
+    calling the `changeTitle` action. But it might be easier to do it inside the action
+    itself. You may remember that in order to dispatch the store''s action, we should
+    call the `dispatch` method applied to the store with the action''s name as a parameter.
+    So we can do it inside the `changeTitle` action. Just open the `action.js` file,
+    find our `changeTitle` action, and add the call to `updateList`:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们可以导入`updateList`动作，并在调用`changeTitle`动作后立即调用它。但是在动作本身内部执行可能更容易。您可能记得，为了调度存储的动作，我们应该调用应用于存储的`dispatch`方法，并将动作的名称作为参数。因此，我们可以在`changeTitle`动作内部执行。只需打开`action.js`文件，找到我们的`changeTitle`动作，并添加对`updateList`的调用：
+- en: '[PRE23]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: It's done! Open the page, modify the titles of the pages, and refresh the page.
+    The titles should maintain their modified state!
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成了！打开页面，修改页面的标题，并刷新页面。标题应保持其修改后的状态！
+- en: The last change that we need to guarantee to be persisted is the change in the
+    shopping list's items `checked` property. Let's look at `ItemComponent` and decide
+    where we should call the `updateList` action.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要确保持久化的最后一个更改是购物清单中物品的`checked`属性的更改。让我们看看`ItemComponent`，决定我们应该在哪里调用`updateList`动作。
+- en: 'Let''s start by adding the ID inside the `props` attribute, just like we did
+    with `AddItemComponent`:'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先像我们在`AddItemComponent`中做的那样，在`props`属性中添加ID：
+- en: '[PRE24]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'We must also bind the `id` property to the component''s invocation, which is
+    done inside `ItemsComponent`:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还必须将`id`属性绑定到组件的调用中，这是在`ItemsComponent`内完成的：
+- en: '[PRE25]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'This also means that we must bind the `id` property to `item-component` inside `ShoppingListComponent`:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这也意味着我们必须将`id`属性绑定到`item-component`内部的`ShoppingListComponent`中：
+- en: '[PRE26]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'We should also import the `mapActions` object inside `ItemComponent` and export
+    the `updateList` method inside the `methods` property:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还应该在`ItemComponent`内部导入`mapActions`对象，并在`methods`属性中导出`updateList`方法：
+- en: '[PRE27]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Okay then, everything is bound to everything; now we just have to find the right
+    place inside `ItemComponent` to call the `updateList` action.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，一切都与一切相连；现在我们只需要找到`ItemComponent`内部调用`updateList`动作的正确位置。
+- en: 'And this turns out to be not such as easy task, because unlike in the other
+    components where we had event handlers dealing with changes and calling the corresponding
+    functions, here we just have class and model bindings attached to the checkbox
+    element. Luckily for us, `Vue` provides a `watch` option that allows us to attach
+    listeners to any of the component''s data and bind the handlers to them. In our
+    case, we want to watch the `item.checked` property and call the action. So, just
+    add the `watch` attribute to the components options as follows:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这事实上并不是一件容易的任务，因为与其他组件不同，我们在这里没有事件处理程序处理更改并调用相应的函数，而是只有绑定到复选框元素的类和模型绑定。幸运的是，`Vue`提供了一个`watch`选项，允许我们将监听器附加到组件的任何数据并将处理程序绑定到它们。在我们的情况下，我们想要监视`item.checked`属性并调用动作。所以，只需将`watch`属性添加到组件选项中，如下所示：
+- en: '[PRE28]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: And...we are done! Try to add items to the shopping lists, check, uncheck, and
+    check them again. Refresh the page. Everything looks like it was before refreshing!
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后...我们完成了！尝试向购物清单中添加物品，勾选，取消勾选，然后再次勾选。刷新页面。一切看起来都和刷新前一样！
+- en: Creating a new shopping list
+  id: totrans-103
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建一个新的购物清单
+- en: Okay then, we are already fetching the shopping lists from the server; we also
+    store applied changes, so we are fine. But wouldn't it also be nice if we could
+    create the shopping lists using the user interface of our application instead
+    of modifying the `db.json` file or using `curl post` requests? Of course, it would
+    be nice. And, of course, we can do it with few lines of code!
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，我们已经从服务器获取了购物清单；我们还存储了应用的更改，所以一切都很好。但是，如果我们能够使用我们应用程序的用户界面创建购物清单，而不是修改`db.json`文件或使用`curl
+    post`请求，那不是也很好吗？当然，那会很好。当然，我们可以用几行代码做到！
+- en: 'Let''s start by adding the action that calls the corresponding API method,
+    as follows:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先添加调用相应API方法的动作，如下所示：
+- en: '[PRE29]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Now we have to provide a visual mechanism for calling this action. For that,
+    we can create an extra tab in the tab list with the plus button, which will call
+    the action when it is clicked. We will do it inside the `App.vue` component. We
+    have already imported the `mapActions` object. Let''s just add the `createShoppingList`
+    method to the exported `methods` property:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们必须提供一个可视化机制来调用这个动作。为此，我们可以在选项卡列表中创建一个额外的选项卡，其中包含加号按钮，当点击时将调用该动作。我们将在`App.vue`组件内完成。我们已经导入了`mapActions`对象。让我们只需将`createShoppingList`方法添加到导出的`methods`属性中：
+- en: '[PRE30]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'At this moment, our `App.vue` component has access to the `createShoppingList`
+    action and can call it on an event handler. The question is—with what data? The
+    `createShoppingList` method is waiting to receive an object that will then be
+    sent to the server. Let''s create a method that will generate a new list with
+    a hardcoded title, and within this method, call the action with this new object.
+    But where should it put this method? The `methods` property of the component is
+    already occupied by the invocation of the `mapActions` helper. Well, the `mapActions`
+    method returns a map of methods. We can simply *extend* this map with our local
+    method:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此刻，我们的 `App.vue` 组件可以访问 `createShoppingList` 动作，并且可以在事件处理程序上调用它。问题是——使用什么数据？`createShoppingList`
+    方法正在等待接收一个对象，然后将其发送到服务器。让我们创建一个方法，它将生成一个带有硬编码标题的新列表，并在这个方法内部，使用这个新对象调用动作。但是这个方法应该放在哪里呢？组件的
+    `methods` 属性已经被 `mapActions` 辅助程序的调用占用了。嗯，`mapActions` 方法返回一个方法映射。我们可以简单地*扩展*这个映射，加入我们的本地方法：
+- en: '[PRE31]'
+  id: totrans-110
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Now we just need to add a button and bind the `addShoppingList` method to its
+    `click` event. You can create your own button anywhere on the page. My button''s
+    code looks like the following:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们只需要添加一个按钮，并将 `addShoppingList` 方法绑定到它的 `click` 事件上。你可以在页面的任何地方创建自己的按钮。我的按钮代码如下：
+- en: '[PRE32]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Look at the page; now we have a nice plus button on the last tab, which clearly
+    indicates that there is a possibility of adding a new shopping list, as shown
+    in the following screenshot:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看看页面；现在我们在最后一个标签上有一个漂亮的加号按钮，清楚地表明可以添加新的购物清单，如下截图所示：
+- en: '![Creating a new shopping list](../Images/image00296.jpeg)'
+  id: totrans-114
+  prefs: []
+  type: TYPE_IMG
+  zh: '![创建新的购物清单](../Images/image00296.jpeg)'
+- en: Now we can add new shopping lists using this nice plus button
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以使用这个漂亮的加号按钮添加新的购物清单
+- en: 'Try to click on the button. Whoops, nothing happens! However, if we look at
+    the Network panel, we can see the request was actually performed and that succeeded:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试点击按钮。哎呀，什么也没发生！但是，如果我们查看网络面板，我们可以看到请求实际上已经执行成功了：
+- en: '![Creating a new shopping list](../Images/image00297.jpeg)'
+  id: totrans-117
+  prefs: []
+  type: TYPE_IMG
+  zh: '![创建新的购物清单](../Images/image00297.jpeg)'
+- en: The creation request was performed successfully; however, nothing changed on
+    the page
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建请求已成功执行；但是，页面上没有任何变化
+- en: 'Actually, this makes perfect sense. We updated the information on the server,
+    but the client side is not aware of these changes. If we could populate shopping
+    lists after the successful shopping list creation, it would be nice, wouldn''t
+    it? Did I say "if we could"? Of course we can! Just go back to `actions.js` and
+    call the `populateShoppingLists` action on the promise''s `then` callback using
+    the `store.dispatch` method:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，这是完全有道理的。我们更新了服务器上的信息，但客户端并不知道这些变化。如果我们能在成功创建购物清单后填充购物清单，那就太好了，不是吗？我说“如果我们能”吗？当然我们可以！只需回到
+    `actions.js` 并在 promise 的 `then` 回调中使用 `store.dispatch` 方法调用 `populateShoppingLists`
+    动作：
+- en: '[PRE33]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'Now, if you click on the plus button, you will immediately see the newly created
+    list appearing in the tab pane, as shown in the following screenshot:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你点击加号按钮，你会立即看到新创建的清单出现在标签窗格中，如下截图所示：
+- en: '![Creating a new shopping list](../Images/image00298.jpeg)'
+  id: totrans-122
+  prefs: []
+  type: TYPE_IMG
+  zh: '![创建新的购物清单](../Images/image00298.jpeg)'
+- en: Newly added shopping list after repopulating our lists
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新填充我们的清单后新增的购物清单
+- en: You can now click on the new shopping list, change its name, add its items,
+    and check and uncheck them. When you refresh the page, everything is just like
+    it was before the refreshing. Amazing work!
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以点击新的购物清单，更改它的名称，添加它的项目，并对其进行检查和取消检查。当你刷新页面时，一切都和刷新前一样。太棒了！
+- en: Deleting existing shopping lists
+  id: totrans-125
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 删除现有的购物清单
+- en: We are already able to create and update our shopping lists. Now we just need
+    to be able to delete them. After all the things that we have learned in this chapter,
+    this will be the easiest part. We should add the action that will call the `deleteShoppingList`
+    method of our API, add the remove button to each of the shopping list, and call
+    the action on the button click.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经能够创建和更新我们的购物清单。现在我们只需要能够删除它们。在本章学到的所有知识之后，这将是最容易的部分。我们应该添加一个动作，调用我们的API的`deleteShoppingList`方法，为每个购物清单添加删除按钮，并在按钮点击时调用该动作。
+- en: 'Let''s start by adding the action. Similarly, as we did with the creation of
+    shopping lists, we will call the `populate` method right after removing the shopping
+    list, so our action will look like the following:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从添加动作开始。与我们创建购物清单时一样，我们将在删除购物清单后立即调用`populate`方法，因此我们的动作将如下所示：
+- en: '[PRE34]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Now let''s think where we should add the remove button. I would like to see
+    it near the shopping list title in the tab header. This is the component called
+    `ShoppingListTitleComponent`. Open it and import the `mapActions` helper. Export
+    it in the `methods` property. So, the code inside the `script` tag of this component
+    looks like the following:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们想一想应该在哪里添加删除按钮。我希望在选项卡标题中的购物清单标题附近看到它。这是一个名为`ShoppingListTitleComponent`的组件。打开它并导入`mapActions`助手。在`methods`属性中导出它。因此，这个组件的`script`标签内的代码如下所示：
+- en: '[PRE35]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Now let''s add the remove button and bind the `deleteShoppingList` method to
+    its `click` event listener. We should pass the ID to this method. We can do it
+    directly inside the template:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们添加删除按钮，并将`deleteShoppingList`方法绑定到其`click`事件侦听器上。我们应该将ID传递给这个方法。我们可以直接在模板内部做到这一点：
+- en: '[PRE36]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'I also added a little bit of styling to the remove icon so that it looks a
+    bit smaller and a bit more elegant:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还为删除图标添加了一点样式，使其看起来更小更优雅：
+- en: '[PRE37]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'That''s it! Open the page and you''ll see a tiny **`x`** button near each shopping
+    list title. Try clicking on it and you will immediately see the changes, as shown
+    in the following screenshot:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样！打开页面，你会看到每个购物清单标题旁边有一个小的**`x`**按钮。尝试点击它，你会立即看到变化，如下面的截图所示：
+- en: '![Deleting existing shopping lists](../Images/image00299.jpeg)'
+  id: totrans-136
+  prefs: []
+  type: TYPE_IMG
+  zh: '![删除现有购物清单](../Images/image00299.jpeg)'
+- en: Shopping lists with the remove X button that allows us to delete unused shopping
+    lists
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 带有删除X按钮的购物清单，允许我们删除未使用的购物清单
+- en: Congratulations! Now we have a fully functional application that allows us to
+    create shopping lists for any occasion, remove them, and manage the items on each
+    of them! Good work! The final code for this section can be found in the [chapter6/shopping-list2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/shopping-list2)
+    folder.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜！现在我们有一个完全功能的应用程序，可以让我们为任何场合创建购物清单，删除它们，并管理每个清单上的物品！干得好！本节的最终代码可以在[chapter6/shopping-list2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/shopping-list2)文件夹中找到。
+- en: Exercise
+  id: totrans-139
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习
+- en: Our shopping lists are all very similar to each other. I would like to propose
+    a small styling exercise in which you should attach coloring to your lists in
+    order to make them differ one from another. It will require you to add one more
+    field for the background color on the shopping list creation and to use it inside
+    the component to paint your lists with the given color.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的购物清单彼此非常相似。我想提出一个小的样式练习，你应该在其中为你的清单附加颜色，以使它们彼此不同。这将要求你在购物清单创建时添加一个背景颜色字段，并在组件内部使用它以用给定的颜色绘制你的清单。
+- en: Creating and using a plugin in the Pomodoro application
+  id: totrans-141
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在番茄钟应用程序中创建和使用插件
+- en: Now that we know how to use existing plugins with our Vue application, why not
+    create our own plugin? We already have a little bit of animation in our Pomodoro
+    application, and the screen changes completely when the state is changed from
+    the working Pomodoro interval to the resting interval. However, if we are not
+    looking at the tab, we have no idea if we should work or rest. It would be nice
+    to add some sounds to our Pomodoro!
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 既然我们知道如何在Vue应用程序中使用现有的插件，为什么不创建我们自己的插件呢？我们的番茄钟应用程序中已经有一点动画效果，当状态从工作的番茄钟间隔变为休息间隔时，屏幕会完全改变。然而，如果我们不看标签，我们就不知道是应该工作还是休息。向我们的番茄钟添加一些声音会很好！
+- en: When thinking about sounds in a time management application, I would like to
+    think about the sound that is nice for working. Every one of us has our own favorite
+    playlist for work. Of course, it differs according to each person's musical preferences.
+    That's why I decided to add some neutral sound to our application during the working
+    period of time. It was proven by some studies that different noises (white, pink,
+    brown, and so on) are good for the kind of work where a high level of concentration
+    is required. The Wikipedia entry about these studies can be found at [https://en.wikipedia.org/wiki/Sound_masking](https://en.wikipedia.org/wiki/Sound_masking)
+    . And some Quora experts talking about this can be found at [http://bit.ly/2cmRVW2](http://bit.ly/2cmRVW2)
+    .
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在思考时间管理应用中的声音时，我想到了适合工作的声音。我们每个人都有自己喜欢的工作播放列表。当然，这取决于每个人的音乐偏好。这就是为什么我决定在工作时间段内向我们的应用程序添加一些中性声音。一些研究证明了不同的噪音（白噪声、粉红噪声、棕噪声等）对于需要高度集中注意力的工作是有益的。关于这些研究的维基百科条目可以在[https://en.wikipedia.org/wiki/Sound_masking](https://en.wikipedia.org/wiki/Sound_masking)找到。一些Quora专家讨论这个问题可以在[http://bit.ly/2cmRVW2](http://bit.ly/2cmRVW2)找到。
+- en: In this section, we will use the Web Audio API ( [https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+    ) to create a plugin for Vue that generates white, pink, and brown noises. We
+    will provide a mechanism to instantiate one noise or another using Vue directives
+    and we will also provide global Vue methods that will start and pause these sounds.
+    After that, we will use this plugin to switch between a silent state while resting
+    and looking at cats and a noisy state while working. Does it sound challenging
+    and interesting? I really hope it does! Let's start then!
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将使用Web Audio API（[https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)）为Vue创建一个插件，用于生成白噪声、粉红噪声和棕噪声。我们将提供一种机制，使用Vue指令来实例化一个噪声或另一个噪声，并且我们还将提供全局Vue方法来启动和暂停这些声音。之后，我们将使用这个插件在休息时观看猫时切换到静音状态，而在工作时切换到嘈杂状态。听起来有挑战性和有趣吗？我真的希望是！那么让我们开始吧！
+- en: Creating the NoiseGenerator plugin
+  id: totrans-145
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建NoiseGenerator插件
+- en: 'Our plugin will be stored in a single JavaScript file. It will contain three
+    methods, one for the generation of each noise and provide a `Vue.install` method
+    where the directives and needed Vue methods will be defined. Use the [chapter6/pomodoro](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/pomodoro)
+    folder as a starting point. Start by creating a `plugins` subfolder in the `src`
+    folder and adding the `VueNoiseGeneratorPlugin.js` file there. Now let''s create
+    the following three methods:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的插件将存储在一个单独的JavaScript文件中。它将包含三种方法，一种用于生成每种噪声，并提供一个`Vue.install`方法，其中将定义指令和所需的Vue方法。使用[chapter6/pomodoro](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/pomodoro)文件夹作为起点。首先，在`src`文件夹中创建一个`plugins`子文件夹，并在其中添加`VueNoiseGeneratorPlugin.js`文件。现在让我们创建以下三种方法：
+- en: '`generateWhiteNoise`'
+  id: totrans-147
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成白噪声
+- en: '`generatePinkNoise`'
+  id: totrans-148
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成粉红噪声
+- en: '`generateBrownNoise`'
+  id: totrans-149
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成棕噪声
+- en: 'I will not reinvent the wheel and will just copy and paste the already existing
+    code that I found on the Internet. Of course, I would like to give huge credit
+    to the great resource that I found at [http://noisehack.com/generate-noise-web-audio-api/](http://noisehack.com/generate-noise-web-audio-api/)
+    . That being said, our plugin after copying the code and organizing it in the
+    functions should look like the following:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我不会重复造轮子，只会复制并粘贴我在互联网上找到的已有代码。当然，我要非常感谢我在[http://noisehack.com/generate-noise-web-audio-api/](http://noisehack.com/generate-noise-web-audio-api/)找到的这个很棒的资源。话虽如此，我们在复制代码并将其组织成函数后，插件应该如下所示：
+- en: '[PRE38]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: You can test all these noises in the JSFiddle at [https://jsfiddle.net/chudaol/7tuewm5z/](https://jsfiddle.net/chudaol/7tuewm5z/)
+    .
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在[https://jsfiddle.net/chudaol/7tuewm5z/](https://jsfiddle.net/chudaol/7tuewm5z/)的JSFiddle中测试所有这些噪音。
+- en: 'Okay, so we have all the three noises implemented. Now we must export the `install`
+    method that will be called by `Vue`. This method receives the `Vue` instance and
+    can create directives and methods on it. Let''s create a directive and call it
+    `noise`. This directive can have one of three values, `white`, `pink`, or `brown`,
+    and according to the received value will instantiate the `noise` variable by calling
+    the corresponding noise creation method. So, our directive creation within an
+    `install` method will look like the following:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，我们已经实现了所有三种噪音。现在我们必须导出`install`方法，该方法将被`Vue`调用。此方法接收`Vue`实例，并可以在其上创建指令和方法。让我们创建一个指令，称之为`noise`。这个指令可以有三个值，`white`、`pink`或`brown`，根据接收到的值，将通过调用相应的噪音创建方法来实例化`noise`变量。因此，在`install`方法中创建指令将如下所示：
+- en: '[PRE39]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'After the instantiation, we connect the `noise` to the already instantiated
+    `audioContext` and `suspend` it because we don''t want it to start producing the
+    noise right on the directive binding. We want it to be instantiated on some events
+    (for example, clicking on the start button) and paused on other events (for example,
+    when someone clicks on the pause button). For that, let''s provide methods for
+    starting, pausing, and stopping our `audioContext`. We will put these three methods
+    on the global Vue property called `noise`. We will call these methods `start`,
+    `pause`, and `stop`. Within the `start` method, we want to resume `audioContext`
+    and suspend it on both the `pause` and `stop` methods. So, our methods will look
+    like the following:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实例化后，我们将`noise`连接到已经实例化的`audioContext`，并将其暂停，因为我们不希望它在指令绑定时立即开始产生噪音。我们希望它在某些事件（例如，单击开始按钮）上被实例化，并在其他事件（例如，有人单击暂停按钮时）上被暂停。为此，让我们为启动、暂停和停止我们的`audioContext`提供方法。我们将这三种方法放在名为`noise`的全局Vue属性上。我们将这些方法称为`start`、`pause`和`stop`。在`start`方法中，我们希望在`pause`和`stop`方法中恢复`audioContext`并将其暂停。因此，我们的方法将如下所示：
+- en: '[PRE40]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: That's it! Our plugin is completely ready to be used. It's not perfect, of course,
+    because we only have one `audioContext`, which is being instantiated once and
+    then populated by one of the chosen noises, meaning we will not be able to use
+    the `noise` directive more than once on the page, but again, this is just a prototype
+    and you are more than welcome to enhance it and make it perfect and public!
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样！我们的插件已经完全准备好使用了。当然，它并不完美，因为我们只有一个`audioContext`，它只被实例化一次，然后由所选的噪音之一填充，这意味着我们将无法在页面上多次使用`noise`指令，但再次强调，这只是一个原型，您完全可以增强它并使其完美并公开！
+- en: Using the plugin in the Pomodoro application
+  id: totrans-158
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在番茄钟应用程序中使用插件
+- en: 'Fine then, now we have our nice noise-producing plugin, and the only thing
+    that is missing is using it! You already know how to do it. Open the `main.js`
+    file, import `VueNoiseGeneratorPlugin`, and tell `Vue` to use it:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了，现在我们有了一个很好的噪音产生插件，唯一缺少的就是使用它！您已经知道如何做了。打开`main.js`文件，导入`VueNoiseGeneratorPlugin`，并告诉`Vue`使用它：
+- en: '[PRE41]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'From now on, we can attach the `noise` directive and use the `Vue.noise` method
+    in any part of our Pomodoro application. Let''s bind it to our main template inside
+    the `App.vue` component:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从现在开始，我们可以在Pomodoro应用程序的任何部分附加`noise`指令并使用`Vue.noise`方法。让我们将其绑定到`App.vue`组件中的主模板中：
+- en: '[PRE42]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: Note that we use `v-noise` in the name of the directive and not just `noise`.
+    We already talked about it when we learned custom directives. To use a directive,
+    we should always prepend the `v-` prefix to its name. Also note that we used double
+    quotes inside the single quotes to wrap the `brown` string. If we didn't do it,
+    Vue would search for the data property called `brown`, because that's how the
+    Vue works. As we can write any JavaScript statement inside the directive binding
+    assignment, we must pass the string with double quotes. You can go further and
+    create a data property called `noise` and assign to it the value you want (`white`,
+    `brown`, or `pink`) and reuse it inside the directive binding syntax.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们在指令的名称中使用了`v-noise`而不仅仅是`noise`。当我们学习自定义指令时已经讨论过这一点。要使用指令，我们应该始终在其名称前加上`v-`前缀。还要注意，我们在单引号内使用双引号来包裹`brown`字符串。如果我们不这样做，Vue将搜索名为`brown`的数据属性，因为这就是Vue的工作原理。由于我们可以在指令绑定赋值中编写任何JavaScript语句，因此我们必须使用双引号传递字符串。您还可以进一步创建一个名为`noise`的数据属性，并将您想要的值（`white`、`brown`或`pink`）分配给它，并在指令绑定语法中重用它。
+- en: 'After that being done, let''s call the `Vue.noise.start` method in our `start`
+    mutation:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，让我们在我们的`start` mutation中调用`Vue.noise.start`方法：
+- en: '[PRE43]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Check the page and click on the start button. You will listen to a nice brown
+    noise. Be careful, however, to not to wake up your coworkers nor to scare your
+    family (or vice versa). Try changing the value of the noise directive and choose
+    your favorite noise to work with.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查页面并点击开始按钮。您将听到一种悦耳的棕色噪音。但是要小心，不要吵醒您的同事，也不要吓到您的家人（反之亦然）。尝试更改噪音指令的值，并选择您喜欢的噪音进行工作。
+- en: 'Still, we are not done. We created a mechanism so that the noise is started,
+    but it''s turning out to be a never-ending noise. Let''s call the `Vue.noise.pause`
+    and `Vue.noise.stop` methods on the `pause` and `stop` mutations, respectively:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但我们还没有完成。我们创建了一个启动噪音的机制，但它正在变成一个永无止境的噪音。让我们分别在`pause`和`stop` mutations中调用`Vue.noise.pause`和`Vue.noise.stop`方法：
+- en: '[PRE44]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'Look at the page. Now if you click on the pause or stop button, the noise is
+    suspended! We are still not done yet. Remember that our purpose was to have the
+    noise only during working time and not during resting time. So, let''s have a
+    look at the `tooglePomodoro` method inside `mutations.js` and add a mechanism
+    that starts or stops the noise according to the Pomodoro''s current state:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看看页面。现在，如果您点击暂停或停止按钮，噪音就会被暂停！我们还没有完成。请记住，我们的目的是只在工作时间而不是休息时间播放噪音。因此，让我们看看`mutations.js`中的`tooglePomodoro`方法，并添加一个根据番茄钟当前状态启动或停止噪音的机制：
+- en: '[PRE45]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: The code of the Pomodoro application after all these modifications can be found
+    in the [chapter6/pomodoro2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/pomodoro2)
+    folder. Check how the noise is started when we start the application, how it's
+    pausing when the working Pomodoro is completed, and how it restarted again when
+    we should be back to work. Check also how the start, pause, and stop buttons trigger
+    the noise as well. Nice work!
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些修改后的番茄钟应用程序的代码可以在[chapter6/pomodoro2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/pomodoro2)文件夹中找到。查看当我们启动应用程序时噪音是如何开始的，当工作番茄钟完成时它是如何暂停的，以及当我们应该回到工作时它是如何重新开始的。还要查看启动、暂停和停止按钮如何触发噪音。干得好！
+- en: Creating a button to toggle the sound
+  id: totrans-172
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建切换声音的按钮
+- en: 'It''s really nice that we have the noise sound bound to the working state of
+    the Pomodoro application. It''s also nice that the sound is paused when we pause
+    the application. However, it might be also useful to be able to pause the sound
+    without having to pause the whole application. Think about those situations when
+    you want to work in complete silence, or you might want to receive a Skype call.
+    In these situations, having a noise in background, even if it''s nice and pink,
+    is not nice at all. Let''s add a button to our application to toggle the sound.
+    Start by declaring a store property called `soundEnabled` and initialize it with
+    `true`. Also, create `getter` for this property. So `store.js` and `getters.js`
+    start looking like the following:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们很高兴将噪音声音绑定到番茄钟应用程序的工作状态。当我们暂停应用程序时，声音也会暂停。然而，有时候可能需要能够暂停声音而不必暂停整个应用程序。想想那些你想要完全安静工作的情况，或者你可能想接听Skype电话的情况。在这些情况下，即使是美妙的粉色噪音也不好。让我们在应用程序中添加一个按钮来切换声音。首先声明一个名为`soundEnabled`的store属性，并将其初始化为`true`。还要为此属性创建一个`getter`。因此，`store.js`和`getters.js`开始看起来像下面这样：
+- en: '[PRE46]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Now we must provide a mechanism to toggle the sound. Let''s create a mutation
+    method for this and add an action that dispatches this mutation. Start by declaring
+    a mutation type called `TOGGLE_SOUND`:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们必须提供一个切换声音的机制。让我们创建一个用于此目的的mutation方法，并添加一个触发此mutation的action。首先声明一个名为`TOGGLE_SOUND`的mutation类型：
+- en: '[PRE47]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Now let''s open `mutations.js` and add the mutation method that toggles the
+    `soundEnabled` store property:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们打开`mutations.js`并添加一个切换`soundEnabled`存储属性的mutation方法：
+- en: '[PRE48]'
+  id: totrans-178
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'Now let''s add the action that dispatches this mutation:'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们添加触发这个mutation的动作：
+- en: '[PRE49]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'Okay then, now we have everything we need to create a toggle sound button!
+    Let''s do it in our `ControlsComponent`. Start by adding a necessary getter and
+    action to the map of methods:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，现在我们有了创建切换声音按钮所需的一切！让我们在`ControlsComponent`中完成。首先在方法映射中添加必要的getter和action：
+- en: '[PRE50]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Now we can add the button to our template. I suggest that it will be the icon
+    with the `glyphicon` class that will be aligned to the right.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以在模板中添加按钮。我建议它是一个带有`glyphicon`类的图标，将其对齐到右侧。
+- en: 'Let''s only show this icon when the application is `started` and `not paused`,
+    and only when the Pomodoro state *is* `working` so that we don''t mess up the
+    toggle sound button in a state where it is not supposed to have sound at all.
+    This means that our `v-show` directive on this element will look like the following:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们只在应用程序`启动`且`未暂停`时显示此图标，并且只在番茄钟状态*为*`工作`时显示，这样我们就不会在根本不应该有声音的状态下搞乱切换声音按钮。这意味着我们在这个元素上的`v-show`指令将如下所示：
+- en: '[PRE51]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Note that we are using the `isWorking` property here, which has not yet been
+    imported. Add it to the map of `methods`:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们在这里使用了尚未导入的`isWorking`属性。将其添加到方法映射中：
+- en: '[PRE52]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'Let''s also use the `glyphicon-volume-off` and `glyphicon-volume-on` classes
+    on this element. They will indicate calling for the action to toggle the sound''s
+    state. This means that the `glyphicon-volume-off` class should be applied when
+    the sound is *enabled* and the `glyphicon-volume-on` class should be applied when
+    the sound is *disabled*. Putting it in the code, our class directive should look
+    like the following:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们还在这个元素上使用`glyphicon-volume-off`和`glyphicon-volume-on`类。它们将指示调用切换声音状态的操作。这意味着当声音*启用*时应用`glyphicon-volume-off`类，当声音*禁用*时应用`glyphicon-volume-on`类。将其放入代码中，我们的类指令应该如下所示：
+- en: '[PRE53]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'Last but not least, we should call the `toggleSound` action when the button
+    is clicked. This means that we should also bind the `click` event listener to
+    this element, which will look like the following:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后但同样重要的是，当点击按钮时，我们应该调用`toggleSound`动作。这意味着我们还应该将`click`事件监听器绑定到这个元素，代码如下所示：
+- en: '[PRE54]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'So, the whole jade markup code for this button will be like the following:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，这个按钮的整个jade标记代码将如下所示：
+- en: '[PRE55]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'Let''s just add a bit of styling to this button so that it appears aligned
+    to the right:'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们给这个按钮添加一点样式，使它看起来与右侧对齐：
+- en: '[PRE56]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Open the page and start the Pomodoro application. Now you can see this nice
+    button on the top-right corner that will allow you to turn the sound off, as shown
+    in the following screenshot:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开页面并启动Pomodoro应用程序。现在你可以在右上角看到一个漂亮的按钮，它将允许你关闭声音，如下截图所示：
+- en: '![Creating a button to toggle the sound](../Images/image00300.jpeg)'
+  id: totrans-197
+  prefs: []
+  type: TYPE_IMG
+  zh: '![创建一个切换声音的按钮](../Images/image00300.jpeg)'
+- en: Now we can turn the sound off while working!
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以在工作时关闭声音！
+- en: 'If you click on this button, it will transform into another button, whose purpose
+    is to turn the sound on again, as shown in the following screenshot:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你点击这个按钮，它将变成另一个按钮，其目的是再次打开声音，如下截图所示：
+- en: '![Creating a button to toggle the sound](../Images/image00301.jpeg)'
+  id: totrans-200
+  prefs: []
+  type: TYPE_IMG
+  zh: '![创建一个切换声音的按钮](../Images/image00301.jpeg)'
+- en: And we can turn it on again!
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以再次打开它！
+- en: 'Now consider the following scenario: we start the application, turn off the
+    sound, pause the application, and resume the application. Our current logic suggests
+    that the sound is started each time the application is started. We will be in
+    an inconsistent state—the application has started, the sound is playing, but the
+    toggling sound button is suggesting to turn the sound on. That''s not right, is
+    it? But this has an easy fix—just add one more condition to the start mutation,
+    not only it should check if `isWorking` is `true`, but also that the sound is
+    enabled:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在考虑以下情景：我们启动应用程序，关闭声音，暂停应用程序，然后恢复应用程序。我们当前的逻辑表明每次启动应用程序时都会启动声音。我们将处于一个不一致的状态——应用程序已启动，声音正在播放，但切换声音按钮建议打开声音。这不对，对吧？但这有一个简单的解决办法——只需在启动变异中添加一个条件，不仅应该检查`isWorking`是否为`true`，还应该检查声音是否启用：
+- en: '[PRE57]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: Now we are fine. The code after all these modifications can be found in the
+    [chapter6/pomodoro3](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/pomodoro3)
+    folder.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们很好。所有这些修改后的代码可以在[chapter6/pomodoro3](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter6/pomodoro3)文件夹中找到。
+- en: Check the code, run the application, enjoy the sound, and do not forget to have
+    a break!
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查代码，运行应用程序，享受声音，并不要忘记休息！
+- en: Exercise
+  id: totrans-206
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习
+- en: It would be nice if during our Pomodoro intervals we could also enjoy some happy
+    nice music while looking at cats. Create a plugin that plays a chosen mp3 file
+    and use it on the Pomodoro intervals.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的Pomodoro间隔期间，如果我们还能享受一些愉快的音乐，看着猫会很好。创建一个播放选择的mp3文件的插件，并在Pomodoro间隔期间使用它。
+- en: Summary
+  id: totrans-208
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: 'While I was writing the last lines of code for this chapter and checking the
+    page, at one point I got stuck looking at this picture:'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我为本章编写最后几行代码并检查页面时，有一次我被这张图片吸引住了：
+- en: '![Summary](../Images/image00302.jpeg)'
+  id: totrans-210
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Summary](../Images/image00302.jpeg)'
+- en: 'A lot of cats looking at me and asking: will this chapter get to its end at
+    some point?'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很多猫盯着我问：这一章什么时候结束？
+- en: I even paused the application to have a better look at this picture (yes, when
+    you pause the Pomodoro application during resting time, the picture will pause
+    as well because the cache-buster timestamp is not being updated anymore). Doesn't
+    it seem like these cats are asking us to get some rest? Also, the amount of them
+    is pretty close to the number of things that we've learned in this chapter!
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我甚至暂停了应用程序，好好看了一下这张图片（是的，当你在休息时间暂停番茄钟应用程序时，图片也会暂停，因为缓存破坏时间戳不再更新）。这些猫似乎在问我们休息一下？而且它们的数量与我们在本章学到的东西的数量非常接近！
+- en: In this chapter, you learned how the plugins system work with Vue.js. We used
+    an existing `resource` plugin to attach the server-side behavior to our shopping
+    list application. Now we can create, delete, and update our shopping lists.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您学习了Vue.js插件系统的工作原理。我们使用现有的`resource`插件将服务器端行为附加到我们的购物清单应用程序上。现在我们可以创建、删除和更新我们的购物清单。
+- en: We have also created our own plugin! Our plugin is able to produce sound that
+    can help in concentrating during the working period. Not only have we created
+    it, but we have also used it in our Pomodoro application! Now we can concentrate
+    better while Pomodoro is working and toggle the sound at any time!
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还创建了自己的插件！我们的插件能够发出声音，有助于在工作期间集中注意力。我们不仅创建了它，还在我们的番茄钟应用程序中使用了它！现在在番茄钟工作时我们可以更好地集中注意力，并随时切换声音！
+- en: Now we have two really nice applications in our hands. Do you know what is better
+    than a nice application?
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们手头有两个非常好的应用程序。你知道什么比一个好的应用程序更好吗？
+- en: '*The only thing that is better than a nice application is a nicely tested application!*'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*唯一比一个好的应用程序更好的是一个经过良好测试的应用程序！*'
+- en: With that in mind, it's about time we tested our applications. In the next chapter,
+    we will check and apply some testing techniques. We will write unit tests using
+    Karma test runner and Jasmine as an assertion library. We will also write end-to-end
+    tests using Nightwatch. I love to test applications and I hope that you will love
+    it as well. Let's go!
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到这一点，是时候测试我们的应用程序了。在下一章中，我们将检查并应用一些测试技术。我们将使用Karma测试运行器和Jasmine作为断言库编写单元测试。我们还将使用Nightwatch编写端到端测试。我喜欢测试应用程序，希望你也会喜欢。让我们开始吧！

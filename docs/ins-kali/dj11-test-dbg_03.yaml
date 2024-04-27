@@ -1,0 +1,1535 @@
+- en: 'Chapter 3. Testing 1, 2, 3: Basic Unit Testing'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第3章。测试1, 2, 3：基本单元测试
+- en: 'In the previous chapter, we began learning about testing Django applications
+    by writing some doctests for the `Survey` model. In the process, we experienced
+    some of the advantages and disadvantages of doctests. When discussing some of
+    the disadvantages, unit tests were mentioned as an alternative test approach that
+    avoids some doctest pitfalls. In this chapter, we will start to learn about unit
+    tests in detail. Specifically, we will:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们开始通过为`Survey`模型编写一些doctests来学习测试Django应用程序。在这个过程中，我们体验了doctests的一些优点和缺点。在讨论一些缺点时，提到了单元测试作为避免一些doctest陷阱的替代测试方法。在本章中，我们将开始详细学习单元测试。具体来说，我们将：
+- en: Re-implement the `Survey` doctests as unit tests
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将`Survey`的doctests重新实现为单元测试
+- en: Assess how the equivalent unit test version compares to the doctests in terms
+    of ease of implementation and susceptibility to the doctest caveats discussed
+    in the previous chapter
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 评估等效的单元测试版本在实现的便利性和对上一章讨论的doctest注意事项的敏感性方面与doctests相比如何
+- en: Begin learning some of the additional capabilities of unit tests as we extend
+    the existing tests to cover additional functions
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在扩展现有测试以覆盖其他功能时，开始学习单元测试的一些附加功能
+- en: Unit tests for the Survey save override method
+  id: totrans-5
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '`Survey`保存覆盖方法的单元测试'
+- en: 'Recall in the previous chapter that we ultimately implemented four individual
+    tests of the `Survey` save override function:'
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回想在上一章中，我们最终实现了对`Survey`保存覆盖功能的四个单独测试：
+- en: A straightforward test of the added capability, which verifies that if `closes`
+    is not specified when a `Survey` is created, it is auto-set to a week after `opens`
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对添加的功能进行直接测试，验证如果在创建`Survey`时未指定`closes`，则自动设置为`opens`之后的一周
+- en: A test that verifies that this auto-set operation is not performed if `closes`
+    is explicitly specified during creation
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 验证如果在创建时明确指定了`closes`，则不会执行此自动设置操作的测试
+- en: A test that verifies that `closes` is only auto-set if its value is missing
+    during initial creation, not while saving an existing instance
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 验证只有在初始创建时其值缺失时，才会自动设置`closes`的测试
+- en: A test that verifies that the `save` override function does not introduce an
+    unexpected exception in the error case where neither `opens` nor `closes` is specified
+    during creation
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 验证`save`覆盖功能在创建时既未指定`opens`也未指定`closes`的错误情况下不会引入意外异常的测试
+- en: 'To implement these as unit tests instead of doctests, create a `TestCase` within
+    the `suvery/tests.py` file, replacing the sample `SimpleTest`. Within the new
+    `TestCase` class, define each individual test as a separate test method in that
+    `TestCase`, like so:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要将这些实现为单元测试而不是doctests，请在`suvery/tests.py`文件中创建一个`TestCase`，替换示例`SimpleTest`。在新的`TestCase`类中，将每个单独的测试定义为该`TestCase`中的单独测试方法，如下所示：
+- en: '[PRE0]'
+  id: totrans-12
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: This is more difficult to implement than the doctest version, isn't it? It is
+    not possible to use a direct cut-and-paste from a shell session, and there is
+    a fair amount of code overhead—code that does not appear anywhere in the shell
+    session—that needs to be added. We can still use cut-and-paste from our shell
+    session as a starting point, but we must edit the code after pasting it, in order
+    to turn the pasted code into a proper unit test. Though not difficult, this can
+    be tedious.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这比doctest版本更难实现，不是吗？无法直接从shell会话中剪切和粘贴，需要添加大量代码开销——在shell会话中没有出现的代码。我们仍然可以从shell会话中剪切和粘贴作为起点，但是我们必须在粘贴后编辑代码，以将粘贴的代码转换为适当的单元测试。虽然不难，但可能会很乏味。
+- en: 'Most of the extra work consists of choosing names for the individual test methods,
+    minor editing of cut-and-pasted code to refer to class variables such as `t` and
+    `sd` correctly, and creating the appropriate test assertions to verify the expected
+    result. The first of these requires the most brainpower (choosing good names can
+    be hard), the second is trivial, and the third is fairly mechanical. For example,
+    in a shell session where we had:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大部分额外工作包括选择各个测试方法的名称，对剪切和粘贴的代码进行微小编辑以正确引用类变量，如`t`和`sd`，以及创建适当的测试断言来验证预期结果。其中第一个需要最多的脑力（选择好的名称可能很难），第二个是微不足道的，第三个是相当机械的。例如，在我们的shell会话中：
+- en: '[PRE1]'
+  id: totrans-15
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'In the unit test, we instead have an `assertEqual`:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在单元测试中，我们有一个`assertEqual`：
+- en: '[PRE2]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Expected exceptions are similar, but use `assertRaises`. For example, where
+    in a shell session we had:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 预期的异常类似，但使用`assertRaises`。例如，在shell会话中，我们有：
+- en: '[PRE3]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'In the unit test, this is:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在单元测试中，这是：
+- en: '[PRE4]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Note we do not actually call the `create` routine in our unit test code, but
+    rather leave that up to the code within `assertRaises`. The first parameter passed
+    to `assertRaises` is the expected exception, followed by the callable expected
+    to raise the exception, followed by any parameters that need to be passed to the
+    callable when calling it.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们实际上没有在我们的单元测试代码中调用`create`例程，而是将其留给`assertRaises`内的代码。传递给`assertRaises`的第一个参数是预期的异常，后跟可预期引发异常的可调用对象，后跟在调用它时需要传递给可调用对象的任何参数。
+- en: Pros of the unit test version
+  id: totrans-23
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 单元测试版本的优点
+- en: 'What do we get from this additional work? Right off the bat, we get a little
+    more feedback from the test runner, when running at the highest verbosity level.
+    For the doctest version, the output of `manage.py test survey -v2` was simply:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从这项额外工作中我们得到了什么？当以最高详细级别运行时，我们从测试运行器中获得了更多反馈。对于doctest版本，`manage.py test survey
+    -v2`的输出只是：
+- en: '[PRE5]'
+  id: totrans-25
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'For the unit test version, we get individual results reported for each test
+    method:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在单元测试中，我们为每个测试方法报告单独的结果：
+- en: '[PRE6]'
+  id: totrans-27
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'If we take a little more effort and provide single-line docstrings for our
+    test methods, we can get even more descriptive results from the test runner. For
+    example, if we add docstrings like so:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们再付出一点努力，并为我们的测试方法提供单行文档字符串，我们甚至可以从测试运行器中获得更详细的结果。例如，如果我们这样添加文档字符串：
+- en: '[PRE7]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'The test runner output for this test will then be:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，此测试的测试运行器输出将是：
+- en: '[PRE8]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: This additional descriptive detail may not be that important when all tests
+    pass, but when they fail, it can be very helpful as a clue to what the test is
+    trying to accomplish.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种额外的描述性细节在所有测试通过时可能并不那么重要，但当测试失败时，它可能非常有助于作为测试试图实现的线索。
+- en: 'For example, let''s assume we have broken the `save` override method by neglecting
+    to add seven days to `opens`, so that if `closes` is not specified, it is auto-set
+    to the same value as `opens`. With the doctest version of the test, the failure
+    would be reported as:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，假设我们已经破坏了`save`覆盖方法，忽略了向`opens`添加七天，因此如果未指定`closes`，它将自动设置为与`opens`相同的值。使用测试的doctest版本，失败将被报告为：
+- en: '[PRE9]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'That doesn''t give much information on what has gone wrong, and you really
+    have to go read the full test code to see what is even being tested. The same
+    failure reported by the unit test is a bit more descriptive, as the `FAIL` header
+    includes the test docstring, so we immediately know the problem has something
+    to do with `closes` being auto-set:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这并没有提供有关出了什么问题的详细信息，您真的必须阅读完整的测试代码才能看到正在测试什么。与单元测试报告的相同失败更具描述性，因为`FAIL`标题包括测试文档字符串，因此我们立即知道问题与`closes`的自动设置有关：
+- en: '[PRE10]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'We can take this one step further and make the error message a bit friendlier
+    by specifying our own error message on the call to `assertEqual`:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以进一步迈出一步，通过在调用`assertEqual`时指定自己的错误消息，使错误消息更友好：
+- en: '[PRE11]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'The reported failure would then be:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后报告的失败将是：
+- en: '[PRE12]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: In this case, the custom error message may not be much more useful than the
+    default one, since what the `save` override is supposed to do here is quite simple.
+    However, such custom error messages can be valuable for more complicated test
+    assertions to help explain what is being tested, and the "why" behind the expected
+    result.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，自定义错误消息可能并不比默认消息更有用，因为这里`save`覆盖应该做的事情非常简单。然而，对于更复杂的测试断言，这样的自定义错误消息可能是有价值的，以帮助解释正在测试的内容以及预期结果背后的“为什么”。
+- en: 'Another benefit of unit tests is that they allow for more selective test execution
+    than doctests. On the `manage.py test` command line, one or more unit tests to
+    be executed can be identified by `TestCase` name. You can even specify that only
+    particular methods in a `TestCase` should be run. For example:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单元测试的另一个好处是，它们允许比doctests更有选择性地执行测试。在`manage.py test`命令行上，可以通过`TestCase`名称标识要执行的一个或多个单元测试。甚至可以指定只运行`TestCase`中的特定方法。例如：
+- en: '[PRE13]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Here we are indicating that we only want to run the `testClosesAutoset` test
+    method in the `SurveySaveTest` unit test found in the `survey` application. Being
+    able to run just a single method or a single test case is a very convenient time
+    saver when developing tests.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们指示只想在`survey`应用程序中找到的`SurveySaveTest`单元测试中运行`testClosesAutoset`测试方法。在开发测试时，能够仅运行单个方法或单个测试用例是非常方便的时间节省器。
+- en: Cons of the unit test version
+  id: totrans-45
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 单元测试版本的缺点
+- en: 'Has anything been lost by switching to unit tests? A bit. First, there is the
+    ease of implementation that has already been mentioned: unit tests require more
+    work to implement than doctests. Though generally not difficult work, it can be
+    tedious. It is also work where errors can be made, resulting in a need to debug
+    the test code. This increased implementation burden can serve to discourage writing
+    comprehensive tests.'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 切换到单元测试是否有所损失？有一点。首先，已经提到的实施便利性：单元测试需要比doctests更多的工作来实施。虽然通常不是困难的工作，但可能会很乏味。这也是可能出现错误的工作，导致需要调试测试代码。这种增加的实施负担可能会阻止编写全面的测试。
+- en: We've also lost the nice property of having tests right there with the code.
+    This was mentioned in the previous chapter as one negative effect of moving some
+    doctests out of docstrings and into the `__test__` dictionary in `tests.py`. The
+    effect is worse with unit tests since all unit tests are usually kept in files
+    separate from the code being tested. Thus there are usually no tests to be seen
+    right near the code, which again may discourage writing tests. With unit tests,
+    unless a methodology such as a test-driven development is employed, the "out of
+    sight, out of mind" effect may easily result in test-writing becoming an afterthought.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还失去了将测试与代码放在一起的好处。在上一章中提到，这是将一些doctests从文档字符串移出并放入`tests.py`中的`__test__`字典的一个负面影响。由于单元测试通常保存在与被测试的代码分开的文件中，因此通常看不到靠近代码的测试，这可能会阻止编写测试。使用单元测试时，除非采用测试驱动开发等方法，否则“视而不见”效应很容易导致编写测试成为事后想法。
+- en: Finally, we've lost the built-in documentation of the doctest version. This
+    is more than just the potential for automatically-generated documentation from
+    docstrings. Doctests are often more readable than unit tests, where extraneous
+    code that is just test overhead can obscure what the test is intending to test.
+    Note though, that using unit tests does not imply that you have to throw away
+    doctests; it is perfectly fine to use both kinds of tests in your application.
+    Each has their strengths, thus for many projects it is probably best to have a
+    good mixture of unit tests and doctests rather than relying on a single type for
+    all testing.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们失去了doctest版本的内置文档。这不仅仅是来自文档字符串的自动生成文档的潜力。Doctests通常比单元测试更易读，其中只是测试开销的多余代码可能会掩盖测试的意图。但请注意，使用单元测试并不意味着您必须放弃doctests；在应用程序中同时使用这两种测试是完全可以的。每种测试都有其优势，因此对于许多项目来说，最好是在所有测试中使用一种类型，而不是依赖单一类型。
+- en: Revisiting the doctest caveats
+  id: totrans-49
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 重新审视doctest的注意事项
+- en: In the previous chapter, we developed a list of things to watch out for when
+    writing doctests. When discussing these, unit tests were sometimes mentioned as
+    an alternative that did not suffer from the same problems. But are unit tests
+    really immune to these problems, or do they just make the problems easier to avoid
+    or address? In this section, we revisit the doctest caveats and consider how susceptible
+    unit tests are to the same or similar issues.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们列出了编写文档测试时需要注意的事项。在讨论这些事项时，有时会提到单元测试作为一个不会遇到相同问题的替代方法。但是单元测试是否真的免疫于这些问题，还是只是使问题更容易避免或解决？在本节中，我们重新审视文档测试的警告，并考虑单元测试对相同或类似问题的敏感程度。
+- en: Environmental dependence
+  id: totrans-51
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 环境依赖
+- en: 'The first doctest caveat discussed was environmental dependence: relying on
+    the implementation details of code other than the code actually being tested.
+    Though this type of dependence can happen with unit tests, it is less likely to
+    occur. This is because a very common way for this type of dependence to creep
+    into doctests is due to reliance on the printed representation of objects, as
+    they are displayed in a Python shell session. Unit tests are far removed from
+    the Python shell. It requires some coding effort to get an object''s printed representation
+    in a unit test, thus it is rare for this form of environmental dependence to creep
+    into a unit test.'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 讨论的第一个文档测试警告是环境依赖：依赖于实际被测试的代码以外的代码的实现细节。尽管单元测试也可能出现这种依赖，但发生的可能性较小。这是因为这种依赖的非常常见的方式是依赖于对象的打印表示，因为它们在Python
+    shell会话中显示。单元测试与Python shell相去甚远。在单元测试中需要一些编码工作才能获得对象的打印表示，因此这种形式的环境依赖很少会出现在单元测试中。
+- en: One common form of environmental dependence mentioned in [Chapter 2](ch02.html
+    "Chapter 2. Does This Code Work? Doctests in Depth") that also afflicts unit tests
+    involves file pathnames. Unit tests, just as doctests, need to take care that
+    differences in file pathname conventions across operating systems do not cause
+    bogus test failures when a test is run on an operating system different from the
+    one where it was originally written. Thus, though unit tests are less prone to
+    the problem of environmental dependence, they are not entirely immune.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[第2章](ch02.html "第2章。深入了解文档测试")中提到的一种常见的环境依赖形式也影响到了单元测试，涉及文件路径名。单元测试和文档测试一样，需要注意跨操作系统的文件路径名约定差异，以防在不同于最初编写测试的操作系统上运行测试时导致虚假的测试失败。因此，尽管单元测试不太容易出现环境依赖问题，但它们并非完全免疫。'
+- en: Database dependence
+  id: totrans-54
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 数据库依赖
+- en: Database dependence is a specific form of environmental dependence that is particularly
+    common for Django applications to encounter. In the doctests, we saw that the
+    initial implementation of the tests was dependent on the specifics of the message
+    that accompanied an `IntegrityError`. In order to make the doctests pass on multiple
+    different databases, we needed to modify the initial tests to ignore the details
+    of this message.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据库依赖是Django应用程序特别常见的一种环境依赖形式。在文档测试中，我们看到测试的初始实现依赖于伴随`IntegrityError`的消息的具体内容。为了使文档测试在多个不同的数据库上通过，我们需要修改初始测试以忽略此消息的细节。
+- en: 'We do not have this same problem with the unit test version. The `assertRaises`
+    used to check for an expected exception already does not consider the exception
+    message detail. For example:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在单元测试版本中没有这个问题。用于检查预期异常的`assertRaises`已经不考虑异常消息的细节。例如：
+- en: '[PRE14]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: There are no message specifics included there, so we don't need to do anything
+    to ignore differences in messages from different database implementations.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那里没有包含具体的消息，所以我们不需要做任何事情来忽略来自不同数据库实现的消息差异。
+- en: 'In addition, unit tests make it easier to deal with even more wide-reaching
+    differences than message details. It was noted in the previous chapter that for
+    some configurations of MySQL, ignoring the message detail is not enough to allow
+    all the tests to pass. The test that has a problem here is the one that ensures
+    `closes` is only auto-set during initial model creation. The unit test version
+    of this test is:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，单元测试使处理比消息细节更广泛的差异变得更容易。在上一章中指出，对于MySQL的某些配置，忽略消息细节不足以使所有测试通过。在这里出现问题的测试是确保`closes`仅在初始模型创建期间自动设置的测试。这个测试的单元测试版本是：
+- en: '[PRE15]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'This test fails if it is run on a MySQL server that is running in non-strict
+    mode. In this mode, MySQL does not raise an `IntegrityError` on an attempt to
+    update a row to contain a `NULL` value in a column declared to be `NOT NULL`.
+    Rather, the value is set to an implicit default value, and a warning is issued.
+    Thus, we see a test error when we run this test on a MySQL server configured to
+    run in non-strict mode:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果在运行在非严格模式下的MySQL服务器上运行此测试，则此测试将失败。在此模式下，MySQL在尝试将行更新为包含在声明为“NOT NULL”的列中包含“NULL”值时不会引发`IntegrityError`。相反，该值将设置为隐式默认值，并发出警告。因此，当我们在配置为在非严格模式下运行的MySQL服务器上运行此测试时，我们会看到测试错误：
+- en: '[PRE16]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Here we see that the warning issued by MySQL causes a simple `Exception` to
+    be raised, not an `IntegrityError`, so the test reports an error.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们看到MySQL发出的警告导致引发了一个简单的`Exception`，而不是`IntegrityError`，因此测试报告了一个错误。
+- en: 'There is also an additional wrinkle to consider here: This behavior of raising
+    an `Exception` when MySQL issues a warning is dependent on the Django `DEBUG`
+    setting. MySQL warnings are turned into raised `Exceptions` only when `DEBUG`
+    is `True` (as it was for the previously run test). If we set `DEBUG` to `False`
+    in `settings.py`, we see yet a different form of test failure:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里还有一个额外的问题需要考虑：当MySQL发出警告时引发`Exception`的行为取决于Django的`DEBUG`设置。只有在`DEBUG`为`True`时（就像先前运行的测试一样），MySQL警告才会转换为引发的`Exception`。如果我们在`settings.py`中将`DEBUG`设置为`False`，我们会看到另一种形式的测试失败：
+- en: '[PRE17]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: In this case, MySQL allowed the save, and since `DEBUG` was not turned on Django
+    did not transform the warning issued by MySQL into an `Exception`, so the save
+    simply worked.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，MySQL允许保存，由于Django没有打开`DEBUG`，因此没有将MySQL发出的警告转换为`Exception`，因此保存工作正常进行。
+- en: At this point, we may seriously question whether it is even worth the effort
+    to get this test to run properly in all these different situations, given the
+    wildly divergent observed behaviors. Perhaps we should just require that if the
+    code is run on MySQL, the server must be configured to run in strict mode. Then
+    the test would be fine as it is, since the previous failures would both signal
+    a server configuration problem. However, let's assume we do need to support running
+    on MySQL, yet we cannot impose any particular configuration requirement on MySQL,
+    and we still need to verify whether our code is behaving properly for this test.
+    How do we do that?
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上，我们可能会认真质疑是否值得在所有这些不同的情况下让这个测试正常运行，考虑到观察到的行为差异很大。也许我们应该要求，如果代码在MySQL上运行，服务器必须配置为严格模式。然后测试就会很好，因为以前的失败都会发出服务器配置问题的信号。但是，让我们假设我们确实需要支持在MySQL上运行，但我们不能对MySQL施加任何特定的配置要求，我们仍然需要验证我们的代码是否对这个测试行为正常。我们该怎么做呢？
+- en: Note what we are attempting to verify in this test is that our code does not
+    auto-set `closes` to some value during save if it has been reset to `None` after
+    initial creation. At first, it seemed that this was easily done by just checking
+    for an `IntegrityError` on an attempted save. However, we've found a database
+    configuration where we don't get an `IntegrityError`. Also, depending on the `DEBUG`
+    setting, we may not get any error reported at all, even if our code behaves properly
+    and leaves `closes` set to `None` during an attempted save. Can we write the test
+    so that it reports the proper result—that is, whether our code behaves properly—in
+    all these situations?
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们试图在这个测试中验证的是，如果在初始创建后将`closes`重置为`None`，我们的代码不会自动将其设置为某个值。起初，似乎只需检查尝试保存时是否出现`IntegrityError`就可以轻松完成这个任务。然而，我们发现了一个数据库配置，我们在那里没有得到`IntegrityError`。此外，根据`DEBUG`设置，即使我们的代码行为正确并在尝试保存期间将`closes`保持为`None`，我们也可能不会报告任何错误。我们能写一个测试来报告正确的结果吗？也就是说，我们的代码在所有这些情况下是否表现正常？
+- en: 'The answer is yes, so long as we can determine in our test code what database
+    is in use, how it is configured, and what the `DEBUG` setting is. Then all we
+    need to do is change the expected results based on the environment the test is
+    running in. In fact, we can test for all these things with a bit of work:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 答案是肯定的，只要我们能在我们的测试代码中确定正在使用的数据库，它是如何配置的，以及`DEBUG`设置是什么。然后，我们只需要根据测试运行的环境改变预期的结果。实际上，我们可以通过一些工作测试所有这些事情：
+- en: '[PRE18]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: The test code starts by assuming that we are running on a database that is operating
+    in strict mode, and set the local variable `strict` to `True`. We also assume
+    `DEBUG` is `False` and set a local variable to reflect that. Then, if the database
+    in use is MySQL (determined by checking the value of `settings.DATABASE_ENGINE`),
+    we need to perform some further checking to see how it is configured. Consulting
+    the MySQL documentation shows that the way to do this is to `SELECT` the session's
+    `sql_mode` variable. If the returned value contains the string `STRICT`, then
+    MySQL is operating in strict mode, otherwise it is not. We issue this query and
+    obtain the result using Django's support for sending raw SQL to the database.
+    If we determine that MySQL is not configured to run in strict mode, we update
+    our local variable `strict` to be `False`.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试代码首先假设我们正在运行在严格模式下操作的数据库，并将本地变量`strict`设置为`True`。我们还假设`DEBUG`是`False`并设置一个本地变量来反映这一点。然后，如果正在使用的数据库是MySQL（通过检查`settings.DATABASE_ENGINE`的值确定），我们需要进行进一步的检查以查看它是如何配置的。查阅MySQL文档显示，这样做的方法是`SELECT`会话的`sql_mode`变量。如果返回的值包含字符串`STRICT`，那么MySQL正在严格模式下运行，否则不是。我们发出这个查询并使用Django支持将原始SQL发送到数据库来获取结果。如果我们确定MySQL没有配置为运行在严格模式下，我们将更新我们的本地变量`strict`为`False`。
+- en: If we get to the point where we set strict to `False`, that is also when the
+    `DEBUG` value in settings becomes important, since it is in this case that MySQL
+    will issue a warning instead of raising an `IntegrityError` for the case we are
+    testing here. If `DEBUG` is `True` in the settings file, then warnings from MySQL
+    will be turned into `Exceptions` by Django's MySQL backend. This is done by the
+    backend using Python's `warnings` module. When the backend is loaded, if `DEBUG`
+    is `True`, then a `warnings.filterwarnings` call is issued to force all database
+    warnings to be turned into `Exceptions`.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们到达将`strict`设置为`False`的地步，那也是`settings`中的`DEBUG`值变得重要的时候，因为在这种情况下，MySQL将发出警告而不是为我们在这里测试的情况引发`IntegrityError`。如果`settings`文件中的`DEBUG`是`True`，那么MySQL的警告将被Django的MySQL后端转换为`Exceptions`。这是通过后端使用Python的`warnings`模块完成的。当后端加载时，如果`DEBUG`是`True`，那么将发出`warnings.filterwarnings`调用，以强制所有数据库警告转换为`Exceptions`。
+- en: Unfortunately, at some point after the database backend is loaded and before
+    our test code runs, the test runner will change the in-memory settings so that
+    `DEBUG` is set to `False`. This is done so that the behavior of test code matches
+    as closely as possible what will happen in production. However, it means that
+    we cannot just test the value of `settings.DEBUG` during the test to see if `DEBUG`
+    was `True` when the database backend was loaded. Rather, we have to re-load the
+    settings module and check the value in the newly loaded version. We do this using
+    the `import_module` function of `django.utils.importlib` (this is a function from
+    Python 2.7 that was backported to be used by Django 1.1).
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，在数据库后端加载后，测试代码运行之前的某个时刻，测试运行程序将更改内存设置，以便将`DEBUG`设置为`False`。这样做是为了使测试代码的行为尽可能接近在生产中发生的情况。但是，这意味着我们不能仅仅在测试期间测试`settings.DEBUG`的值，以查看在加载数据库后端时`DEBUG`是否为`True`。相反，我们必须重新加载设置模块并检查新加载版本中的值。我们使用`django.utils.importlib`的`import_module`函数来实现这一点（这是Python
+    2.7的一个函数，已经被回溯使用Django 1.1）。
+- en: Finally, we know what to look for when we run our test code. If we have determined
+    that we are running a database operating in strict mode, we assert that attempting
+    to save our model instance with `closes` set to `None` should raise an `IntegrityError`.
+    Else, if we are running in non-strict mode, but `DEBUG` is `True` in the settings
+    file, then the attempted save should result in an `Exception` being raised. Otherwise
+    the save should work, and we test the correct behavior of our code by ensuring
+    that `closes` is still set to `None` even after the model instance has been saved.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们知道在运行我们的测试代码时要寻找什么。如果我们已经确定我们正在运行严格模式的数据库，我们断言尝试使用`closes`设置为`None`保存我们的模型实例应该引发`IntegrityError`。否则，如果我们在非严格模式下运行，但在设置文件中`DEBUG`为`True`，那么尝试保存应该导致引发`Exception`。否则保存应该成功，并且我们通过确保即使在模型实例保存后`closes`仍然设置为`None`来测试我们代码的正确行为。
+- en: All of that may seem like rather a lot of trouble to go through for a pretty
+    minor test, but it illustrates how unit tests can be written to accommodate significant
+    differences in expected behavior in different environments. Doing the same for
+    the doctest version is not so straightforward. Thus, while unit tests clearly
+    do not eliminate the problem of dealing with database dependence in the tests,
+    they make it easier to write tests that account for such differences.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些可能看起来是为了一个相当次要的测试而经历的相当大麻烦，但它说明了如何编写单元测试以适应不同环境中预期行为的显着差异。对于doctest版本来说，做同样的事情并不那么简单。因此，虽然单元测试显然不能消除在测试中处理数据库依赖的问题，但它们使得编写能够解决这些差异的测试变得更容易。
+- en: Test interdependence
+  id: totrans-76
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 测试相互依赖
+- en: The next doctest caveat encountered in the last chapter was test interdependence.
+    When the doctests were run on PostgreSQL, an error was encountered in the test
+    following the first one that intentionally triggered a database error, since that
+    error caused the database connection to enter a state where it would accept no
+    further commands, except ones that terminated the transaction. The fix for that
+    was to remember to "clean up" after the intentionally triggered error by including
+    a transaction rollback after any test step that causes such an error.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上一章遇到的下一个doctest警告是测试相互依赖。当在PostgreSQL上运行doctests时，在故意触发数据库错误的第一个测试之后遇到了一个错误，因为该错误导致数据库连接进入一个状态，它不会接受除终止事务之外的任何进一步命令。解决这个问题的方法是记住在故意触发错误后“清理”，在导致这种错误的任何测试步骤之后包括一个事务回滚。
+- en: Django unit tests do not suffer from this problem. The Django test case class,
+    `django.test.TestCase`, ensures that the database is reset to a clean state before
+    each test method is called. Thus, even though the `testClosesReset` method ends
+    by attempting a model save that triggers an `IntegrityError`, no error is seen
+    by the next test method that runs, because the database connection is reset in
+    the interim by the `django.test.TestCase` code. It is not just this error situation
+    that is cleaned up, either. Any database rows that are added, deleted, or modified
+    by a test case method are reset to their original states before the next method
+    is run. (Note that on most databases, the test runner can use a transaction rollback
+    call to accomplish this very efficiently.) Thus Django unit test methods are fully
+    isolated from any database changes that may have been performed by tests that
+    ran before them.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Django单元测试不会受到这个问题的影响。Django测试用例类`django.test.TestCase`确保在调用每个测试方法之前将数据库重置为干净状态。因此，即使`testClosesReset`方法以尝试触发`IntegrityError`的模型保存结束，下一个运行的测试方法也不会看到任何错误，因为在此期间，数据库连接被`django.test.TestCase`代码重置。不仅清理了这种错误情况，任何被测试用例方法添加、删除或修改的数据库行在下一个方法运行之前都会被重置为它们的原始状态。（请注意，在大多数数据库上，测试运行程序可以使用事务回滚调用来非常有效地完成这个任务。）因此，Django单元测试方法完全与之前运行的测试可能执行的任何数据库更改隔离开来。
+- en: Unicode
+  id: totrans-79
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Unicode
+- en: The final doctest caveat discussed in the previous chapter concerned using Unicode
+    literals within doctests. These were observed to not work properly, due to underlying
+    open issues in Python related to Unicode docstrings and Unicode literals within
+    docstrings.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上一章讨论的最后一个doctest警告涉及在doctests中使用Unicode文字。由于Python中与Unicode docstrings和docstrings中的Unicode文字相关的基础问题，这些被观察到无法正常工作。
+- en: 'Unit tests do not have this problem. A straightforward unit test for the behavior
+    of the `Survey` model `__unicode__` method works:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单元测试没有这个问题。对`Survey`模型`__unicode__`方法行为的直接单元测试可以工作。
+- en: '[PRE19]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Note that it is necessary to add the encoding declaration to the top of `survey/tests.py`,
+    just as we did in the previous chapter for `survey/models.py`, but it is not necessary
+    to do any manual decoding of bytestring literals to construct Unicode objects
+    as needed to be done in the doctest version. We just need to set our variables
+    as we normally would, create the `Survey` instance, and assert that the result
+    of calling `unicode` on that instance produces the string we expect. Thus testing
+    with non-ASCII data is much more straightforward when using unit tests than it
+    is with doctests.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，必须像我们在上一章中为`survey/models.py`做的那样，在`survey/tests.py`的顶部添加编码声明，但不需要对字节字符串文字进行任何手动解码以构造所需的Unicode对象，这在doctest版本中是必需的。我们只需要像通常一样设置我们的变量，创建`Survey`实例，并断言调用该实例的`unicode`方法的结果是否产生我们期望的字符串。因此，使用单元测试进行非ASCII数据的测试比使用doctests要简单得多。
+- en: Providing data for unit tests
+  id: totrans-84
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为单元测试提供数据
+- en: Besides not suffering from some of the disadvantages of doctests, unit tests
+    provide some additional useful features for Django applications. One of these
+    features is the ability to load the database with test data prior to the test
+    run. There are a few different ways this can be done; each is discussed in detail
+    in the following sections.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了不受doctests一些缺点的影响外，单元测试为Django应用程序提供了一些额外的有用功能。其中之一是在测试运行之前加载测试数据到数据库中。有几种不同的方法可以做到这一点；每种方法在以下各节中都有详细讨论。
+- en: Providing data in test fixtures
+  id: totrans-86
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在测试装置中提供数据
+- en: The first way to provide test data for unit tests is to load them from files,
+    called fixtures. We will cover this method by first developing an example test
+    that can benefit from pre-loaded test data, then showing how to create a fixture
+    file, and finally describing how to ensure that the fixture file is loaded as
+    part of the test.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为单元测试提供测试数据的第一种方法是从文件中加载它们，称为固定装置。我们将首先通过开发一个可以从预加载的测试数据中受益的示例测试来介绍这种方法，然后展示如何创建一个固定装置文件，最后描述如何确保固定装置文件作为测试的一部分被加载。
+- en: Example test that needs test data
+  id: totrans-88
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 需要测试数据的示例测试
+- en: Before jumping into the details of how to provide a test with pre-loaded data,
+    it would help to have an example of a test that could use this feature. So far
+    our simple tests have gotten by pretty easily by just creating the data they need
+    as they go along. However, as we begin to test more advanced functions, we quickly
+    run into cases were it would become burdensome for the test itself to have to
+    create all of the data needed for a good test.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入讨论如何为测试提供预加载数据的细节之前，有一个可以使用这个功能的测试的例子将会有所帮助。到目前为止，我们的简单测试通过在进行时创建它们所需的数据来轻松进行。然而，当我们开始测试更高级的功能时，很快就会遇到情况，测试本身需要为一个良好的测试创建所有需要的数据将变得繁琐。
+- en: 'For example, consider the `Question` model:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，考虑`Question`模型：
+- en: '[PRE20]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: (Note that we have added a `__unicode__` method to this model. This will come
+    in handy later in the chapter when we begin to use the admin interface to create
+    some survey application data.)
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: （请注意，我们已经为这个模型添加了一个`__unicode__`方法。当我们开始使用管理界面创建一些调查应用程序数据时，这将会很方便。）
+- en: 'Recall that the allowed answers for a given `Question` instance are stored
+    in a separate model, `Answer`, which is linked to `Question` using a `ForeignKey`:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回想一下，给定`Question`实例的允许答案存储在一个单独的模型`Answer`中，它使用`ForeignKey`与`Question`关联：
+- en: '[PRE21]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: This `Answer` model also tracks how many times each answer has been chosen,
+    in its `votes` field. (We have not added a `__unicode__` method to this model
+    yet, since given the way we will configure admin later in the chapter, it is not
+    yet needed.)
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个`Answer`模型还跟踪了每个答案被选择的次数，在它的`votes`字段中。（我们还没有为这个模型添加`__unicode__`方法，因为根据我们稍后在本章中将如何配置管理界面，它还不是必需的。）
+- en: Now, when analyzing survey results, one of the things we will want to know about
+    a given `Question` is which of its `Answers` was chosen most often. That is, one
+    of the functions that a `Question` model will need to support is one which returns
+    the "winning answer" for that `Question`. If we think about this a bit, we realize
+    there may not be a single winning answer. There could be a tie with multiple answers
+    getting the same number of votes. So, this winning answer method should be flexible
+    enough to return more than one answer. Similarly, if there were no responses to
+    the question, it would be better to return no winning answers than the whole set
+    of allowed answers, none of which were ever chosen. Since this method (let's call
+    it `winning_answers`) may return zero, one, or more results, it's probably best
+    for consistency's sake for it to always return something like a list.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在分析调查结果时，我们想要了解一个给定的`Question`的`Answers`中哪个被选择得最多。也就是说，`Question`模型需要支持的一个功能是返回该`Question`的“获胜答案”。如果我们仔细考虑一下，我们会意识到可能没有一个单一的获胜答案。可能会有多个答案获得相同数量的票数而并列。因此，这个获胜答案的方法应该足够灵活，可以返回多个答案。同样，如果没有人回答这个问题，最好返回没有获胜答案，而不是整套允许的答案，其中没有一个被选择。由于这个方法（让我们称之为`winning_answers`）可能返回零个、一个或多个结果，为了保持一致性，最好总是返回类似列表的东西。
+- en: 'Before even starting to implement this function, then, we have a sense of the
+    different situations it will need to handle, and what sort of test data will be
+    useful to have in place when developing the function itself and tests for it.
+    A good test of this routine will require at least three different questions, each
+    with a set of answers:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 甚至在开始实现这个函数之前，我们就已经对它需要处理的不同情况有了一定的了解，以及在开发函数本身和对其进行测试时需要放置哪种类型的测试数据。这个例程的一个很好的测试将需要至少三个不同的问题，每个问题都有一组答案：
+- en: One question that has a clear winner among the answers, that is one answer with
+    more votes than all of the others, so that `winning_answers` returns a single
+    answer
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个问题的答案中有一个明显的获胜者，也就是说一个答案的票数比其他所有答案都多，这样`winning_answers`返回一个单一的答案
+- en: One question that has a tie among the answers, so that `winning_answers` returns
+    multiple answers
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个问题的答案中有平局，所以`winning_answers`返回多个答案
+- en: One question that gets no responses at all, so that `winning_answers` returns
+    no answers
+  id: totrans-100
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个问题根本没有得到任何回答，因此`winning_answers`不返回任何答案
+- en: In addition, we should test with a `Question` that has no answers linked to
+    it. This is an edge case, certainly, but we should ensure that the `winning_answers`
+    function operates properly even when it seems that the data hasn't been fully
+    set up for analysis of which answer was most popular. So, really there should
+    be four questions in the test data, three with a set of answers and one with no
+    answers.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们应该测试一个没有与之关联的答案的`Question`。这显然是一个边缘情况，但我们应该确保`winning_answers`函数在看起来数据还没有完全准备好分析哪个答案最受欢迎时也能正常运行。因此，实际上测试数据中应该有四个问题，其中三个有一组答案，一个没有答案。
+- en: Using the admin application to create test data
+  id: totrans-102
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用管理应用程序创建测试数据
+- en: 'Creating four questions, three with several answers, in a shell session or
+    even a program is pretty tedious, so let''s use the Django admin application instead.
+    Back in the first chapter we included `django.contrib.admin` in `INSTALLED_APPS`,
+    so it is already loaded. Also, when we ran `manage.py syncdb`, the tables needed
+    for admin were created. However, we still need to un-comment the admin-related
+    lines in our `urls.py` file. When we do that `urls.py` should look like this:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在一个shell会话或者甚至一个程序中创建四个问题，其中三个有几个答案，是相当乏味的，所以让我们使用Django管理应用程序来代替。在第一章中，我们包含了`django.contrib.admin`在`INSTALLED_APPS`中，所以它已经加载了。此外，当我们运行`manage.py
+    syncdb`时，为管理所需的表已经创建。然而，我们仍然需要取消注释`urls.py`文件中与管理相关的行。当我们这样做时，`urls.py`应该看起来像这样：
+- en: '[PRE22]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Finally, we need to provide some admin definitions for our survey application
+    models, and register them with the admin application so that we can edit our models
+    in the admin. Thus, we need to create a `survey/admin.py` file that looks something
+    like this:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们需要为我们的调查应用程序模型提供一些管理定义，并将它们注册到管理应用程序中，以便我们可以在管理中编辑我们的模型。因此，我们需要创建一个类似于这样的`survey/admin.py`文件：
+- en: '[PRE23]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Here we have mostly used the admin defaults for everything, except that we have
+    defined and specified some admin inline classes to make it easier to edit multiple
+    things on a single page. The way we have set up the inlines here allows us to
+    edit `Questions` on the same page as the `Survey` they belong to, and similarly
+    edit `Answers` on the same page as the `Questions` they are associated with. We've
+    also specified that we want four extra empty `Questions` when they appear inline.
+    The default for this value is three, but we know we want to set up four questions
+    and we might as well set things up so we can add all four at one time.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们大部分使用了管理默认值，除了我们定义和指定了一些管理内联类，以便更容易在单个页面上编辑多个内容。我们在这里设置内联的方式允许我们在`Survey`所属的同一页上编辑`Questions`，并在与其相关联的`Answers`的同一页上编辑`Answers`。我们还指定了当它们内联出现时，我们希望有四个额外的空`Questions`。这个值的默认值是三，但我们知道我们想要设置四个问题，我们也可能设置一次性添加所有四个问题。
+- en: 'Now, we can start the development server by running `python manage.py runserver`
+    in a command prompt, and access the admin application by navigating to `http://localhost:8000/admin/`
+    from a browser on the same machine. After logging in as the superuser we created
+    back in the first chapter, we''ll be shown the admin main page. From there, we
+    can click on the link to add a `Survey`. The **Add survey** page will let us create
+    a survey with our four `Questions`:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以通过在命令提示符中运行`python manage.py runserver`来启动开发服务器，并通过在同一台机器上的浏览器中导航到`http://localhost:8000/admin/`来访问管理应用程序。登录为我们在第一章创建的超级用户后，我们将会看到管理主页面。从那里，我们可以点击链接添加一个`Survey`。**添加调查**页面将允许我们创建一个包含四个`Questions`的调查：
+- en: '![Using the admin application to create test data](img/7566_03_01.jpg)'
+  id: totrans-109
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用管理应用程序创建测试数据](img/7566_03_01.jpg)'
+- en: 'Here we''ve assigned our `Question` instances `question` values that are not
+    so much questions as indications of what we are going to use each one to test.
+    Notice this page also reflects a slight change made to the `Survey` model: `blank=True`
+    has been added to the `closes` field specification. Without this change, admin
+    would require a value to be specified here for `closes`. With this change, the
+    admin application allows the field to be left blank, so that the automatic assignment
+    done by the save override method can be used.'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们为我们的`Question`实例分配了`question`值，这些值不是问题，而是我们将用来测试每个问题的指示。请注意，此页面还反映了对`Survey`模型所做的轻微更改：在`closes`字段规范中添加了`blank=True`。没有这个改变，管理将要求在这里为`closes`指定一个值。有了这个改变，管理应用程序允许字段留空，以便可以使用保存覆盖方法自动分配的值。
+- en: 'Once we have saved this survey, we can navigate to the change page for the
+    first question, **Clear Winner**, and add some answers:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们保存了这份调查，我们可以导航到第一个问题的更改页面，**明确的赢家**，并添加一些答案：
+- en: '![Using the admin application to create test data](img/7566_03_02.jpg)'
+  id: totrans-112
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用管理应用程序创建测试数据](img/7566_03_02.jpg)'
+- en: 'Thus, we set up the **Clear Winner** question to have one answer (**Max Votes**)
+    that has more votes than all of the other answers. Similarly, we can set up the
+    **2-Way Tie** question to have two answers that have the same number of votes:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们设置了**明确的赢家**问题有一个答案（**最大票数**）比其他所有答案都多。同样，我们可以设置**2-Way Tie**问题有两个答案获得相同数量的票数：
+- en: '![Using the admin application to create test data](img/7566_03_03.jpg)'
+  id: totrans-114
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用管理应用程序创建测试数据](img/7566_03_03.jpg)'
+- en: 'And finally, we set up the answers for **No Responses** so that we can test
+    the situation where none of the answers to a `Question` have received any votes:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们设置了**无回应**的答案，这样我们就可以测试没有任何答案收到任何投票的情况：
+- en: '![Using the admin application to create test data](img/7566_03_04.jpg)'
+  id: totrans-116
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用管理应用程序创建测试数据](img/7566_03_04.jpg)'
+- en: We do not need to do anything further with the **No Answers** question since
+    that one is going to be used to test the case where the answer set for the question
+    is empty, as it is when it is first created.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不需要进一步处理**无回应**问题，因为这个问题将用于测试问题的答案集为空的情况，就像它刚创建时一样。
+- en: Writing the function itself
+  id: totrans-118
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 编写函数本身
+- en: 'Now that we have our database set up with test data, we can experiment in the
+    shell with the best way to implement the `winning_answers` function. As a result,
+    we might come up with something like:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的数据库已经设置了测试数据，我们可以在shell中尝试实现`winning_answers`函数的最佳方法。因此，我们可能会得出类似以下的结果：
+- en: '[PRE24]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'The method starts by initializing a local variable `rv` (return value) to an
+    empty list. Then, it uses the aggregation `Max` function to retrieve the maximum
+    value for `votes` that exists in the set of `Answer` instances associated with
+    this `Question` instance. That one line of code does several things in order to
+    come up with the answer, so it may bear some more explanation. To see how it works,
+    take a look at what each piece in turn returns in a shell session:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该方法首先通过将本地变量`rv`（返回值）初始化为空列表。然后，它使用聚合`Max`函数来检索与此`Question`实例关联的`Answer`实例集中存在的`votes`的最大值。这一行代码在几个方面做了一些事情，为了得出答案，可能需要更多的解释。要了解它是如何工作的，请在shell会话中查看每个部分依次返回的内容：
+- en: '[PRE25]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'Here we see that applying the aggregate function `Max` to the `votes` field
+    of the `answer_set` associated with a given `Question` returns a dictionary containing
+    a single key-value pair. We''re only interested in the value, so we retrieve just
+    the values from the dictionary using `.values()`:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们看到将聚合函数`Max`应用于给定`Question`关联的`answer_set`的`votes`字段会返回一个包含单个键值对的字典。我们只对值感兴趣，因此我们使用`.values()`从字典中检索值。
+- en: '[PRE26]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'However, `values()` returns a list and we want the single item in the list,
+    so we retrieve it by requesting the item at index zero in the list:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，`values()` 返回一个列表，我们想要列表中的单个项目，因此我们通过请求列表中索引为零的项目来检索它：
+- en: '[PRE27]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Next the code tests for whether `max_votes` exists and if it is greater than
+    zero (at least one answer was chosen at least once). If so, `rv` is reset to be
+    the set of answers filtered down to only those that have that maximum number of
+    votes.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，代码测试 `max_votes` 是否存在，以及它是否大于零（至少有一个答案至少被选择了一次）。如果是，`rv` 将被重置为答案集，只包含那些获得最大投票数的答案。
+- en: 'But when would `max_votes` not exist, since it was just set in the previous
+    line? This can happen in the edge case where there are no answers linked to a
+    question. In that case, the aggregate `Max` function is going to return `None`
+    for the maximum votes value, not zero:'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，`max_votes` 何时不存在呢，因为它刚刚在上一行中设置了？这可能发生在没有答案链接到问题的边缘情况中。在这种情况下，聚合 `Max` 函数将返回最大投票值的
+    `None`，而不是零：
+- en: '[PRE28]'
+  id: totrans-129
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: Thus in this edge case, `max_votes` may be set to `None`, so it's best to test
+    for that and avoid trying to compare `None` to `0`. While that comparison will
+    actually work and return what seems like a sensible answer (`None` is not greater
+    than `0`) in Python 2.x, the attempted comparison will return a `TypeError` beginning
+    with Python 3.0\. It's wise to avoid such comparisons now so as to limit problems
+    if and when the code needs to be ported to run under Python 3.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在这种边缘情况下，`max_votes` 可能被设置为 `None`，所以最好测试一下，避免尝试将 `None` 与 `0` 进行比较。虽然在 Python
+    2.x 中，这种比较实际上可以工作并返回一个看似合理的答案（`None` 不大于 `0`），但在 Python 3.0 开始，尝试的比较将返回 `TypeError`。现在最好避免这样的比较，以限制在需要将代码移植到
+    Python 3 下运行时可能出现的问题。
+- en: Finally, the function returns `rv`, at this point hopefully set to the correct
+    value. (Yes, there's a bug in this function. It's more entertaining to write tests
+    that catch bugs now and then.)
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，该函数返回 `rv`，此时希望已经设置为正确的值。（是的，这个函数中有一个 bug。偶尔编写能捕捉到 bug 的测试更有趣。）
+- en: Writing a test that uses the test data
+  id: totrans-132
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 编写使用测试数据的测试
+- en: 'Now that we have an implementation of `winning_answers`, and data to test it
+    with, we can start writing our test for the `winning_answers` method. We might
+    start by adding the following test to `tests.py`, testing the case where there
+    is a clear winner among the answers:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经有了 `winning_answers` 的实现，以及用于测试的数据，我们可以开始编写 `winning_answers` 方法的测试。我们可以从
+    `tests.py` 中添加以下测试开始，测试有一个明显的获胜者的情况：
+- en: '[PRE29]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: The test starts by retrieving the `Question` that has its `question` value set
+    to `'Clear Winner'`. Then, it calls `winning_answers` on that `Question` instance
+    to retrieve the query set of answers for the question that received the most number
+    of votes. Since this question is supposed to have a single winner, the test asserts
+    that there is one element in the returned query set. It then does some further
+    checking by retrieving the winning answer itself and verifying that its answer
+    value is `'Max Votes'`. If all that succeeds, we can be pretty sure that `winning_answers`
+    returns the correct result for the case where there is a single "winner" among
+    the answers.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试从具有其 `question` 值设置为 `'Clear Winner'` 的 `Question` 中开始。然后，它调用 `winning_answers`
+    在该 `Question` 实例上，以检索获得最多投票的问题的答案的查询集。由于这个问题应该有一个单一的获胜者，测试断言返回的查询集中有一个元素。然后它通过检索获胜答案本身并验证其答案值是否为
+    `'Max Votes'` 来进行进一步的检查。如果所有这些都成功，我们可以相当肯定 `winning_answers` 在答案中有一个单一的“获胜者”的情况下返回了正确的结果。
+- en: Extracting the test data from the database
+  id: totrans-136
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 从数据库中提取测试数据
+- en: Now, how do we run that test against the test data we loaded via the admin application
+    into our database? When we run the tests, they are not going to use our production
+    database, but rather create and use an initially empty test database. This is
+    where fixtures come in. Fixtures are just files containing data that can be loaded
+    into the database.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，我们如何对我们通过管理员应用加载到数据库中的测试数据运行该测试呢？当我们运行测试时，它们不会使用我们的生产数据库，而是创建并使用一个最初为空的测试数据库。这就是
+    fixture 的用武之地。Fixture 只是包含可以加载到数据库中的数据的文件。
+- en: 'The first task, then, is to extract the test data that we loaded into our production
+    database into a fixture file. We can do this by using the `manage.py dumpdata`
+    command:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，第一项任务是将我们加载到生产数据库中的测试数据提取到一个 fixture 文件中。我们可以使用 `manage.py dumpdata` 命令来做到这一点：
+- en: '[PRE30]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Beyond the `dumpdata` command itself, the various things specified there are:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了 `dumpdata` 命令本身外，那里指定的各种内容是：
+- en: '`survey`: This limits the dumped data to the survey application. By default,
+    `dumpdata` will output data for all installed applications, but the winning answers
+    test does not need data from any application other than survey, so we can limit
+    the fixture file to contain only data from the survey application.'
+  id: totrans-141
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`survey`：这将限制转储的数据到调查应用程序。默认情况下，`dumpdata` 将输出所有已安装应用程序的数据，但是获胜答案测试不需要来自调查以外的任何应用程序的数据，因此我们可以将
+    fixture 文件限制为只包含调查应用程序的数据。'
+- en: '`--indent 4`: This makes the data output easier to read and edit. By default,
+    `dumpdata` will output the data all on a single line, which is difficult to deal
+    with if you ever need to examine or edit the result. Specifying `indent 4` makes
+    `dumpdata` format the data on multiple lines, with four-space indentation making
+    the hierarchy of structures clear. (You can specify whatever number you like for
+    the indent value, it does not have to be `4`.)'
+  id: totrans-142
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`--indent 4`：这使得数据输出更容易阅读和编辑。默认情况下，`dumpdata` 将把数据输出到一行，如果你需要检查或编辑结果，这将很难处理。指定
+    `indent 4` 使 `dumpdata` 格式化数据为多行，四个空格缩进使结构的层次清晰。 （你可以为缩进值指定任何你喜欢的数字，不一定是 `4`。）'
+- en: '`>test_winning_answers.json`: This redirects the output from the command to
+    a file. The default output format for `dumpdata` is JSON, so we use `.json` as
+    the file extension so that when the fixture is loaded its format will be interpreted
+    correctly.'
+  id: totrans-143
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`>test_winning_answers.json`：这将命令的输出重定向到一个文件。`dumpdata` 的默认输出格式是 JSON，所以我们使用
+    `.json` 作为文件扩展名，这样当加载 fixture 时，它的格式将被正确解释。'
+- en: When `dumpdata` completes, we will have a `test_winning_answers.json` file,
+    which contains a serialized version of our test data. Besides loading it as part
+    of our test (which will be covered next), what might we do with this or any fixture
+    file?
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当`dumpdata`完成时，我们将会有一个`test_winning_answers.json`文件，其中包含我们测试数据的序列化版本。除了将其作为我们测试的一部分加载（下面将介绍），我们还可以对此或任何装置文件做些什么呢？
+- en: 'First, we can load fixtures using the `manage.py loaddata` command. Thus `dumpdata`
+    and `loaddata` together provide a way to move data from one database to another.
+    Second, we might have or write programs that process the serialized data in some
+    way: it can sometimes be easier to perform analysis on data contained in a flat
+    file instead of a database. Finally, the `manage.py testserver` command supports
+    loading fixtures (specified on the command line) into a test database and then
+    running the development server. This can come in handy in situations where you''d
+    like to experiment with how a real server behaves given this test data, instead
+    of being limited to the results of the tests written to use the data.'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们可以使用`manage.py loaddata`命令加载装置。因此，`dumpdata`和`loaddata`一起提供了一种将数据从一个数据库移动到另一个数据库的方法。其次，我们可能有或编写处理序列化数据的程序：有时在包含在平面文件中的数据上执行分析可能比在数据库中执行分析更容易。最后，`manage.py
+    testserver`命令支持将装置（在命令行上指定）加载到测试数据库中，然后运行开发服务器。在您想要尝试使用这些测试数据来实验真实服务器的行为时，这可能会很方便，而不仅仅是限于使用数据编写的测试的结果。
+- en: Getting the test data loaded during the test run
+  id: totrans-146
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 在测试运行期间加载测试数据
+- en: 'Returning to our task at hand: how do we get this fixture we just created loaded
+    when running the tests? An easy way to do this is to rename it to `initial_data.json`
+    and place it in a `fixtures` subdirectory of our survey application directory.
+    If we do that and run the tests, we will see that the fixture file is loaded,
+    and our test for the clear winner case runs successfully:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到我们手头的任务：当运行测试时，我们如何加载刚刚创建的这个装置？一个简单的方法是将其重命名为`initial_data.json`并将其放在我们调查应用程序目录的`fixtures`子目录中。如果我们这样做并运行测试，我们将看到装置文件被加载，并且我们的测试清晰获胜的情况运行成功：
+- en: '[PRE31]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'However, that is not really the right way to get this particular fixture data
+    loaded. Initial data fixtures are meant for constant application data that should
+    always be there as part of the application, and this data does not fall into that
+    category. Rather, it is specific to this particular test, and needs to be loaded
+    only for this test. To do that, place it in the `survey/fixtures` directory with
+    the original name, `test_winning_answers.json`. Then, update the test case code
+    to specify that this fixture should be loaded for this test by including the file
+    name in a `fixtures` class attribute of the test case:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，这并不是真正正确的方法来加载特定的装置数据。初始数据装置是用于应用程序中应始终存在的常量应用程序数据，而这些数据并不属于这一类别。相反，它是特定于这个特定测试的，并且只需要为这个测试加载。为了做到这一点，将其放在`survey/fixtures`目录中，使用原始名称`test_winning_answers.json`。然后，更新测试用例代码，通过在测试用例的`fixtures`类属性中包含文件名来指定应该为这个测试加载这个装置：
+- en: '[PRE32]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Note that `manage.py test`, at least as of Django 1.1, does not provide as much
+    feedback for the loading of test fixtures specified this way as it does for loading
+    initial data fixtures. In the previous test output, where the fixture was loaded
+    as initial data, there are messages about the initial data fixture being loaded
+    and 13 objects being installed. There are no messages like that when the fixture
+    is loaded as part of the `TestCase`.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`manage.py test`，至少在Django 1.1版本中，对于以这种方式指定的测试装置的加载并没有提供与加载初始数据装置相同的反馈。在先前的测试输出中，当装置被加载为初始数据时，会有关于加载初始数据装置和安装了13个对象的消息。当装置作为`TestCase`的一部分加载时，就没有这样的消息了。
+- en: 'Furthermore there is no error indication if you make a mistake and specify
+    the wrong filename in your `TestCase fixtures` value. For example, if you mistakenly
+    leave the ending `s` off of `test_winning_answers`, the only indication of the
+    problem will be that the test case fails:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，如果您在`TestCase fixtures`值中犯了错误并指定了错误的文件名，将不会有错误指示。例如，如果您错误地将`test_winning_answers`的结尾`s`省略了，那么唯一的问题指示将是测试用例失败：
+- en: '[PRE33]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: Possibly the diagnostics provided for this error case may be improved in the
+    future, but in the meantime it's best to keep in mind that mysterious errors such
+    as that `DoesNotExist` above are likely due to the proper test fixture not being
+    loaded rather than some error in the test code or the code being tested.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可能将来对于这种错误情况提供的诊断可能会得到改进，但与此同时最好记住，像上面的`DoesNotExist`这样的神秘错误很可能是由于没有加载正确的测试装置而不是测试代码或被测试代码中的某些错误。
+- en: 'Now that we''ve got the test fixture loaded and the first test method working
+    properly, we can add the tests for the three other cases: the one where there
+    is a two-way tie among the answers, the one where no responses were received to
+    a question, and the one where no answers are linked to a question. These can be
+    written to be very similar to the existing method that tests the clear winner
+    case:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经加载了测试装置并且第一个测试方法正常工作，我们可以为另外三种情况添加测试：其中一种是答案之间存在两种平局的情况，另一种是没有收到问题的回答，还有一种是没有答案与问题相关联的情况。这些测试可以编写得非常类似于测试清晰获胜情况的现有方法：
+- en: '[PRE34]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: Differences are in the names of the `Questions` retrieved from the database,
+    and how the specific results are tested. In the case of the `2-Way Tie`, the test
+    verifies that `winning_answers` returns two answers, and that both have `answer`
+    values that start with `'Max Votes'`. In the case of no responses, and no answers,
+    all the tests have to do is verify that there are no items in the query set returned
+    by `winning_answers`.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 区别在于从数据库中检索到的`Questions`的名称，以及如何测试具体的结果。在`2-Way Tie`的情况下，测试验证`winning_answers`返回两个答案，并且两者的`answer`值都以`'Max
+    Votes'`开头。在没有回应和没有答案的情况下，所有测试只需要验证`winning_answers`返回的查询集中没有项目。
+- en: 'If we now run the tests, we will find the bug that was mentioned earlier, since
+    our last two tests fail:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们现在运行测试，我们会发现之前提到的错误，因为我们最后两个测试失败了：
+- en: '[PRE35]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'The problem here is that `winning_answers` is inconsistent in what it returns:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里的问题是`winning_answers`在返回时不一致：
+- en: '[PRE36]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: The return value `rv` is initialized to a list in the first line of the function,
+    but then when it is set in the case where there are answers that received votes,
+    it is set to be the return value from a `filter` call, which returns a `QuerySet`,
+    not a list. The test methods, since they use `count()` with no arguments on the
+    return value of `winning_answers`, are expecting a `QuerySet`.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`rv`的返回值在函数的第一行初始化为一个列表，但当它在有答案收到投票的情况下被设置时，它被设置为来自`filter`调用的返回值，它返回一个`QuerySet`，而不是一个列表。测试方法，因为它们在`winning_answers`的返回值上使用没有参数的`count()`，所以期望一个`QuerySet`。'
+- en: 'Which is more appropriate for `winning_answers` to return: a list or a `QuerySet`?
+    Probably a `QuerySet`. The caller may only be interested in the count of answers
+    in the set and not the specific answers, so it may not be necessary to retrieve
+    the actual answers from the database. If `winning_answers` consistently returns
+    a list, it would have to force the answers to be read from the database in order
+    to put them in a list. Thus, it''s probably more efficient to always return a
+    `QuerySet` and let the caller''s requirements dictate what ultimately needs to
+    be read from the database. (Given the small number of items we''d expect to be
+    in this set, there is probably little to no efficiency to be gained here, but
+    it is still a good habit to get into in order to consider such things when designing
+    interfaces.)'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于`winning_answers`来说，返回列表还是`QuerySet`更合适？可能是`QuerySet`。调用者可能只对集合中答案的计数感兴趣，而不是具体的答案，因此可能不需要从数据库中检索实际的答案。如果`winning_answers`始终返回一个列表，它将不得不强制从数据库中读取答案以将它们放入列表中。因此，始终返回`QuerySet`并让调用者的要求决定最终需要从数据库中读取什么可能更有效。
+    （考虑到我们期望在这个集合中的项目数量很少，可能在这里几乎没有效率可言，但在设计接口时考虑这些事情仍然是一个好习惯。）
+- en: 'A way to fix `winning_answers` to always return a `QuerySet` is to use the
+    `none()` method applied to the `answer_set`, which will return an empty `QuerySet`:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将`winning_answers`修复为始终返回`QuerySet`的一种方法是使用应用于`answer_set`的`none()`方法，它将返回一个空的`QuerySet`：
+- en: '[PRE37]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: After making this change, the complete `QuestionWinningAnswersTest TestCase`
+    runs successfully.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 进行这一更改后，“QuestionWinningAnswersTest TestCase”将成功运行。
+- en: Creating data during test set up
+  id: totrans-167
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在测试设置期间创建数据
+- en: While test fixtures are very convenient, they are sometimes not the right tool
+    for the job. Specifically, since the fixture files contain fixed, hard-coded values
+    for all model data, fixtures are sometimes not flexible enough for all tests.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然测试装置非常方便，但有时并不是适合所有工作的正确工具。具体来说，由于装置文件包含所有模型数据的固定、硬编码值，因此装置有时对于所有测试来说并不够灵活。
+- en: 'As an example, let''s return to the `Survey` model and consider some methods
+    we are likely to want it to support. Recall that a survey has both, an `opens`
+    and a `closes` date, so at any point in time a particular `Survey` instance may
+    be considered "completed", "active", or "upcoming", depending on where the current
+    date falls in relation to the survey''s `opens` and `closes` dates. It will be
+    useful to have easy access to these different categories of surveys. The typical
+    way to support this in Django is to create a special model `Manager` for `Survey`
+    that implements methods to return appropriately-filtered query sets. Such a `Manager`
+    might look like this:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 举个例子，让我们回到“调查”模型，并考虑一些我们可能希望它支持的方法。请记住，调查既有“开放”日期，也有“关闭”日期，因此在任何时间点，特定的“调查”实例可能被认为是“已完成”，“活跃”或“即将到来”，这取决于当前日期与调查的“开放”和“关闭”日期的关系。有易于访问这些不同类别的调查将是有用的。在Django中支持这一点的典型方法是为“Survey”创建一个特殊的模型“Manager”，该“Manager”实现了返回适当过滤的查询集的方法。这样的“Manager”可能如下所示：
+- en: '[PRE38]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'This manager implements three methods:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个管理器实现了三种方法：
+- en: '`completed`: This returns a `QuerySet` of `Survey` filtered down to only those
+    with `closes` values earlier than today. These are surveys that are closed to
+    any more responses.'
+  id: totrans-172
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`completed`：这将返回一个经过筛选的`Survey`的`QuerySet`，只包括那些`closes`值早于今天的调查。这些是关闭对任何更多回应的调查。'
+- en: '`active`: This returns a `QuerySet` of `Survey` filtered down to only those
+    with `opens` values earlier or equal to today, and `closes` later than or equal
+    to today. These are surveys that are open to receiving responses.'
+  id: totrans-173
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`active`：这将返回一个经过筛选的`Survey`的`QuerySet`，只包括那些`opens`值早于或等于今天，并且`closes`晚于或等于今天的调查。这些是可以接收回应的调查。'
+- en: '`upcoming`: This returns a `QuerySet` of `Survey` filtered down to only those
+    with `opens` values later than today. These are surveys that are not yet open
+    to responses.'
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`upcoming`：这将返回一个经过筛选的`Survey`的`QuerySet`，只包括那些`opens`值晚于今天的调查。这些是尚未开放回应的调查。'
+- en: 'To make this custom manager the default for the `Survey` model, assign an instance
+    of it to the value of the `Survey objects` attribute:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使这个自定义管理器成为“Survey”模型的默认管理器，将其实例分配给“Survey objects”属性的值：
+- en: '[PRE39]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Why might we have difficulty testing these methods using fixture data? The problem
+    arises due to the fact that the methods rely on the moving target of today's date.
+    It's not actually a problem for testing `completed`, as we can set up test data
+    for surveys with `closes` dates in the past, and those `closes` dates will continue
+    to be in the past no matter how much further forward in time we travel.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么我们可能会在使用装置数据测试这些方法时遇到困难？问题出在这些方法依赖于今天日期的移动目标。对于测试“completed”来说，这并不是问题，因为我们可以为具有过去“closes”日期的调查设置测试数据，而这些“closes”日期将继续保持在过去，无论我们向前移动多少时间。
+- en: It is, however, a problem for `active` and `upcoming`, since eventually, even
+    if we choose `closes` (and, for `upcoming`, `opens`) dates far in the future,
+    today's date will (barring universal catastrophe) at some point catch up with
+    those far-future dates. When that happens, the tests will start to fail. Now,
+    we may expect that there is no way our software will still be running in that
+    far-future time. (Or we may simply hope that we are no longer responsible for
+    maintaining it then.) But that's not really a good approach. It would be much
+    better to use a technique that doesn't result in time-bombs in the tests.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，“active”和“upcoming”是一个问题，因为最终，即使我们选择将“关闭”（对于“upcoming”，“打开”）日期设定在遥远的未来，今天的日期也会（除非发生普遍灾难）在某个时候赶上那些遥远的未来日期。当发生这种情况时，测试将开始失败。现在，我们可能期望我们的软件不会在那个遥远的时间仍在运行。（或者我们可能只是希望到那时我们不再负责维护它。）但这并不是一个好的方法。最好使用一种不会在测试中产生定时炸弹的技术。
+- en: 'If we don''t want to use a test fixture file with hard-coded dates to test
+    these routines, what is the alternative? What we can do instead is much like what
+    we were doing earlier: create the data dynamically in the test case. As noted
+    earlier, this might be somewhat tedious, but note we do not have to re-create
+    the data for each test method. Unit tests provide a hook method, `setUp`, which
+    we can use to implement any common pre-test initialization. The test machinery
+    will ensure that our `setUp` routine is run prior to each of our test methods.
+    Thus `setUp` is a good place to put code that dynamically creates fixture-like
+    data for our tests.'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们不想使用一个带有硬编码日期的测试装置文件来测试这些例程，那么有什么替代方法呢？我们可以做的与之前的工作非常相似：在测试用例中动态创建数据。正如前面所述，这可能有点乏味，但请注意我们不必为每个测试方法重新创建数据。单元测试提供了一个钩子方法“setUp”，我们可以使用它来实现任何常见的测试前初始化。测试机制将确保我们的“setUp”例程在每个测试方法之前运行。因此，“setUp”是一个很好的地方，用于放置为我们的测试动态创建类似装置的数据的代码。
+- en: 'In a test for the custom `Survey` manager, then, we might have a `setUp` routine
+    that looks like this:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在对自定义“调查”管理器进行测试时，我们可能会有一个类似于以下的“setUp”例程：
+- en: '[PRE40]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'This method creates three `Surveys`: one that opened and closed yesterday,
+    one that opens and closes today, and one that opens and closes tomorrow. Before
+    it creates these, it deletes all `Survey` objects that are in the database. Thus,
+    each test method in the `SurveyManagerTest` can rely on there being exactly three
+    `Surveys` in the database, one in each of the three states.'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法创建了三个“调查”：一个昨天打开和关闭的，一个今天打开和关闭的，一个明天打开和关闭的。在创建这些之前，它会删除数据库中的所有“调查”对象。因此，“SurveyManagerTest”中的每个测试方法都可以依赖于数据库中确切地有三个“调查”，每个处于三种状态之一。
+- en: Why does the test first delete all `Survey` objects? There should not be any
+    `Surveys` in the database yet, right? That call is there just in case at some
+    future point, the survey application acquires an initial data fixture that includes
+    one or more `Surveys`. If such a fixture existed, it would be loaded during test
+    initialization, and would break these tests that rely on there being exactly three
+    `Surveys` in the database. Thus, it is safest for `setUp` here to ensure that
+    the only `Surveys` in the database are the ones it creates.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么测试首先删除所有“调查”对象？数据库中应该还没有任何“调查”，对吧？那个调用只是为了以防将来调查应用程序获取包含一个或多个“调查”的初始数据装置。如果存在这样的装置，它将在测试初始化期间加载，并且会破坏这些依赖数据库中确切地有三个“调查”的测试。因此，在这里“setUp”最安全的做法是确保数据库中唯一的“调查”是它创建的。
+- en: 'A test for the `Survey` manager `completed` function might then be:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后可能会有一个“Survey”管理器“completed”函数的测试：
+- en: '[PRE41]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: The test first asserts that on entry there is one completed `Survey` in the
+    database. It then verifies that the one `Survey` returned by the `completed` function
+    is in fact that actual survey it expects to be completed, that is the one with
+    title set to `"Yesterday"`. The test then goes a step further and modifies that
+    completed `Survey` so that its `closes` date no longer qualifies it as completed,
+    and saves that change to the database. When that has been done, the test asserts
+    that there are now zero completed `Surveys` in the database.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试首先断言进入时数据库中有一个已完成的“调查”。然后验证“completed”函数返回的一个“调查”实际上是它期望完成的实际调查，即标题设置为“昨天”的调查。然后测试进一步修改了已完成的“调查”，使其“关闭”日期不再使其符合已完成的资格，并将该更改保存到数据库。完成后，测试断言数据库中现在有零个已完成的“调查”。
+- en: 'Testing with that routine verifies that the test works, so a similar test for
+    active surveys might be written as:'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过该例程进行测试可以验证测试是否有效，因此，对于活动调查的类似测试可能会被写成：
+- en: '[PRE42]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: This is very much like the test for `completed`. It asserts that there is one
+    active `Survey` on entry, retrieves the active `Survey` and verifies that it is
+    the one expected to be active, modifies it so that it no longer qualifies as active
+    (by making it qualify as closed), saves the modification, and finally verifies
+    that `active` then returns that there are no active `Surveys`.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这与“已完成”测试非常相似。它断言进入时有一个活动的“调查”，检索活动的“调查”并验证它是否是预期的活动的“调查”，修改它以使其不再符合活动的资格（使其符合关闭的资格），保存修改，最后验证“活动”然后返回没有活动的“调查”。
+- en: 'Similarly, a test for upcoming surveys might be:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类似地，一个关于即将到来的调查的测试可能是：
+- en: '[PRE43]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: But won't all those tests interfere with each other? For example, the test for
+    `completed` makes the `"Yesterday"` survey appear to be active, and the test for
+    `active` makes the `"Today"` survey appear to be closed. It seems that whichever
+    one runs first is going to make a change that will interfere with the correct
+    operation of the other test.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，所有这些测试不会相互干扰吗？例如，“completed”的测试使“昨天”的调查似乎是活动的，“active”的测试使“今天”的调查似乎是关闭的。似乎无论哪个先运行，都会进行更改，从而干扰其他测试的正确操作。
+- en: 'In fact, though, the tests don''t interfere with each other, because the database
+    is reset and the test case `setUp` method is re-run before each test method is
+    run. So `setUp` is not run once per `TestCase`, but rather once per test method
+    within the `TestCase`. Running the tests shows that all of these tests pass, even
+    though each updates the database in a way that would interfere with the others,
+    if the changes it made were seen by the others:'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，这些测试并不会相互干扰，因为在运行每个测试方法之前，数据库会被重置，并且测试用例的 `setUp` 方法会被重新运行。因此 `setUp` 不是每个
+    `TestCase` 运行一次，而是每个 `TestCase` 中的测试方法运行一次。运行这些测试显示，尽管每个测试都会更新数据库，以一种可能会干扰其他测试的方式，但所有这些测试都通过了，如果其他测试看到了它所做的更改，就会相互干扰：
+- en: '[PRE44]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: There is a companion method to `setUp`, called `tearDown` that can be used to
+    perform any cleaning up after test methods. In this case it isn't necessary, since
+    the default Django operation of resetting the database between test method executions
+    takes care of un-doing the database changes made by the test methods. The `tearDown`
+    routine is useful for cleaning up any non-database changes (such as temporary
+    file creation, for example) that may be done by the tests.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`setUp` 有一个伴随方法，叫做 `tearDown`，可以用来在测试方法之后执行任何清理工作。在这种情况下，这并不是必要的，因为 Django
+    默认的操作会在测试方法执行之间重置数据库，从而撤消测试方法所做的数据库更改。`tearDown` 例程对于清理任何非数据库更改（例如临时文件创建）可能会被测试所做的更改非常有用。'
+- en: Summary
+  id: totrans-196
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: 'We have now covered the basics of unit testing Django applications. In this
+    chapter, we:'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在已经掌握了对 Django 应用程序进行单元测试的基础知识。在本章中，我们：
+- en: Converted the previously-written doctests for the `Survey` model to unit tests,
+    which allowed us to directly compare the pros and cons of each test approach
+  id: totrans-198
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将先前编写的 `Survey` 模型的 doctests 转换为单元测试，这使我们能够直接比较每种测试方法的优缺点
+- en: Revisited the doctest caveats from the previous chapter and examined to what
+    extent (if any) unit tests are susceptible to the same issues
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 重新审视了上一章的 doctest 注意事项，并检查了单元测试在多大程度上容易受到相同问题的影响
+- en: Began to learn some of the additional features available with unit tests; in
+    particular, features related to loading test data
+  id: totrans-200
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开始学习一些单元测试的附加功能；特别是与加载测试数据相关的功能。
+- en: In the next chapter, we will start investigating even more advanced features
+    that are available to Django unit tests.
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将开始研究更多可用于 Django 单元测试的高级功能。

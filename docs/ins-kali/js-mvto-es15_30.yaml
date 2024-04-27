@@ -1,0 +1,1099 @@
+- en: Chapter 2. Building a Coupon Site
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第2章。构建优惠券网站
+- en: The best way to understand Seneca and microservices architecture is by building
+    a server-side application that would benefit from the microservices architecture.
+    In previous chapter, we saw how large and complex server-side application benefits
+    from the microservices architecture and why enterprises use microservices architecture.
+    In this chapter, we will build a coupon website to practically demonstrate the
+    benefits of using microservices architecture and Seneca to create a server-side
+    application. While building this coupon site, you will also learn how to design
+    a server-side application using the microservices architecture from scratch, how
+    to split the functionality of the application into services, how a client can
+    directly communicate with the services, and many other things.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 了解Seneca和微服务架构的最佳方法是构建一个从微服务架构中受益的服务器端应用。在上一章中，我们看到了大型和复杂的服务器端应用如何从微服务架构中受益，以及为什么企业使用微服务架构。在本章中，我们将构建一个优惠券网站，以实际演示使用微服务架构和Seneca创建服务器端应用的好处。在构建这个优惠券网站的过程中，您还将学习如何从头开始设计一个使用微服务架构的服务器端应用，如何将应用的功能拆分为服务，客户端如何直接与服务通信，以及许多其他内容。
+- en: 'Some of the things that we will cover in this chapter, apart from things related
+    to Seneca and microservices architecture, are as follows:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了与Seneca和微服务架构相关的内容外，本章还将涵盖以下内容：
+- en: Using the `seneca-mongo-store` plugin to store data in MongoDB
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`seneca-mongo-store`插件在MongoDB中存储数据
+- en: Creating a basic image storage server
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建基本的图像存储服务器
+- en: Discussing HTTP basic authentication using the basic-auth npm package
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 讨论使用basic-auth npm包进行HTTP基本身份验证
+- en: Using the connect-multiparty npm package to parse HTTP POST requests with the
+    `multipart/form-data` content type
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用connect-multiparty npm包来解析带有`multipart/form-data`内容类型的HTTP POST请求
+- en: Moving, deleting, and renaming files in Node.js using the `fs` npm package
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Node.js中使用`fs`npm包移动、删除和重命名文件
+- en: Implementing pagination with MongoDB and Express
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用MongoDB和Express实现分页
+- en: Getting started
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 入门
+- en: The coupon site that we will build will allow users to submit coupons. For the
+    coupon to be publicly visible, the administrator of the site should accept the
+    coupon. Every coupon will have an image attached to it that will be stored and
+    served by an image storage server.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将构建的优惠券网站将允许用户提交优惠券。要使优惠券公开可见，网站管理员应接受优惠券。每张优惠券都附有一个图像，该图像将由图像存储服务器存储和提供。
+- en: We will be using MongoDB to store the coupons. Before you continue further,
+    make sure that you have MongoDB installed and running. I am assuming that you
+    have basic knowledge of MongoDB.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用MongoDB来存储优惠券。在继续之前，请确保您已安装并运行MongoDB。我假设您对MongoDB有基本的了解。
+- en: 'The exercise files contain two directories: `Initial` and `Final`. Inside the
+    `Final` directory, you will find the complete coupon site source code. In the
+    `Initial` directory, you will find the HTML code and directories for the monolithic
+    core, services, image storage server, and so on. You will put code related to
+    them in their respective directories. The `Initial` directory will help you quickly
+    get started with building the coupon site.'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 练习文件包含两个目录：`Initial`和`Final`。在`Final`目录中，您将找到完整的优惠券网站源代码。在`Initial`目录中，您将找到HTML代码和单体核心、服务、图像存储服务器等目录。您将把与它们相关的代码放在各自的目录中。`Initial`目录将帮助您快速开始构建优惠券网站。
+- en: We won't get into designing the frontend of our coupon site. We will only be
+    concentrating on building the architecture and functionalities of the site. Therefore,
+    the HTML code is already included in the `Initial` directory.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不会涉及设计我们优惠券网站的前端。我们只会集中在构建网站的架构和功能上。因此，HTML代码已经包含在`Initial`目录中。
+- en: Architecture of our site
+  id: totrans-14
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 我们网站的架构
+- en: Our server-side application will be composed of a monolithic core, three services,
+    MongoDB server, and image storage server.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的服务器端应用将由单体核心、三项服务、MongoDB服务器和图像存储服务器组成。
+- en: The monolithic core will serve pages to the site visitors and administrators.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单体核心将为网站访问者和管理员提供页面。
+- en: 'The three services are database service, URL configuration service, and upload
+    service. The following is what each of these services do:'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 三项服务是数据库服务、URL配置服务和上传服务。以下是这些服务各自的功能：
+- en: '**Database service**: Adding, retrieving, updating, and deleting coupons in
+    MongoDB is done through database service. The monolithic core retrieves coupons
+    from MongoDB through database service, and upload service stores coupons through
+    database service.'
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**数据库服务**：通过数据库服务在MongoDB中添加、检索、更新和删除优惠券。单体核心通过数据库服务从MongoDB检索优惠券，上传服务通过数据库服务存储优惠券。'
+- en: '**Upload service**: When a user submits a coupon, the HTML form is submitted
+    to the upload service. The upload service then sends the image to the image storage
+    server and adds metadata about the coupon to the database using the database service.
+    We moved these operations to a different service, because if we are resizing and
+    converting the uploaded image, then it will consume more memory and CPU time and
+    keep the port open for more time, which will flood the server and break the monolithic
+    core in case there are a large number of submissions at a time, so moving these
+    operations to a different service makes sure that if there is a rise in submissions,
+    it doesn''t affect the site visitors who are looking for the coupons. We won''t
+    be resizing and converting images, but if you want to add this functionality,
+    you can add this by simply updating the upload service. While the upload service
+    is being updated, the form submissions will not work, but everything else will
+    work. Therefore, we can say that this functionality can be independently updated
+    without affecting other functionalities.'
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**上传服务**：当用户提交优惠券时，HTML表单将提交到上传服务。上传服务然后将图像发送到图像存储服务器，并使用数据库服务向数据库添加有关优惠券的元数据。我们将这些操作移至不同的服务，因为如果我们正在调整和转换上传的图像，那么它将消耗更多的内存和CPU时间，并保持端口打开更长时间，这将使服务器过载并在同时有大量提交时破坏单体核心，因此将这些操作移至不同的服务可以确保如果提交增加，不会影响寻找优惠券的网站访问者。我们不会调整和转换图像，但如果您想添加此功能，可以通过简单更新上传服务来添加。在更新上传服务时，表单提交将不起作用，但其他所有功能将正常工作。因此，我们可以说这个功能可以独立更新而不影响其他功能。'
+- en: '**URL config service**: The client communicates with the monolithic core, image
+    storage server, and upload service. In a production site, these three servers
+    will remain in three different physical computers with three different IP addresses.
+    So, for the client to be able to communicate with them, these three need to be
+    exposed via different domain names (that is the monolithic core can be pointed
+    using the main domain and the other two using sub domains) or we can use a load
+    balancer or reverse proxy that supports URL rerouting so that we can have a single
+    domain name and route the requests to the respective server based on the path
+    of the URL. The URL config service will serve the base URL to communicate with
+    these three servers. To follow this chapter, you can simply run these servers
+    in the same physical computer using different ports, and when you are ready to
+    make the site live, you can change the base URLs in the URL config service, depending
+    on what technique you used to make the client able to communicate with the servers.
+    You don''t have to modify the source code of the servers directly, which is a
+    cumbersome and risky task.'
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**URL配置服务**：客户端与单体核心、图像存储服务器和上传服务进行通信。在生产网站中，这三个服务器将保留在三台不同的物理计算机上，具有三个不同的IP地址。因此，为了客户端能够与它们进行通信，这三个服务器需要通过不同的域名暴露出来（即单体核心可以使用主域指向，其他两个可以使用子域），或者我们可以使用支持URL重定向的负载均衡器或反向代理，以便我们可以使用单个域名，并根据URL的路径将请求路由到相应的服务器。URL配置服务将提供与这三个服务器通信的基本URL。要遵循本章，您可以简单地在同一台物理计算机上使用不同的端口运行这些服务器，当您准备让网站上线时，您可以根据您用于使客户端能够与服务器通信的技术更改URL配置服务中的基本URL。您不必直接修改服务器的源代码，这是一项繁琐且风险较大的任务。'
+- en: We will be creating our own image storage server. However, in a production site,
+    I would recommend that you use Amazon S3 or something similar to store images,
+    as it makes it easy to serve images via CDN. You don't have to worry about scaling
+    and reliability, and it's low cost. The image storage server that we will be creating
+    will be a basic one to just demonstrate how to store images in a separate server
+    and serve from there.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建自己的图像存储服务器。但是，在生产网站中，我建议您使用Amazon S3或类似的东西来存储图像，因为这样可以轻松通过CDN提供图像。您不必担心扩展性和可靠性，而且成本低廉。我们将创建的图像存储服务器将是一个基本的服务器，只是为了演示如何在单独的服务器上存储图像并从那里提供服务。
+- en: 'The following is the diagram that shows all the architecture''s looks and how
+    the servers in the architecture communicate with each other:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是显示所有架构外观以及架构中的服务器如何相互通信的图表：
+- en: '![Architecture of our site](img/00104.jpeg)'
+  id: totrans-23
+  prefs: []
+  type: TYPE_IMG
+  zh: '![我们网站的架构](img/00104.jpeg)'
+- en: Creating the services
+  id: totrans-24
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建服务
+- en: Let's first build the services before building the image storage server and
+    monolithic core.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在构建图像存储服务器和单体核心之前，让我们先构建服务。
+- en: We will build the database service first, as it only depends on the MongoDB
+    server, which is already running. The upload service and monolithic core depend
+    on it, therefore it needs to be built before these.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将首先构建数据库服务，因为它只依赖于已经运行的MongoDB服务器。上传服务和单体核心依赖于它，因此在构建这些服务之前需要先构建它。
+- en: Database service
+  id: totrans-27
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 数据库服务
+- en: The database service will provide actions to add coupons, list verified coupons,
+    list unverified coupons, verify a coupon, and delete a coupon. These actions will
+    be used by the upload service and monolithic core.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据库服务将提供添加优惠券、列出已验证的优惠券、列出未验证的优惠券、验证优惠券和删除优惠券的操作。这些操作将被上传服务和单体核心使用。
+- en: Open the `Initial/database-service` directory. Inside the directory, you will
+    find a `package.json` file and an `app.js` file. The `app.js` file is where you
+    will write the code, and `package.json` lists the dependencies for the database
+    service. The database service is dependent on the `seneca` and `seneca-mongo-store`
+    plugins. Run the `npm install` command inside `Initial/database-service` to install
+    the dependencies locally.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`Initial/database-service`目录。在该目录中，您会找到一个`package.json`文件和一个`app.js`文件。`app.js`文件是您将编写代码的地方，而`package.json`列出了数据库服务的依赖关系。数据库服务依赖于`seneca`和`seneca-mongo-store`插件。在`Initial/database-service`目录中运行`npm
+    install`命令以在本地安装依赖项。
+- en: 'Here is the code to import the `seneca` module, create the `seneca` instance,
+    attach the `seneca-mongo-store` plugin, and initialize the plugin to connect to
+    MongoDB:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是导入`seneca`模块、创建`seneca`实例、附加`seneca-mongo-store`插件并初始化插件以连接到MongoDB的代码：
+- en: '[PRE0]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Here we are using `gocoupons` as the database name. I am assuming that the MongoDB
+    server is running locally on the default port `27017`.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们使用`gocoupons`作为数据库名称。我假设MongoDB服务器在默认端口`27017`上本地运行。
+- en: 'The following is the code to create an action that allows you to add a coupon:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是创建允许您添加优惠券的操作的代码：
+- en: '[PRE1]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: We will store the coupons in a collection named `coupons`. Here we are setting
+    the `verified` property of the document to `false`, that is, whenever a new coupon
+    is submitted by a user, we will make it unverified so that the administrator can
+    retrieve this newly submitted coupon and verify it manually.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将把优惠券存储在一个名为`coupons`的集合中。在这里，我们将文档的`verified`属性设置为`false`，也就是说，每当用户提交一个新的优惠券，我们将使其未经验证，以便管理员可以手动检索这个新提交的优惠券并进行验证。
+- en: The `thumbnail_id` property doesn't hold the complete URL of the coupon thumbnail,
+    instead it's just the filename.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`thumbnail_id`属性不包含优惠券缩略图的完整URL，而只是文件名。'
+- en: 'Here is the code to create an action to retrieve the verified coupons:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是创建检索已验证优惠券操作的代码：
+- en: '[PRE2]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: This action retrieves maximum 21 coupons and it takes a `skip` argument that
+    is used to skip some documents, making it possible to implement pagination using
+    this action.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此操作检索最多21张优惠券，并接受一个`skip`参数，用于跳过一些文档，从而可以使用此操作实现分页。
+- en: 'The following is the code to create an action to retrieve the unverified coupons:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是创建操作以检索未经验证的优惠券的代码：
+- en: '[PRE3]'
+  id: totrans-41
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: This action will be used to retrieve coupons to display on the admin panel for
+    the administrator to accept or reject a coupon.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此操作将用于检索要在管理员面板上显示的优惠券，以便管理员接受或拒绝优惠券。
+- en: 'Here is the code to create an action to verify a coupon, that is, change the
+    `verified` property from `false` to `true`:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是创建验证优惠券操作的代码，即将`verified`属性从`false`更改为`true`：
+- en: '[PRE4]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: This action will be invoked when the admin accepts a coupon to be displayed
+    publicly.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当管理员接受要公开显示的优惠券时，将调用此操作。
+- en: 'Here is the code to create an action to delete a coupon:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是创建删除优惠券操作的代码：
+- en: '[PRE5]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: This action will be invoked when the admin rejects a coupon.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当管理员拒绝优惠券时，将调用此操作。
+- en: 'Now that we have created all the actions for our database service, let''s expose
+    these actions via the network so that the other servers can call them. Here is
+    the code to do this:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经为数据库服务创建了所有操作，让我们通过网络公开这些操作，以便其他服务器可以调用它们。以下是执行此操作的代码：
+- en: '[PRE6]'
+  id: totrans-50
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Now go ahead and run the database service using the `node app.js` command.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在继续使用`node app.js`命令运行数据库服务。
+- en: URL config service
+  id: totrans-52
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: URL配置服务
+- en: The upload services use the URL config service to find the base URL of the monolithic
+    core so that it can redirect the user there once the coupon is submitted successfully.
+    Also, the monolithic core uses this service to find the base URL of the image
+    storage server and upload service so that it can include them in the HTML code.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上传服务使用URL配置服务来查找单体核心的基本URL，以便在成功提交优惠券后将用户重定向到那里。此外，单体核心使用此服务来查找图像存储服务器和上传服务的基本URL，以便将它们包含在HTML代码中。
+- en: Open the `Initial/config-service` directory. Inside the directory, you will
+    find a `package.json` file and an `app.js` file. The `app.js` file is where you
+    will write the code and `package.json` lists the dependencies for the config service.
+    URL config service is only dependent on seneca. Run the `npm install` command
+    inside `Initial/config-service` to install the dependencies locally.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`Initial/config-service`目录。在该目录内，您将找到一个`package.json`文件和一个`app.js`文件。`app.js`文件是您将编写代码的地方，`package.json`列出了配置服务的依赖项。URL配置服务仅依赖于seneca。在`Initial/config-service`内运行`npm
+    install`命令以在本地安装依赖项。
+- en: 'The following is the code to import the `seneca` module and create actions
+    to return the base URLs of the upload service, monolithic core, and image storage
+    server:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是导入`seneca`模块并创建操作以返回上传服务、单体核心和图像存储服务器的基本URL的代码：
+- en: '[PRE7]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Now go ahead and run the URL config service using the `node app.js` command.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在继续使用`node app.js`命令运行URL配置服务。
+- en: Upload service
+  id: totrans-58
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 上传服务
+- en: The upload service handles the new coupon form submission. The form consists
+    of a coupon title, URL, description, price, discount price, and a thumbnail. The
+    content type of form submission is `multipart/form-data`, as it is uploading an
+    image file.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上传服务处理新的优惠券表单提交。表单包括优惠券标题、URL、描述、价格、折扣价格和缩略图。表单提交的内容类型是`multipart/form-data`，因为它正在上传图像文件。
+- en: Open the `Initial/upload-service` directory. Inside the directory, you will
+    find a `package.json` file and an `app.js` file. The `app.js` file is where you
+    will write the code and `package.json` lists the dependencies for the upload service.
+    The upload service is dependent on `seneca`, `express`, `connect-multiparty`,
+    `path`, `fs` and `request` packages. Run the `npm install` command inside `Initial/upload-service`
+    to install the dependencies locally.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`Initial/upload-service`目录。在该目录内，您将找到一个`package.json`文件和一个`app.js`文件。`app.js`文件是您将编写代码的地方，`package.json`列出了上传服务的依赖项。上传服务依赖于`seneca`、`express`、`connect-multiparty`、`path`、`fs`和`request`包。在`Initial/upload-service`内运行`npm
+    install`命令以在本地安装依赖项。
+- en: 'The following is the code to import the modules:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是导入模块的代码：
+- en: '[PRE8]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'There are chances that the users may upload images with the same name. We don''t
+    want images with the same name to overwrite each other. Therefore, we need rename
+    every image with a unique name. The following is the code for defining a function
+    to generate a unique number, which will be used as an image name:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户可能上传具有相同名称的图像的机会。我们不希望具有相同名称的图像互相覆盖。因此，我们需要为每个图像重命名一个唯一的名称。以下是定义生成唯一编号的函数的代码，该编号将用作图像名称：
+- en: '[PRE9]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Now, for the upload service to be able to communicate with the database and
+    URL config services, we need to add them to the upload service `seneca` instance.
+    The following is the code to do this:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，为了使上传服务能够与数据库和URL配置服务进行通信，我们需要将它们添加到上传服务的`seneca`实例中。以下是执行此操作的代码：
+- en: '[PRE10]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Now we need to define an express route to handle POST requests submitted to
+    the `/submit` path. Inside the route handler, we will rename the image, upload
+    the image to image storage server, add the metadata of the coupon to MongoDB using
+    the database service, and redirect to the monolithic core with the status stating
+    that the form was submitted successfully. Here is the code to define the route:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要定义一个express路由来处理提交到`/submit`路径的POST请求。在路由处理程序内部，我们将重命名图像，将图像上传到图像存储服务器，使用数据库服务添加优惠券的元数据到MongoDB，并重定向到单体核心，状态显示表单已成功提交。以下是定义路由的代码：
+- en: '[PRE11]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Here is how the preceding code works:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是前面的代码如何工作的：
+- en: First we added a callback provided by the connect-multiparty module, which parses
+    the `multipart/form-data` body and moves the files to a temporary location.
+  id: totrans-70
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 首先，我们添加了由connect-multiparty模块提供的回调，该回调解析`multipart/form-data`主体并将文件移动到临时位置。
+- en: In the second callback, we performed our custom operations. In the second callback,
+    we first renamed the file so that every image file gets a unique name. Renaming
+    is done using the `rename` method of the filesystem module.
+  id: totrans-71
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在第二个回调中，我们执行了自定义操作。在第二个回调中，我们首先重命名文件，以便每个图像文件都有一个唯一的名称。重命名是使用文件系统模块的`rename`方法完成的。
+- en: Then we uploaded the image file to the image storage server using the `post`
+    method of the request module.
+  id: totrans-72
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后我们使用请求模块的`post`方法将图像文件上传到图像存储服务器。
+- en: After this, we deleted the local version of the image file using the `unlink`
+    method of the filesystem module.
+  id: totrans-73
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 完成后，我们使用文件系统模块的`unlink`方法删除了图像文件的本地版本。
+- en: If uploading the image to the image storage server failed for some reason, then
+    we will return an HTTP internal server error to the client.
+  id: totrans-74
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果由于某种原因将图像上传到图像存储服务器失败，我们将向客户端返回HTTP内部服务器错误。
+- en: If the image got uploaded to the image storage server successfully, then we
+    will add the coupon metadata to MongoDB via the database service.
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果图像成功上传到图像存储服务器，那么我们将通过数据库服务将优惠券元数据添加到MongoDB中。
+- en: If, for some reason, the metadata did not get added, we will delete the previously
+    stored image in the image storage server and then return an HTTP internal server
+    error to the client.
+  id: totrans-76
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果由于某种原因未添加元数据，我们将删除图像存储服务器中先前存储的图像，然后向客户端返回HTTP内部服务器错误。
+- en: If the coupon metadata got added successfully, we will retrieve the base URL
+    of monolithic core from the URL config service and redirect there with a `/?status=submitted`
+    query string, which indicates that the form was submitted successfully. When the
+    monolithic core sees this query string, it displays a message saying that the
+    coupon was submitted successfully.
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果优惠券元数据成功添加，我们将从URL配置服务中检索单体核心的基本URL，并带有`/?status=submitted`查询字符串重定向到那里，表示表单已成功提交。当单体核心看到此查询字符串时，它会显示一条消息，说明优惠券已成功提交。
+- en: In case the URL config service didn't respond for some reason, we will return
+    an HTTP internal server error to the client.
+  id: totrans-78
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果由于某种原因URL配置服务未响应，我们将向客户端返回HTTP内部服务器错误。
+- en: So what you need to keep in mind while coding such services is that you need
+    to handle all sorts of failures and also roll back changes if a failure occurs.
+    Now, this also makes it easy to update and redeploy the database service, URL
+    config service, and image storage server as the upload service handles the failure
+    of these services and provides a feedback to the user.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在编写此类服务时，您需要牢记需要处理各种故障，并在发生故障时回滚更改。现在，这也使得更新和重新部署数据库服务、URL配置服务和图像存储服务器变得更容易，因为上传服务处理了这些服务的故障并向用户提供了反馈。
+- en: 'Now we have defined our routes. Finally, we need to start the Express server.
+    The following is the code to do so:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经定义了我们的路由。最后，我们需要启动Express服务器。以下是启动服务器的代码：
+- en: '[PRE12]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: Now go ahead and run the upload service using the `node app.js` command.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在继续使用`node app.js`命令运行上传服务。
+- en: Creating the image upload server
+  id: totrans-83
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建图像上传服务器
+- en: We have finished building the services. Now let's build the image storage server.
+    The image storage server defines the routes using which an image can be stored,
+    deleted, or retrieved.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经完成了构建服务。现在让我们构建图像存储服务器。图像存储服务器定义了用于存储、删除或检索图像的路由。
+- en: Open the `Initial/image-storage` directory. Inside the directory, you will find
+    a `package.json` file and an `app.js` file. The `app.js` file is where you will
+    write the code, and `package.json` lists the dependencies for the image storage
+    server. The upload service is dependent on `express`, `connect-multiparty`, `path`,
+    and `fs`. Run the `npm install` command inside `Initial/image-storage` to install
+    the dependencies locally.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`Initial/image-storage`目录。在目录中，您将找到一个`package.json`文件和一个`app.js`文件。`app.js`文件是您将编写代码的地方，`package.json`列出了图像存储服务器的依赖项。上传服务依赖于`express`、`connect-multiparty`、`path`和`fs`。在`Initial/image-storage`内运行`npm
+    install`命令以在本地安装依赖项。
+- en: 'The following is the code to import the modules:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是导入模块的代码：
+- en: '[PRE13]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Now let''s define the route using which the upload service can store images
+    in the image storage server. The upload service makes the POST request to the
+    `/store` URL path to store the image. Here is the code to define the route:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们定义路由，使用该路由，上传服务可以将图像存储在图像存储服务器中。上传服务通过POST请求将图像存储在`/store` URL路径中。以下是定义路由的代码：
+- en: '[PRE14]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: Here, at first, we are adding the callback provided by the connect-multiparty
+    module, which parses the `multipart/form-data` content type body and also moves
+    the files to a temporary location.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，首先，我们添加了由connect-multiparty模块提供的回调，该回调解析`multipart/form-data`内容类型主体，并将文件移动到临时位置。
+- en: Then, we are moving the file from temporary directory to another directory.
+    The directory we are moving the file to is `public/images/`. We are moving the
+    file using the `rename` method of the filesystem module. Finally, we are sending
+    a `Done` string as the body of HTTP response to tell the upload service that the
+    file is stored successfully.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们将文件从临时目录移动到另一个目录。我们要将文件移动到的目录是`public/images/`。我们使用文件系统模块的`rename`方法移动文件。最后，我们发送一个`Done`字符串作为HTTP响应的主体，告诉上传服务文件已成功存储。
+- en: 'Now let''s define the route using which the upload service can delete an image
+    stored in the image storage server. The upload service makes the GET request to
+    the `/delete/:id` URL path, where the `id` parameter indicates the image name.
+    The following is the code to define the route:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们定义路由，使用上传服务可以删除存储在图像存储服务器中的图像。上传服务向`/delete/:id` URL路径发出GET请求，其中`id`参数表示图像名称。以下是定义路由的代码：
+- en: '[PRE15]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Here we are deleting the image file using the `unlink` method of the `fs` module.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们使用`fs`模块的`unlink`方法删除图像文件。
+- en: 'Finally, we need to serve images to the browser. Looking for static file in
+    the `public/images/` directory can do this. The following is the code to do this:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们需要向浏览器提供图像。在`public/images/`目录中查找静态文件可以做到这一点。以下是这样做的代码：
+- en: '[PRE16]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Here we are using the static middleware that looks for static files in the directory
+    provided by arguments and serves directly to the browser.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们使用静态中间件来查找由参数提供的目录中的静态文件，并直接提供给浏览器。
+- en: 'Now we have defined our routes. Finally, we need to start the Express server.
+    Here is the code to do so:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经定义了我们的路由。最后，我们需要启动Express服务器。以下是这样做的代码：
+- en: '[PRE17]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Now go ahead and run the image storage server using the `node app.js` command.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在继续使用`node app.js`命令运行图像存储服务器。
+- en: Creating the monolithic core
+  id: totrans-101
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建单体核心
+- en: We have finished creating the services and image storage server. The users interact
+    with the monolithic core to view coupons and the admin interacts with the monolithic
+    core to view unverified coupons, and then it either rejects or accepts a coupon.
+    Other than new coupon submission by the user, everything else by the user and
+    admin is done in the monolithic core.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经完成了创建服务和图像存储服务器。用户与单体核心交互以查看优惠券，管理员与单体核心交互以查看未经验证的优惠券，然后拒绝或接受优惠券。除了用户提交新优惠券之外，用户和管理员的其他操作都在单体核心中完成。
+- en: Open the `Initial/monolithic` directory. Inside the directory, you will find
+    a `package.json` file and an `app.js` file. The `app.js` file is where you will
+    write the code, and `package.json` lists the dependencies for the monolithic core.
+    The monolithic core is dependent on `express`, `seneca`, `request` and `basic-auth
+    npm` packages. Run the `npm install` command inside `Initial/monolithic` to install
+    the dependencies locally.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`Initial/monolithic`目录。在目录中，您会找到一个`package.json`文件和一个`app.js`文件。`app.js`文件是您将编写代码的地方，`package.json`列出了单体核心的依赖关系。单体核心依赖于`express`、`seneca`、`request`和`basic-auth
+    npm`包。在`Initial/monolithic`内运行`npm install`命令以在本地安装依赖项。
+- en: We will use the `ejs` template engine with Express. Inside the `views` directory,
+    you will find `ejs` files for home, new coupon submit forms, and admin pages.
+    The files already contain the templates and HTML code. The site is designed using
+    Bootstrap.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用Express的`ejs`模板引擎。在`views`目录中，您会找到用于主页、新优惠券提交表单和管理员页面的`ejs`文件。这些文件已经包含了模板和HTML代码。该网站使用Bootstrap设计。
+- en: 'The following is the code to import the modules:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是导入模块的代码：
+- en: '[PRE18]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Now, for the monolithic core to be able to communicate with the database and
+    `url- config` services, we need to add them to the monolithic core `seneca` instance.
+    The following is the code to do this:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，为了单体核心能够与数据库和`url-config`服务进行通信，我们需要将它们添加到单体核心的`seneca`实例中。以下是这样做的代码：
+- en: '[PRE19]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Now we need to set `ejs` as the `view engine`. Here is the code to set `ejs`
+    as the view engine:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要将`ejs`设置为`view engine`。以下是将`ejs`设置为视图引擎的代码：
+- en: '[PRE20]'
+  id: totrans-110
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'All the static files such as CSS, JS, and fonts are kept on the `public` directory.
+    We need to serve them to the client. Here is the code to serve the static files:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有静态文件，如CSS、JS和字体，都保存在`public`目录中。我们需要将它们提供给客户端。以下是提供静态文件的代码：
+- en: '[PRE21]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Here we are serving the static files in the same way as we served the static
+    files (that is, images) in the image upload server.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们以与图像上传服务器相同的方式提供静态文件（即图像）来提供静态文件。
+- en: Now we need to add a route to the server of the home page of our website that
+    displays the first 20 coupons. It also displays the **Next** and **Previous**
+    buttons to navigate between the next or previous 20 buttons.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要为网站的主页添加一个路由，显示前20张优惠券。它还显示**下一页**和**上一页**按钮，以在下一页或上一页之间导航。
+- en: 'The home page is accessed via the root URL. The following is the code to add
+    a route to the server of the home page:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主页通过根URL访问。以下是添加到主页服务器的路由代码：
+- en: '[PRE22]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: The `index.ejs` file is the view of the home page of our site. The preceding
+    code renders this view to generate the final HTML code for the home page.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`index.ejs`文件是我们网站主页的视图。前面的代码呈现此视图以生成主页的最终HTML代码。'
+- en: The preceding code implements pagination by checking whether `prev` or `next`
+    keys are present in the query string. If these keys are undefined, then it displays
+    the first 20 coupons, otherwise it calculates the `skip` value argument by adding
+    20 to the value of the `current` key in the query string.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的代码通过检查查询字符串中是否存在`prev`或`next`键来实现分页。如果这些键未定义，则显示前20张优惠券，否则通过将查询字符串中`current`键的值加20来计算`skip`值参数。
+- en: Then, the code checks whether the total number of coupons retrieved is 21 or
+    less. If they are less than 21, then it doesn't display the **Next** button by
+    assigning the `next` variable to `false`, otherwise it displays the **next** button
+    by assigning the `next` variable to `true`. However, the total number of coupons
+    it displays is `20`. We retrieved an extra coupon to just check whether we should
+    display the **next** button or not. To find out whether we should display the
+    **previous** button or not is fairly easy, that is, if the `next` key is `true`
+    in the query string, then we must display the **previous** button.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，代码检查检索到的优惠券总数是否小于等于21。如果小于21，则通过将`next`变量分配为`false`来不显示**下一个**按钮，否则通过将`next`变量分配为`true`来显示**下一个**按钮。然而，它显示的优惠券总数为`20`。我们检索了一个额外的优惠券，只是为了检查是否应该显示**下一个**按钮。要找出是否应该显示**上一个**按钮非常容易，也就是说，如果查询字符串中的`next`键为`true`，那么我们必须显示**上一个**按钮。
+- en: 'The preceding code also checks for the `status=submitted` query string that
+    indicates the user was redirected back from the upload service. If it''s present,
+    then it assigns the `submitted` local variable for the view to `true`. This is
+    the `ejs` template present in the view that checks whether the `submitted` local
+    variable is `true` or `undefined` and displays a successful form submission message:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的代码还检查了`status=submitted`查询字符串，指示用户是否从上传服务重定向回来。如果存在，则为视图分配`submitted`本地变量为`true`。这是在检查`submitted`本地变量是否为`true`或`undefined`并显示成功的表单提交消息的视图中的`ejs`模板：
+- en: '[PRE23]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Here is the `ejs` template present in the view that displays the coupons and
+    the **next** and **previous** buttons:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是在显示优惠券和**下一个**和**上一个**按钮的视图中的`ejs`模板：
+- en: '[PRE24]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'We are done creating our home page. Now we need to create a route with the
+    `/add` URL path that will display a form to submit a new coupon. The view for
+    this coupon submission page is `add.ejs`. Here is the code to create the route:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经创建了我们的主页。现在我们需要创建一个具有`/add` URL路径的路由，用于显示提交新优惠券的表单。此优惠券提交页面的视图是`add.ejs`。以下是创建路由的代码：
+- en: '[PRE25]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Here we are retrieving the base URL of the upload service from the URL config
+    service and assigning it to the `upload_service_url` local variable so that the
+    form knows where to submit the POST request.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们从URL配置服务中检索上传服务的基本URL，并将其分配给`upload_service_url`本地变量，以便表单知道在哪里提交POST请求。
+- en: 'The following is the template in the `add.ejs` view that displays the coupon
+    submission form:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是`add.ejs`视图中显示优惠券提交表单的模板：
+- en: '[PRE26]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Now we need to provide a path for the site admin to access the admin panel.
+    The path to access admin panel is going to be `/admin`. The admin panel will be
+    protected using HTTP basic authentication.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要为网站管理员提供访问管理员面板的路径。访问管理员面板的路径将是`/admin`。管理员面板将使用HTTP基本身份验证进行保护。
+- en: We will create two more routes that will be used by the admin to accept or reject
+    a coupon. The routes are `/admin/accept` and `/admin/reject`.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建另外两个路由，供管理员接受或拒绝优惠券使用。这些路由是`/admin/accept`和`/admin/reject`。
+- en: 'The following is the code to protect the admin panel using the HTTP basic authentication:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是使用HTTP基本身份验证保护管理员面板的代码：
+- en: '[PRE27]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Here we are executing the `auth` callback for all the admin panel paths. The
+    callback checks whether the user is logged in or not. If user is not logged in,
+    we will ask the user to log in. If the user tries to log in, then we will check
+    whether the username and password is correct. If the username and password are
+    wrong, we will ask the user to log in again. We will parse the HTTP basic authentication
+    based the headers using the `basic-auth` module, that is, we will pass the `req`
+    object to the `basicAuth` function to parse it. Here we are hardcoding the username
+    and password.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们正在为所有管理员面板路径执行`auth`回调。回调函数检查用户是否已登录。如果用户未登录，我们将要求用户登录。如果用户尝试登录，我们将检查用户名和密码是否正确。如果用户名和密码错误，我们将要求用户重新登录。我们将使用`basic-auth`模块解析基于标头的HTTP基本身份验证，也就是说，我们将将`req`对象传递给`basicAuth`函数进行解析。在这里，我们正在硬编码用户名和密码。
+- en: 'Now we need to define the routes to access the admin panel. The `admin.ejs`
+    file is the view for the admin panel. The following is the code to add the routes:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要定义访问管理员面板的路由。`admin.ejs`文件是管理员面板的视图。以下是添加路由的代码：
+- en: '[PRE28]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: When the admin visits `/admin`, unverified coupons are displayed along with
+    buttons to accept or reject a coupon. When the admin clicks on the **Accept**
+    button, then a request is made to the `/admin/accept` path to mark the coupon
+    as verified, and when the admin clicks on the **Reject** button, a request is
+    made to the `/admin/reject` path to delete the coupon. After accepting or deleting
+    a coupon, the admin is redirected to the `/admin` path.
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当管理员访问`/admin`时，未经验证的优惠券将显示在页面上，并显示接受或拒绝优惠券的按钮。当管理员点击**接受**按钮时，将向`/admin/accept`路径发送请求以标记优惠券为已验证；当管理员点击**拒绝**按钮时，将向`/admin/reject`路径发送请求以删除优惠券。接受或删除优惠券后，管理员将被重定向到`/admin`路径。
+- en: 'The following is the template that displays the **coupons** and **verification**
+    buttons to the admin:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是向管理员显示**优惠券**和**验证**按钮的模板：
+- en: '[PRE29]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'We have defined our routes. Finally, we need to start the Express server. Here
+    is the code to do so:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经定义了我们的路由。最后，我们需要启动Express服务器。以下是启动服务器的代码：
+- en: '[PRE30]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: Now go ahead and run the monolithic core server using the `node app.js` command.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在继续使用`node app.js`命令运行单体核心服务器。
+- en: Website walkthrough
+  id: totrans-142
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 网站浏览
+- en: We have completed creating our website. Now, let's walkthrough our site to see
+    how it works overall. Before that, make sure that everything is running.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经完成了创建我们的网站。现在，让我们浏览一下我们的网站，看看整体运行情况。在此之前，请确保一切正常运行。
+- en: 'You can visit the home page of the website using the `http://localhost:8080/`
+    URL. The following is how the web page will look when you will visit it for the
+    first time:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用`http://localhost:8080/` URL访问网站的主页。当您首次访问时，网页将如何显示：
+- en: '![Website walkthrough](img/00105.jpeg)'
+  id: totrans-145
+  prefs: []
+  type: TYPE_IMG
+  zh: '![网站浏览](img/00105.jpeg)'
+- en: 'Now to add a coupon, click on the **Submit Coupon** button. Now you will see
+    a form. Fill in the form. Here is how it looks:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在要添加优惠券，请单击**提交优惠券**按钮。现在您会看到一个表格。填写表格。外观如下：
+- en: '![Website walkthrough](img/00106.jpeg)'
+  id: totrans-147
+  prefs: []
+  type: TYPE_IMG
+  zh: '![网站演示](img/00106.jpeg)'
+- en: 'Now submit the form. After submitting the form, you will be redirected to the
+    home page. The following is how the home page will look after redirect:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在提交表单。提交表单后，您将被重定向到主页。重定向后的主页外观如下：
+- en: '![Website walkthrough](img/00107.jpeg)'
+  id: totrans-149
+  prefs: []
+  type: TYPE_IMG
+  zh: '![网站演示](img/00107.jpeg)'
+- en: 'Now click on the **Admin** button to visit the admin panel and accept the coupon.
+    Here is how the admin panel will look:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在单击**管理员**按钮访问管理员面板并接受优惠券。管理员面板的外观如下：
+- en: '![Website walkthrough](img/00108.jpeg)'
+  id: totrans-151
+  prefs: []
+  type: TYPE_IMG
+  zh: '![网站演示](img/00108.jpeg)'
+- en: 'Click on the **Accept** button to accept it. Now go back to the home page.
+    This is how the home page will look now:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单击**接受**按钮以接受。现在返回到主页。现在主页的外观如下：
+- en: '![Website walkthrough](img/00109.jpeg)'
+  id: totrans-153
+  prefs: []
+  type: TYPE_IMG
+  zh: '![网站演示](img/00109.jpeg)'
+- en: In the preceding image, you can see that the product is listed.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上图中，您可以看到产品已列出。
+- en: Further improvements to the site
+  id: totrans-155
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 网站的进一步改进
+- en: 'Here is a list of things we can do now to make the site architecture even better
+    and add some extra features. You will also get some practice writing code involving
+    the microservices architecture by performing the following actions:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是我们现在可以做的事情，以使网站架构变得更好并添加一些额外功能的列表。您还将通过执行以下操作来练习编写涉及微服务架构的代码：
+- en: Create a separate service for the admin panel. The benefit of this is that you
+    can update the admin panel without affecting the visitors, that is, while the
+    admin panel is being updated, the users will still be able to visit and browse
+    coupons. For this, you need to move the route of the admin panel to a new service.
+  id: totrans-157
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为管理员面板创建一个单独的服务。这样做的好处是您可以在不影响访问者的情况下更新管理员面板，也就是说，在更新管理员面板时，用户仍然可以访问和浏览优惠券。为此，您需要将管理员面板的路由移动到一个新的服务中。
+- en: Fetch the username and password from the database. For this, you need to add
+    some actions to the database service.
+  id: totrans-158
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从数据库中获取用户名和密码。为此，您需要向数据库服务添加一些操作。
+- en: Resize or crop images to thumbnail size, as that's the size of an image being
+    displayed on the frontend. This will save the disk space. This needs to be done
+    with the help of the upload service.
+  id: totrans-159
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 调整或裁剪图像至缩略图大小，因为这是前端显示的图像大小。这将节省磁盘空间。这需要借助上传服务来完成。
+- en: You can create a mobile app for the website. For this, you need to create a
+    service that provides APIs for the mobile app. New coupons can be submitted to
+    the upload service by adding a query string, indicating that the request has arrived
+    from the mobile app so that it won't redirect, instead send a response once coupon
+    is submitted successfully.
+  id: totrans-160
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您可以为网站创建一个移动应用程序。为此，您需要创建一个为移动应用程序提供API的服务。新的优惠券可以通过添加查询字符串提交到上传服务，指示请求来自移动应用程序，以便它不会重定向，而是在成功提交优惠券后发送响应。
+- en: These are just some ideas to make the site even better.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些只是一些使网站变得更好的想法。
+- en: Summary
+  id: totrans-162
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we saw how to build a website using Seneca and microservices
+    architecture from scratch. The website we built was simple in terms of features,
+    but involved a lot of important techniques that are used while building sites
+    using the microservices architecture. Now you are ready to choose the architecture
+    that suits your site best. I also mentioned the things you can do to make the
+    site even better.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们看到了如何使用Seneca和微服务架构从头开始构建网站。我们构建的网站在功能上很简单，但涉及了许多在使用微服务架构构建网站时使用的重要技术。现在您已经准备好选择最适合您网站的架构。我还提到了您可以做些什么来使网站变得更好。
+- en: In the next chapter, we will discuss real-time communication among browsers
+    using WebRTC.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将讨论使用WebRTC在浏览器之间进行实时通信。

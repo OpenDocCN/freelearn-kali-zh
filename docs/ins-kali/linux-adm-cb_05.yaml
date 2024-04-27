@@ -1,0 +1,4102 @@
+- en: Hardware and Disks
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 硬件和磁盘
+- en: 'The following topics will be covered in this chapter:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下主题：
+- en: Determining hardware
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 确定硬件
+- en: Testing hardware
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试硬件
+- en: The role of the kernel
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 内核的作用
+- en: Disk configuration on Linux
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Linux上的磁盘配置
+- en: The filesystem hierarchy
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文件系统层次结构
+- en: Configuring a blank disk and mounting it
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 配置空白磁盘并挂载它
+- en: Re-configuring a disk using LVM
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用LVM重新配置磁盘
+- en: Using `systemd-mount` and `fstab`
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`systemd-mount`和`fstab`
+- en: Disk encryption and working with encryption at rest
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 磁盘加密和处理静态加密
+- en: Current filesystem formats
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当前的文件系统格式
+- en: Upcoming filesystem formats
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 即将推出的文件系统格式
+- en: Introduction
+  id: totrans-13
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍
+- en: Your hardware doesn't care for you, like you might care for it.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的硬件并不像您可能对它的关心那样对您关心。
+- en: Hardware is fickle, temperamental, unpredictable, and moody; disks, the rebellious
+    teenager of the hardware family, take this to the next level.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 硬件是善变的、喜怒无常的、不可预测的，磁盘，硬件家族中叛逆的青少年，将这一切推向了一个新的境界。
+- en: You will find yourself confused at some point in your career, baffled as to
+    why seemingly unrelated errors are occurring in disparate parts of your system.
+    Your SSH daemon might be randomly dying at odd points in a transfer, NTP might
+    be drifting, your database might be locking up, and all the while you're tearing
+    your hair out trying to find the cause.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的职业生涯中，您会发现自己在某个时刻感到困惑，对看似无关的错误在系统不同部分的发生感到困惑。您的SSH守护程序可能会在传输的奇怪时刻随机死机，NTP可能会漂移，您的数据库可能会锁死，而与此同时，您正在拼命寻找原因。
+- en: Hardware is usually the answer to these random issues (when it's not time, as
+    we discussed previously). A bad stick of memory can fail in weird and wonderful
+    ways, while a disk occasionally going read-only can mean sporadic and nighttime-disrupting
+    events that can be tempting to resolve with a particularly heavy hammer.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，硬件是这些随机问题的答案（当不是时间时，正如我们之前讨论的）。一根坏内存条可能会以奇怪而奇妙的方式失败，而偶尔只读的磁盘可能意味着零星和夜间干扰的事件，这些事件可能会诱使您用特别沉重的锤子来解决。
+- en: If you don't want to use the phrase "hit it with a hammer" in front of your
+    boss, the accepted nomenclature is "percussive maintenance."
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您不想在老板面前使用短语“用锤子敲一下”，则被接受的命名法是“冲击性维护”。
+- en: When hardware goes bad, there's no recourse other than to replace it. Gone are
+    the days when we'd solder and fix components ourselves, as it's simply not a viable
+    solution, nor is it cost-effective.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当硬件出现问题时，除了更换它之外别无选择。过去我们会自己焊接和修理组件的日子已经一去不复返，因为这不是一个可行的解决方案，也不具有成本效益。
+- en: At some point, you'll discover yourself crouched over an open server in a data
+    center, scratching your head at the rows of `DIMMs` and a `RAID10` array of disks,
+    trying to determine which one is faulty so that you can swap it out and place
+    the old one in a grinder, for your own peace of mind.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在某个时候，您会发现自己蹲在数据中心的一台开放服务器前，对着一排`DIMM`和一个`RAID10`磁盘阵列，摸不着头脑，试图确定哪一个是有故障的，以便您可以将其更换并将旧的放入研磨机，以安心。
+- en: We spell storage disks such as hard drives with a k, and optical-type discs
+    with a c.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们用k来拼写硬盘等存储磁盘，用c来拼写光盘类型的光盘。
+- en: In this chapter, we'll look at ways of identifying specific hardware, as well
+    as some simple troubleshooting steps for finding bad memory. Coupled with this,
+    we'll work through adding new disks to systems and how you might configure them
+    once installed.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将探讨确定特定硬件的方法，以及一些用于查找坏内存的简单故障排除步骤。除此之外，我们还将介绍如何向系统添加新磁盘以及安装后如何配置它们。
+- en: Technical requirements
+  id: totrans-23
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: 'For this chapter, we''re going to use the following `Vagrantfile`, featuring
+    two additional disks:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于本章，我们将使用以下`Vagrantfile`，其中包含两个额外的磁盘：
+- en: '[PRE0]'
+  id: totrans-25
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: The extra disks defined here will be created in the local directory you're running
+    Vagrant from, make sure you have enough space.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里定义的额外磁盘将在您从Vagrant运行的本地目录中创建，确保您有足够的空间。
+- en: Determining hardware
+  id: totrans-27
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 确定硬件
+- en: In the first chapter, we used `dmidecode` and other tooling to work out if we
+    were in a VM or not; here, we're going to go a bit further and try to determine
+    what hardware we might be running in a system, from the disk IDs to the type of
+    graphics card in use.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第一章中，我们使用`dmidecode`和其他工具来确定我们是否在虚拟机中；在这里，我们将进一步尝试确定系统中可能运行的硬件，从磁盘ID到正在使用的图形卡类型。
+- en: Getting ready
+  id: totrans-29
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'Connect to your Vagrant VM and install some of the extra tools we''re going
+    to use:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到您的Vagrant VM并安装一些我们将要使用的额外工具：
+- en: '[PRE1]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: How to do it...
+  id: totrans-32
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到...
+- en: We're going to pick through a few different methods for determining the hardware
+    a system is running; even if you don't have access to the internet, you should
+    be able to determine some basic information using default tools.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过几种不同的方法来确定系统正在运行的硬件；即使您无法访问互联网，您也应该能够使用默认工具确定一些基本信息。
+- en: lspci
+  id: totrans-34
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: lspci
+- en: The tool we installed from the `pciutils` suite, `lspci`, is a good way to list
+    your collective PCI devices, without a lot of extra noise.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从`pciutils`套件安装的工具`lspci`是列出您的集体PCI设备的好方法，而不会有太多额外的噪音。
+- en: 'If we just run `lspci`, we get a list of devices and their IDs:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们只运行`lspci`，我们会得到一个设备列表及其ID：
+- en: '[PRE2]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: What we can see in the previous list are the devices in our system. They've
+    actually had their numeric IDs translated into a human-readable format.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上面的列表中，我们可以看到系统中的设备。它们的数字ID实际上已经被翻译成了人类可读的格式。
+- en: 'If you want to list the IDs alone, you can use the `-n` flag:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您只想列出ID，可以使用`-n`标志：
+- en: '[PRE3]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Or if you want both, use `-nn`:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者如果您两者都想要，可以使用`-nn`：
+- en: '[PRE4]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: In this list, we can see a few friendly descriptions to help us—things such
+    as `Ethernet controller`, `VGA compatible controller`, and `IDE interface`, to
+    name a few.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个列表中，我们可以看到一些友好的描述，以帮助我们——例如`以太网控制器`、`VGA兼容控制器`和`IDE接口`等。
+- en: At a glance, you should get a good understanding of which device does what,
+    thanks to the hard work of the people who keep the `PCI ID` repository up to date: [http://pci-ids.ucw.cz/](http://pci-ids.ucw.cz/).
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 乍一看，由于那些不断更新`PCI ID`存储库的人们的辛勤工作，您应该对每个设备的功能有一个很好的理解：[http://pci-ids.ucw.cz/](http://pci-ids.ucw.cz/)。
+- en: Even better than listing the devices in our system, we can also list the kernel
+    drive that's handling the device with `-k`.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 比起列出系统中的设备，我们还可以使用-k列出处理设备的内核驱动程序。
+- en: 'In the following snippet, we can see that the Ethernet controller is being
+    managed by the kernel driver, `e1000`:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下面的片段中，我们可以看到以太网控制器由内核驱动程序“e1000”管理：
+- en: '[PRE5]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: The name of the kernel driver and the actual hardware won't always be obvious,
+    which is what makes tools such as `lspci` so handy.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 内核驱动程序的名称和实际硬件并不总是显而易见，这就是像lspci这样的工具如此方便的原因。
+- en: In modern machines, you might see more than one PCI bus, with devices connected
+    to it; it just so happens that our VM only utilizes one bus for all of its devices.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在现代机器上，您可能会看到多个PCI总线，设备连接到它；碰巧我们的虚拟机只利用一个总线来连接所有设备。
+- en: 'This means that the tree view is very flat:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着树视图非常扁平：
+- en: '[PRE6]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'However, when we run `lspci` against a physical machine (in this case, my laptop),
+    the tree view can have more branches:'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，当我们对物理机器运行lspci（在这种情况下是我的笔记本电脑）时，树视图可能会有更多的分支：
+- en: '[PRE7]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'If you can''t see a device you know to be there (a graphics card say), it could
+    be a few things: maybe the device is disabled in the BIOS or the card itself is
+    dead. Try some basic troubleshooting such as checking the BIOS/UEFI configuration
+    or flipping the card to a different slot.'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您看不到您知道存在的设备（比如显卡），可能有几种情况：也许设备在BIOS中被禁用，或者卡本身已经损坏。尝试一些基本的故障排除，比如检查BIOS/UEFI配置或将卡插入不同的插槽。
+- en: 'There''s also `lsusb` for USB devices. This can be handy if you''re using something
+    like a USB Ethernet device. In the following example, you can see that the box
+    I''m connected to (a Raspberry Pi) has its network port on the USB bus:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有lsusb用于USB设备。如果您使用类似USB以太网设备的东西，这可能很方便。在下面的示例中，您可以看到我连接的盒子（树莓派）的网络端口位于USB总线上：
+- en: '[PRE8]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: lshw
+  id: totrans-57
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: lshw
+- en: A particularly useful program, `lshw` has the built-in ability to output your
+    hardware tree as JSON, XML, HTML, and presumably more as they're developed.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个特别有用的程序lshw具有内置的能力，可以将您的硬件树输出为JSON、XML、HTML，可能还有更多，因为它们正在开发中。
+- en: 'By default, the output of `lshw` is very verbose, but should look something
+    like the following:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，lshw的输出非常冗长，但应该看起来像下面这样：
+- en: '[PRE9]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'I tend to find that at-a-glance solutions can work better a lot of the time.
+    So, with that in mind, let''s take a look at the `-short` option''s output:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我倾向于发现一目了然的解决方案在很多时候更有效。因此，考虑到这一点，让我们来看看-short选项的输出：
+- en: '[PRE10]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: This is much easier to read and means that, at a glance, you can see that the
+    system has three disks, one network device, and `512MiB` of system memory.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样更容易阅读，一目了然，您可以看到系统有三个磁盘、一个网络设备和512MiB的系统内存。
+- en: 'As we saw in [Chapter 1](e2264f18-69d3-4ff4-af6c-dc8fe152b3e0.xhtml)*, Introduction
+    and Environment Setup*, you can also select a `class` output with `-c`, shown
+    again here with our network device:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在[第1章](e2264f18-69d3-4ff4-af6c-dc8fe152b3e0.xhtml)*中看到的，介绍和环境设置*，您还可以使用-c选择“class”输出，再次显示我们的网络设备：
+- en: '[PRE11]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: From this output, we can see a lot of pertinent information, such as the capacity
+    of the network device (`1Gbit/s`), as well as the capabilities of the device.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从这个输出中，我们可以看到很多相关信息，比如网络设备的容量（1Gbit/s），以及设备的功能。
+- en: We can even see its specific configuration, which is useful for potential changes
+    you might want to make.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们甚至可以看到它的具体配置，这对您可能想要进行的潜在更改很有用。
+- en: 'If you want to see the actual numeric IDs, you can add `-numeric` to your command:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果要查看实际的数字ID，可以在命令中添加-numeric：
+- en: '[PRE12]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: /proc
+  id: totrans-70
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: /proc
+- en: '`/proc` is the **process information pseudo-filesystem** found on most Linux
+    systems (but not the BSDs).'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: /proc是大多数Linux系统上找到的**进程信息伪文件系统**（但不适用于BSD）。
+- en: It is the readable interface-to-kernel data structure, with some files that
+    are writable, allowing for on-the-fly changes to be made to your running kernel.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它是可读的接口到内核数据结构，其中一些文件是可写的，允许对正在运行的内核进行即时更改。
+- en: 'Some useful files within this directory are the likes of `/proc/cpuinfo`, which,
+    when queried, gives you all of the information the kernel knows about your CPU:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此目录中的一些有用文件包括/proc/cpuinfo等，当查询时，它会提供内核了解的有关CPU的所有信息：
+- en: '[PRE13]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: It also gives you a processor number, meaning that if you want a quick count
+    of processors in your system (being used), you can list them with a short command
+    and some piping.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它还会给出处理器编号，这意味着如果您想快速计算系统中（正在使用的）处理器的数量，可以用简短的命令和一些管道列出它们。
+- en: 'Here, we''re dumping the file, looking for the word `processor`, and then counting
+    the lines. It''s not the most foolproof system, but it''s handy in a pinch:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们正在转储文件，寻找单词“processor”，然后计算行数。这不是最可靠的系统，但在紧要关头很方便：
+- en: '[PRE14]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Another handy file to be aware of is `/proc/meminfo` for a complete dump of
+    everything the system knows about your memory:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个要注意的有用文件是/proc/meminfo，它可以完全转储系统了解的有关内存的所有信息：
+- en: '[PRE15]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: The `/proc` filesystem is pretty sprawling and vast; check out the manual page
+    for `proc` if you get a spare moment—you won't regret it in a hurry (you might
+    regret it later).
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: /proc文件系统非常庞大和广泛；如果您有空闲时间，请查看proc的手册页面——您不会立刻后悔（但以后可能会后悔）。
+- en: /sys
+  id: totrans-81
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: /sys
+- en: '`/sys` or `sysfs` is a filesystem for exporting kernel objects (according to
+    its manual page), which means it''s another filesystem for accessing kernel information
+    (like `/proc`).'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: /sys或sysfs是用于导出内核对象的文件系统（根据其手册页面），这意味着它是用于访问内核信息的另一个文件系统（如/proc）。
+- en: 'It can be very useful in scripts for doing things such as listing discovered
+    block devices:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在脚本中非常有用，可以列出发现的块设备等：
+- en: '[PRE16]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: It can also be useful for finding the device IDs of an individual component
+    (if you don't have `lshw` or `lspci` handy, for example).
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想要查找单个组件的设备ID（例如，如果您没有lshw或lspci方便的话），这也可能很有用。
+- en: 'In the following example, I''ve listed the vendor and device IDs of the `eth0` device:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下面的示例中，我列出了eth0设备的供应商和设备ID：
+- en: '[PRE17]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: With this information, I can check the details against a list of devices. I
+    chose to check out the `PCI ID` repository, where I learned that the vendor ID
+    belongs to the Intel Corporation and the device ID translates to 82540EM Gigabit
+    Ethernet Controller.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这些信息，我可以将详细信息与设备列表进行对比。我选择查看`PCI ID`存储库，在那里我了解到供应商ID属于英特尔公司，设备ID转换为82540EM千兆以太网控制器。
+- en: There's a lot more to `/sys` outside the hardware realm, and it can be a good
+    idea to research the filesystem in more depth. The manual page (`5`) for `sysfs`
+    is a debatable must.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`/sys`在硬件领域之外还有很多内容，深入研究文件系统可能是个好主意。`sysfs`的手册页（`5`）是一个有争议的必备品。'
+- en: dmesg (and the kernel logs)
+  id: totrans-90
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: dmesg（和内核日志）
+- en: '`dmesg` is a way to print or control the kernel ring buffer according to its
+    manual but, to you and me, it''s a great way to quickly see if your hardware was
+    detected by the kernel as it''s initialized.'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`dmesg`是一种根据其手册打印或控制内核环形缓冲区的方法，但对你和我来说，它是一个快速查看内核是否检测到硬件的好方法，因为它在初始化时被检测到。'
+- en: 'Running `dmesg` will print to `stdout`, so it''s handy to pipe it into `less`:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行`dmesg`将打印到`stdout`，所以将其导入`less`很方便：
+- en: '[PRE18]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Once done, you should be able to search for specific strings. Continuing with
+    our theme, we''re going to look for `Intel` and see what''s loaded:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，你应该能够搜索特定的字符串。继续我们的主题，我们将搜索`Intel`并查看加载了什么：
+- en: '[PRE19]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'If we look for `ATA`, we can also see our disks being detected:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们搜索`ATA`，我们还可以看到我们的磁盘被检测到：
+- en: '[PRE20]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'There''s even a `-T` option, to give you human-readable timestamps, which can
+    be especially useful, as shown in the following against our IDE (`PATA`) controllers:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 甚至还有一个`-T`选项，可以给你人类可读的时间戳，这可能特别有用，如下所示，与我们的IDE（`PATA`）控制器相比：
+- en: '[PRE21]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: dmidecode
+  id: totrans-100
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: dmidecode
+- en: Another noisy-but-favorite tool from [Chapter 1](e2264f18-69d3-4ff4-af6c-dc8fe152b3e0.xhtml), I*ntroduction
+    and Environment setup*, `dmidecode` decodes the DMI table.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个喧闹但最喜欢的工具来自[第1章](e2264f18-69d3-4ff4-af6c-dc8fe152b3e0.xhtml)，*介绍和环境设置*，`dmidecode`解码DMI表。
+- en: We used it to check for virtual hardware initially, but on a non-virtual machine,
+    it can be more useful.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们最初用它来检查虚拟硬件，但在非虚拟机上，它可能更有用。
+- en: 'Compare the following `-t processor` dumps:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 比较以下`-t processor`转储：
+- en: '[PRE22]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Note the stark emptiness on our virtual machine, compared with the example
+    from my laptop:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意我们的虚拟机上的明显空旷，与我笔记本电脑上的示例相比：
+- en: '[PRE23]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: What this serves to show is that, in some scenarios, more information might
+    be gleaned from a physical machine than a virtual one.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这表明，在某些情况下，从物理机器中可能获得的信息比从虚拟机器中获得的信息更多。
+- en: 'The same can be said in reverse: if someone is doing everything in their power
+    to obfuscate what hardware is running from you, firstly you should suspect you''re
+    running on a VM, and then secondly you should wonder why they''re going to such
+    great lengths to hide that fact.'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 反过来也可以这样说：如果有人竭尽全力地掩盖你的硬件信息，首先你应该怀疑自己是否在虚拟机上运行，然后你应该想知道他们为什么要如此努力地隐藏这个事实。
+- en: /dev
+  id: totrans-109
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: /dev
+- en: If I had to choose a favorite `pseudo-filesystems`, I would be one odd individual,
+    but if you forced me, it would probably be `/dev`.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果非要我选择一个最喜欢的`伪文件系统`，我可能会成为一个奇怪的人，但如果你逼我选择，那可能会是`/dev`。
+- en: This isn't because of some love for the word `dev` or some affinity for its
+    overuse, but rather because I find myself inside it so often.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不是因为对`dev`这个词的喜爱或者对它的过度使用的偏爱，而是因为我经常发现自己在其中。
+- en: 'As with all of the `pseudo-filesystems`, they''re transient and temporary (`tmpfs`).
+    Don''t do as I once saw a colleague do and store things in them, because the moment
+    you reboot your box: poof, your files are gone.'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与所有的`伪文件系统`一样，它们都是瞬态和临时的（`tmpfs`）。不要像我曾经看到的一位同事那样，在其中存储东西，因为一旦重新启动你的机器：噗，你的文件就没了。
+- en: 'On the surface, `/dev` looks messy:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在表面上，`/dev`看起来很混乱：
+- en: '[PRE24]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: However, when you know the know, you'll find it invaluable.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，当你知道这些知识时，你会发现它是无价的。
+- en: 'Let''s `ls` the `/dev/disk/` directory:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们`ls`一下`/dev/disk/`目录：
+- en: '[PRE25]'
+  id: totrans-117
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Intriguing options—I do like those!
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的选项——我喜欢那些！
+- en: 'Choosing the `by-id` option shows us all our disk devices, `by-id`:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 选择`by-id`选项会显示所有我们的磁盘设备，`by-id`：
+- en: '[PRE26]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'The following is my absolute favorite, `by-uuid`:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是我绝对最喜欢的`by-uuid`：
+- en: '[PRE27]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'The main reason I like these is because these entries are actually symlinks
+    to the device they''re named for:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我喜欢这些的主要原因是因为这些条目实际上是指向以它们命名的设备的符号链接：
+- en: '[PRE28]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: Because of this, I now know that my `sda2` partition has a UUID of `570897ca-e759-4c81-90cf-389da6eee4cc`
+    that can be used for various tasks.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我现在知道我的`sda2`分区具有`570897ca-e759-4c81-90cf-389da6eee4cc`的UUID，可以用于各种任务。
+- en: 'The most obvious use of the UUID is in most systems'' `fstab` files:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: UUID最明显的用途是在大多数系统的`fstab`文件中：
+- en: '[PRE29]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: So, marrying the two pieces of information up, we now have the actual device
+    designation (`sda2`) of our `fstab` UUID entry!
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，将这两个信息配对起来，我们现在有了我们`fstab` UUID条目的实际设备标识（`sda2`）！
+- en: The reason UUIDs are used is because device designation can change, historically
+    more so than now. On one boot, your `/boot` filesystem might be denoted as `sda2`,
+    then on another a different device might be found first, and suddenly `/boot`
+    is `sdb2,` breaking `fstab`.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用UUID的原因是因为设备标识可能会发生变化，历史上更是如此。在一次启动中，你的`/boot`文件系统可能被标识为`sda2`，然后在另一次启动中可能首先找到不同的设备，突然之间`/boot`就变成了`sdb2`，破坏了`fstab`。
+- en: How it works...
+  id: totrans-130
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: What we're mostly doing here is checking what the kernel is aware of in terms
+    of devices connected to your system.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里主要做的是检查内核对连接到系统的设备的了解。
+- en: PCI devices, as well as USB devices, have denotions that are the same across
+    all operating systems (you'll see the same Hex values on Windows, Mac, and BSD).
+    This allows for the kernel to choose and load the appropriate bit of code, written
+    to interact with that same device.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: PCI设备以及USB设备在所有操作系统中都具有相同的标识（在Windows、Mac和BSD上都会看到相同的十六进制值）。这使得内核可以选择并加载适当的代码，以与相同的设备进行交互。
+- en: It's rare, but it can happen that one module supersedes an older one or two
+    drivers can both be used with the same hardware; in this case, it's useful to
+    know your hardware device IDs and the bit of kernel code that's running against
+    them.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很少见，但可能会发生一个模块取代旧模块或两个驱动程序都可以与相同的硬件一起使用；在这种情况下，了解您的硬件设备ID以及针对它们运行的内核代码的位是很有用的。
+- en: If you use Linux on the desktop, and use an Nvidia or AMD GPU, there's a high
+    chance you'll be interacting with drivers and what the kernel loads, as there's
+    both closed source and open source versions to pick from.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您在桌面上使用Linux，并且使用Nvidia或AMD GPU，那么您与驱动程序和内核加载进行交互的可能性很高，因为有闭源和开源版本可供选择。
+- en: Testing hardware
+  id: totrans-135
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试硬件
+- en: In this section, we'll discuss methods for testing potentially faulty hardware
+    by looking at SMART and disk-testing software, as well as physically troubleshooting
+    RAM issues.
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论通过查看SMART和磁盘测试软件以及物理故障排除RAM问题的方法来测试潜在故障的硬件。
+- en: Working with disks can be exceptionally risky, and you should always make sure
+    that you have working backups before you start anything that might be hazardous
+    to your data.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 处理磁盘可能会非常危险，您应该始终确保在开始可能对数据有危险的任何操作之前备份数据。
+- en: Getting ready
+  id: totrans-138
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: Here, we're mostly going to be using the Vagrant box we've created, but you
+    may also want to take a look at Memtest86+ from [http://www.memtest.org/](http://www.memtest.org/),
+    which I mention for memory testing.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们主要将使用我们创建的Vagrant box，但您可能还想查看来自[http://www.memtest.org/](http://www.memtest.org/)的Memtest86+，我提到这个是用于内存测试的。
+- en: 'Connect to your VM and install `smartmontools`:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到您的VM并安装`smartmontools`：
+- en: '[PRE30]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: You might also want to download the latest Memtest86+ ISO.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能还想下载最新的Memtest86+ ISO。
+- en: How to do it...
+  id: totrans-143
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: We'll start by looking at disk health.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从磁盘健康开始。
+- en: Self-monitoring, analysis, and reporting technology (SMART)
+  id: totrans-145
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 自我监控、分析和报告技术（SMART）
+- en: 'Firstly, it''s a good idea to make sure that `smartd` is running on whichever
+    system you want to query:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，确保`smartd`正在运行在您想要查询的系统上是个好主意：
+- en: '[PRE31]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: '`smartd` is the monitoring daemon for SMART; the daemon attempts to enable
+    monitoring on compatibly `ATA` devices when it starts and, by default, polls the
+    `ATA` devices every 30 minutes.'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`smartd`是SMART的监控守护程序；守护程序在启动时尝试在兼容的`ATA`设备上启用监控，并默认每30分钟轮询`ATA`设备。'
+- en: By default, errors detected by `smartd` as part of its periodic work are logged
+    using the `SYSLOG` interface. It can also email out to an administrator if configured
+    to do so.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，`smartd`作为其定期工作的一部分检测到的错误使用`SYSLOG`接口进行记录。如果配置为这样做，它还可以通过电子邮件发送给管理员。
+- en: 'Once enabled, disks can then be queried with the `smartctl` tool:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启用后，可以使用`smartctl`工具查询磁盘：
+- en: '[PRE32]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Note the use of `sudo` and the denoting of a disk device.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意使用`sudo`和标记磁盘设备。
+- en: 'Sadly, because we''re in a VirtualBox VM, this won''t give us anything useful:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很遗憾，因为我们在VirtualBox VM中，这不会给我们带来任何有用的东西：
+- en: '[PRE33]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: However, if you tried this on a physical machine, results differ and more information
+    can be gleaned.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果您在物理机上尝试这样做，结果会有所不同，并且可以获得更多信息。
+- en: hdparm
+  id: totrans-156
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: hdparm
+- en: It's possible that your disks are reporting back fine to your SMART commands,
+    but you're still seeing some form of slowdown or other issues.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可能您的磁盘向您的SMART命令报告良好，但您仍然看到某种形式的减速或其他问题。
+- en: You can benchmark a disk's read with the `hdparm` tool (available in the default
+    repositories).
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用`hdparm`工具（默认存储库中提供）对磁盘的读取速度进行基准测试。
+- en: 'We can test the speeds of our disk using the following:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用以下方法测试磁盘的速度：
+- en: '[PRE34]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: The manual page for `hdparm` suggests doing these tests two or three times for
+    average results and running them on otherwise inactive systems.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`hdparm`的手册页面建议进行这些测试两到三次以获得平均结果，并在其他情况下的非活动系统上运行它们。'
+- en: 'Your mileage may vary, but the results from my system look like this:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的情况可能有所不同，但我的系统的结果如下：
+- en: '[PRE35]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Partly, we have a problem here, because what we''re actually doing is reading
+    from the kernel''s page cache. We can bypass this using the `--direct` option,
+    which reads directly from the drive into buffers of `hdparm`:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 部分原因是我们在做的实际上是从内核的页面缓存中读取。我们可以使用`--direct`选项来绕过这一点，该选项直接从驱动器中读取到`hdparm`的缓冲区中：
+- en: '[PRE36]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'These results are more raw disk read performance:'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些结果更多地是原始磁盘读取性能：
+- en: '[PRE37]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: Memory testing
+  id: totrans-168
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 内存测试
+- en: Memory is a little easier to test, though the most thorough way of checking
+    every inch of your DIMMs is to take the box offline for a few hours while you
+    run Memtest86+.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 内存测试起来要容易一些，尽管检查每个DIMM的最彻底方法是将箱子脱机几个小时，同时运行Memtest86+。
+- en: Programs such as **memtester** also exist, which can be executed on a running
+    system. The problem with these types of test is that they won't test memory already
+    in use by the system, and they can end up fighting processes such as the **Out
+    Of Memory** (**OOM**) killer.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也存在诸如**memtester**之类的程序，可以在运行中的系统上执行。这些类型的测试的问题在于它们不会测试系统已使用的内存，并且可能会与**内存不足**（**OOM**）杀手等进程发生冲突。
+- en: If you have the ISO image from the Memtest86+ website, you can attach it to
+    your VM and boot into the program (completely independently of CentOS).
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您从Memtest86+网站获得ISO映像，可以将其附加到VM并启动该程序（完全独立于CentOS）。
+- en: 'It will look something like this:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果看起来会像这样：
+- en: '![](img/2d3d476a-10bb-4225-98b7-004988bbf141.png)'
+  id: totrans-173
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/2d3d476a-10bb-4225-98b7-004988bbf141.png)'
+- en: Any errors will show up in the bottom half of the screen, and you'll know you
+    have bad memory.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 任何错误都将显示在屏幕的下半部分，您将知道您的内存有问题。
+- en: I used to let Memtest86+ do five passes over the memory I was testing when I
+    used it every night during my data center days.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我每晚在数据中心使用Memtest86+时，我会让Memtest86+对我正在测试的内存进行五次测试。
+- en: If you find that your system won't boot at all, but you suspect memory problems,
+    it can be a good idea to test in a binary fashion. By this, I mean that if your
+    server has 128 sticks of memory (not uncommon), you should remove 64 of them and
+    test the remaining batch. If your server boots, you know your faulty stick is
+    somewhere in the 64 you removed. If your server doesn't boot, your faulty stick
+    is somewhere in the batch that you left inside.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您发现您的系统根本无法启动，但怀疑是内存问题，那么以二进制方式进行测试可能是个好主意。我的意思是，如果您的服务器有128根内存条（这并不罕见），您应该移除64根并测试剩下的一批。如果您的服务器启动了，那么您就知道有问题的内存条在您移除的64根中的某一根。如果您的服务器无法启动，那么有问题的内存条就在您留在内部的一批内存条中。
+- en: Repeat this technique, halving the memory you check each time, until you're
+    down to two DIMMs, one of which you know to be faulty, and then test each in turn.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重复这种技术，每次检查的内存减半，直到您只剩下两个DIMM，其中一个您知道是有问题的，然后依次测试每个内存条。
+- en: Testing in the previous fashion may sound obvious, but at two o'clock in the
+    morning, when you can't think straight, having read these words might save your
+    sanity.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以前的测试可能听起来很明显，但在凌晨两点，当您无法清晰地思考时，阅读这些文字可能会挽救您的理智。
+- en: How it works...
+  id: totrans-179
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: SMART reads information by querying the `/dev/` device you target and displaying
+    what it's learned about a SMART-compatible device.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SMART通过查询您选择的`/dev/`设备来读取信息，并显示它对兼容SMART设备所学到的内容。
+- en: When we're using `hdparm`, we're actually running tests regardless of our filesystem,
+    because the program reads from the disk directly—because of this, real-world speed
+    may be different.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们使用`hdparm`时，实际上是在运行测试，而不管我们的文件系统，因为该程序直接从磁盘读取数据——因此，实际速度可能会有所不同。
+- en: There's more...
+  id: totrans-182
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: I didn't include testing graphics cards and things of that nature in this section
+    because it's usually quite easy to tell when a graphics card is on the way out
+    (graphical glitches, random lines, and occasional beeps).
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我没有在本节中包括测试显卡等内容，因为通常很容易判断显卡是否出问题（图形故障、随机出现的线条和偶尔的蜂鸣声）。
+- en: I also didn't mention physical RAID cards, because there's such an abundance
+    that it would be impossible to list a coherent method for all of them. The best
+    advice I can give for physical RAID cards is to check out the manufacturer's details
+    on testing.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我也没有提到物理RAID卡，因为种类繁多，不可能为所有RAID卡列出一个连贯的测试方法。对于物理RAID卡，我能给出的最好建议就是查看制造商关于测试的详细信息。
+- en: We didn't cover write tests for disks, partly because it's usually pretty obvious
+    to tell disk issues from read tests alone, and partly because a lot of the methods
+    of testing writes can be destructive if done incorrectly.
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们没有涵盖磁盘的写入测试，部分原因是通常很容易通过读取测试来判断磁盘问题，另一部分原因是如果错误进行写入测试，很多测试方法可能会具有破坏性。
+- en: The role of the kernel
+  id: totrans-186
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 内核的作用
+- en: We're going to watch the kernel running through its startup process, as well
+    as look at which modules have been loaded by the time we get to the OS.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将观察内核在启动过程中的运行情况，以及在我们到达操作系统时加载了哪些模块。
+- en: Getting ready
+  id: totrans-188
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: 'For this section, ensure your VM is up and running, as we''re going to talk
+    about hardware initialization:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，请确保您的VM正在运行，因为我们将讨论硬件初始化：
+- en: '[PRE38]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Connect to your VM. If you've just come off the previous section, you may want
+    to destroy and recreate your VM to ensure a vanilla experience.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到您的VM。如果您刚刚完成上一节，您可能希望销毁并重新创建您的VM，以确保获得原始体验。
+- en: How to do it...
+  id: totrans-192
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到的...
+- en: First, we're going to watch our system boot.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们要观察我们的系统启动。
+- en: 'Start by disabling the `quiet` option in our boot configuration so that we
+    can actually see information on our VM display:'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在我们的引导配置中禁用`quiet`选项，这样我们就可以在VM显示器上实际看到信息：
+- en: '[PRE39]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Now, we need to generate a new `grub` configuration file, as we''ve made a
+    change:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要生成一个新的`grub`配置文件，因为我们已经做出了更改：
+- en: '[PRE40]'
+  id: totrans-197
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: The previous code is a good example of what you would do if someone asked you
+    to make a `grub` configuration change, a surprisingly common action.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上面的代码是一个很好的例子，如果有人要求您进行`grub`配置更改，这是一个令人惊讶地常见的操作。
+- en: 'Now, bring up the VirtualBox main window, and double-click your VM so, you
+    can see the black console:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，打开VirtualBox主窗口，双击您的VM，这样您就可以看到黑色控制台：
+- en: '![](img/08f1ae2c-f11c-49ac-aaf9-f0c661ad950b.png)'
+  id: totrans-200
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/08f1ae2c-f11c-49ac-aaf9-f0c661ad950b.png)'
+- en: 'Bring up your Terminal connection so that you can see both and reboot your
+    VM with the `reboot` command:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开您的终端连接，这样您就可以同时看到并使用`reboot`命令重新启动您的VM：
+- en: '[PRE41]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'Keep your eyes on the VirtualBox window; you should see something like the
+    following screenshot:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 保持眼睛盯着VirtualBox窗口；您应该会看到类似以下截图的内容：
+- en: '![](img/ae417e9b-2ac0-46dc-b333-34abc9562b23.png)'
+  id: totrans-204
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/ae417e9b-2ac0-46dc-b333-34abc9562b23.png)'
+- en: Did you note that scrolling information? It probably flew by too fast for you
+    to read, but it's your system working through initializing itself.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您有注意到滚动信息吗？它可能飞得太快了，以至于您无法阅读，但这是您的系统在初始化自身。
+- en: You can close your VirtualBox window now and continue in the Terminal.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您现在可以关闭VirtualBox窗口，并在终端中继续操作。
+- en: If you're interested in reading back through what you just saw, you might remember
+    the `dmesg` command we used previously; everything you've just seen is available
+    to view.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您有兴趣回顾刚才看到的内容，您可能会记得我们之前使用过的`dmesg`命令；您刚刚看到的所有内容都可以查看。
+- en: 'Now that we''re in a running system again, we can see which modules the kernel
+    has loaded to deal with our hardware:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要在运行的系统中查看内核加载了哪些模块来处理我们的硬件：
+- en: '[PRE42]'
+  id: totrans-209
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: That's a lot of modules!
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是很多模块！
+- en: As I mentioned previously, some of these modules will be obvious, and more still
+    won't be.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我之前提到的，其中一些模块是显而易见的，还有更多的则不是。
+- en: An obvious one from that list might be `e1000` because we already know that's
+    our network module from an earlier section.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在列表中，一个很明显的是`e1000`，因为我们已经知道这是我们在前面一节中讨论过的网络模块。
+- en: 'We can get specific information about a module using `modinfo`:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`modinfo`获取有关模块的具体信息：
+- en: '[PRE43]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: The preceding code not only gives us the version of the module and the license,
+    but the author and their information for contacting purposes (usually bug reports).
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上面的代码不仅给出了模块的版本和许可证，还给出了作者和他们的联系信息（通常是bug报告）。
+- en: 'If you try to remove a module that''s in use, you won''t be allowed, as seen
+    in the following `modprobe` example:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你试图移除一个正在使用的模块，你将不被允许，就像下面的`modprobe`示例中所示的那样：
+- en: '[PRE44]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'Similarly, if you want to load a new module (maybe because you want to test
+    it), you can again use `modprobe`:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，如果你想加载一个新的模块（也许是因为你想测试它），你可以再次使用`modprobe`：
+- en: '[PRE45]'
+  id: totrans-219
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'We can then see our loaded module:'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以看到我们加载的模块：
+- en: '[PRE46]'
+  id: totrans-221
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: Loading a module on boot is a different matter, as it requires a configuration
+    file if not built in to the kernel (and kernel options are usually generic so
+    that vendors can cover as many bases as possible without causing problems).
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在启动时加载模块是另一回事，因为如果没有内置到内核中（并且内核选项通常是通用的，以便供应商可以尽可能涵盖多种情况而不会引起问题），它需要一个配置文件。
+- en: 'To ensure `nf_tables` starts with the rest of our kernel, run the following:'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了确保`nf_tables`与我们的内核一起启动，请运行以下命令：
+- en: '[PRE47]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: Reboot and use `lsmod` to see whether your module has loaded.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动并使用`lsmod`来查看你的模块是否已加载。
+- en: How it works...
+  id: totrans-226
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: When your system boots, several things happen in sequence, and these vary slightly
+    depending on trivial differences (such as which bootloader you're using, though
+    mostly it's Grub these days).
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当系统启动时，会按顺序发生几件事情，这些事情会略有不同（比如你使用的引导加载程序是哪个，尽管现在大多数情况下都是Grub）。
+- en: One of these things is that the kernel extracts itself and loads, before handing
+    over control to the `init` system (`systemd`).
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中一件事是内核会自行提取并加载，然后将控制权交给`init`系统（`systemd`）。
+- en: While the kernel is loading, it also detects hardware in the system and adds
+    the appropriate module to its running state so that hardware can be correctly
+    interacted with and managed.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当内核加载时，它还会检测系统中的硬件，并将适当的模块添加到其运行状态，以便可以正确地与硬件进行交互和管理。
+- en: When we list modules with `lsmod`, we're actually just printing `/proc/modules` in
+    a more readable format.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们使用`lsmod`列出模块时，实际上只是以更易读的格式打印`/proc/modules`。
+- en: There's more...
+  id: totrans-231
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: You can dynamically load and unload modules, as well as manually blacklist certain
+    ones from loading at all.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以动态加载和卸载模块，也可以手动将某些模块列入黑名单，以防止加载。
+- en: This can come in handy if you have a particular piece of hardware that's faulty,
+    and/or causes a Kernel Panic (the kernel ceasing to function entirely and crashing).
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你有一个特定的硬件故障，和/或导致内核崩溃（内核完全停止运行并崩溃），这可能会有所帮助。
+- en: 'To blacklist a module, it''s simply a case of adding it to a blacklist in `/etc/modprobe.d/`:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要列入黑名单一个模块，只需将其添加到`/etc/modprobe.d/`中的黑名单中：
+- en: '[PRE48]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: In the previous example, I blacklisted `e1000`. Clearly, this is going to cause
+    me problems as it means my network card won't have appropriate drivers at boot,
+    but it made the system more secure!
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一个示例中，我将`e1000`列入黑名单。显然，这会给我带来问题，因为这意味着我的网络卡在启动时将没有适当的驱动程序，但这样可以使系统更安全！
+- en: Disk configuration on Linux
+  id: totrans-237
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Linux上的磁盘配置
+- en: In this section, we're going to look at the out-of-the-box configuration of
+    the disks in our VM and discuss the differences between `vda`, `sda`, `hda`, and
+    `nvme`. We're also going to investigate the difference between disks, virtual
+    disks, partitions, and filesystems.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将查看我们的虚拟机中磁盘的开箱即用配置，并讨论`vda`、`sda`、`hda`和`nvme`之间的区别。我们还将调查磁盘、虚拟磁盘、分区和文件系统之间的区别。
+- en: Getting ready
+  id: totrans-239
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: Here, we're going to be using the Vagrant box we created at the beginning of
+    this chapter.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们将使用我们在本章开头创建的Vagrant box。
+- en: 'Ensure your `centos1` VM is up and connect to it:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保你的`centos1`虚拟机已经启动并连接到它：
+- en: '[PRE49]'
+  id: totrans-242
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: Check that your VM has the appropriate packages for this section installed.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查你的虚拟机是否安装了本节所需的适当软件包。
+- en: '[PRE50]'
+  id: totrans-244
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: How to do it...
+  id: totrans-245
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: We'll start by looking at the physical disks in our system and work out how
+    they relate to what we can see with the `df` command.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将首先查看系统中的物理磁盘，并弄清它们与我们可以通过`df`命令看到的内容之间的关系。
+- en: Listing disks with lsblk
+  id: totrans-247
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用lsblk列出磁盘
+- en: As part of your base system, a program called `lsblk` should be installed.
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为基本系统的一部分，应该安装一个名为`lsblk`的程序。
+- en: 'Running this program gives you a human-readable tree view of our system''s
+    block devices, their logical separations, and their mount points:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行此程序会为您提供一个人类可读的树状视图，显示我们系统的块设备、它们的逻辑分离和它们的挂载点：
+- en: '[PRE51]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: A block device is basically a layer of abstraction atop a storage medium; character
+    (raw) devices allow direct access to the storage medium, but may have restrictions
+    applied that are abstracted away by using a block device instead.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 块设备基本上是在存储介质之上的一层抽象；字符（原始）设备允许直接访问存储介质，但可能会施加一些抽象掉的限制，而使用块设备可以解除这些限制。
+- en: 'In the previous example, we have our physical disks:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一个示例中，我们有我们的物理磁盘：
+- en: '`sda`'
+  id: totrans-253
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sda`'
+- en: '`sdb`'
+  id: totrans-254
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sdb`'
+- en: '`sdc`'
+  id: totrans-255
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sdc`'
+- en: 'We then have our partitions:'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们有我们的分区：
+- en: '`sda1`'
+  id: totrans-257
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sda1`'
+- en: '`sda2`'
+  id: totrans-258
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sda2`'
+- en: '`sda3`'
+  id: totrans-259
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sda3`'
+- en: 'We have our volume group:'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有我们的卷组：
+- en: '`VolGroup00`'
+  id: totrans-261
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`VolGroup00`'
+- en: 'We have logical volumes atop our singular volume group:'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在我们的单一卷组上有逻辑卷：
+- en: '`LogVol00`'
+  id: totrans-263
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`LogVol00`'
+- en: '`LogVol01`'
+  id: totrans-264
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`LogVol01`'
+- en: 'Finally, we have our mount points:'
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们有我们的挂载点：
+- en: '`/boot`'
+  id: totrans-266
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`/boot`'
+- en: '`/`'
+  id: totrans-267
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`/`'
+- en: '`[SWAP]`'
+  id: totrans-268
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[SWAP]`'
+- en: Listing mount points with df
+  id: totrans-269
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用df列出挂载点
+- en: 'Now that we know the rough disk layout of our system, we might want to know
+    all of the other mount points, too. This is easily achieved with a program called
+    `df`:'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道了系统的大致磁盘布局，我们可能也想知道所有其他的挂载点。这可以很容易地通过一个名为`df`的程序来实现：
+- en: '[PRE52]'
+  id: totrans-271
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'For better, human-readable output, we can use `-h`:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了更好地阅读输出，我们可以使用`-h`：
+- en: '[PRE53]'
+  id: totrans-273
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: Here, we can see the mount points we already know about from the previous section,
+    those being `/` and `/boot`.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到我们已经从上一节知道的挂载点，即`/`和`/boot`。
+- en: We can also see other mount points, specifically those tagged with the `devtmpfs`
+    and `tmpfs` filesystems.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以看到其他挂载点，特别是那些标记有`devtmpfs`和`tmpfs`文件系统的挂载点。
+- en: These mount points are mounted atop RAM disks—a concept that's been around for
+    years, but which we still use because RAM is just so damn quick (considerably
+    faster than SSDs at the moment).
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些挂载点被挂载在RAM磁盘上——这个概念已经存在多年了，但我们仍在使用，因为RAM速度非常快（目前比SSD快得多）。
+- en: Temporary directories are those that contain files we don't care about preserving
+    across reboots (for the most part).
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 临时目录是那些包含我们不在乎在重启后保留的文件的目录（大部分情况下）。
+- en: Mostly, the mount points you will be concerned with day-to-day are those that
+    contain non-transient files.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大多数情况下，您每天关心的挂载点是那些包含非瞬态文件的挂载点。
+- en: Listing filesystems with df
+  id: totrans-279
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用df列出文件系统
+- en: 'As well as knowing which of your disks is mounted where, you might also want
+    to know which filesystem is being used atop the chunk of space; this is done with
+    the `-T` flag:'
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了知道哪个磁盘挂载在哪里，您可能还想知道在空间块上使用的是哪个文件系统；这可以通过`-T`标志来完成：
+- en: '[PRE54]'
+  id: totrans-281
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: Here, we can easily see that our slash-root mount point (`/`) and boot mount
+    point are formatted as XFS.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以轻松地看到我们的根目录（`/`）和引导目录被格式化为XFS。
+- en: CentOS and Red Hat prefer to use XFS at present, but it's not uncommon to come
+    across systems using `ext4`, `ext3`, `ext2`, `btrfs`, and `zfs`, to name a few.
+    Functionally, there are differences, but for day-to-day activities, they all handle
+    writing and reading files, which is the important bit.
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，CentOS和Red Hat更喜欢使用XFS，但不少系统使用`ext4`、`ext3`、`ext2`、`btrfs`和`zfs`也并不少见。在功能上有区别，但在日常活动中，它们都能处理写入和读取文件，这是重要的部分。
+- en: Listing logical volume manager disks, volume groups, and logical volumes
+  id: totrans-284
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 列出逻辑卷管理器磁盘、卷组和逻辑卷
+- en: If you're using LVM (which we are by default, and which a lot of systems do),
+    you may want to know the layout of your disks that are being handled by LVM.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您正在使用LVM（默认情况下我们正在使用，许多系统也是如此），您可能想知道由LVM处理的磁盘的布局。
+- en: Physical disks
+  id: totrans-286
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 物理磁盘
+- en: 'To start, we need to know which physical volumes LVM is aware of; this is accomplished
+    with `pvs` or `pvdisplay`:'
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要知道LVM知道的物理卷是哪些；这可以通过`pvs`或`pvdisplay`来完成：
+- en: '[PRE55]'
+  id: totrans-288
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: Note how `sudo pvs` is a more traditional, `unix-y` output, whereas the second
+    is more intended for human parsing.
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意`sudo pvs`是更传统的`unix-y`输出，而第二个更适合人类解析。
+- en: Here, we can see that the only physical device LVM is aware of is the `sda3`
+    partition atop the `sda` device.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到LVM知道的唯一物理设备是`sda`设备上的`sda3`分区。
+- en: A physical volume in LVM land can be either an entire device (`sda`) or a partition
+    on that device (`sda3`). Generally, which one is used is down to the system administrator's
+    personal preference, as there are both pros and cons to both methods. Personally,
+    I prefer to give the whole device to LVM and let it do all of the work, removing
+    a layer of abstraction, but I've known people who swear by carving up the disk
+    into partitions before LVM even gets a say.
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在LVM领域，物理卷可以是整个设备（`sda`）或该设备上的分区（`sda3`）。通常，使用哪种取决于系统管理员的个人偏好，因为这两种方法都有利弊。就我个人而言，我更喜欢将整个设备交给LVM，并让它完成所有工作，消除了一层抽象，但我知道有人发誓在LVM甚至发言之前将磁盘划分为分区。
+- en: Volume groups
+  id: totrans-292
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 卷组
+- en: You can have more than one physical volume grouped together in a volume group;
+    later, this allows for flexibility in terms of the logical volumes that sit on
+    top.
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以将多个物理卷组合在一起形成一个卷组；稍后，这将为逻辑卷的灵活性提供便利。
+- en: 'You will get a printout when using `pvs` and `pvdisplay` that tells you the
+    volume group that the disk is a part of, but if you want to only list the volume
+    group information, `vgs` and `vgdisplay` can be used:'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`pvs`和`pvdisplay`时，您将得到一个打印输出，告诉您磁盘所属的卷组，但如果您只想列出卷组信息，可以使用`vgs`和`vgdisplay`：
+- en: '[PRE56]'
+  id: totrans-295
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: Here, we can see that there are two logical volumes atop this volume group.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到有两个逻辑卷位于这个卷组之上。
+- en: Logical volumes
+  id: totrans-297
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 逻辑卷
+- en: Finally, in the LVM stack, we have the logical volumes. These are the logical
+    devices that the filesystems get applied to, and which can then be mounted at
+    a point on your system.
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在LVM堆栈中，我们有逻辑卷。这些是文件系统应用的逻辑设备，然后可以挂载到系统上的某个点。
+- en: Have you worked out the logic behind the command naming?
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您是否已经弄清楚了命令命名背后的逻辑？
+- en: 'For this section, we will use `lvs` and `lvdisplay`:'
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这一部分，我们将使用`lvs`和`lvdisplay`：
+- en: '[PRE57]'
+  id: totrans-301
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: There are two logical volumes!
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有两个逻辑卷！
+- en: We know that one of them is sitting under our slash-root and, thanks to `lsblk`
+    earlier, we know that the second is providing our swap space.
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们知道其中一个位于我们的根目录下，而且由于之前的`lsblk`，我们知道第二个提供了我们的交换空间。
+- en: Listing swap
+  id: totrans-304
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 列出交换
+- en: Swap is special, and it's more like extended, slow, and somewhat annoying memory
+    than it is disk space.
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 交换是特殊的，更像是扩展的、缓慢的、有些烦人的内存，而不是磁盘空间。
+- en: Swap is used when your system's RAM is full, and the kernel starts to offload
+    infrequently accessed memory onto the disk, where it can be read back at a much
+    slower rate.
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您的系统RAM已满，并且内核开始将不经常访问的内存转移到磁盘上时，交换被使用，可以以更慢的速度读取回来。
+- en: Is it time for another holy war? I think it is! Some systems administrators
+    swear by swap and will always make sure their system has at least a few megabytes
+    of space to swap into, even if they've got 256 GB of RAM; other systems administrators
+    say that, if you're using that much RAM and still swapping, you need more RAM.
+    Smile and nod if you're not the person making the decision about whether or not
+    to even have swap—it's not worth it.
+  id: totrans-307
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 是时候再次进行一场圣战了吗？我认为是的！一些系统管理员信奉交换，并始终确保他们的系统至少有几兆字节的交换空间，即使他们有256GB的RAM；其他系统管理员说，如果您使用了那么多RAM并且仍在交换，您需要更多的RAM。如果您不是做出是否甚至有交换的决定的人，请微笑并点头，这不值得。
+- en: 'We can list what swap our system is using with `swapon`, like so:'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`swapon`列出系统正在使用的交换，如下所示：
+- en: '[PRE58]'
+  id: totrans-309
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: Here, we can see our one swap device is `/dev/dm-1`, but we think it's an LVM
+    device? That can't be right.
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到我们的一个交换设备是`/dev/dm-1`，但我们认为它是一个LVM设备？这肯定不对。
+- en: But it can!
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是它可以！
+- en: 'Logical volumes are actually mapped; `dm-1` is a low-level representation of
+    our logical volume. Running `ls -l` on our logical volume device proves the following:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 逻辑卷实际上是映射的；`dm-1`是我们逻辑卷的低级表示。在我们的逻辑卷设备上运行`ls -l`可以证明以下事实：
+- en: '[PRE59]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Our device is actually linked and mapped to `dm-1`, which is why it's listed
+    as it is in our `swapon` command.
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的设备实际上是链接和映射到`dm-1`，这就是为什么它在我们的`swapon`命令中列出的方式。
+- en: How it works...
+  id: totrans-315
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: Physically, you have a disk.
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 物理上，你有一个磁盘。
+- en: This disk can be a hard disk drive (the old-school spinning platter type) or
+    a solid state drive of some sort, be it `NVMe` on an M.2 connector or generic
+    SATA.
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个磁盘可以是硬盘驱动器（老式的旋转式碟片类型）或某种固态硬盘，比如M.2连接器上的`NVMe`或通用的SATA。
+- en: Whatever the type of disk, you want to use it for storage.
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论磁盘的类型如何，你都想要用它来存储。
+- en: To store data on the disk, it needs to have some things. First, it needs to
+    be readable by the OS; this bit is handled by the kernel. If the kernel determines
+    the disk to be an IDE drive (uncommon), it'll probably show as an `hda` device.
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在磁盘上存储数据，它需要一些东西。首先，它需要被操作系统读取；这一部分由内核处理。如果内核确定磁盘是IDE驱动器（不常见），它可能会显示为`hda`设备。
+- en: If the disk is SATA or SCSI, it might show up as an `sda` device. If it's a
+    virtio virtual disk, and shows as such to the virtual machine, it will be listed
+    as `vda`.
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果磁盘是SATA或SCSI，它可能显示为一个`sda`设备。如果它是一个virtio虚拟磁盘，并且在虚拟机中显示为这样，它将被列为`vda`。
+- en: The disk lettering is sequential, which is why our three disks show up as `sda`,
+    `sdb`, and `sdc`.
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 磁盘的标识是顺序的，这就是为什么我们的三个磁盘显示为`sda`、`sdb`和`sdc`。
+- en: This lettering doesn't have to be consistent; the disks are assigned their denotion
+    at boot-time, meaning your computer can come up with its first disk as `sdb` one
+    day and `sda` another, because of various factors. The way around this is to use
+    disk UUIDs (seen in `fstab` earlier) or labels.
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种标识不一定要一致；磁盘在启动时被分配它们的标识，这意味着你的计算机可能一天以`sdb`的方式启动，另一天以`sda`的方式启动，这是由于各种因素。解决这个问题的方法是使用磁盘UUID（在之前的`fstab`中看到）或标签。
+- en: Secondly, after the operating system recognizes that a disk exists, it has to
+    check for partitions and filesystems. Partitions are a segment of a disk, and
+    filesystems are the recipe for how files are read and written to the drive.
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，在操作系统识别到磁盘存在后，它必须检查分区和文件系统。分区是磁盘的一个部分，文件系统是文件如何读取和写入到驱动器的配方。
+- en: In this section, we started out with `lsblk`,  which we used to query the `sysfs`
+    filesystem and the `udev` database, before displaying it in a human-readable way.
+    Generally, this is my first stop when trying to determine what a system looks
+    like.
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们首先使用了`lsblk`，用它来查询`sysfs`文件系统和`udev`数据库，然后以人类可读的方式显示出来。通常，这是我在尝试确定系统外观时的第一站。
+- en: After that, we had a look at mount points and filesystems.
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，我们看了挂载点和文件系统。
+- en: Mount points are the area of the Linux hierarchy to which disks are assigned.
+    Unlike Windows, where the structure starts at the disk, on Linux, the structure
+    is set and the disks fit in (flipping the Windows model on its head).
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 挂载点是Linux层次结构中分配磁盘的区域。与Windows不同，Windows的结构从磁盘开始，而Linux的结构是固定的，磁盘适应其中。
+- en: It's a little hard to visualize the Linux hierarchy of mount points and filesystems,
+    but the important thing to remember is that everything starts at root (that is,
+    slash-root or `/`) and builds from there. You could have one disk, with one partition,
+    and put slash-root on that partition, hence making the simplest system possible.
+    Or, you could put your home directories (`/home`) on a physical disk of its own,
+    but it would still exist as `/home`, one step above slash-root.
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux层次结构的挂载点和文件系统有点难以想象，但重要的是要记住的是一切都从根目录开始（即斜杠根目录或`/`），然后从那里构建。你可以有一个磁盘，有一个分区，并将斜杠根目录放在该分区上，从而使得最简单的系统成为可能。或者，你可以将你的主目录（`/home`）放在一个独立的物理磁盘上，但它仍然存在于斜杠根目录的上一级。
+- en: Imagine the logical layout of the Linux hierarchy as the absolute, with the
+    disks almost an irrelevant piece of the puzzle. If you really felt like it, you
+    could mount a bit of the filesystem at `/home/me/favourite_things/pokemon/absol`,
+    entirely on one disk.
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 想象一下Linux层次结构的逻辑布局是绝对的，而磁盘几乎是谜题中不重要的一部分。如果你真的想这样做，你可以将文件系统的一部分挂载到`/home/me/favourite_things/pokemon/absol`，完全在一个磁盘上。
+- en: Filesystems are a bit more obvious and generally static (unless you're a system
+    administrator who really wants to live on the wild side). Once you've carved out
+    a section of disk that you want to use (say to mount `/home` on), you decide on
+    a filesystem.
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件系统有点更明显，通常是静态的（除非你是一个真的想要冒险的系统管理员）。一旦你划分出你想要使用的磁盘部分（比如挂载`/home`），你就要决定文件系统。
+- en: It's best to go with a typical one in a work environment, something like XFS
+    or `ext4`, rather than an experimental one, like `btrfs`.
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最好选择在工作环境中使用的典型文件系统，比如XFS或`ext4`，而不是像`btrfs`这样的实验性文件系统。
+- en: At the end of your storage-creating adventure, you've got a disk, with a `partition`,
+    which has the `ext4` filesystem atop, and which you've mounted at `/home`.
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在你的存储创建冒险结束时，你有一个磁盘，上面有一个`分区`，上面有一个`ext4`文件系统，你已经挂载到`/home`。
+- en: There's more...
+  id: totrans-332
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: '...There''s so much more!'
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '...还有更多！'
+- en: The world of filesystems is an ever-evolving and ever-changing one. You'd have
+    thought that, by now, we'd have data storage licked, but you would be wrong.
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件系统的世界是一个不断发展和变化的世界。你可能会认为，到现在为止，我们已经解决了数据存储的问题，但你会错。
+- en: There are some filesystems that are better suited for thousands of small files
+    (for example, databases) and some that are better suited for massive blocks of
+    files (such as VM disks). Which one you choose to use is up to you.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一些文件系统更适合于成千上万的小文件（例如数据库），有一些更适合于大块的文件（比如虚拟机磁盘）。你选择使用哪种取决于你。
+- en: There are de-duplicating, snapshotting, and even self-healing (apparently) filesystems.
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有去重、快照，甚至自愈（显然）的文件系统。
+- en: FreeBSD swears by ZFS, which is also shipped in Ubuntu in the Linux world. OpenSUSE
+    favors `btrfs` for a lot of its new installations, and some distributions keep
+    with the classics, shipping the `ext` family for familiarity reasons.
+  id: totrans-337
+  prefs: []
+  type: TYPE_NORMAL
+  zh: FreeBSD信奉ZFS，在Linux世界的Ubuntu中也有。OpenSUSE偏爱`btrfs`用于许多新安装，并且一些发行版保持经典，出于熟悉原因使用`ext`系列。
+- en: Whichever you decide to use, be sure to keep backups—backups are important.
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论您决定使用哪一个，一定要保持备份-备份很重要。
+- en: The filesystem hierarchy
+  id: totrans-339
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 文件系统层次结构
+- en: In this section, we'll discuss `hier` and `man hier` as a way of determining
+    what your filesystem's different names mean.
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论`hier`和`man hier`，作为确定您的文件系统不同名称含义的一种方式。
+- en: 'When you look at your system, you might question why certain folders are named
+    in the way they are:'
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您查看系统时，您可能会质疑为什么某些文件夹以这种方式命名：
+- en: '[PRE60]'
+  id: totrans-342
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: What's `sbin` or `opt`?
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 什么是`sbin`或`opt`？
+- en: 'You might also be curious as to know why there''s a folder called `root` when
+    we''re supposed to be in the root of the system, `/`:'
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能还想知道为什么有一个名为`root`的文件夹，当我们应该在系统的根目录`/`中时：
+- en: '[PRE61]'
+  id: totrans-345
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: The filesystem hierarchy has the answers you want!
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件系统层次结构有您想要的答案！
+- en: Getting ready
+  id: totrans-347
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: This section is going to use our lone VM.
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节将使用我们的孤立VM。
+- en: If not already connected, connect to your VM.
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果尚未连接，请连接到您的VM。
+- en: 'We''re also going to directly reference a man page, so ensure that your man
+    pages are installed with the following:'
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还将直接引用man页面，因此请确保已安装以下man页面：
+- en: '[PRE62]'
+  id: totrans-351
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: How to do it...
+  id: totrans-352
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'To discern how your distribution maintainer thinks the distribution filesystem
+    should look, run `man hier`:'
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要了解发行版维护者如何看待发行版文件系统应该是什么样子，请运行`man hier`：
+- en: '[PRE63]'
+  id: totrans-354
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: The manual page should open in your default pager (usually `less`) and can be
+    navigated as such.
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 手册页应该在您的默认分页器（通常是`less`）中打开，并且可以进行导航。
+- en: 'What you should see is something akin to the following—a list of paths, with
+    a description next to each of them:'
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该看到类似于以下内容的东西-路径列表，并在每个路径旁边有描述：
+- en: '![](img/3eb37f69-8cd3-4a23-b2a2-78af79e5b2cc.png)'
+  id: totrans-357
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/3eb37f69-8cd3-4a23-b2a2-78af79e5b2cc.png)'
+- en: Linux Manual Hier Page
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux手册层次页面
+- en: How it works...
+  id: totrans-359
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: This manual page is important, and there's no guarantee that it'll be consistent
+    across the systems that you manage (that is, Debian and CentOS might look distinctly
+    unfamiliar).
+  id: totrans-360
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个手册页很重要，不能保证在您管理的系统上一致（即Debian和CentOS可能看起来完全陌生）。
+- en: 'What it should be is the distribution maintainer''s understanding of where
+    specific files go on this distribution. So, according to this manual page, that
+    is the following:'
+  id: totrans-361
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它应该是发行版维护者对该发行版上特定文件放置位置的理解。因此，根据本手册页，如下所示：
+- en: '"/bin  This directory contains executable programs which are needed in single
+    user mode and to bring the system up or repair it."'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"/bin 这个目录包含在单用户模式下需要的可执行程序，以及用于启动系统或修复系统的程序。"'
+- en: 'That one is fairly obvious, but what if we want a directory for add-on packages?
+    `hier` for CentOS has you covered:'
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个很明显，但是如果我们想要一个附加包的目录呢？CentOS的`hier`可以满足您的需求：
+- en: '"/opt   This directory should contain add-on packages that contain static files."'
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"/opt 这个目录应该包含包含静态文件的附加包。"'
+- en: 'How about if you see a path, and you''re not sure what it''s for, such as `/usr/games`?
+    See the following:'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您看到一个路径，不确定它是用来做什么的，比如`/usr/games`？请参阅以下内容：
+- en: '"  /usr/games Binaries for games and educational programs (optional)."'
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"/usr/games 游戏和教育程序的二进制文件（可选）。"'
+- en: Curiously, one directory that's omitted from the CentOS-supplied `hier` manual
+    is `/srv`, and it's one I use quite frequently.
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是，CentOS提供的`hier`手册中省略了一个目录，即`/srv`，而我经常使用它。
+- en: 'Taken from the Ubuntu `hier` manual, we can see its definition:'
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从Ubuntu的`hier`手册中，我们可以看到它的定义：
+- en: '"/srv   This directory contains site-specific data that is served by this system."'
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"/srv 这个目录包含由该系统提供的特定站点数据。"'
+- en: 'This is a good example of how different systems might put files in different
+    places, and it''s a good place to clear up confusion:'
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是不同系统可能会将文件放在不同位置的很好的例子，也是消除困惑的好地方：
+- en: '"       /      This is the root directory. This is where the whole tree starts.'
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “/ 这是根目录。整个树的起点。
+- en: <SNIP>
+  id: totrans-372
+  prefs: []
+  type: TYPE_NORMAL
+  zh: <SNIP>
+- en: /root  This directory is usually the home directory for the root user (optional)."
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: /root 这个目录通常是root用户的主目录（可选）。
+- en: There's more...
+  id: totrans-374
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: 'At the bottom of your system''s `hier` manual, you might see a reference to
+    The Filesystem Hierarchy Standard, available at [http://www.pathname.com/fhs/](http://www.pathname.com/fhs/).
+    This standard is, according to the manual, as follows:'
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的系统的`hier`手册的底部，您可能会看到对文件系统层次结构标准的引用，网址为[http://www.pathname.com/fhs/](http://www.pathname.com/fhs/)。根据手册，这个标准如下：
+- en: '"The filesystem standard has been designed to be used by Unix distribution
+    developers, package developers, and system implementors. However, it is primarily
+    intended to be a reference and is not a tutorial on how to manage a Unix filesystem
+    or directory hierarchy."'
+  id: totrans-376
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “文件系统标准已经被设计用于Unix发行版开发人员、软件包开发人员和系统实施者使用。但是，它主要是作为参考，而不是Unix文件系统或目录层次结构管理的教程。”
+- en: This in itself isn't very helpful because it effectively says "*these are more
+    guidelines than rules*", a la *Pirates of the Caribbean*.
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这本身并不是很有帮助，因为它实际上说的是“这些更多是指南而不是规则”，就像《加勒比海盗》中的一样。
+- en: Basically, use `man hier` as a good rule of thumb for working out how a system
+    is laid out, but don't assume some narcissistic system administrator hasn't come
+    along and put Terraform in `/usr/local/sbin` just to be awkward.
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基本上，使用`man hier`作为了解系统布局的良好准则，但不要假设某些自恋的系统管理员会来到`/usr/local/sbin`中放置Terraform。
+- en: Configuring a blank disk and mounting it
+  id: totrans-379
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 配置空白磁盘并挂载它
+- en: In this section, we'll use CLI tools to partition and format one of our disks
+    (without LVM), talking about GPT and MBR while we do so. We'll then mount our
+    disk at `/home` on our system.
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将使用CLI工具对我们的一个磁盘进行分区和格式化（不使用LVM），并在此过程中讨论GPT和MBR。然后我们将在系统上将我们的磁盘挂载到`/home`。
+- en: Getting ready
+  id: totrans-381
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: If you're using the supplied `Vagrantfile` for this chapter, you'll have a system
+    with two blank disks connected. If you're using your own solution, now would be
+    the time to add a couple of blank disks.
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您在本章使用提供的`Vagrantfile`，您将拥有连接的两个空白磁盘的系统。如果您使用自己的解决方案，现在是添加几个空白磁盘的时候了。
+- en: 'Connect to your VM and ensure you can see `/dev/sdb`; if you can''t, double
+    check your Vagrant setup:'
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到您的VM并确保您可以看到`/dev/sdb`；如果看不到，请仔细检查您的Vagrant设置：
+- en: '[PRE64]'
+  id: totrans-384
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: How to do it...
+  id: totrans-385
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: First, we need to partition our disk. Here, we're going to create two partitions
+    of half the disk each.
+  id: totrans-386
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要对磁盘进行分区。在这里，我们将创建两个各占一半磁盘的分区。
+- en: 'Start by using `fdisk` against `/dev/sdb`:'
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先使用`fdisk`对`/dev/sdb`进行操作：
+- en: '[PRE65]'
+  id: totrans-388
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: You'll be dropped into a different shell, that of `fdisk`.
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将进入不同的shell，即`fdisk`的shell。
+- en: 'First, we will create `GPT disklabel` by typing `g`:'
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将通过输入`g`创建`GPT disklabel`：
+- en: '[PRE66]'
+  id: totrans-391
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: Next, we will create a new partition, with a partition number of `1`, a first
+    sector of `2048`, and of the size 1 GB.
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将创建一个新分区，分区号为`1`，第一个扇区为`2048`，大小为1 GB。
+- en: 'We do this by pressing `n` and *Enter*, accepting the defaults of the first
+    two prompts (by pressing *Enter* without input) and typing `+1G` when prompted
+    for `Last sector`:'
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们通过按下`n`和*Enter*，接受前两个提示的默认值（通过在没有输入的情况下按*Enter*）并在提示`Last sector`时输入`+1G`来完成这一步：
+- en: '[PRE67]'
+  id: totrans-394
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Next, we use `n` again to create a second partition although this time we''re
+    going to accept the defaults each time (hit *Enter* thrice) because we want to
+    use the rest of the disk:'
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们再次使用`n`创建第二个分区，尽管这次我们将每次接受默认值（按*Enter*三次），因为我们想使用磁盘的剩余空间：
+- en: '[PRE68]'
+  id: totrans-396
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'Now, we''ve got our partitions laid out as we want, we need to write the table
+    to the disk and exist `fdisk`. Do this with `w`:'
+  id: totrans-397
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经按照我们的意愿布置了分区，我们需要将表写入磁盘并退出`fdisk`。使用`w`来完成这一步：
+- en: '[PRE69]'
+  id: totrans-398
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: These days, systems are pretty good about automatically re-reading the partition
+    table changes of a device, though occasionally you might still need to run `partprobe`
+    to inform your kernel of any changes manually.
+  id: totrans-399
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如今，系统在设备的分区表更改方面自动重新读取得很好，尽管偶尔您可能仍然需要运行`partprobe`手动通知内核有任何更改。
+- en: 'Running `lsblk` should now show our new partitions:'
+  id: totrans-400
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在运行`lsblk`应该显示我们的新分区：
+- en: '[PRE70]'
+  id: totrans-401
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: Now that we have two partitions, we're going to format them with a filesystem.
+  id: totrans-402
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了两个分区，我们将使用文件系统对它们进行格式化。
+- en: 'For the sake of this tutorial, we''re going to format one as `ext4`, and one
+    as XFS:'
+  id: totrans-403
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 出于本教程的目的，我们将一个格式化为`ext4`，另一个格式化为XFS：
+- en: '[PRE71]'
+  id: totrans-404
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: You will be presented with various bits of information, but hopefully the format
+    should be done quickly.
+  id: totrans-405
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看到各种信息，但希望格式化应该很快完成。
+- en: 'For partition two, we''re going to use just the `mkfs` command, which lacks
+    the implied type of using `mkfs.ext4`:'
+  id: totrans-406
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于第二个分区，我们将只使用`mkfs`命令，它缺少使用`mkfs.ext4`的隐含类型：
+- en: '[PRE72]'
+  id: totrans-407
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'We can use a new tool here (`blkid`) to print the UUID and `TYPE` of these
+    partitions:'
+  id: totrans-408
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以在这里使用一个新工具（`blkid`）来打印这些分区的UUID和`TYPE`：
+- en: '[PRE73]'
+  id: totrans-409
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: It looks good!
+  id: totrans-410
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看起来不错！
+- en: Finally, it's a good practice to copy over files from the location you're hoping
+    to mount atop, prior to replacing it with your new filesystem.
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，最好在用新文件系统替换之前，从您希望挂载的位置复制文件。
+- en: 'If we look at `/home` at the moment, it looks like this:'
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们此刻查看`/home`，它看起来像这样：
+- en: '[PRE74]'
+  id: totrans-413
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: 'If we mount one of our filesystems at `/home` and `ls` again, it looks like
+    this:'
+  id: totrans-414
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们将我们的文件系统之一挂载到`/home`并再次`ls`，它看起来像这样：
+- en: '[PRE75]'
+  id: totrans-415
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: Our Vagrant user's home folder has vanished!
+  id: totrans-416
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的Vagrant用户的主文件夹消失了！
+- en: The `lost+found` folder is a function of `fsck` (the filesystem repair utility)
+    and is the dumping ground for pieces of files that it can't make head nor tail
+    of.
+  id: totrans-417
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`lost+found`文件夹是`fsck`（文件系统修复实用程序）的一个功能，是它无法理解的文件片段的倾倒地。'
+- en: 'This is because we mounted a system over the top of the old location; if we
+    unmount this new filesystem and `ls` the directory again, it looks like this:'
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是因为我们在旧位置的顶部挂载了一个系统；如果我们卸载这个新文件系统并再次`ls`目录，它看起来像这样：
+- en: '[PRE76]'
+  id: totrans-419
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: So, what we really need to do is copy over all existing data (preserving ownership
+    and rights) before writing atop it.
+  id: totrans-420
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，我们真正需要做的是在写入数据之前复制所有现有数据（保留所有权和权利）。
+- en: 'Start by creating a folder in `/mnt` (a standard place to do such things),
+    mounting our new filesystem, and copying the data over:'
+  id: totrans-421
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在`/mnt`中创建一个文件夹（这是这样做的标准位置），挂载我们的新文件系统，并复制数据：
+- en: '[PRE77]'
+  id: totrans-422
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: In the previous, we used `-r` to recursively copy and `--preserve=all` to preserve
+    things such as the SELinux context of the files, alongside the ownership and timestamps.
+  id: totrans-423
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在以前，我们使用了`-r`进行递归复制和`--preserve=all`来保留诸如文件的SELinux上下文以及所有权和时间戳等内容。
+- en: 'Check your results by confirming the Vagrant user''s SSH `authorized_keys`
+    file still has the permissions, `-rw-------`:'
+  id: totrans-424
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过确认Vagrant用户的SSH`authorized_keys`文件仍然具有权限`-rw-------`来检查您的结果：
+- en: '[PRE78]'
+  id: totrans-425
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: 'Now, `umount` the filesystem from our temporary location and mount it over
+    the top of the previous `/home`, making sure we''re not in `/home` first (by moving
+    to a different directory):'
+  id: totrans-426
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，从我们的临时位置`umount`文件系统，并将其挂载到以前的`/home`上，确保我们首先不在`/home`中（通过移动到不同的目录）：
+- en: '[PRE79]'
+  id: totrans-427
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: We move to the root of the filesystem (`/`) on purpose, to avoid the device
+    being busy and causing complications, though this is more of an issue when trying
+    to unmount a filesystem that you're still sitting in.
+  id: totrans-428
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们故意移动到文件系统的根目录（`/`），以避免设备忙碌并引起复杂性，尽管当尝试卸载您仍在其中的文件系统时，这更多是一个问题。
+- en: 'Running `df` should now show your newly mounted partition:'
+  id: totrans-429
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在运行`df`应该显示您新挂载的分区：
+- en: '[PRE80]'
+  id: totrans-430
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: On a reboot, this change will not be preserved. Later, we'll look at making
+    this change permanent with `fstab` and `systemd-mountd`.
+  id: totrans-431
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动后，此更改将不会被保留。稍后，我们将研究如何使用`fstab`和`systemd-mountd`使此更改永久。
+- en: How it works...
+  id: totrans-432
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: When we carved our physical device (`sdb`) into two partitions, we created them
+    using `fdisk`.
+  id: totrans-433
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们将物理设备（`sdb`）划分为两个分区时，我们使用`fdisk`创建了它们。
+- en: First, though, we had to give the disk a partition table, where it could store
+    the information about the partitions we're creating.
+  id: totrans-434
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不过，首先，我们需要给磁盘分区表，以便它可以存储我们正在创建的分区的信息。
+- en: The classic partition table is called **Master Boot Record** (**MBR**) and the
+    new-school one is called **GUID Partition Table** (**GPT**).
+  id: totrans-435
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 经典的分区表称为**主引导记录**（**MBR**），新学校的分区表称为**GUID分区表**（**GPT**）。
+- en: You may still see MBR systems floating around, but GPT is objectively better
+    to use these days, allowing for things such as more than four primary partitions
+    (which MBR is limited to).
+  id: totrans-436
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能仍然会看到MBR系统在周围漂浮，但GPT在这些天明显更好，允许诸如多于四个主分区之类的功能（MBR受限于此）。
+- en: 'You can view the partitions on a disk by again loading `fdisk` and passing
+    `p` on the command line:'
+  id: totrans-437
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过再次加载`fdisk`并在命令行上传递`p`来查看磁盘上的分区：
+- en: '[PRE81]'
+  id: totrans-438
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: These logical spaces can then have a filesystem applied atop them, so that when
+    your OS tries to write files to the disk, the disk knows a way to store the data.
+  id: totrans-439
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，这些逻辑空间可以在其上应用文件系统，这样当您的操作系统尝试将文件写入磁盘时，磁盘知道如何存储数据。
+- en: Once done, the disk can then be mounted anywhere in the Linux filesystem hierarchy,
+    replacing any path you care to.
+  id: totrans-440
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，磁盘可以在Linux文件系统层次结构中的任何位置挂载，替换您关心的任何路径。
+- en: This works because Linux doesn't care how many disks are attached to your system,
+    or what type of disk they are; all it cares about are the mount points.
+  id: totrans-441
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是因为Linux不在乎您的系统连接了多少个磁盘，或者它们是什么类型的磁盘；它只关心挂载点。
+- en: There's more...
+  id: totrans-442
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: One thing to be aware of is that there are different partition system IDs available
+    for different partition types.
+  id: totrans-443
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 需要注意的一件事是，不同的分区类型有不同的分区系统ID可用。
+- en: 'The list of Linux ones that are available on CentOS is as follows:'
+  id: totrans-444
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在CentOS上可用的Linux列表如下：
+- en: '[PRE82]'
+  id: totrans-445
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: These IDs are more informative than anything else these days, though historically,
+    they might be used for informing a system of specific methods required for reading
+    and writing data.
+  id: totrans-446
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些ID如今比任何其他东西都更具信息量，尽管从历史上看，它们可能被用于通知系统所需的特定方法来读写数据。
+- en: For example, if a partition is labelled correctly on an OpenBSD system and then
+    the drive it's on is plugged into a Linux system, the Linux system should read
+    the ID and realize what it is, preferably not touching the data inside.
+  id: totrans-447
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，如果在OpenBSD系统上正确标记了分区，然后将其所在的驱动器插入Linux系统，Linux系统应该读取ID并意识到它是什么，最好不要触及其中的数据。
+- en: Re-configuring a disk using LVM
+  id: totrans-448
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 重新配置使用LVM的磁盘
+- en: We're going to format the second disk in our system, and this time we'll use
+    LVM to do so. We'll use the various LVM tools (`lvs`, `pvs`, and `vgs`) to accomplish
+    this, before giving the new logical volume we create a filesystem and mounting
+    it somewhere on our system.
+  id: totrans-449
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在系统中格式化第二个磁盘，这次我们将使用LVM来完成。在为新创建的逻辑卷创建文件系统并将其挂载到系统的某个位置之前，我们将使用各种LVM工具（`lvs`，`pvs`和`vgs`）来完成这一点。
+- en: Getting ready
+  id: totrans-450
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: For this section, we're going to use the second disk in our system (it will
+    probably be `sdc` on yours).
+  id: totrans-451
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将使用系统中的第二个磁盘（在您的系统上可能是`sdc`）。
+- en: Connect to your `centos1` VM and check that another disk is available to work
+    with.
+  id: totrans-452
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到您的`centos1`虚拟机，并检查是否有另一个可用于工作的磁盘。
+- en: 'If you''ve come straight from the last section, your `lsblk` might look like
+    the following:'
+  id: totrans-453
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您直接从上一节过来，您的`lsblk`可能看起来像下面这样：
+- en: '[PRE83]'
+  id: totrans-454
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: We're going to use `sdc` here.
+  id: totrans-455
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在这里使用`sdc`。
+- en: How to do it...
+  id: totrans-456
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到这一点...
+- en: As I mentioned previously, some people like to first create a partition on their
+    drive before introducing it to the LVM lifestyle.
+  id: totrans-457
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我之前提到的，有些人喜欢在引入LVM生活方式之前在他们的驱动器上创建一个分区。
+- en: We'll do that here, but only because I'll end up having a fight with one of
+    my technical authors if I don't.
+  id: totrans-458
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在这里这样做，但只是因为如果我不这样做，我最终会与我的一位技术作者发生争执。
+- en: 'For an added bit of novelty, we''re going to use `fdisk` without dropping into
+    the command''s shell to hammer home the fact that there are several ways of doing
+    the same thing in Linux:'
+  id: totrans-459
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了增加新奇感，我们将使用`fdisk`而不是进入命令的shell，以强调Linux中有多种执行相同操作的方法：
+- en: '[PRE84]'
+  id: totrans-460
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: We also set our partition's system ID to be 31—that is, Linux LVM.
+  id: totrans-461
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还将设置我们的分区系统ID为31，即Linux LVM。
+- en: 'To take it one step further, we''re going to apply a partition label to our
+    partition, giving it a friendly name:'
+  id: totrans-462
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了更进一步，我们将为我们的分区应用一个分区标签，为其提供一个友好的名称：
+- en: '[PRE85]'
+  id: totrans-463
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: PartLabels are insanely useful, though next to no-one uses them! They're also
+    only available for GPT disks. They basically mean you can reference a partition
+    by name, instead of number or partition UUID. If you ever find yourself using
+    ZFS on a USB hard drive, I might have just saved you an aneurysm.
+  id: totrans-464
+  prefs: []
+  type: TYPE_NORMAL
+  zh: PartLabels非常有用，尽管几乎没有人使用它们！它们也仅适用于GPT磁盘。它们基本上意味着您可以按名称引用分区，而不是按编号或分区UUID。如果您发现自己在USB硬盘上使用ZFS，我可能刚刚帮您避免了一次动脉瘤。
+- en: 'Now that we have a partition, let''s present it to LVM. First, we have to make
+    LVM aware of it, using `pvcreate`:'
+  id: totrans-465
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一个分区，让我们将其呈现给LVM。首先，我们必须让LVM意识到它，使用`pvcreate`：
+- en: '[PRE86]'
+  id: totrans-466
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'Once done, a `pvs` command will list our new physical device:'
+  id: totrans-467
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，`pvs`命令将列出我们的新物理设备：
+- en: '[PRE87]'
+  id: totrans-468
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'Adding it to a volume group is step two, which involves creating the volume
+    group too (or we could add it to `VolGroup00`, but for now we''ll make a new one):'
+  id: totrans-469
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将其添加到卷组是第二步，这涉及创建卷组（或者我们可以将其添加到`VolGroup00`，但现在我们将创建一个新的）：
+- en: '[PRE88]'
+  id: totrans-470
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: 'Finally, we''re going to create a logical volume within this group, though
+    for novelty we''re not going to use all of the available space in the volume group:'
+  id: totrans-471
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们将在此组中创建一个逻辑卷，尽管出于新奇，我们不会使用卷组中的所有可用空间：
+- en: '[PRE89]'
+  id: totrans-472
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: 'Note that now listing our logical volumes with `lvs` shows our new one, which
+    is using 50% of the `VolGroup01` space:'
+  id: totrans-473
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，现在使用`lvs`列出我们的逻辑卷将显示我们的新逻辑卷，它使用`VolGroup01`空间的50%：
+- en: '[PRE90]'
+  id: totrans-474
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: Logical volumes can be many things and have various uses. What we have created
+    here is a simple linear volume, suitable for day-to-day tasks, but lacking things
+    such as redundancy.
+  id: totrans-475
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 逻辑卷可以是许多东西，并且具有各种用途。我们在这里创建的是一个简单的线性卷，适用于日常任务，但缺少冗余等功能。
+- en: We now have a disk that we can place a filesystem atop, before mounting it somewhere
+    on our VM.
+  id: totrans-476
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有一个可以在其上放置文件系统的磁盘，然后将其挂载到我们的VM上的某个位置。
+- en: 'To make a filesystem, we again use `mkfs`:'
+  id: totrans-477
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了创建文件系统，我们再次使用`mkfs`：
+- en: '[PRE91]'
+  id: totrans-478
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: 'And again, we can `mount` it (creating a mount point first):'
+  id: totrans-479
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 而且，我们可以挂载它（首先创建一个挂载点）：
+- en: '[PRE92]'
+  id: totrans-480
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: '`lsblk` can confirm our new setup:'
+  id: totrans-481
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`lsblk`可以确认我们的新设置：'
+- en: '[PRE93]'
+  id: totrans-482
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: How it works...
+  id: totrans-483
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'What we have created are layers:'
+  id: totrans-484
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建的是层：
+- en: We have our physical disk (`sdc`)
+  id: totrans-485
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们有我们的物理磁盘（`sdc`）
+- en: We have a partition atop our physical disk (`sdc1`)
+  id: totrans-486
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们在我们的物理磁盘（`sdc1`）之上有一个分区
+- en: We have our volume group, with our physical volume inside (`VolGroup01`)
+  id: totrans-487
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们有我们的卷组，里面有我们的物理卷（`VolGroup01`）
+- en: We have our logical volume, atop our volume group (`Home3`)
+  id: totrans-488
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们有我们的逻辑卷，位于我们的卷组之上（`Home3`）
+- en: We have our filesystem, atop our logical volume, which we then mounted at `/mnt/home3`
+  id: totrans-489
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们有我们的文件系统，位于我们的逻辑卷之上，然后我们将其挂载到`/mnt/home3`
+- en: This means that we have complexity, but we also have flexibility.
+  id: totrans-490
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着我们有复杂性，但我们也有灵活性。
+- en: What we have done is create a virtual block device, in the form of our logical
+    volume. This logical volume will have data written to it and, in turn, will apply
+    that data to a physical volume in the volume group, based on decisions by the
+    kernel.
+  id: totrans-491
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们所做的是创建一个虚拟块设备，以我们的逻辑卷的形式。这个逻辑卷将有数据写入它，然后根据内核的决定将这些数据应用到卷组中的物理卷上。
+- en: There's more...
+  id: totrans-492
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: When we created the logical volume, we simply specified that the new device
+    should use 50% of the available space, but we could have also suggested a specific
+    size in absolute values (for example, 1G).
+  id: totrans-493
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们创建逻辑卷时，我们只需指定新设备应使用可用空间的50%，但我们也可以建议使用绝对值的特定大小（例如1G）。
+- en: 'You might be asking why you would use LVM, if we effectively got to the same
+    position we were in when we simply placed a filesystem atop a disk partition.
+    The answer is: flexibility.'
+  id: totrans-494
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会问为什么要使用LVM，如果我们实际上达到了我们在简单地在磁盘分区之上放置文件系统时所处的相同位置。答案是：灵活性。
+- en: In LVM-land, you can grow volume groups by adding more physical disks to them,
+    you can move data from one physical disk to another (in a running system), and
+    you can even shift all data off a drive, before removing that drive in a hotplug
+    (or hot unplug) fashion. This relies on your filesystem supporting such changes,
+    but modern ones will (allowing you to grow and shrink them on the fly).
+  id: totrans-495
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在LVM领域，您可以通过向卷组添加更多物理磁盘来扩展卷组，您可以在运行中的系统中将数据从一个物理磁盘移动到另一个物理磁盘，并且甚至可以在热插拔（或热拔插）模式下将所有数据从驱动器移出，然后移除该驱动器。这取决于您的文件系统是否支持这样的更改，但现代的文件系统会支持（允许您在运行时扩展和收缩它们）。
+- en: 'As an example of the previous, let''s extend our logical volume to use all
+    of the available space of the volume group:'
+  id: totrans-496
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为先前的示例，让我们将我们的逻辑卷扩展到使用卷组的所有可用空间：
+- en: '[PRE94]'
+  id: totrans-497
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: Note the `+` symbol in front of the `100%` section. This suggests to `lvextend`
+    that you want to add the new size onto the old; it's necessary to use all 2G of
+    the disk to do so.
+  id: totrans-498
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意`100%`部分前面的`+`符号。这表明`lvextend`要求您将新大小添加到旧大小上；必须使用整个2G磁盘来这样做。
+- en: 'Once extended, we still have to grow our filesystem to fit the available space:'
+  id: totrans-499
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 扩展后，我们仍然必须扩展我们的文件系统以适应可用空间：
+- en: '[PRE95]'
+  id: totrans-500
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: 'To do this, we need to use a `btrfs` command:'
+  id: totrans-501
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了做到这一点，我们需要使用一个`btrfs`命令：
+- en: '[PRE96]'
+  id: totrans-502
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: 'And now, we should have our space:'
+  id: totrans-503
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们应该有了我们的空间：
+- en: '[PRE97]'
+  id: totrans-504
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: This is just one example of the flexibility in LVM, and it offers a boatload
+    more functionality on top. It even enables easier migration of data, as you can
+    easily import pools onto other systems.
+  id: totrans-505
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这只是LVM灵活性的一个例子，它还提供了更多功能。它甚至可以更轻松地迁移数据，因为您可以轻松地将池导入其他系统。
+- en: It does have its trade-offs, though. For example, I was recently trying to get
+    a VM booting as quickly as I could (for testing purposes) and ended up disregarding
+    LVM as it was quicker to directly access the disks at boot time (in OS, it's not
+    different, but for my environment, it was booting speed that mattered).
+  id: totrans-506
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但它确实有其权衡之处。例如，我最近试图尽快让虚拟机启动（用于测试目的），最终忽略了LVM，因为直接在启动时访问磁盘更快（在操作系统中没有区别，但对于我的环境来说，启动速度很重要）。
+- en: Using systemd-mount and fstab
+  id: totrans-507
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用systemd-mount和fstab
+- en: In this section, we'll learn about making sure that our newly configured disks
+    appear on boot and how to run a test to see if it'll come up at boot time.
+  id: totrans-508
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将学习如何确保我们新配置的磁盘在启动时出现，并如何运行测试以查看它是否会在启动时出现。
+- en: For this, we'll use the traditional method of adding a disk to the `fstab` file,
+    and we'll also use `systemd-mount`.
+  id: totrans-509
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，我们将使用向`fstab`文件添加磁盘的传统方法，我们还将使用`systemd-mount`。
+- en: 'You could use the following to directly reconfigure `/dev/sdb` as a single
+    partition, formatted to `ext4`:'
+  id: totrans-510
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下内容直接将`/dev/sdb`重新配置为单个分区，格式为`ext4`：
+- en: '[PRE98]'
+  id: totrans-511
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE98]'
+- en: Getting ready
+  id: totrans-512
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备好了
+- en: In this section, we're going to use both our `sdb` and `sdc` drives.
+  id: totrans-513
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将同时使用我们的`sdb`和`sdc`驱动器。
+- en: If you have rebuilt your VM, have a go at the previous sections to end up with
+    a drive that has a simple filesystem atop a partition and one atop a LVM logical
+    volume.
+  id: totrans-514
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您重建了您的虚拟机，请尝试前面的部分，最终得到一个在分区上有一个简单的文件系统和一个在LVM逻辑卷上的驱动器。
+- en: Reboot your VM so that you're at a point where you have partitioned drives,
+    but they're unmounted.
+  id: totrans-515
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动虚拟机，这样你就可以分区驱动器，但它们没有挂载。
+- en: 'It should look something like the following:'
+  id: totrans-516
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它应该看起来像下面这样：
+- en: '[PRE99]'
+  id: totrans-517
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE99]'
+- en: (Note the lack of mount points by `sdb1` and `VolGroup01-Home3`).
+  id: totrans-518
+  prefs: []
+  type: TYPE_NORMAL
+  zh: （请注意，`sdb1`和`VolGroup01-Home3`没有挂载点）。
+- en: How to do it...
+  id: totrans-519
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到这一点...
+- en: We're going to start with the traditional `fstab` approach.
+  id: totrans-520
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从传统的`fstab`方法开始。
+- en: fstab
+  id: totrans-521
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: fstab
+- en: 'Our `fstab` currently looks like this:'
+  id: totrans-522
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的`fstab`目前看起来是这样的：
+- en: '[PRE100]'
+  id: totrans-523
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE100]'
+- en: 'We''re going to add another line to the bottom, prompting our `/dev/sdb1` partition
+    to mount as `/home`. First, we''re going to get the partition''s UUID, because
+    we do not want our `sdb` device to suddenly come up as `sdc` and break our boot:'
+  id: totrans-524
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在底部添加另一行，提示我们的`/dev/sdb1`分区挂载为`/home`。首先，我们将获取分区的UUID，因为我们不希望我们的`sdb`设备突然变成`sdc`并破坏我们的引导：
+- en: '[PRE101]'
+  id: totrans-525
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE101]'
+- en: 'Cool—now that we have that (`10572fe4-5f65-4df0-9e69-dcd885e9f01e`), we can
+    add it:'
+  id: totrans-526
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很好 - 现在我们有了（`10572fe4-5f65-4df0-9e69-dcd885e9f01e`），我们可以添加它：
+- en: '[PRE102]'
+  id: totrans-527
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE102]'
+- en: What we're doing here is telling `fstab` where our partition is (`UUID`), we're
+    telling it where to mount the partition (`/opt`), and we're giving it the filesystem
+    format so that it knows how to mount it (`ext4`). Then, we're telling it to use
+    the default mount options (`defaults`), which are good enough for most use cases;
+    we're specifying that the filesystem doesn't need to be dumped (`0`), and that
+    we do not want to run any checks on it at boot (`0`) though in the real world,
+    you might want to enable this.
+  id: totrans-528
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里做的是告诉`fstab`我们的分区在哪里（`UUID`），告诉它在哪里挂载分区（`/opt`），并且给它文件系统格式，以便它知道如何挂载它（`ext4`）。然后，我们告诉它使用默认的挂载选项（`defaults`），这对大多数用例来说已经足够好了；我们指定文件系统不需要被转储（`0`），并且我们不希望在启动时对其进行任何检查（`0`），尽管在现实世界中，你可能想要启用这个选项。
+- en: 'Note that we can mount `fstab` immediately with `mount`:'
+  id: totrans-529
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们可以立即用`mount`挂载`fstab`：
+- en: '[PRE103]'
+  id: totrans-530
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE103]'
+- en: Any errors will be immediately obvious, as `mount` will refuse to work.
+  id: totrans-531
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 任何错误都会立即显而易见，因为`mount`会拒绝工作。
+- en: Running `mount -a` prior to rebooting is preferable to having your system stall
+    and become unable to boot—take it from experience.
+  id: totrans-532
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在重新启动之前运行`mount -a`比让系统停滞并且无法启动更可取——从经验中得出。
+- en: systemd-mount
+  id: totrans-533
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: systemd-mount
+- en: If you want to be new and trendy, you might want to use `systemd-mount` instead
+    of the decrepit (emphasis mine) `fstab`.
+  id: totrans-534
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想要新潮一点，你可能想使用`systemd-mount`而不是老旧的（重点是我的）`fstab`。
+- en: 'First, create our `local` unit directory if it doesn''t already exist from
+    our previous chapters:'
+  id: totrans-535
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，如果我们之前的章节中还没有创建我们的`local`单元目录，我们需要创建它：
+- en: '[PRE104]'
+  id: totrans-536
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE104]'
+- en: 'Then, populate a new file with the following:'
+  id: totrans-537
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，用以下内容填充一个新文件：
+- en: '[PRE105]'
+  id: totrans-538
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE105]'
+- en: 'Now, we can start and `enable` our `mount`:'
+  id: totrans-539
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以启动和`enable`我们的`mount`：
+- en: '[PRE106]'
+  id: totrans-540
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE106]'
+- en: 'At the end of this section, and after a reboot, your `lsblk` printout should
+    look like the following:'
+  id: totrans-541
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分结束后，重新启动后，你的`lsblk`输出应该如下所示：
+- en: '[PRE107]'
+  id: totrans-542
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE107]'
+- en: How it works...
+  id: totrans-543
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: On `systemd` systems, it's generally the case that `fstab` is managed by `systemd`
+    anyway.
+  id: totrans-544
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`systemd`系统上，通常情况下`fstab`都是由`systemd`管理的。
+- en: 'What''s actually happening when a system boots is that the `systemd-fstab-generator`
+    reads the `/etc/fstab` file, and translates what it finds there into `systemd`
+    units. This is the reason you can list mounts with `systemctl`:'
+  id: totrans-545
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当系统启动时，实际上发生的是`systemd-fstab-generator`读取`/etc/fstab`文件，并将其找到的内容转换为`systemd`单元。这就是你可以用`systemctl`列出挂载点的原因：
+- en: '[PRE108]'
+  id: totrans-546
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE108]'
+- en: 'And this is why we can see the details of a partition with `systemctl cat`:'
+  id: totrans-547
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是为什么我们可以用`systemctl cat`看到分区的详细信息：
+- en: '[PRE109]'
+  id: totrans-548
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE109]'
+- en: 'This does beg the question of why you would want to use `fstab` at all, if
+    you have the option to use `systemd` entirely, and the simple answer is: tradition.
+    At the moment, people expect `fstab` to be the place they go to find `mount` information
+    but, in the future, this might change.'
+  id: totrans-549
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这确实引出了一个问题，如果你有使用`systemd`的选项，为什么你还要使用`fstab`，简单的答案是：传统。目前，人们期望在`fstab`中找到`mount`信息，但在未来，这可能会改变。
+- en: There's more...
+  id: totrans-550
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: If your system does fail to boot, following a change to `fstab` or one to your
+    `systemd-mount` files, then the next step (beyond panic) is to log in to the console
+    of your server. In this case, we do this by connecting to the VirtualBox window
+    and connecting to the graphical representation of our console session, before
+    booting into single user mode.
+  id: totrans-551
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你的系统在对`fstab`进行更改或对`systemd-mount`文件进行更改后无法启动，那么下一步（除了恐慌）就是登录到服务器的控制台。在这种情况下，我们通过连接到VirtualBox窗口并连接到我们控制台会话的图形表示，然后进入单用户模式来实现。
+- en: You would then remove the offending line from your configuration and reboot
+    your system once more.
+  id: totrans-552
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，你需要从配置中删除有问题的行，并再次重新启动系统。
+- en: I've caused a system to get stuck at boot more times than I can count, and historically
+    this hasn't been a problem, for the reasons I mentioned previously. However, in
+    modern cloud environments, you might not always get a console (at the time of
+    writing, Azure has only just implemented this feature) so ensuring your `fstab`
+    entries are correct, prior to rebooting, is a good idea!
+  id: totrans-553
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我导致系统在启动时卡住的次数比我能数清的还要多，历史上这并不是一个问题，因为我之前提到的原因。然而，在现代云环境中，你可能并不总是能够获得控制台（在撰写本文时，Azure刚刚实现了这个功能），因此在重新启动之前确保你的`fstab`条目是正确的是一个好主意！
+- en: The `systemd.mount` man page is a good place to look for the mount options that
+    `systemd` understands.
+  id: totrans-554
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`systemd.mount`的手册是查找`systemd`理解的挂载选项的好地方。'
+- en: See also
+  id: totrans-555
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: '`fstab` has been around in one form or another since 4.0 BSD, released in 1980\.
+    Obviously, back then, it didn''t use `systemd`, but then, 4.0 BSD did not do much
+    of anything.'
+  id: totrans-556
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`fstab`自1980年发布的4.0 BSD以来一直存在，或多或少地以某种形式存在。显然，当时它并没有使用`systemd`，但是，4.0 BSD并没有做太多事情。'
+- en: I would look at the history of the `fstab` file, if you're into that sort of
+    thing, and there's nothing good on TV.
+  id: totrans-557
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你对`fstab`文件的历史感兴趣，我会看一下，如果电视上没有好节目的话。
+- en: '`_netdev` is something else to be aware of, and I''ll mention it here because
+    it''s routinely saved my bacon. It''s an option that can be added to mount points
+    (like defaults) and it tells `systemd` that the filesystem is dependent on your
+    network being up. For NFS and iSCSI environments, this is probably a must.'
+  id: totrans-558
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`_netdev`是另一个需要注意的东西，我在这里提一下，因为它经常帮了我大忙。这是一个可以添加到挂载点（就像默认值）的选项，它告诉`systemd`文件系统依赖于你的网络是否正常。对于NFS和iSCSI环境，这可能是必须的。'
+- en: Disk encryption and working with encryption at rest
+  id: totrans-559
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 磁盘加密和处理静态加密
+- en: Here, we're going to take a look at using `dm-crypt` to encrypt our disk so
+    that the data on the device is safe when removed from a machine. We'll touch on
+    file encryption locally, too.
+  id: totrans-560
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们将看看如何使用`dm-crypt`来加密我们的磁盘，以便在从机器上移除时设备上的数据是安全的。我们也会简要介绍本地文件加密。
+- en: Getting ready
+  id: totrans-561
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: In this section, we're going to use both our `sdb` drives.
+  id: totrans-562
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将使用我们的`sdb`驱动器。
+- en: If you have rebuilt your VM, have a go at the previous sections to end up with
+    a drive that has a simple filesystem atop a partition.
+  id: totrans-563
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你已经重建了你的虚拟机，尝试一下前面的部分，最终得到一个在分区上有一个简单文件系统的驱动器。
+- en: 'On your VM, first, make sure that any `fstab` entries you''ve added are removed;
+    for me, this was a case of running the following `sed` command:'
+  id: totrans-564
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的虚拟机上，首先确保您已经删除了任何添加的`fstab`条目；对我来说，这是运行以下`sed`命令的情况：
+- en: '[PRE110]'
+  id: totrans-565
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE110]'
+- en: 'I then rebooted my system to ensure that `/opt` was not mounted at boot, and
+    finally I regenerated the first partition on my disk:'
+  id: totrans-566
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我重新启动了系统，以确保`/opt`在启动时没有被挂载，最后我重新生成了我的磁盘上的第一个分区：
+- en: '[PRE111]'
+  id: totrans-567
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE111]'
+- en: Again, your mileage may vary, but what you want to end up with is a disk that
+    has one partition on it, unformatted for now.
+  id: totrans-568
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次说明，您的情况可能有所不同，但您最终想要的是一个只有一个分区的磁盘，现在还没有格式化。
+- en: 'We''ll also need to install the appropriate tools for this section:'
+  id: totrans-569
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还需要安装适当的工具来完成这一部分：
+- en: '[PRE112]'
+  id: totrans-570
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE112]'
+- en: How to do it...
+  id: totrans-571
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: First, it's recommended that you fill your drive with random data, prior to
+    creating an encrypted partition on top of it; this is so that data that wasn't
+    encrypted can't be recovered later.
+  id: totrans-572
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，建议您在创建加密分区之前用随机数据填充驱动器；这样以后无法恢复未加密的数据。
+- en: 'I''m going to accomplish this with `shred`:'
+  id: totrans-573
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我将使用`shred`来完成这个任务：
+- en: '[PRE113]'
+  id: totrans-574
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE113]'
+- en: 'Now that we''ve filled our drive with random data, we have to format our partition
+    as a **Linux Unified Key Setup** (**LUKS**), an encryption specification:'
+  id: totrans-575
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经用随机数据填满了驱动器，我们必须将我们的分区格式化为**Linux统一密钥设置**（**LUKS**），这是一种加密规范：
+- en: '[PRE114]'
+  id: totrans-576
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE114]'
+- en: As you can see, there are some sanity-check elements, such as getting you to
+    type all uppercase `YES` before you're prompted for a password. The password has
+    some requirements, such as being a minimum of 12 characters and not being based
+    on a dictionary word.
+  id: totrans-577
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，有一些检查要素，例如在提示输入密码之前，要求您输入所有大写的`YES`。密码有一些要求，例如至少为12个字符，不能基于字典单词。
+- en: 'We''ve created an `encrypted` partition, which we now need to open before we
+    can work with it:'
+  id: totrans-578
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经创建了一个`encrypted`分区，现在我们需要在可以使用它之前打开它：
+- en: '[PRE115]'
+  id: totrans-579
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE115]'
+- en: 'Using `lsblk`, you should now see the crypt device:'
+  id: totrans-580
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`lsblk`，您现在应该看到加密设备：
+- en: '[PRE116]'
+  id: totrans-581
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE116]'
+- en: 'So, what do we do with it? We format it with the following:'
+  id: totrans-582
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，我们该怎么做呢？我们用以下方式格式化它：
+- en: '[PRE117]'
+  id: totrans-583
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE117]'
+- en: You may have noticed that I'm using `btrfs` a lot here; this isn't because of
+    some misplaced allegiance to a filesystem format that can't even do RAID correctly,
+    instead it's because when I type, I read what I'm typing in my head, and it's
+    easier to think "*butter fs*" than it is "*ext*". So now you know; you're welcome.
+  id: totrans-584
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能已经注意到我在这里经常使用`btrfs`；这不是因为对一个甚至无法正确执行RAID的文件系统格式的错误忠诚，而是因为当我打字时，我会在脑海中阅读我所打的字，而且用“*butter
+    fs*”比“*ext*”更容易想到。现在你知道了；不用谢。
+- en: 'It''s time to mount it:'
+  id: totrans-585
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 是时候挂载它了：
+- en: '[PRE118]'
+  id: totrans-586
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE118]'
+- en: 'Congratulations! Your encrypted disk will now function as any other would,
+    and you can be safe in the knowledge that, if someone steals your hard drive,
+    its contents are locked behind encryption and a password. We can see our setup
+    with `lsblk`:'
+  id: totrans-587
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜！您的加密磁盘现在将像其他磁盘一样运行，并且您可以放心，如果有人偷走了您的硬盘，其内容将被加密和密码锁定。我们可以用`lsblk`看到我们的设置：
+- en: '[PRE119]'
+  id: totrans-588
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE119]'
+- en: 'To close an encrypted volume, the filesystem first has to be unmounted:'
+  id: totrans-589
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要关闭加密卷，首先必须卸载文件系统：
+- en: '[PRE120]'
+  id: totrans-590
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE120]'
+- en: 'Now, you run `cryptsetup` again, only with `luksClose` this time:'
+  id: totrans-591
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您再次运行`cryptsetup`，只是这次使用`luksClose`：
+- en: '[PRE121]'
+  id: totrans-592
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE121]'
+- en: But what if we want to mount our disk on boot?
+  id: totrans-593
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果我们想在启动时挂载我们的磁盘呢？
+- en: Well, first, you should question doing this and consider the ramifications.
+    The purpose of encryption is to protect data, and if you set up a disk to come
+    up automatically, you're nullifying your security (assuming an entire box has
+    been taken, and not just the sole hard drive).
+  id: totrans-594
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好吧，首先，您应该质疑这样做并考虑后果。加密的目的是保护数据，如果您设置一个磁盘自动启动，您将使您的安全性无效（假设整个盒子被拿走，而不仅仅是唯一的硬盘）。
+- en: However, there's an argument to be made that encrypting a drive but having an
+    "unlock key" automatically unlock and mount it is still useful if your drive dies
+    and you want to send it back to the drive manufacturer for a replacement. Without
+    the key, even if they could read the data off the platters, all they get is jumbled
+    noise.
+  id: totrans-595
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，有人可能会认为加密驱动器但自动解锁和挂载它的“解锁密钥”仍然有用，如果您的驱动器损坏并且您想将其送回给驱动器制造商进行更换。没有密钥，即使他们可以读取盘片上的数据，他们得到的只是杂乱的噪音。
+- en: With that in mind, let's mount `/dev/sdb1` at boot.
+  id: totrans-596
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到这一点，让我们在启动时挂载`/dev/sdb1`。
+- en: 'We need the UUID of the encrypted disk; for this, we use `luksUUID` to make
+    life easy:'
+  id: totrans-597
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要加密磁盘的UUID；为此，我们使用`luksUUID`来简化生活：
+- en: '[PRE122]'
+  id: totrans-598
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE122]'
+- en: 'First, place an entry into `/etc/crypttab`:'
+  id: totrans-599
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在`/etc/crypttab`中添加一个条目：
+- en: '[PRE123]'
+  id: totrans-600
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE123]'
+- en: 'Second, we need to add our `fstab` entry for our disk:'
+  id: totrans-601
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，我们需要为我们的磁盘添加`fstab`条目：
+- en: '[PRE124]'
+  id: totrans-602
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE124]'
+- en: As we saw previously, this could also be its own `systemd` unit file if you
+    so wish.
+  id: totrans-603
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前所看到的，如果你愿意的话，这也可以是自己的`systemd`单元文件。
+- en: 'Third, create a keyfile to use, with a suitably complex key:'
+  id: totrans-604
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第三，创建一个适当复杂的密钥来使用：
+- en: '[PRE125]'
+  id: totrans-605
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE125]'
+- en: 'Now, add this key to our encrypted partition. When prompted for any existing
+    passphrase, give the one you gave when first creating the drive:'
+  id: totrans-606
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，将此密钥添加到我们的加密分区。在提示输入任何现有密码时，输入您第一次创建驱动器时给出的密码：
+- en: '[PRE126]'
+  id: totrans-607
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE126]'
+- en: At this point, you can reboot your VM and, hopefully (keep an eye on the console
+    in VirtualBox), it'll come up seamlessly.
+  id: totrans-608
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上，您可以重新启动您的虚拟机，希望（在VirtualBox的控制台上保持关注）它会顺利启动。
+- en: 'It''s worth noting that the encrypted volume can now be opened using either
+    your passphrase or the keyfile (shown as follows):'
+  id: totrans-609
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 值得注意的是，现在可以使用您的密码或密钥文件（如下所示）打开加密卷：
+- en: '[PRE127]'
+  id: totrans-610
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE127]'
+- en: How it works...
+  id: totrans-611
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: What we've done here is simply created an encrypted volume; it's yet another
+    logical disk, that the system can treat as any other storage medium once it's
+    been unlocked.
+  id: totrans-612
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里所做的只是简单地创建了一个加密卷；它是另一个逻辑磁盘，一旦解锁，系统就可以像对待其他存储介质一样对待它。
+- en: '`cryptsetup` is the key component used here, and it couldn''t be described
+    better than by its own manual page.'
+  id: totrans-613
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`cryptsetup`是在这里使用的关键组件，最好的描述方式莫过于它自己的手册页面。'
+- en: cryptsetup is used to conveniently setup dm-crypt managed device-mapper mappings.
+    These include plain dm-crypt volumes and  LUKS  volumes.  The difference is that
+    LUKS uses a metadata header and can hence offer more features than plain dm-crypt.
+    On the other hand, the header is  visible and vulnerable to damage.
+  id: totrans-614
+  prefs: []
+  type: TYPE_NORMAL
+  zh: cryptsetup用于方便地设置dm-crypt管理的设备映射。这些包括普通的dm-crypt卷和LUKS卷。区别在于LUKS使用元数据头，因此可以提供比普通dm-crypt更多的功能。另一方面，头部是可见的并且容易受到损坏。
+- en: With `cryptsetup`, we started by formatting the partition we'd set up and setting
+    an initial passphrase. This was the `luksFormat` element. Once done, our LUKS
+    partition could then be opened, which is the process of passing our assigned passphrase
+    to the device, for it to then set up a device mapping automatically. We were then
+    able to format our mapped device with a useful filesystem for using natively (`btrfs`
+    again) and mount it.
+  id: totrans-615
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`cryptsetup`，我们首先格式化了我们设置的分区并设置了初始密码。这是`luksFormat`元素。完成后，我们的LUKS分区就可以打开了，这是将我们分配的密码传递给设备的过程，然后设备会自动设置设备映射。然后，我们可以使用有用的文件系统（再次是`btrfs`）格式化我们的映射设备并挂载它。
+- en: Most of the work you do with LUKS devices will be done using `cryptsetup` (at
+    least on servers).
+  id: totrans-616
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您在LUKS设备上执行的大部分工作将使用`cryptsetup`完成（至少在服务器上）。
+- en: There's more...
+  id: totrans-617
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: 'By default, if you try to mount a filesystem on an encrypted drive, without
+    knowing or caring that it''s LUKS encrypted, you''ll get a descriptive message
+    that should give you a hint:'
+  id: totrans-618
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，如果您尝试在加密驱动器上挂载文件系统，而不知道或不关心它是LUKS加密的，您将收到一个描述性消息，这应该给您一个提示：
+- en: '[PRE128]'
+  id: totrans-619
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE128]'
+- en: At this point, you know you need to run `luksOpen` on the drive first, and you
+    might find that you've long since forgotten the password and the data on the disk
+    has effectively gone to silicon-heaven (or silicon-purgatory).
+  id: totrans-620
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，您知道您需要首先在驱动器上运行`luksOpen`，您可能会发现您早已忘记了密码，磁盘上的数据实际上已经消失了（或者消失了）。
+- en: 'In this section, we mounted our drive using a keyfile on the root partition;
+    if instead you add a line with `none` in it to `crypttab` and then add the entry
+    to `fstab`, you will get prompted for a password at boot:'
+  id: totrans-621
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们使用根分区上的密钥文件挂载了我们的驱动器；如果您在`crypttab`中添加一行带有`none`，然后将条目添加到`fstab`，您将在启动时被提示输入密码：
+- en: '[PRE129]'
+  id: totrans-622
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE129]'
+- en: 'Now, you need to go to your console and put in your LUKS password, as we can
+    see in the following screenshot:'
+  id: totrans-623
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您需要转到控制台并输入您的LUKS密码，如下面的屏幕截图所示：
+- en: '![](img/891f95f5-4a00-4233-bdf1-62ef61a04f7a.png)'
+  id: totrans-624
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/891f95f5-4a00-4233-bdf1-62ef61a04f7a.png)'
+- en: This has to be done from the console, as SSH won't be up yet. Obviously, in
+    a cloud environment or a physical server build, this can be tricky.
+  id: totrans-625
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这必须从控制台完成，因为SSH尚未启动。显然，在云环境或物理服务器构建中，这可能会有些棘手。
+- en: See also
+  id: totrans-626
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: If you've been following along, you might be asking what `systemd` does with
+    `crypttab`, if it translates `fstab` into `systemd` units.
+  id: totrans-627
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您一直在跟进，您可能会问`systemd`如何处理`crypttab`，如果它将`fstab`转换为`systemd`单元。
+- en: 'The answer is that it does something very similar, in fact, using a similarly
+    named program at boot-time: `systemd-cryptsetup-generator`.'
+  id: totrans-628
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 答案是它实际上做了非常相似的事情，事实上，在启动时使用了一个类似命名的程序：`systemd-cryptsetup-generator`。
+- en: 'We can actually see what happened to our encrypted device at boot by catting
+    the automatically generated file:'
+  id: totrans-629
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们实际上可以通过查看自动生成的文件来看看我们的加密设备在启动时发生了什么：
+- en: '[PRE130]'
+  id: totrans-630
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE130]'
+- en: You can see the `attach` command being run at the bottom.
+  id: totrans-631
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到底部运行了`attach`命令。
+- en: Current filesystem formats
+  id: totrans-632
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 当前文件系统格式
+- en: There're a lot of filesystem formats out there—some are more popular than others;
+    some are used for very specific tasks; some are the darlings of certain operating
+    systems; and others simply should have gone away years ago.
+  id: totrans-633
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有很多文件系统格式——有些比其他更受欢迎；有些用于非常特定的任务；有些是某些操作系统的宠儿；而其他一些应该在多年前就消失了。
+- en: In the Windows world, we typically see NTFS, but FAT32, exFAT, and even FAT16
+    in some cases are still options.
+  id: totrans-634
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Windows世界中，我们通常看到NTFS，但FAT32，exFAT，甚至在某些情况下还有FAT16是可选项。
+- en: More recently, Apple has dropped the ageing HFS+ and moved full-steam toward
+    APFS as its filesystem of the future.
+  id: totrans-635
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最近，苹果已经放弃了老化的HFS+，全力向APFS作为未来的文件系统迈进。
+- en: FreeBSD defaults to either ZFS (if you've got the RAM for it) or UFS (if you
+    haven't).
+  id: totrans-636
+  prefs: []
+  type: TYPE_NORMAL
+  zh: FreeBSD默认为ZFS（如果您有足够的RAM）或UFS（如果您没有）。
+- en: OpenBSD—well, OpenBSD uses FFS, which is exactly as good as it sounds.
+  id: totrans-637
+  prefs: []
+  type: TYPE_NORMAL
+  zh: OpenBSD——嗯，OpenBSD使用FFS，听起来就像它的名字一样好。
+- en: '**Fast File System** (**FFS**) is pretty much UFS.'
+  id: totrans-638
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**快速文件系统**（**FFS**）基本上就是UFS。'
+- en: Linux is a whole other kettle of fish because, not only does it do all of the
+    filesystems listed previously, to a greater or lesser degree, it also has hundreds
+    of others to pick from.
+  id: totrans-639
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux是另一个完全不同的东西，因为它不仅可以处理以前列出的所有文件系统，而且还可以从数百个其他文件系统中进行选择。
+- en: Now, we're going to see what we have available to us on our VM.
+  id: totrans-640
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将看看在我们的VM上有什么可用的。
+- en: Getting ready
+  id: totrans-641
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: For this section, you'll just need access to your VM and possibly the internet
+    as a whole.
+  id: totrans-642
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于本节，您只需要访问您的VM，可能还需要整个互联网。
+- en: Connect to your Vagrant box; this section is purely informational, so don't
+    worry about what state it's in for now.
+  id: totrans-643
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到您的Vagrant box；本节纯粹是信息性的，所以现在不用担心它的状态。
+- en: How to do it...
+  id: totrans-644
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Listing systems you can create is relatively easy, as you can tab `mkfs` a
+    couple of times to get a list of established aliases:'
+  id: totrans-645
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 列出您可以创建的系统相对容易，因为您可以多次使用`mkfs`来获取已建立的别名列表：
+- en: '[PRE131]'
+  id: totrans-646
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE131]'
+- en: Your distribution may have others available, though not installed by default.
+  id: totrans-647
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的发行版可能还有其他可用的文件系统格式，尽管默认情况下未安装。
+- en: 'For example, if I want to manage DOS filesystems, I can install `dosfstools`:'
+  id: totrans-648
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，如果我想管理DOS文件系统，我可以安装`dosfstools`：
+- en: '[PRE132]'
+  id: totrans-649
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE132]'
+- en: 'I''ve suddenly got the `msdos`, `vfat`, and `fat` options:'
+  id: totrans-650
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我突然有了`msdos`，`vfat`和`fat`选项：
+- en: '[PRE133]'
+  id: totrans-651
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE133]'
+- en: 'You can also list the filesystems your kernel is capable of interacting with
+    by using your current kernel''s module directory:'
+  id: totrans-652
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以通过使用当前内核的模块目录列出内核能够与之交互的文件系统：
+- en: '[PRE134]'
+  id: totrans-653
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE134]'
+- en: Note that the likes of `ext3` might be managed by an `ext4` module of yours,
+    so just because `ext3` isn't listed doesn't mean you can't mount, read, and write
+    to an `ext3` drive.
+  id: totrans-654
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，像`ext3`可能由你的`ext4`模块管理，所以仅因为`ext3`没有列出来并不意味着你不能挂载、读取和写入`ext3`驱动器。
+- en: How it works...
+  id: totrans-655
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它的工作原理...
+- en: Realistically, it doesn't work.
+  id: totrans-656
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，它不起作用。
+- en: In a perfect world, we would have one filesystem that worked across each OS
+    and was suited for every task, but the truth of the matter is that there's always
+    going to be some filesystems that are better at some jobs than others.
+  id: totrans-657
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在完美的世界里，我们会有一个文件系统可以跨越每个操作系统，并适用于每项任务，但事实是总会有一些文件系统在某些任务上比其他文件系统更擅长。
+- en: At the time of writing, Red Hat defaults to using XFS as its filesystem of choice,
+    a journaling filesystem that was created in 1993\. Before that, the default was
+    the `ext` family of filesystems, which some distributions (such as Debian) continue
+    to use.
+  id: totrans-658
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在撰写本文时，Red Hat默认使用XFS作为其首选文件系统，这是一个于1993年创建的日志文件系统。在那之前，默认使用的是`ext`系列的文件系统，一些发行版（如Debian）仍在使用。
+- en: OpenSUSE likes `btrfs` at the minute, though how much that's likely to change
+    is anyone's guess, especially as the likes of Red Hat have just decided against
+    including it in future versions.
+  id: totrans-659
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前OpenSUSE喜欢`btrfs`，尽管这可能会改变，尤其是像Red Hat这样的公司刚刚决定不包括它在未来的版本中。
+- en: This is also all before getting on to **Filesystem in Userspace** (**FUSE**),
+    which is capable of bringing a host of other (userspace) filesystems into the
+    mix.
+  id: totrans-660
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这还没有涉及到**用户空间文件系统**（**FUSE**），它可以将一系列其他（用户空间）文件系统引入其中。
+- en: For now, just be safe in the knowledge that XFS and `ext4` will likely be around
+    for a while, and they're a solid choice for any system as long as your needs aren't
+    too bespoke. You may need to get a storage engineer in if you're planning on doing
+    things such as investigating which filesystem will be best for your new, bespoke,
+    database.
+  id: totrans-661
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，只要你的需求不是太特别，XFS和`ext4`可能会持续一段时间，并且它们对于任何系统来说都是一个可靠的选择。如果你打算进行一些调查，找出哪种文件系统最适合你的新的、特别的数据库，你可能需要找一个存储工程师。
+- en: My recommendation is to go with whatever is in use by default.
+  id: totrans-662
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我的建议是使用默认的文件系统。
+- en: Upcoming filesystem formats
+  id: totrans-663
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 即将推出的文件系统格式
+- en: We've discussed the old favorites, such as XFS and `ext4`, but we've only touched
+    on the likes of ZFS and novelty filesystems such as `btrfs`.
+  id: totrans-664
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经讨论了像XFS和`ext4`这样的老牌文件系统，但我们只是涉及了像ZFS和`btrfs`这样的新颖文件系统。
+- en: On top of the regular I-need-a-filesystem-for-my-disk filesystems, there're
+    others such as LizardFS and SSHFS, which are worth a mention.
+  id: totrans-665
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了常规的“我需要一个文件系统来管理我的磁盘”文件系统之外，还有其他一些值得一提的文件系统，比如LizardFS和SSHFS。
+- en: Getting ready
+  id: totrans-666
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: For this section, you'll again need access to your VM and the internet as a
+    whole.
+  id: totrans-667
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，你需要再次访问你的虚拟机和整个互联网。
+- en: Connect to your VM, but also have a web browser handy.
+  id: totrans-668
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到你的虚拟机，同时准备一个网络浏览器。
+- en: How to do it...
+  id: totrans-669
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到...
+- en: Starting out simple-ish, let's talk about ZFS.
+  id: totrans-670
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从简单的开始，让我们谈谈ZFS。
+- en: Less of a traditional filesystem than others, ZFS has recently been mainstreamed
+    on Linux by being bundled into Ubuntu (which caused a lot of arguing and even
+    some claims that Canonical were willfully breaking GPL compliance), and it's causing
+    a bit of a stir.
+  id: totrans-671
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ZFS不像其他传统的文件系统，最近被捆绑到Ubuntu中，这引起了很多争论，甚至有人声称Canonical故意违反了GPL合规性，这引起了一些骚动。
+- en: For years, ZFS was the main reason people installed FreeBSD (don't email me),
+    and it's the backbone filesystem for systems based on Solaris or OpenSolaris.
+    It works differently to XFS or ext4 and is arguably closer to the LVM world.
+  id: totrans-672
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 多年来，ZFS是人们安装FreeBSD的主要原因（不要给我发邮件），它是基于Solaris或OpenSolaris的系统的骨干文件系统。它的工作方式与XFS或ext4不同，可以说更接近LVM世界。
+- en: Disks are placed into VDEVs, which is the bit that handles the mirroring or
+    RAID-ing of drives. These VDEVs then form the basis for zpools, which are storage
+    pools that datasets then sit atop (datasets are more like traditional partitions—kinda).
+  id: totrans-673
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 磁盘被放置到VDEVs中，这是处理驱动器镜像或RAID的部分。然后这些VDEVs形成了zpools的基础，这些是数据集的存储池（数据集更像是传统的分区）。
+- en: ZFS on Linux is the project behind putting ZFS on Linux, and I would advise
+    checking them out.
+  id: totrans-674
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ZFS on Linux是将ZFS放在Linux上的项目，我建议你去了解一下。
+- en: After ZFS, you've got things such as distributed filesystems, which you might
+    mount on your local system using FUSE. LizardFS is one such filesystem.
+  id: totrans-675
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在ZFS之后，你还有诸如分布式文件系统之类的东西，你可以使用FUSE在本地系统上挂载它们。LizardFS就是这样的文件系统。
+- en: You use LizardFS if you want distributed and redundant storage, which can be
+    accessed over a network and mounted locally. You can do clever things such as
+    store multiple copies of data and even have multi-master setups of the controller
+    node so that you have some redundancy in the event of hardware failure (because
+    hardware does fail).
+  id: totrans-676
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想要分布式和冗余存储，可以使用LizardFS，它可以通过网络访问并在本地挂载。你可以做一些聪明的事情，比如存储多个数据副本，甚至在控制节点上设置多主机设置，以便在硬件故障时具有一定的冗余性（因为硬件确实会出现故障）。
+- en: 'If all of that was over your head, don''t panic: it was over my head for the
+    longest time too, but it''s pretty nifty software and worth a weekend to get to
+    grips with.'
+  id: totrans-677
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果这一切让你感到困惑，不要惊慌：我也很长时间以来都感到困惑，但这是非常棒的软件，值得花一个周末来掌握。
+- en: SSHFS is another FUSE filesystem, only this time it's a bit of software that's
+    used to mount remote systems directories locally so that you can mangle and mess
+    with them to your heart's content, without being on the command line of the remote
+    box.
+  id: totrans-678
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSHFS是另一个FUSE文件系统，只是这次它是一个软件，用于将远程系统目录挂载到本地，这样你就可以随心所欲地操纵和处理它们，而不必在远程主机的命令行上操作。
+- en: How it works...
+  id: totrans-679
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它的工作原理...
+- en: Again, it generally doesn't work.
+  id: totrans-680
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次强调，它通常不起作用。
+- en: Filesystems are a deep and interesting topic, for a very dedicated and specific
+    kind of people. I've met storage engineers who could talk for hours about the
+    different filesystems on offer and why you shouldn't bother using `ext2` as a
+    `/boot` partition these days, simply because the trade-offs aren't there, or who
+    drone on about the selective merit of using **just a bunch of disk** (**JBOD**)
+    deployments versus traditional SANs.
+  id: totrans-681
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件系统是一个深奥而有趣的话题，适合非常专注和特定类型的人。我曾经遇到过存储工程师，他们可以讨论各种不同的文件系统以及为什么你现在不应该再使用`ext2`作为`/boot`分区，因为没有相应的权衡，或者他们会滔滔不绝地谈论使用**JBOD**部署与传统SAN之间的选择优势。
+- en: Once again, I'll point out that there are use cases for every type of filesystem
+    on offer, even WikipediaFS, and that's okay! Just be safe in the knowledge that
+    the options are there, if you need them.
+  id: totrans-682
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我再次指出，每种文件系统都有其用例，甚至包括WikipediaFS，这都没问题！只要确保你知道有这些选择，如果你需要的话。
+- en: Round-up - hardware and disks
+  id: totrans-683
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结 - 硬件和磁盘
+- en: Most of this chapter, quite unintentionally, turned into a breakdown of disks
+    and filesystems. This is because, traditionally, disks were the most likely thing
+    to go wrong in your system. Recently, disks don't die anywhere near as much, because
+    the advent of cheap and commercially available SSDs has removed the "spinning
+    rust" from a lot of systems.
+  id: totrans-684
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一章大部分是无意中变成了对磁盘和文件系统的分析。这是因为传统上，磁盘是你系统中最容易出问题的东西。最近，磁盘不再像以前那样频繁损坏，因为廉价和商业可用的固态硬盘的出现已经从许多系统中移除了“旋转锈”。
+- en: That said, data can, and will, randomly disappear from your life.
+  id: totrans-685
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也就是说，数据可能会随机地从你的生活中消失。
+- en: Backup! Backup! Backup!
+  id: totrans-686
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 备份！备份！备份！
+- en: It doesn't matter how many times I say it—some of you will still read those
+    words and think "*yeah, I should do that*" with no intention of ever bothering
+    to set something up. For your own systems, that's your choice, but you might at
+    least consider it for those boxes you manage, as it'll only make your life easier
+    (and you the hero) when you break out the backups after a catastrophic failure
+    that threatens to cost your employer millions.
+  id: totrans-687
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不管我说了多少次，你们中的一些人仍然会读到这些话，然后想：“是的，我应该这样做”，却没有打算去设置任何东西。对于你自己的系统，这是你的选择，但至少你可以考虑一下你管理的那些盒子，因为当你在灾难性故障之后拿出备份时，这将使你的生活更轻松（并让你成为英雄），这可能会给你的雇主造成数百万的损失。
+- en: It should go without saying, but you should make a point of testing your backups
+    frequently, or you will enter the faith-based backups situation, and that is not
+    somewhere you want to be.
+  id: totrans-688
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不用说，但你应该经常测试你的备份，否则你将进入基于信仰的备份情况，那不是你想要的地方。
+- en: Filesystems are also getting more confusing and feature-rich. If you compare
+    something like `ext2` with `btrfs`, you'll find a wealth of tricks and clever
+    things that are designed to make your life easier in the long term, but in the
+    short term can leave you with a bewildering array of options.
+  id: totrans-689
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件系统也变得越来越复杂和功能丰富。如果你比较`ext2`和`btrfs`，你会发现许多设计旨在长期使你的生活更轻松的技巧和聪明的东西，但在短期内可能会让你面对一系列令人困惑的选择。
+- en: People also do silly things in this world, such as deploy RAID5 `btrfs` solutions
+    in live environments, without doing basic write-hole checks to ensure they won't
+    get any data loss if a disk goes pop (for the full story behind this, do an internet
+    search for "`btrfs` raid lol" and you'll probably get some meaningful results).
+  id: totrans-690
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个世界上，人们也会做一些愚蠢的事情，比如在实时环境中部署RAID5 `btrfs`解决方案，而没有进行基本的写孔检查，以确保如果一个磁盘坏掉，他们不会丢失任何数据（要了解这背后的完整故事，请在互联网上搜索“`btrfs`
+    raid lol”，你可能会得到一些有意义的结果）。
+- en: On the whole, just remember that hardware is out to get you, and you may find
+    some dark amusement in that knowledge the next time you're sat in a data center
+    at four in the morning, holding a hard drive up to your ear to listen for the
+    telltale sound of clicking, as a mechanical head tries and fails to correctly
+    read that one important payroll database.
+  id: totrans-691
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总的来说，记住硬件会对你造成影响，当你在凌晨四点坐在数据中心时，拿着一个硬盘听点击声，因为机械头试图并且未能正确读取那个重要的工资数据库时，你可能会对这种知识感到一些黑暗的幽默。

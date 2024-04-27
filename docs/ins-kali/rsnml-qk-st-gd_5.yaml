@@ -1,0 +1,669 @@
+- en: Effective ML
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 有效的ML
+- en: So far, we've learned the basics of Reason. We've seen how having a sound type
+    system can make refactoring a safer, less stressful endeavor. When changing an
+    implementation detail, the type system helpfully alerts us to the other areas
+    of the codebase that need to be updated. In this chapter, we'll learn how to hide
+    implementation details to make refactoring even easier. By hiding implementation
+    details, we guarantee that changing them won't affect other areas of your codebase.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经学习了Reason的基础知识。我们已经看到，拥有健壮的类型系统可以使重构变得更加安全，减轻压力。在更改实现细节时，类型系统会有用地提醒我们需要更新代码库的其他部分。在本章中，我们将学习如何隐藏实现细节，使重构变得更加容易。通过隐藏实现细节，我们保证更改它们不会影响代码库的其他部分。
+- en: We'll also learn how the type system can help us enforce business rules in our
+    application. Hiding implementation details also gives us a nice way to enforce
+    business rules by guaranteeing that modules are not being misused by the user. We'll
+    illustrate this point throughout much of this chapter using simple code examples
+    that are included in this book's GitHub repository.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还将学习类型系统如何帮助我们在应用程序中强制执行业务规则。隐藏实现细节还为我们提供了一种通过保证模块不被用户滥用来强制执行业务规则的好方法。我们将通过本章中包含在本书的GitHub存储库中的简单代码示例来阐明这一点。
+- en: To follow along, start from `Chapter05/app-start`. These examples are isolated
+    from the app we've been building.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要跟着做，请从`Chapter05/app-start`开始。这些示例与我们一直在构建的应用程序隔离开来。
+- en: 'You can go to the GitHub repository for this book using the following:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下方式转到本书的GitHub存储库：
+- en: '[PRE0]'
+  id: totrans-5
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Remember, all modules are global and all of a module''s types and bindings
+    are exposed by default. As we''ll soon see, module signatures can be used to hide
+    a module''s types and/or bindings from other modules. In this chapter, we''ll
+    also learn about advanced type system features, including the following:'
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记住，所有模块都是全局的，模块的所有类型和绑定默认情况下都是公开的。正如我们将很快看到的，模块签名可以用来隐藏模块的类型和/或绑定，使其对其他模块不可见。在本章中，我们还将学习高级类型系统功能，包括以下内容：
+- en: Abstract types
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 抽象类型
+- en: Phantom types
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 幻影类型
+- en: Polymorphic variants
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 多态变体
+- en: Module signatures
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 模块签名
+- en: 'A module signature constrains a module in a similar way to how an interface
+    can constrain a class in object-oriented programming. A module signature can require
+    that a module implements certain types and bindings and can also be used to hide
+    implementation details. Say that we had a module called `Foo` defined in `Foo.re`.
+    Its signature can be defined in `Foo.rei`. Any type or binding listed in a module''s
+    signature is exposed to other modules. Any type or binding listed in a module
+    is hidden if a module signature exists and that type or binding isn''t present
+    in the module signature. Given a binding `let foo = "foo";` in `Foo.re`, that
+    binding can be both required and exposed by its module signature by including `let
+    foo: string;` in `Foo.rei`:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '模块签名约束模块的方式类似于接口约束面向对象编程中的类。模块签名可以要求模块实现特定类型和绑定，还可以用于隐藏实现细节。假设我们有一个名为`Foo`的模块，在`Foo.re`中定义。它的签名可以在`Foo.rei`中定义。如果模块签名存在并且该类型或绑定不在模块签名中，则模块中列出的任何类型或绑定都将被隐藏。在`Foo.re`中有一个绑定`let
+    foo = "foo";`，该绑定可以通过其模块签名要求和暴露，方法是在`Foo.rei`中包括`let foo: string;`：'
+- en: '[PRE1]'
+  id: totrans-12
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Here, `Foo.rei` requires `Foo.re` to have a `let` binding named `foo` of the
+    `string `type.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，`Foo.rei`要求`Foo.re`有一个名为`foo`的`string`类型的`let`绑定。
+- en: 'If a module''s `.rei` file exists and is empty, then everything within the
+    module is hidden, as shown in the following code:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果模块的`.rei`文件存在且为空，则模块中的所有内容都被隐藏，如下面的代码所示：
+- en: '[PRE2]'
+  id: totrans-15
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'A module''s signature requires the module to include any types and/or bindings
+    listed in the signature, as shown in the following code:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模块的签名要求模块包括签名中列出的任何类型和/或绑定，如下面的代码所示：
+- en: '[PRE3]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'This results in the following compilation error because the module signature
+    requires a `bar` binding of the `string` type that isn''t defined in the module:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这导致以下编译错误，因为模块签名要求`bar`绑定为`string`类型，而模块中未定义：
+- en: '[PRE4]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Module types
+  id: totrans-20
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 模块类型
+- en: 'A module signature can also be defined using the `module type` keyword instead
+    of using a separate `.rei` file. The module type must start with a capital letter.
+    Once defined, a module can be constrained by a module type using the `module <Name>
+    : <Type>` syntax, as follows:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '模块签名也可以使用`module type`关键字来定义，而不是使用单独的`.rei`文件。模块类型必须以大写字母开头。一旦定义，模块可以使用`module
+    <Name> : <Type>`语法来受模块类型的约束，如下所示：'
+- en: '[PRE5]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'The same module type can be used for multiple modules, as follows:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 相同的模块类型可以用于多个模块，如下所示：
+- en: '[PRE6]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: We can think of module signatures as interfaces in the object-oriented sense.
+    The interface defines the properties and methods that a module must define. In
+    Reason, however, module signatures also hide bindings and types. But perhaps one
+    of the most useful features of module signatures is the ability to expose abstract
+    types.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将模块签名视为面向对象意义上的接口。接口定义了模块必须定义的属性和方法。然而，在Reason中，模块签名还隐藏了绑定和类型。但模块签名最有用的功能之一可能是暴露抽象类型的能力。
+- en: Abstract types
+  id: totrans-26
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 抽象类型
+- en: 'Abstract types are type declarations that don''t have a definition. Let''s
+    explore why this would be useful. In addition to bindings, module signatures can
+    include types. In the following code, you''ll notice that the module signature
+    of `Foo` includes a `person` type, and now `Foo` must include this `type` declaration:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 抽象类型是没有定义的类型声明。让我们探讨一下为什么这会有用。除了绑定，模块签名还可以包括类型。在下面的代码中，您会注意到`Foo`的模块签名包括一个`person`类型，现在`Foo`必须包括这个`type`声明：
+- en: '[PRE7]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'The `person` type is exposed in the same way as if there were no module signature
+    defined. As you''d expect, if a signature is defined and the type is not listed,
+    the type isn''t exposed to other modules. There is also the option to leave the
+    type abstract. We only keep what''s left of the equals sign. Let''s look at the
+    following code:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`person`类型的暴露方式与没有定义模块签名时的方式相同。正如你所期望的，如果定义了签名并且类型未列出，那么该类型不会暴露给其他模块。还有将类型保持抽象的选项。我们只保留等号后面的部分。让我们看看下面的代码：'
+- en: '[PRE8]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Now, the `person` type is exposed to other modules, but no other modules can
+    directly create or manipulate a value of the `person `type. The `person` type
+    is required to be defined in `Foo`, but it can have any definition. This means
+    that the `person` type can change over time, and no modules outside of `Foo` would
+    ever know the difference.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，`person`类型对其他模块是可见的，但没有其他模块可以直接创建或操纵`person`类型的值。`person`类型需要在`Foo`中定义，但可以有任何定义。这意味着`person`类型可以随时间改变，而`Foo`之外的模块永远不会知道这一点。
+- en: Let's explore abstract types further in the following section.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在下一节进一步探讨抽象类型。
+- en: Using module signatures
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用模块签名
+- en: 'Let''s imagine that we''re building an invoice-management system and we have
+    an `Invoice` module that defines an `invoice` type along with a function that
+    other modules can use to create values of that type. This arrangement is shown
+    in the following code:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们正在构建一个发票管理系统，我们有一个`Invoice`模块，定义了一个`invoice`类型以及其他模块可以使用的函数来创建该类型的值。这种安排如下所示：
+- en: '[PRE9]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Let''s also suppose that we have another module that is responsible for sending
+    emails to customers, as shown in the following code:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们还有另一个模块负责向客户发送电子邮件，如下面的代码所示：
+- en: '[PRE10]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Since the `Invoice.t` type is exposed, the invoice can be manipulated by `Email`,
+    as shown in the following code:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于`Invoice.t`类型是公开的，所以发票可以被`Email`操纵，如下面的代码所示：
+- en: '[PRE11]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: Despite the `Invoice.t` type being immutable, there is nothing preventing `Email`
+    from shadowing the invoice binding with some altered fields. However, if we made
+    the `Invoice.t` type abstract, this wouldn't be possible because `Email` wouldn't
+    be able to manipulate the abstract type. None of the functions that the `Email`
+    module has access to would work with an `Invoice.t` type.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管`Invoice.t`类型是不可变的，但没有阻止`Email`用一些改变的字段来遮蔽发票绑定。然而，如果我们将`Invoice.t`类型设为抽象，这将是不可能的，因为`Email`将无法操纵抽象类型。`Email`模块可以访问的任何函数都无法与`Invoice.t`类型一起使用。
+- en: '[PRE12]'
+  id: totrans-41
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now, compiling gives us the following error:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，编译给我们带来了以下错误：
+- en: '[PRE13]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'If we decide to allow other modules to add discounts to invoices, we would
+    need to create a function and include it in the module signature of `Invoice`.
+    Let''s suppose we want to only allow one discount per invoice and also restrict
+    the discount amount to ten, fifteen, or twenty percent. We could implement this
+    in the following way:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们决定允许其他模块向发票添加折扣，我们需要创建一个函数并将其包含在`Invoice`的模块签名中。假设我们只想允许每张发票只有一个折扣，并且还限制折扣金额为十、十五或二十个百分比。我们可以以以下方式实现这一点：
+- en: '[PRE14]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Now, as long as the `Invoice` module''s public API (or module signature) doesn''t
+    change, we''re free to refactor the `Invoice` module however we''d like without
+    needing to worry about breaking code in other modules. To prove this point, let''s
+    refactor `Invoice.t` to be a tuple instead of a record, as shown in the following
+    code. As long as we don''t change the module signature, the `Email` module won''t
+    need to change at all:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，只要`Invoice`模块的公共API（或模块签名）不改变，我们就可以自由地重构`Invoice`模块，而不需要担心在其他模块中破坏代码。为了证明这一点，让我们将`Invoice.t`重构为元组而不是记录，如下面的代码所示。只要我们不改变模块签名，`Email`模块就不需要做任何改变：
+- en: '[PRE15]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Also, thanks to the `Invoice.t` abstract type, we are guaranteed that an invoice
+    can only be discounted once, and only by specified percentages. We could take
+    this example further by requiring all changes to an invoice to be logged. Traditionally,
+    this sort of requirement would be solved by adding a side effect after a database
+    transaction because, in JavaScript, we wouldn't otherwise be sure that we would
+    be logging all changes to an invoice. With module signatures, we have the option
+    to solve these kinds of requirements in the application layer.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另外，由于`Invoice.t`抽象类型，我们保证发票只能打折一次，并且只能按指定的百分比打折。我们可以通过要求对发票的所有更改都进行日志记录来进一步举例。传统上，这种要求会通过在数据库事务之后添加副作用来解决，因为在JavaScript中，我们无法确定是否会记录所有对发票的更改。使用模块签名，我们可以选择在应用层解决这些要求。
+- en: Phantom types
+  id: totrans-49
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 幻影类型
+- en: Looking at our previous implementation, it would be nice if we didn't have to
+    check whether an invoice has been discounted at runtime. Is there a way we could
+    check whether an invoice has been discounted at compile time instead? With phantom
+    types, we can.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看看我们之前的实现，如果我们不必在运行时检查发票是否已经打折，那将是很好的。有没有一种方法可以在编译时检查发票是否已经打折？使用幻影类型，我们可以。
+- en: 'Phantom types are types that have a type variable, but this type variable isn''t
+    used in its definition. To better understand, let''s look again at the `option`
+    type, as shown in the following code:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幻影类型是具有类型变量的类型，但这个类型变量在其定义中没有被使用。为了更好地理解，让我们再次看看`option`类型，如下面的代码所示：
+- en: '[PRE16]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: The `option` type has a type variable, `'a`, and the type variable is being
+    used in its definition. As we've already learned, `option` is a polymorphic type
+    because it has a type variable. On the other hand, a phantom type doesn't use
+    the type variable in its definition. Let's see how this is useful with our invoice
+    management example.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`option`类型有一个类型变量`''a`，并且类型变量在其定义中被使用。正如我们已经学到的，`option`是一种多态类型，因为它有一个类型变量。另一方面，幻影类型在其定义中不使用类型变量。让我们看看这在我们的发票管理示例中是如何有用的。'
+- en: 'Let''s change the `Invoice` module''s signature to use a phantom type, as follows:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们将`Invoice`模块的签名更改为使用幻影类型，如下所示：
+- en: '[PRE17]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'The abstract `type t` is now `type t(''a)`. We also have two more abstract
+    types, as shown in the following code:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 抽象类型`t`现在是`type t('a)`。我们还有两个更多的抽象类型，如下面的代码所示：
+- en: '[PRE18]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Also, note that the `make` function now returns `t(undiscounted)` (instead of
+    just `t`) and the `discount` function now accepts `t(undiscounted)` and returns `t(discounted)`.
+    Remember that the abstract `t('a)` accepts a `type` variable, and that the `type`
+    variable just so happens to be either the `discounted` type or the `undiscounted` type.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要注意，`make`函数现在返回`t(undiscounted)`（而不仅仅是`t`），`discount`函数现在接受`t(undiscounted)`并返回`t(discounted)`。记住，抽象`t('a)`接受一个`type`变量，而`type`变量恰好是`discounted`类型或`undiscounted`类型。
+- en: 'In the implementation, we can now get rid of the runtime check we had previously,
+    as shown in the following code:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在实现中，我们现在可以摆脱之前的运行时检查，如下面的代码所示：
+- en: '[PRE19]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Now, this check is done at compile time since the `discount` function only
+    accepts `undiscounted` invoices, as shown in the following code:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，这个检查是在编译时进行的，因为`discount`函数只接受`undiscounted`发票，如下面的代码所示：
+- en: '[PRE20]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'This is just one more way that a type system can help us focus more on logic
+    and less on error handling. Previously, trying to discount an invoice twice would
+    just return the original invoice unchanged. Let''s now try to discount an invoice
+    twice in `Email.re` using the following code:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这只是类型系统可以帮助我们更多地关注逻辑而不是错误处理的另一种方式。以前，尝试两次打折发票只会返回原始发票。现在，让我们尝试在`Email.re`中两次打折发票，使用以下代码：
+- en: '[PRE21]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Now, trying to discount an invoice twice will result in a lovely compile-time
+    error, as follows:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，尝试两次打折发票将导致一个可爱的编译时错误，如下所示：
+- en: '[PRE22]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'This is absolutely beautiful. Suppose, however, that you''d like to be able
+    to email any invoice—discounted or not. Does our use of phantom types cause a
+    problem? How would we write a function that takes any invoice type? We''ll, remember
+    that our invoice type is `Invoice.t(''a)` and if we want to accept any invoice,
+    we keep the type parameter, as shown in the following code:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这绝对美丽。然而，假设你想能够给任何发票发送电子邮件，无论是否打折。我们使用幻影类型会导致问题吗？我们如何编写一个接受任何发票类型的函数？我们的发票类型是`Invoice.t('a)`，如果我们想接受任何发票，我们保留类型参数，如下面的代码所示：
+- en: '[PRE23]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: So we can have our cake and eat it too.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以我们可以两全其美。
+- en: Polymorphic variants
+  id: totrans-70
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 多态变体
+- en: 'We''ve already briefly looked at polymorphic variants in the previous chapter.
+    To recap, we learned about them when we used the `[@bs.unwrap]` decorator to bind
+    to some existing JavaScript. The idea was that `[@bs.unwrap]` can be used to bind
+    to an existing JavaScript function where its arguments can be of different types.
+    For example, let''s say we want to bind to the following function:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经在上一章简要地看过多态变体。简而言之，我们在使用`[@bs.unwrap]`装饰器绑定到一些现有的JavaScript时学到了它们。这个想法是`[@bs.unwrap]`可以用于绑定到现有的JavaScript函数，其中它的参数可以是不同的类型。例如，假设我们想绑定到以下函数：
+- en: '[PRE24]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Let''s say this function should only accept arguments of the `string` type or
+    `int` type and nothing else. We could bind to this example function as follows:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设这个函数只接受`string`类型或`int`类型的参数，不接受其他类型。我们可以这样绑定这个示例函数：
+- en: '[PRE25]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'However, our binding would then allow invalid argument types (such as `bool`).
+    It would be better if our compiler could help us out by preventing invalid argument
+    types. One way to do this is to use `[@bs.unwrap]` with a polymorphic variant.
+    Our binding would then appear as follows:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，我们的绑定将允许无效的参数类型（如`bool`）。如果我们的编译器能够通过阻止无效的参数类型来帮助我们，那将更好。其中一种方法是使用多态变体与`[@bs.unwrap]`。我们的绑定将如下所示：
+- en: '[PRE26]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'We''d use the binding like so:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们会这样使用绑定：
+- en: '[PRE27]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Now, if we tried to pass an invalid argument type, the compiler would let us
+    know, as shown in the following code:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果我们尝试传递无效的参数类型，编译器会让我们知道，如下面的代码所示：
+- en: '[PRE28]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: The trade-off here is that we'll need to pass in arguments by wrapping them
+    in the polymorphic variant constructors rather than directly.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里的折衷是我们需要通过将参数包装在多态变体构造函数中而不是直接传递参数。
+- en: 'Right off the bat, you''ll notice the following two differences between normal
+    variants and polymorphic variants:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一开始，你会注意到普通变体和多态变体之间的以下两个不同之处：
+- en: We did not need to explicitly declare a type for the polymorphic variant
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们不需要显式声明多态变体的类型
+- en: Polymorphic variants begin with a backtick character ([PRE29]
+  id: totrans-84
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 多态变体以反引号字符（[PRE29]
+- en: type validArgs =
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: type validArgs =
+- en: '| Int(int)'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '| Int(int)'
+- en: '| Str(string);'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '| Str(string);'
+- en: '[@bs.val] external dynamic : validArgs => string = "";'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[@bs.val] external dynamic : validArgs => string = "";'
+- en: dynamic(Int(1));
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: dynamic(Int(1));
+- en: '```'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '```'
+- en: 'The problem with the preceding implementation is that `Int(1)` does not compile
+    to a JavaScript number. Normal variants are compiled to an `array` and our `dynamic`
+    function returns `undefined` instead of `"Number: 42"`. The function returns `undefined`
+    because no cases on the switch statement were matched.'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '前面实现的问题是`Int(1)`不会编译为JavaScript数字。普通变体编译为`array`，我们的`dynamic`函数返回`undefined`而不是`"Number:
+    42"`。函数返回`undefined`是因为在switch语句上没有匹配到任何情况。'
+- en: With polymorphic variants, BuckleScript compiles `dynamic(`Int(42))` to `dynamic(42)` and
+    the function works as expected.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用多态变体，BuckleScript将`dynamic(`Int(42))`编译为`dynamic(42)`，函数按预期工作。
+- en: Advanced type system features
+  id: totrans-93
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 高级类型系统特性
+- en: Reason's type system is quite full-featured and has been refined over the last
+    couple of decades. What we've seen so far is only an introduction to Reason's
+    type system. In my opinion, you should become familiar with the basics before
+    continuing to more advanced type system features. It's hard to appreciate things
+    such as type safety without having experienced bugs that a sound type system would
+    have prevented. It's hard to appreciate advanced type system features without
+    getting slightly frustrated with what you've learned so far in this book. It's
+    beyond the scope of this book to discuss advanced type system features in too
+    much detail, but I want to make sure that those of you who are evaluating Reason
+    as an option know that there's much more to its type system.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Reason的类型系统非常全面，并在过去的几十年中得到了完善。到目前为止，我们所看到的只是对Reason类型系统的介绍。在我看来，你应该在继续学习更高级的类型系统功能之前熟悉基础知识。没有经历过合理的类型系统本应阻止的错误，很难欣赏诸如类型安全之类的东西。没有对到目前为止在本书中学到的内容感到略微沮丧，很难欣赏高级类型系统功能。本书的范围不包括对高级类型系统功能进行过多详细讨论，但我想确保那些正在评估Reason作为一个选项的人知道它的类型系统还有更多内容。
+- en: In addition to phantom types and polymorphic variants, Reason has **generalized
+    algebraic datatypes** (**GADTs**). Modules can be dynamically created using functors
+    (that is, module functions that operate somewhere in between compile time and
+    runtime). Reason also has classes and objects—the O in OCaml stands for objective.
+    OCaml's predecessor was a language called Caml that first appeared in the mid
+    1980s. What we've learned so far in this book is specifically useful in the context
+    of typical React applications. Personally, I like that Reason is a language that
+    I can grow into while being productive.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了幻影类型和多态变体之外，Reason还具有**广义代数数据类型**（**GADTs**）。模块可以使用函数器（即，在编译时和运行时之间操作的模块函数）动态创建。Reason还具有类和对象——OCaml中的O代表objective。OCaml的前身是一种称为Caml的语言，最早出现在20世纪80年代中期。到目前为止，在本书中学到的东西在典型的React应用程序的上下文中特别有用。就我个人而言，我喜欢Reason是一种我可以在其中不断成长并保持高效的语言。
+- en: If you find yourself frustrated with the type system, then reach out to the
+    experts on the Discord channel and someone will likely help you work through your
+    problem. I'm constantly amazed at how helpful the community is. And don't forget,
+    if you just want to move on, you can always drop into raw JavaScript if you need
+    to and come back to the problem when you're ready.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你发现自己对类型系统感到沮丧，那么可以在Discord频道上寻求专家的帮助，有人很可能会帮助你解决问题。我对社区的乐于助人感到不断惊讶。而且不要忘记，如果你只是想继续前进，你总是可以转到原始的JavaScript，如果需要的话，等你准备好了再回来解决问题。
+- en: 'You can find the Reason Discord channel here:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以在这里找到Reason的Discord频道：
+- en: '[https://discord.gg/reasonml](https://discord.gg/reasonml)'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://discord.gg/reasonml](https://discord.gg/reasonml)'
+- en: It's also perfectly valid to not use the fancier features of Reason's type system.
+    What we've learned so far provides a lot of value in terms of adding type safety
+    to our React applications.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不使用Reason类型系统的更高级功能也是完全有效的。到目前为止，我们所学到的内容在为我们的React应用程序添加类型安全方面提供了很大的价值。
+- en: Summary
+  id: totrans-100
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: By now, we've seen how Reason can help us build safer, more maintainable codebases
+    with the help of its type system. Variants allow us make invalid states unrepresentable.
+    The type system helps make refactoring a less scary, less painful process. Module
+    signatures can help us to enforce business rules in our application. Module signatures
+    also serve as basic documentation that lists what a module exposes and gives you
+    a basic idea of how the module is meant to be used based on exposed function names
+    and their argument types, as well as exposed types.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经看到Reason如何帮助我们使用其类型系统构建更安全、更易维护的代码库。变体允许我们使无效状态不可表示。类型系统有助于使重构过程变得不那么可怕、不那么痛苦。模块签名可以帮助我们强制执行应用程序中的业务规则。模块签名还可以作为基本文档，列出模块公开的内容，并根据公开的函数名称和其参数类型以及公开的类型，给出模块的基本使用方式的概念。
+- en: In [Chapter 6](a6ac6581-d3bd-49f3-ad4d-bfed965287ca.xhtml), *CSS-in-JS (in Reason)*,
+    we'll look at how we can use Reason's type system to enforce valid CSS using a
+    CSS-in-Reason library that wraps Emotion ([https://emotion.sh](https://emotion.sh)),
+    called `bs-css`.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第6章](a6ac6581-d3bd-49f3-ad4d-bfed965287ca.xhtml)中，*CSS-in-JS（在Reason中）*，我们将看看如何使用Reason的类型系统来强制执行有效的CSS，使用一个包装Emotion（[https://emotion.sh](https://emotion.sh)）的CSS-in-Reason库，名为`bs-css`。

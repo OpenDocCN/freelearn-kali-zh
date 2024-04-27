@@ -1,0 +1,1262 @@
+- en: Chapter 11. Using MongoDB with Our Waiter Caller Project
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第11章。在我们的服务员呼叫器项目中使用MongoDB
+- en: Our web application now has nearly all of its functionality. If we plan to monetize
+    this application, now would be the time where we'd demo it to potential customers.
+    Even though their data (such as their account name and virtual table data) would
+    be lost every time we had to restart our server, this data is trivial enough to
+    make a full demo of the application feasible.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的网络应用现在几乎具备了所有功能。如果我们计划对这个应用进行货币化，现在就是向潜在客户演示的时候。即使他们的数据（如他们的账户名称和虚拟表数据）每次我们不得不重新启动服务器时都会丢失，这些数据也足够微不足道，使得完全演示应用程序成为可能。
+- en: In this chapter, we will add a proper database for use in production. We'll
+    use MongoDB—a slightly controversial NoSQL database management system that has
+    become extremely popular, arguably largely because of its simplicity. We'll take
+    a look at how to install in on our VPS, configure it correctly, and access it
+    using a Python driver. Then, we'll implement the full `DBHelper` class to replace
+    `MockDBHelper`, which we use for testing. To end off, we'll look at adding indices
+    to MongoDB and a favicon to our application.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将为生产环境添加一个适当的数据库。我们将使用MongoDB——一个略具争议的NoSQL数据库管理系统，因其简单性而变得极其流行，可以说这主要是因为其简单性。我们将看看如何在我们的VPS上安装它，正确配置它，并使用Python驱动程序访问它。然后，我们将实现完整的`DBHelper`类来替换我们用于测试的`MockDBHelper`。最后，我们将看看如何向MongoDB添加索引和向我们的应用程序添加一个favicon。
+- en: 'In this chapter, we''ll cover the following topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Introducing MongoDB
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 介绍MongoDB
+- en: Installing MongoDB
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安装MongoDB
+- en: Using the MongoDB shell
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用MongoDB shell
+- en: Introducing PyMongo
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 介绍PyMongo
+- en: Adding some finishing touches
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 添加一些最后的修饰
+- en: Introducing MongoDB
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍MongoDB
+- en: MongoDB is a NoSQL database. This means that unlike the MySQL database we used
+    for our Crime Map project, it is not organized into tables, rows, and columns;
+    instead, it is organized into collections, documents, and fields. While it can
+    be useful to think of these new terms as a sort of translation from those we use
+    for relational databases, the concepts do not perfectly translate. If you have
+    a background in relational databases, a useful and more complete reference to
+    these translations can be found on the official MongoDB website at [https://docs.mongodb.org/manual/reference/sql-comparison/](https://docs.mongodb.org/manual/reference/sql-comparison/).
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB是一个NoSQL数据库。这意味着与我们在犯罪地图项目中使用的MySQL数据库不同，它不是组织成表、行和列；相反，它是组织成集合、文档和字段。虽然将这些新术语视为我们用于关系数据库的一种翻译可能会有用，但这些概念并不完全相同。如果您有关系数据库的背景，可以在官方MongoDB网站上找到有关这些翻译的有用且更完整的参考资料[https://docs.mongodb.org/manual/reference/sql-comparison/](https://docs.mongodb.org/manual/reference/sql-comparison/)。
+- en: MongoDB's structure is much more flexible than that of a SQL database—not all
+    of our data has to confirm to a specific schema, and this can save development
+    time. For our Crime Map project, we had to spend time up front looking at our
+    data and deciding how to represent it in a database. We then had to set up a bunch
+    of fields, specifying the data type, length, and other constraints. MongoDB, by
+    contrast, requires none of this. It's more flexible than an RDBMS, and it uses
+    documents to represent the data. Documents are essentially bits of JSON data similar
+    to the data we pulled from the APIs we used. This means that we can easily add
+    or remove fields as necessary, and we do not need to specify data types for our
+    fields.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB的结构比SQL数据库灵活得多——我们的所有数据都不必符合特定的模式，这可以节省开发时间。对于我们的犯罪地图项目，我们不得不花时间来查看我们的数据，并决定如何在数据库中表示它。然后，我们不得不设置一堆字段，指定数据类型、长度和其他约束。相比之下，MongoDB不需要这些。它比关系数据库管理系统更灵活，并且使用文档来表示数据。文档本质上是类似于我们从使用的API中提取的数据的JSON数据。这意味着我们可以根据需要轻松添加或删除字段，并且我们不需要为我们的字段指定数据类型。
+- en: The downside of this is that by not being forced to be structured and consistent,
+    it's easy for us to get lazy and fall into bad practices of mixing different data
+    types in a single field and allowing invalid data to pollute our database. In
+    short, MongoDB gives us more freedom, but in doing so, it shifts some of the responsibility
+    for being clean and consistent onto our shoulders.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样做的缺点是，由于不需要强制结构化和一致，我们很容易变得懒惰，并陷入在单个字段中混合不同数据类型和允许无效数据污染我们数据库的不良做法。简而言之，MongoDB给了我们更多的自由，但这样做也将一些保持清洁和一致性的责任转移到了我们的肩上。
+- en: Installing MongoDB
+  id: totrans-13
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装MongoDB
+- en: MongoDB can be found in the Ubuntu software repositories, but as updates are
+    frequent and the repository versions tend to lag behind, it's highly recommended
+    to install it from the official Mongo package directly.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB可以在Ubuntu软件仓库中找到，但由于更新频繁且仓库版本往往滞后，强烈建议直接从官方Mongo软件包安装。
+- en: We'll go through how to do this step by step here, but as the installation procedures
+    may change, it's advisable to get an updated version of the required URLs and
+    steps from the official installation guide available at [https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/).
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将逐步介绍如何做到这一点，但由于安装过程可能会发生变化，建议从官方安装指南中获取所需URL和步骤的更新版本[https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/)。
+- en: 'The first thing we need to do is import MongoDB''s public key so that the installation
+    can be authenticated. On your VPS only (as before, we will not install a database
+    server on our development machine), run the following:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要导入MongoDB的公钥，以便进行身份验证。仅在您的VPS上（与以前一样，我们不会在开发机器上安装数据库服务器），运行以下命令：
+- en: '[PRE0]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Now that we have the key, we can use the following command to add a link to
+    the MongoDB package to our software sources. Note that this command is specific
+    to Ubuntu 14.04 "Trusty", which, at the time of writing, is the latest long-term
+    support Ubuntu version. If your VPS runs a different version of Ubuntu, make sure
+    you get the correct command from the MongoDB documentation link provided earlier.
+    To discover which version of Ubuntu you have, run `lsb_release -a` in your terminal
+    and examine the output for a version number and name:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了密钥，我们可以使用以下命令将MongoDB软件包的链接添加到我们的软件源。请注意，此命令特定于Ubuntu 14.04“Trusty”，这是写作时最新的长期支持Ubuntu版本。如果您的VPS运行不同版本的Ubuntu，请确保从前面提供的MongoDB文档链接中获取正确的命令。要发现您使用的Ubuntu版本，请在终端中运行`lsb_release
+    -a`并检查版本号和名称的输出：
+- en: '[PRE1]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Now, we simply need to update our source lists by running:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们只需要通过运行以下命令来更新我们的源列表：
+- en: '[PRE2]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Finally, do the actual installation by running the following command:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，通过运行以下命令进行实际安装：
+- en: '[PRE3]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: The preceding command will install MongoDB with some sensible defaults and start
+    the server. It'll also configure it in such a way that the server will start up
+    automatically if you reboot your VPS.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的命令将使用一些合理的默认值安装MongoDB并启动服务器。它还会配置服务器，以便在重新启动VPS时自动启动。
+- en: Using the MongoDB shell
+  id: totrans-25
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用MongoDB shell
+- en: Similarly to what we discussed with MySQL, MongoDB comes with a simple shell.
+    This is ideal to run quick, one-off commands and get used to the syntax. Let's
+    run through the basic CRUD operations to get familiar with how MongoDB works.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与我们在MySQL中讨论的类似，MongoDB带有一个简单的shell。这非常适合运行快速的一次性命令并熟悉语法。让我们运行基本的CRUD操作，以熟悉MongoDB的工作方式。
+- en: As in our previous project, once we introduce MongoDB, we'll move to using it
+    only through Python code; however, to start out, we'll write commands directly
+    in the shell. This means there will be some slight differences in syntax, but
+    as nearly everything is JSON based, these differences shouldn't be a problem.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与我们之前的项目一样，一旦我们引入MongoDB，我们将只通过Python代码来使用它；然而，首先我们将直接在shell中编写命令。这意味着语法上会有一些细微的差异，但由于几乎所有东西都是基于JSON的，这些差异不应该是问题。
+- en: Starting the MongoDB shell
+  id: totrans-28
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 启动MongoDB shell
+- en: 'To start the MongoDB shell, run the following command on your VPS:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要启动MongoDB shell，请在您的VPS上运行以下命令：
+- en: '[PRE4]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: This will start the interactive MongoDB shell as in the following image, which
+    you can exit at any time by pressing *Ctrl + C* or by typing `exit` into the shell
+    and pressing *Enter*.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将启动交互式MongoDB shell，如下图所示，您可以随时通过按*Ctrl + C*或在shell中输入`exit`并按*Enter*来退出。
+- en: '![Starting the MongoDB shell](img/B04312_11_01.jpg)'
+  id: totrans-32
+  prefs: []
+  type: TYPE_IMG
+  zh: '![启动MongoDB shell](img/B04312_11_01.jpg)'
+- en: Running commands in the MongoDB shell
+  id: totrans-33
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在MongoDB shell中运行命令
+- en: 'As with MySQL, the top-level concept in MongoDB is a database. By default,
+    this will connect to a database named `test`. We can change databases using the
+    `use` command. Run the following command in the shell:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与MySQL一样，MongoDB中的顶级概念是数据库。默认情况下，这将连接到名为`test`的数据库。我们可以使用`use`命令更改数据库。在shell中运行以下命令：
+- en: '[PRE5]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: You should see the output "**Switched to db sandbox**". This is where we can
+    note the first big difference between MySQL and MongoDB. With MySQL, we would
+    first have had to create the database. This is a common pattern we'll see with
+    MongoDB; if you reference a database, collection, or field that doesn't exist,
+    it'll be automatically created for you.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该看到输出“**切换到db sandbox**”。这是我们可以注意到MySQL和MongoDB之间的第一个重大差异。对于MySQL，我们首先必须创建数据库。这是我们将在MongoDB中看到的一个常见模式；如果引用一个不存在的数据库、集合或字段，它将自动为您创建。
+- en: Creating data with MongoDB
+  id: totrans-37
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用MongoDB创建数据
+- en: 'Now, let''s create a collection (similar to a table in our MySQL database from
+    the Crime Map project) and add a document (as with a row from a table in our MySQL
+    database) to it. Run the following in the MongoDB shell:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们创建一个集合（类似于Crime Map项目中的MySQL数据库中的表）并向其中添加一个文档（类似于MySQL数据库中的表中的行）。在MongoDB
+    shell中运行以下命令：
+- en: '[PRE6]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: In the preceding command, `db` refers to the current database. Directly after,
+    `people` refers to the collection called of this name. As it doesn't exist, it'll
+    get created as we attempt to use it. Following this is `insert`, which means we
+    want to add something to the database. We will pass as an argument (inside round
+    the brackets), which is a JSON structure. In our case, we represented a person
+    with a JSON object containing the person's name and age. Note that everything
+    is in quotation marks except for the value of the `age` field; again, unlike MySQL,
+    we don't have to specify the types for this data. MongoDB will store the name
+    as a string and the age as an integer, but it applies no restrictions to these
+    fields.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的命令中，`db`指的是当前数据库。紧接着，`people`指的是这个名称的集合。由于它不存在，当我们尝试使用它时，它将被创建。接下来是`insert`，这意味着我们想要向数据库添加一些内容。我们将作为参数传递（在圆括号内），这是一个JSON结构。在我们的例子中，我们用一个包含人名和年龄的JSON对象表示一个人。请注意，除了`age`字段的值之外，所有内容都在引号中；再次，与MySQL不同，我们不必为这些数据指定类型。MongoDB将把名称存储为字符串，将年龄存储为整数，但不对这些字段施加任何限制。
+- en: 'Add another person to the database to make the next operations that we will
+    try out more meaningful. Run the following:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 向数据库添加另一个人，以使我们将尝试的下一个操作更有意义。运行以下命令：
+- en: '[PRE7]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Reading data with MongoDB
+  id: totrans-43
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用MongoDB读取数据
+- en: 'Instead of the SQL concept of a `SELECT` statement, MongoDB uses a `find()`
+    command. Similarly to SQL, we can specify the criteria to search for in data and
+    also choose which fields we want the database to return. Run the following command:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB使用`find()`命令而不是SQL中的`SELECT`语句。与SQL类似，我们可以指定要在数据中搜索的条件，并选择要返回的数据库字段。运行以下命令：
+- en: '[PRE8]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: This is the most basic version of the `find` operation. It'll simply *find*
+    or *retrieve* all the data and all its fields from the `people` collection. You
+    should see MongoDB output all the information about both the people we just added.
+    You'll note that each person also has an `ObjectId` field added; MongoDB adds
+    unique identifier fields to each of our documents automatically, and these `ID`
+    fields are also automatically indexed.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是`find`操作的最基本版本。它将简单地*查找*或*检索*`people`集合中的所有数据和所有字段。您应该会看到MongoDB输出我们刚刚添加的两个人的所有信息。您会注意到每个人还添加了一个`ObjectId`字段；MongoDB会自动为我们的每个文档添加唯一标识符字段，并且这些`ID`字段也会自动索引。
+- en: 'We can also use `find` with a single argument. The argument specifies criteria,
+    and MongoDB only returns documents that match. Run the following command:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们也可以使用单个参数的`find`。该参数指定条件，MongoDB只返回与之匹配的文档。运行以下命令：
+- en: '[PRE9]'
+  id: totrans-48
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'This will return all the fields from all the records if the name matches `John
+    Smith`, so you should see a single result returned and printed to the shell, as
+    in the screenshot that follows:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果名称匹配`John Smith`，则此命令将返回所有记录的所有字段，因此您应该会看到返回一个单一结果并打印到shell中，如下面的截图所示：
+- en: '![Reading data with MongoDB](img/B04312_11_02.jpg)'
+  id: totrans-50
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用MongoDB读取数据](img/B04312_11_02.jpg)'
+- en: 'Finally, if we don''t want all the fields returned, we can run the `find` command
+    and pass in a second argument to specify which fields we want. Run the following
+    command, and you should see results as in the following screenshot:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，如果我们不想返回所有字段，可以运行`find`命令并传入第二个参数来指定我们想要的字段。运行以下命令，您应该会看到以下截图中的结果：
+- en: '[PRE10]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: '![Reading data with MongoDB](img/B04312_11_03.jpg)'
+  id: totrans-53
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用MongoDB读取数据](img/B04312_11_03.jpg)'
+- en: The first argument says we're only interested in people who are called "John
+    Smith". The second argument says we're only interested in their age. Here, `1`
+    is a flag that says we want this field. We could instead use `0` to say that we're
+    not interested in a field, in which case, all the fields will be returned except
+    this one.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个参数表示我们只对名为“John Smith”的人感兴趣。第二个参数表示我们只对他们的年龄感兴趣。这里，`1`是一个标志，表示我们想要这个字段。我们可以使用`0`来表示我们对一个字段不感兴趣，这样的话，除了这个字段之外，所有字段都会被返回。
+- en: 'Note that even though we said we were only interested in the `age` field, the
+    preceding command returned the `_id` field as well. The `_id` field is always
+    returned unless explicitly excluded. For example, we could run the following:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，即使我们说我们只对`age`字段感兴趣，上述命令返回了`_id`字段。除非明确排除，否则始终返回`_id`字段。例如，我们可以运行以下命令：
+- en: '[PRE11]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: This will return only John's age and nothing else. Also, note that the key for
+    the `_id` field is `_id` and not `id`; this is to prevent a conflict with the
+    `id` keyword in many programming languages, including Python.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将只返回约翰的年龄，没有其他内容。另外，请注意`_id`字段的键是`_id`而不是`id`；这是为了避免与许多编程语言中的`id`关键字发生冲突，包括Python。
+- en: 'Each of our examples used very basic JSON objects with only a single value,
+    but we can specify multiple values for each argument. Consider the difference
+    between the following commands:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的每个示例都使用了非常基本的JSON对象，每个参数只有一个值，但我们可以为每个参数指定多个值。考虑以下命令之间的区别：
+- en: '[PRE12]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: The first command uses `find` with a single argument that returns all records
+    for all the people with the name John Smith and aged 1\. The second command uses
+    `find` with two arguments and returns the `age` field (and `_id` field) of all
+    the people with the name John Smith.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个命令使用带有单个参数的`find`，返回所有名为John Smith且年龄为1岁的人的所有记录。第二个命令使用带有两个参数的`find`，返回名为John
+    Smith的人的`age`字段（和`_id`字段）。
+- en: A final difference to note from MySQL is that there is no need to commit new
+    data. Once we run the `insert` statement, the data will be in the database until
+    we remove it.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与MySQL的最后一个区别是，不需要提交新数据。一旦我们运行`insert`语句，数据将保存在数据库中，直到我们将其删除。
+- en: Updating data with MongoDB
+  id: totrans-62
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用MongoDB更新数据
+- en: 'Updating existing records is slightly more complicated. MongoDB provides an
+    `update` method, which can be called in the same way as `insert` and `find`. It
+    also takes two arguments—the first specifying the criteria to find the document
+    we want to update, and the second providing a new document to replace it with.
+    Run the following command:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更新现有记录稍微复杂一些。MongoDB提供了一个`update`方法，可以与`insert`和`find`相同的方式调用。它也需要两个参数——第一个指定查找要更新的文档的条件，第二个提供一个新文档来替换它。运行以下命令：
+- en: '[PRE13]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'This finds the person with the name John Smith, and replaces him with a new
+    person, also with the name `John Smith` and aged 43\. If there are a lot of fields
+    and we only want to change a single one, it is tedious and wasteful to recreate
+    all the old fields. Therefore, we can use MongoDB''s `$set` keyword instead, which
+    will only replace the specified fields inside a document instead of replacing
+    the whole document. Run the following command:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将找到名为John Smith的人，并用一个新的人替换他，新人也叫`John Smith`，年龄为43岁。如果有很多字段，我们只想更改一个字段，那么重新创建所有旧字段是繁琐和浪费的。因此，我们可以使用MongoDB的`$set`关键字，它只会替换文档中指定的字段，而不是替换整个文档。运行以下命令：
+- en: '[PRE14]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: This updates John's age back to 35 again, which is probably a relief to him.
+    Instead of having to overwrite the whole document, here we only changed the `age`
+    field. We did this using the `$set` keyword in the second argument. Note that
+    the `update` function still takes two arguments and the second one now has a nested
+    JSON structure—the out JSON object has `$set` as the key and another JSON object
+    as a value. The inner JSON object specifies the updates that we want to make.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将把约翰的年龄再次更新为35岁，这对他来说可能是一种解脱。我们只改变了`age`字段，而不是覆盖整个文档。我们在第二个参数中使用了`$set`关键字来实现这一点。请注意，`update`函数仍然需要两个参数，而第二个参数现在具有嵌套的JSON结构——输出的JSON对象将`$set`作为键，另一个JSON对象作为值。内部JSON对象指定了我们想要进行的更新。
+- en: Deleting data with MongoDB
+  id: totrans-68
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用MongoDB删除数据
+- en: 'Deleting data is as easy as finding it. We will simply use the `remove` function
+    instead of `find` and then specify the matching criteria in a single argument,
+    just as we would with `find`. Run the following command to delete John from our
+    database:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 删除数据就像查找数据一样简单。我们将简单地使用`remove`函数而不是`find`，然后在单个参数中指定匹配条件，就像我们在`find`中所做的那样。运行以下命令从我们的数据库中删除John：
+- en: '[PRE15]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'You will see a confirmation that one record was deleted, as shown in the following
+    image:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看到一个确认，显示已删除一条记录，如下图所示：
+- en: '![Deleting data with MongoDB](img/B04312_11_04.jpg)'
+  id: totrans-72
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用MongoDB删除数据](img/B04312_11_04.jpg)'
+- en: 'You can also check that John is deleted by running the following:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以通过运行以下命令来检查John是否已被删除：
+- en: '[PRE16]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Now, only Mary will be returned, as in the following image:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，只有Mary将被返回，如下图所示：
+- en: '![Deleting data with MongoDB](img/B04312_11_05.jpg)'
+  id: totrans-76
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用MongoDB删除数据](img/B04312_11_05.jpg)'
+- en: 'To remove all the documents from a collection, we can pass in an empty argument.
+    Run the following command to remove all the remaining people:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要从集合中删除所有文档，我们可以传入一个空参数。运行以下命令以删除所有剩余的人：
+- en: '[PRE17]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Here, `{}` specifies an empty criteria condition and therefore matches all
+    the documents. Check that our `people` collection is empty by running the `find`
+    command again, as follows:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，`{}`指定了一个空的条件，因此匹配所有文档。通过再次运行`find`命令来检查我们的`people`集合是否为空，如下所示：
+- en: '[PRE18]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'You''ll see no output, as shown in the following screenshot (with the earlier
+    examples included for context), because our `people` collection is now empty:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看不到任何输出，如下图所示（包括前面的示例，以便了解上下文），因为我们的`people`集合现在为空：
+- en: '![Deleting data with MongoDB](img/B04312_11_06.jpg)'
+  id: totrans-82
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用MongoDB删除数据](img/B04312_11_06.jpg)'
+- en: Now that we looked at the basics of MongoDB, let's take a look at how to run
+    similar commands using Python instead of operating through the shell.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经了解了MongoDB的基础知识，让我们看看如何使用Python而不是通过shell来运行类似的命令。
+- en: Introducing PyMongo
+  id: totrans-84
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍PyMongo
+- en: 'PyMongo is a library that implements drivers for MongoDB and will allow us
+    to execute commands on our database from our application code. As usual, install
+    it through pip using the following command (note that, similarly to MongoDB, you
+    only need to install this library on the server):'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: PyMongo是一个实现了MongoDB驱动程序的库，它允许我们从应用程序代码中对数据库执行命令。像往常一样，使用以下命令通过pip安装它（请注意，与MongoDB类似，您只需要在服务器上安装此库）：
+- en: '[PRE19]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Now, we can import this library into our application and build our real `DBHelper`
+    class, implementing all the methods we used in our `MockDBHelper` class.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以将这个库导入到我们的应用程序中，并构建我们真正的`DBHelper`类，实现我们在`MockDBHelper`类中使用的所有方法。
+- en: Writing the DBHelper class
+  id: totrans-88
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 编写DBHelper类
+- en: 'The last class that we need is the `DBHelper` class, which will contain all
+    the functions that are required for our application code to talk to our database.
+    This class will use the `pymongo` library we just installed in order to run MongoDB
+    commands. Create a file named `dbhelper.py` in the `waiter` directory and add
+    the following code:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要的最后一个类是`DBHelper`类，它将包含我们的应用程序代码与数据库交互所需的所有函数。这个类将使用我们刚刚安装的`pymongo`库来运行MongoDB命令。在`waiter`目录中创建一个名为`dbhelper.py`的文件，并添加以下代码：
+- en: '[PRE20]'
+  id: totrans-90
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: This code imports the `pymongo` library, and in the constructor, it creates
+    a client—a Python object that will let us run the CRUD operations we tried out
+    earlier on our database. We defined the name of our database as a global one,
+    and in the second line of our constructor, we connected to the specified database
+    using `client`.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码导入了`pymongo`库，在构造函数中，它创建了一个客户端——一个Python对象，让我们可以在数据库上运行我们之前尝试过的CRUD操作。我们将我们的数据库名称定义为全局的，并在构造函数的第二行中，使用`client`连接到指定的数据库。
+- en: Adding the user methods
+  id: totrans-92
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 添加用户方法
+- en: 'For user management, we need the same two functions we had in our mock class.
+    The first is to get a user out of the database (in order to log this user in)
+    and the second is to add new users to the database (in order to register new users).
+    Add the following two methods to the `DBHelper` class:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于用户管理，我们需要与我们的模拟类中相同的两个函数。第一个是从数据库中获取用户（以便登录此用户），第二个是向数据库中添加新用户（以便注册新用户）。将以下两个方法添加到`DBHelper`类中：
+- en: '[PRE21]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: For the first method, we used PyMongo's `find_one()` function. This is similar
+    to the `find()` method we used in the MongoDB shell but returns only a single
+    match instead of all the matching results. As we only allow one registration per
+    e-mail address, there will always be either one or zero matches. Using `find()`
+    instead of `find_one()` here would also work, but we would get back a Python generator
+    that produces a single or zero element. Using `find_one()`, we will get back either
+    a single user result or none, which is exactly what our login code needs.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于第一种方法，我们使用了PyMongo的`find_one()`函数。这类似于我们在MongoDB shell中使用的`find()`方法，但是它只返回单个匹配项，而不是所有匹配的结果。由于我们每个电子邮件地址只允许注册一个用户，所以匹配结果要么是一个，要么是零。在这里使用`find()`而不是`find_one()`也可以，但是我们会得到一个产生单个或零元素的Python生成器。使用`find_one()`，我们要么得到一个单个用户的结果，要么得到空，这正是我们的登录代码所需要的。
+- en: For the `add_user()` method, we used `insert()` exactly as we discussed when
+    playing with the MongoDB shell and inserted a new document containing the e-mail
+    address, salt, and salted hash of the password.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于`add_user()`方法，我们使用了`insert()`，就像我们在使用MongoDB shell时讨论的那样，并插入了一个包含电子邮件地址、盐和密码的盐哈希的新文档。
+- en: Adding the table methods
+  id: totrans-97
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 添加表方法
+- en: 'We need methods to handle the following cases for the virtual tables that our
+    users will create:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要处理我们的用户将创建的虚拟表的以下情况的方法：
+- en: One to add new tables
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个用于添加新表
+- en: One to update tables (so that we can add the shortened bitly URL)
+  id: totrans-100
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个用于更新表（以便我们可以添加缩短的bitly URL）
+- en: One to get all the tables (so that we can display them in the **Account** page)
+  id: totrans-101
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个用于获取所有表（以便我们可以在**账户**页面中显示它们）
+- en: One to get a single table (so that we can add the local table number to our
+    requests)
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个用于获取单个表（以便我们可以将本地表号添加到我们的请求中）
+- en: One to delete a table
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个用于删除表
+- en: 'This is a nice set of methods as it demonstrates all four of the CRUD database
+    operations. Add the following code to the `DBHelper` class:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一组不错的方法，因为它演示了所有四种CRUD数据库操作。将以下代码添加到`DBHelper`类中：
+- en: '[PRE22]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: For the `add_table()` method, MongoDB will assign a unique identifier every
+    time we insert a table. This gives us true multiuser support. Our mock code used
+    the user-chosen table number as a unique identifier and would break with multiple
+    users when two or more users chose the same table number. In the `add_table()`
+    method, we returned this unique identifier to the application code, which can
+    then be used to build the URL that's needed to make new requests for this specific
+    table.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于`add_table()`方法，每次插入表时，MongoDB都会分配一个唯一标识符。这为我们提供了真正的多用户支持。我们的模拟代码使用用户选择的表号作为唯一标识符，并且在多个用户选择相同的表号时会出现问题。在`add_table()`方法中，我们将此唯一标识符返回给应用程序代码，然后可以用它来构建所需的URL，以便为此特定表发出新的请求。
+- en: The `update_table()` method uses the `insert()` function that we discussed earlier.
+    As in our previous example, we used the `$set` keyword to keep our original data
+    intact, and only edited a specific field (instead of overwriting the entire document).
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`update_table()`方法使用了我们之前讨论过的`insert()`函数。与我们之前的示例一样，我们使用了`$set`关键字来保持我们的原始数据完整，并且只编辑了特定字段（而不是覆盖整个文档）。'
+- en: Note
+  id: totrans-108
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Note that unlike in the MongoDB shell example, we now need quotation marks around
+    `$set`; this makes it syntactically legal Python code (all the keys of a dictionary
+    have to be strings), and PyMongo takes care of the magic in the background to
+    convert our Python dictionaries into MongoDB commands and objects.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，与MongoDB shell示例不同，我们现在需要在`$set`周围加上引号；这使得它在语法上成为合法的Python代码（字典的所有键都必须是字符串），而PyMongo会在后台处理魔术，将我们的Python字典转换为MongoDB命令和对象。
+- en: The `get_tables()` function used the `find()` function instead of the `find_one()`
+    function that we used for the user code. This caused PyMongo to return a Python
+    generator that can produce all the data that matched the *find* criteria. As we
+    assumed that we'll always be able to load all the tables into memory, we converted
+    this generator to a list, which we then passed to our template.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`get_tables()`函数使用了`find()`函数，而不是我们用于用户代码的`find_one()`函数。这导致PyMongo返回一个Python生成器，可以生成与*find*条件匹配的所有数据。由于我们假设总是能够将所有表加载到内存中，因此我们将此生成器转换为列表，然后将其传递给我们的模板。'
+- en: 'The `get_table()` function is used in cases when we only have access to the
+    table ID and need to get other information about the table. This is exactly the
+    scenario when we processed requests; the URL of the request contained the table''s
+    unique ID but wanted to add the table number to the **Dashboard** page. The unique
+    identifiers that MongoDB generated are actually objects rather than simple strings,
+    but we had just the string from our URL. Therefore, we created `ObjectId` and
+    passed in the string before using this ID to query the database. `ObjectId` can
+    be imported from the `bson` library, which was installed automatically. This means
+    we also need to add another import statement. Add the following line to the top
+    of the `dbhelper.py` file:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`get_table()`函数用于在我们只有访问表ID并且需要获取有关表的其他信息时使用。这正是我们处理请求时的情况；请求的URL包含了表的唯一ID，但希望将表号添加到**Dashboard**页面。MongoDB生成的唯一标识符实际上是对象而不是简单的字符串，但我们只有来自我们的URL的字符串。因此，在使用此ID查询数据库之前，我们创建了`ObjectId`并传入了字符串。`ObjectId`可以从自动安装的`bson`库中导入。这意味着我们还需要添加另一个导入语句。将以下行添加到`dbhelper.py`文件的顶部：'
+- en: '[PRE23]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Finally, the `delete_table()` method used the `remove()` function exactly as
+    we did before. Here, we removed a table by its unique identifier, so again, we
+    created an `ObjectId` object from the string we had before passing it to the database.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，`delete_table()`方法使用了`remove()`函数，与之前完全相同。在这里，我们通过其唯一标识符删除了一个表，因此我们再次从之前的字符串创建了一个`ObjectId`对象，然后将其传递给数据库。
+- en: Adding the request methods
+  id: totrans-114
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 添加请求方法
+- en: 'We have to add the last three methods to the `DBHelper` class to deal with
+    the attention requests. We need to:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要将最后三个方法添加到`DBHelper`类中以处理关注请求。我们需要：
+- en: Add a request when a patron visits the provided URL
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当顾客访问提供的URL时，添加一个请求
+- en: Get all the requests for a specific user to display on the **Dashboard** page
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 获取特定用户的所有请求，以在**Dashboard**页面上显示
+- en: Delete requests from the database when the user hits the **Resolve** button
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当用户点击**解决**按钮时，从数据库中删除请求
+- en: 'Add the following methods to the `dbhelper.py` file:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将以下方法添加到`dbhelper.py`文件中：
+- en: '[PRE24]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: Changing the application code
+  id: totrans-121
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 更改应用程序代码
+- en: 'Now that we have a real `DBHelper` class, we need to conditionally import it
+    based on which environment we''re in. Change the import for the `MockDBHelper`
+    class in the `waitercaller.py` file to read, as follows:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一个真正的`DBHelper`类，我们需要根据我们所处的环境有条件地导入它。将`waitercaller.py`文件中`MockDBHelper`类的导入更改为如下所示：
+- en: '[PRE25]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Ensure that the preceding four lines are added beneath the `config` import.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保在`config`导入下面添加前面四行。
+- en: 'Also, our `DBHelper` class deals mainly with many instances of `ObjectId`,
+    while our `MockDBHelper` class uses strings. We therefore need a small change
+    to our `account_createtable()` function to cast `ObjectId` to a string. Take a
+    look at the line in `waitercaller.py` that reads the following:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们的`DBHelper`类主要处理许多`ObjectId`实例，而我们的`MockDBHelper`类使用字符串。因此，我们需要对我们的`account_createtable()`函数进行小的更改，将`ObjectId`转换为字符串。查看`waitercaller.py`中的以下行：
+- en: '[PRE26]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Now, change this to the following:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，将其更改为以下内容：
+- en: '[PRE27]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: This will ensure that `tableid` is always a string before we concatenate it
+    to our URL.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将确保在我们将其连接到我们的URL之前，`tableid`始终是一个字符串。
+- en: The last code changes we need for our production is a different `config` file
+    to specify the correct `base_url` for our VPS and to indicate that the `MockDBHelper`
+    class should not be used. As we don't check our `config` file into our `git` repository,
+    we'll need to create this directly on the VPS.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们生产环境需要的最后一次代码更改是一个不同的`config`文件，用于指定VPS的正确`base_url`并指示不应使用`MockDBHelper`类。由于我们不会将`config`文件检入`git`存储库，因此我们需要直接在VPS上创建这个文件。
+- en: Testing our application in production
+  id: totrans-131
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在生产环境中测试我们的应用程序
+- en: Our application should now be fully functional once we add the preceding code!
+    As with the database section of our Crime Map application, this bit is the most
+    delicate as we haven't been able to test the `DBHelper` code locally, and we'll
+    have to debug it directly on the VPS. However, we're confident, from our `MockDBHelper`
+    class, that all our application logic is working, and if the new database code
+    holds up, everything else should go as expected. Let's push our code to the server
+    and test it out.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦添加了上述代码，我们的应用程序现在应该是完全可用的！与我们的犯罪地图应用程序的数据库部分一样，这部分是最微妙的，因为我们无法在本地测试`DBHelper`代码，而必须直接在VPS上进行调试。然而，我们有信心，从我们的`MockDBHelper`类中，我们的应用程序逻辑都是有效的，如果新的数据库代码能够保持下来，其他一切应该都会按预期进行。让我们将代码推送到服务器上并进行测试。
+- en: 'Locally, run the following commands in your `waitercaller` directory:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的`waitercaller`目录中本地运行以下命令：
+- en: '[PRE28]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'On your VPS, change to the `WaiterCaller` directory, pull the new code, and
+    restart Apache, as follows:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的VPS上，切换到`WaiterCaller`目录，拉取新代码，并按以下方式重新启动Apache：
+- en: '[PRE29]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Now, create the production `config` file using nano by running the following
+    command:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，通过运行以下命令使用nano创建生产`config`文件：
+- en: '[PRE30]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: Type the following into the new `config.py` file, substituting the IP address
+    in `base_url` with the IP address of your VPS.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在新的`config.py`文件中输入以下内容，将`base_url`中的IP地址替换为您的VPS的IP地址。
+- en: '[PRE31]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: Then, save and quit the file by hitting *Ctrl* + *X* and entering *Y* when prompted.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，通过按*Ctrl* + *X*并在提示时输入*Y*来保存并退出文件。
+- en: 'Now, run the following command to reload Apache with the new code:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，运行以下命令以使用新代码重新加载Apache：
+- en: '[PRE32]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Visit the IP address of your VPS in your local browser and do a run-through
+    of all the functionality to make sure everything works as expected. This includes
+    attempting to sign up with invalid data, signing up, attempting to log in with
+    invalid data, logging in, creating a table, creating a request, viewing the dashboard,
+    waiting for the dashboard to refresh, resolving a request, and more. For a full
+    test, all the actions should be completed several times in varying combinations.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本地浏览器中访问您的VPS的IP地址，并对所有功能进行一次全面测试，以确保一切都按预期工作。这包括尝试使用无效数据注册、注册、尝试使用无效数据登录、登录、创建表、创建请求、查看仪表板、等待仪表板刷新、解决请求等。对于全面的测试，所有操作应该以不同的组合多次完成。
+- en: You'll probably understand how tedious this gets even for our relatively simple
+    application. For more complicated applications, it is well worth the effort to
+    create automatic tests—code that imitates what a user would do on the site but
+    also has built-in expectations of what should happen at each step. Tools such
+    as Selenium ([www.seleniumhq.org](http://www.seleniumhq.org)) come in very useful
+    to build such tests.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能会明白，即使对于我们相对简单的应用程序，这也变得很繁琐。对于更复杂的应用程序，值得花费精力创建自动测试——模拟用户在网站上的操作，但也具有内置的对每个步骤应该发生什么的期望。诸如Selenium（[www.seleniumhq.org](http://www.seleniumhq.org)）之类的工具非常有用，可以用来构建这样的测试。
+- en: Tip
+  id: totrans-146
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: 'As always, if anything goes wrong or you get the dreaded "500: Internal Server
+    Error", check the Apache error file at `/etc/log/apache2/error.log` for hints.'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与往常一样，如果出现任何问题，或者出现可怕的“500：内部服务器错误”，请检查`/etc/log/apache2/error.log`中的Apache错误文件以获取提示。
+- en: Adding some finishing touches
+  id: totrans-148
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加一些最后的修饰
+- en: To end off, we'll add a couple of indices to our database to improve efficiency
+    and prevent multiple requests from being open for a single table. After this,
+    we'll add a favicon to personalize our web application.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们将向我们的数据库添加一些索引，以提高效率并防止为单个表打开多个请求。之后，我们将添加一个网站图标来个性化我们的Web应用程序。
+- en: Adding indices to MongoDB
+  id: totrans-150
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 向MongoDB添加索引
+- en: Database indices are used to increase efficiency. Normally, to find a subset
+    of documents in our database that match certain criteria (that is, whenever we
+    use the MongoDB `find()` method), the database engine has to examine each record
+    and add the ones that match the returned result. If we add an index to a specific
+    field, the database will store more metadata, which can be thought about as storing
+    a sorted copy of this field. To find out whether `john@example.com` appears in
+    a sorted list is much more efficient than checking whether it appears in an unsorted
+    list. However, the indices do take up additional storage space, so choosing where
+    to add indices is a classic *space-time tradeoff* that's seen everywhere in computer
+    science. MongoDB can also use indices to place some constraints on a field. In
+    our case, we'll use a *unique* index, which prevents a new document from being
+    added to the database if the value for the indexed field already appears in another
+    document in this collection.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据库索引用于提高效率。通常，要在数据库中找到与特定条件匹配的一组文档（也就是说，每当我们使用MongoDB的`find()`方法时），数据库引擎必须检查每条记录并添加与返回结果匹配的记录。如果我们向特定字段添加索引，数据库将存储更多的元数据，可以将其视为存储该字段的排序副本。在排序列表中查找`john@example.com`是否出现比在无序列表中查找要高效得多。然而，索引确实会占用额外的存储空间，因此选择在哪里添加索引是计算机科学中经典的“时空权衡”，无处不在。MongoDB还可以使用索引对字段施加一些约束。在我们的情况下，我们将使用*唯一*索引，如果索引字段的值已经出现在此集合中的另一个文档中，则阻止向数据库添加新文档。
+- en: 'We''ll add two indices to MongoDB. We''ll add an index on the `email` field
+    of our `users` collection as we will use this field to find users on login, and
+    we want the lookups to be as fast as possible. We also want to ensure at a database
+    level that each e-mail address is unique. We already have two checks for this:
+    the HTML5 field does a frontend check, and our application code does a backend
+    check. Even though a database check may seem unnecessary, it takes little effort
+    to set up and follows the good principles of baked-in security (in which checks
+    aren''t just tacked on as an afterthought, but all data is validated as often
+    as possible instead), and the principle that each *layer* of an application (the
+    frontend, application layer, and database layer in our case) shouldn''t blindly
+    trust the data that is passed from a higher layer.'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在MongoDB中添加两个索引。我们将在`users`集合的`email`字段上添加一个索引，因为我们将使用此字段在登录时查找用户，并且我们希望查找尽可能快。我们还希望在数据库级别确保每个电子邮件地址都是唯一的。我们已经有两个检查：HTML5字段进行前端检查，我们的应用程序代码进行后端检查。即使数据库检查可能看起来是不必要的，但设置起来很容易，并遵循内置安全性的良好原则（其中检查不仅仅是作为事后添加的，而是尽可能经常验证所有数据），以及应用程序的每个*层*（前端，应用程序层和数据库层在我们的情况下）都不应该盲目地信任从更高层传递的数据的原则。
+- en: We'll also add a unique index on the `table_id` field for a requests collection.
+    This will prevent a single impatient table from spamming the dashboard with multiple
+    requests by refreshing the page that creates a new request. It's also useful because
+    our requests are created using GET requests, which can easily be duplicated (by
+    a browser preloading a page or a social network scraping the links a user visits
+    to find out more about them). By ensuring that each request's `table_id` is unique,
+    we can prevent both of these issues.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还将在请求集合的`table_id`字段上添加唯一索引。这将防止单个不耐烦的桌子通过刷新创建新请求的页面来向仪表板发送多个请求。这也很有用，因为我们的请求是使用GET请求创建的，可以很容易地复制（通过浏览器预加载页面或社交网络抓取用户访问的链接以了解更多信息）。通过确保每个请求的`table_id`是唯一的，我们可以防止这两个问题。
+- en: Where do we add indices?
+  id: totrans-154
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 我们在哪里添加索引？
+- en: When we built our MySQL database, we had a setup script that ran independently
+    of our Crime Map web application. This setup script built the skeleton of the
+    database, and we wrote it in Python so that we could easily run it again if we
+    ever needed to migrate to a new server or to reinstall our database.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们构建MySQL数据库时，我们有一个独立于我们的犯罪地图Web应用程序的设置脚本。此设置脚本构建了数据库的框架，我们用Python编写它，以便如果我们需要迁移到新服务器或重新安装我们的数据库，我们可以轻松地再次运行它。
+- en: As MongoDB is so much more flexible, we didn't need a setup script. We can start
+    our application off on a new server, and—as long as we install MongoDB—the database
+    will recreate itself from scratch as new data is added or the old data is restored
+    from a backup.
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于MongoDB非常灵活，我们不需要设置脚本。我们可以在新服务器上启动我们的应用程序，并且只要安装了MongoDB，数据库将会在添加新数据或从备份中恢复旧数据时从头开始重新创建。
+- en: 'The lack of a setup script does mean that we don''t really have a good place
+    to add indices to our database. If we add the indices through the MongoDB shell,
+    it means that someone has to remember to add them again if the application needs
+    to migrate to a new server. Therefore, we''ll create an independent Python script
+    just to make the indices. On your local machine, create a Python file in the `waitercaller`
+    directory and call it `create_mongo_indices.py`. Add the following code:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 缺少设置脚本意味着我们实际上没有一个很好的地方可以向我们的数据库添加索引。如果我们通过MongoDB shell添加索引，这意味着如果应用程序需要迁移到新服务器，有人必须记住再次添加它们。因此，我们将创建一个独立的Python脚本来创建索引。在您的本地计算机上，在`waitercaller`目录中创建一个Python文件，并将其命名为`create_mongo_indices.py`。添加以下代码：
+- en: '[PRE33]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: The connection code is the same that we used before, and the code used to create
+    indices is simple enough. We called the `create_index()` method on the collection
+    we want to create an index on and then passed in the field name to use to create
+    the index. In our case, we also passed in the `unique=True` flag to specify that
+    the indices should also have a unique constraint added to them.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接代码与我们以前使用的代码相同，用于创建索引的代码足够简单。我们在要在其上创建索引的集合上调用`create_index()`方法，然后传递要用于创建索引的字段名称。在我们的情况下，我们还传递了`unique=True`标志，以指定索引也应该添加唯一约束。
+- en: 'Now, we need to make a small change to our application so that it can deal
+    with the case of a new request being made when an identical request is already
+    open. In the `dbhelper.py` file, update the `add_request()` method to the following:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要对我们的应用程序进行一些小的更改，以便它可以处理已经打开的相同请求的情况。在`dbhelper.py`文件中，将`add_request()`方法更新为以下内容：
+- en: '[PRE34]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'If we try to insert a request into our database with a duplicate `table_id`
+    field, `DuplicateKeyError` will be thrown. In the updated code, we will catch
+    this error and return `False` to indicate that the request wasn''t successfully
+    created. We will also now return `True` when the request is successful. To take
+    advantage of this information in the application code, we also need to update
+    the `new_request()` method. Edit the method so that it looks similar to this:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们尝试向数据库插入具有重复的`table_id`字段的请求，将抛出`DuplicateKeyError`。在更新的代码中，我们将捕获此错误并返回`False`以指示请求未成功创建。当请求成功时，我们现在也将返回`True`。为了在应用程序代码中利用这些信息，我们还需要更新`new_request()`方法。编辑该方法，使其类似于此：
+- en: '[PRE35]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: Now, we will check whether the new request was successfully created or whether
+    an existing one blocked it. In the latter case, we will return a different message,
+    requesting patience from the patron.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将检查新请求是否成功创建，或者现有请求是否阻止它。在后一种情况下，我们将返回不同的消息，要求顾客耐心等待。
+- en: 'To test the new functionality, add the new and modified files to Git (`waitercaller.py`,
+    `dbhelper.py`, `create_mongo_indices.py`), commit, and then push them. On your
+    VPS, pull in the new changes, restart Apache, and run the following:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了测试新功能，将新的和修改后的文件添加到Git（`waitercaller.py`，`dbhelper.py`，`create_mongo_indices.py`），提交，然后推送它们。在您的VPS上，拉取新的更改，重新启动Apache，并运行以下命令：
+- en: '[PRE36]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'To create the indices we discussed before, run some tests again in your browser
+    to make sure nothing broke and to verify that you get the new message displayed
+    when you visit the same attention request URL repeatedly without resolving the
+    request, as in the screenshot that follows:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了创建我们之前讨论过的索引，再次在浏览器中运行一些测试，确保没有出现任何问题，并验证当您重复访问相同的关注请求URL时是否显示了新消息，如下图所示：
+- en: '![Where do we add indices?](img/B04312_11_07.jpg)'
+  id: totrans-168
+  prefs: []
+  type: TYPE_IMG
+  zh: '![我们在哪里添加索引？](img/B04312_11_07.jpg)'
+- en: You may find that, due to your browser pre-fetching pages, attention requests
+    get made automatically when you first create tables through the account page.
+    If you see the message as displayed in the above image when you don't expect to,
+    resolve any open requests on the dashboard page, and visit the newrequest URL
+    again.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能会发现，由于浏览器预取页面，当您首次通过帐户页面创建表格时，会自动发出关注请求。如果您在不期望时看到上图中显示的消息，请在仪表板页面上解决任何未处理的请求，并再次访问newrequest
+    URL。
+- en: Adding a favicon
+  id: totrans-170
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 添加网站图标
+- en: The last thing we'll add to our application is a favicon. *Favicons* are the
+    small images that most browsers display in the tab bar when a page is open and
+    on the bookmarks bar if a user bookmarks a site. They add a friendly touch to
+    the site and help a user identify a site more quickly.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要添加到我们的应用程序的最后一件事是一个网站图标。*网站图标*是大多数浏览器在打开页面时在标签栏中显示的小图像，如果用户将网站加为书签，则会显示在书签栏上。它们为网站增添了友好的触感，并帮助用户更快地识别网站。
+- en: 'The tricky part about favicons is that they have to be really small. It''s
+    customary to use a 16x16 pixel image as a favicon—which doesn''t leave that much
+    room for creativity. There are some nice websites to help you create the perfect
+    favicon for your website. One such site is [favicon.cc](http://favicon.cc), which
+    allows you to create a favicon from scratch (giving you 16x16 blank pixels to
+    start), or it can import an image. Using the import functionality, you can use
+    a bigger image that [favicon.cc](http://favicon.cc) attempts to reduce to 16x16
+    pixels—this has mixed results and generally works better with simpler images.
+    An example favicon is included in the code bundle in the static directory, and
+    an enlarged version of it is shown in the following image:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于网站图标的棘手之处在于它们必须非常小。习惯上使用16x16像素的图像作为网站图标，这并不留下太多创意空间。有一些很好的网站可以帮助您为您的网站创建完美的网站图标。其中一个网站是[favicon.cc](http://favicon.cc)，它允许您从头开始创建网站图标（给您16x16的空白像素开始），或者可以导入图像。使用导入功能，您可以使用一个更大的图像，[favicon.cc](http://favicon.cc)会尝试将其缩小为16x16像素，这样做的效果参差不齐，通常对于简单的图像效果更好。代码包中包含一个示例网站图标，放在静态目录中，并在下图中显示了它的放大版本：
+- en: '![Adding a favicon](img/B04312_11_08.jpg)'
+  id: totrans-173
+  prefs: []
+  type: TYPE_IMG
+  zh: '![添加网站图标](img/B04312_11_08.jpg)'
+- en: 'Once you have an icon (you can use the one provided in the code bundle), it''s
+    easy to tell Flask to serve it along with the rest of the page. Make sure your
+    icon is called `favicon.ico` (the standard extension for icon files is `.ico`)
+    and put it in the `waitercaller/static` directory. Then, add the following line
+    to the `<head>` section of the `base.html` template:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您有了一个图标（您可以使用代码包中提供的图标），就很容易告诉Flask将其与页面的其余部分一起提供。确保您的图标被命名为`favicon.ico`（图标文件的标准扩展名是`.ico`），并将其放在`waitercaller/static`目录中。然后，在`base.html`模板的`<head>`部分中添加以下行：
+- en: '[PRE37]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'This creates a link to the `favicon.ico` file using Jinja''s `url_for` function
+    to generate the full URL needed to be directed to the static directory, which
+    is simply converted to the plain HTML (which you can see by hitting **View source**
+    in your browser). Take a look at the following:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将创建一个链接到`favicon.ico`文件，使用Jinja的`url_for`函数生成所需的完整URL，以便指向静态目录，然后将其简单转换为HTML（您可以通过浏览器中的**查看源代码**来查看）。看一下下面的内容：
+- en: '[PRE38]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'Now, if you reload the page again, you will see the favicon in the tab heading,
+    and if you bookmark the page, you''ll view the icon in the bookmarks toolbar of
+    your browser as well, as seen in the following screenshot:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您再次重新加载页面，您将在标签标题中看到网站图标，如果您将页面加为书签，您也将在浏览器的书签工具栏中看到图标，如下图所示：
+- en: '![Adding a favicon](img/B04312_11_09.jpg)'
+  id: totrans-179
+  prefs: []
+  type: TYPE_IMG
+  zh: '![添加网站图标](img/B04312_11_09.jpg)'
+- en: That's it for our last project. Of course, no web application is ever truly
+    complete, and there are countless improvements to make and features to add. By
+    this stage in the book, you will have more than enough knowledge to start adding
+    your own changes and bringing your original ideas into creation, either as extensions
+    to the projects we walked through in this book or from scratch, as brand-new web
+    applications.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是我们最后的项目。当然，没有一个Web应用程序是真正完整的，有无数的改进和功能可以添加。在本书的这个阶段，您将拥有足够的知识来开始添加自己的更改，并将您的原创想法变成现实，无论是作为我们在本书中介绍的项目的扩展，还是从头开始，作为全新的Web应用程序。
+- en: Summary
+  id: totrans-181
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we completed our Waiter Caller web application. We installed
+    MongoDB on our server, learned how to use it through the shell, and then installed
+    PyMongo. Using PyMongo, we created a new database helper class to allow our application
+    code to run operations on the new database.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们完成了我们的服务员呼叫器Web应用程序。我们在服务器上安装了MongoDB，学习了如何通过shell使用它，然后安装了PyMongo。使用PyMongo，我们创建了一个新的数据库助手类，允许我们的应用程序代码在新数据库上运行操作。
+- en: Finally, we added a favicon to make our web application friendlier and more
+    aesthetically pleasing to users.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们添加了一个网站图标，使我们的Web应用程序更加友好和美观。
+- en: In the next and final chapter, we'll take a look at what could still be added
+    to our application to improve usability and security and end with some pointers
+    on where to look next to continue learning about Flask and web development through
+    Python.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章和最后一章中，我们将看看我们的应用程序还可以添加什么来改善可用性和安全性，并以一些指针结束，指出接下来继续学习Flask和Python进行Web开发的地方。

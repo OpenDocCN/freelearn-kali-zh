@@ -1,0 +1,2238 @@
+- en: Asynchronous Microservice Architectures Using Message Queues
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用消息队列的异步微服务架构
+- en: In the past two chapters, you learned how to build REST-based microservices
+    with the Go programming language. The REST architectural style is both simple
+    and flexible at the same time, which makes it an excellent choice for many use
+    cases. However, being built on top of HTTP, all communication in a REST architecture
+    will follow the client/server model with request/reply transactions. In some use
+    cases, this might be restrictive and other communication models might be better
+    suited.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在过去的两章中，您学习了如何使用Go编程语言构建基于REST的微服务。REST架构风格既简单又灵活，这使其成为许多用例的绝佳选择。然而，基于HTTP构建的REST架构中的所有通信都将遵循客户端/服务器模型，进行请求/回复事务。在某些用例中，这可能是有限制的，其他通信模型可能更适合。
+- en: In this chapter, we will introduce the publish/subscribe communication model,
+    along with the technologies that you need to implement it. Typically, publish/subscribe
+    architectures require a central infrastructure component—the message broker. In
+    the open source world, there are many different implementations of message brokers;
+    so, in this chapter, we will introduce two different message brokers that we feel
+    to be among the most important ones—**RabbitMQ** and **Apache Kafka**. Both are
+    suited for specific use cases; you will learn how to set up each of these two
+    message brokers, how to connect your Go application, and when you should use one
+    or the other.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将介绍发布/订阅通信模型，以及您需要实现它的技术。通常，发布/订阅架构需要一个中央基础设施组件——消息代理。在开源世界中，有许多不同的消息代理实现；因此，在本章中，我们将介绍两种我们认为最重要的消息代理——**RabbitMQ**和**Apache
+    Kafka**。两者都适用于特定的用例；您将学习如何设置这两种消息代理，如何连接您的Go应用程序，以及何时应该使用其中一种。
+- en: We will then show you how to use this knowledge in order to extend the event
+    management microservice that you have worked in the previous chapters to publish
+    an event whenever something important happens. This allows us to implement a second
+    microservice that listens on those events. You will also learn about advanced
+    architectural patterns that usually work well alongside asynchronous communication,
+    such as *event collaboration* and *event sourcing*, and how (and when) to use
+    them in your application.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们将向您展示如何利用这些知识来扩展您在前几章中工作的事件管理微服务，以便在发生重要事件时发布事件。这使我们能够实现第二个微服务来监听这些事件。您还将了解通常与异步通信一起使用的高级架构模式，例如*事件协作*和*事件溯源*，以及如何（以及何时）在应用程序中使用它们。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: The publish/subscribe architectural pattern
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 发布/订阅架构模式
+- en: Event collaboration
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 事件协作
+- en: Event sourcing
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 事件溯源
+- en: AMQP with RabbitMQ
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用RabbitMQ的AMQP
+- en: Apache Kafka
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Apache Kafka
+- en: The publish/subscribe pattern
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 发布/订阅模式
+- en: The publish/subscribe pattern is a communication pattern alternative to the
+    well-known request/reply pattern. Instead of a client (issuing a request) and
+    a server (replying with a response to that request), a publish/subscribe architecture
+    consists of publishers and subscribers.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 发布/订阅模式是一种通信模式，是请求/回复模式的替代方案。与客户端（发出请求）和服务器（回复该请求）不同，发布/订阅架构由发布者和订阅者组成。
+- en: Each publisher can emit messages. It is of no concern to the publisher who actually
+    gets these messages. This is the concern of the subscribers; each subscriber can
+    subscribe to a certain type of message and be notified whenever a publisher publishes
+    a given type of message. In reverse, each subscriber does not concern itself with
+    where a message actually came from.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个发布者都可以发出消息。发布者实际上并不关心谁收到了这些消息。这是订阅者的问题；每个订阅者可以订阅某种类型的消息，并在发布者发布给定类型的消息时得到通知。反过来，每个订阅者并不关心消息实际来自哪里。
+- en: '![](img/e967a901-db08-4ba1-a019-ab96d69ff7bc.png)'
+  id: totrans-13
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/e967a901-db08-4ba1-a019-ab96d69ff7bc.png)'
+- en: The request/reply and the publish/subscribe communication patterns
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请求/回复和发布/订阅通信模式
+- en: In practice, many publish/subscribe architectures require a central infrastructure
+    component—the message broker. Publishers publish messages at the message broker,
+    and subscribers subscribe to messages at the message broker. One of the broker's
+    main tasks then is to route published messages to the subscribers that have expressed
+    interest in them.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，许多发布/订阅架构都需要一个中央基础设施组件——消息代理。发布者在消息代理上发布消息，订阅者在消息代理上订阅消息。然后，代理的主要任务之一是将发布的消息路由到对它们感兴趣的订阅者。
+- en: Typically, messages will be routed **topic-based**. This means that each publisher
+    specified a topic for a published message (a topic usually just being a string
+    identifier, for example, `user.created`). Each subscriber will also subscribe
+    to a certain topic. Often, a broker will also allow a subscriber to subscribe
+    to an entire set of topic using wildcard expressions such as `user.*`.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，消息将被路由到基于主题的方式。这意味着每个发布者都为发布的消息指定一个主题（主题通常只是一个字符串标识符，例如`user.created`）。每个订阅者也将订阅特定的主题。通常，代理还允许订阅者使用通配符表达式（例如`user.*`）订阅整个主题集。
+- en: 'In contrast to request/reply, the publish/subscribe pattern brings some clear
+    advantages:'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与请求/回复相比，发布/订阅模式带来了一些明显的优势：
+- en: Publishers and subscribers are very loosely coupled. This goes to the extent
+    that they do not even know about one another.
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 发布者和订阅者之间的耦合非常松散。甚至它们彼此之间都不知道。
+- en: A pub/sub architecture is very flexible. It is possible to add new subscribers
+    (and, therefore, extend existing processes) without having to modify the publisher.
+    The inverse also applies; you can add new publishers without having to modify
+    the subscribers.
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 发布/订阅架构非常灵活。可以添加新的订阅者（因此扩展现有流程）而无需修改发布者。反之亦然；可以添加新的发布者而无需修改订阅者。
+- en: In case the messages are routed by a message broker, you also gain resiliency.
+    Usually, the message broker stores all messages in a queue, in which they are
+    kept until they have been processed by a subscriber. If a subscriber becomes unavailable
+    (for example, due to a failure or an intentional shutdown), the messages that
+    should have been routed to that subscriber will become queued until the subscriber
+    is available again.
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果消息由消息代理路由，您还会获得弹性。通常，消息代理会将所有消息存储在队列中，直到它们被订阅者处理。如果订阅者变得不可用（例如由于故障或有意关闭），本应路由到该订阅者的消息将排队，直到订阅者再次可用。
+- en: Often, you will also get some kind of reliability guaranteed by the message
+    broker on a protocol level. For example, RabbitMQ guarantees *reliable delivery*
+    by requiring each subscriber to acknowledge a received message. Only when the
+    message has been acknowledged, the broker will remove the message from the queue.
+    If the subscriber should fail (for example, by disconnection) when a message had
+    already been delivered, but not yet acknowledged, the message will be put back
+    into the message queue. If another subscriber listens on the same message queue,
+    the message might be routed to that subscriber; otherwise, it will remain in the
+    queue until the subscriber is available again.
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通常，您还会在协议级别获得消息代理的某种可靠性保证。例如，RabbitMQ通过要求每个订阅者确认接收到的消息来保证*可靠传递*。只有在消息被确认后，代理才会从队列中删除消息。如果订阅者应该失败（例如，由于断开连接），当消息已经被传递但尚未被确认时，消息将被放回消息队列中。如果另一个订阅者监听同一消息队列，消息可能会被路由到该订阅者；否则，它将保留在队列中，直到订阅者再次可用。
+- en: You can easily scale out. In case that too many messages are published for a
+    single subscriber to efficiently handle them, you can add more subscribers and
+    have the message broker load-balance the messages sent to these subscribers.
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您可以轻松扩展。如果对于单个订阅者来说发布了太多消息以有效处理它们，您可以添加更多订阅者，并让消息代理负载平衡发送给这些订阅者的消息。
+- en: Of course, introducing a central infrastructure component such as a message
+    broker brings its own risk. When not done right, your message broker might become
+    a single point of failure, taking your entire application down with it in case
+    it fails. When introducing a message broker in a production environment, you should
+    take appropriate measures to ensure high-availability (usually by clustering and
+    automatic failover).
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，引入消息代理这样的中心基础设施组件也带来了自己的风险。如果做得不对，您的消息代理可能会成为单点故障，导致整个应用程序在其失败时崩溃。在生产环境中引入消息代理时，您应该采取适当的措施来确保高可用性（通常是通过集群和自动故障转移）。
+- en: In case your application is run in a cloud environment, you may also take advantage
+    of one of the managed message queuing and delivery services that are offered by
+    the cloud providers, for example, AWS **Simple Queue Service** (**SQS**) or the
+    Azure Service Bus.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您的应用程序在云环境中运行，您还可以利用云提供商提供的托管消息排队和传递服务之一，例如AWS的**简单队列服务**（**SQS**）或Azure服务总线。
+- en: In this chapter, you will learn how to use two of the most popular open source
+    message brokers—RabbitMQ and Apache Kafka. In [Chapter 8](25f18fd2-4d08-41fb-a8b2-acc927bd0876.xhtml),
+    *AWS Part II - S3, SQS, API Gateway, and DynamoDB*, you will learn about AWS SQS.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您将学习如何使用两种最流行的开源消息代理——RabbitMQ和Apache Kafka。在[第8章](25f18fd2-4d08-41fb-a8b2-acc927bd0876.xhtml)中，*AWS第二部分-S3、SQS、API网关和DynamoDB*，您将了解有关AWS
+    SQS的信息。
+- en: Introducing the booking service
+  id: totrans-26
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍预订服务
+- en: In this section, we will start by implementing a publish/subscribe architecture
+    using RabbitMQ. For this, we will need new microservices to our architecture—the
+    booking service will handle bookings for events. Its responsibilities will include
+    making sure that events are not overbooked. For this, it will need to know about
+    existing events and locations. In order to achieve this, we will modify the **EventService**
+    to emit events whenever a location or an event was created (yes, the terminology
+    is confusing—make sure not to mistake the *notification that something has happened*
+    kind-of-event with the *Metallica is playing here* kind-of-event). The **BookingService**
+    can then listen to these events and emit events itself whenever someone books
+    a ticket for one of these events.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将首先使用RabbitMQ实现发布/订阅架构。为此，我们需要向我们的架构添加新的微服务——预订服务将处理事件的预订。其责任将包括确保事件不会被过度预订。为此，它将需要了解现有的事件和位置。为了实现这一点，我们将修改**EventService**，以便在创建位置或事件时发出事件（是的，术语很混乱——确保不要将*发生了某事的通知*类型的事件与*Metallica在这里演出*类型的事件弄混）。**BookingService**然后可以监听这些事件，并在有人为这些事件之一预订票时自己发出事件。
+- en: '![](img/5e8ba22f-e4f5-4afe-a62e-a02471ec46b7.png)'
+  id: totrans-28
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/5e8ba22f-e4f5-4afe-a62e-a02471ec46b7.png)'
+- en: An overview of our microservices and the events that they will be publishing
+    and subscribing to
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的微服务概述以及它们将发布和订阅的事件
+- en: Event collaboration
+  id: totrans-30
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 事件协作
+- en: Event collaboration describes an architectural principle that works well together
+    with an event-driven publish/subscribe architecture.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事件协作描述了一个与事件驱动的发布/订阅架构很好配合的架构原则。
+- en: 'Consider the following example that uses the regular request/reply communication
+    pattern—a user requests the booking service to book a ticket for a certain event.
+    Since the events are managed by another microservice (the **EventService**), the
+    **BookingService** will need to request information on both the event and its
+    location from the **EventService.** Only then can the **BookingService** check
+    whether there are still seats available and save the user''s booking in its own
+    database. The requests and responses required for this transaction are illustrated
+    in the following diagram:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑以下示例，使用常规的请求/响应通信模式——用户请求预订服务为某个事件预订门票。由于事件由另一个微服务（**EventService**）管理，因此**BookingService**需要从**EventService**请求有关事件及其位置的信息。只有这样**BookingService**才能检查是否还有座位可用，并将用户的预订保存在自己的数据库中。此交易所需的请求和响应如下图所示：
+- en: '![](img/33a76190-6cbc-46dc-a92c-74f6f5cf3070.png)'
+  id: totrans-33
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/33a76190-6cbc-46dc-a92c-74f6f5cf3070.png)'
+- en: requests and responses
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请求和响应
+- en: 'Now, consider the same scenario in a publish/subscribe architecture, in which
+    the **BookingService** and **EventService** are integrated using events: every
+    time data changes in the **EventService**, it emits an event (for example, *a
+    new location was created*, *a new event was created*, *an event was updated*,
+    and so on).'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，考虑在发布/订阅架构中相同的场景，其中**BookingService**和**EventService**使用事件进行集成：每当**EventService**中的数据发生变化时，它会发出一个事件（例如*创建了一个新位置*，*创建了一个新事件*，*更新了一个事件*等）。
+- en: 'Now, the **BookingService** can listen to these events. It can build its own
+    database of all currently existing locations and events. Now, if a user requests
+    a new booking for a given event, the **BookingService** can simply use the data
+    from its own local database, without having to request this data from another
+    service. Refer to the following diagram for another illustration of this principle:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，**BookingService**可以监听这些事件。它可以构建自己的所有当前存在的位置和事件的数据库。现在，如果用户请求为特定事件预订新的预订，**BookingService**可以简单地使用自己本地数据库中的数据，而无需从另一个服务请求此数据。请参考以下图表，以进一步说明这个原则：
+- en: '![](img/42e36988-e61f-42cd-a54b-9e1133e416b3.png)'
+  id: totrans-37
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/42e36988-e61f-42cd-a54b-9e1133e416b3.png)'
+- en: BookingService using the data from its own local database
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用自己本地数据库中的BookingService
+- en: This is the key point of an event collaboration architecture. In the preceding
+    diagram, a service almost never needs to query another service for data, because
+    it already knows everything it needs to know by listening to the events emitted
+    by other services.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是事件协作架构的关键点。在前面的图表中，一个服务几乎永远不需要查询另一个服务的数据，因为它通过监听其他服务发出的事件已经知道了它需要知道的一切。
+- en: Obviously, this architectural pattern works extremely well together with publish/subscribe.
+    In the preceding example, the **EventService** would be the publisher and the
+    **BookingService** (potentially, among others) the subscriber. Of course, one
+    might flinch at the fact that this principle will inevitably lead to redundant
+    data being stored by the two services. However, this is not necessarily a bad
+    thing—since every service constantly listens to events emitted by the other services,
+    the entire dataset can be kept (eventually) consistent. Also, this increases the
+    system's overall resiliency; for example, if the event service suffers a sudden
+    failure, the **BookingService** would stay operational since it does not rely
+    on the event service to be working anymore.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，这种架构模式与发布/订阅非常配合。在前面的例子中，**EventService**将是发布者，而**BookingService**（可能还有其他服务）将是订阅者。当然，人们可能会对这个原则必然导致两个服务存储冗余数据感到不安。然而，这并不一定是件坏事——因为每个服务都不断监听其他服务发出的事件，整个数据集最终可以保持一致。此外，这增加了系统的整体弹性；例如，如果事件服务突然发生故障，**BookingService**仍然可以正常运行，因为它不再依赖事件服务的工作。
+- en: Implementing publish/subscribe with RabbitMQ
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用RabbitMQ实现发布/订阅
+- en: In the following section, you will learn how to implement a basic publish/subscribe
+    architecture. For this, we will take a look at the **Advanced Message Queueing
+    Protocol** (**AMQP**) and one of its most popular implementations, RabbitMQ.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的部分，您将学习如何实现基本的发布/订阅架构。为此，我们将看一下**高级消息队列协议**（**AMQP**）及其最流行的实现之一，RabbitMQ。
+- en: The Advanced Message Queueing Protocol
+  id: totrans-43
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 高级消息队列协议
+- en: On a protocol level, RabbitMQ implements the AMQP. Before getting started with
+    RabbitMQ, let's get started by taking a look at the basic protocol semantics of
+    AMQP.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在协议级别上，RabbitMQ实现了AMQP。在开始使用RabbitMQ之前，让我们先看一下AMQP的基本协议语义。
+- en: 'An AMQP message broker manages two basic kinds of resources—**Exchanges** and
+    **Queues**. Each publisher publishes its messages into an exchange. Each subscriber
+    consumes a queue. The AMQP broker is responsible for putting the messages that
+    are published in an exchange into the respective queue. Where messages go after
+    they have been published to an exchange depends on the **exchange type** and the
+    routing rules called **bindings**. AMQP knows three different types of exchanges:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AMQP消息代理管理两种基本资源——**交换**和**队列**。每个发布者将其消息发布到一个交换中。每个订阅者消费一个队列。AMQP代理负责将发布到交换中的消息放入相应的队列中。消息发布到交换后的去向取决于**交换类型**和称为**绑定**的路由规则。AMQP有三种不同类型的交换：
+- en: '**Direct exchanges**: Messages are published with a given topic (called **routing
+    key** in AMQP) that is a simple string value. Bindings between a direct exchange
+    and queue can be defined to match exactly that topic.'
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Direct exchanges**: 消息以给定的主题（在AMQP中称为**路由键**）发布，这是一个简单的字符串值。可以定义直接交换和队列之间的绑定，以精确匹配该主题。'
+- en: '**Fanout exchanges**: Messages are routed to all queues that are connected
+    to a fanout exchange via a binding. Messages can have a routing key, but it will
+    be ignored. Every bound queue will receive all messages that are published in
+    the fanout exchange.'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Fanout exchanges**: 消息通过绑定连接到扇出交换机的所有队列。消息可以有路由键，但会被忽略。每个绑定的队列将接收发布在扇出交换机中的所有消息。'
+- en: '**Topic exchanges**: This works similar to direct exchanges. However, queues
+    are now bound to the exchange using patterns that the message''s routing key must
+    match. Topic exchanges usually assume routing keys to be segmented with the dot
+    character `''.''`. As an example, your routing keys could follow the `"<entityname>.<state-change>.<location>"`
+    pattern (for example, `"event.created.europe"`). You can now create queue bindings
+    that may contain wildcards using the `''*''` or `''#''` characters. `*` will match
+    any single routing key segment, whereas `#` will match any number of segments.
+    So, for the preceding example, valid bindings might be as follows:'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**主题交换**：这与直接交换类似。但是，现在队列是使用消息的路由键必须匹配的模式绑定到交换。主题交换通常假定路由键使用句点字符`''.''`进行分段。例如，您的路由键可以遵循`"<entityname>.<state-change>.<location>"`模式（例如，`"event.created.europe"`）。现在可以创建包含通配符的队列绑定，使用`''*''`或`''#''`字符。`*`将匹配任何单个路由键段，而`#`将匹配任意数量的段。因此，对于前面的示例，有效的绑定可能如下：'
+- en: '`event.created.europe` (obviously)'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`event.created.europe`（显然）'
+- en: '`event.created.*` (listen to whenever an event is created anywhere in the world)'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`event.created.*`（每当在世界的任何地方创建事件时都会收到通知）'
+- en: '`event.#` (listen to whenever any change is made to an event anywhere in the
+    world)'
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`event.#`（每当在世界的任何地方对事件进行任何更改时都会收到通知）'
+- en: '`event.*.europe` (listen to whenever any change is made to an event in Europe)'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`event.*.europe`（每当在欧洲对事件进行任何更改时都会收到通知）'
+- en: One possible example exchange and queue topology are shown in the next diagram.
+    In this case, we have one service that publishes messages, the **EventService**.
+    We have two queues in which messages will be routed. The first queue, **evts_booking**,
+    will receive any and all messages that are related to any kind of change made
+    to an event. The second queue, **evts_search**, will receive messages only regarding
+    the creation of new events. Note that the **evts_booking** queue has two subscribers.
+    When two or more subscribers subscribe to the same queue, the message broker will
+    dispatch messages to one of the subscribers on a rotating basis.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一个图表显示了一个可能的示例交换和队列拓扑结构。在这种情况下，我们有一个发布消息的服务**EventService**。我们有两个队列，消息将被路由到这两个队列中。第一个队列**evts_booking**将接收与事件的任何更改相关的所有消息。第二个队列**evts_search**将只接收关于新事件创建的消息。请注意，**evts_booking**队列有两个订阅者。当两个或更多订阅者订阅同一个队列时，消息代理将轮流将消息分发给其中一个订阅者。
+- en: '![](img/cc668950-bec2-43b7-beb1-5ca489f7e80d.png)'
+  id: totrans-54
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/cc668950-bec2-43b7-beb1-5ca489f7e80d.png)'
+- en: Message broker displaying messages to one of the subscribers on a rotating basis
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 消息代理将消息轮流显示给其中一个订阅者
+- en: It is important to note that the entire AMQP topology (meaning all the exchanges
+    and queues and how they are bound to one another) is not defined by the broker,
+    but by the publishers and consumers themselves. AMQP specifies several methods
+    that clients can use to declare the exchanges and queues they need. For example,
+    a publisher would typically use the `exchange.declare` method to assert that the
+    exchange it wants to publish actually exists (the broker will then create it if
+    it did not exist before). On the other hand, a subscriber might use the `queue.declare`
+    and `queue.bind` methods to declare a queue that it wants to subscribe and bind
+    it to an exchange.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要的是要注意，整个AMQP拓扑（即所有交换和队列以及它们如何相互绑定）不是由代理定义的，而是由发布者和消费者自己定义的。AMQP指定了客户端可以使用的几种方法来声明它们需要的交换和队列。例如，发布者通常会使用`exchange.declare`方法来断言它想要发布的交换实际上存在（如果之前不存在，代理将创建它）。另一方面，订阅者可能会使用`queue.declare`和`queue.bind`方法来声明它想要订阅的队列，并将其绑定到一个交换。
+- en: There are multiple open source message brokers that implement AMQP. One of the
+    most popular ones (and also the one that we will be working within this chapter)
+    is the RabbitMQ broker, an open source AMQP broker developed by **Pivotal** and
+    made available under the **Mozilla Public License**. Other message brokers that
+    implement AMQP are **Apache QPID** ([https://qpid.apache.org](https://qpid.apache.org))
+    and **Apache ActiveMQ** ([http://activemq.apache.org](http://activemq.apache.org)).
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有多个实现AMQP的开源消息代理。其中最流行的之一（也是我们在本章中将要使用的）是RabbitMQ代理，这是一个由**Pivotal**开发并在**Mozilla
+    Public License**下提供的开源AMQP代理。其他实现AMQP的消息代理包括**Apache QPID**（[https://qpid.apache.org](https://qpid.apache.org)）和**Apache
+    ActiveMQ**（[http://activemq.apache.org](http://activemq.apache.org)）。
+- en: Although we will use RabbitMQ in this example, the code written in this chapter
+    should work will all kinds of AMQP implementations.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然在这个例子中我们将使用RabbitMQ，但本章中编写的代码应该适用于所有类型的AMQP实现。
+- en: RabbitMQ quickstart with Docker
+  id: totrans-59
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Docker快速启动RabbitMQ
+- en: Before building our publish/subscribe architecture, you will need to set up
+    a running RabbitMQ message broker in your development environment. The easiest
+    way to get started with RabbitMQ is by using the official Docker images.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在构建我们的发布/订阅架构之前，您需要在开发环境中设置一个正在运行的RabbitMQ消息代理。使用官方的Docker镜像是开始使用RabbitMQ的最简单方法。
+- en: For this example, we will assume that you have a working Docker installation
+    on your local machine. Take a look at the official installation instructions to
+    learn how you can install Docker on your operating system at: [https://docs.docker.com/engine/installation](https://docs.docker.com/engine/installation).
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于本例，我们将假设您的本地机器上已经安装了Docker。请查看官方安装说明，了解如何在您的操作系统上安装Docker：[https://docs.docker.com/engine/installation](https://docs.docker.com/engine/installation)。
+- en: 'You can start a new RabbitMQ broker using the following command on your command
+    line:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下命令在命令行上启动一个新的RabbitMQ代理：
+- en: '[PRE0]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: The preceding command will create a new container named `rabbitmq` on your machine.
+    For this, Docker will use the `rabbitmq:3-management` image. This image contains
+    the latest release of RabbitMQ 3 (at the time of writing, 3.6.6) and the management
+    UI. The `-p 5672:5672` flag will instruct Docker to map the TCP port `5672` (which
+    is the IANA-assigned port number for AMQP) to your `localhost` address. The `-p
+    15672:15672` flag will do the same for the management user interface.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述命令将在您的机器上创建一个名为`rabbitmq`的新容器。为此，Docker将使用`rabbitmq:3-management`镜像。该镜像包含了RabbitMQ
+    3的最新版本（在撰写本文时为3.6.6）和管理UI。`-p 5672:5672`标志将指示Docker将TCP端口`5672`（这是AMQP的IANA分配的端口号）映射到您的`localhost`地址。`-p
+    15672:15672`标志将对管理用户界面执行相同的操作。
+- en: After starting the container, you will be able to open an AMQP connection to
+    `amqp://localhost:5672` and open the management UI in your browser at `http://localhost:15672`.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启动容器后，您将能够在浏览器中打开到`amqp://localhost:5672`的AMQP连接，并在`http://localhost:15672`中打开管理UI。
+- en: When you are using Docker on Windows, you will need to substitute localhost
+    with the IP address of your local Docker virtual machine. You can determine this
+    IP address using the following command on the command line: `$ docker-machine
+    ip default`.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您在Windows上使用Docker时，您需要用本地Docker虚拟机的IP地址替换localhost。您可以使用以下命令在命令行上确定此IP地址：`$
+    docker-machine ip default`。
+- en: 'Regardless whether you are using docker-machine or a local Docker installation,
+    the RabbitMQ user interface should look very much like it does in the following
+    screenshot:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论您是使用docker-machine还是本地Docker安装，RabbitMQ用户界面应该看起来与以下截图非常相似：
+- en: '![](img/6075ceff-4af4-4e70-bfa2-de38dd0501c0.png)'
+  id: totrans-68
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6075ceff-4af4-4e70-bfa2-de38dd0501c0.png)'
+- en: RabbitMQ's management user interface
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: RabbitMQ的管理用户界面
+- en: Open the management interface in your browser (`http://localhost:15672` or your
+    docker-machine IP address). The RabbitMQ image ships a default guest user whose
+    password is also `guest`. When running RabbitMQ in production, this is, of course,
+    the first thing that you should change. For development purposes, it will do fine.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在浏览器中打开管理界面（`http://localhost:15672`或您的docker-machine IP地址）。RabbitMQ镜像提供了一个默认的guest用户，其密码也是`guest`。在生产中运行RabbitMQ时，这当然是您应该更改的第一件事。对于开发目的，这样做就可以了。
+- en: Advanced RabbitMQ setups
+  id: totrans-71
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 高级RabbitMQ设置
+- en: 'The Docker-based setup described in the preceding section allows you to get
+    started quickly and are also (with a few adjustments) suitable for production
+    setups. If you do not want to use Docker for your message broker, you can also
+    install RabbitMQ on most common Linux distribution from package repositories.
+    For example, on Ubuntu and Debian, you can install RabbitMQ using the following
+    commands:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上一节中描述的基于Docker的设置可以让您快速入门，并且（经过一些调整）也适用于生产设置。如果您不想为消息代理使用Docker，您还可以从软件包存储库在大多数常见的Linux发行版上安装RabbitMQ。例如，在Ubuntu和Debian上，您可以使用以下命令安装RabbitMQ：
+- en: '[PRE1]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Similar commands also work on **CentOS** and **RHEL**:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类似的命令也适用于**CentOS**和**RHEL**：
+- en: '[PRE2]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: For a production setup, you might want to consider setting up RabbitMQ as a
+    cluster to ensure high availability. Take a look at the official documentation
+    at [http://www.rabbitmq.com/clustering.html](http://www.rabbitmq.com/clustering.html)
+    for more information on how to set up a RabbitMQ cluster.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于生产设置，您可能希望考虑设置RabbitMQ作为集群，以确保高可用性。请查看官方文档[http://www.rabbitmq.com/clustering.html](http://www.rabbitmq.com/clustering.html)了解如何设置RabbitMQ集群的更多信息。
+- en: Connecting RabbitMQ with Go
+  id: totrans-77
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Go连接RabbitMQ
+- en: 'For connecting to a RabbitMQ broker (or any AMQP broker, for that matter),
+    we recommend that you use the `github.com/streadway/amqp` library (which is the
+    de facto standard Go library for AMQP). Let''s start by installing the library:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要连接到RabbitMQ代理（或者说是任何AMQP代理），我们建议您使用`github.com/streadway/amqp`库（这是事实上的标准Go库，用于AMQP）。让我们从安装库开始：
+- en: '[PRE3]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'You can then start by importing the library into your code. Open a new connection
+    using the `amqp.Dial` method:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您可以通过将库导入到您的代码中来开始。使用`amqp.Dial`方法打开一个新连接：
+- en: '[PRE4]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: In this case, `"amqp://guest:guest@localhost:5672"` is the URL of your AMQP
+    broker. Note that the user credentials are embedded into the URL. The `amqp.Dial`
+    method returns a connection object on success, or `nil` and an error, otherwise
+    (as usual in Go, make sure that you actually check for this error). Also, do not
+    forget to close the connection using the `Close()` method when you do not need
+    it anymore.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，`"amqp://guest:guest@localhost:5672"`是您的AMQP代理的URL。请注意，用户凭据嵌入到URL中。`amqp.Dial`方法在成功时返回连接对象，否则返回`nil`和错误（与Go中一样，请确保您实际上检查了此错误）。此外，在不再需要连接时不要忘记使用`Close()`方法关闭连接。
+- en: 'Of course, it is usually not a good practice to hardcode connection details
+    such as these (much fewer credentials) into your application. Remember what you
+    learned about twelve-factor applications, and let''s introduce an environment
+    variable `AMQP_URL` that we can use to dynamically configure the AMQP broker:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，通常不建议将连接详细信息（更不用说凭据）硬编码到您的应用程序中。记住您学到的关于十二要素应用程序的知识，让我们引入一个环境变量`AMQP_URL`，我们可以使用它来动态配置AMQP代理：
+- en: '[PRE5]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: In AMQP, most operations are done not directly on the connection, but on channels.
+    Channels are used to *multiplex* several virtual connections over one actual TCP
+    connection.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在AMQP中，大多数操作不是直接在连接上进行的，而是在通道上进行的。通道用于在一个实际的TCP连接上*多路复用*多个虚拟连接。
+- en: Channels themselves are not thread-safe. In Go, we will need to keep this in
+    mind and pay attention to not access the same channel from multiple goroutines.
+    However, using multiple channels, with each channel being accessed by only one
+    thread, is completely safe. So, when in doubt, it is best to create a new channel.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通道本身不是线程安全的。在Go中，我们需要记住这一点，并注意不要从多个goroutine访问同一个通道。但是，使用多个通道，每个通道只被一个线程访问，是完全安全的。因此，当有疑问时，最好创建一个新通道。
+- en: 'Continue by creating a new channel on the existing connection:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续在现有连接上创建一个新通道：
+- en: '[PRE6]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: We can now use this channel object for some actual AMQP operations, for example,
+    publishing messages and subscribing to messages.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以使用这个通道对象进行一些实际的AMQP操作，例如发布消息和订阅消息。
+- en: Publishing and subscribing to AMQP messages
+  id: totrans-90
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 发布和订阅AMQP消息
+- en: Before diving back into the MyEvents microservice architecture, let's take a
+    look at the basic AMQP methods that we can use. For this, we will start by building
+    a small example program that is capable of publishing messages to an exchange.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入研究MyEvents微服务架构之前，让我们看一下我们可以使用的基本AMQP方法。为此，我们将首先构建一个小的示例程序，该程序能够向交换发布消息。
+- en: 'After opening a channel, a message publisher should declare the exchange into
+    which it intends to publish messages. For this, you can use the `ExchangeDeclare()`
+    method on the channel object:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开通道后，消息发布者应声明要发布消息的交换。为此，您可以在通道对象上使用`ExchangeDeclare()`方法：
+- en: '[PRE7]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'As you can see, `ExchangeDeclare` takes quite a number of parameters. These
+    are as follows:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，`ExchangeDeclare`需要相当多的参数。这些如下所示：
+- en: The exchange name
+  id: totrans-95
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 交换名称
+- en: The exchange type (remember that AMQP knows `direct`, `fanout`, and `topic` exchanges)
+  id: totrans-96
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 交换类型（请记住AMQP知道`direct`，`fanout`和`topic`交换）
+- en: The `durable` flag will cause the exchange to remain declared when the broker
+    restarts
+  id: totrans-97
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`durable`标志将导致交换在代理重新启动时保持声明状态'
+- en: The `autoDelete` flag will cause the exchange to be deleted as soon as the channel
+    that declared it is closed
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`autoDelete`标志将导致交换在声明它的通道关闭时被删除'
+- en: The `internal` flag will prevent publishers from publishing messages into this
+    queue
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`internal`标志将阻止发布者将消息发布到此队列中'
+- en: The `noWait` flag will instruct the `ExchangeDeclare` method not to wait for
+    a successful response from the broker
+  id: totrans-100
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`noWait`标志将指示`ExchangeDeclare`方法不等待来自代理的成功响应'
+- en: The `args` argument may contain a map with additional configuration parameters
+  id: totrans-101
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`args`参数可能包含具有附加配置参数的映射'
+- en: 'After having declared an exchange, you can now publish a message. For this,
+    you can use the channel''s `Publish()` method. The emitted message will be an
+    instance of the `amqp.Publishing` struct that you need to instantiate at first:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 声明交换后，您现在可以发布一条消息。为此，您可以使用通道的`Publish()`方法。发出的消息将是您需要首先实例化的`amqp.Publishing`结构的实例：
+- en: '[PRE8]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Then, use the `Publish()` method to publish your message:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，使用`Publish()`方法发布您的消息：
+- en: '[PRE9]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'The `Publish()` method takes the following parameters:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Publish()`方法接受以下参数：'
+- en: The name of the exchange to publish to
+  id: totrans-107
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要发布到的交换的名称
+- en: The message's routing key
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 消息的路由键
+- en: The `mandatory` flag will instruct the broker to make sure that the message
+    is actually routed into at least one queue
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`mandatory`标志将指示代理确保消息实际上被路由到至少一个队列中'
+- en: The `immediate` flag will instruct the broker to make sure that the message
+    is actually delivered to at least one subscriber
+  id: totrans-110
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`immediate`标志将指示代理确保消息实际上被传递给至少一个订阅者'
+- en: The `msg` argument contains the actual message that is to be published
+  id: totrans-111
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`msg`参数包含要发布的实际消息'
+- en: For a publish/subscribe architecture, in which a publisher does not need to
+    know about who is subscribing its published messages, the `mandatory` and `immediate`
+    flags are obviously unsuited, so we simply set them to false in this example (and
+    all following ones).
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于发布/订阅架构，发布者不需要知道谁订阅其发布的消息，显然`mandatory`和`immediate`标志不适用，因此在此示例（以及所有后续示例）中，我们将它们设置为false。
+- en: You can now run this program, and it will connect to your local AMQP broker,
+    declare an exchange, and publish a message. Of course, this message will not be
+    routed anywhere and vanish. In order to actually process it, you will need a subscriber.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您现在可以运行此程序，它将连接到您的本地AMQP代理，声明一个交换，并发布一条消息。当然，这条消息不会被路由到任何地方并消失。为了实际处理它，您将需要一个订阅者。
+- en: 'Continue by creating a second Go program in which you connect to the AMQP broker
+    and create a new channel just like in the previous section. However, now, instead
+    of declaring an exchange and publishing a message, let''s declare a queue and
+    bind it to that exchange:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续创建第二个Go程序，其中您连接到AMQP代理并创建一个新的通道，就像在前一节中一样。但是，现在，不是声明一个交换并发布一条消息，让我们声明一个队列并将其绑定到该交换：
+- en: '[PRE10]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'After having declared and bound a queue, you can now start consuming this queue.
+    For this, use the channel''s `Consume()` function:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 声明并绑定队列后，您现在可以开始消费此队列。为此，请使用通道的`Consume()`函数：
+- en: '[PRE11]'
+  id: totrans-117
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'The `Consume()` method takes the following parameters:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Consume()`方法接受以下参数：'
+- en: The name of the queue to be consumed.
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要消耗的队列的名称。
+- en: A string that uniquely identifies this consumer. When left empty (like in this
+    case), a unique identifier will be automatically generated.
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 唯一标识此消费者的字符串。当留空（就像在这种情况下）时，将自动生成唯一标识符。
+- en: When the `autoAck` flag is set, received messages will be acknowledged automatically.
+    When it is not set, you will need to explicitly acknowledge messages after processing
+    them using the received message's `Ack()` method (see the following code example).
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当设置`autoAck`标志时，接收到的消息将自动确认。当未设置时，您需要在处理接收到的消息后显式确认消息，使用接收到的消息的`Ack()`方法（请参阅以下代码示例）。
+- en: When the `exclusive` flag is set, this consumer will be the only one allowed
+    to consume this queue. When not set, other consumers might listen on the same
+    queue.
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当设置`exclusive`标志时，此消费者将是唯一被允许消费此队列的消费者。当未设置时，其他消费者可能会监听同一队列。
+- en: The `noLocal` flag indicated to the broker that this consumer should not be
+    delivered messages that were published on the same channel.
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`noLocal`标志指示代理不应将在同一通道上发布的消息传递给此消费者。'
+- en: The `noWait` flag instructs the library not to wait for confirmation from the
+    broker.
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`noWait`标志指示库不等待来自代理的确认。'
+- en: The `args` argument may contain a map with additional configuration parameters.
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`args`参数可能包含具有附加配置参数的映射。'
+- en: 'In this example, `msgs` will be a channel (this time, meaning an actual Go
+    channel, not an AMQP channel) of `amqp.Delivery` structs. In order to receive
+    messages from the queue, we can simply read values from that channel. If you want
+    to read messages continuously, the easiest way to do this is using a `range` loop:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，`msgs`将是一个通道（这次是一个实际的Go通道，而不是一个AMQP通道）的`amqp.Delivery`结构。为了从队列中接收消息，我们可以简单地从该通道中读取值。如果要连续读取消息，最简单的方法是使用`range`循环：
+- en: '[PRE12]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: Note that we explicitly acknowledge the message using the `msg.Ack` function
+    in the preceding code. This is necessary because we have set the `Consume()` function's
+    `autoAck` parameter to false, earlier.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在前面的代码中，我们使用`msg.Ack`函数显式确认消息。这是必要的，因为我们之前将`Consume()`函数的`autoAck`参数设置为false。
+- en: Explicitly acknowledging a message serves an important purpose—if your consumer
+    fails for whatever reason between receiving and acknowledging the message, the
+    message will be put back into the queue, and then redelivered to another consumer
+    (or stay in the queue, if there are no other consumers). For this reason, a consumer
+    should only acknowledge a message when it has finished processing it. If a message
+    is acknowledged before it was actually processed by the consumer (which is what
+    the `autoAck` parameter would cause), and the consumer then unexpectedly dies,
+    the message will be lost forever. For this reason, explicitly acknowledging messages
+    is an important step in making your system resilient and failure-tolerant.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显式确认消息具有重要目的——如果您的消费者在接收和确认消息之间由于任何原因失败，消息将被放回队列，然后重新传递给另一个消费者（或者如果没有其他消费者，则留在队列中）。因此，消费者应该只在完成处理消息时确认消息。如果消息在消费者实际处理之前就被确认（这就是`autoAck`参数会导致的情况），然后消费者意外死机，消息将永远丢失。因此，显式确认消息是使系统具有弹性和容错性的重要步骤。
+- en: Building an event emitter
+  id: totrans-130
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建事件发射器
+- en: In the preceding example, we used AMQP channels to send simple string messages
+    from publisher to subscriber. In order to use AMQP to build an actual publish/subscribe
+    architecture, we will need to transmit more complex messages with structured data.
+    In general, each AMQP message is simply a string of bytes. To submit structured
+    data, we can use serialization formats, such as JSON or XML. Also, since AMQP
+    is not limited to ASCII messages, we could also use binary serialization protocols
+    such as `MessagePack` or `ProtocolBuffers`.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的例子中，我们使用AMQP通道从发布者向订阅者发送简单的字符串消息。为了使用AMQP构建实际的发布/订阅架构，我们需要传输更复杂的带有结构化数据的消息。一般来说，每个AMQP消息只是一串字节。为了提交结构化数据，我们可以使用序列化格式，比如JSON或XML。此外，由于AMQP不限于ASCII消息，我们还可以使用二进制序列化协议，比如`MessagePack`或`ProtocolBuffers`。
+- en: For whichever serialization format you decide, you need to make sure that both
+    publisher and subscriber understand both the serialization format and the actual
+    internal structure of the messages.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论您决定使用哪种序列化格式，您都需要确保发布者和订阅者都了解序列化格式和消息的实际内部结构。
+- en: Regarding the serialization format, we will take the easy choice in this chapter
+    and use the JSON serialization format. It is widely adopted; serializing and unserializing
+    messages are easily done using Go standard libraries and also in other programming
+    languages (which is important—although in this book we have committed ourselves
+    exclusively to Go, it is common in microservice architectures to have lots of
+    different application runtimes).
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于序列化格式，我们将在本章中选择简单的JSON序列化格式。它被广泛采用；使用Go标准库和其他编程语言（这一点很重要——尽管在本书中我们专门致力于Go，但在微服务架构中，有许多不同的应用运行时是很常见的）轻松地进行序列化和反序列化消息。
+- en: We also need to make sure that both publisher and subscribers know how the messages
+    will be structured. For example, a `LocationCreated` event might have a `name`
+    property and an `address` property. To solve this issue, we will introduce a shared
+    library that will contain struct definitions for all possible events, together
+    with instructions for the JSON (un)serialization. This library can then be shared
+    between the publisher and all subscribers.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还需要确保发布者和订阅者都知道消息的结构。例如，一个`LocationCreated`事件可能有一个`name`属性和一个`address`属性。为了解决这个问题，我们将引入一个共享库，其中包含所有可能事件的结构定义，以及JSON（反）序列化的说明。然后，这个库可以在发布者和所有订阅者之间共享。
+- en: 'Start by creating the `todo.com/myevents/contracts` directory in your GOPATH.
+    The first event type that we will describe is the `EventCreatedEvent` event. This
+    message will later be published by the event service when a new event is created.
+    Let''s define this event as a struct in the `event_created.go` file in the newly
+    created package:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先在您的GOPATH中创建`todo.com/myevents/contracts`目录。我们将描述的第一种事件类型是`EventCreatedEvent`事件。当创建新事件时，此消息将由事件服务发布。让我们在新创建的包的`event_created.go`文件中将此事件定义为一个结构：
+- en: '[PRE13]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Also, we need a possibility to generate a topic name for each event (in RabbitMQ,
+    the topic name will also be used as a routing key for the messages). For this,
+    add a new method—`EventName()`—to your newly defined struct:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们需要为每个事件生成一个主题名称（在RabbitMQ中，主题名称也将用作消息的路由键）。为此，请向您新定义的结构添加一个新方法——`EventName()`：
+- en: '[PRE14]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'We can now use a Go interface to define a generic event type. This type can
+    be used to enforce that each event type actually implements an `EventName()` method.
+    Since both event publisher and event subscriber will also later be used across
+    multiple services, we will put the event interface code into the `todo.com/myevents/lib/msgqueue` package.
+    Start by creating the package directory and a new file, `event.go`, within that
+    package:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在可以使用Go接口来定义一个通用的事件类型。这种类型可以用来强制每种事件类型实际上都实现了一个`EventName()`方法。由于事件发布者和事件订阅者以后也将被用于多个服务，我们将事件接口代码放入`todo.com/myevents/lib/msgqueue`包中。首先创建包目录和一个新文件`event.go`：
+- en: '[PRE15]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Of course, our example application uses more events than just the `EventCreatedEvent`.
+    For example, we also have a `LocationCreatedEvent` and an `EventBookedEvent`.
+    Since showing all their implementations in print would be fairly repetitive, we
+    would like to refer to the example files for this chapter.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们的示例应用程序使用的事件不仅仅是`EventCreatedEvent`。例如，我们还有一个`LocationCreatedEvent`和一个`EventBookedEvent`。由于在打印中显示它们的所有实现会相当重复，我们希望在本章的示例文件中查看它们。
+- en: 'Let''s now continue by building an event emitter that can actually publish
+    these messages to an AMQP broker. Since we will also explore other message brokers
+    in later sections of this chapter, we will start by defining the interface that
+    any event emitter should fulfil. For this, create a `emitter.go` file in the `msgqueue`
+    package that was created before with the following contents:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们现在继续构建一个事件发射器，它可以实际将这些消息发布到AMQP代理。由于我们将在本章的后面部分探索其他消息代理，因此我们将首先定义任何事件发射器应该满足的接口。为此，在之前创建的`msgqueue`包中创建一个`emitter.go`文件，内容如下：
+- en: '[PRE16]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: This interface describes the methods (actually, just one method) that all event
+    emitter implementations need to fulfil. Let's now continue by creating a `todo.com/myevents/lib/msgqueue/amqp`
+    subpackage with a `emitter.go` file. This file will contain a struct definition
+    for the `AMQPEventEmitter`.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此接口描述了所有事件发射器实现需要满足的方法（实际上只有一个方法）。让我们继续创建一个`todo.com/myevents/lib/msgqueue/amqp`子包，其中包含一个`emitter.go`文件。该文件将包含`AMQPEventEmitter`的结构定义。
+- en: 'Consider the following code example:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑以下代码示例：
+- en: '[PRE17]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Note how the `amqpEventEmitter` type is declared package-private, as it is declared
+    with a lowercase name. This will prevent users from instantiating the `amqpEventEmitter`
+    type directly. For a proper instantiation, we will provide a constructor method,
+    instead.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意`amqpEventEmitter`类型声明为包私有，因为它使用小写名称声明。这将阻止用户直接实例化`amqpEventEmitter`类型。为了正确实例化，我们将提供一个构造方法。
+- en: 'Next, let''s add a `setup` method that we can use to declare the exchange that
+    this publisher is going to publish into:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们添加一个`setup`方法，我们可以用来声明此发布者将要发布到的交换机：
+- en: '[PRE18]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: You might be wondering why we created a new AMQP channel in this method and
+    closed it immediately after declaring the exchange. After all, we could reuse
+    this same channel for publishing messages later. We will get to that in a moment.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能想知道为什么我们在此方法中创建了一个新的AMQP通道，并在声明交换机后立即关闭它。毕竟，我们可以在以后重用相同的通道来发布消息。我们稍后会解决这个问题。
+- en: 'Continue by adding a constructor function—`NewAMQPEventEmitter`—for building
+    new instances of this struct:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续添加一个构造函数`NewAMQPEventEmitter`，用于构建此结构的新实例：
+- en: '[PRE19]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Now, to the actual heart of the `amqpEventEmitter` event—the `Emit` method.
+    First, we will need to transform the event that has been passed into the method
+    as a parameter into a JSON document:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，到`amqpEventEmitter`事件的实际核心——`Emit`方法。首先，我们需要将作为参数传递给方法的事件转换为JSON文档：
+- en: '[PRE20]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Next, we can create a new AMQP channel and publish our message to the events
+    exchange:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们可以创建一个新的AMQP通道，并将我们的消息发布到事件交换机中：
+- en: '[PRE21]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Note that we used the `Headers` field of `amqp.Publishing` to add the event
+    name in a special message header. This will make it easier for us to implement
+    the event listener later.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们使用`amqp.Publishing`的`Headers`字段来将事件名称添加到特殊的消息头中。这将使我们更容易实现事件监听器。
+- en: Also, note that we are creating a new channel for each published message within
+    this code. While it is, in theory, possible to reuse the same channel for publishing
+    multiple messages, we need to keep in mind that a single AMQP channel is not thread-safe.
+    This means that calling the event emitter's `Emit()` method from multiple go-routines
+    might lead to strange and unpredictable results. This is exactly the problem that
+    AMQP channels are there to solve; using multiple channels, multiple threads can
+    use the same AMQP connection.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要注意，在此代码中，我们为每个发布的消息创建了一个新通道。虽然理论上可以重用相同的通道来发布多个消息，但我们需要记住，单个AMQP通道不是线程安全的。这意味着从多个go协程调用事件发射器的`Emit()`方法可能会导致奇怪和不可预测的结果。这正是AMQP通道的问题所在；使用多个通道，多个线程可以使用相同的AMQP连接。
+- en: 'Next, we can integrate our new event emitter into the existing event service
+    that you have already built in [Chapter 2](def2621c-74c4-4f60-a37a-b0b2f86c6339.xhtml), *Building
+    Microservices Using Rest APIs*, and [Chapter 3](9c1db13f-619b-43a7-96a1-c6fc65e13b67.xhtml),* Securing
+    Microservices*. Start by adding a configuration option for the AMQP broker in
+    the `ServiceConfig` struct:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们可以将新的事件发射器集成到您已经在[第2章](def2621c-74c4-4f60-a37a-b0b2f86c6339.xhtml)和[第3章](9c1db13f-619b-43a7-96a1-c6fc65e13b67.xhtml)中构建的现有事件服务中。首先，在`ServiceConfig`结构中添加一个AMQP代理的配置选项：
+- en: '[PRE22]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'This allows you to specify the AMQP broker via the JSON configuration file.
+    In the `ExtractConfiguration()` function, we can also add a fallback that optionally
+    extracts this value from an environment variable, if set:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这使您可以通过JSON配置文件指定AMQP代理。在`ExtractConfiguration()`函数中，我们还可以添加一个备用选项，如果设置了环境变量，则可以从中提取此值：
+- en: '[PRE23]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'We can now use this configuration option to construct a new event emitter in
+    the event service''s `main` function:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以在事件服务的`main`函数中使用此配置选项来构造一个新的事件发射器：
+- en: '[PRE24]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'We can now pass this event emitter into the `rest.ServeAPI` function, which
+    can, in turn, pass it into the `newEventHandler` function:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以将此事件发射器传递给`rest.ServeAPI`函数，然后再传递给`newEventHandler`函数：
+- en: '[PRE25]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'The event emitter can then be stored as a field in the `eventServiceHandler`
+    struct:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，事件发射器可以作为`eventServiceHandler`结构的字段存储：
+- en: '[PRE26]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Now, the `eventServiceHandler` holds a reference to the event emitter that
+    you can use in the actual REST handlers. This allows you, for example, to emit
+    an `EventCreatedEvent` whenever a new event is created via the API. For this,
+    modify the `newEventHandler` method of `eventServiceHandler`, as follows:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，`eventServiceHandler`持有对事件发射器的引用，您可以在实际的REST处理程序中使用它。例如，通过API创建新事件时，您可以发出`EventCreatedEvent`。为此，请修改`eventServiceHandler`的`newEventHandler`方法如下：
+- en: '[PRE27]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Building an event subscriber
+  id: totrans-171
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建事件订阅者
+- en: Now that we can publish events on a `RabbitMQ` broker using the `EventEmitter`,
+    we also need a possibility to listen to these events. This will be the purpose
+    of the `EventListener`, which we will build in this section.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以使用`EventEmitter`在`RabbitMQ`代理上发布事件，我们还需要一种方法来监听这些事件。这将是我们将在本节中构建的`EventListener`的目的。
+- en: 'Like before, let''s start by defining the interface that all event listeners
+    (the AMQP event listener being one of them) should fulfil. For this, create the `listener.go` file
+    in the `todo.com/myevents/lib/msgqueue` package:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与之前一样，让我们首先定义所有事件监听器（AMQP事件监听器是其中之一）应该满足的接口。为此，在`todo.com/myevents/lib/msgqueue`包中创建`listener.go`文件：
+- en: '[PRE28]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'This interface looks quite different than the event emitter''s interface. This
+    is because each call to the event emitter''s `Emit()` method simply publishes
+    one message immediately. However, an event listener is typically active for a
+    long time and needs to react to incoming messages whenever they may be received.
+    This reflects in the design of our `Listen()` method: first of all, it will accept
+    a list of event names for which the event listener should listen. It will then
+    return two Go channels: the first will be used to stream any events that were
+    received by the event listener. The second will contain any errors that occurred
+    while receiving those events.'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个接口看起来与事件发射器的接口有很大不同。这是因为对事件发射器的每次调用`Emit()`方法只是立即发布一条消息。然而，事件监听器通常会长时间处于活动状态，并且需要在接收到消息时立即做出反应。这反映在我们的`Listen()`方法的设计中：首先，它将接受事件监听器应该监听的事件名称列表。然后返回两个Go通道：第一个将用于流式传输事件监听器接收到的任何事件。第二个将包含接收这些事件时发生的任何错误。
+- en: 'Start with building the AMQP implementation by creating a new `listener.go` file
+    in the `todo.com/myevents/lib/msgqueue/amqp` package:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先通过在`todo.com/myevents/lib/msgqueue/amqp`包中创建一个新的`listener.go`文件来构建AMQP实现：
+- en: '[PRE29]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Similar to the event emitter, continue by adding a `setup` method. In this
+    method, we will need to declare the AMQP queue that the listener will be consuming:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类似于事件发射器，继续添加一个`setup`方法。在这个方法中，我们需要声明监听器将要消费的AMQP队列：
+- en: '[PRE30]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: Note that the name of the queue that the listener will consume is configurable
+    using the `amqpEventListener` struct's `queue` field. This is because later, multiple
+    services will use the event listener to listen to their events, and each service
+    will require its own AMQP queue for this.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，监听器将要消费的队列的名称可以使用`amqpEventListener`结构的`queue`字段进行配置。这是因为以后，多个服务将使用事件监听器来监听它们的事件，并且每个服务都需要自己的AMQP队列。
+- en: You may have noticed that we did not yet actually bind the newly declared queue
+    to the events exchange. This is because we do not know yet which events we actually
+    have to listen for (remember the `Listen` method's `events` parameter?).
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，我们尚未将新声明的队列绑定到事件交换机。这是因为我们还不知道我们实际上需要监听哪些事件（记住`Listen`方法的`events`参数吗？）。
+- en: 'Finally, let''s add a constructor function to create new AMQP event listeners:'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，让我们添加一个构造函数来创建新的AMQP事件监听器：
+- en: '[PRE31]'
+  id: totrans-183
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'With the possibility to construct new AMQP event listeners, let''s implement
+    the actual `Listen()` method. The first thing to do is use the `eventNames` parameter
+    and bind the event queue accordingly:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了构建新的AMQP事件监听器的可能性，让我们实现实际的`Listen()`方法。首先要做的是使用`eventNames`参数并相应地绑定事件队列：
+- en: '[PRE32]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Next, we can use the channel''s `Consume()` method to receive messages from
+    the queue:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们可以使用通道的`Consume()`方法从队列中接收消息：
+- en: '[PRE33]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'The `msgs` variable now holds a channel of `amqp.Delivery` structs. However,
+    our event listener is supposed to return a channel of `msgqueue.Event`. This can
+    be solved by consuming the `msgs` channel in our own goroutine, build the respective
+    event structs, and then publish these in another channel that we return from this
+    function:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`msgs`变量现在持有`amqp.Delivery`结构的通道。然而，我们的事件监听器应该返回一个`msgqueue.Event`的通道。这可以通过在我们自己的goroutine中消费`msgs`通道，构建相应的事件结构，然后将这些事件发布到我们从这个函数返回的另一个通道中来解决：'
+- en: '[PRE34]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: The tricky part is now within the inner goroutine. Here, we will need to map
+    the raw AMQP message to one of the actual event structs (as the `EventCreatedEvent`
+    defined before).
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在棘手的部分在于内部goroutine中。在这里，我们需要将原始的AMQP消息映射到实际的事件结构之一（如之前定义的`EventCreatedEvent`）。
+- en: 'Remember how the EventEmitter added an additional `x-event-name` header to
+    the AMQP message when publishing events? This is something that we can use now
+    to map these messages back to their respective struct types. Let''s start by extracting
+    the event name from the AMQP message headers:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还记得EventEmitter在发布事件时向AMQP消息添加了额外的`x-event-name`头部吗？现在我们可以使用这个来将这些消息映射回它们各自的结构类型。让我们从AMQP消息头中提取事件名称开始：
+- en: All of the following code goes into the inner `range` loop of the `Listen` method.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下所有代码都放在`Listen`方法的内部`range`循环中。
+- en: '[PRE35]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: The preceding code tries to read the `x-event-name` header from the AMQP message.
+    Since the `msg.Headers` attribute is basically a `map[string]interface{}`, we
+    will need a few map index and type assertions until we can actually use the event
+    name. In case a message is received that does not contain the required header,
+    an error will be written into the errors channel. Also, the message will be nack'ed
+    (short for negative acknowledgment), indicating to the broker that it could not
+    be successfully processed.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的代码尝试从AMQP消息中读取`x-event-name`头部。由于`msg.Headers`属性基本上是一个`map[string]interface{}`，我们需要一些映射索引和类型断言，直到我们实际使用事件名称。如果接收到不包含所需头部的消息，将向错误通道写入错误。此外，消息将被nack'ed（简称否定确认），表示经纪人无法成功处理该消息。
+- en: 'After knowing the event name, we can use a simple switch/case construct to
+    create a new event struct from this name:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 知道事件名称后，我们可以使用简单的switch/case结构从这个名称创建一个新的事件结构：
+- en: '[PRE36]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: Building the booking service
+  id: totrans-197
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建预订服务
+- en: Now that we have an event listener, we can use it to implement the booking service.
+    Its general architecture will follow that of the event service, so we will not
+    go too much into detail on that matter.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一个事件监听器，我们可以使用它来实现预订服务。它的一般架构将遵循事件服务的架构，因此我们不会过多地详细介绍这个问题。
+- en: 'Start by creating a new package `todo.com/myevents/bookingservice` and create
+    a new `main.go` file:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先创建一个新的包`todo.com/myevents/bookingservice`，并创建一个新的`main.go`文件：
+- en: '[PRE37]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'This will set up the booking service with both a database connection and working
+    event listener. We can now use this event listener to listen to the events emitted
+    by the event service. For this, add a new subpackage `todo.com/myevents/bookingservice/listener`
+    and create a new `event_listener.go\` file:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将使用数据库连接和工作事件监听器设置预订服务。现在我们可以使用这个事件监听器来监听事件服务发出的事件。为此，添加一个新的子包`todo.com/myevents/bookingservice/listener`并创建一个新的`event_listener.go\`文件：
+- en: '[PRE38]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: In the `ProcessEvents()` function, we are calling the event listener's `Listen`
+    function to listen for newly created events. The `Listen` function returns two
+    channels, one for received messages and one for errors that occur during listening.
+    We will then use an infinitely running for loop and a select statement to read
+    from both of these channels at once. Received events will be passed to the `handleEvent`
+    function (which we still need to write), and received errors will be simply printed
+    to the standard output.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`ProcessEvents()`函数中，我们调用事件监听器的`Listen`函数来监听新创建的事件。`Listen`函数返回两个通道，一个用于接收消息，一个用于监听期间发生的错误。然后我们将使用一个无限运行的for循环和一个select语句同时从这两个通道中读取。接收到的事件将传递给`handleEvent`函数（我们仍然需要编写），接收到的错误将简单地打印到标准输出。
+- en: 'Let''s continue with the `handleEvent` function:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续使用`handleEvent`函数：
+- en: '[PRE39]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: This function uses a type switch to determine the actual type of the incoming
+    event. Currently, our event listener processes the two events, `EventCreated`
+    and `LocationCreated`, by storing them in their local database.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个函数使用类型开关来确定传入事件的实际类型。目前，我们的事件监听器通过将`EventCreated`和`LocationCreated`两个事件存储在它们的本地数据库中来处理这两个事件。
+- en: In this example, we are using a shared library `todo.com/myevents/lib/persistence` for
+    managing database access. This is for convenience only. In real microservice architectures,
+    individual microservices typically use completely independent persistence layers
+    that might be built on completely different technology stacks.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们使用了一个共享库`todo.com/myevents/lib/persistence`来管理数据库访问。这仅仅是为了方便。在真实的微服务架构中，各个微服务通常使用完全独立的持久化层，可能构建在完全不同的技术栈上。
+- en: 'In our `main.go` file, we can now instantiate the `EventProcessor` and call
+    the `ProcessEvents()` function:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的`main.go`文件中，现在可以实例化`EventProcessor`并调用`ProcessEvents()`函数：
+- en: '[PRE40]'
+  id: totrans-209
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: Apart from listening to events, the booking service also needs to implement
+    its own REST API that can be used by users to book tickets for a specified event.
+    This will follow the same principles that you have already learned about in [Chapter
+    2](def2621c-74c4-4f60-a37a-b0b2f86c6339.xhtml), *Building Microservices Using
+    Rest APIs*, and [Chapter 3](9c1db13f-619b-43a7-96a1-c6fc65e13b67.xhtml),* Securing
+    Microservices*. For this reason, we will refrain from explaining the Booking Service's
+    REST API in detail and just describe the highlights. You can find a full implementation
+    of the REST service in the code examples for this chapter.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了监听事件，预订服务还需要实现自己的REST API，用户可以用来预订指定事件的门票。这将遵循您已经在[第2章](def2621c-74c4-4f60-a37a-b0b2f86c6339.xhtml)和[第3章](9c1db13f-619b-43a7-96a1-c6fc65e13b67.xhtml)中学到的相同原则，*使用Rest
+    API构建微服务*和*保护微服务*。因此，我们将避免详细解释预订服务的REST API，并只描述要点。您可以在本章的代码示例中找到REST服务的完整实现。
+- en: 'In the `main.go` file, we will need to move the `processor.ProcessEvents()`
+    call into its own go-routine. Otherwise, it would block and the program would
+    never reach the `ServeAPI` method call:'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`main.go`文件中，我们需要将`processor.ProcessEvents()`调用移到自己的go-routine中。否则，它会阻塞，程序永远不会达到`ServeAPI`方法调用：
+- en: '[PRE41]'
+  id: totrans-212
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: Finally, we will move on to the actual request handler. It is registered for
+    POST requests at `/events/{eventID}/bookings`; it checks how many bookings are
+    currently placed for this event and whether the event's location still has the
+    capacity for one more booking. In this case, it will create and persist a new
+    booking and emit an `EventBooked` event. Take a look at the example files to view
+    the full implementation.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们将转向实际的请求处理程序。它在`/events/{eventID}/bookings`注册为POST请求；它会检查当前为该事件放置了多少预订，并且事件的位置是否仍然有容量可以再预订一次。在这种情况下，它将创建并持久化一个新的预订，并发出一个`EventBooked`事件。查看示例文件以查看完整的实现。
+- en: Event sourcing
+  id: totrans-214
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 事件溯源
+- en: Building your applications using asynchronous messaging opens the door for applying
+    some advanced architectural patterns, one of which you will learn about in this
+    section.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用异步消息传递构建应用程序为应用一些高级架构模式打开了大门，其中之一将在本节中学习。
+- en: When using messaging, publish/subscribe, and event collaboration, every change
+    in the entire system's state is reflected in the form of an event that is emitted
+    by one of the participating services. Often, each of these services has its own
+    database, keeping its own view on the system's state (at least, as far as required)
+    and staying up to date by continually listening to the events that are published
+    by the other services.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用消息传递、发布/订阅和事件协作时，整个系统状态的每一次变化都以一个事件的形式反映出来，该事件由参与服务中的一个发出。通常，这些服务中的每一个都有自己的数据库，保持对系统状态的自己视图（至少是所需的），并通过不断监听其他服务发布的事件来保持最新。
+- en: However, the fact that each change in the system state is also represented by
+    a published event presents an interesting opportunity. Imagine that someone recorded
+    and saved each and every event that was published by anyone into an event log.
+    In theory (and also in practice), you can use this event log to reconstruct the
+    entire system state, without having to rely on any other kind of database.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，系统状态的每一次变化都由一个已发布的事件表示，这提供了一个有趣的机会。想象一下，有人记录并保存了任何人发布的每一个事件到事件日志中。理论上（也在实践中），你可以使用这个事件日志来重建整个系统状态，而不必依赖任何其他类型的数据库。
+- en: 'As an example, consider the following (small) event log:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 举个例子，考虑以下（小）事件日志：
+- en: '8:00 am—User #1 with name Alice was created'
+  id: totrans-219
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 上午8:00—用户＃1名称为爱丽丝被创建
+- en: '9:00 am—User #2 with name Bob was created'
+  id: totrans-220
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 上午9:00—用户＃2名称为鲍勃被创建
+- en: '1:00 pm—User #1 was deleted'
+  id: totrans-221
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下午1:00—用户＃1被删除
+- en: '3:00 pm—User #2 changes name to Cedric'
+  id: totrans-222
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下午3:00—用户＃2将名称更改为塞德里克
+- en: By replaying these events, it is easy to reconstruct the state of your system
+    at the end of the day—there is one user named Cedric. However, there is more.
+    Since each event is timestamped, you can reconstruct the state that your application
+    had at any given point in time (for example, at 10:00 am, your application had
+    two users, Alice and Bob).
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过重放这些事件，很容易重建系统在一天结束时的状态——有一个名为塞德里克的用户。然而，还有更多。由于每个事件都有时间戳，你可以重建应用在任何给定时间点的状态（例如，在上午10:00，你的应用有两个用户，爱丽丝和鲍勃）。
+- en: Besides point-in-time recovery, event sourcing offers you a complete audit log
+    over everything that happened in your system. Audit logging often is an actual
+    requirement on its own in many cases, but also makes it easier to debug the system
+    in case of errors. Having a complete event log allows you to replicate the system's
+    state at the exact point in time and then replay events step by step to actually
+    reproduce a specific error.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了点对点恢复，事件溯源还为你提供了系统中发生的一切的完整审计日志。审计日志通常在许多情况下是一个实际的要求，但也使得在出现错误时更容易调试系统。拥有完整的事件日志可以让你在确切的时间点复制系统的状态，然后逐步重放事件，以实际重现特定的错误。
+- en: Also, having an event log makes the individual services less dependent on their
+    local databases. In the extreme, you can abandon databases entirely and have each
+    service reconstruct its entire query model from the event log in-memory each time
+    it starts up.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，事件日志使各个服务不那么依赖其本地数据库。在极端情况下，你可以完全放弃数据库，并让每个服务在启动时从事件日志中内存重建其整个查询模型。
+- en: Implementing publish/subscribe and event sourcing with Apache Kafka
+  id: totrans-226
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Apache Kafka实现发布/订阅和事件溯源
+- en: In the remainder of this chapter, we will not build our own event sourcing system.
+    Previously, we used RabbitMQ to accomplish messaging between our services. However,
+    RabbitMQ only handles message dispatching, so if you need an event log containing
+    all events, you will need to implement it yourself by listening to all events
+    and persisting them. You will also need to take care of event replaying yourself.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的其余部分，我们不会构建自己的事件溯源系统。之前，我们使用RabbitMQ来实现服务之间的消息传递。然而，RabbitMQ只处理消息分发，因此如果你需要一个包含所有事件的事件日志，你需要自己实现它，监听所有事件并持久化它们。你还需要自己处理事件重放。
+- en: Apache Kafka is a distributed message broker that also ships with an integrated
+    transaction log. It was originally built by LinkedIn and is available as an open
+    source product licensed under the Apache License.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Apache Kafka是一个分布式消息代理，还附带一个集成的事务日志。它最初是由LinkedIn构建的，并作为Apache许可下的开源产品提供。
+- en: In the preceding section, we already built implementations of the `EventEmitter`
+    and `EventListener` interfaces using an AMQP connection. In this section, we will
+    implement the same interfaces using Kafka.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的部分中，我们已经使用AMQP连接构建了`EventEmitter`和`EventListener`接口的实现。在本节中，我们将使用Kafka来实现相同的接口。
+- en: Kafka quickstart with Docker
+  id: totrans-230
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Docker快速开始Kafka
+- en: Contrary to RabbitMQ, Apache Kafka is a bit more complex to set up. Kafka itself
+    requires a working Zookeeper setup in order to perform leader election, managing
+    cluster state, and persisting cluster-wide configuration data. However, for development
+    purposes, we can use the `spotify/kafka` image. This image comes with a built-in
+    Zookeeper installation, allowing quick and easy setup.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与RabbitMQ相反，Apache Kafka设置起来要复杂一些。Kafka本身需要一个工作的Zookeeper设置，以进行领导者选举、管理集群状态和持久化集群范围的配置数据。然而，为了开发目的，我们可以使用`spotify/kafka`镜像。该镜像带有内置的Zookeeper安装，可以快速轻松地设置。
+- en: 'Just as with the RabbitMQ image before, use the `docker run` command to get
+    started quickly:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像之前的RabbitMQ图像一样，使用`docker run`命令快速开始：
+- en: '[PRE42]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: This will start a single-node Kafka instance and bind it to the localhost TCP
+    port `9092`.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将启动一个单节点Kafka实例，并将其绑定到本地主机的TCP端口`9092`。
+- en: Basic principles of Apache Kafka
+  id: totrans-235
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Apache Kafka的基本原则
+- en: Kafka offers a publish/subscribe message broker, but is not based on AMQP and
+    therefore uses a different terminology.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Kafka提供了一个发布/订阅消息代理，但不是基于AMQP，因此使用不同的术语。
+- en: The first basic concept in Kafka is the topic. A topic is something like a category
+    or event name that subscribers can write to. It contains a complete log of all
+    messages that were ever published into this topic. Each topic is divided into
+    a configurable number of partitions. When a new message is published, it needs
+    to contain a partition key. The partition key is used by the broker to decide
+    into which partition of the topic the message should be written.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Kafka中的第一个基本概念是主题。主题类似于订阅者可以写入的类别或事件名称。它包含了曾经发布到该主题的所有消息的完整日志。每个主题分为可配置数量的分区。当发布新消息时，需要包含一个分区键。代理使用分区键来决定消息应写入主题的哪个分区。
+- en: '![](img/228af662-564a-48ba-90ca-d1c11e87a40f.png)'
+  id: totrans-238
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/228af662-564a-48ba-90ca-d1c11e87a40f.png)'
+- en: Each Kafka topic consists of a configurable number of partitions; each published
+    message has a partition key, which is used to decide into which partition a message
+    should be saved
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个Kafka主题由可配置数量的分区组成；每个发布的消息都有一个分区键，用于决定消息应保存到哪个分区
+- en: The Kafka broker guarantees that within each partition, the order of messages
+    will be the same as in which they were published. For each topic, messages will
+    be kept for a configurable retention period. However, the broker's performance
+    does not degrade significantly when the transaction logs get larger. For this
+    reason, it is entirely possible to operate Kafka with an infinite retention period,
+    and by this way use it as an event log. Of course, you do need to consider that
+    the required disk storage will grow proportionally. Luckily, Kafka supports horizontal
+    scale-out quite well.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Kafka 代理保证在每个分区内，消息的顺序与发布时的顺序相同。对于每个主题，消息将保留一段可配置的保留期。然而，当事务日志变得更大时，代理的性能并不会显著下降。因此，完全可以使用无限的保留期操作
+    Kafka，并以此方式将其用作事件日志。当然，您需要考虑所需的磁盘存储将成比例增长。幸运的是，Kafka 对水平扩展支持得相当好。
+- en: From each topic, any number of subscribers (called *consumers* in Kafka jargon)
+    can read messages and any number of publishers (*producers*) can write them. Each
+    consumer defines for itself at which offset in the event log it would like to
+    start consuming. For example, a freshly initialized consumer that only operates
+    in-memory could read the entire event log from the start (offset = `0`) to rebuild
+    its entire query model. Another consumer that has a local database and only needs
+    new events that occurred after a certain point in time can start reading the event
+    log at a later point.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从每个主题，任意数量的订阅者（在 Kafka 行话中称为 *消费者*）可以读取消息，任意数量的发布者（*生产者*）可以写入消息。每个消费者都可以定义从事件日志的哪个偏移量开始消费。例如，一个刚初始化的只在内存中操作的消费者可以从头（偏移量
+    = `0`）读取整个事件日志以重建其整个查询模型。另一个只有本地数据库并且只需要在某个时间点之后发生的新事件的消费者可以从稍后的时间点开始读取事件日志。
+- en: Each consumer is a member of a consumer group. A message published in a given
+    topic is published to one consumer of each group. This can be used to implement
+    a publish/subscribe communication, similar to what we have already built with
+    AMQP. The following figure illustrates the different terms and actors in a publish/subscribe
+    architecture using AMQP and Kafka. In both cases, every message that is published
+    in the exchange/topic will be routed to every consumer.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个消费者都是消费者组的成员。在给定主题中发布的消息将发布到每个组的一个消费者。这可以用来实现发布/订阅通信，类似于我们已经使用 AMQP 构建的内容。以下图表说明了使用
+    AMQP 和 Kafka 架构的发布/订阅中的不同术语和角色。在这两种情况下，发布在交换/主题中的每条消息都将路由到每个消费者。
+- en: '![](img/27552bd3-67e3-4bf0-9a6b-7a99d8bdef10.png)'
+  id: totrans-243
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/27552bd3-67e3-4bf0-9a6b-7a99d8bdef10.png)'
+- en: Publish/Subscribe with both AMQP (1) and Apache Kafka (2); each message that
+    is published in the exchange/topic is routed to every subscriber
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用 AMQP（1）和 Apache Kafka（2）进行发布/订阅；在交换/主题中发布的每条消息都会路由到每个订阅者
+- en: In AMQP, you can also have multiple subscribers listen on the same queue. In
+    this case, incoming messages will be routed not to all, but to one of the connected
+    subscribers. This can be used to build some kind of load-balancing between different
+    subscriber instances.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在 AMQP 中，也可以有多个订阅者监听同一个队列。在这种情况下，传入的消息将不会路由到所有订阅者，而是路由到其中一个已连接的订阅者。这可以用来在不同的订阅者实例之间构建某种负载均衡。
+- en: 'The same can be built in Kafka by putting multiple subscriber instances into
+    the same consumer group. In Kafka, however, each subscriber is assigned to a fixed
+    set of (possibly multiple) partitions. For this reason, the number of consumers
+    that can consume a topic in parallel is limited by the number of topic partitions.
+    The following diagram illustrates this example:'
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在 Kafka 中，可以通过将多个订阅者实例放入同一消费者组来实现相同的功能。然而，在 Kafka 中，每个订阅者被分配到一个固定的（可能是多个）分区。因此，可以并行消费主题的消费者数量受到主题分区数量的限制。以下图表说明了这个例子：
+- en: '![](img/00d574d2-a4b6-4166-a6c2-9b88b89e846a.png)'
+  id: totrans-247
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00d574d2-a4b6-4166-a6c2-9b88b89e846a.png)'
+- en: Load-balancing with both AMQP (1) and Apache Kafka (2); each message that is
+    published in the exchange/topic routed to one of the connected subscribers
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用 AMQP（1）和 Apache Kafka（2）进行负载均衡；在交换/主题中发布的每条消息都会路由到已连接的订阅者之一
+- en: If you should decide to have multiple consumers within the same consumer group
+    subscribe the same partition of a topic, the broker will simply dispatch all messages
+    in that partition to the consumer that connected last.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果决定在同一消费者组中有多个消费者订阅主题的同一分区，代理将简单地将该分区中的所有消息分派给最后连接的消费者。
+- en: Connecting to Kafka with Go
+  id: totrans-250
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用 Go 连接到 Kafka
+- en: 'When we connected to an AMQP broker in the previous sections of this chapter,
+    we used the de facto standard library `github.com/streadway/amqp`. For connecting
+    to a Kafka broker, there is a little more diversity among the available Go libraries.
+    At the time of writing this book, the most popular Kafka client libraries for
+    Go are as follows:'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的前几节中，我们连接到 AMQP 代理时使用了事实上的标准库 `github.com/streadway/amqp`。连接到 Kafka 代理时，可用的
+    Go 库之间存在更多的多样性。在撰写本书时，Go 中最受欢迎的 Kafka 客户端库如下：
+- en: '`github.com/Shopify/sarama` offers full protocol support and is implemented
+    in pure Go. It is licensed under the MIT license. It is actively maintained.'
+  id: totrans-252
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`github.com/Shopify/sarama` 提供完整的协议支持，是纯 Go 实现的。它是根据 MIT 许可证授权的。它是维护活跃的。'
+- en: '`github.com/elodina/go_kafka_client` is also implemented in pure Go. It offers
+    more features than the `Shopify` library, but appears to be less actively maintained.
+    It is licensed under the Apache license.'
+  id: totrans-253
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`github.com/elodina/go_kafka_client` 也是纯 Go 实现的。它提供的功能比 `Shopify` 库更多，但似乎维护活跃度较低。它是根据
+    Apache 许可证授权的。'
+- en: '`github.com/confluentinc/confluent-kafka-go` provides a Go wrapper for the
+    `librdkafka` C library (meaning that you will need to have `librdkafka` installed
+    on your system for this library to work). It is reported to be faster than the
+    `Shopify` library since it relies on a highly optimized C library. For the same
+    reason though, it might prove difficult to build. It is actively maintained, although
+    its community seems smaller than the `Shopify` library.'
+  id: totrans-254
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`github.com/confluentinc/confluent-kafka-go`为`librdkafka` C库提供了一个Go包装器（这意味着您需要在系统上安装`librdkafka`才能使此库工作）。据说它比`Shopify`库更快，因为它依赖于高度优化的C库。不过，出于同样的原因，它可能难以构建。它正在积极维护，尽管其社区似乎比`Shopify`库小。'
+- en: 'For this chapter, we will use the `github.com/Shopify/sarama` library. Start
+    by installing it via `go get`:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将使用`github.com/Shopify/sarama`库。通过`go get`安装它：
+- en: '[PRE43]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: In the previous sections, we have already defined the `EventEmitter` and `EventListener`
+    interfaces in the `todo.com/myevents/lib/msgqueue` package. In this section, we
+    will now add alternative implementations for these two interfaces. Before diving
+    in, let's take a quick look at how to use the `sarama` library to connect to a
+    Kafka broker, in general.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的部分中，我们已经在`todo.com/myevents/lib/msgqueue`包中定义了`EventEmitter`和`EventListener`接口。在本节中，我们将为这两个接口添加替代实现。在深入之前，让我们快速看一下如何使用`sarama`库来连接到Kafka代理。
+- en: 'Regardless of whether you intend to publish or consume messages, you will need
+    to start by instantiating a `sarama.Client` struct. For this, you can use the
+    `sarama.NewClient` function. For instantiating a new client, you will need a list
+    of Kafka broker addresses (remember, Kafka is designed for being operated in a
+    cluster, so you can actually connect to many clustered brokers at the same time)
+    and a configuration object. The easiest way to create a configuration object is
+    the `sarama.NewConfig` function:'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论您是打算发布还是消费消息，您都需要首先实例化`sarama.Client`结构。为此，您可以使用`sarama.NewClient`函数。要实例化一个新客户端，您需要Kafka代理地址的列表（记住，Kafka设计为在集群中运行，因此您实际上可以同时连接到许多集群代理）和一个配置对象。创建配置对象的最简单方法是使用`sarama.NewConfig`函数：
+- en: '[PRE44]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'Of course, using `localhost` as a single broker works fine in a development
+    setup. For a production setup, the broker list should be read from the environment:'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，在开发设置中，将`localhost`作为单个代理工作正常。对于生产设置，代理列表应从环境中读取：
+- en: '[PRE45]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: You can use the `config` object to fine-tune various parameters of your Kafka
+    connection. For most purposes, the default settings will do just fine, though.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用`config`对象来微调Kafka连接的各种参数。对于大多数情况，默认设置就可以了。
+- en: Publishing messages with Kafka
+  id: totrans-263
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Kafka发布消息
+- en: The Sarama library offers two implementations for publishing messages—the `sarama.SyncProducer`
+    and the `sarama.AsyncProducer`.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Sarama库提供了两种发布消息的实现——`sarama.SyncProducer`和`sarama.AsyncProducer`。
+- en: The `AsyncProducer` offers an asynchronous interface that uses Go channels both
+    for publishing messages and for checking the success of these operations. It allows
+    high-throughput of messages, but is a bit bulky to use if all you want to do is
+    to emit a single message. For this reason, the `SyncProducer` offers a simpler
+    interface that takes a message for producing and blocks until it receives confirmation
+    from the broker that the message has been successfully published to the event
+    log.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`AsyncProducer`提供了一个异步接口，使用Go通道来发布消息并检查这些操作的成功。它允许高吞吐量的消息，但如果您只想发出单个消息，使用起来有点笨重。因此，`SyncProducer`提供了一个更简单的接口，它接受一个用于生产的消息，并在从代理接收到消息已成功发布到事件日志的确认之前阻塞。'
+- en: 'You can instantiate a new Producer using the `sarama.NewSyncProducerFromClient`
+    and `sarama.NewAsyncProducerFromClient` functions. In our example, we will use
+    the `SyncProducer` that you can create as follows:'
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用`sarama.NewSyncProducerFromClient`和`sarama.NewAsyncProducerFromClient`函数实例化一个新的生产者。在我们的示例中，我们将使用`SyncProducer`，您可以按以下方式创建：
+- en: '[PRE46]'
+  id: totrans-267
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Let''s continue by using the `SyncProducer` to create a Kafka implementation
+    of our `EventEmitter` interface. Start by creating the `todo.com/myevents/lib/msgqueue/kafka` package
+    and the `emitter.go`  file within that package:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续使用`SyncProducer`来创建我们的`EventEmitter`接口的Kafka实现。首先创建`todo.com/myevents/lib/msgqueue/kafka`包和该包中的`emitter.go`文件：
+- en: '[PRE47]'
+  id: totrans-269
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Continue by adding a constructor function for instantiating this struct:'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续添加一个构造函数来实例化这个结构：
+- en: '[PRE48]'
+  id: totrans-271
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'In order to emit messages, you will need to construct an instance of the `sarama.ProducerMessage`
+    struct. For this, you will need the topic (which, in our case, is supplied by
+    the `msgqueue.Event`''s `EventName()` method) and the actual message body. The
+    body needs to be supplied as an implementation of the `sarama.Encoder` interface.
+    You can use the `sarama.ByteEncoder` and `sarama.StringEncoder` types to simply
+    typecast a byte array or a string to an `Encoder` implementation:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了发送消息，您需要构建`sarama.ProducerMessage`结构的实例。为此，您需要主题（在我们的情况下，由`msgqueue.Event`的`EventName()`方法提供）和实际的消息正文。正文需要作为`sarama.Encoder`接口的实现提供。您可以使用`sarama.ByteEncoder`和`sarama.StringEncoder`类型，将字节数组或字符串简单地强制转换为`Encoder`实现：
+- en: '[PRE49]'
+  id: totrans-273
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: The key in this code sample is the producer's `SendMessage()` method. Note that
+    we are actually ignoring a few of this method's return values. The first two return
+    values return the number of the partition that the messages were written in and
+    the offset number that the message has in the event log.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此代码示例中，关键是生产者的`SendMessage()`方法。请注意，我们实际上忽略了此方法的一些返回值。前两个返回值返回了消息写入的分区号和消息在事件日志中的偏移量。
+- en: 'The preceding code works, but has one fatal flaw: it creates a new Kafka topic
+    for each event type. While it is entirely possible for a subscriber to consume
+    multiple topics at once, you will have no guaranteed order of processing. This
+    may result in a producer emitting a `location #1 created` and `location #1 updated` sequentially
+    in short order and a subscriber receiving them in the other order.'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的代码是有效的，但有一个致命的缺陷：它为每种事件类型创建了一个新的Kafka主题。虽然订阅者完全可以同时消费多个主题，但无法保证处理顺序。这可能导致生产者按顺序短时间内依次发出`位置#1创建`和`位置#1更新`，而订阅者按照不同的顺序接收它们。
+- en: 'In order to solve this problem, we will need to do two things:'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了解决这个问题，我们需要做两件事：
+- en: All messages must be published on the same topic. This implies that we will
+    need another way to store the actual event name within the message.
+  id: totrans-277
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 所有消息必须发布在同一个主题上。这意味着我们需要另一种方法在消息中存储实际的事件名称。
+- en: Each message must expose a partition key. We can use the message's partition
+    key to ensure that messages concerning the same entity (that is, the same event,
+    the same user) are stored in a single partition of the event log and are routed
+    to the same consumer in-order.
+  id: totrans-278
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每条消息必须公开一个分区键。我们可以使用消息的分区键来确保涉及相同实体的消息（即相同事件，相同用户）存储在事件日志的单个分区中，并且按顺序路由到相同的消费者。
+- en: 'Let''s start with the partitioning key. Remember the `Event` interface in the
+    `todo.com/myevents/lib/msgqueue` package? It looked like this:'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从分区键开始。还记得`todo.com/myevents/lib/msgqueue`包中的`Event`接口吗？它看起来是这样的：
+- en: '[PRE50]'
+  id: totrans-280
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Continue by adding a new method `PartitionKey()` to this interface:'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续添加一个新的`PartitionKey()`方法到这个接口：
+- en: '[PRE51]'
+  id: totrans-282
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Next, we can modify the existing event structs that we have defined before
+    (for example, `EventCreatedEvent`) to implement this `PartitionKey()` method:'
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们可以修改之前定义的现有事件结构（例如`EventCreatedEvent`）来实现这个`PartitionKey()`方法：
+- en: '[PRE52]'
+  id: totrans-284
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'Now, let''s return to the `kafkaEventEmitter`. We can now use each event''s
+    `PartitionKey()` method when publishing a message to Kafka. Now, we just need
+    to send the event name alongside the event. To solve this issue, we will use an
+    envelope for the message body: this means that the message body will not just
+    contain the JSON-serialized event object, but rather another object that can contain
+    metadata (like the event name) and the actual event body as payload. Let''s define
+    this event in a new file `payload.go` in the package `todo.com/myevents/lib/msgqueue/kafka`:'
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们回到`kafkaEventEmitter`。我们现在可以在将消息发布到Kafka时使用每个事件的`PartitionKey()`方法。现在，我们只需要在事件旁边发送事件名称。为了解决这个问题，我们将在`todo.com/myevents/lib/msgqueue/kafka`包的新文件`payload.go`中定义这个事件：
+- en: '[PRE53]'
+  id: totrans-286
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'We can now adjust the `kafkaEventEmitter` to first construct an instance of
+    the `messageEnvelope` struct and then JSON-serialize that:'
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以调整`kafkaEventEmitter`，首先构造`messageEnvelope`结构的实例，然后对其进行JSON序列化：
+- en: '[PRE54]'
+  id: totrans-288
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: Consuming messages from Kafka
+  id: totrans-289
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从Kafka消费消息
+- en: Consuming Messages from a Kafka broker is a little bit more complex than in
+    AMQP. You have already learned that a Kafka topic may consist of many partitions
+    that each consumer can consume one or more (up to all) of these partitions. Kafka
+    architectures allow horizontal scaling by dividing a topic into more partitions
+    and having one consumer subscribe to each partition.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从Kafka代理服务器消费消息比在AMQP中更复杂一些。您已经了解到Kafka主题可能由许多分区组成，每个消费者可以消费一个或多个（最多全部）这些分区。Kafka架构允许通过将主题分成更多分区并让一个消费者订阅每个分区来进行水平扩展。
+- en: This means that each subscriber needs to know which partitions of a topic exist
+    and which of those it should consume. Some of the libraries that we introduced
+    earlier in this section (especially the Confluent library) actually support automatic
+    subscriber partitioning and automatic group balancing. The `sarama` library does
+    not offer this feature, so our `EventListener` will need to select the partitions
+    it wants to consume manually.
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着每个订阅者都需要知道主题的哪些分区存在，以及它应该消费其中的哪些。我们在本节中介绍的一些库（尤其是Confluent库）实际上支持自动订阅者分区和自动组平衡。`sarama`库不提供此功能，因此我们的`EventListener`将需要手动选择要消费的分区。
+- en: For our example, we will implement the `EventListener` so that it, by default,
+    listens on all available partitions of a topic. We'll add a special property that
+    can be used to explicitly specify the partitions to listen on.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的示例，我们将实现`EventListener`，以便默认情况下监听主题的所有可用分区。我们将添加一个特殊属性，用于明确指定要监听的分区。
+- en: 'Create a new file `listener.go` in the `todo.com/myevents/lib/msgqueue/kafka`
+    package:'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`todo.com/myevents/lib/msgqueue/kafka`包中创建一个新文件`listener.go`：
+- en: '[PRE55]'
+  id: totrans-294
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'Continue by adding a constructor function for this struct:'
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续为这个结构体添加一个构造函数：
+- en: '[PRE56]'
+  id: totrans-296
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'The `Listen()` method of `kafkaEventListener` follows the same interface as
+    the `amqpEventListener` that we implemented in the previous section:'
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`kafkaEventListener`的`Listen()`方法遵循与我们在上一节中实现的`amqpEventListener`相同的接口：'
+- en: '[PRE57]'
+  id: totrans-298
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'The first thing to do is to determine which topic partitions should be consumed.
+    We will assume that the listener should listen on all partitions when an empty
+    slice was passed to the `NewKafkaEventListener` method:'
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先要做的是确定应该消费哪些主题分区。我们将假设当`NewKafkaEventListener`方法传递了一个空切片时，监听器应该监听所有分区：
+- en: '[PRE58]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'A Sarama consumer can only consume one partition. If we want to consume multiple
+    partitions, we will need to start multiple consumers. In order to preserve the
+    `EventListener`''s interface, we will start multiple consumers, each in its own
+    goroutine in the `Listen()` method and then have them all write to the same results
+    channel:'
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Sarama消费者只能消费一个分区。如果我们想要消费多个分区，我们需要启动多个消费者。为了保持`EventListener`的接口，我们将在`Listen()`方法中启动多个消费者，每个消费者在自己的goroutine中运行，然后让它们都写入同一个结果通道：
+- en: '[PRE59]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Note the goroutines that are started within the first for loop. Each of these
+    contains an inner for loop that iterates over all messages received in a given
+    partition. We can now JSON-decode the incoming messages and reconstruct the appropriate
+    event types.
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意在第一个for循环内启动的goroutines。其中每个都包含一个内部for循环，遍历给定分区中接收到的所有消息。现在我们可以对传入的消息进行JSON解码，并重建适当的事件类型。
+- en: All of the following code examples are placed within the inner for loop of the`Listen()`
+    method of `kafkaEventListener`.
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下所有代码示例都放置在`kafkaEventListener`的`Listen()`方法的内部for循环中。
+- en: '[PRE60]'
+  id: totrans-305
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'We now have a new problem. We have unmarshalled the event body into a `messageEnvelope`
+    struct. This contains the event name and the actual event body. However, the event
+    body is just typed as `interface{}`. Ideally, we would need to convert this `interface{}`
+    type back to the correct event type (for example, `contracts.EventCreatedEvent`)
+    dependent on the event name. For this, we can use the `github.com/mitchellh/mapstructure`
+    package that you can install via go get:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有一个新问题。我们已经将事件主体解组为`messageEnvelope`结构。这包含了事件名称和实际事件主体。然而，事件主体只是被定义为`interface{}`。理想情况下，我们需要将这个`interface{}`类型转换回正确的事件类型（例如，`contracts.EventCreatedEvent`），这取决于事件名称。为此，我们可以使用`github.com/mitchellh/mapstructure`包，您可以通过go
+    get安装：
+- en: '[PRE61]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'The `mapstructure` library works similar to the `encoding/json` library, only
+    that it does not take `[]byte` input variables, but generic `interface{}` input
+    values. This allows you to take JSON input of unknown structure (by calling `json.Unmarshal`
+    on an `interface{}` value) and then later map the already-decoded type of unknown
+    structure to a well-known struct type:'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`mapstructure`库的工作方式类似于`encoding/json`库，只是它不接受`[]byte`输入变量，而是通用的`interface{}`输入值。这允许您接受未知结构的JSON输入（通过在`interface{}`值上调用`json.Unmarshal`），然后将已解码的未知结构类型映射到已知的结构类型：'
+- en: '[PRE62]'
+  id: totrans-309
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: The `TagName` property in the `mapstructure.DecoderConfig` struct that is created
+    before doing the actual decoding instructs the `mapstructure` library to respect
+    the existing ``json:"..."`` annotations that are already present in the event
+    contracts.
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在实际解码之前创建的`mapstructure.DecoderConfig`结构中的`TagName`属性指示`mapstructure`库尊重事件合同中已经存在的``json:"..."``注释。
+- en: 'After successfully decoding a message, it can be published into the results
+    channel:'
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 成功解码消息后，可以将其发布到结果通道中：
+- en: '[PRE63]'
+  id: totrans-312
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: Our Kafka event listener is now fully functional. Since it implements the `msgqueue.EventListener`
+    interface, you can use it as a drop-in replacement for the existing AMQP event
+    listener.
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的Kafka事件监听器现在已经完全可用。由于它实现了`msgqueue.EventListener`接口，您可以将其用作现有AMQP事件监听器的即插即用替代品。
+- en: There is one caveat, though. When started, our current Kafka event listener
+    always starts consuming from the very start of the event log. Have a closer look
+    at the `ConsumePartition` call in the preceding code example—its third parameter
+    (in our case, `0`) describes the offset in the event log at which the consumer
+    should start consuming.
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，有一个警告。当启动时，我们当前的Kafka事件监听器总是从事件日志的开头开始消费。仔细看一下前面代码示例中的`ConsumePartition`调用——它的第三个参数（在我们的例子中是`0`）描述了消费者应该开始消费的事件日志中的偏移量。
+- en: Using `0` as an offset will instruct the event listener to read the entire event
+    log right from the start. This is the ideal solution if you want to implement
+    event sourcing with Kafka. If you just want to use Kafka as a message broker,
+    your service will need to remember the offset of the last message read from the
+    event log. When your service is restarted, you can then resume consuming from
+    that last known position.
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`0`作为偏移量将指示事件监听器从头开始读取整个事件日志。如果您想要使用Kafka实现事件溯源，这是理想的解决方案。如果您只想将Kafka用作消息代理，您的服务将需要记住从事件日志中读取的最后一条消息的偏移量。当您的服务重新启动时，您可以从上次已知的位置继续消费。
+- en: Summary
+  id: totrans-316
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, you learned how to integrate multiple services with asynchronous
+    communication using message queues such as RabbitMQ and Apache Kafka. You also
+    learned about architectural patterns such as event collaboration and event sourcing
+    that help you to build scalable and resilient applications that are well-suited
+    for cloud deployments.
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您学习了如何使用消息队列（如RabbitMQ和Apache Kafka）集成多个服务进行异步通信。您还了解了事件协作和事件溯源等架构模式，这有助于您构建适合云部署的可扩展和弹性的应用程序。
+- en: The technologies that we have worked with in this chapter are not tied to any
+    specific cloud provider. You can easily roll your own RabbitMQ or Kafka infrastructure
+    on any cloud infrastructure or your own servers. In [Chapter 8](25f18fd2-4d08-41fb-a8b2-acc927bd0876.xhtml),
+    *AWS Part II - S3, SQS, API Gateway, and DynamoDB*, we will take another look
+    at message queues—this time with a special focus on the managed messaging solutions
+    that are offered to you by AWS.
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章中我们使用的技术与任何特定的云提供商无关。您可以轻松地在任何云基础设施或您自己的服务器上部署自己的RabbitMQ或Kafka基础设施。在[第8章](25f18fd2-4d08-41fb-a8b2-acc927bd0876.xhtml)中，*AWS第二部分-S3、SQS、API网关和DynamoDB*，我们将再次关注消息队列，这次特别关注AWS提供给您的托管消息解决方案。

@@ -1,0 +1,2431 @@
+- en: Webpack in Vue CLI 3
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vue CLI 3中的Webpack
+- en: 'In the previous chapter, we saw how to start using Vue CLI via both the command
+    line and the UI. In this chapter, we will cover webpack basics from the viewpoint
+    of Vue CLI 3\. We will begin with an overview of what webpack is. We''ll look
+    at concepts behind module bundling, tree shaking, webpack loaders and output,
+    webpack plugins, **Hot Module Replacement** (**HMR**), code coverage and code
+    splitting, and then we''ll look at how these concepts fit in with Vue CLI 3 as
+    follows:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们看到了如何通过命令行和UI开始使用Vue CLI。在本章中，我们将从Vue CLI 3的角度介绍webpack的基础知识。我们将首先概述webpack是什么。我们将研究模块捆绑、摇树、webpack加载器和输出、webpack插件、**热模块替换**（**HMR**）、代码覆盖和代码拆分的概念，然后我们将看看这些概念如何与Vue
+    CLI 3配合，如下所示：
+- en: The evolution of the **JavaScript** (**JS**) language from the script tag to
+    module bundlers
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从脚本标签到模块捆绑器的JavaScript（JS）语言的演变
+- en: The script tag
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 脚本标签
+- en: '**Immediately Invoked Function Expressions** (**IIFEs**), what problems they
+    solve, and what problems they don''t'
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**立即调用函数表达式**（**IIFEs**），它们解决了什么问题，以及它们没有解决的问题'
+- en: How **Node Package Manager** (**NPM**) helps teams share third-party libraries
+    in their code
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Node Package Manager** (**NPM**)如何帮助团队在他们的代码中共享第三方库'
+- en: The role of JS task runners and NPM scripts
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: JS任务运行器和NPM脚本的作用
+- en: What the CommonJS specification is and how modules work in JavaScript and Node.js
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CommonJS规范是什么，以及它如何在JavaScript和Node.js中工作
+- en: What module bundlers are and how they bridge the gap between Node.js and the
+    browser
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 模块捆绑器是什么，以及它们如何弥合Node.js和浏览器之间的差距
+- en: What webpack, and how it works
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: webpack是什么，以及它是如何工作的
+- en: How to run webpack on a project
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何在项目中运行webpack
+- en: Bundling assets with webpack using production and development modes
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用生产和开发模式使用webpack捆绑资产
+- en: Adding a Vue project via NPM and using webpack with it
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过NPM添加Vue项目并使用webpack
+- en: Understanding exactly how webpack works is crucial to understanding the magic
+    that Vue CLI 3 performs. If you are familiar with webpack, you still might find
+    some sections of this chapter useful. If you feel you are a webpack pro, you can
+    probably just skip this chapter.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 准确理解webpack的工作原理对于理解Vue CLI 3的魔力至关重要。如果您熟悉webpack，您可能仍然会发现本章的某些部分有用。如果您觉得自己是webpack专家，您可能可以直接跳过本章。
+- en: Before getting into what is webpack and to properly understand the issues that
+    webpack solves, we need to look back at a bit of history of changes that happened
+    to the JS language in the last decade.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入了解webpack是什么以及正确理解webpack解决的问题之前，我们需要回顾一下过去十年中JS语言发生的一些变化。
+- en: The evolution of the JS language
+  id: totrans-15
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: JS语言的演变
+- en: 'Looking from the vantage point of webpack, here is the chronological list of
+    approaches, techniques, best practices, and patterns that were added to the JS
+    ecosystem, which led to the current state of things:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从webpack的角度来看，以下是JS生态系统中添加的方法、技术、最佳实践和模式的时间顺序列表，这些方法、技术、最佳实践和模式导致了当前的状态：
+- en: The `script` tag as the answer to adding interactivity to web pages
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`script`标签作为向网页添加交互性的答案'
+- en: Immediately invoked function expressions as the answer to modularizing libraries
+    and avoiding code collisions
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 立即调用函数表达式作为模块化库和避免代码冲突的答案
+- en: The problem with IIFEs
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: IIFEs的问题
+- en: Sharing third-party libraries in a team environment with NPM
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用NPM在团队环境中共享第三方库
+- en: JS task runners and NPM scripts
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: JS任务运行器和NPM脚本
+- en: Modules in JS
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: JS中的模块
+- en: Let's look at each one of these solutions in more detail.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们更详细地看看这些解决方案中的每一个。
+- en: The script tag
+  id: totrans-24
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 脚本标签
+- en: Initially, adding JS to your web page meant that you would need to add some
+    `script` tags directly in your HTML. For quick prototypes, this is still a valid
+    way of doing things even to this day. Very often, third-party libraries get added
+    via the `src` attribute inside a `script` tag (which usually gets placed right
+    above the closing `body` tag in our HTML).
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最初，将JS添加到您的网页意味着您需要直接在HTML中添加一些`script`标签。对于快速原型，这仍然是一种有效的做法，甚至到今天。很多时候，第三方库是通过`script`标签内的`src`属性添加的（通常放在我们的HTML中关闭`body`标签的正上方）。
+- en: Unfortunately, you usually need more than one `script` tag inside your HTML.
+    And regardless of whether you add your JS code directly to your page, you add
+    it from another file in your project, or you add it from a remote location (such
+    as from a **content delivery network** (**CDN**) using the `src` attribute), ultimately,
+    all these scripts are added to the global JS scope. This means one thing, collision.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，您通常需要在HTML中添加多个`script`标签。而不管您是直接将JS代码添加到页面中，还是从项目中的另一个文件添加，或者从远程位置添加（例如从**内容传送网络**（**CDN**）使用`src`属性），最终，所有这些脚本都被添加到全局JS范围内。这意味着一件事，冲突。
+- en: To avoid collisions, a clever approach was taken, the use of IIFEs.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了避免冲突，采取了一个巧妙的方法，即使用IIFE。
+- en: Immediately Invoked Function Expressions
+  id: totrans-28
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 立即调用的函数表达式
+- en: What are IIFEs all about? IIFEs simply exploit the fact that in JS, *parentheses
+    can't contain statements*. This fact alone allowed JS developers to put in anonymous
+    functions that they could immediately invoke, without getting any errors from
+    the parser, by simply wrapping them in parentheses.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IIFE到底是什么？IIFE简单地利用了JS中*括号不能包含语句*的事实。这个事实本身允许JS开发人员放入匿名函数，他们可以立即调用，而不会因为简单地将它们包装在括号中而从解析器中得到任何错误。
+- en: An IIFE is essentially a quirk of the JS language, but a very useful one; with
+    an IIFE, all the code is scoped to the function, and thus your code is safe from
+    anything else that is outside of it. In other words, using IIFEs is a simple way
+    to avoid collisions, that is, the accidental overwriting of variables or functions.
+    Thus, at one point, many popular libraries started wrapping their own code into
+    IIFEs. For example, if you open the code for the jQuery library ([https://code.jquery.com](https://code.jquery.com)),
+    or for the Chart.js library ([https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.js](https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.js)),
+    or for many other popular JS libraries, you'd find that they use the IIFE pattern.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IIFE本质上是JS语言的一个怪癖，但是非常有用；通过IIFE，所有的代码都被限定在函数范围内，因此您的代码不会受到外部任何其他东西的影响。换句话说，使用IIFE是避免冲突的一种简单方法，即意外覆盖变量或函数。因此，有一段时间，许多流行的库开始将它们自己的代码包装成IIFE。例如，如果您打开jQuery库的代码（[https://code.jquery.com](https://code.jquery.com)），或Chart.js库的代码（[https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.js](https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.js)），或许多其他流行的JS库的代码，您会发现它们使用了IIFE模式。
+- en: Thus, with IIFEs, we could add different scripts to our pages, without the worry
+    that code collisions might happen.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，通过IIFE，我们可以向页面添加不同的脚本，而不必担心代码冲突可能发生。
+- en: The problem with IIFEs
+  id: totrans-32
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: IIFE的问题
+- en: 'Unfortunately, simply using IIFEs does not fix all our problems. To illustrate
+    the issue at hand, let''s quote Joe Armstrong, creator of Erlang:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，仅仅使用IIFE并不能解决我们所有的问题。为了说明手头的问题，让我们引用Erlang的创始人Joe Armstrong的话：
+- en: '"You wanted a banana, but what you got is the gorilla holding the banana, and
+    the entire jungle."'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “你想要香蕉，但你得到的是拿着香蕉的大猩猩，整个丛林。”
+- en: Bear in mind that in this quote, Mr. Armstrong was discussing a problem with
+    object-oriented languages, but the underlying issue is applicable in JS code modularization.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，在这段引用中，阿姆斯特朗先生讨论的是面向对象语言的问题，但根本问题在JS代码模块化中也适用。
+- en: Basically, our problem with IIFEs is that we can't cherry-pick specific functionality
+    that we'd like to use from a JS library. With the IIFE pattern, we *must* use
+    everything that is wrapped up in an IIFE, even if we are only using just a small
+    piece of a specific library's codebase. Of course, to be honest, IIFEs are not
+    the ones to blame for this. JS, the language, for a long time simply did not have
+    the ability to cherry-pick any kind of code functionality, because in JS, it was
+    simply impossible to split your code into modules.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基本上，我们对IIFEs的问题在于我们无法从JS库中精选出我们想要使用的特定功能。使用IIFE模式，我们*必须*使用IIFE中包含的所有内容，即使我们只是使用特定库代码库的一小部分。当然，老实说，IIFEs并不是这个问题的罪魁祸首。长期以来，JS语言根本没有能力精选任何类型的代码功能，因为在JS中，将代码拆分成模块是不可能的。
+- en: Another major pain point of JS was the issue of reusing third-party code across
+    teams.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JS的另一个主要痛点是在团队之间重复使用第三方代码的问题。
+- en: Sharing third-party libraries in a team environment with NPM
+  id: totrans-38
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用NPM在团队环境中共享第三方库
+- en: IIFEs solved the problem of code collisions, but they didn't solve the problem
+    of code reuse. What if a developer on my team has a different, updated version
+    of a library, with breaking changes? What if I decide to update the dependencies
+    on my computer? How will my other team members deal with that? Besides using source
+    version control, are there any other options for faster collaboration?
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IIFEs解决了代码冲突的问题，但并没有解决代码重用的问题。如果我的团队中的开发人员有一个不同的、更新的库版本，其中有破坏性的更改，该怎么办？如果我决定在我的计算机上更新依赖关系，我的其他团队成员将如何处理？除了使用源代码版本控制，还有其他更快的协作选项吗？
+- en: '**Node Package Manager** (**NPM**) was the answer to these problems. Node is
+    just a Google V8 JS engine that can run on a server. NPM simply allows a developer
+    to install new libraries into a project, regardless of whether it is to be used
+    on the frontend or the backend of an app. So, effectively, NPM is the JS package
+    manager, similar to what we have in Ruby (gems ([https://rubygems.org/](https://rubygems.org/))),
+    C# (NuGet ([https://www.nuget.org/](https://www.nuget.org/))), or in Linux (`apt-get`,
+    `yum`).'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Node Package Manager**（**NPM**）是这些问题的答案。Node只是一个可以在服务器上运行的Google V8 JS引擎。NPM允许开发人员将新库安装到项目中，无论是用于应用程序的前端还是后端。因此，NPM实际上是JS包管理器，类似于Ruby（gems
+    ([https://rubygems.org/](https://rubygems.org/)））、C#（NuGet ([https://www.nuget.org/](https://www.nuget.org/)））或Linux中的`apt-get`、`yum`。'
+- en: For example, let's say we wanted to install Vue via NPM. If we have Node installed
+    on our machine, we'll have NPM too, since NPM comes bundled with a Node installation.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，假设我们想通过NPM安装Vue。如果我们的计算机上安装了Node，那么我们也会有NPM，因为NPM随Node一起捆绑安装。
+- en: 'Next, we need to create a new directory. Let''s change this directory''s name
+    to `vue-from-npm`, and point our command-line console to it. We can then follow
+    it up with this command:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要创建一个新目录。让我们将此目录的名称更改为`vue-from-npm`，并将命令行控制台指向它。然后我们可以跟随这个命令：
+- en: '[PRE0]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Running the preceding command will create a `package.json` file. The `-y` flag
+    accepts all the default answers that you'd be prompted with in the console.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行上述命令将创建一个`package.json`文件。`-y`标志接受控制台中提示的所有默认答案。
+- en: 'If we looked at the newly created `package.json` file inside our project directory,
+    we''d see the following contents:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们查看项目目录中新创建的`package.json`文件，我们会看到以下内容：
+- en: '[PRE1]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Note that the `npm init` command only adds a `package.json` file to an empty
+    directory. That's all that it does!
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`npm init`命令只会将`package.json`文件添加到空目录中。就是这样！
+- en: 'Adding Vue is then as simple as running this command:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，添加Vue就像运行这个命令一样简单：
+- en: '[PRE2]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'The preceding command will do a few things, namely:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述命令将执行一些操作，即：
+- en: It will add the `node_modules` directory.
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它将添加`node_modules`目录。
+- en: It will put the entire Vue library inside the `node_modules` directory.
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它将整个Vue库放在`node_modules`目录中。
+- en: It will create the `package-lock.json` file in the root of our project.
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它将在我们项目的根目录中创建`package-lock.json`文件。
+- en: It will update the `package.json` file in the root of our project.
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它将更新我们项目的根目录中的`package.json`文件。
+- en: 'The updated `package.json` file now looks like this:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更新后的`package.json`文件现在看起来是这样的：
+- en: '[PRE3]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'If it is not obvious, the file has been updated with a new entry: `dependencies`.
+    This entry lists all the dependencies included in the project. Specifically, we
+    have added Vue (version 2.6.7 or above) to our project.'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果不明显的话，文件已经更新了一个新条目：`dependencies`。这个条目列出了项目中包含的所有依赖项。具体来说，我们已经将Vue（版本2.6.7或以上）添加到了我们的项目中。
+- en: 'A great thing about NPM is that we can add any other library to our project,
+    just as easily as we did with Vue. For example, to update our project with accounting.js,
+    we just run this command:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NPM的一个很棒的地方是，我们可以像添加Vue一样轻松地向我们的项目添加任何其他库。例如，要使用accounting.js更新我们的项目，我们只需运行这个命令：
+- en: '[PRE4]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Once the installation is complete, let''s again inspect the `node_modules`
+    directory as follows:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装完成后，让我们再次检查`node_modules`目录：
+- en: '[PRE5]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Note that for the sake of brevity, we are only showing the second level of folders
+    and files inside the `accounting-js` folder. The `is-string`, `object-assign`,
+    and `vue` folders are shown collapsed.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，为了简洁起见，我们只显示了`accounting-js`文件夹内的第二级文件夹和文件。`is-string`，`object-assign`和`vue`文件夹都被折叠显示。
+- en: 'What this shows us is that sometimes other NPM modules come bundled with the
+    actual libraries that we installed. In the case of `accounting-js`, we also got
+    the `is-string` and `object-assign` NPM modules. Let''s also inspect the updated
+    `package.json` file in the root of our directory as follows:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这向我们展示了有时其他NPM模块会捆绑实际安装的库。在`accounting-js`的情况下，我们还得到了`is-string`和`object-assign`
+    NPM模块。让我们也检查一下我们目录根目录中更新的`package.json`文件：
+- en: '[PRE6]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: As we can see, the root `package.json` file has been updated with the proper
+    version of `accounting-js`. Let's locate another `package.json` file, this time
+    inside the `node_modules/accounting-js` folder. If you opened that file, it holds
+    a lot more information, in just a bit over 100 lines of code. This information
+    is specific to the actual NPM module, `accounting-js`.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，根`package.json`文件已经更新为正确的`accounting-js`版本。让我们找到另一个`package.json`文件，这次是在`node_modules/accounting-js`文件夹中。如果你打开了那个文件，它包含了更多信息，仅仅超过100行代码。这些信息是特定于实际的NPM模块`accounting-js`。
+- en: OK, so now our project is ready for collaboration. The way to do it? Let's see
+    how a colleague of ours, let's call him `John`, would add the project we just
+    created, and all the project dependencies, on his own computer.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，现在我们的项目已经准备好进行协作了。怎么做呢？让我们看看我们的一个同事，让我们称他为“约翰”，如何在他自己的电脑上添加我们刚刚创建的项目和所有项目依赖项。
+- en: To do this, we'll create a new folder, let's call it `johns-computer`, and let's
+    just copy the root level `package.json` from our `vue-from-npm` folder into our
+    `johns-computer` folder.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，我们将创建一个新文件夹，让我们称之为`johns-computer`，然后我们只需将`vue-from-npm`文件夹中的根级`package.json`复制到我们的`johns-computer`文件夹中。
+- en: 'Next, let''s simply run this command:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们简单地运行这个命令：
+- en: '[PRE7]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Running the preceding command will install all the projects and dependencies
+    that we had in the `vue-from-npm` folder.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行上述命令将安装我们在`vue-from-npm`文件夹中的所有项目和依赖项。
+- en: JavaScript task runners and NPM scripts
+  id: totrans-71
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: JavaScript任务运行器和NPM脚本
+- en: 'Around the same time during which NPM was gaining popularity, another frontend
+    technology was also on the rise: task runners. Task runners are simple tools;
+    they run repetitive tasks. Sometimes, task runners are referred to as build tools
+    because they act as intermediaries between updates that a developer makes to a
+    codebase, and what the production ready code ends up being. This is what''s known
+    as a *build step*, a part of the software development process in which something
+    happens to your code *after* you''ve written it.'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大约在NPM变得流行的同时，另一种前端技术也在崛起：任务运行器。任务运行器是简单的工具；它们运行重复的任务。有时，任务运行器被称为构建工具，因为它们充当开发人员对代码库进行更新和最终生成的生产就绪代码之间的中介。这就是所谓的*构建步骤*，这是软件开发过程中的一部分，在这个过程中，你的代码在你编写完之后会发生一些事情。
+- en: 'For example, new features that get added to CSS3 usually start off as *vendor
+    prefixes* (also known as *browser prefixes*). In other words, before a new CSS
+    functionality is available in all browsers, it gets implemented in an experimental
+    stage in individual browsers, using browser-specific prefixes as follows:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，CSS3中添加的新功能通常以*供应商前缀*（也称为*浏览器前缀*）的形式开始。换句话说，在新的CSS功能在所有浏览器中可用之前，它会在各个浏览器中以实验阶段实现，使用浏览器特定的前缀，如下所示：
+- en: '[PRE8]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: In this alphabetically ordered list of browser prefixes, we can see browser
+    prefixes for Microsoft browsers, Mozilla, old versions of Opera, and finally,
+    all the webkit-based browsers (Chrome, Safari, newer Opera, and so on).
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个按字母顺序排列的浏览器前缀列表中，我们可以看到微软浏览器、Mozilla、旧版本的Opera，最后是所有基于webkit的浏览器（Chrome、Safari、新版Opera等）的浏览器前缀。
+- en: 'Keeping track of updates to browser prefixes is kind of difficult. It is probably
+    not the best use of a developer''s time to monitor for changes to CSS implementations,
+    and then update their code accordingly. For example, at a certain point in the
+    past, it was necessary to use the following browser prefixes on the CSS `transition`
+    property:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 跟踪浏览器前缀的更新是有点困难的。开发人员的时间可能不是最好的用法，去监视CSS实现的变化，然后相应地更新他们的代码。例如，在过去的某个时间点，有必要在CSS的`transition`属性上使用以下浏览器前缀：
+- en: '[PRE9]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Obviously, today we simply use the `transition` property in our CSS declarations,
+    without any browser prefixes, because the `transition` property is widely supported
+    in all modern browsers.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，今天我们在CSS声明中简单地使用`transition`属性，而不需要任何浏览器前缀，因为`transition`属性在所有现代浏览器中得到了广泛支持。
+- en: 'Having to deal with the constantly shifting landscape of changes to the CSS
+    specification and its implementations in various browsers led to a solution in
+    the form of a task runner. Instead of having to manually add vendor prefixes to
+    their CSS code, frontend developers could now simply add a plugin to their task
+    runner and it would do the dirty work for them: add vendor prefixes where needed.'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不得不应对不断变化的CSS规范和各种浏览器中的实现带来的不断变化的情况，导致了任务运行器这种解决方案的出现。前端开发人员现在不再需要手动向他们的CSS代码中添加供应商前缀，而是可以简单地向他们的任务运行器添加一个插件，它会为他们做这些繁重的工作：在需要时添加供应商前缀。
+- en: 'Of course, what we saw previously was just one example of what task runners
+    are used for. Some other examples include: minifying CSS and JS files, transpiling
+    from ES6 to ES5, compiling CSS from SASS, removing unused CSS, reloading the browser
+    whenever a file is saved in your project, and so on.'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们之前看到的只是任务运行器用于的一个例子。其他一些例子包括：压缩CSS和JS文件，从ES6转译为ES5，从SASS编译CSS，删除未使用的CSS，在项目中保存文件时重新加载浏览器，等等。
+- en: 'Today, there are a number of different tools that help us to effectively automate
+    some tasks in our development process. Three tools stand out: Grunt, Gulp, and
+    NPM scripts.'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 今天，有许多不同的工具帮助我们有效地自动化开发过程中的一些任务。三个工具脱颖而出：Grunt、Gulp和NPM脚本。
+- en: 'While Grunt and Gulp are standalone task runners that you can install via NPM,
+    NPM scripts are an interesting alternative for the following few reasons:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然 Grunt 和 Gulp 是独立的任务运行器，可以通过 NPM 安装，但基于 NPM 的脚本是一个有趣的替代方案，原因如下：
+- en: You are using NPM anyway, so why not get more familiar with a tool you are already
+    using?
+  id: totrans-83
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您已经在使用 NPM，为什么不更熟悉一下您已经在使用的工具呢？
+- en: Using NPM scripts instead of the aforementioned task runners will streamline
+    your development further.
+  id: totrans-84
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用 NPM 脚本而不是前面提到的任务运行器将进一步简化您的开发流程。
+- en: By using NPM, you avoid the complexity of having to use a task runner plugin
+    for tasks that can be automated straight in NPM.
+  id: totrans-85
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过使用 NPM，您可以避免使用任务运行器插件来自动化 NPM 中可以自动化的任务的复杂性。
+- en: Up until this point, we've looked back at the history and the evolution of the
+    JS ecosystem. We've seen how IIFEs were used to take care of accidental scope
+    leaks. We've also seen how NPM takes care of code sharing. We've further looked
+    at how some repetitive tasks can be automated with the help of task runners, and
+    how NPM can be used to remove an unnecessary layer of abstraction by keeping our
+    tasks inside NPM scripts.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 直到这一点，我们已经回顾了 JS 生态系统的历史和演变。我们已经看到了 IIFE 如何用来处理意外的作用域泄漏。我们还看到了 NPM 如何处理代码共享。我们进一步看到了如何使用任务运行器自动化一些重复的任务，以及如何使用
+    NPM 来通过将任务保留在 NPM 脚本中来消除不必要的抽象层。
+- en: However, we still haven't looked at ways to solve the problem of code modularization
+    in JS. So, let's look at that next.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，我们还没有看到解决 JS 中代码模块化问题的方法。所以，让我们接着看看。
+- en: Modules in JavaScript
+  id: totrans-88
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: JavaScript 中的模块
+- en: In any programming language, a module is a self-contained piece of functionality. You
+    can think of them as different episodes of a TV show. They can be looked at independently.
+    They can stand on their own, although they are a part of a greater whole.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在任何编程语言中，模块都是一个独立的功能块。您可以将它们视为电视节目的不同集数。它们可以独立查看。它们可以独立存在，尽管它们是整体的一部分。
+- en: And just like an episode in a TV show has a season and a number, so that we
+    know *where it fits* in the bigger plot, a module also holds the information that
+    tells us what other modules it relies on (the *module dependencies*), and what
+    functionality it adds to the entire app; this is what's known as a *module's interface*,
+    the API that's exposed to other modules.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像电视节目中的一集有一个季节和一个编号，这样我们就知道*它在*更大情节中的位置一样，一个模块也包含了告诉我们它依赖的其他模块（*模块依赖*）以及它为整个应用程序添加了什么功能的信息；这就是所谓的*模块接口*，对其他模块公开的
+    API。
+- en: We've seen how in the beginning, JS did not have modules at all. This changed
+    with the introduction of Node.js. Node.js is actually an implementation of CommonJS,
+    a project that was started in 2009 by Mozilla's Kevin Dangoor.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经看到，在开始时，JS 根本没有模块。这在 Node.js 的引入后发生了变化。Node.js 实际上是 CommonJS 的一种实现，这是由 Mozilla
+    的 Kevin Dangoor 在 2009 年发起的一个项目。
+- en: 'CommonJS project''s purpose was to define a standard library that would provide
+    JS APIs to be used outside of the browser. This included a module specification,
+    which resulted in developers being able to use code like this in Node.js:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: CommonJS 项目的目的是定义一个标准库，提供供在浏览器之外使用的 JS API。这包括一个模块规范，这导致开发人员能够在 Node.js 中使用这样的代码：
+- en: '[PRE10]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Working with modules in Node.js
+  id: totrans-94
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在 Node.js 中使用模块
+- en: 'Let''s require and use some modules in Node.js:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在 Node.js 中要求并使用一些模块：
+- en: To begin, we'll create a new directory. Let's call it `module-practice`. Let's
+    point our Git Bash to this folder.
+  id: totrans-96
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们将创建一个新目录。让我们称之为`module-practice`。让我们将 Git Bash 指向这个文件夹。
+- en: 'Once inside it, let''s create two new files. Let''s call these files `main.js`
+    and `whatever.js` as follows:'
+  id: totrans-97
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 一旦进入其中，让我们创建两个新文件。让我们将这些文件命名为`main.js`和`whatever.js`，如下所示：
+- en: '[PRE11]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Next, let''s open this entire folder in VS Code as follows:'
+  id: totrans-99
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，让我们按照以下步骤在 VS Code 中打开整个文件夹：
+- en: '[PRE12]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now, let''s add some code to `whatever.js` as follows:'
+  id: totrans-101
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们向`whatever.js`添加一些代码如下：
+- en: '[PRE13]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: This is as simple as a piece of code in JS can get.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是JS中代码的简单形式。
+- en: 'Let''s now see how can we make it available in our `main.js` file. We''ll just
+    need to require `whatever.js` as follows:'
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在让我们看看如何使它在我们的`main.js`文件中可用。我们只需要像下面这样要求`whatever.js`：
+- en: '[PRE14]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Now that it is required, we can use it, so let''s update `main.js` to this:'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在它被要求了，我们可以使用它，所以让我们将`main.js`更新为这样：
+- en: '[PRE15]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Let''s now run this code with the following:'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在让我们用以下方式运行这段代码：
+- en: '[PRE16]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: What will happen now is, we will see the word `whatever` printed inside Git
+    Bash.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在会发生的是，我们将在Git Bash中看到单词`whatever`被打印出来。
+- en: 'Let''s take our experiment a step further. Here''s our updated `whatever.js`:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们进一步进行我们的实验。这是我们更新后的`whatever.js`：
+- en: '[PRE17]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Consequently, we need to update `main.js` too as follows:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们需要更新`main.js`如下：
+- en: '[PRE18]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: As we have already seen, the `require` keyword imports a module's code and makes
+    it available in another file; in our example, the `main.js` file.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们已经看到的，`require`关键字导入了一个模块的代码，并使其在另一个文件中可用；在我们的例子中，就是`main.js`文件。
+- en: 'The `exports` keyword lets us make the code available to other files, with
+    one caveat. It also allows us to choose what parts of our module we want to make
+    available to other files. As we see, the `module.exports` is an object. The contents
+    of this object is what will be returned when our `whatever` module is required
+    by `main.js`. This allows us to expose only certain sections of our code, and
+    enables the setup of a module''s interface. In other words, `module.exports` is
+    what enables us to keep parts of our code private. Consider this update to `whatever.js`:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`exports`关键字让我们可以将代码提供给其他文件，但有一个注意事项。它还允许我们选择我们想要向其他文件提供的模块的哪些部分。正如我们所看到的，`module.exports`是一个对象。这个对象的内容在我们的`main.js`要求`whatever`模块时将被返回。这使我们能够仅暴露代码的某些部分，并且使模块接口的设置成为可能。换句话说，`module.exports`是使我们能够保持代码的部分私有的东西。考虑对`whatever.js`的这个更新：'
+- en: '[PRE19]'
+  id: totrans-117
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: We don't need to make any changes to `main.js`. If we ran it from Git Bash,
+    we'd still get the word `whatever` output to console. But we have made parts of
+    `whatever.js` not directly accessible.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不需要对`main.js`进行任何更改。如果我们从Git Bash运行它，仍然会在控制台输出单词`whatever`。但是我们已经使`whatever.js`的部分内容不直接可访问。
+- en: As a side note, notice that in the preceding code, the function syntax of ES3
+    and ES5 are used alongside one another. The section of code that defines the `returnSomething`
+    function is using newer syntax, which lets us write function definitions without
+    having to use the `function` keyword.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个旁注，注意在前面的代码中，ES3和ES5的函数语法一起使用。定义`returnSomething`函数的代码部分使用了更新的语法，这使我们能够在不使用`function`关键字的情况下编写函数定义。
+- en: Module bundlers, a way to use modules in the browser
+  id: totrans-120
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 模块捆绑器，一种在浏览器中使用模块的方法
+- en: Unfortunately, you can't just use the `require` keyword, as we just saw, straight
+    in the browser. The `require` keyword is not a part of JS's browser API. It is
+    important to note here that Node.js has the ability to read from and to the filesystem
+    of your computer. Thus, if you installed any NPM package in a project, using Node.js,
+    you would be able to require such a module as explained previously.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，你不能直接在浏览器中使用`require`关键字，正如我们刚才看到的那样。`require`关键字不是JS浏览器API的一部分。这里需要注意的是，Node.js有能力读取和写入计算机文件系统。因此，如果你在项目中使用Node.js安装了任何NPM包，你就可以像之前解释的那样要求这样一个模块。
+- en: 'However, JS in the browser does not have access to the file system of your
+    OS, and thus this leaves us with a conundrum: how do we use the JS module syntax
+    inside the browser?'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，浏览器中的JS无法访问你的操作系统文件系统，因此这给我们留下了一个难题：我们如何在浏览器中使用JS模块语法？
+- en: 'The answer: we have a tool for that, and it''s called a **module bundler**.'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 答案是：我们有一个工具可以做到这一点，它被称为**模块捆绑器**。
+- en: Today, in 2019, there are a number of different module bundlers available, such
+    as webpack ([http://webpack.github.io/](http://webpack.github.io/)), FuseBox ([https://fuse-box.org/](https://fuse-box.org/)),
+    Parcel ([https://parceljs.org/](https://parceljs.org/)), rollup.js ([https://rollupjs.org/guide/en](https://rollupjs.org/guide/en)),
+    or Browserify ([http://browserify.org/](http://browserify.org/)).
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 今天，在2019年，有许多不同的模块打包工具可用，比如webpack（[http://webpack.github.io/](http://webpack.github.io/)）、FuseBox（[https://fuse-box.org/](https://fuse-box.org/)）、Parcel（[https://parceljs.org/](https://parceljs.org/)）、rollup.js（[https://rollupjs.org/guide/en](https://rollupjs.org/guide/en)）或Browserify（[http://browserify.org/](http://browserify.org/)）。
+- en: 'What is a module bundler? Here is a quote from the Browserify home page, which
+    puts it succinctly:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 什么是模块打包工具？以下是Browserify主页上的一句话，简洁地表达了它：
+- en: '"Browserify lets you require (''modules'') in the browser by bundling up all
+    of your dependencies."'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “Browserify让你可以在浏览器中使用require('modules')来捆绑所有你的依赖项。”
+- en: Besides bundling all the dependencies that get required through modules in your
+    project, module bundlers also solve issues such as cyclical dependencies; that
+    is, they use algorithms that resolve the order in which all the project's dependencies
+    should be bundled in your project.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了打包项目中通过模块所需的所有依赖项，模块打包工具还解决了循环依赖等问题；也就是说，它们使用算法来解析项目中所有依赖项应该在项目中捆绑的顺序。
+- en: We have almost finished our overview of the JS ecosystem. Next, we'll look at
+    one particular flavor of a module bundler, and that is webpack.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们几乎完成了对JS生态系统的概述。接下来，我们将看一种特定的模块打包工具，那就是webpack。
+- en: Once we know just what exactly webpack is and how it works under the hood, we'll
+    be able to fully comprehend where it fits within Vue CLI.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们知道webpack究竟是什么，以及它在幕后是如何工作的，我们就能完全理解它在Vue CLI中的位置。
+- en: What is webpack?
+  id: totrans-130
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 什么是webpack？
+- en: Webpack is a module bundler for the web. Some people also refer to it as an
+    asset compiler for web applications.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack是Web的模块打包工具。有些人也把它称为Web应用程序的资产编译器。
+- en: 'According to webpack''s GitHub page:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据webpack的GitHub页面：
+- en: '"It packs many modules into a few bundled assets and so on. Modules can be
+    CommonJs, AMD, ES6 modules, CSS, images, JSON, CoffeeScript, LESS, and so on,
+    and your custom stuff."'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “它将许多模块打包成少量的捆绑资产等等。模块可以是CommonJs、AMD、ES6模块、CSS、图片、JSON、CoffeeScript、LESS等等，还有你自定义的东西。”
+- en: Earlier in this chapter, in the section titled *Working with modules in Node.js*,
+    we barely scratched the surface of how modules get exported and required in Node
+    apps. What we did not mention is that there are all kinds of different module
+    syntaxes that we can use. As already mentioned, Node.js works with the CommonJS
+    module syntax. Besides CommonJS, there is also **Asynchronous Module Definition**
+    (**AMD**). Alongside AMD, you can use ESM modules. With ESM modules, the syntax
+    is a bit different from what we saw earlier.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的前面，标题为*在Node.js中使用模块*的部分中，我们只是浅尝辄止地介绍了模块在Node应用程序中的导出和引入。我们没有提到的是，我们可以使用各种不同的模块语法。正如前面提到的，Node.js使用CommonJS模块语法。除了CommonJS，还有**异步模块定义**（**AMD**）。除了AMD，你还可以使用ESM模块。使用ESM模块时，语法与我们之前看到的有些不同。
+- en: 'Let''s rewrite the `whatever` module using ESM syntax by taking the following
+    steps, and use it in `main.js`:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们按照以下步骤使用ESM语法重写`whatever`模块，并在`main.js`中使用它：
+- en: 'To keep things easy, let''s also create a new folder as follows:'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了简化事情，让我们创建一个新的文件夹如下：
+- en: '[PRE20]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Let''s point our Git Bash by using the `cd` command (the *change directory*
+    command) as follows:'
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们使用`cd`命令（*更改目录*命令）指向我们的Git Bash如下：
+- en: '[PRE21]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Let''s add our two files as follows:'
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们按照以下方式添加我们的两个文件：
+- en: '[PRE22]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Now, let''s open our folder with VS Code as follows:'
+  id: totrans-142
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们按照以下方式打开我们的文件夹与VS Code：
+- en: '[PRE23]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Next, let''s add the code for `main2.mjs` as follows:'
+  id: totrans-144
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，让我们添加`main2.mjs`的代码如下：
+- en: '[PRE24]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Finally, let''s follow it up with code for `whatever2.mjs` as follows:'
+  id: totrans-146
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，让我们按照以下方式编写`whatever2.mjs`的代码：
+- en: '[PRE25]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'As we can see, we needed to save the files as ESM modules, using the `mjs`
+    file extension. Node.js supports ESM modules experimentally, so you need to run
+    the following command in Git Bash:'
+  id: totrans-148
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，我们需要将文件保存为ESM模块，使用`mjs`文件扩展名。Node.js实验性地支持ESM模块，因此您需要在Git Bash中运行以下命令：
+- en: '[PRE26]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Upon running the preceding command, this is the output you''ll see in the console:'
+  id: totrans-150
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行上述命令后，您将在控制台中看到以下输出：
+- en: '[PRE27]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: As we can see, besides receiving the expected output in the console, we also
+    got the `ExperimentalWarning` message. Hopefully, this demonstration of two different
+    kinds of module syntaxes helps us understand what webpack will do for us. Among
+    other things, it will *level the playing field*, so that we can use various standard
+    and non-standard ways to work with modules in our projects.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，除了在控制台中收到预期的输出之外，我们还收到了`ExperimentalWarning`消息。希望这个演示两种不同模块语法的示例能帮助我们理解webpack将为我们做什么。除其他事项外，它将*平衡竞争环境*，这样我们就可以在项目中使用各种标准和非标准的模块工作方式。
+- en: Basically, what webpack does is, it takes our modules with dependencies (including
+    our project's assets such as `.png`, `.jpeg`, and `.scss` files), and it outputs
+    static assets (`.js`, `.css`, and `.image` files).
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基本上，webpack所做的是，它接受具有依赖项的模块（包括我们项目的资产，如`.png`、`.jpeg`和`.scss`文件），并输出静态资产（`.js`、`.css`和`.image`文件）。
+- en: How webpack works
+  id: totrans-154
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: webpack的工作原理
+- en: We've seen how to use the CommonJS and ESM module syntax. Again, CommonJS is
+    the syntax used for Node.js modules. This means that all the dependencies in a
+    Node.js module are described using the `require` command. Contrary to this, a
+    webpack module's dependency can be described in a wide variety of syntaxes. For
+    example, if your module's dependency was an SCSS partial, you'd use an `@import`
+    statement. If you were importing an AMD module's dependency, you'd be using it's
+    own `require` and `define` syntax.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经看到了如何使用CommonJS和ESM模块语法。再次强调，CommonJS是Node.js模块使用的语法。这意味着Node.js模块中的所有依赖项都是使用`require`命令描述的。与此相反，webpack模块的依赖项可以用各种语法描述。例如，如果您的模块依赖于一个SCSS部分，您将使用`@import`语句。如果您正在导入AMD模块的依赖项，您将使用其自己的`require`和`define`语法。
+- en: What this means is, that basically, *webpack modules accept all the different
+    syntaxes for importing various dependencies* of a module. Even the `src` attribute
+    (for the `img` HTML element) is considered a webpack module's dependency.
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着，基本上*webpack模块接受导入各种依赖项的不同语法*。甚至`src`属性（用于`img` HTML元素）也被视为webpack模块的依赖项。
+- en: Building a new project and running webpack on it
+  id: totrans-157
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建一个新项目并在其上运行webpack
+- en: 'Let''s now build a project and integrate webpack bundling into our workflow
+    by taking the following steps:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们通过以下步骤构建一个项目并将webpack捆绑到我们的工作流程中：
+- en: 'Let''s add a new directory. Let''s run a command that doesn''t exist as follows:'
+  id: totrans-159
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们添加一个新目录。让我们运行一个不存在的命令，如下所示：
+- en: '[PRE28]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'The console will return the following:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 控制台将返回以下内容：
+- en: '[PRE29]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Great! Now, let''s use the *repeat last command* shortcut, the double exclamation
+    mark, as follows:'
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 太棒了！现在，让我们使用*重复上一条命令*的快捷方式，双感叹号，如下所示：
+- en: '[PRE30]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Running the preceding command will create our `new-project-with-webpack` folder,
+    and will `cd` into this new directory. The double ampersand command (`&&`) is
+    just a way to run multiple commands one after another, rather than having to type
+    them out one by one. The double exclamation mark command (`!!`) means *repeat
+    the previous line*, so the preceding command actually means the following:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行上述命令将创建我们的`new-project-with-webpack`文件夹，并将`cd`进入这个新目录。双和符号命令(`&&`)只是一种运行多个命令的方式，而不是一个接一个地输入它们。双感叹号命令(`!!`)表示*重复上一行*，所以上述命令实际上意味着以下内容：
+- en: '[PRE31]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Next, let''s add our `package.json`, and accept all the defaults (using the
+    `-y` flag) as follows:'
+  id: totrans-167
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，让我们添加我们的`package.json`，并接受所有默认值（使用`-y`标志）如下：
+- en: '[PRE32]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Let''s inspect the contents of our folder in VS Code as follows:'
+  id: totrans-169
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们按以下步骤检查我们在VS Code中的文件夹内容：
+- en: '[PRE33]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'Once VS Code is running on our screen, we can double-click the `package.json`
+    file and verify it''s contents as follows:'
+  id: totrans-171
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 一旦VS Code在我们的屏幕上运行，我们可以双击`package.json`文件并验证其内容如下：
+- en: '[PRE34]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Now, let''s add webpack to our project as follows:'
+  id: totrans-173
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们按照以下步骤将webpack添加到我们的项目中：
+- en: '[PRE35]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Once done, let''s go back to VS Code and review our `package.json` again as
+    follows:'
+  id: totrans-175
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，让我们回到VS Code并再次审查我们的`package.json`如下：
+- en: '[PRE36]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'As we can see, a new key has been added: `devDependencies`. Inside it, we have
+    the `webpack` and the `webpack-cli` development dependencies. These `devDependencies`
+    are the dependencies that you will be using only while building your project,
+    and webpack is a perfect example of such a dependency: you will not need webpack
+    in production. That''s why we''ve used the `--save-dev` flag when we installed
+    webpack via NPM.'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，一个新的键已经被添加：`devDependencies`。在其中，我们有`webpack`和`webpack-cli`开发依赖。这些`devDependencies`是你在构建项目时才会使用的依赖项，而webpack就是这样一个依赖的完美例子：你在生产环境中不需要webpack。这就是为什么我们在通过NPM安装webpack时使用了`--save-dev`标志。
+- en: 'Looking at the file structure of our project, we can now see the following:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看我们项目的文件结构，我们现在可以看到以下内容：
+- en: '[PRE37]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: If you open the `node_modules` folder, you see over 300 folders inside. This
+    huge list of dependencies begins with a `.bin` folder. Contrast this with one
+    of our previous examples, `vue-from-npm`, where we had only four subfolders inside
+    the `node_modules` folder, even though we installed both the `vue` and `accounting-js` NPM
+    packages. Note also that inside the `vue-from-npm` folder, there is no `.bin`
+    folder. This is the case regardless of whether you install it with the `--save`
+    or the `--save-dev` flag when running `npm install`. While this might be obvious
+    to more experienced developers, it might be important for better understanding
+    to those developers who do not have enough experience with Node.js and NPM ecosystem.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你打开`node_modules`文件夹，你会看到里面有300多个文件夹。这个庞大的依赖列表以一个`.bin`文件夹开始。与我们之前的一个例子`vue-from-npm`相比，其中`node_modules`文件夹内只有四个子文件夹，尽管我们安装了`vue`和`accounting-js`两个NPM包。还要注意的是，在`vue-from-npm`文件夹内，没有`.bin`文件夹。无论你在运行`npm
+    install`时使用`--save`还是`--save-dev`标志，情况都是如此。虽然这对于更有经验的开发人员可能是显而易见的，但对于那些在Node.js和NPM生态系统方面经验不足的开发人员来说，更好地理解这一点可能是很重要的。
+- en: So, what is this `.bin` folder? It just stores the compiled native binaries
+    (that is, executable files) of a Node module that you installed using `npm install`.
+    Not all NPM modules have these compiled native binaries and this is why you won't
+    always see the `.bin` folder inside the `node_modules` folder. Inside this `.bin`
+    folder, there are many different Node modules. These are all necessary for webpack
+    to work properly.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，这个`.bin`文件夹是什么？它只是存储了你使用`npm install`安装的Node模块的编译后的本地二进制文件（即可执行文件）。并非所有的NPM模块都有这些编译后的本地二进制文件，这就是为什么你不会总是在`node_modules`文件夹内看到`.bin`文件夹的原因。在这个`.bin`文件夹内，有许多不同的Node模块。这些对于webpack正常工作都是必要的。
+- en: 'Back to our project, let''s now add two files to it: `index.js`, and `whatever.js` as
+    follows:'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到我们的项目，现在让我们向其中添加两个文件：`index.js`和`whatever.js`，如下所示：
+- en: '[PRE38]'
+  id: totrans-183
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Currently, we won't be adding any code to either of those files. Right now,
+    we'll focus on running webpack in our project.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，我们不会向这些文件中添加任何代码。现在，我们将专注于在我们的项目中运行webpack。
+- en: Running webpack on a project
+  id: totrans-185
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在一个项目上运行webpack
+- en: 'Go back to our `new-project-with-webpack` folder, and examine the contents
+    of `package.json` again, with the focus on the `scripts` key as follows:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到我们的`new-project-with-webpack`文件夹，再次检查`package.json`的内容，重点关注`scripts`键如下：
+- en: '[PRE39]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Use the following command in Git Bash to run `test` script:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Git Bash中使用以下命令运行`test`脚本：
+- en: '[PRE40]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: This will throw an error, with `exit code 1`.
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将抛出一个带有`exit code 1`的错误。
+- en: 'Let''s make some changes to it as follows:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们对它做一些更改，如下所示：
+- en: '[PRE41]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: Let's run the test again with `npm run test`. This time the output in the console
+    will not be as ghastly, because we removed the `exit 1` command, and we altered
+    the wording of what will be echoed when running the `test` command.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们再次用`npm run test`来运行测试。这次控制台的输出不会那么可怕，因为我们删除了`exit 1`命令，并且改变了运行`test`命令时会被回显的内容。
+- en: 'Let''s try something else entirely as follows:'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们尝试完全不同的东西，如下所示：
+- en: '[PRE42]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'Now, we get no errors, because our `index.js` is empty. Let''s add something
+    to it as follows:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们不会得到错误，因为我们的`index.js`是空的。让我们添加一些内容，如下所示：
+- en: '[PRE43]'
+  id: totrans-197
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Save changes to `index.js`, run `npm run test` again, and this time the output
+    in Git Bash will be number `4` printed to the screen.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 保存对`index.js`的更改，再次运行`npm run test`，这次在Git Bash中的输出将会打印出数字`4`。
+- en: What does this tell us? It tells us that we are in complete control of what
+    our scripts are going to do! So, initially we had a script that was named test.
+    This script would echo out a message and throw an error with `exit code 1`.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这告诉我们什么？它告诉我们我们完全控制我们的脚本将要做什么！所以，最初我们有一个名为test的脚本。这个脚本会回显一条消息，并抛出一个带有`exit code
+    1`的错误。
+- en: 'And just as we can give our scripts any arbitrary key name, such as `test`,
+    we can also give them any arbitrary value. Of course, `console.log(2+2)` is a
+    silly value to give to a script key. We can give our scripts keys much better
+    values, for example:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像我们可以给我们的脚本任意的键名，比如`test`，我们也可以给它们任意的值。当然，`console.log(2+2)`是一个愚蠢的值给一个脚本键。我们可以给我们的脚本键更好的值，例如：
+- en: '[PRE44]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'Now, when we run an NPM script with the value of webpack, this script will
+    then run the webpack executable. Let''s try it out as follows:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当我们用webpack的值运行一个NPM脚本时，这个脚本将运行webpack可执行文件。让我们试一下，如下所示：
+- en: '[PRE45]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'This returns an error, but out of all the information that gets logged out,
+    the following two lines are the most important:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这会返回一个错误，但在所有被记录下来的信息中，以下两行是最重要的：
+- en: '[PRE46]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'The reason we got this error is because webpack looks for an entry point to
+    get started on. By default, this entry point is set to `./src/index.js`. So, let''s
+    add this `src` folder, and move our `index.js` into it as follows:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们得到这个错误的原因是因为webpack在寻找入口点来启动。默认情况下，这个入口点被设置为`./src/index.js`。所以，让我们添加这个`src`文件夹，并将我们的`index.js`移动到其中，如下所示：
+- en: '[PRE47]'
+  id: totrans-207
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Now, let''s run webpack from the command line again as follows:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们再次从命令行运行webpack，如下所示：
+- en: '[PRE48]'
+  id: totrans-209
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'This time we''ll get a much better output. However, there is no syntax highlighting
+    in Git Bash by default. This can be fixed really fast. Since we are already using
+    VS Code, simply type the keyboard shortcut of *Ctrl* + *~*. If you''re not familiar
+    with this symbol, it''s called a *tilde*, and it''s located right under the *Esc*
+    key, and above the *Tab* key. Pressing this keyboard shortcut will open up a terminal
+    window inside VS Code, and if you execute the `npm run webpack` command again,
+    you''d get nicely formatted and color highlighted output, like this:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这次我们会得到一个更好的输出。然而，默认情况下Git Bash没有语法高亮。这可以很快解决。因为我们已经在使用VS Code，只需键入*Ctrl* +
+    *~*的快捷键。如果你对这个符号不熟悉，它叫做*tilde*，位于*Esc*键下方，*Tab*键上方。按下这个快捷键将在VS Code中打开一个终端窗口，如果你再次执行`npm
+    run webpack`命令，你会得到格式良好且带有颜色高亮的输出，就像这样：
+- en: '![](assets/3d6cb640-cf6b-4d45-8781-a79d20bdb165.png)'
+  id: totrans-211
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/3d6cb640-cf6b-4d45-8781-a79d20bdb165.png)'
+- en: 'Figure 2.1: Webpack logging out information to console in VS CodeAs a side
+    note, your screen''s colors might look different, depending on the color scheme
+    you are using in your VS Code. To access the color themes, use the following keyboard
+    shortcut: *Ctrl + K* *Ctrl + T*.'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图2.1：在VS Code中将信息记录到控制台的webpack作为一个侧面说明，你的屏幕颜色可能会有所不同，这取决于你在VS Code中使用的颜色方案。要访问颜色主题，请使用以下键盘快捷键：*Ctrl
+    + K* *Ctrl + T*。
+- en: 'Looking at the message that was output to the console, we can see that it can
+    be grouped in two sections: the one with the actual information (hash, version,
+    time, built at, entrypoint, and so on) and the warning. The warning reads that
+    we haven''t set the `mode` option.'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看控制台输出的消息，我们可以看到它可以分为两部分：实际信息（哈希、版本、时间、构建时间、入口点等）和警告。警告显示我们没有设置`mode`选项。
+- en: 'If unset, the `mode` option defaults to production. However, we can also set
+    it to `development`, which is optimized for faster builds. This means that we
+    can add another script in our `scripts` section of `package.json`, and this script
+    can then be used for the development build of our project. This is the updated
+    `scripts` section:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果未设置，`mode`选项默认为生产模式。但是，我们也可以将其设置为`development`，这对于更快的构建进行了优化。这意味着我们可以在`package.json`的`scripts`部分中添加另一个脚本，然后可以用于项目的开发构建。这是更新后的`scripts`部分：
+- en: '[PRE49]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'Now, we can run the development mode in webpack, with the following command:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以使用以下命令在webpack中运行开发模式：
+- en: '[PRE50]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Here is the complete output in the console:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是控制台中的完整输出：
+- en: '[PRE51]'
+  id: totrans-219
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: As we can see, it took webpack `108ms` to bundle my project in the development
+    mode. When I ran it in production mode (the default `npm run webpack` command
+    in my setup), it took `447ms`.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以看到，webpack在开发模式下花了`108ms`来打包我的项目。当我在生产模式下运行它（在我的设置中默认的`npm run webpack`命令），它花了`447ms`。
+- en: 'What does actually happen when we run this command? What does webpack do in
+    the background? It builds a dependency graph of all the module dependencies. To
+    go back to our analogy from earlier in the chapter, it''s as if we gave it a bunch
+    of episodes of a TV show, recorded on a bunch of Blu-ray discs, and it takes all
+    of them and lines them up properly. Webpack figures out the correct place for
+    each of these modules, and then bundles them up and serves them to the `dist`
+    folder. If you look at your project''s file structure again, you''ll see that
+    now there''s a new addition: the `dist` folder. If we inspect the contents of
+    the `dist` folder, this is what we''ll see:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行这个命令时实际上发生了什么？webpack在后台做了什么？它构建了所有模块依赖的依赖图。回到本章前面的比喻，就好像我们给了它一堆电视剧的剧集，录在一堆蓝光光盘上，它把它们全部拿来并正确地排列起来。Webpack找出了每个模块的正确位置，然后将它们捆绑起来并提供给`dist`文件夹。如果再次查看项目的文件结构，你会发现有一个新的添加：`dist`文件夹。如果我们检查`dist`文件夹的内容，我们会看到：
+- en: '[PRE52]'
+  id: totrans-222
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: If we inspect the `main.js` file, we'll see that there is a lot of stuff that
+    webpack adds. Even on a tiny project like ours, the output gets to be about 100
+    lines long.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们检查`main.js`文件，我们会看到webpack添加了很多东西。即使在像我们这样的小项目上，输出也会有大约100行长。
+- en: 'The first few lines of our `main.js` file look like this:'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的`main.js`文件的前几行如下：
+- en: '[PRE53]'
+  id: totrans-225
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: Let's run our `npm run webpack` command again to see how it will affect the
+    output in `main.js`.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们再次运行`npm run webpack`命令，看看它如何影响`main.js`中的输出。
+- en: 'If we inspect `main.js`, we will see that now we have only a single line of
+    code, beginning with the following:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们检查`main.js`，我们会看到现在只有一行代码，以以下内容开头：
+- en: '[PRE54]'
+  id: totrans-228
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: What this means is that webpack uglifies and minifies our code when run in production
+    mode.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着当以生产模式运行时，webpack会对我们的代码进行混淆和缩小。
+- en: Obviously, this affects the file size too. While the bundled `main.js` file
+    has the file size of 3.81 KB in development mode, when bundled in production mode,
+    it has just 944 bytes.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，这也会影响文件大小。在开发模式下，打包的`main.js`文件大小为3.81 KB，而在生产模式下，它只有944字节。
+- en: 'Finally, to avoid seeing the warning message, we can update our scripts entry
+    in `package.json` to this:'
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，为了避免看到警告消息，我们可以将`package.json`中的脚本条目更新为：
+- en: '[PRE55]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: At this point, we can start using webpack with Vue. However, we won't be using
+    the Vue CLI. Instead, we'll see how to set everything up manually. This is not
+    the best way to do things, but it will help us better understand why things are
+    done the way they are in the Vue ecosystem.
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上，我们可以开始使用webpack与Vue。但是，我们不会使用Vue CLI。相反，我们将看到如何手动设置所有内容。这不是做事情的最佳方式，但它将帮助我们更好地理解为什么在Vue生态系统中会这样做。
+- en: Adding a Vue project via NPM and using webpack with it
+  id: totrans-234
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 通过NPM添加一个Vue项目并使用webpack
+- en: In this section, we'll build a new project with NPM, then add webpack to it,
+    and finally add a Vue single file component to it.
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将使用NPM构建一个新项目，然后将webpack添加到其中，并最终添加一个Vue单文件组件。
+- en: 'First, let''s make a new directory by taking the following steps. We''ll call
+    our project `npm-vue-webpack`:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们按照以下步骤新建一个目录。我们将我们的项目命名为`npm-vue-webpack`：
+- en: 'Open Git Bash and add a new folder as follows:'
+  id: totrans-237
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开Git Bash并按照以下方式添加一个新文件夹：
+- en: '[PRE56]'
+  id: totrans-238
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Initialize `npm` as follows:'
+  id: totrans-239
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 按照以下方式初始化`npm`：
+- en: '[PRE57]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'Next, install Vue and webpack into our new project as follows:'
+  id: totrans-241
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，按照以下步骤将Vue和webpack安装到我们的新项目中：
+- en: '[PRE58]'
+  id: totrans-242
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: Once the NPM installation is complete, we can verify the folders and the contents
+    of `package.json` as we did earlier in the chapter.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦NPM安装完成，我们可以像在本章前面那样验证`package.json`的文件夹和内容。
+- en: 'Next, add the source and output folders our project will use as follows:'
+  id: totrans-244
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，按照以下方式添加我们的项目将使用的源文件夹和输出文件夹：
+- en: '[PRE59]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: 'Open our new project in VS Code as follows:'
+  id: totrans-246
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 按照以下步骤打开我们的新项目在VS Code中：
+- en: '[PRE60]'
+  id: totrans-247
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'Now, we can add two new files right from the VS Code editor. We''ll call the
+    first file `source.js`, and we''ll call the second file `output.js`. Make sure
+    you have added and saved these two empty files in your project at this stage:
+    `source.js` in the `src` folder, and `output.js` in the `dist` folder.'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以直接从VS Code编辑器中添加两个新文件。我们将第一个文件命名为`source.js`，第二个文件命名为`output.js`。确保在此阶段将这两个空文件添加并保存到您的项目中：`source.js`在`src`文件夹中，`output.js`在`dist`文件夹中。
+- en: Adding our Vue component as a JavaScript module
+  id: totrans-249
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将我们的Vue组件添加为JavaScript模块
+- en: 'Now let''s add our Vue component:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们添加我们的Vue组件：
+- en: 'Next, let''s add this code to `source.js` as follows:'
+  id: totrans-251
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，让我们按照以下方式将这段代码添加到`source.js`中：
+- en: '[PRE61]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: On the first line, we're importing a file called `CustomArticle.js`.
+  id: totrans-253
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在第一行，我们正在导入一个名为`CustomArticle.js`的文件。
+- en: Let's make a new file inside the `src` folder. We'll call this file `CustomArticle.js`.
+  id: totrans-254
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`src`文件夹内新建一个文件。我们将这个文件命名为`CustomArticle.js`。
+- en: 'And add the following code to it:'
+  id: totrans-255
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 并将以下代码添加到其中：
+- en: '[PRE62]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: As we can see, we're using the ESM syntax to export and import a JS module.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以看到，我们正在使用ESM语法来导出和导入JS模块。
+- en: Compiling JavaScript modules with webpack
+  id: totrans-258
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用webpack编译JavaScript模块
+- en: 'We are almost ready now to compile our `source.js` to `output.js` with the
+    help of webpack. However, before we do it, we still need to update the `scripts`
+    section of our `package.json` as follows:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们几乎可以准备好使用webpack将我们的`source.js`编译为`output.js`了。但在这之前，我们仍然需要按照以下方式更新我们的`package.json`中的`scripts`部分：
+- en: '[PRE63]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'Now, we can run the following command inside Git Bash:'
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以在Git Bash中运行以下命令：
+- en: '[PRE64]'
+  id: totrans-262
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: As expected, we see the output in the console, together with the warning about
+    setting the mode option. We now know what this means, so it's not important to
+    deal with it at this time.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如预期的那样，我们在控制台中看到了输出，以及关于设置模式选项的警告。我们现在知道这意味着什么，所以在这个时候处理它并不重要。
+- en: 'If we inspect the contents of `output.js`, we''ll see that it''s empty, and
+    that, by default, webpack minified and obfuscated our output code to the default
+    `main.js` file as follows:'
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们检查`output.js`的内容，我们会发现它是空的，并且默认情况下，webpack会将我们的输出代码压缩和混淆到默认的`main.js`文件中，具体如下：
+- en: '[PRE65]'
+  id: totrans-265
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: So, how do we make webpack output to a different file, other than the default
+    `main.js`? We use the webpack configuration file!
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，我们如何让webpack输出到一个不同的文件，而不是默认的`main.js`？我们使用webpack配置文件！
+- en: Adding options with the help of the webpack configuration file
+  id: totrans-267
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 通过webpack配置文件添加选项
+- en: 'Using the webpack configuration file, we can add various options to the way
+    our apps get bundled with webpack. Here is how:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用webpack配置文件，我们可以添加各种选项来打包我们的应用程序。具体如下：
+- en: 'Add a new file to the root of our project. We''ll call this `webpack.config.js`
+    file. Here is the code:'
+  id: totrans-269
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在项目的根目录添加一个新文件。我们将这个文件命名为`webpack.config.js`。代码如下：
+- en: '[PRE66]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'Now, run our command again as follows:'
+  id: totrans-271
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，再次运行我们的命令如下：
+- en: '[PRE67]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: This time it outputs to the correct file.
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这次它输出到了正确的文件。
+- en: 'Just as we can specify the output file, we can also specify the input file as
+    follows:'
+  id: totrans-274
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 就像我们可以指定输出文件一样，我们也可以指定输入文件如下：
+- en: '[PRE68]'
+  id: totrans-275
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: We still need to render our Vue component somewhere on the screen. We need an
+    HTML file for that.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们仍然需要在屏幕上的某个位置渲染我们的Vue组件。我们需要一个HTML文件来实现这一点。
+- en: Adding an HTML file so that we can render our Vue component
+  id: totrans-277
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加一个HTML文件，以便渲染我们的Vue组件
+- en: 'Let''s add a new HTML file, we''ll call it `index.html`, to our `dist` folder as
+    follows:'
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在`dist`文件夹中添加一个新的HTML文件，我们将其命名为`index.html`，具体如下：
+- en: '[PRE69]'
+  id: totrans-279
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: Just as we discussed at the very beginning of this chapter, we are adding scripts
+    directly to our HTML in the *old-school* way, by just stacking `script` tags at
+    the bottom of our HTML file. The first `script` tag we're using is fetching Vue
+    from a CDN, and the second `script` tag fetches our `output.js` file from the
+    `dist` folder.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像我们在本章开头讨论的那样，我们以*老派*的方式直接向HTML中添加脚本，只需在HTML文件底部堆叠`script`标签。我们使用的第一个`script`标签是从CDN获取Vue，第二个`script`标签从`dist`文件夹中获取我们的`output.js`文件。
+- en: If you're using VS Code, you can now right-click on your new `dist/index.html`
+    file, and click the Open in default browser command.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你使用VS Code，现在可以右键单击新的`dist/index.html`文件，然后单击“在默认浏览器中打开”命令。
+- en: 'You will see the following sentence on the web page that opens:'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在打开的网页上会看到以下句子：
+- en: Our own custom article component!
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们自己的自定义文章组件！
+- en: Now, we need to give webpack the ability to output an HTML file. For that, we'll
+    need to use the `html-webpack-plugin`.
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要让webpack能够输出HTML文件。为此，我们需要使用`html-webpack-plugin`。
+- en: Giving webpack the ability to output an HTML file
+  id: totrans-285
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 赋予webpack输出HTML文件的能力
+- en: 'In this section, we''ll see how to output an HTML file using a webpack plugin
+    by taking the following steps:'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将看到如何使用webpack插件输出HTML文件，具体步骤如下：
+- en: 'Install `html-webpack-plugin` via NPM as follows:'
+  id: totrans-287
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过NPM安装`html-webpack-plugin`如下：
+- en: '[PRE70]'
+  id: totrans-288
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'Our `devDependencies` of `package.json` have updated accordingly as follows:'
+  id: totrans-289
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们的`package.json`的`devDependencies`已相应更新如下：
+- en: '[PRE71]'
+  id: totrans-290
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: 'Now, update our `webpack.config.js`, as follows:'
+  id: totrans-291
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，按照以下步骤更新我们的`webpack.config.js`：
+- en: '[PRE72]'
+  id: totrans-292
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: Before we continue, delete the `index.html` file that we had in our `dist` folder.
+    Don't worry about deleting it, though, since webpack will soon recreate it.
+  id: totrans-293
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在继续之前，删除`dist`文件夹中的`index.html`文件。不过不用担心删除它，因为webpack很快就会重新创建它。
+- en: 'Next, let''s run the webpack script again as follows:'
+  id: totrans-294
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，再次运行webpack脚本如下：
+- en: '[PRE73]'
+  id: totrans-295
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'Webpack just created a new `index.html` file for us! Here''s the contents of
+    the file:'
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack刚刚为我们创建了一个新的`index.html`文件！文件内容如下：
+- en: '[PRE74]'
+  id: totrans-297
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: This is all great, but obviously, our file is not the same. We have lost our
+    entry point for the Vue component we had. Also, we need to update our Vue code
+    so that it works as a single file component.
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这都很好，但显然，我们的文件不一样了。我们丢失了Vue组件的入口点。此外，我们需要更新我们的Vue代码，使其作为单文件组件工作。
+- en: Adding a .vue file as a JavaScript module
+  id: totrans-299
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将.vue文件作为JavaScript模块添加
+- en: 'First, let''s update the `source.js` file, to the following:'
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们更新`source.js`文件，如下所示：
+- en: '[PRE75]'
+  id: totrans-301
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'We can now also rename our `CustomArticle.js` to `CustomArticle.vue`, and add
+    the following code to it:'
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们还可以将`CustomArticle.js`重命名为`CustomArticle.vue`，并向其中添加以下代码：
+- en: '[PRE76]'
+  id: totrans-303
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: Unfortunately, webpack doesn't work with `.vue` files out of the box. To fix
+    the issue at hand, we need to use a **webpack loader**. A webpack loader helps
+    webpack understand the files it's working with. There are many loaders out there,
+    but for now, we need to work with Vue.
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，webpack不能直接处理`.vue`文件。为了解决目前的问题，我们需要使用**webpack加载器**。webpack加载器帮助webpack理解它正在处理的文件。有许多加载器，但现在我们需要使用Vue。
+- en: Adding a webpack loader to work with .vue files
+  id: totrans-305
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加webpack加载器以处理.vue文件
+- en: 'To work with `.vue` files, take the following steps:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要处理`.vue`文件，请按以下步骤进行：
+- en: 'Install a webpack loader called `vue-loader` via NPM as follows:'
+  id: totrans-307
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过NPM安装名为`vue-loader`的webpack加载器，如下所示：
+- en: '[PRE77]'
+  id: totrans-308
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'Now that we''ve saved it, we need to use it, and we''ll do that by updating
+    the webpack configuration as follows:'
+  id: totrans-309
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们已经保存了它，我们需要使用它，我们将通过更新webpack配置来做到这一点：
+- en: '[PRE78]'
+  id: totrans-310
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: 'Try running webpack now as follows. Spoiler alert: it will fail:'
+  id: totrans-311
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在尝试运行webpack，如下所示。剧透警告：它会失败：
+- en: '[PRE79]'
+  id: totrans-312
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: 'The error message we get reads as follows:'
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们得到的错误消息如下：
+- en: '[PRE80]'
+  id: totrans-314
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'To fix this error, we need to add a rule for our Vue loader, by updating our
+    `webpack.config.js` file to the following:'
+  id: totrans-315
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要修复此错误，我们需要为我们的Vue加载器添加一个规则，通过更新我们的`webpack.config.js`文件如下：
+- en: '[PRE81]'
+  id: totrans-316
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: The `test` key inside the array in the `rules` option receives a regex as a
+    value. This regex is checking for the presence of a file with a `vue` file extension.
+    If it matches, that is, if it finds a `vue` file, it will use the `vue-loader`
+    module on it.
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`rules`选项中数组内的`test`键接收一个正则表达式作为值。这个正则表达式检查是否存在一个带有`vue`文件扩展名的文件。如果匹配，也就是说，如果找到了一个`vue`文件，它将在其上使用`vue-loader`模块。'
+- en: 'Let''s run our webpack script again as follows:'
+  id: totrans-318
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们再次运行我们的webpack脚本，如下所示：
+- en: '[PRE82]'
+  id: totrans-319
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: 'This will throw another error as follows:'
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将抛出另一个错误，如下所示：
+- en: '[PRE83]'
+  id: totrans-321
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: 'There are more errors logged out to the console, but this is the one that we
+    need to fix by adding another NPM package, as follows:'
+  id: totrans-322
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 控制台中记录了更多错误，但我们需要通过添加另一个NPM包来解决这个。
+- en: '[PRE84]'
+  id: totrans-323
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: 'The `devDependencies` entry inside `package.json` just received another update, as
+    follows:'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`package.json`中的`devDependencies`条目刚刚又更新了，如下所示：'
+- en: '[PRE85]'
+  id: totrans-325
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: 'So, now we can run webpack again as follows:'
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，现在我们可以再次运行webpack，如下所示：
+- en: '[PRE86]'
+  id: totrans-327
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: After webpack ran, if you opened `output.js` at this time, you'll see that it
+    has the full Vue library inside of it, along with our `CustomArticle` at the very
+    end. This all compiled without any errors.
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在webpack运行后，如果此时打开`output.js`，你会看到它里面有完整的Vue库，以及我们的`CustomArticle`在最后。所有这些都没有任何错误编译。
+- en: Fixing the issue with our index.html file
+  id: totrans-329
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 修复我们的index.html文件的问题
+- en: 'We still have the issue of the `index.html` file in the `dist` folder. It''s
+    an easy fix! We''ll just add our own `index.html` file to the `src` folder, with
+    the following contents:'
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们仍然有`dist`文件夹中的`index.html`文件的问题。这很容易解决！我们只需在`src`文件夹中添加我们自己的`index.html`文件，内容如下：
+- en: '[PRE87]'
+  id: totrans-331
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'Note that we have now removed our own `script` tags, since webpack will be
+    adding them. Also, make sure to delete the `index.html` file inside the `dist`
+    folder. Now, run the `npm run webpack` command again, and you''ll get this output
+    in `dist/index.html` as follows:'
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们现在已经删除了自己的`script`标签，因为webpack将添加它们。另外，请确保删除`dist`文件夹中的`index.html`文件。现在，再次运行`npm
+    run webpack`命令，你将在`dist/index.html`中得到以下输出：
+- en: '[PRE88]'
+  id: totrans-333
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: Why is this not working?
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么这不起作用？
+- en: It is not working because we need to update both the JS files to be output,
+    as well as the HTML files. Currently, we are only updating the JS files, but we
+    still need to do it for our `index.html` file. Luckily, we already have `html-webpack-plugin`
+    to help out.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它不起作用，因为我们需要更新要输出的JS文件以及HTML文件。目前，我们只更新JS文件，但我们仍然需要为我们的`index.html`文件做同样的操作。幸运的是，我们已经有`html-webpack-plugin`来帮忙。
+- en: Delivering HTML files via webpack with the help of html-webpack-plugin
+  id: totrans-336
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 通过html-webpack-plugin使用webpack传递HTML文件
+- en: 'We''ll begin by updating the `html-webpack-plugin` in the `webpack.config.js`
+    file as follows:'
+  id: totrans-337
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将首先更新`webpack.config.js`文件中的`html-webpack-plugin`如下：
+- en: '[PRE89]'
+  id: totrans-338
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: 'What we did in the plugins section was, we passed an `options` object to our
+    `HtmlWebpackPlugin()` call. Inside this `options` object, we specified our template:
+    `./src/index.html`.'
+  id: totrans-339
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在插件部分所做的是，我们向`HtmlWebpackPlugin()`调用传递了一个`options`对象。在这个`options`对象内部，我们指定了我们的模板：`./src/index.html`。
+- en: Before we run the webpack script again, we need to make sure to add the `meta`
+    tag with `charset` set to `utf-8`. Otherwise, we'll get an error in our console
+    when we open `dist/index.html` in the browser.
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们再次运行webpack脚本之前，我们需要确保添加`meta`标签，并将`charset`设置为`utf-8`。否则，当我们在浏览器中打开`dist/index.html`时，我们将在控制台中收到错误。
+- en: 'Let''s now run `npm run webpack` again. This time, everything works! We get
+    our humble looking sentence on the screen:'
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们再次运行`npm run webpack`。这次，一切都正常！我们在屏幕上得到了我们看起来很简单的句子：
+- en: Our own custom article component!
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们自己的自定义文章组件！
+- en: Congratulations! Although it is humble looking, you have successfully added
+    a Vue app to an NPM-powered project, running on webpack.
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜！虽然它看起来很简单，但您已成功将一个Vue应用程序添加到了运行在webpack上的NPM项目中。
+- en: Next, we'll learn about HMR, and how it helps us in our Vue development.
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将学习HMR以及它如何在Vue开发中帮助我们。
+- en: Understanding Hot Module Replacement in Vue
+  id: totrans-345
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 了解Vue中的热模块替换
+- en: HMR has become a sort of a buzzword in the past couple of years. What's the
+    big deal? In this section, we'll discuss how HMR works.
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HMR在过去几年已经成为了一个热门词汇。这有什么了不起的？在本节中，我们将讨论HMR的工作原理。
+- en: 'To do that, we''ll build another default simple app, just like we did in [Chapter
+    1](081bc26f-96a8-4cb0-8e73-d7c6e67f409b.xhtml), *Introducing Vue CLI 3, *as follows:'
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了做到这一点，我们将构建另一个默认的简单应用程序，就像我们在[第1章](081bc26f-96a8-4cb0-8e73-d7c6e67f409b.xhtml)中所做的那样，*介绍Vue
+    CLI 3*：
+- en: '[PRE90]'
+  id: totrans-348
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: 'After a while, once it''s done, we''ll go into our app''s directory as follows:'
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 过一会儿，一旦完成，我们将按以下方式进入我们应用程序的目录：
+- en: '[PRE91]'
+  id: totrans-350
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: 'Let''s open the project''s folder in VS Code as follows:'
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们按以下方式在VS Code中打开项目文件夹：
+- en: '[PRE92]'
+  id: totrans-352
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: Now, we can see the entire contents of our `second-default-project`.
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以看到整个`second-default-project`的内容。
+- en: 'Now, we can serve the app as follows:'
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以按以下方式提供应用程序：
+- en: '[PRE93]'
+  id: totrans-355
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: Of course, our app is now serving in our browser.
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们的应用程序现在正在浏览器中提供。
+- en: To view your app, visit `localhost:8080` in your browser.
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要查看您的应用程序，请在浏览器中访问`localhost:8080`。
+- en: Let's look at HMR updates happening in real time.
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们实时查看HMR更新。
+- en: Observing HMR updates
+  id: totrans-359
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 观察HMR更新
+- en: 'While the browser window is active, let''s press the *F12* key to turn on the
+    developer tools. Let''s also make sure that our the Elements panel is the active
+    tab inside the dev tools, so that we can see the **Document Object Model** (**DOM**)
+    structure, like in the following zoomed-in screenshot from the browser:'
+  id: totrans-360
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在浏览器窗口处于活动状态时，让我们按下*F12*键打开开发者工具。还要确保我们的元素面板是开发工具内的活动选项卡，这样我们就可以看到**文档对象模型**（**DOM**）结构，就像在浏览器中放大的截图中一样：
+- en: '![](assets/555e8cdc-a628-43eb-870d-45c51239a104.png)'
+  id: totrans-361
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/555e8cdc-a628-43eb-870d-45c51239a104.png)'
+- en: 'Figure 2.2: The welcome screen of second-default-app with the Elements panel
+    open in dev tools'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图2.2：打开开发工具中元素面板的second-default-app的欢迎屏幕
+- en: Now, let's see HMR in action. Ideally, to see this in action, you'd need to
+    use two monitors. Thus, you could, for example, move your VS Code window to the
+    left monitor, and your browser with the app served to the right monitor. Alternatively,
+    you can use a single monitor and view both apps side by side (with each one taking
+    up half the screen width). The point of this exercise is to be able to see at
+    the same time your VS Code window, your Vue app browser window, and your Elements
+    panel inside your browser's dev tools.
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们看看HMR的实际效果。理想情况下，要看到这一点，您需要使用两个监视器。因此，您可以将VS Code窗口移动到左侧监视器，将为应用程序提供的浏览器移动到右侧监视器。或者，您可以使用单个监视器并将两个应用程序并排查看（每个应用程序占据屏幕宽度的一半）。这个练习的重点是能够同时看到您的VS
+    Code窗口、Vue应用程序浏览器窗口和浏览器开发工具中的Elements面板。
+- en: 'Next, inside VS Code, open the `App.vue` file (inside the `src` folder of your
+    project). Look at line 4, which currently reads as follows:'
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，在VS Code中打开项目的`src`文件夹中的`App.vue`文件。查看第4行，目前的内容如下：
+- en: '[PRE94]'
+  id: totrans-365
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: We'll soon change that line to something else. Before you change the line, pay
+    attention to how these changes reflect in the browser serving your app. Will the
+    browser refresh?
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们很快就会将该行更改为其他内容。在更改该行之前，请注意这些更改如何在为您提供应用程序的浏览器中反映。浏览器会刷新吗？
+- en: 'Now that you''re focused on tracking changes in browser, let''s update line
+    4 in `App.vue` as follows:'
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您专注于跟踪浏览器中的更改，让我们按照以下方式更新`App.vue`中的第4行：
+- en: '[PRE95]'
+  id: totrans-368
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: Pay attention to the browser while you're saving changes to `App.vue` in VS
+    Code. The best way to do this is to have VS Code in focus, but watch the browser
+    window, specifically the Elements panel. With VS Code in focus, you can save changes
+    with the shortcut key *Ctrl* + *S*.
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在保存`App.vue`中的更改时，请注意浏览器。最好的方法是让VS Code处于焦点状态，但要观察浏览器窗口，特别是Elements面板。将VS Code置于焦点状态，您可以使用快捷键*Ctrl*
+    + *S*保存更改。
+- en: If you pay close attention, and if you're using Chrome, you'll notice a flash
+    of purple color inside the Elements panel. That's the Chrome browser notifying
+    us of the changes that happened to the DOM of our Vue app. If you pay close attention,
+    you'll notice that there is a flash on the `head` element, as well as the `h1`
+    element and it's child text node, `HMR is cool`.
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您仔细观察，并且正在使用Chrome浏览器，您会注意到Elements面板内出现了一道紫色的闪光。这是Chrome浏览器通知我们Vue应用程序的DOM发生了变化。如果您仔细观察，您会注意到`head`元素上有一道闪光，以及`h1`元素和其子文本节点`HMR
+    is cool`上也有一道闪光。
+- en: Also, you might notice that there was no refresh on the browser. Neither webpack,
+    our app's code, or we ourselves forced the browser to refresh. What's the conclusion
+    here? Webpack is actually not forcing a page refresh with HMR! Instead, it just
+    injects an HMR.
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会注意到浏览器没有刷新。无论是webpack、我们的应用代码还是我们自己都没有强制浏览器刷新。这里的结论是什么？Webpack实际上并没有使用HMR强制刷新页面！相反，它只是注入了HMR。
+- en: 'While the change on the `h1` element is obvious (as it is the immediately visible
+    consequence of us changing the text inside the `App.vue` file), the update that
+    happens in the `head` element is both more obscure and more helpful. To see what
+    is happening, let''s twirl open the head tag by clicking on the little black triangle
+    to the left of the `head` tag inside the Elements panel, as shown in the following
+    screenshot:'
+  id: totrans-372
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然`h1`元素的更改是显而易见的（因为它是我们更改`App.vue`文件中文本的直接可见结果），但在`head`元素中发生的更新既更加隐晦又更有帮助。为了看到发生了什么，让我们点击Elements面板中`head`标签左侧的小黑三角形展开head标签，如下面的截图所示：
+- en: '![](assets/495be8e0-9fbb-415a-ac5e-e73a101235f3.png)'
+  id: totrans-373
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/495be8e0-9fbb-415a-ac5e-e73a101235f3.png)'
+- en: 'Figure 2.3: Twirl-open the head tag inside Elements panel in dev tools'
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图2.3：在开发工具中的Elements面板中展开head标签
+- en: 'Next, we''ll need to scroll all the way down to the closing `</head>` tag.
+    Right above it, there will be a `script` tag that reads something similar to this:'
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要滚动到最后的`</head>`标签。在它的上方，会有一个类似于这样的`script`标签：
+- en: '[PRE96]'
+  id: totrans-376
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: 'Let''s keep close attention on this section of the DOM tree in the Elements
+    panel, while we make another change to `App.vue`. Let''s update our `msg` attribute
+    on line 4 to this:'
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们对`App.vue`进行另一个更改时，让我们密切关注元素面板中DOM树的这一部分。让我们将第4行的`msg`属性更新为这样：
+- en: '[PRE97]'
+  id: totrans-378
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: 'If you observed the `script` tag, you''ll notice it change as follows:'
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你观察了`script`标签，你会注意到它的变化如下：
+- en: '[PRE98]'
+  id: totrans-380
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE98]'
+- en: Did you notice that Vue injected another script above the closing `</head>`
+    tag? That injected script is HMR in action, right there.
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你有没有注意到Vue在闭合的`</head>`标签上面注入了另一个脚本？那个注入的脚本就是HMR在那里发挥作用。
+- en: 'Let''s inspect the very first line of the appended script file as follows:'
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们检查附加的脚本文件的第一行，如下所示：
+- en: '[PRE99]'
+  id: totrans-383
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE99]'
+- en: How does this whole process work? Webpack simply runs our changes, bundles an
+    update to our app, and, since it is already running, injects the new code using
+    Vue loader.
+  id: totrans-384
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 整个过程是如何工作的呢？Webpack简单地运行我们的更改，捆绑了我们应用程序的更新，并且，由于它已经在运行，使用Vue加载器注入了新的代码。
+- en: So, as we've just seen, HMR is just a feature of webpack that helps us do things
+    more smoothly, without the need to worry about refreshing our apps.
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，正如我们刚才看到的，HMR只是webpack的一个功能，帮助我们更顺畅地进行操作，而不需要担心刷新我们的应用程序。
+- en: Summary
+  id: totrans-386
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter we discussed the evolution of the JS language and its ecosystem,
+    and how this evolution lead to the appearance of module bundlers. We also looked
+    at webpack, the module bundler of choice of Vue CLI 3.
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们讨论了JS语言及其生态系统的演变，以及这种演变如何导致模块捆绑器的出现。我们还看了webpack，这是Vue CLI 3的首选模块捆绑器。
+- en: We looked at how to plug in a very basic Vue-powered app, running on single
+    file Vue templates. Alongside this mini-project, we also looked at a number of
+    important webpack concepts. We finished the chapter by observing HMR on a Vue
+    project.
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们看了如何插入一个非常基本的Vue应用程序，运行在单文件Vue模板上。除了这个小项目，我们还看了一些重要的webpack概念。我们通过观察Vue项目上的HMR来结束了本章。
+- en: Now that we know the very basics of how webpack works, in the chapters that
+    follow, we'll discuss some other related technologies and we'll build on our knowledge
+    of webpack and Vue CLI 3\. The next topic we'll be closely examining is Babel.
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道了webpack的基本工作原理，在接下来的章节中，我们将讨论一些其他相关技术，并且在webpack和Vue CLI 3的知识基础上进行深入。我们将密切关注的下一个主题是Babel。

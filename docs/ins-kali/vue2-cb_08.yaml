@@ -1,0 +1,2501 @@
+- en: Organize + Automate + Deploy = Webpack
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 组织+自动化+部署=Webpack
+- en: 'In this chapter, we will talk about the following topics:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将讨论以下主题：
+- en: Extracting logic from your components to keep the code tidy
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从组件中提取逻辑以保持代码整洁
+- en: Bundling your component with Webpack[Preview](https://cdp.packtpub.com/vue_js_2_cookbook/wp-admin/post.php?post=70&action=pdfpreview)
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Webpack打包您的组件[预览](https://cdp.packtpub.com/vue_js_2_cookbook/wp-admin/post.php?post=70&action=pdfpreview)
+- en: Organizing your dependencies with Webpack
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Webpack组织您的依赖项
+- en: Using external components in your Webpack project
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Webpack项目中使用外部组件
+- en: Developing with continuous feedback with hot reloading
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用热重载进行连续反馈的开发
+- en: Using Babel to compile from ES6
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Babel编译ES6
+- en: Running a code linter while developing
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在开发过程中运行代码检查器
+- en: Using only one command to build both a minified and a development .js file
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 只使用一个命令构建压缩和开发.js文件
+- en: Releasing your components to the public
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将您的组件发布到公共场所
+- en: Introduction
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 引言
+- en: Webpack coupled with npm is a very powerful tool. In essence, it's just a bundler
+    that takes some files along with their dependencies and bundles everything into
+    one or more consumable files. It's now in its second version and represents much
+    more than before, especially for Vue developers.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack与npm结合是一个非常强大的工具。本质上，它只是一个打包工具，将一些文件及其依赖项打包成一个或多个可消费的文件。它现在已经进入第二个版本，并且对于Vue开发人员来说比以前更重要。
+- en: Webpack will enable you to write components conveniently isolated in single
+    files and shippable on command. It will enable you to use different JavaScript
+    standards, such as ES6, but also other languages altogether, all thanks to **loaders**
+    , a concept that will recur in the following recipes.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack将使您能够方便地在单个文件中编写组件，并可通过命令进行发布。它将使您能够使用不同的JavaScript标准，如ES6，以及其他语言，这都要归功于**加载器**，这个概念将在后续的示例中反复出现。
+- en: Extracting logic from your components to keep the code tidy
+  id: totrans-14
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从组件中提取逻辑以保持代码整洁
+- en: Vue components can become very complex sometimes. In these cases, it's better
+    to split them up and try to hide some complexity with abstraction. The best place
+    to put such complexity is external JavaScript files. This way you have the added
+    benefit that, if necessary, it's easier to share the extracted logic with additional
+    components.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue组件有时可能变得非常复杂。在这些情况下，最好将它们拆分并尝试使用抽象隐藏一些复杂性。放置此类复杂性的最佳位置是外部JavaScript文件。这样做的好处是，如果需要的话，更容易与其他组件共享提取的逻辑。
+- en: Getting ready
+  id: totrans-16
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: This recipe is of intermediate level. Before coming here, you should have completed
+    the  *Choosing a development environment*  recipe in [Chapter 1](text00026.html)
+    , *Getting Started with Vue.js* , and should know how to set up a project with
+    npm.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个示例是中级水平的。在来到这里之前，您应该已经完成了第1章中的“选择开发环境”示例，以及“开始使用Vue.js”，并且应该知道如何使用npm设置项目。
+- en: 'Also, ensure that you have the `vue-cli` package installed globally with the
+    following command:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要确保您已经全局安装了`vue-cli`包，使用以下命令：
+- en: '[PRE0]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: How to do it...
+  id: totrans-20
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: We will build a calculator for compound interest; you will discover how much
+    money you will have after an initial investment.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将构建一个复利计算器；您将发现在初始投资后您将拥有多少钱。
+- en: Creating a clean Webpack project
+  id: totrans-22
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建一个干净的Webpack项目
+- en: 'Create a new directory and a new `Vue` project inside it with the following
+    command:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个新目录，并使用以下命令在其中创建一个新的`Vue`项目：
+- en: '[PRE1]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: You can choose the default values for the questions asked.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以选择问题的默认值。
+- en: Run `npm install` to install all the required dependencies.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行`npm install`来安装所有所需的依赖项。
+- en: Then, navigate to `src/App.vue` in the directory structure and delete pretty
+    much everything inside the file.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，导航到目录结构中的`src/App.vue`，并删除文件中的几乎所有内容。
+- en: 'The final result should be as follows:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终结果应该如下所示：
+- en: '[PRE2]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'I''ve already done this for you, and, you can use another template with the
+    following command instead:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我已经为您完成了这个任务，您可以使用以下命令来使用另一个模板：
+- en: '`vue init gurghet/webpack`'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`vue init gurghet/webpack`'
+- en: Building the compound interest calculator
+  id: totrans-32
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建复利计算器。
+- en: 'To build the compound interest calculator, you need three fields: the initial
+    capital or principal, the yearly interest rate, and the investment length. You
+    will then add an output field to display the final result. Here''s the corresponding
+    HTML code:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要构建复利计算器，您需要三个字段：初始资本或本金、年利率和投资期限。然后，您将添加一个输出字段来显示最终结果。以下是相应的HTML代码：
+- en: '[PRE3]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: We put the `.number` modifier, or otherwise the numbers we put inside will be
+    converted to strings by JavaScript.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`.number`修饰符，否则我们放入的数字将被JavaScript转换为字符串。
+- en: 'In the JavaScript part, declare the three model variables by writing the following
+    code:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在JavaScript部分，通过编写以下代码声明三个模型变量：
+- en: '[PRE4]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'To calculate the compound interest, we take the math formula for it:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了计算复利，我们采用数学公式：
+- en: '![](img/Image00143.gif)'
+  id: totrans-39
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00143.gif)'
+- en: 'In JavaScript, it can be written as follows:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在JavaScript中，可以这样写：
+- en: '[PRE5]'
+  id: totrans-41
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'You have to add this to the `Vue` component as a computed property, as shown:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您需要将此添加到`Vue`组件中作为计算属性，如下所示：
+- en: '[PRE6]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'You can run your application with the following command (launched from your
+    directory):'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下命令运行应用程序（从您的目录启动）：
+- en: '[PRE7]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Now that our application works, you can see how much we will gain by putting
+    0.93 dollars into a bank account with 2.25 percent interest and hibernating for
+    1,000 years (4.3 billion dollars!):'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序可以工作了，您可以看到将0.93美元存入一个年利率为2.25%的银行账户并沉睡1000年后我们将获得多少钱（43亿美元！）：
+- en: '![](img/Image00144.jpg)'
+  id: totrans-47
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00144.jpg)'
+- en: The formula inside the code is not much of a bother right now. Still, what if
+    we had another component that also does the same calculation? We would also like
+    to make it more explicit that we are computing the compound interest and we don't
+    actually care what the formula does in this scope.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，代码中的公式并不重要。但是，如果我们有另一个组件也执行相同的计算，我们也希望更明确地表明我们正在计算复利，而不关心此范围内的公式实际上是什么。
+- en: 'Create a new file, named `compoundInterest.js` , inside the `src` folder; write
+    the following code inside it:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`src`文件夹中创建一个名为`compoundInterest.js`的新文件；在其中编写以下代码：
+- en: '[PRE8]'
+  id: totrans-50
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'We then modify the code in `App.vue` accordingly:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后相应地修改`App.vue`中的代码：
+- en: '[PRE9]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Also, remember to import the file we just created at the top of the JavaScript
+    part:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另外，请记住在JavaScript部分的顶部导入我们刚刚创建的文件：
+- en: '[PRE10]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: How it works...
+  id: totrans-55
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: When working in a component or when programming in general, it's much better
+    to reduce the scope of the code to only one layer of abstraction. When we write
+    a computed function that returns the final capital value, we should only worry
+    about calling the right function--the one that does the right calculation for
+    our purpose. The internals of the formula are on a lower layer of abstraction
+    and we don't want to deal with that.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在组件中工作或者一般编程时，将代码的范围减小到只有一个抽象层级会更好。当我们编写一个计算函数来返回最终的资本值时，我们只需要担心调用正确的函数-适用于我们目的的函数。公式的内部在更低的抽象层级上，我们不想处理它。
+- en: 'What we have done is that we brought all the nitty gritty of the calculations
+    in a separate file. We then exported the function from the file with the following
+    line:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们所做的是将所有繁琐的计算工作放在一个单独的文件中。然后，我们使用以下代码从文件中导出函数：
+- en: '[PRE11]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'This makes the function available by default when we import the file from our
+    `Vue` component:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样，当我们从`Vue`组件导入文件时，默认情况下该函数可用：
+- en: '[PRE12]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: So, now `compoundInterest` is the function we defined in the other file. Furthermore,
+    this separation of concerns allow us to use this function to compute compound
+    interest everywhere in our code, even in other files (potentially other projects
+    too).
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，现在`compoundInterest`是我们在另一个文件中定义的函数。此外，这种关注点的分离使我们能够在代码的任何地方使用此函数来计算复利，甚至在其他文件中（潜在地也可以是其他项目中）。
+- en: Bundling your component with Webpack
+  id: totrans-62
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Webpack打包您的组件
+- en: Webpack lets you package your project in minified JavaScript files. You can
+    then distribute these files or use them yourself. When you use the inbuilt templates
+    that come with `vue-cli` , Webpack is configured to build an entire working application
+    with it. Sometimes we want to build a library to publish or use in another project.
+    In this recipe, you will tweak the default configuration of the Webpack template
+    to release a component instead.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack允许您将项目打包成压缩的JavaScript文件。然后，您可以分发这些文件或自己使用它们。当您使用`vue-cli`附带的内置模板时，Webpack会配置为构建一个完整的工作应用程序。有时我们想要构建一个库以发布或在另一个项目中使用。在这个示例中，您将调整Webpack模板的默认配置以发布一个组件。
+- en: Getting ready
+  id: totrans-64
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: This recipe will make sense to you only after you have installed npm (refer
+    to the  *Choosing a development environment*  recipe in [Chapter 1](text00026.html)
+    , *Getting Started with Vue.js* ) and got familiar with `vue-cli` and the Webpack
+    template.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只有在您安装了npm（参考[第1章](text00026.html)中的*选择开发环境*示例，*开始使用Vue.js*）并熟悉`vue-cli`和Webpack模板后，这个示例才会有意义。
+- en: How to do it...
+  id: totrans-66
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: For this recipe, you will build a reusable component that shakes whatever you
+    put into it; for this, we will use the excellent CSShake library.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个教程，您将构建一个可重用的组件，可以抖动您放入其中的任何内容；为此，我们将使用优秀的CSShake库。
+- en: 'Create a new clean project based on the Webpack template. You can take a look
+    at the previous recipe to see how to do that, or you can use the prebuilt template
+    I made. You can use my template by creating a new directory and running this command:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于Webpack模板创建一个新的干净项目。您可以查看之前的教程来了解如何做到这一点，或者您可以使用我制作的预构建模板。您可以通过创建一个新目录并运行此命令来使用我的模板：
+- en: '[PRE13]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Choose the default answers if you don't know what they mean. Remember to run
+    `npm install` to bring in the dependencies.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您不知道它们的含义，请选择默认答案。记得运行`npm install`来引入依赖项。
+- en: 'Let''s first rename a couple of things: rename the `App.vue` file to `Shaker.vue`
+    .'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们重命名一些东西：将`App.vue`文件重命名为`Shaker.vue`。
+- en: 'Inside it, write the following as the HTML template:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在其中，将以下内容作为HTML模板写入：
+- en: '[PRE14]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: Note how we changed the `<div>` into a `<span>`  with respect to the original
+    template. That's because we want our shaker to be an inline component.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，与原始模板相比，我们将`<div>`更改为`<span>`。这是因为我们希望我们的抖动器成为一个内联组件。
+- en: 'The component is complete as it is; we just need a minor cosmetic edit in the
+    JavaScript part:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 组件本身已经完成了；我们只需要在JavaScript部分进行一些微小的美化编辑：
+- en: '[PRE15]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'To manually test our application, we can modify the `main.js` file in the following
+    way (the highlighted text is the modified code):'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了手动测试我们的应用程序，我们可以按照以下方式修改`main.js`文件（突出显示的文本是修改后的代码）：
+- en: '[PRE16]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'This will create a sample page as shown in the following screenshot, in which
+    we can prototype our component with hot-reloading. Launch it by running the following command:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将创建一个示例页面，如下图所示，在其中我们可以使用热重载来原型化我们的组件。通过运行以下命令来启动它：
+- en: '[PRE17]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: '![](img/Image00145.jpg)'
+  id: totrans-81
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00145.jpg)'
+- en: Placing the cursor over the word `test` should make it shake.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将光标放在单词`test`上应该使其抖动。
+- en: Now, we would like to package this component in a single JavaScript file that
+    can be reused in the future.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们希望将此组件打包到一个单独的JavaScript文件中，以便将来可以重用。
+- en: There is no configuration present for this in the default template, but it's
+    easy enough to add one.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认模板中没有此配置，但很容易添加一个。
+- en: First of all, you have to do some hammering in the `webpack.prod.js` file inside
+    the `build` folder.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在`build`文件夹中的`webpack.prod.js`文件中进行一些修改。
+- en: 'Let''s get rid of some plugins that we don''t need for releasing a library;
+    find the `plugins` array inside the file. It''s an array containing plugins in
+    the form of the following code:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们摆脱一些我们在发布库时不需要的插件；找到文件中的`plugins`数组。它是一个包含以下代码形式的插件数组：
+- en: '[PRE18]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'We only need the following plugins:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们只需要以下插件：
+- en: '`webpack.DefinePlugin`'
+  id: totrans-89
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`webpack.DefinePlugin`'
+- en: '`webpack.optimize.UglifyJsPlugin`'
+  id: totrans-90
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`webpack.optimize.UglifyJsPlugin`'
+- en: '`webpack.optimize.OccurrenceOrderPlugin`'
+  id: totrans-91
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`webpack.optimize.OccurrenceOrderPlugin`'
+- en: 'Get rid of all the other plugins as we don''t need them; the final array should
+    look like this:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 摆脱所有其他插件，因为我们不需要它们；最终的数组应该是这样的：
+- en: '[PRE19]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: The first one allows you to add some more configuration, the second plugin minifies
+    the file, and the third one will optimize the size of the resulting file.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个允许您添加一些其他配置，第二个插件将文件进行了缩小，第三个插件将优化生成文件的大小。
+- en: Another property we need to edit is `output` , as we want to simplify the output
+    path.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还需要编辑的另一个属性是`output`，因为我们希望简化输出路径。
+- en: 'The original property looks like this:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 原始属性如下所示：
+- en: '[PRE20]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'What it does originally is create a series of output files inside a `js` directory.
+    There are variables in square parentheses; we won''t need them because you only
+    have one self-contained module for our application, which we''ll call *shaker*
+    . We need to obtain the following code:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 原始代码会创建一个`js`目录中的一系列输出文件。方括号中有一些变量；因为您只有一个自包含模块用于我们的应用程序，我们将其称为*shaker*。我们需要获得以下代码：
+- en: '[PRE21]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Since, as just said, you want the component to be self-contained, we need some
+    more modifications, which will also depend on your needs.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于，正如刚才所说，您希望组件是自包含的，我们需要进行一些其他的修改，这也取决于您的需求。
+- en: 'If you want the component to have any CSS styling built-in (we have none in
+    our case as we are using an external CSS library), you should disable the `ExtractTextPlugin`
+    ; we already deleted the plugin from the list but some other files are still using
+    it. Find the `extract` option inside the `vue-loader.conf.js`  file (the `vue`
+    section of the same file in some versions) and replace it with the following code:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您希望组件内置任何CSS样式（在我们的情况下，我们使用的是外部CSS库），您应该禁用`ExtractTextPlugin`；我们已经从列表中删除了该插件，但仍有其他文件在使用它。在`vue-loader.conf.js`文件中找到`extract`选项（某些版本中的`vue`部分）并将其替换为以下代码：
+- en: '[PRE22]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Our component will normally contain the Vue library inside; if you want to
+    use the component in a Vue project, you don''t need this, as it would be duplicated
+    code. You can tell Webpack to just search for dependencies externally and not
+    include them. Add the following property in the `webpack.prod.js`  file you just
+    modified before `plugins` :'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的组件通常会包含Vue库；如果您想在Vue项目中使用该组件，您不需要这个库，因为它会造成重复的代码。您可以告诉Webpack只在外部搜索依赖项而不包含它们。在您刚刚修改的`webpack.prod.js`文件中的`plugins`之前添加以下属性：
+- en: '[PRE23]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'This will tell Webpack not to write the Vue library into the bundle but to
+    just take a global, named `Vue` , and use it wherever the `vue` dependency is
+    imported in our code. The Webpack configuration is almost done; we just need to
+    add another property before the `module` property:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将告诉Webpack不将Vue库写入捆绑包中，而是只需使用一个全局的名为`Vue`的变量，在我们的代码中导入`vue`依赖项时使用它。Webpack配置几乎完成了；我们只需要在`module`属性之前添加另一个属性：
+- en: '[PRE24]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'This will start the compilation reading code from the `dist.js` file. Wait
+    a minute, this file doesn''t exist yet. Let''s create it and add the following
+    code inside:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将从`dist.js`文件开始编译代码。等一下，这个文件还不存在。让我们创建它并在内部添加以下代码：
+- en: '[PRE25]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: In the final JavaScript minified file, the Vue dependency will be taken externally,
+    and then we register the component globally.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在最终的JavaScript压缩文件中，Vue依赖将被外部引用，然后我们将组件全局注册。
+- en: 'As the last change, I would suggest modifying the folder in which the minified
+    file gets saved. In the `config/index.js` file, edit the following line:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为最后的更改，我建议修改保存压缩文件的文件夹。在`config/index.js`文件中，编辑以下行：
+- en: '[PRE26]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Swap the preceding line with the following code:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将上述行与以下代码进行交换：
+- en: '[PRE27]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Now run the command to build the minified file with npm:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在使用npm运行命令来构建压缩文件：
+- en: '[PRE28]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'You will see an output that looks like this:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看到一个类似于以下内容的输出：
+- en: '![](img/Image00146.jpg)'
+  id: totrans-117
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00146.jpg)'
+- en: To test our file, we can use JSFiddle
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了测试我们的文件，我们可以使用JSFiddle。
+- en: 'Copy the content of the file you created inside `dist/shaker.js` , then go
+    to [https://gist.github.com/](https://gist.github.com/) (you may need to register)
+    and paste the content of the file inside the text area. Name it `shaker.js` :'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 复制您在`dist/shaker.js`中创建的文件的内容，然后转到[https://gist.github.com/](https://gist.github.com/)（您可能需要注册），将文件的内容粘贴到文本区域内。将其命名为`shaker.js`：
+- en: '![](img/Image00147.jpg)'
+  id: totrans-120
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00147.jpg)'
+- en: 'Since the text is a single line, you will not see much with the No wrap option
+    on. Click on Create public gist and when you are presented with the next page,
+    click on Raw , as shown in the following screenshot:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于文本是单行的，使用“No wrap”选项时您将看不到太多内容。点击“创建公共gist”，当您看到下一页时，点击“Raw”，如下图所示：
+- en: '![](img/Image00148.jpg)'
+  id: totrans-122
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00148.jpg)'
+- en: 'Copy the URL in the address bar and go to [http://rawgit.com/](http://rawgit.com/)
+    , where you can paste the link:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 复制地址栏中的URL，然后转到[http://rawgit.com/](http://rawgit.com/)，在那里您可以粘贴链接：
+- en: '![](img/Image00149.jpg)'
+  id: totrans-124
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00149.jpg)'
+- en: Click and copy the link you get on the right. Congratulations, you just published
+    your component on the Web!
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 点击并复制右侧获得的链接。恭喜，您刚刚将您的组件发布到了Web上！
+- en: 'Now head to JSFiddle and pick Vue as a library. You can now add the link you
+    copied in the left and you have your component available to use:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在转到JSFiddle并选择Vue作为库。您现在可以在左侧添加您复制的链接，您的组件就可以使用了：
+- en: '![](img/Image00150.jpg)'
+  id: totrans-127
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00150.jpg)'
+- en: How it works...
+  id: totrans-128
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: Webpack configuration in the official templates is quite involved. On the other
+    hand, don't try to understand everything straight away, or you will get stuck
+    and not learn much anyway.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 官方模板中的Webpack配置相当复杂。另一方面，不要试图一下子理解所有内容，否则您会陷入困境，也无法学到太多东西。
+- en: We created a **UMD** (**Universal Module Definition** ) module that will try
+    and see whether there is a Vue dependency available and install itself as a component.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建了一个**UMD**（**通用模块定义**）模块，它将尝试查看是否有可用的Vue依赖，并将自身安装为一个组件。
+- en: You can even add CSS and styling to your component and, the way we configured
+    Webpack, the styles will still ship with your component.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您甚至可以为您的组件添加CSS和样式，我们配置的Webpack将会将样式与组件一起发布。
+- en: There's more...
+  id: totrans-132
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: In the *Releasing your components to the public*  recipe in this chapter,  you
+    will learn how to publish your component in the npm publish registry. We'll use
+    a different approach than this, but you'll find there the missing steps to publish
+    it to the registry.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的“将组件发布到公共场所”示例中，您将学习如何将组件发布到npm发布注册表中。我们将使用与此不同的方法，但您可以在那里找到将其发布到注册表的缺失步骤。
+- en: Organizing your dependencies with Webpack
+  id: totrans-134
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Webpack组织您的依赖关系
+- en: Webpack is a tool for organizing your code and dependencies. Furthermore, it
+    gives you a way to develop and build with JavaScript files that embed all the
+    dependencies and modules that we pass to them. We'll use this in this recipe to
+    build a small Vue application and bundle everything in a single file.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack是一个用于组织代码和依赖关系的工具。此外，它还提供了一种开发和构建JavaScript文件的方式，这些文件包含了我们传递给它们的所有依赖和模块。我们将在这个示例中使用它来构建一个小型的Vue应用程序，并将所有内容打包到一个单独的文件中。
+- en: Getting ready
+  id: totrans-136
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: This recipe doesn't require any particular skill except the use of npm and some
+    knowledge of the command line. You can find out more in the  *Organizing your
+    dependencies with Webpack*  recipe in this chapter.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个示例不需要任何特殊的技能，只需要使用npm和一些命令行的知识。您可以在本章的“使用Webpack组织您的依赖关系”示例中了解更多信息。
+- en: How to do it...
+  id: totrans-138
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到...
+- en: 'Create a new folder for your recipe and create a `package.json`  file with
+    the following content inside it:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为您的示例创建一个新的文件夹，并在其中创建一个包含以下内容的`package.json`文件：
+- en: '[PRE29]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: This defines an npm project in our folder. You can, of course, use `npm init`
+    or `yarn init` if you know what you're doing.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这在我们的文件夹中定义了一个npm项目。当然，如果你知道你在做什么，你可以使用`npm init`或`yarn init`。
+- en: 'We will install Webpack 2 for this recipe. To add it to your project dependencies,
+    run the following command:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将为这个示例安装Webpack 2。要将其添加到您的项目依赖项中，请运行以下命令：
+- en: '[PRE30]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: The `--save-dev` option means that we will not ship the code for Webpack in
+    our final product, but we will use it only for development purposes.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`--save-dev`选项意味着我们不会在最终产品中发布Webpack的代码，而只会在开发过程中使用它。'
+- en: Create a new `app` directory and an `App.vue` file inside it.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个新的`app`目录，并在其中创建一个`App.vue`文件。
+- en: 'This file will be a simple `Vue` component; it can be as simple as the following:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个文件将是一个简单的`Vue`组件；它可以像下面这样简单：
+- en: '[PRE31]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'We need to tell Webpack how to turn `.vue` files into `.js` files. To do that,
+    we create a configuration file in the root folder, named `webpack.config.js` ;
+    this file will be automatically picked up by Webpack. Inside this file, write
+    as follows:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要告诉Webpack如何将`.vue`文件转换为`.js`文件。为此，我们在根文件夹中创建一个名为`webpack.config.js`的配置文件；这个文件将被Webpack自动识别。在这个文件中，写入如下内容：
+- en: '[PRE32]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'The line inside rules says the following:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 规则中的行表示以下内容：
+- en: <q>Hey Webpack, when you see a file that ends in `.vue` , use the `vue-loader`
+    to turn it into a JavaScript file.</q>
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: <q>嘿Webpack，当你看到一个以`.vue`结尾的文件时，使用`vue-loader`将其转换为JavaScript文件。</q>
+- en: 'We need to install such a loader with npm using the following command:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要使用以下命令使用npm安装这样的加载器：
+- en: '[PRE33]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'This loader internally uses other dependencies that will not be installed automatically;
+    we need to do it manually by running the following command:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此加载器内部使用其他依赖项，这些依赖项不会自动安装；我们需要通过运行以下命令手动安装它们：
+- en: '[PRE34]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Let''s also take this opportunity to install Vue itself:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以趁此机会安装Vue本身：
+- en: '[PRE35]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Now our `Vue` component is ready. We need to write a page in which to place
+    it and try it. Create a file called `index.js` inside the `app` folder. We will instantiate
+    the component in a Vue instance. Inside `index.js` , write the following:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的`Vue`组件已经准备好了。我们需要编写一个页面来放置它并尝试它。在`app`文件夹中创建一个名为`index.js`的文件。我们将在Vue实例中实例化该组件。在`index.js`中写入以下内容：
+- en: '[PRE36]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: This will mount the Vue instance inside an element with `id="app"` , and it
+    will contain a single component--our `App.vue` .
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在具有`id="app"`的元素内挂载Vue实例，并且它将包含一个单独的组件-我们的`App.vue`。
+- en: 'We need one more file--an HTML file. In the root directory, create `index.html`
+    with this code:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还需要一个HTML文件。在根目录中创建`index.html`，并使用以下代码：
+- en: '[PRE37]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'We don''t want to refer to `app/index.js` directly here; this is because `index.js`
+    itself doesn''t contain much. It has an `import` statement that won''t be recognized
+    by the browser. Webpack can instead easily create `dist/bundle.js` with `index.js`
+    inside, along with all its dependencies. To do it, run this command:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不想直接引用`app/index.js`，这是因为`index.js`本身并不包含太多内容。它有一个浏览器无法识别的`import`语句。Webpack可以轻松地创建包含`index.js`及其所有依赖项的`dist/bundle.js`。要做到这一点，请运行以下命令：
+- en: '[PRE38]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'This should generate an output similar to this:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该生成类似于以下内容的输出：
+- en: '![](img/Image00151.jpg)'
+  id: totrans-166
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00151.jpg)'
+- en: You can now open `index.html`  and you'll see the component working.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以打开`index.html`，您将看到组件正在工作。
+- en: However, it's not so much fun to launch this long command every time. Webpack
+    and npm can do better.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，每次都运行这个长命令并不那么有趣。Webpack和npm可以做得更好。
+- en: 'In `webpack.config.js` , add the following properties:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`webpack.config.js`中添加以下属性：
+- en: '[PRE39]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: This will specify the entry point of Webpack and where the resulting file should
+    be saved.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将指定Webpack的入口点和结果文件的保存位置。
+- en: 'We can also add a script to `package.json` :'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以在`package.json`中添加一个脚本：
+- en: '[PRE40]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: Now, launching `npm run build` will have the same effect as the long command
+    we used.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，运行`npm run build`将产生与我们使用的长命令相同的效果。
+- en: How it works...
+  id: totrans-175
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: In this recipe, we basically created a JavaScript file (`bundle.js` ) that simultaneously
+    contains Vue and the component we wrote. In the `index.html` , there is no trace
+    of Vue because it's embedded in `bundle.js` .
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们基本上创建了一个同时包含Vue和我们编写的组件的JavaScript文件（`bundle.js`）。在`index.html`中，没有Vue的痕迹，因为它被嵌入在`bundle.js`中。
+- en: This way of working is much better when we have a lot of dependencies. We don't
+    need to add a lot of tags in the head or the body of the page anymore. Also, we
+    don't have to be afraid to load a dependency that we don't need.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们有很多依赖关系时，这种工作方式要好得多。我们不再需要在页面的头部或正文中添加很多标签。此外，我们不必担心加载不需要的依赖关系。
+- en: As an added bonus, Webpack has the power and flexibility to minify our final
+    file and other advanced optimizations that are simply not possible by loading
+    the dependencies manually.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为额外的奖励，Webpack具有将我们的最终文件和其他高级优化压缩的能力和灵活性，这是通过手动加载依赖项无法实现的。
+- en: Using external components in your Webpack project
+  id: totrans-179
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在您的Webpack项目中使用外部组件
+- en: Using external Vue components in your own project is usually straightforward.
+    Sometimes though, things aren't so simple. In particular, there are some configurations
+    in the official templates with Webpack that (weirdly) actually prevent you from
+    using some external components. In this recipe, we will install a modal dialog
+    component from the Bulma project.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在自己的项目中使用外部Vue组件通常很简单。然而，有时候事情并不那么简单。特别是，在官方模板中有一些Webpack的配置（奇怪的是）实际上会阻止您使用某些外部组件。在这个示例中，我们将安装Bulma项目中的一个模态对话框组件。
+- en: Getting ready
+  id: totrans-181
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: In this recipe, we will tweak the Webpack configuration. It is suggested to
+    have completed the  *Organizing your dependencies with Webpack*  recipe before
+    taking up this task.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们将调整Webpack配置。建议在开始此任务之前完成“使用Webpack组织依赖项”示例。
+- en: How to do it...
+  id: totrans-183
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何操作...
+- en: 'We will start with a fresh Webpack project. You can create a new one using
+    the `vue-cli` and the official Webpack template. My suggestion, however, is to
+    begin with my Webpack template, which is a clean slate. To do  it, run the following
+    command in a new directory:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从一个全新的Webpack项目开始。您可以使用`vue-cli`和官方Webpack模板创建一个新项目。然而，我建议您使用我的Webpack模板开始，这是一个干净的模板。要这样做，请在一个新的目录中运行以下命令：
+- en: '[PRE41]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'We will install `vue-bulma-modal` , which is a component written in Vue with
+    the Bulma CSS framework:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将安装`vue-bulma-modal`，这是一个使用Bulma CSS框架编写的Vue组件：
+- en: '[PRE42]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: In the preceding command we installed `bulma` too, which contains the actual
+    CSS styles.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述命令中，我们还安装了`bulma`，其中包含实际的CSS样式。
+- en: 'To actually make the styles work, we need to turn them into JavaScript for
+    Webpack; this means we need to install a couple of loaders:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使样式起作用，我们需要将它们转换为Webpack的JavaScript代码；这意味着我们需要安装一些加载器：
+- en: '[PRE43]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: The SASS loader is already configured, so there is no need to touch anything.
+    What we will touch though, is the Webpack configuration related to the Babel loader
+    (learn more about it in the *Developing with continuous feedback with hot reloading*
+     recipe).
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SASS加载器已经配置好了，所以不需要做任何修改。但我们将修改与Babel加载器相关的Webpack配置（在“使用热重载进行连续反馈开发”示例中了解更多信息）。
+- en: 'In the official template (but this may change, watch out), there is a line
+    that prevents Webpack from compiling dependencies. Go to `build/webpack.base.conf.js`
+    and find this block:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在官方模板中（但这可能会改变，请注意），有一行代码阻止Webpack编译依赖项。打开`build/webpack.base.conf.js`文件，找到以下代码块：
+- en: '[PRE44]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: Depending on the version of Webpack you are using, you may need to slightly
+    tweak the loader syntax. In older versions of Webpack, for example, you would
+    write `babel` instead of `babel-loader` .
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据您使用的Webpack版本，您可能需要稍微调整加载器语法。例如，在旧版本的Webpack中，您需要写`babel`而不是`babel-loader`。
+- en: 'You have to remove the highlighted line and, instead, write the following:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您必须删除突出显示的行，并改为编写以下内容：
+- en: '[PRE45]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: This is telling Webpack to compile the component we just installed with `babel-loader`
+    .
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这告诉Webpack使用`babel-loader`编译我们刚刚安装的组件。
+- en: 'Now, write the following HTML layout in `App.vue` :'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在`App.vue`中编写以下HTML布局：
+- en: '[PRE46]'
+  id: totrans-199
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Then, you can write the logic, as shown, in the JavaScript:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您可以按照JavaScript中所示的逻辑编写代码：
+- en: '[PRE47]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'To actually use the Bulma styles, we need to kick in the SASS loader and import
+    the `bulma` file. Add the following lines:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要实际使用Bulma样式，我们需要启用SASS加载器并导入`bulma`文件。添加以下行：
+- en: '[PRE48]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: Note how we are specifying the language of our styles in the first line (we
+    are writing SCSS, but in this case we write it as it is).
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们在第一行中指定了样式的语言（我们编写的是SCSS，但在这种情况下我们按原样编写）。
+- en: 'If you now try to run your app with the `npm run dev` command, you will see
+    the Bulma modal dialog in all its splendor:'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您现在尝试使用`npm run dev`命令运行应用程序，您将看到Bulma模态对话框以其全部辉煌出现：
+- en: '![](img/Image00152.jpg)'
+  id: totrans-206
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00152.jpg)'
+- en: How it works...
+  id: totrans-207
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理如下...
+- en: The official Webpack template contains the configuration rule to never compile
+    files inside the `node_modules` directory. This means that authors of web components
+    are encouraged to distribute an already compiled file because otherwise users
+    will import raw JavaScript files (since Webpack won't compile them) in their projects,
+    causing all sorts of errors in browsers. Personally, I don't think this is good
+    engineering. One problem with this setup is that since the files you are importing
+    in your project are compiled against one version of Vue, the component might not
+    work (this actually happened in the past) if you use a newer version of Vue.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 官方的Webpack模板包含了一个配置规则，不要编译`node_modules`目录中的文件。这意味着Web组件的作者被鼓励分发一个已经编译好的文件，否则用户将在他们的项目中导入原始的JavaScript文件（因为Webpack不会编译它们），从而在浏览器中引发各种错误。就个人而言，我认为这不是一个好的工程实践。这种设置的一个问题是，由于您在项目中导入的文件是针对一个版本的Vue进行编译的，所以如果您使用较新版本的Vue，组件可能无法正常工作（实际上过去确实发生过这种情况）。
+- en: A better approach is to import the raw files and components and let Webpack
+    compile them in a single file. Unfortunately, the majority of components available
+    in the wild are distributed already compiled, so while it's very quick to import
+    them given the official template, you're more likely to encounter compatibility
+    problems.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更好的方法是导入原始文件和组件，让Webpack将它们编译成一个单独的文件。不幸的是，大多数在外部可用的组件都已经编译好了，所以虽然使用官方模板很快就可以导入它们，但更有可能遇到兼容性问题。
+- en: 'When importing external components, the first thing to do is to examine their
+    `package.json` file. Let''s see what the `vue-bulma-modal`  package contains in
+    this file:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在导入外部组件时，首先要做的是检查它们的`package.json`文件。让我们看看`vue-bulma-modal`包在此文件中包含了什么：
+- en: '[PRE49]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'The file referred to by the `main` property is the file we are importing when
+    we write the following line in JavaScript:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们在JavaScript中编写以下行时，`main`属性引用的文件是我们导入的文件：
+- en: '[PRE50]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'The `src/index.js` file, in turn, contains the following code:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`src/index.js`文件中包含以下代码：'
+- en: '[PRE51]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: This is not a compiled file; it's raw ES6 and we know it because `import` is
+    not defined in regular JavaScript. That's why we need Webpack to compile this
+    for us.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不是一个编译文件；它是原始的ES6代码，我们知道这一点是因为在常规的JavaScript中没有定义`import`。这就是为什么我们需要Webpack来为我们编译它。
+- en: 'On the other hand, consider that we write the following:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，考虑到我们编写了以下内容：
+- en: '[PRE52]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'With the tilde sign (`~` ), we tell Webpack to resolve the style like it was
+    a module and so, what we are really importing is the file referred to by the main
+    in the `package.json` of the `bulma` package, which, if we check, looks as follows:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用波浪号（`~`），我们告诉Webpack像处理模块一样解析样式，因此，我们真正导入的是`bulma`包的`package.json`中`main`属性所引用的文件，如果我们检查一下，它看起来如下：
+- en: '[PRE53]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: Since we are importing a SASS with the SASS syntax, we need to specify in the
+    Vue component that we are using `lang="sass"` .
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们使用SASS语法导入了一个SASS文件，所以我们需要在Vue组件中指定`lang="sass"`。
+- en: Developing with continuous feedback with hot reloading
+  id: totrans-222
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用热重载进行连续反馈的开发
+- en: Hot reloading is a really useful technology that lets you develop while looking
+    at the results in the browser, without even refreshing the page. It's a very tight
+    loop and can really speed up your development process. In the official Webpack
+    template, hot reloading is installed by default. In this recipe, you will learn
+    how to install it yourself.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 热重载是一项非常有用的技术，它允许您在浏览器中查看结果而无需刷新页面即可进行开发。这是一个非常紧密的循环，可以真正加快开发过程。在官方的Webpack模板中，默认安装了热重载。在本教程中，您将学习如何自己安装它。
+- en: Getting ready
+  id: totrans-224
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: Before attempting this recipe, you should have at least a vague idea of how
+    Webpack works; the  *Organizing your dependencies with Webpack*  recipe in this
+    chapter will have you covered.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在尝试这个教程之前，您应该对Webpack的工作原理有一个大致的了解；本章中的“使用Webpack组织依赖项”教程将为您提供帮助。
+- en: How to do it...
+  id: totrans-226
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到这一点...
+- en: Create a new npm project in a new directory, either with `npm init -y` or `yarn
+    init -y` . I personally prefer the second one because the resulting `package.json`
+    is much more compact.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在一个新的目录中创建一个新的npm项目，可以使用`npm init -y`或`yarn init -y`。我个人更喜欢第二种方法，因为生成的`package.json`更加简洁。
+- en: To install Yarn, you can use the `npm install -g yarn`  command. The main benefit
+    of Yarn is that you will be able to lock your dependencies to a known version.
+    This prevents bugs when working in teams and the application gets cloned from
+    Git with slightly different versions that introduce incompatibilities.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要安装Yarn，你可以使用`npm install -g yarn`命令。Yarn的主要好处是你将能够将你的依赖锁定到已知版本。这可以防止在团队合作中出现错误，当应用程序从Git克隆时，可能会有略微不同的版本引入不兼容性。
+- en: You will create a digital swear jar. For every swear word you pronounce, you
+    donate an amount of money to a swear jar for a long term objective.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你将创建一个数字咒骂罐。每次你说脏话，你就会向一个长期目标的咒骂罐捐赠一定金额的钱。
+- en: 'Create a new file, named `SwearJar.vue` , and add the following code inside
+    it:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个名为`SwearJar.vue`的新文件，并在其中添加以下代码：
+- en: '[PRE54]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: You will insert this component in a web page.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你将把这个组件插入到一个网页中。
+- en: 'Create a file named `index.html`  in the same directory and write the following
+    code:'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在同一个目录下创建一个名为`index.html`的文件，并写入以下代码：
+- en: '[PRE55]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: The `bundle.js`  file will be created (in memory) by Webpack for us.
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`bundle.js`文件将由Webpack（在内存中）为我们创建。'
+- en: 'The last app file you need is a JavaScript file that will contain our Vue root
+    instance. Create it in the same directory and name it `index.js` ; put the following
+    content in it:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你需要的最后一个应用程序文件是一个包含Vue根实例的JavaScript文件。在同一个目录下创建一个名为`index.js`的文件，并将以下内容放入其中：
+- en: '[PRE56]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Now you need to create a file, `webpack.config.js` , to tell Webpack a couple
+    of things. The first thing is the entry point of our application (`index.js` )
+    and where we would like to place the compiled files:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你需要创建一个名为`webpack.config.js`的文件，告诉Webpack一些事情。第一件事是我们应用程序的入口点（`index.js`）以及我们想要放置编译文件的位置：
+- en: '[PRE57]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'Next, we will tell Webpack to turn `.vue` files into JavaScript with `vue-loader`
+    :'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将告诉Webpack将`.vue`文件转换为JavaScript文件，使用`vue-loader`：
+- en: '[PRE58]'
+  id: totrans-241
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'To make everything work, we still need to install the dependencies we implied
+    in our code. We can install them with the following two commands:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使一切正常工作，我们仍然需要安装我们在代码中隐含的依赖项。我们可以使用以下两个命令来安装它们：
+- en: '[PRE59]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: The last one in particular--`webpack-dev-server` --is a development server that
+    will help us develop with hot reloading.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特别是最后一个--`webpack-dev-server`--是一个开发服务器，将帮助我们进行热重载开发。
+- en: 'Run the following command to start the server:'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行以下命令启动服务器：
+- en: '[PRE60]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: Actually, let's put this command in an npm script.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，让我们将这个命令放在一个npm脚本中。
+- en: 'Open `package.json` and add the following lines:'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`package.json`并添加以下行：
+- en: '[PRE61]'
+  id: totrans-249
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'We can now run `npm run dev` and we''ll get the same result--a browser will
+    pop up--as illustrated in the following screenshot:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以运行`npm run dev`，我们将得到与下面的截图中所示相同的结果--一个浏览器将弹出：
+- en: '![](img/Image00153.jpg)'
+  id: totrans-251
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00153.jpg)'
+- en: Clicking on the plus button will make the counter go up, but what about the
+    style of this application? Let's make it more attractive.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 点击加号按钮将使计数器增加，但是这个应用程序的样式呢？让我们让它更有吸引力。
+- en: 'Open your code editor and the window side by side and make the following modifications
+    to `SwearJar.vue` :'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开你的代码编辑器和窗口并排放置，并对`SwearJar.vue`进行以下修改：
+- en: '[PRE62]'
+  id: totrans-254
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: Save the file, and you will see the page updating itself. Even better, the state
+    will be retained if the counter was already set above zero, and this means that
+    if you have a complex component you don't have to bring it manually into the same
+    state again after each modification. Try to set the swear count to some number
+    and edit the template. Most of the time, the counter will not get reset to zero.
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 保存文件，你会看到页面自动更新。更好的是，如果计数器已经设置为大于零的值，状态将会保留，这意味着如果你有一个复杂的组件，在每次修改后你不需要手动将其带回相同的状态。尝试将脏话计数设置为某个数字并编辑模板。大多数情况下，计数器不会被重置为零。
+- en: How it works...
+  id: totrans-256
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'The Webpack dev server is very helpful software that lets you develop with
+    a very tight feedback loop. We used plenty of arguments to make it run:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack开发服务器是非常有帮助的软件，它让你能够以非常紧密的反馈循环进行开发。我们使用了很多参数来使其运行：
+- en: '[PRE63]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: All these parameters are the same inside the `webpack.config.js` . Instead,
+    we are putting these parameters in the command line for convenience. The `--output-path`
+     is where the Webpack server will serve `bundle.js` ; in our case, we said that
+    we want it served at the root path, so it will effectively bind the `/bundle.js`
+    path to the actual `bundle.js`  file.
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些参数在`webpack.config.js`中是相同的。相反，我们将这些参数放在命令行中是为了方便。`--output-path`是Webpack服务器将服务的`bundle.js`的位置；在我们的例子中，我们说我们希望它在根路径下服务，所以它将有效地将`/bundle.js`路径绑定到实际的`bundle.js`文件。
+- en: The second parameter, `--inline` , will inject some JavaScript code in our browser
+    so that our app can communicate with the Webpack dev server.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个参数`--inline`将在我们的浏览器中注入一些JavaScript代码，以便我们的应用程序可以与Webpack开发服务器通信。
+- en: The `--hot` parameter will activate the Hot Module Replacement plugin, which
+    will communicate with the `vue-loader` (actually with the `vue-hot-reload-api`
+    , which is inside it) and will either restart or rerender (preserving the state)
+    each Vue model inside the page.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`--hot`参数将激活热模块替换插件，它将与`vue-loader`（实际上是与其中的`vue-hot-reload-api`）通信，并且将重新启动或重新渲染（保留状态）页面中的每个Vue模型。'
+- en: Finally, `--open` just opens the default browser for us.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，`--open`只是为我们打开默认的浏览器。
+- en: Using Babel to compile from ES6
+  id: totrans-263
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Babel编译ES6
+- en: ES6 has a lot of useful features, and in this recipe you will learn how you
+    can use it in your projects. It's worth noting that ES6 currently has very good
+    browser support. You won't have compatibility issues with 80% of the browsers
+    in the wild, but you may need to even reach people who're still using Internet
+    Explorer 11, depending on your audience, or you may just want to maximize your
+    audience. Moreover, some tools for development and Node.js still don't fully support
+    ES6, deeming Babel necessary even for development.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ES6有很多有用的功能，在这个示例中，你将学习如何在你的项目中使用它。值得注意的是，ES6目前在浏览器上有很好的支持。你不会在80%的浏览器中遇到兼容性问题，但是根据你的受众，你可能需要甚至要接触仍在使用Internet
+    Explorer 11的人，或者你可能只是想最大化你的受众。此外，一些用于开发和Node.js的工具仍然不完全支持ES6，因此即使是开发也需要使用Babel。
+- en: Getting ready
+  id: totrans-265
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: In this recipe, we will use npm and the command line. If you completed the 
+    *Choosing a development environment*  recipe in [Chapter 1](text00026.html) ,
+    *Getting Started with Vue.js* ,  you are probably good to go.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们将使用npm和命令行。如果你在[第1章](text00026.html)的*选择开发环境*示例中完成了*开始使用Vue.js*，那么你可能已经准备好了。
+- en: How to do it...
+  id: totrans-267
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: Create a new directory with an empty npm project. You can use the `npm init
+    -y` command or, if you have Yarn installed, you can use `yarn init -y` inside
+    the directory. This command will create a new `package.json` inside the directory.
+    (Refer to the note in the *Developing with continuous feedback with hot reloading*
+    recipe on Yarn.)
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个带有空的npm项目的新目录。你可以使用`npm init -y`命令，或者如果你已经安装了Yarn，你可以在目录中使用`yarn init -y`。这个命令将在目录中创建一个新的`package.json`文件。（请参考Yarn上的*使用热重载进行连续反馈开发*示例中的注意事项。）
+- en: 'For this npm project, we will need a couple of dependencies other than Vue:
+    Webpack, and Babel in the form of a loader for Webpack. Oh yes, we will need the
+    `vue-loader` as well for Webpack. To install them, launch the following two commands:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个npm项目，除了Vue之外，我们还需要一些其他的依赖项：Webpack和Babel（以Webpack的loader形式）。是的，我们还需要`vue-loader`来使用Webpack。要安装它们，请执行以下两个命令：
+- en: '[PRE64]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: 'In the same directory, let''s write a component that uses ES6 syntax; let''s
+    call it `myComp.vue` :'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在同一个目录下，让我们编写一个使用ES6语法的组件；让我们称之为`myComp.vue`：
+- en: '[PRE65]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'This component doesn''t do much except print the `[2,4,6]` array to the console,
+    but it does it with arrow syntax at the following line:'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个组件除了将`[2,4,6]`数组打印到控制台外，没有做太多事情，但是它在下一行使用了箭头语法：
+- en: '[PRE66]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: This is not understood by some browsers and tools; we need to compile this component
+    with Webpack, but we need to do it with the Babel loader.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这对于一些浏览器和工具来说是无法理解的；我们需要使用Webpack编译这个组件，但是我们需要使用Babel loader来完成。
+- en: 'Create a new `webpack.config.js` file and write the following inside it:'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个新的`webpack.config.js`文件，并在其中写入以下内容：
+- en: '[PRE67]'
+  id: totrans-277
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: This will tell Webpack to start compiling from our `myComp.vue` file, but before
+    that, it will be processed by the `vue-loader` to turn it into a js file and then
+    by the `babel-loader` to turn the arrow function into something simpler and more
+    compatible.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将告诉Webpack从我们的`myComp.vue`文件开始编译，但在此之前，它将通过`vue-loader`处理它，将其转换为js文件，然后通过`babel-loader`将箭头函数转换为更简单和更兼容的形式。
+- en: 'We can achieve the same thing with a different and more standard configuration:'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用不同且更标准的配置来实现相同的效果：
+- en: '[PRE68]'
+  id: totrans-280
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: This is a more general configuration and it says that whenever we encounter
+    a file that ends with `.vue` , it should be parsed and processed with the `vue-loader`
+    and `.js` files with the `babel-loader` .
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个更通用的配置，它表示每当我们遇到以`.vue`结尾的文件时，应该使用`vue-loader`进行解析和处理，以及以`.js`结尾的文件应该使用`babel-loader`进行处理。
+- en: 'To configure the Babel loader, there are a couple of options; we''ll follow
+    the recommended way. Create a file called `.babelrc` inside your project folder
+    (note the initial point) and to specify that we want the `es2015` preset applied,
+    we write the following code:'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要配置Babel加载器，有几个选项；我们将遵循推荐的方式。在项目文件夹中创建一个名为`.babelrc`的文件（注意初始点），并指定我们要应用`es2015`预设，写入以下代码：
+- en: '[PRE69]'
+  id: totrans-283
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'Lastly, I always like to add a new script to the `package.json`  file to make
+    launching commands easier. Add the following line at the end of the file (but
+    before the last curly brace):'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我总是喜欢在`package.json`文件中添加一个新的脚本，以便更容易地启动命令。在文件末尾（但在最后一个大括号之前）添加以下行：
+- en: '[PRE70]'
+  id: totrans-285
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'Then run `npm run build` . This creates a file inside the `dist` directory,
+    named `bundle.js` ; open it and search for a line that contains, for example, `double`
+    . You should find something like this:'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后运行`npm run build`。这将在`dist`目录中创建一个名为`bundle.js`的文件；打开它并搜索包含例如`double`的行。你应该会找到类似于这样的内容：
+- en: '[PRE71]'
+  id: totrans-287
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: This was our `var double = n => n * 2` , transformed from ES6 to *regular*  JavaScript.
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们的`var double = n => n * 2`，从ES6转换为*常规*JavaScript。
+- en: How it works...
+  id: totrans-289
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'The `es2015` Babel preset is a collection of Babel plugins that aims to transform
+    ECMAScript2015 (ES6) syntax into simpler JavaScript. For example, it contains
+    the `babel-plugin-transform-es2015-arrow-functions` plugin, which as you may have
+    guessed, transforms arrow functions:'
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`es2015` Babel预设是一组Babel插件，旨在将ECMAScript2015（ES6）语法转换为更简单的JavaScript。例如，它包含了`babel-plugin-transform-es2015-arrow-functions`插件，它可以将箭头函数转换为：'
+- en: '[PRE72]'
+  id: totrans-291
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'Transform the arrow functions into simpler JavaScript as follows:'
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将箭头函数转换为更简单的JavaScript，如下所示：
+- en: '[PRE73]'
+  id: totrans-293
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'To select the files and their respective loaders, we filled the test field
+    inside `webpack.config.js` and to match the `.vue` files, we wrote the following:'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了选择文件及其相应的加载器，我们在`webpack.config.js`中填写了测试字段，并为匹配的`.vue`文件编写了以下内容：
+- en: '[PRE74]'
+  id: totrans-295
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: This syntax is a regular expression and it always starts with a forward slash
+    and ends with another forward slash. The first character it matches is the point,
+    which is expressed as `\.` because the `.` character is already taken for other
+    purposes. The point has to be followed by the `vue` string and the end of string
+    character is expressed as a dollar sign. If you put them all together, it will
+    match all the strings that end with `.vue` . A similar thing is followed for the
+    `.js` files.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个语法是一个正则表达式，它总是以一个正斜杠开始，以另一个正斜杠结束。它匹配的第一个字符是点，表示为`\.`，因为`.`字符已经被用于其他目的。点后面必须跟着`vue`字符串，字符串的结束字符表示为美元符号。如果把它们都放在一起，它将匹配所有以`.vue`结尾的字符串。对于`.js`文件也是类似的。
+- en: Running a code linter while developing
+  id: totrans-297
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在开发过程中运行代码检查器
+- en: Linting your code drastically reduces small bugs and inefficiencies that accumulate
+    during development, it guarantees that the coding style is consistent across a
+    team or organization, and it makes your code more readable. Instead of running
+    the linter once in a while, it's useful to have it constantly running. This recipe
+    teaches you how to do it with Webpack.
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对代码进行linting可以大大减少在开发过程中累积的小错误和低效，它保证了团队或组织中的编码风格的一致性，并使您的代码更易读。与偶尔运行linter不同，将其始终运行是有用的。本教程将教您如何在Webpack中实现此功能。
+- en: Getting ready
+  id: totrans-299
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: In this recipe, we will play with Webpack once again. You will build a tight
+    loop with `webpack-dev-server` , which is covered in the *Developing with continuous
+    feedback with hot reloading*  recipe.
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本教程中，我们将再次使用Webpack。您将使用`webpack-dev-server`构建一个紧密循环，该循环在*使用热重载进行连续反馈开发*教程中有所涵盖。
+- en: How to do it...
+  id: totrans-301
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何实现...
+- en: In a new folder, create a new npm project (you can use `npm init -y` or `yarn
+    init -y` ).
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在一个新的文件夹中，创建一个新的npm项目（可以使用`npm init -y`或`yarn init -y`）。
+- en: 'Inside the folder, create a new directory named `src` and put a file inside
+    it, called `MyComp.vue` . Let the file contain the following code:'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在文件夹中，创建一个名为`src`的新目录，并在其中放置一个名为`MyComp.vue`的文件。让文件包含以下代码：
+- en: '[PRE75]'
+  id: totrans-304
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'We can already spot a problem--the `John`  name property will be overwritten
+    by the later property, `Jane` , with the same key. Let''s pretend that we didn''t
+    notice this and put the component inside a web page. For this, we need another
+    file, named `index.js` , in the `src` directory. Write the following code inside
+    it:'
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经发现了一个问题-`John`的name属性将被后面的具有相同键的属性`Jane`覆盖。让我们假装没有注意到这一点，并将组件放在一个网页中。为此，我们需要另一个文件，名为`index.js`，在`src`目录中。在其中写入以下代码：
+- en: '[PRE76]'
+  id: totrans-306
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: 'In the root directory, place an `index.html` file with the following code:'
+  id: totrans-307
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在根目录中，放置一个名为`index.html`的文件，其中包含以下代码：
+- en: '[PRE77]'
+  id: totrans-308
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'We now need a `webpack.config.js` file to tell Webpack how to compile our files; write
+    the following inside it:'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要一个`webpack.config.js`文件来告诉Webpack如何编译我们的文件；在其中写入以下内容：
+- en: '[PRE78]'
+  id: totrans-310
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: This just tells Webpack to start compiling from the `index.js` file and, whenever
+    it finds a `.vue` file, to turn it into JavaScript with the `vue-loader` . Beyond
+    this, we want to scan all our files with a linter to ensure that we didn't make silly
+    mistakes in our code.
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这只是告诉Webpack从`index.js`文件开始编译，并且每当它找到一个`.vue`文件时，将其转换为JavaScript与`vue-loader`。除此之外，我们还希望使用一个linter扫描所有的文件，以确保我们的代码中没有愚蠢的错误。
+- en: 'Add the following loader to the `rules` array:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将以下loader添加到`rules`数组中：
+- en: '[PRE79]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: 'The `enforce: ''pre''` property will run this loader before the others, so
+    it will apply to the code you wrote and not a transformation of it.'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`enforce: ''pre''`属性将在其他loader之前运行此loader，因此它将应用于您编写的代码而不是其转换。'
+- en: 'The last thing we need is to configure ESLint. Create a new file in the root
+    directory named `.eslintrc.js` , and add the following inside it:'
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们最后需要做的是配置ESLint。在根目录中创建一个名为`.eslintrc.js`的新文件，并在其中添加以下内容：
+- en: '[PRE80]'
+  id: totrans-316
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: We are saying a couple of things here. First is the set of rules we want to
+    apply to our code; in other words, our set of rules (which is empty now) is extending
+    the recommended set of rules. Second, we are using the `babel-eslint` parser instead
+    of the default one. Finally, we are using the HTML ESLint plugin, which will help
+    us to deal with the `.vue` files and will extract the JavaScript code in them.
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里说了几件事。首先是我们想要应用于我们的代码的一组规则；换句话说，我们的规则集（现在为空）正在扩展推荐的规则集。其次，我们使用`babel-eslint`解析器而不是默认的解析器。最后，我们使用HTML
+    ESLint插件，它将帮助我们处理`.vue`文件并提取其中的JavaScript代码。
+- en: 'We are now ready to launch our development machinery, but first we need to
+    install the dependencies using the following command:'
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经准备好启动我们的开发机器了，但首先我们需要使用以下命令安装依赖项：
+- en: '[PRE81]'
+  id: totrans-319
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: 'We can launch the Webpack dev server directly, but I highly suggest adding
+    the following code to the `package.json`  file:'
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以直接启动Webpack开发服务器，但我强烈建议将以下代码添加到`package.json`文件中：
+- en: '[PRE82]'
+  id: totrans-321
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: 'Now, if we launch `npm run dev` , a browser should open with the component
+    incorrectly displaying the following:'
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果我们启动`npm run dev`，浏览器应该打开并显示以下错误的组件：
+- en: '`<q>Hello Jane!</q>`'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`<q>Hello Jane!</q>`'
+- en: 'You should also be able to see the problem in the console:'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还应该能够在控制台中看到问题：
+- en: '`11:7  error  Duplicate key ''name''  no-dupe-keys`'
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`11:7  error  Duplicate key ''name''  no-dupe-keys`'
+- en: 'This means that we have two keys with the same *name* . Correct the error by
+    removing the property:'
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着我们有两个具有相同“name”的键。通过删除该属性来纠正错误：
+- en: '[PRE83]'
+  id: totrans-327
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: In the console, after you save the Vue component, you should note that Webpack
+    already performed the compilation again, this time with no errors.
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在控制台中，当您保存Vue组件后，您应该注意到Webpack已经再次执行了编译，这次没有错误。
+- en: How it works...
+  id: totrans-329
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理是...
+- en: Basically, what happens here is that the linter loader processes the files before
+    other compilation steps and writes the errors in the console. This way, you will
+    be able to see imperfections in your code while you develop continuously.
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基本上，在此处发生的是，linter加载器在其他编译步骤之前处理文件并将错误写入控制台。这样，您就可以在不断开发的过程中看到代码中的不完美之处。
+- en: ESLint and Webpack are available in the Vue official template. You now know
+    that if, for some reason, you want to modify the ESLint rules, you can do it from
+    the `.eslintrc.js` file and that if you want to use another linter altogether,
+    you can use another loader in the Webpack configuration file.
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ESLint和Webpack在Vue官方模板中可用。现在您知道，如果出于某种原因，您想要修改ESLint规则，可以从`.eslintrc.js`文件中进行修改，并且如果您想要使用其他linter，可以在Webpack配置文件中使用另一个加载器。
+- en: Using only one command to build both a minified and a development .js file
+  id: totrans-332
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 只使用一个命令来构建一个压缩和一个开发的.js文件
+- en: 'While working on the release of your components, you may need a reliable process
+    to issue your built files. A common operation is to release two versions of a
+    library/component: one for development purposes and one to be consumed in production
+    code, usually minified. In this recipe, you will tweak the official template to
+    release both a minified and a development JavaScript file at the same time.'
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开发组件时，您可能需要一个可靠的流程来发布构建的文件。一个常见的操作是发布库/组件的两个版本：一个用于开发目的，一个用于在生产代码中使用，通常是经过压缩的。在这个配方中，您将调整官方模板，同时发布一个经过压缩和一个开发的JavaScript文件。
+- en: Getting ready
+  id: totrans-334
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: This recipe makes sense if you are already building and distributing your own
+    components. If you want to learn more, I suggest you refer to the *Bundling your
+    component with Webpack*  recipe.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您已经在构建和分发自己的组件，那么这个配方就有意义。如果您想了解更多信息，我建议您参考“使用Webpack打包您的组件”配方。
+- en: How to do it…
+  id: totrans-336
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何操作...
+- en: We'll start with a project with the official Webpack template. You can use your
+    own, or you can spin up a new project with `vue init webpack` and install the
+    dependencies with `npm isntall` .
+  id: totrans-337
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从官方的Webpack模板开始一个项目。您可以使用自己的模板，或者使用“vue init webpack”创建一个新项目，并使用“npm install”安装依赖项。
+- en: Go inside the `build` directory. When you launch the `npm run build` command,
+    you are effectively launching the `build.js` file in this directory.
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 进入“build”目录。当您运行“npm run build”命令时，实际上是在该目录中运行“build.js”文件。
+- en: 'If you examine the file, you will find something like this near the end:'
+  id: totrans-339
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您检查文件，您会在末尾找到类似以下内容的内容：
+- en: '[PRE84]'
+  id: totrans-340
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: This is equivalent to launching Webpack from the command line using the same
+    configuration specified in the first argument, `webpackConfig` . To have a minified
+    and non-minified file, we have to bring the `webpackConfig` to a common denominator,
+    then we will specify only the differences between the development and production
+    versions of the files.
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这相当于使用相同配置在命令行中启动Webpack，指定在第一个参数“webpackConfig”中指定的配置。为了获得一个经过压缩和一个非经过压缩的文件，我们必须将“webpackConfig”带到一个公共的基准，然后只指定开发和生产版本之间的差异。
+- en: To do this, go inside `webpack.prod.conf.js` in the same directory. Here, you
+    can see the configuration we are passing; in particular, you will find `UglifyJsPlugin`
+    , which is responsible for minifying the file if you look at the plugin array.
+    Remove the plugin since it represents the main difference between the two distributions.
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，请进入同一目录中的“webpack.prod.conf.js”。在这里，您可以看到我们正在传递的配置；特别是，您会发现“UglifyJsPlugin”，它负责压缩文件（如果您查看插件数组）。删除该插件，因为它代表了两个版本之间的主要区别。
+- en: 'Now, write the following in `build.js` before the Webpack command:'
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在Webpack命令之前，在“build.js”中写入以下内容：
+- en: '[PRE85]'
+  id: totrans-344
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: You now have an array with two different configurations, one with the plugin
+    required to minify the file and one without it. If you merge each of them with
+    the configuration inside the `webpack.prod.conf.js` , you will obtain a different
+    result.
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你有了一个包含两个不同配置的数组，一个带有压缩文件所需的插件，一个没有。如果你将它们与`webpack.prod.conf.js`中的配置合并，你将得到不同的结果。
+- en: 'To merge the two configurations, we will use the `webpack-merge` package. Add
+    the following line to the top of the file:'
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了合并这两个配置，我们将使用`webpack-merge`包。在文件顶部添加以下行：
+- en: '[PRE86]'
+  id: totrans-347
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'Then, modify the first line of the Webpack command to the following:'
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，将Webpack命令的第一行修改为以下内容：
+- en: '[PRE87]'
+  id: totrans-349
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: This will launch as many different merged configurations as we specify in the
+    configs array.
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将启动与我们在配置数组中指定的配置数量一样多的不同合并配置。
+- en: 'You can launch the `npm run build` command now, but the problem is that the
+    files will have the same name. Cut the output property from the `webpack.prod.conf.js`
+    and paste it in the `config` array, which should now look like this:'
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以运行`npm run build`命令了，但问题是文件将具有相同的名称。从`webpack.prod.conf.js`中剪切输出属性，并将其粘贴到`config`数组中，现在它应该是这样的：
+- en: '[PRE88]'
+  id: totrans-352
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: If you build your project now, you will have both a minified and a development
+    file. You can, of course, personalize your configurations to grow very different.
+    For example, you can add source maps in one and leave the other as is.
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你现在构建你的项目，你将得到一个压缩和一个开发文件。当然，你可以根据需要个性化你的配置，使它们变得非常不同。例如，你可以在一个配置中添加源映射，而将另一个配置保持不变。
+- en: How it works...
+  id: totrans-354
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: We first created an array of objects that represent differences in the Webpack
+    configuration. We then mapped each piece of configuration into a larger, common
+    configuration with the help of `webpack-merge` . When we now call the `npm run
+    build` command, both the configurations run one after the other.
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先创建了一个表示Webpack配置差异的对象数组。然后，我们使用`webpack-merge`的帮助将每个配置片段映射到一个更大的公共配置中。当我们现在调用`npm
+    run build`命令时，两个配置将依次运行。
+- en: It's a common convention to postfix the name of the file with `min` to signal
+    that the file is minified and ready to be used in production.
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将文件名的后缀命名为`min`是一种常见的约定，表示该文件已经被压缩并准备好在生产环境中使用。
+- en: Releasing your components to the public
+  id: totrans-357
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 发布你的组件到公共领域
+- en: At a certain point, there comes a moment when you want to give back to the community.
+    Maybe you built a "fart button" or maybe you built an automates stock options
+    trader; whatever it is that you've built, the JavaScript and Vue community will
+    be happy to welcome you. There is a big chunk of things to be done on the side
+    of marketing and licensing, but in this recipe you will concentrate on the more
+    technical aspects.
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在某个时刻，当你想要回馈社区时，会有一个时刻。也许你建了一个“放屁按钮”，或者你建了一个自动化股票期权交易者；无论你建了什么，JavaScript和Vue社区都会很高兴欢迎你。在市场营销和许可方面还有很多事情要做，但在这个教程中，你将集中关注更多的技术方面。
+- en: Getting ready
+  id: totrans-359
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: This recipe is directed at those who want to share their work in Vue with the
+    rest of the community. In the *Bundling your component with Webpack*  recipe,
+    you will find how to tweak the official Webpack template to bundle your component
+    correctly; this recipe can be thought of as a second part. We will not use the
+    official template though.
+  id: totrans-360
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个教程是针对那些想要与Vue社区分享他们的工作的人。在*使用Webpack打包你的组件*教程中，你会找到如何调整官方Webpack模板以正确打包你的组件；这个教程可以看作是第二部分。不过我们不会使用官方模板。
+- en: How to do it...
+  id: totrans-361
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何操作...
+- en: The approach I will take for this recipe is to use the excellent `vue-share-components`
+    template by *Guillaume Chau* . We'll build a joke button from that starting point.
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我在这个教程中采用的方法是使用*Guillaume Chau*的优秀`vue-share-components`模板。我们将从这个起点构建一个笑话按钮。
+- en: 'In your command line, create a new directory and type the following command
+    inside it:'
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在命令行中，创建一个新的目录并在其中输入以下命令：
+- en: '[PRE89]'
+  id: totrans-364
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: 'It will ask you some questions; you can copy the responses from the following
+    image. The only thing to note is that you (sadly) cannot use the `joke-button`
+    name for your project because I have already registered it while writing this
+    recipe. However, you can come up with a similar sounding name (you may want to
+    check whether the name is available in the `npm` registry before moving ahead):'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它会询问你一些问题；你可以从下面的图片中复制回答。需要注意的是，你（可悲地）不能使用`joke-button`作为你的项目名称，因为在编写这个教程时我已经注册了它。不过，你可以想出一个类似的名称（在继续之前，你可能需要检查该名称在`npm`注册表中是否可用）：
+- en: '![](img/Image00154.jpg)'
+  id: totrans-366
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00154.jpg)'
+- en: Once the project is created, you can install the dependencies with `npm install`
+    , just as in the console output.
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 项目创建完成后，你可以像控制台输出一样使用`npm install`安装依赖项。
+- en: 'Inside the project, let''s create the joke button component. Inside the `component`
+    folder, you will find a `Test.vue` component; rename it to `JokeButton.vue` and
+    make it look like the following code:'
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在项目内部，让我们创建一个笑话按钮组件。在`component`文件夹内，你会找到一个`Test.vue`组件；将其重命名为`JokeButton.vue`并使其看起来像以下代码：
+- en: '[PRE90]'
+  id: totrans-369
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: Obviously, you can create the component you prefer; this is just an example.
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，你可以创建你喜欢的组件；这只是一个例子。
+- en: 'In the `index.js` file, you will see the `Test` component imported and installed;
+    you will need to install the `JokeButton`  instead. The lines you need to change
+    are highlighted:'
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`index.js`文件中，你会看到导入和安装了`Test`组件；你需要安装`JokeButton`代替。需要更改的行已经被标出：
+- en: '[PRE91]'
+  id: totrans-372
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: Our component is ready!
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的组件已经准备好了！
+- en: Now you have to go to the npm website to register for an account (if you don't
+    have one already).
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你需要去npm网站注册一个账号（如果你还没有的话）。
+- en: 'Go to [npmjs.com](https://www.npmjs.com/) :'
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前往[npmjs.com](https://www.npmjs.com/)：
+- en: '![](img/Image00155.jpg)'
+  id: totrans-376
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00155.jpg)'
+- en: 'Click on sign up and enter your details, like I did here:'
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 点击注册并输入你的详细信息，就像我在这里做的一样：
+- en: '![](img/Image00156.jpg)'
+  id: totrans-378
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00156.jpg)'
+- en: Of course, you can subscribe to the npm weekly newsletter if you like.
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，如果你喜欢的话，你可以订阅npm每周的新闻通讯。
+- en: 'Once registered, you''re done and can come back to the command line. You must
+    log in to the npm registry from the terminal with the following command:'
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注册完成后，你就完成了，可以回到命令行了。你必须使用以下命令从终端登录到 npm 注册表：
+- en: '[PRE92]'
+  id: totrans-381
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: 'You will see something like this:'
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你将看到类似于这样的内容：
+- en: '![](img/Image00157.jpg)'
+  id: totrans-383
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00157.jpg)'
+- en: You will have to enter the password you just entered for the npm website.
+  id: totrans-384
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你将需要输入刚刚为 npm 网站输入的密码。
+- en: 'The next command will publish your library in the public repository:'
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一个命令将会在公共仓库中发布你的库：
+- en: '[PRE93]'
+  id: totrans-386
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: 'Now you can even look up your package and, sure enough, you will find it as
+    shown in the following screenshot:'
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你甚至可以查找你的包，确保你会在下面的截图中找到它：
+- en: '![](img/Image00158.jpg)'
+  id: totrans-388
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Image00158.jpg)'
+- en: To try it, you can find the instructions in your own `README` , how cool is
+    that?
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要尝试它，你可以在你自己的 `README` 中找到说明，多酷啊！
+- en: How it works...
+  id: totrans-390
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: The `vue-share-components` is simpler than the official template, so it's a
+    good way to learn by examining it.
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`vue-share-components` 比官方模板更简单，所以通过检查它是一个很好的学习方式。'
+- en: 'The first thing we can take a look at is the `package.json` file. The following
+    lines are relevant:'
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以首先看一下 `package.json` 文件。以下几行是相关的：
+- en: '[PRE94]'
+  id: totrans-393
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: 'The `main` property is what we actually get when we write the following command
+    in our programs:'
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`main` 属性是我们在程序中写入以下命令时实际得到的内容：'
+- en: '[PRE95]'
+  id: totrans-395
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: 'Alternatively, we get it when we add the following code:'
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，我们在添加以下代码时获得它：
+- en: '[PRE96]'
+  id: totrans-397
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: So, the `JokeButton` variable will actually contain what is exported in our
+    `joke-button.common.js` .
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，`JokeButton` 变量实际上将包含在我们的 `joke-button.common.js` 中导出的内容。
+- en: You can edit the main property of `package.json` to point directly to a `.vue`
+    component. This way, you give the user the responsibility to compile the component.
+    While this is more work for the user, it also helps when one wants the freedom
+    to compile against the most recent version of Vue.
+  id: totrans-399
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以编辑 `package.json` 的 `main` 属性，直接指向一个 `.vue` 组件。这样，你就把编译组件的责任交给了用户。虽然这对用户来说更多了一些工作，但当你想要自由地编译最新版本的
+    Vue 时，这也是有帮助的。
+- en: 'In the latter case, if you have some logic of your component exported in `external.js`
+    files (like in the first recipe of this chapter), always remember to add the directory
+    in the Webpack rules, like so:'
+  id: totrans-400
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在后一种情况下，如果你的组件的一些逻辑是在 `external.js` 文件中导出的（就像本章的第一个示例中一样），请始终记得在 Webpack 规则中添加目录，如下所示：
+- en: '`{`'
+  id: totrans-401
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`{`'
+- en: '`  test: /.js$/,`'
+  id: totrans-402
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`  test: /.js$/,`'
+- en: '`  loader: ''babel-loader'',`'
+  id: totrans-403
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`  loader: ''babel-loader'',`'
+- en: '`  include: [resolve(''src''), resolve(''test''), resolve(''node_modules/myComponent'')]`'
+  id: totrans-404
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`  include: [resolve(''src''), resolve(''test''), resolve(''node_modules/myComponent'')]`'
+- en: '`},`'
+  id: totrans-405
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`},`'
+- en: The unpkg is particular of [unpkg.com](https://unpkg.com/#/) , which is a CDN.
+    This is very nice because as soon as we publish our project, we will have our
+    script published at [https://unpkg.com/joke-button](https://unpkg.com/joke-button)
+    , and it will point to the  `joke-button.browser.js` file that is suited for the
+    browser.
+  id: totrans-406
+  prefs: []
+  type: TYPE_NORMAL
+  zh: unpkg 是 [unpkg.com](https://unpkg.com/#/) 的特定部分，它是一个 CDN。这非常好，因为一旦我们发布了项目，我们的脚本将会在
+    [https://unpkg.com/joke-button](https://unpkg.com/joke-button) 上发布，并且它将指向适用于浏览器的
+    `joke-button.browser.js` 文件。
+- en: The `prepublish` script is a special script that will be called before publishing the
+    project to npm with the `npm publish`  command. This eliminates the possibility
+    that you forget to build the files before publishing your component (it happened
+    to me many times, so I was forced to increase the version of the software artificially,
+    build the files manually, and publish again).
+  id: totrans-407
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`prepublish`脚本是一个特殊的脚本，在使用`npm publish`命令将项目发布到npm之前调用。这消除了在发布组件之前忘记构建文件的可能性（这在我身上发生过很多次，所以我被迫人为地增加软件版本，手动构建文件，然后再次发布）。'
+- en: Another interesting fact to note is the difference between `webpack.config.common.js`
+    , which outputs the  `joke-button.common.js` file, and  `webpack.config.browser.js`
+    , which outputs the  `joke-button.browser.js` file.
+  id: totrans-408
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个有趣的事实是`webpack.config.common.js`和`webpack.config.browser.js`之间的区别，前者输出`joke-button.common.js`文件，后者输出`joke-button.browser.js`文件。
+- en: 'The first file has the output set to the following:'
+  id: totrans-409
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个文件的输出设置如下：
+- en: '[PRE97]'
+  id: totrans-410
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: 'So, it will output a library that will expose a commonJS interface; this is
+    tailored for non-browser environments, and you will have to require or import
+    this library to use it. On the other hand, the second file for the browser has
+    the following output:'
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，它将输出一个公开commonJS接口的库；这是为非浏览器环境定制的，您需要使用require或import来使用该库。另一方面，用于浏览器的第二个文件具有以下输出：
+- en: '[PRE98]'
+  id: totrans-412
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE98]'
+- en: 'A UMD will expose itself in a global scope, no need to import anything, so
+    it''s perfect for the browser because we can include the file in a Vue webpage
+    and use the component freely. This is also possible, thanks to the `index.js`
+    auto-install feature:'
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: UMD将在全局范围内公开自身，无需导入任何内容，因此它非常适合浏览器，因为我们可以将文件包含在Vue网页中并自由使用组件。这也是可能的，多亏了`index.js`的自动安装功能：
+- en: '[PRE99]'
+  id: totrans-414
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE99]'
+- en: What this code is doing is packaging the install function (which registers the
+    component(s) with Vue) inside the `plugin` constant and exporting it in the meantime.
+    Then, it checks whether there is either `window` or `global` defined, in that
+    case, it gets hold of the `Vue` variable that represents the Vue library and uses
+    the plugin API to install the component(s).
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码的作用是将安装函数（用于在Vue中注册组件）封装在`plugin`常量中，并同时导出它。然后，它检查是否定义了`window`或`global`，如果是这样，它获取代表Vue库的`Vue`变量，并使用插件API来安装组件。

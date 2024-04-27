@@ -1,0 +1,2342 @@
+- en: '*Chapter 4*: Tools for Regular Operations'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '*第四章*：常规操作工具'
+- en: At this point in this book, we've installed a system, and we've covered some
+    of the scripts we can create to automate tasks, so we've reached the point where
+    we can focus on the system itself.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书的这一部分，我们已经安装了一个系统，并且已经涵盖了一些可以创建来自动化任务的脚本，所以我们已经到了可以专注于系统本身的地步。
+- en: Having a system properly configured requires not only installing it but understanding
+    how to run tasks at specific times, keeping all the services running appropriately,
+    and configuring time synchronization, service management, boot targets (runlevels),
+    and scheduled tasks, all of which we will be covering in this chapter.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 拥有一个正确配置的系统不仅需要安装，还需要了解如何在特定时间运行任务，保持所有服务适当运行，并配置时间同步、服务管理、引导目标（运行级别）和计划任务，所有这些内容我们将在本章中介绍。
+- en: In this chapter, you will learn how to check the statuses of services, how to
+    start, stop, and troubleshoot them, as well as how to keep the system clock in
+    sync for your server or your whole network.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您将学习如何检查服务的状态，如何启动、停止和排除故障，以及如何为服务器或整个网络保持系统时钟同步。
+- en: 'The list of topics that will be covered is as follows:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将涵盖的主题列表如下：
+- en: Managing system services with systemd
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用systemd管理系统服务
+- en: Scheduling tasks with cron and systemd
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用cron和systemd进行任务调度
+- en: Learning about time synchronization with chrony and ntp
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 学习使用chrony和ntp进行时间同步
+- en: Checking for free resources – memory and disk (free and df)
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查空闲资源 - 内存和磁盘（free和df）
+- en: Finding logs, using journald, and reading log files, including log preservation
+    and rotation
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 查找日志，使用journald和阅读日志文件，包括日志保存和轮换
+- en: Technical requirements
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: It is possible for you to complete this chapter by using the virtual machine
+    we created at the beginning of this book. Additionally, for testing the *NTP server*,
+    it might be useful to create a second virtual machine that will connect to the
+    first one as a client, following the same procedure we used for the first one.
+    Additionally, required packages will be indicated within the text.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用我们在本书开头创建的虚拟机来完成本章。此外，为了测试*NTP服务器*，可能需要创建第二个虚拟机，该虚拟机将连接到第一个虚拟机作为客户端，遵循我们用于第一个虚拟机的相同过程。此外，所需的软件包将在文本中指示。
+- en: Managing system services with systemd
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用systemd管理系统服务
+- en: In this section, you will learn how to manage **System Services**, runtime targets,
+    and all about the service status with **systemd**. You will also learn how to
+    manage system boot targets and services that should start at system boot.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，您将学习如何使用**systemd**管理**系统服务**，运行时目标，以及有关**systemd**的服务状态。您还将学习如何管理系统引导目标和应该在系统引导时启动的服务。
+- en: '`systemd` (which you can learn a bit about at [https://www.freedesktop.org/wiki/Software/systemd/](https://www.freedesktop.org/wiki/Software/systemd/))
+    is defined as a system daemon that''s used to manage the system. It came as a
+    rework of how a system boots and starts, and it looks at the limitations related
+    to the traditional way of doing it.'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`systemd`（您可以在[https://www.freedesktop.org/wiki/Software/systemd/](https://www.freedesktop.org/wiki/Software/systemd/)了解一些）被定义为用于管理系统的系统守护程序。它作为对传统启动和启动方式的重新设计而出现，它看待与传统方式相关的限制。'
+- en: 'When we think about system starting, we have the initial **kernel** and **ramdisk**
+    load and execution, but right after that, services and scripts take control to
+    make filesystems available. This helps prepare the services that provide the functionality
+    we want from our system, such as the following:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们考虑系统启动时，我们有初始**内核**和**ramdisk**的加载和执行，但在此之后，服务和脚本接管，使文件系统可用。这有助于准备提供我们系统所需功能的服务，例如以下内容：
+- en: Hardware detection
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 硬件检测
+- en: Additional filesystem activation
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 附加文件系统激活
+- en: Network initialization (wired, wireless, and so on)
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 网络初始化（有线，无线等）
+- en: Network services (time sync, remote login, printers, network filesystems, and
+    so on)
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 网络服务（时间同步，远程登录，打印机，网络文件系统等）
+- en: User-space setup
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户空间设置
+- en: However, most of the tools that existed before `systemd` came into play and
+    worked on this in a sequential way, causing the whole boot process (from boot
+    to user login) to become lengthy and be subject to delays.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，大多数在`systemd`出现之前存在的工具都是按顺序进行操作，导致整个启动过程（从启动到用户登录）变得冗长并且容易受到延迟的影响。
+- en: Traditionally, this also meant we had to wait for the required service to be
+    fully available before the next one that depended on it could be started, increasing
+    the total boot time.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 传统上，这也意味着我们必须等待所需的服务完全可用，然后才能启动依赖于它的下一个服务，增加了总启动时间。
+- en: Some approaches were attempted, such as using *monit* or other tools that allow
+    us to define dependencies, monitor processes, and even recover from failures,
+    but in general, it was reusing an existing tool to perform other functions, trying
+    to win the race regarding the fastest-booting system.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些尝试的方法，比如使用*monit*或其他允许我们定义依赖关系、监视进程甚至从故障中恢复的工具，但总的来说，这是重用现有工具来执行其他功能，试图赢得关于启动最快的系统的竞赛。
+- en: Important Note
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: '`systemd` redesigned the process to focus on simplicity: start less processes
+    and do more parallel execution. The idea itself sounds easy but requires redesigning
+    a lot of what was taken for granted in the past, to focus on the needs of a new
+    approach to improve OS performance.'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`systemd`重新设计了这个过程，专注于简单性：启动更少的进程并进行更多的并行执行。这个想法本身听起来很简单，但需要重新设计过去被视为理所当然的很多东西，以便专注于改进操作系统性能的新方法的需求。'
+- en: 'This redesign, which has provided lot of benefits, also came with a cost: it
+    drastically changed the way systems used to boot, so there has been a lot of controversy
+    on the adoption of `systemd` by different vendors, and even some efforts by the
+    community to provide systemd-free variants.'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种重新设计带来了许多好处，但也伴随着代价：它彻底改变了系统以前的启动方式，因此在不同供应商中对`systemd`的采用引起了很多争议，甚至社区也做出了一些努力提供不带systemd的变种。
+- en: Rationalizing how services start so that only those that are required are started
+    is a good way to accomplish efficiency, for example, there is no need to start
+    Bluetooth, printer, or network services when the system is disconnected, there
+    is no Bluetooth hardware, or no one is printing. With fewer services waiting to
+    start, the system boot is not delayed by those waits and focuses on the ones that
+    really need attention.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 合理地启动服务，只启动必需的服务，是提高效率的好方法，例如，当系统断开连接时，没有蓝牙硬件或没有人在打印时，就没有必要启动蓝牙、打印机或网络服务。减少等待启动的服务，系统启动不会因为等待而延迟，而是专注于真正需要关注的服务。
+- en: On top of that, parallel execution allows us to have each service taking the
+    time it needs to get ready but not make others wait, so in general, running services
+    initialization in parallel allows us to maximize the usage of CPU, disk, and so
+    on, and the wait times for each service are used by other services that are active.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除此之外，并行执行允许我们让每个服务花费所需的时间准备好，但不会让其他服务等待，因此一般来说，并行运行服务初始化允许我们最大限度地利用CPU、磁盘等，而每个服务的等待时间被其他活动的服务使用。
+- en: '`systemd` also pre-creates the listening sockets before the actual daemon is
+    started, so services that have requirements on other services can be started and
+    be on a wait status until its dependencies are started. This is done without them
+    losing any messages that are sent to them, so when the service is finally started,
+    it will act on all the pending actions.'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`systemd`还会在实际守护程序启动之前预先创建监听套接字，因此对其他服务有依赖关系的服务可以启动并处于等待状态，直到其依赖项启动。这样做是为了不让它们丢失任何发送给它们的消息，因此当服务最终启动时，它将执行所有待处理的操作。'
+- en: Let's learn a bit more about *systemd* as it will be required for several operations
+    we're going to describe in this chapter.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '让我们多了解一些关于*systemd*，因为它将需要用于我们将在本章中描述的几个操作。 '
+- en: '*Systemd* comes with the concept of units, which are nothing but configuration
+    files. These units can be categorized as different types, based on their file
+    extension:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*Systemd*具有单位的概念，它们只是配置文件。这些单位可以根据其文件扩展名进行分类为不同类型：'
+- en: '![](img/Table_4.1.jpg)'
+  id: totrans-32
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Table_4.1.jpg)'
+- en: Tip
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Don't feel overwhelmed by the different `systemd` unit types. In general, the
+    most common ones are **Service**, **Timer**, **Socket**, and **Target**.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要被不同的`systemd`单位类型所压倒。一般来说，最常见的是**Service**、**Timer**、**Socket**和**Target**。
+- en: 'Of course, these unit files are expected to be found in some specific folders:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，这些单位文件应该被找到在一些特定的文件夹中：
+- en: '![](img/Table_4.2.jpg)'
+  id: totrans-36
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Table_4.2.jpg)'
+- en: As we mentioned earlier about the sockets, unit files for path, bus, and more
+    are activated when a system's access to that path is performed, allowing services
+    to be started when another one is requiring them. This adds more optimization
+    for lowering system startup times.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前提到的关于套接字，当系统访问该路径时，路径、总线等单位文件被激活，允许在另一个服务需要它们时启动服务。这为降低系统启动时间增加了更多的优化。
+- en: With that, we have learned about *systemd* unit types. Now, let's focus on the
+    file structure of unit files.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这样，我们已经了解了*systemd*单位类型。现在，让我们专注于单位文件的文件结构。
+- en: Systemd unit file structure
+  id: totrans-39
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: '*systemd*单位文件结构'
+- en: 'Let''s get our hands dirty with an example: a system has been deployed with
+    `sshd` enabled, and we need to get it running once the network has been initialized
+    in the **runlevels**, which provide connectivity.'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过一个例子来动手实践：一个系统已经部署并启用了`sshd`，我们需要在网络初始化后运行它，这样可以提供连接。
+- en: 'As we mentioned previously, `systemd` uses unit files, and we can check the
+    aforementioned folders or list them with `systemctl list-unit-files` . Remember
+    that each file is a configuration file that defines what *systemd* should do;
+    for example, `/usr/lib/systemd/system/chronyd.service`:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前提到的，`systemd`使用单位文件，我们可以检查前面提到的文件夹，或者使用`systemctl list-unit-files`列出它们。记住，每个文件都是一个定义*systemd*应该做什么的配置文件；例如，`/usr/lib/systemd/system/chronyd.service`：
+- en: '![Figure 4.1 – chronyd.service contents'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.1 - chronyd.service的内容]'
+- en: '](img/B16799_04_001.jpg)'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_001.jpg)'
+- en: Figure 4.1 – chronyd.service contents
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.1 - chronyd.service的内容
+- en: This file defines not only the traditional program to start and the PID file,
+    but the dependencies, the conflicts, and soft dependencies, which provides enough
+    information to `systemd` to decide on the right approach.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个文件不仅定义了要启动的传统程序和PID文件，还定义了依赖关系、冲突和软依赖关系，这为`systemd`提供了足够的信息来决定正确的方法。
+- en: If you're familiar with "*inifiles*," this file uses that approach, in that,
+    it uses square brackets, `[` and `]`, for sections and then pairs of `key=value`
+    for the settings in each section.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你熟悉"*inifiles*"，这个文件使用了那种方法，即使用方括号`[`和`]`表示部分，然后在每个部分的设置中使用`key=value`的配对。
+- en: Section names are case-sensitive, so they will not be interpreted correctly
+    if the proper naming convention is not used.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 部分名称是区分大小写的，因此如果不使用正确的命名约定，它们将无法被正确解释。
+- en: 'Section directives are named like so:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 部分指令的命名如下：
+- en: '`[Unit]`'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[单位]'
+- en: '`[Install]`'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[安装]'
+- en: 'There are additional entries for each of the different types:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每种类型都有额外的条目：
+- en: '`[Service]`'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[服务]'
+- en: '`[Socket]`'
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[套接字]'
+- en: '`[Mount]`'
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[挂载]'
+- en: '`[Automount]`'
+  id: totrans-55
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[自动挂载]'
+- en: '`[Swap]`'
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[交换]'
+- en: '`[Path]`'
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[路径]'
+- en: '`[Timer]`'
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[定时器]'
+- en: '`[Slice]`'
+  id: totrans-59
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[切片]'
+- en: 'As you can see, we have specific sections for each type. If we execute `man
+    systemd.unit` it will give you examples, along with all the supported values,
+    for the *systemd* version you''re using:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，我们为每种类型都有特定的部分。如果我们执行`man systemd.unit`，它将为你提供示例，以及你正在使用的*systemd*版本的所有支持的值：
+- en: '![Figure 4.2 – man page of systemd.unit'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.2 - systemd.unit的man页面]'
+- en: '](img/B16799_04_002.jpg)'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_002.jpg)'
+- en: Figure 4.2 – man page of systemd.unit
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.2 - systemd.unit的man页面
+- en: With that, we have reviewed the file structure of unit files. Now, let's use
+    *systemctl* to actually manage the service's status.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这样，我们已经审查了单位文件的文件结构。现在，让我们使用*systemctl*来实际管理服务的状态。
+- en: Managing services to be started and stopped at boot
+  id: totrans-65
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 管理服务在启动时启动和停止
+- en: Services can be enabled or disabled; that is, the services will or won't be
+    activated on system startup.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 服务可以启用或禁用；也就是说，服务将或不会在系统启动时被激活。
+- en: If you're familiar with the previous tools available in RHEL, it was common
+    to use `chkconfig` to define the status of the services based on their default
+    `rc.d/` settings.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您熟悉RHEL中以前可用的工具，通常会使用`chkconfig`根据其默认的`rc.d/`设置来定义服务的状态。
+- en: 'A service, such as `sshd`, can be enabled via the following command:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以通过以下命令启用`sshd`等服务：
+- en: '[PRE0]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'It can also be disabled via the following command:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也可以通过以下命令禁用：
+- en: '[PRE1]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: This results in creating or removing `/etc/systemd/system/multi-user.target.wants/sshd.service`.
+    Notice `multi-user.target` in the path, which is the equivalent of the runlevel
+    we used to configure other approaches such as **initscripts**.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将创建或删除`/etc/systemd/system/multi-user.target.wants/sshd.service`。注意路径中的`multi-user.target`，它相当于我们用来配置其他方法（如**initscripts**）的运行级别。
+- en: Tip
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Although traditional usage of `chkconfig sshd on/off` or `service start/stop/status/restart
+    sshd` is valid, it is better to get used to the `systemctl` approach described
+    in this chapter.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管传统的`chkconfig sshd on/off`或`service start/stop/status/restart sshd`的用法是有效的，但最好习惯于本章中描述的`systemctl`方法。
+- en: The previous commands enable or disable the service at boot, but for executing
+    an immediate action, we need to issue different commands.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的命令在启动时启用或禁用服务，但要执行即时操作，我们需要发出不同的命令。
+- en: 'To start the `sshd` service, use the following command:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要启动`sshd`服务，请使用以下命令：
+- en: '[PRE2]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'To stop it, use the following command:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要停止它，请使用以下命令：
+- en: '[PRE3]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Of course, we can also check the service''s status. The following is an example
+    of looking at `systemd` via `systemctl status sshd`:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们也可以检查服务的状态。以下是通过`systemctl status sshd`查看`systemd`的示例：
+- en: '![Figure 4.3 – Status of sshd daemon'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.3 - sshd守护程序的状态'
+- en: '](img/B16799_04_003.jpg)'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_003.jpg)'
+- en: Figure 4.3 – Status of sshd daemon
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.3 - sshd守护程序的状态
+- en: This status information provides details about the unit file defining the service,
+    its default status at boot, if it is running or not, its PID, some other details
+    about its resource consumption, and some of the most recent log entries for the
+    service, which are quite useful when you're debugging simple service start failures.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此状态信息提供了有关定义服务的单元文件、其在启动时的默认状态、它是否正在运行、其PID、其资源消耗的其他详细信息，以及服务的一些最近的日志条目，这在调试简单的服务启动故障时非常有用。
+- en: One important thing to check is the output of `systemctl list-unit-files` as
+    it reports the defined unit files in the system, as well as the current status
+    and the vendor preset for each one.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查`systemctl list-unit-files`的输出是很重要的，因为它报告了系统中定义的单元文件，以及每个单元文件的当前状态和供应商预设。
+- en: Now that we have covered how to start/stop and status check services, let's
+    work on managing the actual system boot status itself.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经介绍了如何启动/停止和检查服务的状态，让我们来管理实际的系统引导状态本身。
+- en: Managing boot targets
+  id: totrans-87
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 管理引导目标
+- en: The default status we have defined at boot is important when it comes to talking
+    about **runlevels**.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在启动时定义的默认状态在谈论**运行级别**时很重要。
+- en: A runlevel defines a predefined set of services based on usage; that is, they
+    define which services will be started or stopped when we're using a specific functionality.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行级别根据使用定义了一组预定义的服务；也就是说，它们定义了在使用特定功能时将启动或停止哪些服务。
+- en: 'For example, there are runlevels that are used to define the following:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，有一些运行级别用于定义以下内容：
+- en: '**Halt mode**'
+  id: totrans-91
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**停止模式**'
+- en: '**Single user mode**'
+  id: totrans-92
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**单用户模式**'
+- en: '**Multi-user mode**'
+  id: totrans-93
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**多用户模式**'
+- en: '**Networked multiuser**'
+  id: totrans-94
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**网络化多用户**'
+- en: '**Graphical**'
+  id: totrans-95
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**图形**'
+- en: '**Reboot**'
+  id: totrans-96
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**重新启动**'
+- en: 'Each of those runlevels allows a predefined set of services to be started/stopped
+    when the runlevel is changed with `init $runlevel`. Of course, levels used to
+    be based on each other, and were very simple:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些运行级别允许在运行级别更改时启动/停止一组预定义的服务。当然，级别以前是基于彼此的，并且非常简单：
+- en: Halt stopped all the services and then halted or powered off the system.
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 停止所有服务，然后停止或关闭系统。
+- en: Single user mode starts a shell for one user.
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 单用户模式为一个用户启动一个shell。
+- en: Multi-user mode enables regular login daemons on the virtual terminals.
+  id: totrans-100
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 多用户模式在虚拟终端上启用常规登录守护程序。
+- en: Networked is like multi-user but with the network started.
+  id: totrans-101
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 网络化就像多用户，但网络已启动。
+- en: Graphical is like networked but with graphical login via display manager (`gdm`
+    or others).
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 图形就像网络化，但通过显示管理器（`gdm`或其他）进行图形登录。
+- en: Reboot is like halt, but at the end of processing services, it issues a reboot
+    instead of a halt.
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 重新启动就像停止，但在处理服务结束时，它会发出重新启动而不是停止。
+- en: 'These runlevels (and the default one when the system is booted) used to be
+    defined in `/etc/inittab`, but the file placeholder reminds us of the following:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些运行级别（以及系统启动时的默认运行级别）以前是在`/etc/inittab`中定义的，但文件占位符提醒我们以下内容：
+- en: '[PRE4]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: So, by making this change to `systemd`, a new way to check the available boot
+    targets and define them is in place.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，通过对`systemd`进行此更改，现在可以检查可用的引导目标并定义它们的新方法。
+- en: 'We can find the available system targets by listing this folder:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过列出此文件夹来找到可用的系统目标：
+- en: '[PRE5]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Or more, correctly, we can use `systemctl`, like so:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者更正确地说，我们可以使用`systemctl`，如下所示：
+- en: '[PRE6]'
+  id: totrans-110
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: When you examine the output on your system, you will find some compatibility
+    aliases for runlevels 0 to 6 that provide compatibility with the traditional ones.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您在系统上检查输出时，您会发现0到6的运行级别的一些兼容别名，这些别名与传统的运行级别提供兼容性。
+- en: For example, for regular server usage, the default target will be `multi-user.target`
+    when you're running without graphical mode or `graphical.target` when you're using
+    it.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，对于常规服务器使用，当您在没有图形模式下运行时，默认目标将是`multi-user.target`，当您使用图形模式时将是`graphical.target`。
+- en: 'We can define, as instructed in the placeholder at `/etc/inittab`, the new
+    runlevel to use by executing the following command:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以按照`/etc/inittab`中的占位符的指示，通过执行以下命令来定义要使用的新运行级别：
+- en: '[PRE7]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'We can verify the active one by using the following command:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用以下命令验证活动状态：
+- en: '[PRE8]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'This brings us to the next question: *What does a target definition look like*?
+    Let''s examine the output in the following screenshot:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就引出了下一个问题：*目标定义是什么样的*？让我们来看一下以下截图中的输出：
+- en: '![Figure 4.4 – Contents of runlevel 5 from its target unit definition'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.4 - 从其目标单元定义的运行级别5的内容'
+- en: '](img/B16799_04_004.jpg)'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_004.jpg)'
+- en: Figure 4.4 – Contents of runlevel 5 from its target unit definition
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.4 - 从其目标单元定义的运行级别5的内容
+- en: As you can see, it is set as a dependency of another target (**multi-user.target**)
+    and has some requirements on other services, such as **display-manager.service**,
+    and also other conflicts, and the target can only be reached when other targets
+    have completed.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，它被设置为另一个目标（**multi-user.target**）的依赖项，并且对其他服务（如**display-manager.service**）有一些要求，还有其他冲突，只有在其他目标完成时才能达到该目标。
+- en: In this way, `systemd` can select the proper order of services to start and
+    the dependencies to reach the configured boot target.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这种方式，`systemd`可以选择适当的服务启动顺序和达到配置的引导目标的依赖关系。
+- en: With that, we have covered the service's status, as well as how to start, stop,
+    and enable it on boot, but there are other tasks we should execute in our system
+    but in a periodic way. Let's get further into this topic.
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这些，我们已经了解了服务的状态，以及如何在启动时启动、停止和启用它，但是还有其他任务我们应该以周期性的方式在系统中执行。让我们进一步探讨这个话题。
+- en: Scheduling tasks with cron and systemd
+  id: totrans-124
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用cron和systemd进行任务调度
+- en: The skills you will learn in this section will be concerned with scheduling
+    periodic tasks in the system for business services and maintenance.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将在本节中学习的技能将涉及为业务服务和维护安排周期性任务。
+- en: For regular system usage, there are tasks that need to be executed periodically,
+    ranging from temporary folder cleanup, updating the cache's refresh rate, and
+    performing check-in with inventory systems, among other things.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于常规的系统使用，有一些需要定期执行的任务，范围从临时文件夹清理、更新缓存的刷新率，到与库存系统进行检查等等。
+- en: The traditional way to set them up is via `c``ronie` package.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设置它们的传统方式是通过`cronie`软件包。
+- en: Cronie implements a daemon that's compatible with the traditional *vixie cron*
+    and allows us to define both user and system crontabs.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Cronie实现了一个与传统的*vixie cron*兼容的守护程序，允许我们定义用户和系统crontab。
+- en: A crontab defines several parameters for a task that must be executed. Let's
+    see how it works.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Crontab定义了必须执行的任务的几个参数。让我们看看它是如何工作的。
+- en: System-wide crontab
+  id: totrans-130
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 系统范围的crontab
+- en: System-wide crontab can be defined in `/etc/crontab` or in individual files
+    at `/etc/cron.d`. Other additional folders exist, such as `/etc/cron.hourly`,
+    `/etc/cron.daily`, `/etc/cron.weekly`, and `/etc/cron.monthly`.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 系统范围的crontab可以在`/etc/crontab`中定义，也可以在`/etc/cron.d`中的单独文件中定义。还存在其他附加文件夹，如`/etc/cron.hourly`、`/etc/cron.daily`、`/etc/cron.weekly`和`/etc/cron.monthly`。
+- en: In the folders for *hourly*, *daily*, *weekly*, or *monthly*, you can find scripts
+    or symbolic links to them. When the period since the preceding execution is met
+    (one hour, one day, one week, one month), the script will be executed.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在*每小时*、*每天*、*每周*或*每月*的文件夹中，您可以找到脚本或符号链接。当满足自上次执行以来的时间段（一小时、一天、一周、一个月）时，将执行该脚本。
+- en: In contrast, in `/etc/crontab` or `/etc/cron.d`, as well as in the user crontabs,
+    the standard definition of jobs is used.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 相比之下，在`/etc/crontab`或`/etc/cron.d`以及用户crontab中，使用标准的作业定义。
+- en: 'Jobs are defined by specifying the parameters that are relevant to the execution
+    period, the user that will be executing the job (except for user crontabs), and
+    the command to execute:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过指定与执行周期相关的参数、将执行作业的用户（除了用户crontab外）和要执行的命令来定义作业：
+- en: '[PRE9]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'By looking at the standard `/etc/crontab` file, we can check the meaning of
+    each field:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过查看标准的`/etc/crontab`文件，我们可以检查每个字段的含义：
+- en: '[PRE10]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Based on this, if we check the initial example, `01 * * * * root run-parts
+    /etc/cron.hourly`, we can deduce the following:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于此，如果我们检查初始示例`01 * * * * root run-parts /etc/cron.hourly`，我们可以推断如下：
+- en: Run at minute `01`.
+  id: totrans-139
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每分钟运行`01`。
+- en: Run every hour.
+  id: totrans-140
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每小时运行。
+- en: Run every day.
+  id: totrans-141
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每天运行。
+- en: Run every month.
+  id: totrans-142
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每月运行。
+- en: Run every day of the week.
+  id: totrans-143
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每周的每一天运行。
+- en: Run as `root`.
+  id: totrans-144
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 以`root`身份运行。
+- en: Execute the `run-parts /etc/cron.hourly` command.
+  id: totrans-145
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 执行`run-parts /etc/cron.hourly`命令。
+- en: This, in brief, means that the job will run on the first minute of every hour
+    as the `root` user.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，这意味着作业将以`root`用户身份在每小时的第一分钟运行。
+- en: Sometimes, it is possible to see an indication, such as **/number*, which means
+    that the job will be executed every multiple of that number. For example, **/3*
+    will run every 3 minutes if it is on the first column, every 3 hours if it's on
+    the second, and so on.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有时，可能会看到一个指示，比如**/number*，这意味着作业将在该数字的倍数上执行。例如，**/3*将在第一列上每3分钟运行一次，在第二列上每3小时运行一次，依此类推。
+- en: Any command we might execute from the command line can be executed via cron,
+    and the output will be, by default, mailed to the user running the job. It is
+    a common practice to either define the user that will receive the email via the
+    `MAILTO` variable in the crontab file, or to redirect them to the appropriate
+    log files for the standard output and standard error (`stdout` and `stderr`).
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过cron执行从命令行执行的任何命令，并且默认情况下，输出将通过邮件发送给运行作业的用户。通常的做法是在crontab文件中定义将接收电子邮件的用户的`MAILTO`变量，或者将它们重定向到适当的日志文件以获取标准输出和标准错误（`stdout`和`stderr`）。
+- en: User crontab
+  id: totrans-149
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 用户crontab
+- en: Like the system-wide **crontab**, users can define their own crontabs so that
+    tasks are executed by the user. This is, for example, useful for running periodic
+    scripts both for a human user or a system account for a service.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与系统范围的**crontab**一样，用户可以定义自己的crontab，以便用户执行任务。例如，这对于为人类用户或服务的系统帐户运行周期性脚本非常有用。
+- en: The syntax for user crontabs is the same as it is system-wide. However, the
+    column for the username is not there, since it is always executed as the user
+    is defining the crontab itself.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户crontab的语法与系统范围的语法相同。但是，用户名的列不在那里，因为它总是作为定义crontab本身的用户执行。
+- en: 'A user can check its crontab via `crontab –l`:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户可以通过`crontab -l`检查其crontab：
+- en: '[PRE11]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: A new one can be created by editing it via `crontab -e`, which will open a text
+    editor so that a new entry can be created.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以通过编辑`crontab -e`来创建一个新的，这将打开一个文本编辑器，以便创建一个新的条目。
+- en: 'Let''s work with an example by creating an entry, like this:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过创建一个条目来举例说明，就像这样：
+- en: '[PRE12]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'When we exit the editor, it will reply with the following:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们退出编辑器时，它会回复以下内容：
+- en: '[PRE13]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: This will create a file in the `/var/spool/cron/` folder with the name of the
+    user that created it. It is a text file, so you can check its contents directly.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在`/var/spool/cron/`文件夹中创建一个文件，文件名为创建它的用户。它是一个文本文件，因此您可以直接检查其内容。
+- en: 'After some time (at least 2 minutes), we''ll have a file in our `$HOME` folder
+    that contains the contents of each execution (because we''re using the *append*
+    redirect; that is, `>>`):'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一段时间后（至少2分钟），我们将在我们的`$HOME`文件夹中有一个包含每次执行内容的文件（因为我们使用*追加*重定向；即`>>`）：
+- en: '[PRE14]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: Now that we've covered the traditional crontab, let's learn about the systemd
+    way of doing things; that is, using timers.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经了解了传统的crontab，让我们了解一下systemd的做事方式；也就是使用定时器。
+- en: Systemd timers
+  id: totrans-163
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Systemd定时器
+- en: Apart from the regular **Cron Daemon**, a cron-style systemd feature is to use
+    **timers**. A timer allows us to define, via a unit file, a job that will be executed.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了常规的**Cron守护程序**，cron风格的systemd功能是使用**定时器**。定时器允许我们通过一个单元文件定义将要执行的作业。
+- en: 'We can check the ones that are already available in our system with the following
+    code:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用以下代码检查系统中已经可用的定时器：
+- en: '[PRE15]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Let''s see, for example, `fstrim.timer`, which is used on SSD drives to perform
+    a trim at `/usr/lib/systemd/system/fstrim.timer`:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们来看一下`fstrim.timer`，它用于SSD驱动器在`/usr/lib/systemd/system/fstrim.timer`执行修剪：
+- en: '[PRE16]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'The preceding timer sets a weekly execution for `fstrim.service`:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述定时器设置了每周执行`fstrim.service`：
+- en: '[PRE17]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: As the `fstrim -av` command shows, we are only executing this once.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如`fstrim -av`命令所示，我们只执行一次。
+- en: One of the advantages of having the service timers as unit files, similar to
+    the service itself, is that it can be deployed and updated via the `/etc/cron.d/`
+    files with the regular *cron* daemon, which is handled by *systemd*.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 服务定时器与服务本身一样，作为单元文件的一个优点是，它可以通过`/etc/cron.d/`文件与常规的*cron*守护程序一起部署和更新，这由*systemd*处理。
+- en: We now know a bit more about how to schedule tasks, but to get the whole picture,
+    scheduling always requires proper timing, so we'll cover this next.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们对如何安排任务有了更多了解，但要获得完整的图片，安排总是需要适当的时间，所以下面我们将介绍这一点。
+- en: Learning about time synchronization with chrony and NTP
+  id: totrans-174
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 学习使用chrony和NTP进行时间同步
+- en: In this section, you will understand the importance of **time synchronization**
+    and how to configure the service.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，您将了解**时间同步**的重要性以及如何配置服务。
+- en: With connected systems, it is important to keep a source of truth in regards
+    to timing (think about bank accounts, incoming transfer wires, outgoing payments,
+    and more that must be correctly timestamped and sorted). Also, consider tracing
+    logs between users connecting, issues happening, and so on; they all need to be
+    in sync so that we can diagnose and debug between all the different systems involved.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于连接的系统，保持与时间相关的真相是很重要的（考虑银行账户、收款转账、出款支付等，这些都必须被正确地时间戳和排序）。此外，考虑用户连接之间的日志跟踪、发生的问题等；它们都需要同步，以便我们可以在涉及到的所有不同系统之间进行诊断和调试。
+- en: You might think that the system clock, which is defined when the system is provisioned,
+    should be OK, but setting the system clock is not enough as the clocks tend to
+    drift; internal batteries can cause the clock to drift or to even reset, and even
+    intense CPU activity can affect it. To keep clocks accurate, they need to be regularly
+    synced against a reference clock that fixes the drift and tries to anticipate
+    future drifts before the local clock is compared against the remote reference.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会认为在系统配置时定义的系统时钟应该是正常的，但仅仅设置系统时钟是不够的，因为时钟往往会漂移；内部电池可能导致时钟漂移或甚至重置，甚至强烈的CPU活动也会影响它。为了保持时钟的准确性，它们需要定期与修正漂移并尝试预测未来漂移的参考时钟同步。
+- en: The system clock can be synced against a *GPS* unit, for example, or more easily
+    against other systems that have connections to more precise clocks (other GPS
+    units, atomic clocks, and so on). The **Network Time Protocol** (**NTP**) is an
+    internet protocol that's used over UDP to maintain communication between the clients
+    and the servers.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 系统时钟可以与*GPS*设备同步，例如，或者更容易地与其他连接到更精确时钟的系统同步（其他GPS设备、原子钟等）。**网络时间协议**（**NTP**）是一种互联网协议，通过UDP用于维护客户端和服务器之间的通信。
+- en: Tip
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提示
+- en: NTP organizes servers by stratum. A stratum 0 device is a GPS device or an atomic
+    clock that directly sends the signal to a server, a stratum 1 server (primary
+    server) is connected to a stratum 0 device, a stratum 2 server is connected to
+    stratum 1 servers, and so on... This hierarchy allows us to reduce the usage of
+    higher stratum servers but also keep a reliable time source for our systems.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NTP通过层级来组织服务器。层级0设备是GPS设备或原子钟，直接向服务器发送信号，层级1服务器（主服务器）连接到层级0设备，层级2服务器连接到层级1服务器，依此类推...这种层级结构允许我们减少对更高层级服务器的使用，同时为我们的系统保持可靠的时间来源。
+- en: Clients connect to servers and compare the times that are received to reduce
+    the effects of network latency.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 客户端连接到服务器，并比较接收到的时间以减少网络延迟的影响。
+- en: Let's see how the NTP client works.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看NTP客户端是如何工作的。
+- en: NTP client
+  id: totrans-183
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: NTP客户端
+- en: In RHEL8, *chrony* acts as both the server (when enabled) and the client (via
+    the `chronyc` command), and it comes with some features that make it suitable
+    for current hardware and user needs, such as fluctuating networks (laptop is suspend/resumed
+    or flaky connections).
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在RHEL8中，*chrony*在启用时充当服务器和客户端（通过`chronyc`命令），并且具有一些功能，使其适用于当前的硬件和用户需求，例如波动的网络（笔记本电脑挂起/恢复或不稳定的连接）。
+- en: 'One interesting feature is that *chrony* does not **step** the clock after
+    its initial sync, which means that the time doesn''t *jump*. Instead, the system
+    clock runs faster or slower so that, after a period of time, it will be in sync
+    with the reference clock it''s using. This makes the time to be a continuum from
+    the operating system and application''s point of view: the seconds are going faster
+    or slower than what they should be, if compared against a clock, until they match
+    the reference clock.'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个有趣的特性是*chrony*在初始同步后不会**step**时钟，这意味着时间不会*跳跃*。相反，系统时钟会以更快或更慢的速度运行，以便在一段时间后，它将与其使用的参考时钟同步。这使得时间从操作系统和应用程序的角度来看是连续的：秒针比起钟表来说要快或慢，直到它们与参考时钟匹配。
+- en: Chrony is configured via `/etc/chrony.conf` and acts as a client, so it connects
+    to servers to check if they're eligible to be the time source. The main difference
+    between the traditional **server** directive and the **pool** is that the latter
+    can receive several entries while the former only uses one. It is possible to
+    have several servers and pool because, in effect, the servers will be added to
+    the list of possible sources once the duplicates have been removed.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Chrony通过`/etc/chrony.conf`进行配置，并充当客户端，因此它连接到服务器以检查它们是否有资格成为时间源。传统的**server**指令和**pool**之间的主要区别在于后者可以接收多个条目，而前者只使用一个。可以有多个服务器和池，因为实际上，一旦删除了重复项，服务器将被添加到可能的源列表中。
+- en: For *pool* or *server* directives, there are several options available (described
+    in `man chrony.conf`), such as `iburst`, which enables faster checks so that they
+    can quickly transition to a synchronized status.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于*pool*或*server*指令，有几个可用的选项（在`man chrony.conf`中有描述），例如`iburst`，它可以加快检查速度，以便它们可以快速过渡到同步状态。
+- en: 'The actual sources for time can be checked with `chronyc sources`:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以使用`chronyc sources`来检查实际的时间源：
+- en: '![Figure 4.5 – chronyc sources output'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.5 – chronyc sources输出'
+- en: '](img/B16799_04_005.jpg)'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_005.jpg)'
+- en: Figure 4.5 – chronyc sources output
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.5 – chronyc sources输出
+- en: 'As we can see, we know which status is for each server based on the first column
+    (**M**):'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，我们可以根据第一列（**M**）知道每个服务器的状态是什么：
+- en: '**^**: This is a server'
+  id: totrans-193
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**^**：这是一个服务器'
+- en: '**=**: This is a peer'
+  id: totrans-194
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**=**：这是一个对等体'
+- en: 'In the second column (S), we can see the different statuses for each entry:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第二列（S）中，我们可以看到每个条目的不同状态：
+- en: '*****: This is our current synchronized server.'
+  id: totrans-196
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*****：这是我们当前的同步服务器。'
+- en: '**+**: This is another acceptable time source.'
+  id: totrans-197
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**+**：这是另一个可接受的时间源。'
+- en: '**?**: This is used to indicate sources that has lost network connectivity.'
+  id: totrans-198
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**?**：用于指示已失去网络连接的源。'
+- en: '**x**: This server is considered a false ticker (its time is considered inconsistent
+    compared to other sources).'
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**x**：此服务器被认为是虚假的滴答器（与其他来源相比，其时间被认为是不一致的）。'
+- en: '**~**: A source that has a high variability (it also appears during daemon
+    startup).'
+  id: totrans-200
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**~**：具有高变异性的源（它也会在守护程序启动期间出现）。'
+- en: So, we can see that our system is connected to a server that is considering
+    the reference at `ts1.sct.de`, which is a stratum 2 server.
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们可以看到我们的系统连接到一个正在考虑`ts1.sct.de`作为参考的服务器，这是一个stratum 2服务器。
+- en: 'More detailed information can be checked via the `chronyc tracking` command:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以通过`chronyc tracking`命令检查更详细的信息：
+- en: '![Figure 4.6 – Chronyc tracking output'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.6 – Chronyc跟踪输出'
+- en: '](img/B16799_04_006.jpg)'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_006.jpg)'
+- en: Figure 4.6 – Chronyc tracking output
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.6 – Chronyc跟踪输出
+- en: 'This provides more detailed information about our clock and our reference clock.
+    Each field in the preceding screenshot has the following meaning:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这提供了关于我们的时钟和参考时钟的更详细信息。前面截图中的每个字段具有以下含义：
+- en: '**Field**: Description.'
+  id: totrans-207
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**字段**：描述。'
+- en: '**Reference ID**: ID and name/IP of the server that the system has synchronized.'
+  id: totrans-208
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**参考ID**：系统已同步的服务器的ID和名称/IP。'
+- en: '**Stratum**: Our stratum level. In this example, our synchronized server is
+    a stratum 3 clock.'
+  id: totrans-209
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Stratum**：我们的stratum级别。在此示例中，我们的同步服务器是一个stratum 3时钟。'
+- en: '**Ref time**: The last time the reference was processed.'
+  id: totrans-210
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**参考时间**：上次处理参考的时间。'
+- en: '**System time**: When running in normal mode (without time skip), this references
+    how far away or behind the system is from the reference clock.'
+  id: totrans-211
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**系统时间**：在正常模式下运行时（没有时间跳跃），这指的是系统与参考时钟的偏离。'
+- en: '**Last offset**: Estimated offset on the last clock update. If it''s positive,
+    this indicates that our local time was ahead of our source.'
+  id: totrans-212
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**最后偏移**：最后一次时钟更新的估计偏移。如果是正数，这表示我们的本地时间超前于我们的来源。'
+- en: '**RMS offset**: Long-term average of the offset value.'
+  id: totrans-213
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**RMS偏移**：偏移值的长期平均值。'
+- en: '**Frequency**: It is the rate at which the system clock would be wrong if *chronyd*
+    is not fixing it, expressed in parts per million.'
+  id: totrans-214
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**频率**：如果*chronyd*不修复它，系统时钟的错误率，以百万分之一表示。'
+- en: '**Residual freq**: Reflects any difference between the measurements for the
+    current reference clock.'
+  id: totrans-215
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**剩余频率**：反映当前参考时钟测量之间的任何差异。'
+- en: '**Skew**: Estimated error on the frequency.'
+  id: totrans-216
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**偏差**：频率的估计误差。'
+- en: '**Root delay**: Total network delays to the stratum -1 synchronized server.'
+  id: totrans-217
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**根延迟**：到stratum -1同步服务器的总网络延迟。'
+- en: '**Root dispersion**: Total dispersion accumulated through all the computers
+    connected to the stratum -1 server we''re synchronized to.'
+  id: totrans-218
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**根分散**：通过连接到我们同步的stratum -1服务器的所有计算机累积的总分散。'
+- en: '**Update interval**: Interval between the last two clock updates.'
+  id: totrans-219
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**更新间隔**：最后两次时钟更新之间的间隔。'
+- en: '`/usr/share/doc/program/`), and more. For example, more detailed information
+    about each field listed here can be found via the `man chronyc` command.'
+  id: totrans-220
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`/usr/share/doc/program/`），等等。例如，关于此处列出的每个字段的更详细信息可以通过`man chronyc`命令找到。'
+- en: To configure the client with additional options, other than the ones provided
+    at install time or via the kickstart file, we can edit the `/etc/chrony.cnf` file.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要配置客户端的其他选项，除了安装时提供的选项或通过kickstart文件提供的选项，我们可以编辑`/etc/chrony.cnf`文件。
+- en: Let's learn how to convert our system into an NTP server for our network.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们学习如何将我们的系统转换为我们网络的NTP服务器。
+- en: NTP server
+  id: totrans-223
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: NTP服务器
+- en: As we introduced earlier, *chrony* can also be configured as a server for your
+    network. In this mode, our system will be providing accurate clock information
+    to other hosts without consuming external bandwidth or resources from higher-stratum
+    servers.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前介绍的，*chrony*也可以配置为您的网络的服务器。在这种模式下，我们的系统将向其他主机提供准确的时钟信息，而不消耗来自更高层级服务器的外部带宽或资源。
+- en: 'This configuration is also performed via the `/etc/chrony.conf` file, which
+    is where we will be adding a new directive; that is, `allow`:'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个配置也是通过`/etc/chrony.conf`文件进行的，我们将在这里添加一个新的指令；即`allow`：
+- en: '[PRE18]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: This change enables *chrony* to listen on all host requests. Alternatively,
+    we can define a subnet or host to listen to, such as `allow 1.1.1.1`. More than
+    one directive can be used to define the different subnets. Alternatively, you
+    can use the *deny* directive to block specific hosts or subnets from reaching
+    our NTP server.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此更改使*chrony*能够监听所有主机请求。或者，我们可以定义一个子网或主机来监听，例如`allow 1.1.1.1`。可以使用多个指令来定义不同的子网。另外，您可以使用*deny*指令来阻止特定主机或子网访问我们的NTP服务器。
+- en: The serving time starts from the base that our server is already synchronized
+    with, as well as an external NTP server, but let's think about an environment
+    without connectivity. In this case, our server will not be connected to an external
+    source and it will not serve time.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 服务时间从我们的服务器已经与之同步的基础开始，以及一个外部NTP服务器，但让我们考虑一个没有连接性的环境。在这种情况下，我们的服务器将不连接到外部来源，也不会提供时间。
+- en: '*chrony* allows us to define a fake stratum for our server. This is done via
+    the `local` directive in the configuration file. This allows the daemon to get
+    a higher local stratum so that it can serve the time to other hosts; for example:'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*chrony*允许我们为我们的服务器定义一个虚假的层级。这是通过配置文件中的`local`指令完成的。这允许守护程序获得更高的本地层级，以便它可以向其他主机提供时间；例如：'
+- en: '[PRE19]'
+  id: totrans-230
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: With this directive, we're setting the local stratum to 3 and we're using the
+    **orphan** option, which enables a special mode in which all the servers with
+    an equal local stratum are ignored unless no other source can be selected, and
+    its reference ID is smaller than the local one. This means that we can set several
+    NTP servers in our disconnected network but only one of them will be the reference.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这个指令，我们将本地层级设置为3，并使用**orphan**选项，这将启用一个特殊模式，在这个模式下，所有具有相同本地层级的服务器都会被忽略，除非没有其他来源可供选择，且其参考ID小于本地ID。这意味着我们可以在我们的断开网络中设置几个NTP服务器，但只有一个会成为参考。
+- en: Now that we have covered time synchronization, we are going to dive into resource
+    monitoring. Later, we'll look at logging. All of this is related to our time reference
+    for the system.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经涵盖了时间同步，我们将深入资源监视。稍后，我们将研究日志记录。所有这些都与我们系统的时间参考有关。
+- en: Checking for free resources – memory and disk (free and df)
+  id: totrans-233
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检查空闲资源 - 内存和磁盘（free和df）
+- en: In this section, you will check the availability of system **resources** such
+    as **memory** and **disk**.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，您将检查系统**资源**的可用性，例如**内存**和**磁盘**。
+- en: Keeping a system running smoothly means using monitoring so that we can check
+    that the services are running and that the system provides the resources for them
+    to do their tasks.
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 保持系统平稳运行意味着使用监视，以便我们可以检查服务是否正在运行，以及系统是否为它们提供了资源来执行它们的任务。
+- en: 'There are simple commands we can use to monitor the most basic use cases:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一些简单的命令可以用来监视最基本的用例：
+- en: Disk
+  id: totrans-237
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 磁盘
+- en: CPU
+  id: totrans-238
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CPU
+- en: Memory
+  id: totrans-239
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 内存
+- en: Network
+  id: totrans-240
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 网络
+- en: This includes several ways of monitoring, such as one-shot monitoring, continuously,
+    or even for a period of time to diagnose performance better.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这包括几种监视方式，例如一次性监视、连续监视，或者甚至在一段时间内进行诊断性能更好。
+- en: Memory
+  id: totrans-242
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 内存
+- en: Memory can be monitored via the `free` command. It provides details on how much
+    *RAM* and *SWAP* are available and in use, which also indicates how much memory
+    is used by shares, buffers, or caches.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 内存可以通过`free`命令进行监视。它提供了有关可用和正在使用多少*RAM*和*SWAP*的详细信息，这也表明了多少内存被共享、缓冲或缓存使用。
+- en: 'Linux tends to use all available memory; any unused RAM is directed toward
+    caches or buffers and memory pages that are not being used. These are swapped
+    out to disk if available:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux倾向于使用所有可用的内存；任何未使用的RAM都会被指向缓存或缓冲区，以及未被使用的内存页面。如果可用，这些将被交换到磁盘上：
+- en: '[PRE20]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: For example, in the preceding output, we can see that the system has a total
+    of 823 MB of RAM and that it's using some swap and some memory for buffers. This
+    system is not swapping heavily as it's almost idle (we'll check the load average
+    later in this chapter), so we should not be concerned about it.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，在上面的输出中，我们可以看到系统总共有823 MB的RAM，并且它正在使用一些交换空间和一些内存用于缓冲。这个系统没有大量交换，因为它几乎处于空闲状态（我们将在本章后面检查负载平均值），所以我们不应该担心它。
+- en: When RAM usage gets high and there's no more swap available, the kernel includes
+    a protection mechanism called **OOM-Killer**. It determines, based on time in
+    execution, resources usage, and more which processes in the system should be terminated
+    to recover the system so that it's functional. This, however, comes at a cost,
+    as the kernel knows about the processes that may have gone out of control. However,
+    the killer may kill databases and web servers and leave the system in an unstable
+    way. For production servers, it is sometimes typical to, instead of letting the
+    OOM-Killer start killing processes in an uncontrolled way, to either tune the
+    values for some critical process so that those are not killed or to cause a system
+    crash.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当RAM使用量很高且没有更多的交换空间可用时，内核会包括一种保护机制，称为**OOM-Killer**。它根据执行时间、资源使用情况等确定系统中应终止哪些进程以恢复系统，使其正常运行。然而，这是有代价的，因为内核知道可能已经失控的进程。然而，杀手可能会杀死数据库和Web服务器，并使系统处于不稳定状态。对于生产服务器，有时候典型的做法是，不是让OOM-Killer开始以不受控制的方式杀死进程，而是调整一些关键进程的值，使它们不被杀死，或者导致系统崩溃。
+- en: A system crash is used to collect debug information that can later be analyzed
+    via a dump containing information about what caused the crash, as well as a memory
+    dump that can be diagnosed.
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 系统崩溃用于收集可以稍后通过包含导致崩溃的原因以及可以进行诊断的内存转储的调试信息。
+- en: We will come back to this topic in [*Chapter 16*](B16799_16_Final_SK_ePub.xhtml#_idTextAnchor200),
+    *Kernel Tuning and Managing Performance Profiles with tuned*. Let's move on and
+    check the disk space that's in use.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在[*第16章*](B16799_16_Final_SK_ePub.xhtml#_idTextAnchor200)中回到这个话题，*使用tuned进行内核调优和管理性能配置文件*。让我们继续检查正在使用的磁盘空间。
+- en: Disk space
+  id: totrans-250
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 磁盘空间
+- en: Disk space can be checked via the `df` provides data as output for each filesystem.
+    This indicates the filesystem and its size, available space, percent of utilization,
+    and mount point.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以通过`df`检查磁盘空间，它为每个文件系统提供数据输出。这表示文件系统及其大小、可用空间、利用率百分比和挂载点。
+- en: 'Let''s check this in our example system:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在我们的示例系统中检查一下：
+- en: '[PRE21]'
+  id: totrans-253
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: By using this, it's easy to focus on filesystems with higher utilization and
+    less free space to prevent issues.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过使用这个工具，可以轻松关注利用率较高且剩余空间较少的文件系统，以防止问题发生。
+- en: Important Note
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: If a file is being written, such as by a process logging its output, removing
+    the file will just unlink the file from the filesystem, but since the process
+    still has the file handle open, the space is not reclaimed until the process is
+    stopped. In case of critical situations where disk space must be made available
+    as soon as possible, it's better to empty the file via a redirect, such as `echo
+    "" > filename`. This will recover the disk space immediately while the process
+    is still running. Doing this with `rm` command will require the process to be
+    finalized.
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果文件正在被写入，比如由一个进程记录其输出，那么删除文件只会将文件从文件系统中取消链接，但由于进程仍然保持文件句柄打开，直到进程停止，空间才会被回收。在必须尽快释放磁盘空间的紧急情况下，最好通过重定向清空文件，比如`echo
+    "" > filename`。这样可以在进程仍在运行时立即恢复磁盘空间。使用`rm`命令会要求进程被完成。
+- en: We'll check out CPU usage next.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来我们将检查CPU使用率。
+- en: CPU
+  id: totrans-258
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: CPU
+- en: 'When it comes to monitoring the CPU, we can make use of several tools, such
+    as `ps`:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在监视CPU方面，我们可以利用多种工具，比如`ps`：
+- en: '![Figure 4.7 – Output of the ps aux command (every process in the system)'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.7 - ps aux命令的输出（系统中的每个进程）'
+- en: '](img/B16799_04_007.jpg)'
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_007.jpg)'
+- en: Figure 4.7 – Output of the ps aux command (every process in the system)
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.7 - ps aux命令的输出（系统中的每个进程）
+- en: The `ps` command is the de facto standard for checking which process is running,
+    as well as resource consumption usage.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ps`命令是检查正在运行的进程以及资源消耗情况的事实标准。'
+- en: As for any other command, we could write a lot about all the different command
+    arguments we could use (so, again, check the man page for details), but as a rule,
+    try to learn about their basic usage or the ones that are more useful for you.
+    For anything else, check the manual. For example, `ps aux` provides enough information
+    for normal usage (every process in the system).
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于任何其他命令，我们都可以写很多关于可以使用的所有不同命令参数的内容（所以，再次，查看man页面以获取详细信息），但通常来说，尽量了解它们的基本用法或对你更有用的用法。其他情况，请查看手册。例如，`ps
+    aux`提供了足够的信息供正常使用（系统中的每个进程）。
+- en: 'The `top` tool, as shown in the following screenshot, refreshes the screen
+    regularly and can sort the output of running processes, such as CPU usage, memory
+    usage, and more. In addition, `top` also shows a five-line summary of memory usage,
+    `load average`, running processes, and so on:'
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`top`工具，如下面的截图所示，会定期刷新屏幕，并可以对运行中的进程进行排序，比如CPU使用率、内存使用率等。此外，`top`还显示了关于内存使用情况、负载平均、运行中的进程等的五行摘要：'
+- en: '![Figure 4.8 – top execution on our test system'
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.8 - 在我们的测试系统上执行top命令'
+- en: '](img/B16799_04_008.jpg)'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_008.jpg)'
+- en: Figure 4.8 – top execution on our test system
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.8 - 在我们的测试系统上执行top命令
+- en: CPU usage is not the only thing that may keep our system sluggish. Now, let's
+    learn a bit about load average indicators.
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: CPU使用率并不是唯一可能使系统变得缓慢的因素。现在，让我们稍微了解一下负载平均指标。
+- en: Load average
+  id: totrans-270
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 负载平均
+- en: 'Load average is usually provided as a group of three numbers, such as `load
+    average: 0.81, 1.00, 1.17`, which is the average that''s calculated for 1, 5,
+    and 15 minutes, respectively. This indicates how busy a system is; the higher
+    it is, the worse it will respond. The values that are compared for each time frame
+    give us an idea of whether the system load is increasing (higher values in 1 or
+    5 and lower on 15) or if it is going down (higher at 15 mins, lower at 5 and 1),
+    so it becomes a quick way to find out if something happened or if it is ongoing.
+    If a system usually has a high load average (over 1.00), it would be a good idea
+    to dig a bit deeper into the possible causes (too much demand for its power, not
+    many resources available, and so on).'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 负载平均通常以三个数字的形式提供，比如`负载平均：0.81，1.00，1.17`，分别是1、5和15分钟的平均值。这表示系统有多忙；数值越高，响应越差。每个时间段比较的值给我们一个概念，即系统负载是增加的（1或5分钟内的值较高，15分钟内的值较低），还是正在减少（15分钟内的值较高，5和1分钟内的值较低），因此这成为了一个快速找出是否发生了什么或者正在发生的方法。如果系统通常具有较高的负载平均值（超过1.00），那么深入挖掘可能的原因（对其功率需求过高，可用资源不多等）是一个好主意。
+- en: Now that we have covered the basics, let's move on and look at some extra checks
+    we can perform on our system resource's usage.
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经介绍了基础知识，让我们继续看一些额外的检查，我们可以对系统资源的使用进行。
+- en: Other monitoring tools
+  id: totrans-273
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 其他监控工具
+- en: For `ifconfig`, for example, and match the values that are received for transmitted
+    packages, received, errors, and so on.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，对于`ifconfig`，可以匹配接收到的传输包、接收到的包、错误等的值。
+- en: When the goal Is to perform more complete monitoring, we should ensure that
+    the `/var/log/sa/`.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当目标是执行更完整的监控时，我们应该确保`/var/log/sa/`。
+- en: The historical data that's recorded and stored per day (`##`) at `/var/log/sa/sa##`
+    and `/var/log/sa/sar##` can be queried so that we can compare against other days.
+    By running the data collector (which is executed by a *systemd* timer) with a
+    higher frequency, we can increase the granularity for specific periods while an
+    issue is being investigated.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每天记录和存储的历史数据（`##`）可以在`/var/log/sa/sa##`和`/var/log/sa/sar##`中查询，以便我们可以与其他天进行比较。通过以更高的频率运行数据收集器（由*systemd*定时器执行），我们可以在调查问题时增加特定时期的细粒度。
+- en: 'However, the appearance of the *sar* file is showing lots of data:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，*sar*文件的外观显示了大量的数据：
+- en: '![Figure 4.9 – Contents of /var/log/sar02 on the example system'
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.9 - 示例系统上/var/log/sar02的内容'
+- en: '](img/B16799_04_009.jpg)'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_009.jpg)'
+- en: Figure 4.9 – Contents of /var/log/sar02 on the example system
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.9 - 示例系统上/var/log/sar02的内容
+- en: 'Here, we can see that the 8-0 device had 170.27 transactions per second and
+    14.51% utilization. In this case, the device''s name is using the values for the
+    major/minor, which we can check in the `/dev/` folder. We can see this by running
+    `ls -l /dev/*|grep 8`, as shown in the following screenshot:'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到8-0设备每秒有170.27次事务和14.51%的利用率。在这种情况下，设备的名称使用主/次的值，我们可以在`/dev/`文件夹中检查。我们可以通过运行`ls
+    -l /dev/*|grep 8`来查看，如下面的截图所示：
+- en: '![Figure 4.10 – Directory listing for /dev/ for locating the device corresponding
+    to major 8 and minor 0'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.10 - 用于定位与主8和次0对应的设备的/dev/目录列表'
+- en: '](img/B16799_04_010.jpg)'
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_010.jpg)'
+- en: Figure 4.10 – Directory listing for /dev/ for locating the device corresponding
+    to major 8 and minor 0
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.10 - 用于定位与主8和次0对应的设备的/dev/目录列表
+- en: Here, we can see that this corresponds to the full hard drive statistics at
+    `/dev/sda`.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到这对应于`/dev/sda`上的完整硬盘统计信息。
+- en: Tip
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Processing the data via **sar** is a good way to get insights on what's going
+    on with our system, but since the *sysstat* package has been around for a long
+    time in Linux, there are tools such as [https://github.com/mbaldessari/sarstats](https://github.com/mbaldessari/sarstats)
+    that help us process the data that's recorded and present it graphically as a
+    PDF file.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过**sar**处理数据是了解系统运行情况的好方法，但由于*sysstat*软件包在Linux中已经存在很长时间，因此有一些工具，如[https://github.com/mbaldessari/sarstats](https://github.com/mbaldessari/sarstats)，可以帮助我们处理记录的数据并以PDF文件的形式呈现图形化。
+- en: 'In the following graph, we can see the system service times for the different
+    drives, along with a label at the time the system crashes. This helps us identify
+    the system''s activity at that point:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下图中，我们可以看到不同驱动器的系统服务时间，以及系统崩溃时的标签。这有助于我们识别该点的系统活动：
+- en: '![Figure 4.11 – Sarstats graphics for the disk service''s time in their example
+    PDF at https://acksyn.org/software/sarstats/sar01.pdf'
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.11 - 他们示例PDF中的磁盘服务时间的Sarstats图形，网址为https://acksyn.org/software/sarstats/sar01.pdf'
+- en: '](img/B16799_04_011.jpg)'
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_011.jpg)'
+- en: Figure 4.11 – Sarstats graphics for the disk service's time in their example
+    PDF at [https://acksyn.org/software/sarstats/sar01.pdf](https://acksyn.org/software/sarstats/sar01.pdf
+    )
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.11 - 他们示例PDF中的磁盘服务时间的Sarstats图形，网址为[https://acksyn.org/software/sarstats/sar01.pdf](https://acksyn.org/software/sarstats/sar01.pdf
+    )
+- en: Modern tooling for monitoring the system's resources has evolved, and **Performance
+    Co-Pilot** (**pcp** and, optionally, the **pcp-gui** packages) can be set up for
+    more powerful options. Just bear in mind that pcp requires us to also start the
+    data collector on the system.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现代监控系统资源的工具已经发展，**Performance Co-Pilot**（**pcp**和可选的**pcp-gui**软件包）可以设置更强大的选项。只需记住，pcp要求我们还在系统上启动数据收集器。
+- en: RHEL8 also includes **cockpit**, which is installed by default when we do a
+    server installation. This package provides a set of tools that enable web management
+    for the system, and it can also be made part of other products via plugins that
+    extend its functionality.
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: RHEL8还包括**cockpit**，在进行服务器安装时默认安装。该软件包提供了一组工具，可以通过扩展其功能的插件将其作为其他产品的一部分。
+- en: The web service provided by cockpit can be reached at your host IP at port `9090`,
+    so you should access `https://localhost:9090` to get a login screen so that we
+    can use our system credentials to log in.
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: cockpit提供的Web服务可以在主机IP的9090端口上访问，因此您应该访问`https://localhost:9090`以获取登录屏幕，以便我们可以使用系统凭据登录。
+- en: Important Tip
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: If cockpit is not installed or available, make sure that you execute `dnf install
+    cockpit` to install the package and use `systemctl enable --now cockpit.socket`
+    to start the service. If you are accessing the server remotely, instead of using
+    `localhost`, use the server hostname or IP address after allowing the firewall
+    to connect via `firewall-cmd --add-service=cockpit`, if you haven't done so previously.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果未安装或不可用cockpit，请确保执行`dnf install cockpit`来安装该软件包，并使用`systemctl enable --now
+    cockpit.socket`启动服务。如果您远程访问服务器，而不是使用`localhost`，请在允许防火墙连接之后使用服务器主机名或IP地址进行连接`firewall-cmd
+    --add-service=cockpit`，如果之前未这样做。
+- en: 'After logging in, we will see a dashboard showing the relevant system information
+    and links to other sections, as shown in the following screenshot:'
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 登录后，我们将看到一个显示相关系统信息和链接到其他部分的仪表板，如下面的截图所示：
+- en: '![Figure 4.12 – Cockpit screen after logging in with a system dashboard'
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.12 - 登录系统仪表板后的Cockpit屏幕'
+- en: '](img/B16799_04_12.jpg)'
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_12.jpg)'
+- en: Figure 4.12 – Cockpit screen after logging in with a system dashboard
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.12 - 登录系统仪表板后的Cockpit屏幕
+- en: As you can see, *cockpit* includes several tabs that can be used to view the
+    status of the system and even perform some administration tasks, such as **SELinux**,
+    software updates, subscriptions, and more.
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，*cockpit*包括几个选项卡，可用于查看系统状态，甚至执行一些管理任务，如**SELinux**、软件更新、订阅等。
+- en: 'For example, we can check the system graphs on performance, as shown in the
+    following screenshot:'
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们可以查看性能图表，如下面的截图所示：
+- en: '![Figure 4.13 – Cockpit graphs in the dashboard for Usage Graphs'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.13 - 用于使用图表的Cockpit仪表板的图形'
+- en: '](img/B16799_04_13.jpg)'
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_13.jpg)'
+- en: Figure 4.13 – Cockpit graphs in the dashboard for Usage Graphs
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.13 - 仪表板中的Cockpit图表
+- en: Cockpit allows us to check a service's status, package upgrade status, plus
+    other configuration settings from a graphical interface that can also connect
+    remotely to other systems. These can be selected from the lateral menu on the
+    left.
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Cockpit允许我们从图形界面检查服务状态、软件包升级状态以及其他配置设置，还可以远程连接到其他系统。这些可以从左侧的侧边菜单中选择。
+- en: There are better tools suited for large deployment monitoring and management,
+    such as *Ansible* and *Satellite*, so it is important to get used to the tools
+    we have for troubleshooting and simple scripts we can build. This allows us to
+    combine what we've learned so far to quickly generate hints about things that
+    require our attention.
+  id: totrans-307
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有更适合大规模部署监控和管理的工具，比如*Ansible*和*Satellite*，因此熟悉我们用于故障排除和简单脚本构建的工具非常重要。这使我们能够结合到目前为止学到的知识，快速生成需要我们注意的事项的提示。
+- en: With that, we have covered some of the basics of checking resource usage. Now,
+    let's check out how to find information about the running services and errors
+    we can review.
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这样，我们已经介绍了一些检查资源使用情况的基础知识。现在，让我们看看如何查找有关正在运行的服务和我们可以审查的错误的信息。
+- en: Finding logs, using journald, and reading log files, including log preservation
+    and rotation
+  id: totrans-309
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 查找日志，使用journald和阅读日志文件，包括日志保存和轮换
+- en: In this section, you will learn how to review a system's status via logs.
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，您将学习如何通过日志审查系统的状态。
+- en: Previously in this chapter, we learned how to manage system services via *systemd*,
+    check their status, and check their logs. Traditionally, the different daemons
+    and system components used to create files under the `/var/log/` folder are based
+    on the name of the daemon or service. If the service used to create several logs,
+    it would do so inside a folder for the service (for example, **httpd** or **samba**).
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的前面部分，我们学习了如何通过*systemd*管理系统服务，检查它们的状态和检查它们的日志。传统上，不同的守护程序和系统组件用于在`/var/log/`文件夹下创建文件，这些文件基于守护程序或服务的名称。如果服务用于创建多个日志，则会在服务的文件夹内创建这些日志（例如**httpd**或**samba**）。
+- en: The system log daemon, `rsyslogd`, has a new *systemd* partner, named `systemd-journald.service`,
+    that also stores logs, but instead of using the traditional plain text format,
+    it uses binary format, which can be queried via the `journalctl` command.
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 系统日志守护程序`rsyslogd`有一个新的*systemd*伙伴，名为`systemd-journald.service`，它也存储日志，但它不是使用传统的纯文本格式，而是使用二进制格式，可以通过`journalctl`命令查询。
+- en: It's really important to get used to reading the log files as it's the basis
+    for troubleshooting, so let's learn about general logging and how to use it.
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 熟悉阅读日志文件非常重要，因为这是故障排除的基础，因此让我们学习一下一般日志记录以及如何使用它。
+- en: 'Logs contain status information for the services that generate it. They might
+    have some common formatting and can often be configured, but they tend to use
+    several common elements, such as the following:'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 日志包含生成它的服务的状态信息。它们可能具有一些常见的格式，并且通常可以配置，但它们倾向于使用一些常见的元素，例如以下内容：
+- en: Timestamp
+  id: totrans-315
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 时间戳
+- en: Module generating the entry
+  id: totrans-316
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成条目的模块
+- en: Message
+  id: totrans-317
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 消息
+- en: 'The following is an example:'
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一个例子：
+- en: '[PRE22]'
+  id: totrans-319
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: In this case, we can see that someone attempted to log into our system as the
+    `admin` user from IP address `49.232.135.77`.
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，我们可以看到有人尝试以`admin`用户从IP地址`49.232.135.77`登录到我们的系统。
+- en: We can correlate that event with additional logs, such as the ones for the login
+    subsystem via `journalctl -u systemd-logind`. In this example, we cannot find
+    any login for the `admin` user (this is expected as the `admin` user was not defined
+    in this system).
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将该事件与其他日志相关联，例如通过`journalctl -u systemd-logind`查看登录子系统的日志。在这个例子中，我们找不到`admin`用户的任何登录（这是预期的，因为在这个系统中未定义`admin`用户）。
+- en: Additionally, we can see the name of the host, `el8-692807`, the service generating
+    it, `sshd`, a `50197`, and the message that's been logged by that service.
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们还可以看到主机名`el8-692807`，生成它的服务`sshd`，`50197`和该服务记录的消息。
+- en: 'In addition to *journalctl*, there are additional logs that we can look at
+    when we wish to check the system''s health. Let''s look at an example with `/var/log/messages`:'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了*journalctl*，我们还可以查看其他日志，以便在希望检查系统健康状况时使用。让我们以`/var/log/messages`为例：
+- en: '![Figure 4.14 – Excerpt of /var/log/messages'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.14 - /var/log/messages摘录'
+- en: '](img/B16799_04_014.jpg)'
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_014.jpg)'
+- en: Figure 4.14 – Excerpt of /var/log/messages
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.14 - /var/log/messages摘录
+- en: In this example, we can see how the system ran some commands while following
+    a similar output to the initial lines. For example, in the preceding example,
+    we can see how `sysstat` has been executed every 10 minutes, as well as how the
+    `dnf` cache has been updated.
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们可以看到系统在遵循类似初始行的输出时运行了一些命令。例如，在前面的例子中，我们可以看到`sysstat`每10分钟执行一次，以及`dnf`缓存已更新。
+- en: 'Let''s look at a list of important logs that are available in a standard system
+    installation (note that the filenames are relative to `/var/log folder`):'
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看一下标准系统安装中可用的重要日志列表（请注意，文件名是相对于`/var/log`文件夹的）：
+- en: '`boot.log`: Stores the messages that are emitted by the system during boot.
+    It might contain escape codes that are used to provide colorized output.'
+  id: totrans-329
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`boot.log`：存储系统在启动过程中发出的消息。它可能包含用于提供带颜色的输出的转义代码。'
+- en: '`audit/audit.log`: Contains the stored messages that have been generated by
+    the Kernel audit subsystem.'
+  id: totrans-330
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`audit/audit.log`：包含由内核审计子系统生成的存储消息。'
+- en: '`secure`: Contains security-related messages, such as failed `sshd` login attempts.'
+  id: totrans-331
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`secure`：包含安全相关的消息，比如`sshd`登录尝试失败。'
+- en: '`dnf.log`: Logs generated by the DNF package manager, such as cache refreshes.'
+  id: totrans-332
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`dnf.log`：由DNF软件包管理器生成的日志，例如缓存刷新。'
+- en: '`firewalld`: Output generated by the *firewalld* daemon.'
+  id: totrans-333
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`firewalld`：由*firewalld*守护程序生成的输出。'
+- en: '`lastlog`: This is a binary file that contains information about the last few
+    users logging into the system (to be queried via the `last` command).'
+  id: totrans-334
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`lastlog`：这是一个包含有关最近登录系统的用户信息的二进制文件（可通过`last`命令查询）。'
+- en: '`messages`: The default logging facility. This means that anything that is
+    not a specific log will go here. Usually, this is the best place to start checking
+    what happened with a system.'
+  id: totrans-335
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`messages`：默认的日志记录设施。这意味着任何不是特定日志的内容都会在这里。通常，这是开始检查系统发生了什么的最佳位置。'
+- en: '`maillog`: The log for the mail subsystem. When enabled, it attempts to deliver
+    messages. Any messages that are received will be stored here. It''s common practice
+    to configure outgoing mail from servers so that system alerts or script outputs
+    can be delivered.'
+  id: totrans-336
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`maillog`：邮件子系统的日志。启用后，它会尝试传递消息。接收到的任何消息都将存储在这里。通常，配置服务器的出站邮件，以便可以传递系统警报或脚本输出。'
+- en: '`btmp`: Binary log for failed access to the system.'
+  id: totrans-337
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`btmp`：系统访问失败的二进制日志。'
+- en: '`wtmp`: Binary log for access to the system.'
+  id: totrans-338
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`wtmp`：系统访问的二进制日志。'
+- en: '`sa/sar*`: Text logs for the *sysstat* utility (the binary ones, named *sa*,
+    plus the day number, are converted via a *cron* job at night).'
+  id: totrans-339
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sa/sar*`：*sysstat*实用程序的文本日志（二进制文件，命名为*sa*，加上日期编号，通过夜间的*cron*作业转换）。'
+- en: Additional log files might exist, depending on the services that have been installed,
+    the installation method that was used, and so on. It is very important to get
+    used to the available logs and, of course, review their contents to see how the
+    messages are formatted, how many logs are created every day, and what kind of
+    information they produce.
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据已安装的服务、使用的安装方法等，可能存在其他日志文件。熟悉可用的日志非常重要，当然，要审查它们的内容，以了解消息的格式、每天创建多少个日志以及它们产生了什么样的信息。
+- en: Using the information that's been logged, we will get hints on how to configure
+    each individual daemon. This allows us to adjust the log level between being showing
+    just errors or being more verbose about debugging issues. This means we can configure
+    the required log rotation to avoid risking system stability because all the space
+    has been consumed by logs.
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 利用已记录的信息，我们将获得有关如何配置每个单独的守护进程的提示。这使我们能够调整日志级别，从仅显示错误到更详细地调试问题。这意味着我们可以配置所需的日志旋转，以避免因为日志占用了所有空间而导致系统稳定性受到风险。
+- en: Log rotation
+  id: totrans-342
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 日志旋转
+- en: During regular system operation, lots of daemons are in use, and the system
+    itself generates the logs that are used for troubleshooting and system checks.
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在正常的系统操作期间，有许多守护进程在使用，并且系统本身会生成用于故障排除和系统检查的日志。
+- en: Some services might allow us to define the log file to write for based on the
+    date, but usually, the standard is to log to a file named like the daemon in the
+    `/var/log` directory; for example, `/var/log/cron`. Writing to the same file will
+    cause the file to grow until the drive holding the logs is filled, which might
+    not make sense as after a while (sometimes, under company-defined policies), logs
+    are no longer useful.
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些服务可能允许我们根据日期定义要写入的日志文件，但通常的标准是将日志记录到`/var/log`目录中类似守护进程名称的文件中；例如，`/var/log/cron`。写入同一文件将导致文件不断增长，直到存储日志的驱动器被填满，这在一段时间后（有时在公司定义的政策下）可能不再有意义。
+- en: 'The `cron` entry that simplifies the log rotation process. It is configured
+    via `/etc/logrotate.conf` and is executed on a daily basis, as shown here:'
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简化日志旋转过程的`cron`条目。它是通过`/etc/logrotate.conf`配置的，并且每天执行一次，如下所示：
+- en: '![Figure 4.15 – Example listing of logs and rotated logs (using date extension)'
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图4.15 - 日志和旋转日志的示例清单（使用日期扩展）'
+- en: '](img/B16799_04_015.jpg)'
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B16799_04_015.jpg)'
+- en: Figure 4.15 – Example listing of logs and rotated logs (using date extension)
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.15 - 日志和旋转日志的示例清单（使用日期扩展）
+- en: If we check the contents of the configuration file, we will see that it includes
+    some file definitions either directly there or via drop-in files in the `/etc/logrotate.d/`
+    folder, which allows each program to drop their own requirements without it affecting
+    others when packages are installed, removed, or updated.
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们检查配置文件的内容，我们会发现它包括一些文件定义，可以直接在那里或通过`/etc/logrotate.d/`文件夹中的附加文件中定义，这样每个程序都可以在安装、删除或更新软件包时满足自己的要求，而不会影响其他程序。
+- en: Why is this important? Because, if you remember from of the tips earlier in
+    this chapter (while speaking about disk space), if `logrotate` just deleted the
+    files and created a new one, the actual disk space would not be freed, and the
+    daemon writing to the log will continue to write to the file it was writing to
+    (via the file handle). To overcome this, each definition file can define a post-rotation
+    command. This signals the process of log rotation so that it can close and then
+    reopen the files it uses for logging. Some programs might require a signal such
+    as `kill –SIGHUP PID` or a special parameter on execution such as `chronyc cyclelogs`.
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么这很重要？因为，如果您还记得本章早些时候的一些建议（关于磁盘空间），如果`logrotate`只是删除文件并创建新文件，实际的磁盘空间将不会被释放，并且写入日志的守护进程将继续写入它正在写入的文件（通过文件句柄）。为了克服这一点，每个定义文件可以定义一个后旋转命令。这会向日志旋转过程发出信号，以便它可以关闭，然后重新打开用于记录的文件。一些程序可能需要像`kill
+    -SIGHUP PID`这样的信号，或者在执行时需要特殊参数，比如`chronyc cyclelogs`。
+- en: With these definitions, `logrotate` will be able to apply the configuration
+    for each service and, at the same time, keep the service working in a sane state.
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这些定义，`logrotate`将能够为每个服务应用配置，并同时保持服务在一个健全的状态下运行。
+- en: 'Configuration can also include special directives, such as the following:'
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置还可以包括特殊指令，例如以下内容：
+- en: '`missingok`'
+  id: totrans-353
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`missingok`'
+- en: '`nocreate`'
+  id: totrans-354
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`nocreate`'
+- en: '`nopytruncate`'
+  id: totrans-355
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`nopytruncate`'
+- en: '`notifempty`'
+  id: totrans-356
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`notifempty`'
+- en: You can find out more about them (and others) on the `logrotate.conf` (yes,
+    some packages also include a man page for the configuration files, so try checking
+    `man logrotate.conf` to get the full details!).
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在`logrotate.conf`中找到更多关于它们（以及其他内容）的信息（是的，一些软件包还包括配置文件的man页面，因此尝试检查`man logrotate.conf`以获取完整的详细信息！）。
+- en: The remaining general configuration in the main file allows us to define some
+    common directives, such as how many days of logs to keep, if we want to use the
+    date in the file extension for the rotated log files, if we want to use compression
+    on the rotated logs, how frequently we want to have the rotation executed, and
+    so on.
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主文件中剩下的一般配置允许我们定义一些常见的指令，比如要保留多少天的日志，是否要在旋转日志文件的文件扩展名中使用日期，是否要在旋转日志上使用压缩，我们希望多频繁地执行旋转等等。
+- en: Let's look at some examples.
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看一些例子。
+- en: 'The following example will rotate on a `daily` basis, keep `30` rotated logs,
+    `compress` them, and use an extension with `date` as part of its trailing filename:'
+  id: totrans-360
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下示例将在“每日”基础上旋转，保留“30”个旋转日志，对它们进行“压缩”，并在其尾部文件名中使用“日期”作为扩展名。
+- en: '[PRE23]'
+  id: totrans-361
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'In this example, it will keep `4` logs rotated on a `weekly` basis (so 4 weeks)
+    and will `compress` the logs, but use a sequence number for each rotated log (this
+    means that each time a rotation happens, the sequence number is increased for
+    the previously rotated logs too):'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，它将在“每周”基础上保留“4”个旋转日志（因此是4周），并对日志进行“压缩”，但对每个旋转日志使用序列号（这意味着每次旋转发生时，以前旋转的日志的序列号也会增加）：
+- en: '[PRE24]'
+  id: totrans-363
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: One of the advantages of this approach (not using `dateext`) is that the log
+    naming convention is predictable as we have `daemon.log` as the current one, `daemon.1.log`
+    as the prior one, and so on. This makes it easier to script log parsing and processing.
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法的一个优点（不使用“dateext”）是日志命名约定是可预测的，因为我们有“daemon.log”作为当前日志，“daemon.1.log”作为以前的日志，依此类推。这使得编写日志解析和处理脚本变得更容易。
+- en: Summary
+  id: totrans-365
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we learned about `systemd` and how it takes care of booting
+    the required system services in an optimized way. We also learned how to check
+    a service's status, how to enable, disable, start, and stop them, and how to make
+    the system boot into the different targets that we boot our system into.
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们了解了“systemd”以及它如何以优化的方式负责引导所需的系统服务。我们还学习了如何检查服务的状态，如何启用、禁用、启动和停止它们，以及如何使系统引导到我们引导系统的不同目标中。
+- en: Time synchronization was introduced as a must-have feature and it ensures our
+    service functions properly. It also allows us to determine the status of our system
+    clock and how to act as a clock server for our network.
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 时间同步被介绍为一个必不可少的功能，它确保我们的服务正常运行。它还允许我们确定系统时钟的状态，以及如何作为网络的时钟服务器。
+- en: We also used system tools to monitor resource usage, learned how to check the
+    logs that are created by our system to find about the functional status of the
+    different tools, and how to can ensure that logs are maintained properly so that
+    older entries are discarded when they are no longer relevant.
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还使用系统工具来监视资源使用情况，学习如何检查系统创建的日志以了解不同工具的功能状态，以及如何确保日志被正确维护，以便在不再相关时丢弃旧条目。
+- en: In the next chapter, we will dive into securing the system with different users,
+    groups, and permissions.
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将深入探讨使用不同用户、组和权限来保护系统。

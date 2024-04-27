@@ -1,0 +1,1524 @@
+- en: Understanding API Gateway
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解API网关
+- en: After designing some microservices, we will talk about microservices gateways
+    here. When compared to monolithic applications, microservices do not communicate
+    via in-memory calls and rather use the network calls. Hence, network design and
+    implementation plays an important role in the stability of the distributed system.
+    We will debunk API Gateway and learn how it handles important concerns in microservices-based
+    architecture.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设计了一些微服务后，我们将在这里讨论微服务网关。与单片应用程序相比，微服务不通过内存调用进行通信，而是使用网络调用。因此，网络设计和实现在分布式系统的稳定性中起着重要作用。我们将揭示API网关，并了解它如何处理基于微服务的架构中的重要关注点。
+- en: 'This chapter will commence with an understanding of API Gateway and why we
+    need to use it. It will then talk about all the centralized concerns that an API
+    Gateway handles, as well as the benefits, and drawbacks of introducing a gateway.
+    We will design our gateway for shopping cart microservices and see all available
+    options for a gateway, and get acquainted with design patterns and aspects involved
+    in API Gateway. This chapter will talk about the following topics:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将从理解API网关及其必要性开始。然后将讨论API网关处理的所有集中关注点，以及引入网关的好处和缺点。我们将为购物车微服务设计我们的网关，并查看网关的所有可用选项，并熟悉API网关中涉及的设计模式和方面。本章将讨论以下主题：
+- en: Debunking API Gateway
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 揭示API网关
+- en: Concerns API Gateway handles
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: API网关处理的关注点
+- en: API Gateway design patterns
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: API网关设计模式
+- en: Circuit breakers and its role
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 断路器及其作用
+- en: The need for gateway in our shopping cart microservices
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们的购物车微服务中需要网关
+- en: Available gateways options
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 可用的网关选项
+- en: Designing our gateway for shopping cart microservices
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为购物车微服务设计我们的网关
+- en: Debunking API Gateway
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 揭示API网关
+- en: 'As we go deeper into our microservices development, we see various pitfalls
+    ahead. Now that our microservices are ready and when we think of clients utilizing
+    those microservices, we will encounter the following issues:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着我们深入微服务开发，我们看到前方有各种陷阱。现在我们的微服务已经准备就绪，当我们考虑客户端利用这些微服务时，我们将遇到以下问题：
+- en: The consumer or the web client runs on a browser. We don't have any discovery
+    client on the frontend, which takes care of identifying where the container/VM
+    service is located or neither take care of load balancing. We need an extra piece
+    of the puzzle which connects the microservices living in different containers
+    in the backend and abstracting that implementation from the client.
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 消费者或Web客户端在浏览器上运行。前端没有任何发现客户端，负责识别容器/VM服务的位置，也不负责负载平衡。我们需要一个额外的拼图，它连接后端不同容器中的微服务，并将该实现从客户端抽象出来。
+- en: Untill now, we haven't spoken about centralized concerns like authenticating
+    services, versioning services, filtering or transforming any request/response.
+    Upon reflection, we realize that they need a central point of control from which
+    they can be applied throughout the system without re-implementing the same logic
+    everywhere.
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们还没有讨论像认证服务、版本化服务、过滤或转换任何请求/响应等集中关注点。经过反思，我们意识到它们需要一个中央控制点，可以在整个系统中应用，而无需在每个地方重新实现相同的逻辑。
+- en: Further more, different clients may have different contract requirements. One
+    client may expect an XML response while other needs JSON response. We need a center
+    component which takes care of routing a request, translating the response as per
+    protocol needs, and composing various responses as per need.
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 此外，不同的客户端可能有不同的合同要求。一个客户端可能期望XML响应，而另一个需要JSON响应。我们需要一个中心组件来处理路由请求，根据协议需求翻译响应，并根据需要组合各种响应。
+- en: If we want to scale any of the microservice independently on demand, new instances
+    need to be added on demand whose location should be abstracted from the client.
+    So we need a central client who constantly communicates with all microservices
+    and maintains a registry. Further, if the service is down, it should inform the
+    client of this and break the connection there, thus preventing failure to propagate.
+    Further, it can act as a place for central cache management.
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果我们想独立按需扩展任何微服务，需要根据需要添加新实例，其位置应该对客户端进行抽象。因此，我们需要一个不断与所有微服务通信并维护注册表的中央客户端。此外，如果服务宕机，它应该通知客户端并在那里断开连接，从而防止故障传播。此外，它可以作为中央缓存管理的地方。
+- en: 'An API Gateway is a type of service which solves all mentioned problems. It
+    is the entry point in our microservices world and it provides a shared layer for
+    clients to communicate with internal services. It can perform tasks like route
+    requests, transform protocols, authenticate, rate limiting to a service, and so
+    on. It is a center point for governance and it helps to achieve various things
+    like the following:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: API网关是一种解决所有上述问题的服务类型。它是我们微服务世界的入口点，并为客户端提供与内部服务通信的共享层。它可以执行路由请求、转换协议、认证、对服务进行速率限制等任务。它是治理的中心点，有助于实现以下各种事项：
+- en: Monitor the entire distributed moving system and take action accordingly
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 监控整个分布式移动系统，并相应地采取行动
+- en: Decouple consumers from microservices by abstracting the instance and network
+    location, and routing every request via the API Gateway
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过抽象实例和网络位置，以及通过API网关路由每个请求，将消费者与微服务解耦
+- en: Avoid code duplication by keeping reusable code in a single place
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过将可重用代码保存在一个地方，避免代码重复
+- en: Achieve scaling on demand, and take action on faulty services from a single
+    place
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 根据需要实现按需扩展，并从一个地方对故障服务采取行动
+- en: Define API standards, for example, Swagger, Thrift IDL, and so on
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 定义API标准，例如Swagger，Thrift IDL等
+- en: Design contracts
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设计合同
+- en: Track the life cycle of APIs with various things like versioning, utilization,
+    monitoring and alerting, throttling, and so on
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 跟踪API的生命周期，包括版本化、利用率、监控和警报、限流等
+- en: Avoid chatty communication between client and microservices
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 避免客户端和微服务之间的啰嗦通信
+- en: With being a single entry point into a totally moving distributed system, it
+    becomes very easy to enforce any new governance standards (for example, every
+    consumer should have JWT token), have some real-time monitoring, auditing, API
+    consumption policies, and so on.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为进入完全移动的分布式系统的单一入口点，很容易强制执行任何新的治理标准（例如，每个消费者都应该有JWT令牌），进行实时监控，审计，API消费政策等。
+- en: 'The JWT token pattern leverages an encryption algorithm: method of token validation.
+    After any successful authentication, our system generates a unique token which
+    has the userID, and a timestamp value. This token is returned to the client which
+    needs to be sent alongside further requests. On receiving any service requests
+    the server reads and decrypts the token. This token is usually termed as **JSON
+    Web Token** or **JWT**. To prevent attacks like **cross-site request forgery**
+    (**CSRF**) we use this kind of technique.'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JWT令牌模式利用加密算法：令牌验证方法。在任何成功的身份验证之后，我们的系统生成一个具有userID和时间戳值的唯一令牌。将此令牌返回给客户端，需要在进一步的请求中发送。在接收任何服务请求时，服务器会读取并解密令牌。此令牌通常被称为**JSON
+    Web Token**或**JWT**。为了防止**跨站点请求伪造**（**CSRF**）等攻击，我们使用这种技术。
+- en: The gateway provides flexibility to freely manipulate microservice instances
+    as the client is totally abstracted from this logic. It is the best place to handle
+    transformation requirements based on a client device. The gateway acts as a buffer
+    zone against any sorts of attacks. The service is contaminated and it will not
+    compromise the whole system. Gateway handles security by meeting all these standards,
+    confidentiality, integrity, and availability. With increasing benefits, if the
+    gateway is not properly handled there can be loads of drawbacks too. A gateway
+    can introduce an exponential level of complexity with the increased dynamic system.
+    With the added layer of communication, it will increase the response time.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 网关提供了灵活性，可以自由操纵微服务实例，因为客户端完全与此逻辑抽象。这是处理基于客户端设备的转换需求的最佳位置。网关充当缓冲区，防止任何形式的攻击。服务被污染，不会危及整个系统。网关通过满足所有这些标准来处理安全性，保密性，完整性和可用性。随着利益的增加，如果网关没有得到适当处理，也会有很多缺点。网关可能会引入指数级的复杂性，随着动态系统的增加，响应时间会增加。
+- en: 'In the following diagram, API Gateway is explained in detail:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下图中，详细解释了API网关：
+- en: '![](img/f8004844-d3fa-426e-a7d5-78a7d1689b0d.png)'
+  id: totrans-29
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f8004844-d3fa-426e-a7d5-78a7d1689b0d.png)'
+- en: Now that we know what a gateway does, let us now understand the basics of what
+    a gateway does and what things it handles overall.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道网关的作用，让我们现在了解网关的基本知识以及它总体上处理的事情。
+- en: Concerns API Gateway handles
+  id: totrans-31
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: API网关处理的问题
+- en: An API Gateway becomes one of the most important components in microservices
+    architecture as it is the only place where core concerns are handled. Hence, a
+    common implementation seen across all microservices implementation is introducing
+    API Gateway which provides critical functionalities. Furthermore, API Gateway
+    is the part which is connected to service discovery which maintains routes of
+    all newly added services dynamically. In this section, we will look into gateway
+    features and understand the role and impact of the overall architecture of our
+    central operational layer.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: API网关成为微服务架构中最重要的组件之一，因为它是处理核心问题的唯一位置。因此，在所有微服务实现中看到的常见实现是引入提供关键功能的API网关。此外，API网关是连接到服务发现的部分，动态维护所有新添加服务的路由。在本节中，我们将研究网关功能，并了解我们中央操作层的整体架构的角色和影响。
+- en: Security
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安全性
+- en: With an increase in distribution, there is a considerably high level of freedom.
+    There are lots of moving services which may go up or down at any point in time.
+    Considering from a security point of view, when there are a lot of moving parts,
+    things can go considerably wrong. Hence, certain rules are needed which govern
+    security. Therefore, we need to secure remote service invocations of all public
+    facing API endpoints. We need to handle various things like authentication, threat
+    vulnerabilities, authorizations, message protection, and secure communications. We
+    will add SSL/TLS compliant endpoints to safeguard against various attacks like
+    a man in the middle, bidirectional encryption against tampering. Furthermore,
+    to handle DDoS attacks, API Gateway will handle various factors like limiting
+    the rate of requests, number of connections on demand, and many more. Gateway
+    will close slow connections, blacklist or whitelist IP addresses, limiting connections
+    to other backend microservices, maintaining a number of database connections,
+    and so on. API Gateway will handle things like authentication and authorizations.
+    We can introduce federal identities such as **OpenID**, **SAML**, and **OAuth**
+    here. Also, this layer would generate JWT and authenticate all requests.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着分布的增加，自由度相当高。有很多移动服务，可能随时上升或下降。从安全性的角度考虑，当有很多移动部分时，事情可能出现相当大的问题。因此，需要一定的规则来管理安全性。因此，我们需要保护所有面向公众的API端点的远程服务调用。我们需要处理各种事情，如身份验证，威胁漏洞，授权，消息保护和安全通信。我们将添加SSL/TLS兼容的端点，以防范各种攻击，如中间人攻击，双向加密防止篡改。此外，为了处理DDoS攻击，API网关将处理各种因素，如限制请求速率，按需连接数量等。网关将关闭慢速连接，黑名单或白名单IP地址，限制与其他后端微服务的连接，维护数据库连接数量等。API网关将处理身份验证和授权等事项。我们可以在这里引入联邦身份，如**OpenID**，**SAML**和**OAuth**。此外，该层将生成JWT并验证所有请求。
+- en: 'One of the tricky parts of microservices development is identity and access
+    management. In huge enterprises, this is usually handled through common systems
+    like LDAP. Federal identities are kind of authorization servers (they are used
+    across varied applications: for example, you can consider single a Google Account
+    linked to various services such as Google Docs, Google Drive, and so on which
+    authorize the user and then gives ID token and access token). Famous federal identities
+    providers include OAuth and **Security Assertion Markup Language** (**SAML**).'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务开发中的一个棘手部分是身份和访问管理。在大型企业中，通常通过LDAP等常见系统处理这一问题。联邦身份有点像授权服务器（它们在各种应用程序中使用：例如，您可以考虑将单个Google帐户链接到Google文档、Google
+    Drive等各种服务，然后授权用户并提供ID令牌和访问令牌）。著名的联邦身份提供者包括OAuth和**安全断言标记语言**（**SAML**）。
+- en: Dumb gateways
+  id: totrans-36
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 愚蠢的网关
+- en: One of the most fundamental principles of a gateway is *gateways are always
+    dumb*. While designing gateways, an important aspect to take care of is, that
+    gateways should not be overly ambitious; that is it should not contain non-generic
+    logic or any business requirements. Making it overly ambitious defeats the purpose
+    of the gateway and can make it a single point of failure and also make it difficult
+    to test and deploy. Smart gateways cannot be easily version controlled or integrated
+    into the large pipeline. Furthermore, it introduces tight coupling as when you
+    upgrade your gateway, you often have to work on upgrading its dependencies and
+    core logic associated with it.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 网关的最基本原则之一是*网关始终是愚蠢的*。在设计网关时，需要注意的一个重要方面是，网关不应过于雄心勃勃；也就是说，它不应包含非通用逻辑或任何业务需求。使其过于雄心勃勃会违背网关的目的，并且可能使其成为单点故障，并且也可能使其难以测试和部署。智能网关无法轻松进行版本控制或集成到大型管道中。此外，它引入了紧密耦合，因为当您升级网关时，通常必须处理升级其依赖项和与之相关的核心逻辑。
+- en: 'To briefly summarize, API Gateways should contain anything that we can validate
+    or maintain within itself without the help of other services or shared states.
+    Anything apart from that should be moved out of the API Gateway. The following
+    points briefly summarize the dumbness of API Gateway and its functionalities:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，API网关应包含任何我们可以在其中验证或维护的内容，而无需其他服务或共享状态的帮助。除此之外的任何内容都应移出API网关。以下几点简要总结了API网关的愚蠢和其功能：
+- en: Validations like JWT token validation (we are not requesting any external service)
+  id: totrans-39
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 像JWT令牌验证这样的验证（我们不请求任何外部服务）
+- en: Improving quality of service (things like shrinking responses, HTTP header caching,
+    sending cached data, and so on)
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 提高服务质量（例如缩小响应、HTTP头缓存、发送缓存数据等）
+- en: Request and response manipulation (handling multiple content types and manipulating
+    request and response accordingly)
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 请求和响应操作（处理多种内容类型并相应操作请求和响应）
+- en: Interaction with service discovery (non-blocking interactions with service registry
+    to get service request details)
+  id: totrans-42
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 与服务发现的交互（与服务注册表进行非阻塞交互以获取服务请求详细信息）
+- en: Rate limiting and throttling (isolated features)
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 速率限制和节流（隔离的功能）
+- en: Circuit breaker (detect failures and handle failures accordingly)
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 断路器（检测故障并相应处理）
+- en: Transformation and orchestration
+  id: totrans-45
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 转换和编排
+- en: 'We have divided our microservices well into single responsibility principle;
+    however, in order to achieve a business capability, we often require a combination
+    of microservices. For example, a person buying a product is a mixture of payment
+    microservice, inventory microservice, shipping microservice, and checkout microservice. Just
+    like a Linux pipe which combines various commands, we need a similar orchestrator
+    solution. This is essential for the consumers as it is an absolute nightmare to
+    call every fine-grained service individually. Consider an example for our shopping
+    cart microservices. We have the following two microservices:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经很好地将我们的微服务划分为单一责任原则；然而，为了实现业务能力，我们经常需要结合多个微服务。例如，购买产品的人是支付微服务、库存微服务、运输微服务和结账微服务的混合体。就像Linux管道结合各种命令一样，我们需要类似的编排解决方案。这对消费者来说是至关重要的，因为逐个调用每个细粒度服务绝对是一场噩梦。以我们的购物车微服务为例。我们有以下两个微服务：
+- en: '**Audience targeting**: These microservices take in user information and return
+    a list of all the recommendations (it returns a list of product IDs)'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**受众定位**：这些微服务接收用户信息并返回所有推荐的列表（它返回产品ID的列表）'
+- en: '**Product detail**: These microservices takes in product IDs and respond by
+    giving product metadata and detailed information'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**产品详情**：这些微服务接收产品ID并通过提供产品元数据和详细信息来做出响应'
+- en: Let's say we are designing a recommendation page for 20 items. If we keep it
+    as it is, then the consumer will have to make a total of 21 HTTP calls (1 call
+    to get a list of product IDs, 20 calls to get product detail information), which
+    is a nightmare. To avoid this, we need orchestrator (something which combines
+    all these 21 calls). Furthermore, microservices have to deal with different clients
+    who have need of varying responses. The API Gateway is a place for transformation
+    where all things such as communication protocol, response formats, protocol transformations
+    can be taken care of. We can put things like JSON to XML conversion in API Gateway,
+    HTTP to gRPC or GraphQL protocols transformations, and so on.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们正在为20个项目设计一个推荐页面。如果我们保持原样，那么消费者将不得不进行总共21次HTTP调用（1次获取产品ID列表的调用，20次获取产品详细信息的调用），这是一场噩梦。为了避免这种情况，我们需要编排器（可以组合所有这些21次调用的东西）。此外，微服务必须处理需要不同响应的不同客户端。API网关是一个转换的地方，可以处理通信协议、响应格式、协议转换等所有事情。我们可以在API网关中放置诸如JSON到XML转换、HTTP到gRPC或GraphQL协议转换等内容。
+- en: Monitoring, alerting, and high availability
+  id: totrans-50
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 监控、警报和高可用性
+- en: There are a lot of moving parts in microservices architecture. Hence, it becomes
+    vital to have system-wide monitoring and avoid cascading failures. API Gateway
+    provides a one-stop solution to that problem. We can monitor and capture the information
+    about all data flow which can be kept for security purposes. We can monitor health,
+    traffic, and data. API Gateway can monitor various things such as network connectivity,
+    log maintenance, backups and recovery, security, and system status and health.
+    Further, API Gateway can monitor basic things like a number of requests coming
+    for API, maintain remote hosts, browsers, OS, performance statistics, the stack
+    trace of messages, violations for breaching gateway policies, and so on. API Gateway
+    can integrate with alert tools such as consul alerts ([https://github.com/AcalephStorage/consul-alerts](https://github.com/AcalephStorage/consul-alerts))
+    and appropriate actions can be taken accordingly on it to achieve high availability. We
+    must deploy multiple instances of API Gateway behind the load balancer to effectively
+    load balance the traffic among many instances of API Gateway. We must plan for
+    high volume and load. If deployed in the cloud we can have auto-scaling enabled
+    if not, then we must make sure it has enough data resources to handle future load.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务架构中有很多移动部件。因此，系统范围的监控和避免级联故障变得至关重要。API网关为这个问题提供了一站式解决方案。我们可以监控和捕获所有数据流的信息，可以用于安全目的。我们可以监控健康、流量和数据。API网关可以监控各种事物，如网络连接、日志维护、备份和恢复、安全性以及系统状态和健康状况。此外，API网关还可以监控一些基本事物，如API的请求数、维护远程主机、浏览器、操作系统、性能统计、消息的堆栈跟踪、违反网关策略的违规行为等。API网关可以集成警报工具，如consul
+    alerts ([https://github.com/AcalephStorage/consul-alerts](https://github.com/AcalephStorage/consul-alerts))，并相应地采取适当的行动以实现高可用性。我们必须在负载均衡器后部署多个API网关实例，以有效地在多个API网关实例之间平衡流量。我们必须计划高容量和负载。如果部署在云中，我们可以启用自动扩展，如果没有，则必须确保它有足够的数据资源来处理未来的负载。
+- en: Caching and error handling
+  id: totrans-52
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 缓存和错误处理
+- en: In order to have maximum optimization and performance, caches are often introduced
+    in distributed systems. Redis has seen a huge increase as it is lightweight and
+    can serve the purpose of cache very well. Further, in some business capabilities,
+    stale data can be tolerated in the age of offline first. API Gateway can take
+    care of this part, providing a cached response if the microservice is down or
+    to prevent too many database calls. The golden rule while designing a cache mechanism
+    can be those service calls which never actually need to be made should be the
+    fastest calls. For example, consider the Avengers 4 page is updated in IMDB. It's
+    getting more than 20,000 hits per second.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了实现最大的优化和性能，缓存经常被引入到分布式系统中。Redis因为它轻量级并且可以很好地满足缓存的目的，因此得到了巨大的增长。此外，在某些业务能力中，可以容忍陈旧的数据，这是离线优先时代。API网关可以处理这一部分，如果微服务宕机或者防止过多的数据库调用，提供缓存响应。设计缓存机制的黄金法则可以是那些实际上永远不需要进行的服务调用应该是最快的调用。例如，考虑IMDB中《复仇者联盟4》页面的更新。它每秒都在获得超过20,000次的点击。
+- en: The database is hammered with these hits as it also has to fetch other things
+    (like comments, reviews, and so on). That's where cache be comes useful. Things
+    which will rarely change like actors description, movie description, and so on
+    come from the cache layer. The response returned is super fast and it saves a
+    network hop as well as it does not increase CPU performance. By implementing a
+    caching layer, API Gateway ensures that the user experience is not impacted. In
+    a distributed system, due to being chatty, an error is meant to occur, hence errors
+    should be properly handled through patterns like timeouts and circuit breakers
+    which should give out cached responses.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据库受到这些访问的冲击，因为它还必须获取其他东西（如评论、评论等）。这就是缓存变得有用的地方。很少改变的东西，如演员描述、电影描述等，来自缓存层。返回的响应非常快，它节省了网络跳跃，也不会增加CPU性能。通过实施缓存层，API网关确保用户体验不受影响。在分布式系统中，由于通信频繁，错误很可能发生，因此错误应该通过超时和断路器等模式得到适当处理，这些模式应该提供缓存响应。
+- en: 'We can manage to cache at the following two levels:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以在以下两个级别进行缓存管理：
+- en: '**Caching at the API Gateway level:** With this option, we cache the service
+    response at the gateway or central level. It provides us the advantage of saving
+    the service call as we can return the data at the gateway level itself. Also,
+    in case of service unavailability or non-responsiveness, API Gateway could return
+    the data from the cache.'
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**在API网关级别进行缓存：** 选择这个选项，我们可以在网关或中央级别缓存服务响应。这样可以节省服务调用的优势，因为我们可以直接在网关级别返回数据。此外，在服务不可用或无响应的情况下，API网关可以从缓存中返回数据。'
+- en: '**Caching at the service level:** With this option, each service manages to
+    cache its own data. API Gateway is not aware of the inner cache or inner anything
+    to be precise. Service can easily invalidate the cache on a need basis. However,
+    while implementing this option we should have a default response ready at central
+    cache level.'
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**在服务级别进行缓存：** 选择这个选项，每个服务都可以管理自己的缓存数据。API网关不知道内部缓存或内部任何精确的东西。服务可以根据需要轻松地使缓存失效。然而，在实施这个选项时，我们应该在中央缓存级别准备好默认响应。'
+- en: '**Netflix Hystrix** is one such useful library which has powerful options like
+    timing out the calls which exceed a specific threshold, not to wait needlessly,
+    define fall back action such as returning default value or returning value from
+    the cache. It has a Node.js client too ([https://www.npmjs.com/package/hystrixjs](https://www.npmjs.com/package/hystrixjs)).'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Netflix Hystrix** 是一个非常有用的库，具有强大的选项，如超时调用超过特定阈值，不必要等待，定义回退操作，如返回默认值或从缓存返回值。它也有一个Node.js客户端
+    ([https://www.npmjs.com/package/hystrixjs](https://www.npmjs.com/package/hystrixjs))。'
+- en: Service registry and discovery
+  id: totrans-59
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 服务注册和发现
+- en: One of the key advantages of microservices is ease of scaling. At any point
+    in time new microservices can be added to adapt to incoming traffic, can be scaled,
+    and existing monolithic can be broken down to several microservices. All these
+    service instances have dynamically assigned network locations. An API Gateway
+    can maintain a connection to service registry which can keep a track of all these
+    service instances. API Gateway communicates with service registry which is a database
+    containing network locations of all instances. Each service instance tells its
+    location to the registry on startup and shutdown. Another component which is connected
+    to API Gateway is service discovery. The client consuming various microservices
+    needs to have a simple discovery pattern in order to prevent the application from
+    becoming too chatty.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务的一个关键优势是易于扩展。在任何时候，新的微服务都可以根据流量进行调整，可以进行扩展，并且现有的单片式可以分解为多个微服务。所有这些服务实例都具有动态分配的网络位置。API网关可以维护与服务注册表的连接，该注册表可以跟踪所有这些服务实例。API网关与包含所有实例的网络位置的数据库进行通信。每个服务实例在启动和关闭时都会告诉注册表其位置。与API网关连接的另一个组件是服务发现。消费各种微服务的客户端需要具有简单的发现模式，以防止应用程序变得过于啰嗦。
+- en: Consul is one of the most widely used tools for service registry and discovery.
+    It knows how many active containers fail for a specific service, and if that number
+    is zero it marks that service as broken.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Consul是最广泛使用的服务注册和发现工具之一。它知道特定服务有多少活动容器失败，如果该数字为零，它会将该服务标记为损坏。
+- en: 'There are the following two types of approaches:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有以下两种类型的方法：
+- en: '`push`: Microservice itself takes care of making its entry acknowledged to
+    the API gateway'
+  id: totrans-63
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`推送`：微服务本身负责向API网关确认其入口'
+- en: '`pull`: Where API Gateway takes care of checking in all microservices'
+  id: totrans-64
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`拉取`：API网关负责检查所有微服务'
+- en: Circuit breakers
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 断路器
+- en: Yet another important concern API Gateway handles is breaking the connection
+    whenever the service is down. Let's say one microservice is down and starts throwing
+    out a high number of errors. Queuing further requests of that microservice is
+    unwise as it will soon have a high resource utilization. An API Gateway introduced
+    here can implement things such as breaking the connection or simply saying when
+    a certain threshold is passed, the gateway will stop sending data to that failing
+    component unless the component is resolved, analyze the logs, implement a fix,
+    push an update, and thus prevent failure cascading in the entire system. Scaling
+    the underlying and popular microservices thus becomes very easy. The gateway can
+    therefore be scaled horizontally as well as vertically. API Gateway helps to achieve
+    zero downtime by deploying configuration in a rolling fashion, that is, while
+    in new deployments, the circuit is tripped, new requests are not served, older
+    requests are honored in a single cluster, and the other cluster meanwhile takes
+    new requests. We will see circuit breaker live example in [Chapter 7](162a0f25-2890-4a58-aa41-e9c9b5fc6c2d.xhtml), *Service
+    State and Interservice Communication*.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: API网关处理的另一个重要问题是当服务宕机时断开连接。比如说一个微服务宕机并开始抛出大量错误。排队进一步请求该微服务是不明智的，因为它很快就会有很高的资源利用率。在这里引入的API网关可以实现诸如断开连接或者简单地说当某个阈值被超过时，网关将停止向该失败组件发送数据，直到组件被解决，分析日志，实施修复，推送更新，从而防止整个系统中的故障级联。因此，扩展底层和流行的微服务变得非常容易。网关因此可以水平和垂直扩展。API网关通过以滚动方式部署配置来实现零停机时间，也就是说，在新部署时，电路被触发，新请求不会被服务，旧请求在单个集群中被接受，同时另一个集群接受新请求。我们将在[第7章](162a0f25-2890-4a58-aa41-e9c9b5fc6c2d.xhtml)中看到断路器的实时示例，*服务状态和服务间通信*。
+- en: Versioning and dependency resolution
+  id: totrans-67
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 版本控制和依赖解析
+- en: 'When microservices are very fine grained and designed based on the single responsibility
+    principle they deal with only specific concerns, and hence they become chatty
+    (too many network calls): that is, to perform a usual set of tasks, many requests
+    need to be sent to different services. Gateways can provide virtual endpoints
+    or facades that can internally be routed to many different microservices. API
+    Gateway can resolve all dependencies and segregate all responses in a single response,
+    thus making it easy to consume for the client. Furthermore, with increasing changing
+    business needs and capabilities we need to maintain versioning, so at any point
+    in time, we can go back in time to old services.'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当微服务非常细粒度并且基于单一职责原则设计时，它们只处理特定的问题，因此它们变得啰嗦（太多的网络调用）：也就是说，为了执行一组常规任务，需要向不同的服务发送许多请求。网关可以提供虚拟端点或外观，可以在内部路由到许多不同的微服务。API网关可以解析所有依赖关系，并将所有响应分离成一个单一的响应，从而使客户端易于消费。此外，随着不断变化的业务需求和能力，我们需要保持版本控制，因此在任何时候，我们都可以回到旧服务。
+- en: 'API versioning is managed in two ways—either by sending it in URI (a URI  not
+    to be confused with URL is uniform resource identifier with information contained
+    in itself, for example `http://example.com/users/v4/1234/`) or by sending it along
+    the header. API Gateway can handle this problem with the following two approaches:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: API版本控制有两种方式进行管理——一种是通过在URI中发送（URI不要与URL混淆，它是包含信息的统一资源标识符，例如`http://example.com/users/v4/1234/`），另一种是通过在标头中发送。API网关可以通过以下两种方式处理这个问题：
+- en: '**Microservices discovery**: This is the most widely used pattern wherein coupling
+    between microservices and client application is totally removed as microservices
+    are dynamically registered (we will see this in more detail in the next chapter).
+    This component is in direct touch with API Gateway and provides information about
+    service location to it, thereby preventing traditional SOA monolithic approach.'
+  id: totrans-70
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**微服务发现**：这是最广泛使用的模式，其中微服务和客户端应用程序之间的耦合完全消除，因为微服务是动态注册的（我们将在下一章中更详细地看到这一点）。这个组件直接与API网关联系，并向其提供有关服务位置的信息，从而防止传统的SOA单片式方法。'
+- en: '**Microservices description**: This approach, on the other hand, focuses more
+    on communicating via contracts. It expresses features of microservices in a very
+    well written descriptive contract which can be understood by other client applications.
+    The contract contains metadata information too, such as API version, requirements,
+    and so on.'
+  id: totrans-71
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**微服务描述**：另一方面，这种方法更注重通过合同进行通信。它以非常详细的描述性合同表达微服务的特性，这些合同可以被其他客户端应用程序理解。合同还包含元数据信息，如API版本、要求等。'
+- en: 'In this section, we looked at all the concerns which an API Gateway vice handles.
+    Special care should be made for API Gateway for the following aspects:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们看了API网关副处理的所有关注点。对于API网关，应特别注意以下几个方面：
+- en: It should not be a single point of failure
+  id: totrans-73
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它不应该是单点故障
+- en: It should not be centralized or have synchronous coordination
+  id: totrans-74
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它不应该是集中化的或具有同步协调
+- en: It should not depend on any state
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它不应该依赖于任何状态
+- en: It should be just another microservice
+  id: totrans-76
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它应该只是另一个微服务
+- en: Business logic should not be encapsulated inside
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 业务逻辑不应该封装在内部
+- en: API Gateway design patterns and aspects
+  id: totrans-78
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: API网关设计模式和方面
+- en: Now that we know what API Gateway handles, lets throughout now look at common
+    design aspects involved in API Gateway. In this section, we will look at all design
+    aspects to be considered while designing API Gateway. We will understand modes
+    of designing API Gateway which will help us to design a scalable system with high
+    availability.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道API网关处理什么，让我们现在看看API网关涉及的常见设计方面。在这一部分，我们将看看在设计API网关时需要考虑的所有设计方面。我们将了解设计API网关的模式，这将帮助我们设计一个具有高可用性的可扩展系统。
+- en: 'Being a core part which handles centralized concerns and being the starting
+    point in microservices, API Gateway should be designed so that:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为处理集中关注点并且是微服务的起点的核心部分，API网关应该被设计成：
+- en: '**It embraces concurrency**: Being heavily distributed due to designing based
+    on single responsibility, server-side concurrency is needed which can reduce the
+    network chattiness. Node.js being non-blocking and asynchronous, each request
+    executes in parallel with other requests and thereby a single heavy client request
+    is not much better than many light non-concurrent requests. While business use
+    cases may need blocking calls to backend systems, API Gateway should compose these
+    calls via an efficient way through reactive frameworks, which does not increase
+    resource pool utilization.'
+  id: totrans-81
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**它支持并发性**：由于基于单一责任的设计而具有高度分布性，需要服务器端并发性，这可以减少网络通信。Node.js是非阻塞和异步的，每个请求都与其他请求并行执行，因此单个重型客户端请求并不比许多轻量级非并发请求好多少。虽然业务用例可能需要对后端系统进行阻塞调用，但API网关应该通过响应式框架以高效的方式组合这些调用，这不会增加资源池的利用率。'
+- en: '**It should be reactive**: Reactive programming offers varying operators capable
+    of filtering, selecting, transforming, combining, and composing observables thus
+    by enabling efficient execution and composition in API Gateway layer. It promotes
+    the idea of variables which are filled over time. It promotes non-blocking architecture
+    as in the observable pattern, the producer just pushes the values to the consumer
+    whenever the values are available rather than blocking the thread in that time.
+    Values can arrive at any point in time asynchronously or synchronously. It has
+    added advantages like the producer can give an ending signal to the consumer that
+    there is no more data or if an error has occurred.'
+  id: totrans-82
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**它应该是反应式的**：反应式编程提供了各种操作符，能够过滤、选择、转换、组合和组合可观察对象，从而在API网关层实现高效的执行和组合。它提倡随时间填充的变量的概念。它提倡非阻塞架构，因为在可观察模式中，生产者只是在值可用时向消费者推送值，而不是在那段时间内阻塞线程。值可以在任何时间点异步或同步到达。它还有额外的优势，比如生产者可以向消费者发出结束信号，告诉消费者没有更多的数据，或者发生了错误。'
+- en: '**The service layer follows an observable pattern**: When all methods in API
+    Gateway return an `Observable<T>` concurrency is enabled by default. The service
+    layer then adheres to things like returning a cached response based on conditions
+    and if resources are not available or if service is not available, then block
+    the request. This can happen without changing anything on the client end.'
+  id: totrans-83
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**服务层遵循可观察模式**：当API网关中的所有方法都返回`Observable<T>`时，默认启用并发性。服务层然后遵循诸如根据条件返回缓存响应以及如果资源不可用或服务不可用，则阻止请求等操作。这可以在不改变客户端端的情况下发生。'
+- en: '**It handle backend services and dependencies**: A gateway abstracts away all
+    the backend services and dependencies behind the virtual facade layer due to which
+    any inbound request access business capability rather than the entire system.
+    This will allow us to change underlying implementations with limited impact on
+    code that depends on it. Thus service layer ensures that all models and tight
+    couplings stay inbound and are abstracted and are not allowed to leak in the endpoints.'
+  id: totrans-84
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**它处理后端服务和依赖关系**：由于网关在虚拟外观层后面抽象了所有后端服务和依赖关系，因此任何入站请求都可以访问业务能力而不是整个系统。这将允许我们在对依赖它的代码影响有限的情况下更改底层实现。因此，服务层确保所有模型和紧密耦合保持内部，并且被抽象化并且不允许泄漏到端点中。'
+- en: '**They should be stateless**: API Gateways should be stateless by nature, which
+    means not creating any session data. This will enable us to scale the gateway
+    as there won''t be any need later to replicate the session in case of disaster.
+    However, API Gateway can maintain cached data, which can either be replicated
+    using a peer-to-peer relationship or introducing a cache library such as Redis
+    rather than going for in-memory calls. The following is a list of some of the
+    general guidelines by seeing most common pitfalls:'
+  id: totrans-85
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**它们应该是无状态的**：API网关应该是无状态的，这意味着不创建任何会话数据。这将使我们能够扩展网关，因为在灾难情况下不需要在以后复制会话。但是，API网关可以维护缓存数据，可以使用点对点关系复制这些数据，或者引入缓存库（如Redis）而不是进行内存调用。以下是一些常见陷阱的一般指导方针：'
+- en: To achieve the best availability API Gateway should be used in the Active-Active
+    mode. It means that the system should always be fully operational and able to
+    maintain current system state.
+  id: totrans-86
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为了实现最佳的可用性，API网关应该在主动-主动模式下使用。这意味着系统应该始终保持完全运作，并能够维持当前的系统状态。
+- en: Proper analysis and monitoring tools to prevent message flooding. In that case,
+    that traffic to that service should be limited.
+  id: totrans-87
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 适当的分析和监控工具以防止消息洪泛。在这种情况下，对该服务的流量应该受到限制。
+- en: Using tools to constantly monitor the system either via some available tools
+    or system logs or network management protocols.
+  id: totrans-88
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用工具不断监视系统，可以通过一些可用的工具、系统日志或网络管理协议。
+- en: The Active/Active mode is a method to deal with failover, load balancing, and
+    keeping our system highly available. Here two or more servers are used which aggregate
+    the network traffic load and they work together as a team to distribute it to
+    the available network servers. Load balancers also persist information requests
+    and keep this information in cache. If they return looking for the same information
+    the user will be directly locked on to the server which previously served its
+    request. This process reduces network traffic load intensely.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主动-主动模式是一种处理故障转移、负载平衡和保持系统高度可用性的方法。这里使用两个或更多服务器，它们聚合网络流量负载，并一起工作作为一个团队将其分配给可用的网络服务器。负载均衡器还会持久保存信息请求，并将此信息保存在缓存中。如果它们返回寻找相同的信息，用户将直接锁定到之前提供其请求的服务器上。这个过程大大减少了网络流量负载。
+- en: Circuit breakers and its role
+  id: totrans-90
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 断路器及其作用
+- en: In the practical world, errors do occur. Services can timeout, become unreachable,
+    or take longer to complete. Being a distributed system, the entire system should
+    not go down. The circuit breaker is the solution to this problem and it is a very
+    important component in API Gateway.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在实际世界中，错误确实会发生。服务可能会超时，变得无法访问，或者需要更长时间才能完成。作为一个分布式系统，整个系统不应该崩溃。断路器是解决这个问题的方法，它是API网关中非常重要的组件。
+- en: 'The pattern essentially works in two states. If the circuit is closed, everything
+    is normal, the request is dispatched to the destination, the response is received.
+    But if there are errors or timeouts the circuit is open which means that route
+    is not available as of now, we need to go a different route or way to achieve
+    the service request. To achieve this functionality, Netflix has open sourced their
+    project—Hystrix. This is, however, the Node.js version of the same: [https://www.npmjs.com/package/hystrixjs](https://www.npmjs.com/package/hystrixjs)
+    (it''s not official from Netflix, but rather an open source project). It even
+    has the Hystrix dashboard for monitoring purposes. According to Hystrix''s library,
+    it has the following capabilities:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该模式基本上分为两种状态。如果电路关闭，一切正常，请求被分派到目的地，接收到响应。但如果有错误或超时，电路就会打开，这意味着该路由目前不可用，我们需要采用不同的路线或方式来实现服务请求。为了实现这个功能，Netflix开源了他们的项目——Hystrix。然而，这是同样的Node.js版本：[https://www.npmjs.com/package/hystrixjs](https://www.npmjs.com/package/hystrixjs)（这不是Netflix官方的，而是一个开源项目）。它甚至有用于监控目的的Hystrix仪表板。根据Hystrix的库，它具有以下功能：
+- en: Protect system against any failures which occur because of network issues or
+    any third-party clients or libraries
+  id: totrans-93
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 保护系统免受因网络问题或任何第三方客户端或库而发生的任何故障
+- en: Stop propagating failures and avoid dispersion of error
+  id: totrans-94
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 停止传播失败，避免错误的扩散
+- en: Fail fast, fail often, fail better, fail forward, and recover rapidly with counter-measures
+  id: totrans-95
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 快速失败，经常失败，更好地失败，向前失败，并迅速恢复与对策
+- en: Degrade failures with fallback mechanisms like returning response from the cache
+  id: totrans-96
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用回退机制来降级失败，比如从缓存中返回响应
+- en: Provide dashboard for monitoring purposes
+  id: totrans-97
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 提供监控目的的仪表板
+- en: 'Take a look at the following diagram:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看一下下面的图表：
+- en: '![](img/64667362-37e9-489f-b474-fd082acb167c.png)'
+  id: totrans-99
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/64667362-37e9-489f-b474-fd082acb167c.png)'
+- en: 'The circuit breaker follows the same set of rules as the original **Hystrix** module.
+    To calculate the health of a command, the following steps are executed:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 断路器遵循与原始**Hystrix**模块相同的一套规则。为了计算命令的健康状况，执行以下步骤：
+- en: 'Maintain a watch on volume across the circuit as follows:'
+  id: totrans-101
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在整个电路中保持对音量的监控如下：
+- en: If the network volume across the circuit doesn't exceed the predefined value,
+    then Hystrix can simply execute the run function without comparing anything at
+    all. Metrics can log all told cases for future references.
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果电路中的网络音量没有超过预定义值，那么Hystrix可以简单地执行运行函数，而根本不需要比较任何东西。度量可以记录所有这些情况以供将来参考。
+- en: If the network volume across the circuit exceeds the configured brink value,
+    Hystrix can check the health first to take preventive measures.
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果电路中的网络音量超过配置的边界值，Hystrix可以首先检查健康状况以采取预防措施。
+- en: When checking the health, if the error percentage exceeds the pre-defined threshold,
+    the transition of circuit happens from closed to open and all subsequent requests
+    would be rejected with the open circuit error preventing further requests.
+  id: totrans-104
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在检查健康状况时，如果错误百分比超过预定义的阈值，电路的转换会从关闭到打开，所有后续的请求都将被拒绝，以防止进一步的请求。
+- en: 'After an organized time Hystrix can enable one request to go through to examine
+    whether the services are recovered. If it passes an expectation test, the circuit
+    once more transitions to a closed state and all the counters are reset. To use
+    it in your application just create service commands and add values:'
+  id: totrans-105
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 经过一段时间的组织，Hystrix可以允许一个请求通过以检查服务是否已恢复。如果它通过了期望的测试，电路再次转换为关闭状态，并且所有计数器被重置。要在应用程序中使用它，只需创建服务命令并添加值：
+- en: '[PRE0]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: To execute those commands just use the execute method. A complete gist can be
+    found in the source inside `hystrix` folder.
+  id: totrans-107
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要执行这些命令，只需使用execute方法。在`hystrix`文件夹中的源代码中可以找到完整的要点。
+- en: Need for gateway in our shopping cart microservices
+  id: totrans-108
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 我们购物车微服务中网关的需求
+- en: After debunking gateways in detail lets come back to our shopping cart microservices
+    system. We will look at the need for a gateway in our system and the things it
+    will handle with our context and then move on to design the gateway. In this section,
+    we will look at various design aspects that we need to consider while designing
+    the gateway.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在详细解释网关之后，让我们回到我们的购物车微服务系统。我们将看看我们系统中网关的需求以及它将处理的内容，然后继续设计网关。在本节中，我们将看看在设计网关时需要考虑的各种设计方面。
+- en: Handle performance and scalability
+  id: totrans-110
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 处理性能和可伸缩性
+- en: Being an entry point in system performance, scalability and high availability
+    of API Gateway is a very crucial factor. As it will handle all the requests, making
+    it on asynchronous non-blocking I/O seems very logical which is what Node.js is.
+    All the requests coming from our shopping cart microservices need to be authenticated,
+    cached, monitored and constantly send out health aware checks. Consider a scenario
+    where our products service has larg traffic. API Gateway should then automatically
+    spawn new instances of the server and maintain addresses of the new instances.
+    The new instances then need to constantly send health checks to gateway so it
+    would know which instances are alive. Consider the same example which we saw earlier
+    where we have product microservice and we need to show the client a detailed listing
+    of 20 items. Now the client is not going to make 21 HTTP requests but instead,
+    we need a core composition component which combines responses from various requests.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为系统性能、可伸缩性和API网关高可用性的入口点，非常关键。因为它将处理所有请求，使其成为异步非阻塞I/O似乎非常合乎逻辑，这正是Node.js的特点。来自我们的购物车微服务的所有请求都需要经过身份验证、缓存、监控，并不断发送健康检查。考虑一个场景，我们的产品服务有大量流量。API网关应该自动产生服务器的新实例并维护新实例的地址。然后新实例需要不断向网关发送健康检查，以便知道哪些实例是活着的。考虑之前我们看到的同样的例子，我们有产品微服务，我们需要向客户显示20个项目的详细列表。现在客户不会发出21个HTTP请求，而是我们需要一个核心组合组件，它将从各种请求中组合响应。
+- en: Reactive programming to up the odds
+  id: totrans-112
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 响应式编程提高胜算
+- en: In order to make sure that we don't have to frequently change the client code,
+    the API Gateway simply routes the client request to a microservice. It may make
+    other requests by making multiple backend service calls and then aggregate all
+    the results. In order to make sure that there is minimum response time, the API
+    Gateway should make independent calls concurrently which is where a reactive model
+    of programming comes into the picture. API Composition is needed in various cases
+    like fetching the users past orders, where we first need to fetch the user details
+    and then their past orders. Writing compositional logic using traditional asynchronous
+    callbacks will soon lead to the problem of callback hell which will produce coupled,
+    tangled, difficult to understand and error-prone code which is where reactive
+    programming is very helpful.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了确保我们不必频繁更改客户端代码，API网关简单地将客户端请求路由到微服务。它可能通过进行多个后端服务调用来发出其他请求，然后聚合所有结果。为了确保最小的响应时间，API网关应该同时进行独立调用，这就是响应式编程模型发挥作用的地方。在各种情况下都需要API组合，比如获取用户的过去订单，我们首先需要获取用户详情，然后获取他们的过去订单。使用传统的异步回调编写组合逻辑很快就会导致回调地狱的问题，这将产生耦合、混乱、难以理解和容易出错的代码，这就是响应式编程非常有帮助的地方。
+- en: Invoking services
+  id: totrans-114
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 调用服务
+- en: Microservices do need to communicate with each other synchronously or asynchronously
+    based on the business capability. There must be inter-process communication mechanisms.
+    Our shopping cart microservices can have two modes of communication. One involves
+    a message broker which queues up messages and sends them to services on availability.
+    The other involves brokerless communication and the service directly communicates
+    with an other service and this may have data loss. There are lots of event-driven
+    message brokers such as AMQP, RabbitMQ, and so on, others such as Zeromq are brokerless.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务确实需要根据业务能力同步或异步地相互通信。必须有进程间通信机制。我们的购物车微服务可以有两种通信模式。一种涉及消息代理，它排队消息并在可用时将它们发送到服务。另一种涉及无代理通信，服务直接与另一个服务通信，这可能会导致数据丢失。有许多事件驱动的消息代理，如AMQP、RabbitMQ等，还有一些无代理的，如Zeromq。
+- en: Some business capabilities need asynchronous modes of communication such as
+    during the checkout of a product, we need to call payment services. If there is
+    successful payment, then and only then can the product be purchased. API Gateway
+    needs to support a variety of mechanisms based on business capabilities. We will
+    see a live example in [Chapter 7](162a0f25-2890-4a58-aa41-e9c9b5fc6c2d.xhtml), *Service
+    State and Interservice Communication*, in the *NetFlix Case study* section.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些业务能力需要异步通信模式，比如在产品结账时，我们需要调用支付服务。只有成功支付，产品才能被购买。API网关需要支持基于业务能力的各种机制。我们将在[第7章](162a0f25-2890-4a58-aa41-e9c9b5fc6c2d.xhtml)中看到一个实时例子，*服务状态和服务间通信*，在*NetFlix案例研究*部分。
+- en: Discovering services
+  id: totrans-117
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 发现服务
+- en: With constantly dynamic and evolving services, our gateway needs to know the
+    location (IP address, service port) of every microservice in the system. Now,
+    this can be hotwired in the system but as they are evolving we need a more dynamic
+    method as services constantly auto-scale and upgrade. For example, in our shopping
+    cart microservices, we may constantly add new services based on use case. Now
+    API Gateway needs to know the location of these services so it can query any of
+    the services any time to return the response to the client. API Gateway must maintain
+    communication with service registry which is just a database of all microservices
+    locations and their instances.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着不断动态和发展的服务，我们的网关需要知道系统中每个微服务的位置（IP地址、服务端口）。现在，这可以在系统中进行热插拔，但由于它们不断发展，我们需要更动态的方法，因为服务不断自动扩展和升级。例如，在我们的购物车微服务中，我们可能会根据用例不断添加新服务。现在API网关需要知道这些服务的位置，以便随时查询任何服务以返回响应给客户端。API网关必须与服务注册表保持通信，服务注册表只是所有微服务位置及其实例的数据库。
+- en: Handling partial service failures
+  id: totrans-119
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 处理部分服务故障
+- en: 'Yet another need to address is handling partial failures. When one service
+    calls another service it may not receive a response at all or it may get delayed
+    response. With the increased number of services, any service may go down at any
+    point in time. API Gateway should be able to handle partial failures by implementing
+    some/all of the following strategies:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个需要解决的问题是处理部分故障。当一个服务调用另一个服务时，可能根本不会收到响应，或者可能会收到延迟的响应。随着服务数量的增加，任何服务都可能在任何时间点宕机。API网关应能够通过实施以下一些/全部策略来处理部分故障：
+- en: Asynchronous mode of communication by default. Using synchronous mode only when
+    needed.
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 默认使用异步通信模式。仅在需要时使用同步模式。
+- en: A number of retries should be handled with exponential backoffs that is 1, 2,
+    4, 16, and so on.
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应处理多次重试，采用指数退避，即1、2、4、16等。
+- en: Well defined network timeouts to prevent blocking of resources.
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 定义良好的网络超时，以防止资源阻塞。
+- en: Circuit breaker pattern to trip the request if service is down or overloaded.
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 断路器模式用于在服务宕机或过载时中断请求。
+- en: Fallbacks or returning cached values. For example images of a product will never
+    change frequently, they can be cached.
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 回退或返回缓存值。例如，产品的图像不会经常更改，可以进行缓存。
+- en: Monitoring the number of queued requests. If the number goes beyond a limit,
+    then it doesn't make sense to send further requests.
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 监控排队请求的数量。如果数量超过限制，那么发送进一步的请求就没有意义。
+- en: Design considerations
+  id: totrans-127
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设计考虑
+- en: 'A good API Gateway should adhere to the following design considerations in
+    order to have a rock solid microservice design:'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个良好的API网关应遵循以下设计考虑，以便拥有坚固的微服务设计：
+- en: '**Dependency: **There should not be a dependency on any other microservice.
+    An API Gateway is just another microservice. If any service ID is unavailable
+    for a preconfigured time or does not follow the SLAs then API Gateway should not
+    wait for that service. It should rather fail fast using circuit breaker or another
+    fall back strategy like returning cached responses.'
+  id: totrans-129
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**依赖性：**不应依赖任何其他微服务。API网关只是另一个微服务。如果任何服务ID在预先配置的时间内不可用或不遵循SLA，则API网关不应等待该服务。它应该使用断路器或其他回退策略快速失败，如返回缓存响应。'
+- en: '**Database and business logic: **API Gateway should not have database connectivity.
+    Gateways are dumb that is they do not have any state. If you need a database then
+    we need to create a separate microservice. Likewise business logic should reside
+    in the service itself. Gateway just routes any service requests to an appropriate
+    destination.'
+  id: totrans-130
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**数据库和业务逻辑：**API网关不应具有数据库连接。网关是愚蠢的，即它们没有任何状态。如果需要数据库，我们需要创建一个单独的微服务。同样，业务逻辑应该驻留在服务本身。网关只是将任何服务请求路由到适当的目的地。'
+- en: '**Orchestration and handling multiple content types:** Service choreography
+    (a pattern where microservices communicate with each other) should be done at
+    API Gateway rather than orchestration. Gateway should be connected to service
+    registry which gives us a location of dynamically moving services.'
+  id: totrans-131
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**编排和处理多种内容类型：**服务编排（微服务相互通信的模式）应该在API网关而不是编排中完成。网关应连接到服务注册表，这样我们就可以得到动态移动服务的位置。'
+- en: '**Versioning: **Gateway should have appropriate versioning strategy. Its like
+    we need to move a huge rock up the mountain, but as it is too big we break the
+    rock into smaller pieces and distribute it to every person. Now each person will
+    go at its own pace, but that doesn''t imply that he has to meet the other person''s
+    expectation too, because, in the end, it is the whole rock that matters and not
+    smaller pieces. Likewise, any particular version of a service should not break
+    contract exposed. New contracts should be updated on a need basis so other clients
+    can then know the new expectations until which backwards compatibility should
+    be there.'
+  id: totrans-132
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**版本控制：**网关应具有适当的版本控制策略。就像我们需要将一块巨大的岩石移到山上，但由于它太大，我们将岩石分成较小的块并分发给每个人。现在每个人都会按自己的步伐前进，但这并不意味着他必须满足其他人的期望，因为最终重要的是整块岩石而不是较小的块。同样，服务的任何特定版本都不应该破坏暴露的合同。新合同应根据需要进行更新，以便其他客户端了解新的期望，直到需要向后兼容性。'
+- en: '**High Availability: **It should be highly available and scalable. Planning
+    should be done for high volume and high load. If deployed in the cloud we can
+    go with: AWS auto-scaling.'
+  id: totrans-133
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**高可用性：**它应该是高可用和可扩展的。应该为高容量和高负载进行规划。如果部署在云中，我们可以选择：AWS自动扩展。'
+- en: In the next section, we will dive into available gateway options and discuss
+    them in detail. We will look at some cloud provider options too and see pros and
+    cons of each.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将深入研究可用的网关选项并进行详细讨论。我们还将查看一些云提供商选项，并了解每个选项的优缺点。
+- en: Available API Gateways options
+  id: totrans-135
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 可用的API网关选项
+- en: Now let us look at some of the practical implementations of API Gateway available.
+    In this section, we will look at options like Express Gateway, Netflix OSS, message
+    brokers, NGINX as a reverse proxy, and tools available for designing gateway.
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们看一些可用的API网关的实际实现。在本节中，我们将看到Express网关、Netflix OSS、消息代理、NGINX作为反向代理以及用于设计网关的工具等选项。
+- en: HTTP proxy and Express Gateway
+  id: totrans-137
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: HTTP代理和Express网关
+- en: 'HTTP proxy is an HTTP programmable library for proxying. This is helpful for
+    applying things such as reverse proxy or load balancing. `http-proxy` available
+    in npm has more than 1 lakh download per day. To achieve request dispatching we
+    can use `http-proxy`. This is a piece of cake and can be achieved like this:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HTTP代理是用于代理的HTTP可编程库。这对于应用反向代理或负载平衡非常有帮助。npm中可用的`http-proxy`每天的下载量超过10万次。为了实现请求分发，我们可以使用`http-proxy`。这很容易实现，可以像这样实现：
+- en: '[PRE1]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'One of the gateways built on top of Express.js and Node.js, Express Gateway
+    is the most simple to use with wide options such as language agnostic for a microservices
+    use case and portable as it can be run anywhere in Docker in public or private
+    cloud. It can work with any DevOps tools and it comes with pre-bundled proven
+    and popular modules. We can extend this with any express middleware and this is
+    totally config based and configs are auto-detected and hot reloaded. The following
+    are core components in the express gateway:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Express网关是基于Express.js和Node.js构建的网关之一，是最简单易用的，具有诸如面向微服务用例的语言不可知性和可移植性等广泛选项，因此可以在Docker中的任何地方（公共或私有云）运行。它可以与任何DevOps工具一起使用，并且配备了预打包的经过验证和流行的模块。我们可以使用任何express中间件来扩展它，这完全基于配置，配置会自动检测并进行热重载。以下是Express网关中的核心组件：
+- en: '| **Endpoints (API and service)** | They are nothing but URLs. Express Gateway
+    maintains them in two forms. API endpoints and service endpoints. API endpoints
+    are exposed and it proxies API requests to microservices asked for in service.
+    |'
+  id: totrans-141
+  prefs: []
+  type: TYPE_TB
+  zh: '| **端点（API和服务）** | 它们只是URL。Express网关以两种形式维护它们。API端点和服务端点。API端点是公开的，并将API请求代理到服务中请求的微服务。
+    |'
+- en: '| **Policies** | Set of conditions or actions or contract that is evaluated
+    and acted upon for any request that is passed through the gateway. Middlewares
+    are utilized. |'
+  id: totrans-142
+  prefs: []
+  type: TYPE_TB
+  zh: '| **策略** | 一组条件、操作或合同，用于评估并对通过网关的任何请求采取行动。中间件被利用。 |'
+- en: '| **Pipelines** | Set of policies linked to microservices to be executed sequentially.
+    For policy execution an API requested is passed through the pipeline where in
+    the end it encounters a proxy policy which guides request to service endpoint.
+    |'
+  id: totrans-143
+  prefs: []
+  type: TYPE_TB
+  zh: '| **管道** | 一组与微服务相关联的策略，按顺序执行。对于策略执行，API请求通过管道，最终遇到一个代理策略，该策略指导请求到服务端点。 |'
+- en: '| **Consumers** | Anyone who consumes microservices. To handle varying consumers
+    Express Gateway comes with a consumer management module. The golden rule for which
+    is an app must belong to a user. |'
+  id: totrans-144
+  prefs: []
+  type: TYPE_TB
+  zh: '| **消费者** | 消费微服务的任何人。为了处理不同的消费者，Express网关配备了一个消费者管理模块。其中的黄金法则是应用程序必须属于一个用户。
+    |'
+- en: '| **Credentials** | Types of authentication and authorizations. Consumer or
+    user may have one or more than one set of credentials. Credentials are linked
+    to a scope. Express Gateway comes with the credential management module. |'
+  id: totrans-145
+  prefs: []
+  type: TYPE_TB
+  zh: '| **凭证** | 认证和授权的类型。消费者或用户可能有一个或多个凭证。凭证与范围相关联。Express网关配备了凭证管理模块。 |'
+- en: '| **Scopes** | Labels used to assign authorization. Authorization policies
+    protecting the endpoints look up at the credential to make sure the integrity
+    of the system and consumer has that corresponding scope. |'
+  id: totrans-146
+  prefs: []
+  type: TYPE_TB
+  zh: '| **范围** | 用于分配授权的标签。保护端点的授权策略查看凭证，以确保系统的完整性，并且消费者具有相应的范围。 |'
+- en: 'Let''s now look at one example of Express Gateway. Following is the sample `gateway.config.yml`
+    file which is generated using Express Gateway ( [https://www.express-gateway.io/](https://www.express-gateway.io/).):'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们看一个Express网关的示例。以下是使用Express网关生成的`gateway.config.yml`文件的示例（[https://www.express-gateway.io/](https://www.express-gateway.io/)）。
+- en: '[PRE2]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: The preceding configuration is a minimalist example of a JWT at gateway and
+    proxy routes and is self explanatory.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述配置是网关和代理路由中JWT的最简单示例，并且是不言自明的。
+- en: Zuul and Eureka
+  id: totrans-150
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Zuul和Eureka
+- en: 'The next option that we are going to look at is the Zuul proxy server provided
+    by Netflix. Zuul is an edge service with objective of proxying requests to various
+    backing services. Thus it acts as a "unified front door" to consume services.
+    Zuul can be integrated with other open sourced tools by Netflix such as Hystrix
+    for fault tolerance, Eureka for service discovery, routing engine, load balancing,
+    and so on. Zuul is written in Java but can be used for microservices written in
+    any language. Zuul provides ease in doing the following things:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来我们要看的选项是Netflix提供的Zuul代理服务器。Zuul是一个边缘服务，其目标是代理请求到各种后端服务。因此，它充当了消费服务的“统一前门”。Zuul可以与Netflix提供的其他开源工具集成，例如Hystrix用于容错、Eureka用于服务发现、路由引擎、负载平衡等。Zuul是用Java编写的，但可以用于任何语言编写的微服务。Zuul在以下方面提供了便利：
+- en: Validating contract requirements for each resource. If contract is not fulfilled,
+    then rejecting those requests that do not meet them.
+  id: totrans-152
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 验证每个资源的合同要求。如果合同未得到满足，则拒绝那些不符合要求的请求。
+- en: Give us accurate view of production by tracking meaningful data and statistics.
+  id: totrans-153
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过跟踪有意义的数据和统计信息，为我们提供准确的生产视图。
+- en: Connecting to service registries and dynamically routing to different backend
+    clusters as needed.
+  id: totrans-154
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 连接到服务注册表，并根据需要动态路由到不同的后端集群。
+- en: In order to gauge performance gradually increasing traffic in a cluster.
+  id: totrans-155
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为了逐渐增加集群中的流量来衡量性能。
+- en: Dropping requests that go over a limit, thus by achieving load shedding by allocating
+    capacity for each type of request.
+  id: totrans-156
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 丢弃超出限制的请求，从而通过为每种类型的请求分配容量来实现负载分担。
+- en: Handling static or cached responses, thus by preventing internal container trips.
+  id: totrans-157
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理静态或缓存响应，从而防止内部容器的频繁访问。
+- en: 'Zuul 2.1 is under active development with the objective of achieving asynchronous
+    operations at the gateway level. Zuul 2 is however non blocking and thoroughly
+    relies on RxJava and reactive programming. To run Zuul as an API Gateway perform
+    the following steps:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zuul 2.1正在积极开发，旨在在网关级别实现异步操作。然而，Zuul 2是非阻塞的，并且完全依赖于RxJava和响应式编程。要将Zuul作为API网关运行，请执行以下步骤：
+- en: 'Zuul requires a Java environment. Clone the following Spring boot project:
+    [https://github.com/kissaten/heroku-zuul-server-demo](https://github.com/kissaten/heroku-zuul-server-demo)'
+  id: totrans-159
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Zuul需要Java环境。克隆以下Spring boot项目：[https://github.com/kissaten/heroku-zuul-server-demo](https://github.com/kissaten/heroku-zuul-server-demo)
+- en: Start the project using `mvn spring-boot:run`.
+  id: totrans-160
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`mvn spring-boot:run`启动项目。
+- en: Inside the project's `src/main/resources/application.yml` file we will write
+    our Zuul filters logic.
+  id: totrans-161
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在项目的`src/main/resources/application.yml`文件中，我们将编写我们的Zuul过滤器逻辑。
+- en: 'We will add failover logic there. For example consider the following sample
+    configuration:'
+  id: totrans-162
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将在那里添加故障转移逻辑。例如考虑以下示例配置：
+- en: '[PRE3]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: This configuration tells `zuul` to send all requests to the `httpbin` service.
+    If we want to define multiple routes here we can. The `httpbin` service then defines
+    the number of available servers. If the first host goes down, then proxy will
+    fail over to the second host.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此配置告诉`zuul`将所有请求发送到`httpbin`服务。如果我们想在这里定义多个路由，我们可以。然后，`httpbin`服务定义了可用服务器的数量。如果第一个主机出现故障，那么代理将故障转移到第二个主机。
+- en: 'The next chapter enables service discovery through another Netflix library:
+    Eureka.'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一章通过另一个Netflix库Eureka实现了服务发现。
+- en: API Gateway versus reverse proxy NGINX
+  id: totrans-166
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: API网关与反向代理NGINX
+- en: 'In this section, we are going to look at possible options available at server
+    levels. A reverse proxy (NGINX or Apache httpd) can do tasks like authenticating
+    a request, handling transportation security, and load balancing. NGINX is one
+    of the widely used tools to use a reverse proxy at gateway level in microservices.
+    The following code sample depicts configuration with a reverse proxy, SSL certificates,
+    and load balancing:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将查看服务器级别可用的可能选项。反向代理（NGINX或Apache httpd）可以执行诸如验证请求、处理传输安全性和负载平衡等任务。NGINX是在微服务网关级别使用反向代理的广泛工具之一。以下代码示例描述了使用反向代理、SSL证书和负载平衡的配置：
+- en: '[PRE4]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: The preceding configuration adds SSL certificates at a central level and adds
+    proxies at three domains and load balances all requests among them.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述配置在中心级别添加了SSL证书，并在三个域中添加了代理，并在它们之间平衡所有请求。
+- en: RabbitMQ
+  id: totrans-170
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: RabbitMQ
+- en: 'One of the most widely deployed message brokers, RabbitMQ operates on AMQP
+    protocol. The `amqplib` client for Node.js is widely adopted and has more than
+    16,000 downloads per day. In this section, we will look at a sample implementation
+    of `amqp` and understand the options given by it. RabbitMQ follows more of an
+    event based approach where each service listens to RabbitMQ "tasks" queue and
+    on listening for an event, the service completes its task and then sends it to
+    a `completed_tasks` queue. API Gateway listens for the `completed_tasks` queue
+    and when it receives a message, it sends the response back to the client. So let
+    us design our RabbitMQ class by performing the following steps:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: RabbitMQ是最广泛部署的消息代理之一，它使用AMQP协议。Node.js的`amqplib`客户端被广泛采用，每天的下载量超过16,000次。在本节中，我们将查看`amqp`的示例实现，并了解它提供的选项。RabbitMQ更多地遵循基于事件的方法，其中每个服务都监听RabbitMQ的“tasks”队列，当监听到事件时，服务完成其任务，然后将其发送到`completed_tasks`队列。API网关监听`completed_tasks`队列，当收到消息时，将响应发送回客户端。因此，让我们通过执行以下步骤设计我们的RabbitMQ类：
+- en: 'We will define our constructor as follows:'
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将定义我们的构造函数如下：
+- en: '[PRE5]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Next we will define our connection method as follows:'
+  id: totrans-174
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们将定义我们的连接方法如下：
+- en: '[PRE6]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Next we will have a `send` method which sends a message to the RabbitMQ channel
+    as follows:'
+  id: totrans-176
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们将有一个`send`方法，该方法将消息发送到RabbitMQ通道，如下所示：
+- en: '[PRE7]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: You can see the full file here, where you will find all available options. Similar
+    to earlier use cases, you can also find types for the `amqp` module at the definitely
+    typed repository [https://gist.github.com/insanityrules/4d120b3d9c20053a7c6e280a6d5c5bfb](https://gist.github.com/insanityrules/4d120b3d9c20053a7c6e280a6d5c5bfb).
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在此处查看完整文件，其中将找到所有可用选项。与之前的用例类似，您还可以在definitely typed存储库中找到`amqp`模块的类型[https://gist.github.com/insanityrules/4d120b3d9c20053a7c6e280a6d5c5bfb](https://gist.github.com/insanityrules/4d120b3d9c20053a7c6e280a6d5c5bfb)。
+- en: 'Next we just have to use the class. For example, take a look at the following
+    code:'
+  id: totrans-179
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们只需使用该类。例如，看一下以下代码：
+- en: '[PRE8]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: As a prerequisite of for this project RabbitMQ must be installed on the system,
+    which requires the installation of Erlang. Once RabbitMQ is up and running, you
+    can check by typing `rabbitmqctl status` to make sure that RabbitMQ service is
+    running.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为此项目的先决条件，RabbitMQ必须安装在系统上，这需要安装Erlang。一旦RabbitMQ启动运行，您可以通过键入`rabbitmqctl status`来检查RabbitMQ服务是否正在运行。
+- en: Designing our gateway for shopping cart microservices
+  id: totrans-182
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设计我们的购物车微服务网关
+- en: After seeing various options let's now get our hands dirty and start implementing
+    our microservices gateway for shopping cart microservices. In this section, we
+    will implement gateway from scratch which will have functionalities such as dispatching
+    requests from public endpoints to internal endpoints, aggregate responses from
+    multiple services, and handle transport security and dependency resolution. Let's
+    look at all the concepts that we will use in this module before proceeding with
+    code.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在看到各种选项后，现在让我们动手开始实现购物车微服务的微服务网关。在本节中，我们将从头开始实现网关，该网关将具有从公共端点到内部端点的请求分派功能，从多个服务聚合响应，并处理传输安全性和依赖关系解析。在继续编码之前，让我们先看一下我们将在此模块中使用的所有概念。
+- en: What are we going to use?
+  id: totrans-184
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 我们将使用什么？
+- en: 'In this section, we will look at all the following node modules and concepts
+    in order to efficiently construct our gateway:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将查看所有以下节点模块和概念，以便有效地构建我们的网关：
+- en: '**ES6 proxy**: Generally speaking, a proxy server is one which acts as an intermediary
+    server for requests coming in from clients. One of the most powerful and interesting
+    features in ES6 was proxy. ES6 proxy acts as an intermediary among API consumers
+    and objects in services. We usually create proxies when we want our own desired
+    behavior whenever the properties of the underlying target object are accessed.
+    To configure traps for your proxy which has control of the underlying target object
+    we use handler functions.'
+  id: totrans-186
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**ES6代理**：一般来说，代理服务器是指作为客户端请求的中间服务器。ES6中最强大和有趣的功能之一就是代理。ES6代理在API消费者和服务对象之间充当中间人。当我们希望在访问基础目标对象的属性时获得自己想要的行为时，通常会创建代理。为了配置代理的陷阱，控制基础目标对象，我们使用处理程序函数。'
+- en: '**NPM module dockerode**: Its Node.js reactive module for Remote API for docker.
+    It has some nice features such as streams for reactive programming, support for
+    additional demultiplexing and promises and callback based interfaces for easy
+    programming.'
+  id: totrans-187
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**NPM模块dockerode**：它是用于Docker远程API的Node.js响应式模块。它具有一些不错的功能，如用于响应式编程的流、支持附加的多路复用和承诺以及基于回调的接口，便于编程。'
+- en: '**Dependency injection**: One of the most important design patterns (initially
+    started in Java, now it is present everywhere) in which one or more dependencies
+    of a service are injected or passed by reference to a dependent object.'
+  id: totrans-188
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**依赖注入**：这是最重要的设计模式之一（最初在Java中开始，现在到处都有），其中一个或多个服务的依赖项被注入或通过引用传递给依赖对象。'
+- en: Please check source code of `chapter 5` for custom implementation which includes
+    service discovery. You can revisit this exercise after completing `chapter 6`.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请查看`第5章`的源代码，其中包括服务发现的自定义实现。在完成`第6章`后，您可以重新访问这个练习。
+- en: Summary
+  id: totrans-190
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we debunked API Gateway. We understood the pros and cons of
+    introducing API Gateway and what concerns API Gateway can handle centrally. We
+    looked at design aspects of API Gateway and understood the need for API Gateway
+    in our system. We had a look at the circuit breaker and why it was vital to have.
+    We looked at available gateway options like Zuul, Express Gateway, reverse proxy,
+    and designed our own gateway for shopping cart microservices.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们揭示了API网关。我们了解了引入API网关的利弊，以及API网关可以集中处理哪些问题。我们研究了API网关的设计方面，并了解了在我们的系统中需要API网关的原因。我们看了一下断路器以及为什么拥有它是至关重要的。我们研究了可用的网关选项，如Zuul、Express
+    Gateway、反向代理，并为购物车微服务设计了我们自己的网关。
+- en: In the next chapter, we will learn about service registry and service discovery.
+    We will see how gateway connects with service discovery to automatically know
+    the location of moving services. We will see ways in which a service can be registered
+    and learn the pros and cons of each approach. We will see some options like consul
+    and implement them in our shopping cart microservices.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习服务注册表和服务发现。我们将看到网关如何连接到服务发现，自动了解移动服务的位置。我们将看到服务可以注册的方式，并了解每种方法的利弊。我们将看到一些选项，比如consul，并在我们的购物车微服务中实现它们。

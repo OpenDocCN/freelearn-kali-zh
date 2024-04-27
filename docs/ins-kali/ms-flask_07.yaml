@@ -1,0 +1,1873 @@
+- en: Chapter 7. Using NoSQL with Flask
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第7章 使用Flask与NoSQL
+- en: A **NoSQL** (short for **Not Only SQL**) database is any nonrelational data
+    store. It usually focuses on speed and scalability. NoSQL has been taking the
+    web development world by storm for the past 7 years. Huge companies, such as Netflix
+    and Google, announced that they were moving many of their services to NoSQL databases,
+    and many smaller companies followed this.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**NoSQL**（缩写为**Not Only SQL**）数据库是任何非关系型数据存储。它通常侧重于速度和可伸缩性。在过去的7年里，NoSQL一直在网页开发领域掀起了风暴。像Netflix和Google这样的大公司宣布他们正在将许多服务迁移到NoSQL数据库，许多较小的公司也跟随着这样做。'
+- en: This chapter will deviate from the rest of the book in which Flask will not
+    be the main focus. The focus on database design might seem odd in a book about
+    Flask, but choosing the correct database for your application is arguably the
+    most important decision while designing your technology stack. In the vast majority
+    of web applications, the database is the bottleneck, so the database you pick
+    will determine the overall speed of your app. A study conducted by Amazon showed
+    that even a 100-ms delay caused a 1 percent reduction in sales, so speed should
+    always be one of the main concerns of a web developer. Also, there is an abundance
+    of horror stories in the programmer community of web developers about choosing
+    a popular NoSQL database and then not really understanding what the database required
+    in terms of administration. This leads to large amounts of data loss and crashes,
+    which in turn means losing customers. All in all, it's no exaggeration to say
+    that your choice of database for your application can be the difference between
+    your app succeeding or failing.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一章将偏离本书的其余部分，其中Flask不会是主要焦点。在一本关于Flask的书中，专注于数据库设计可能看起来有些奇怪，但选择正确的数据库对于设计技术栈来说可能是最重要的决定。在绝大多数网络应用中，数据库是瓶颈，因此你选择的数据库将决定应用的整体速度。亚马逊进行的一项研究表明，即使100毫秒的延迟也会导致1%的销售额减少，因此速度应该始终是网络开发人员的主要关注点之一。此外，程序员社区中有大量关于选择流行的NoSQL数据库然后并不真正了解数据库在管理方面需要什么的恐怖故事。这导致大量数据丢失和崩溃，进而意味着失去客户。总的来说，毫不夸张地说，你选择应用的数据库可能是应用成功与否的关键。
+- en: To illustrate the strengths and weaknesses of NoSQL databases, each type of
+    NoSQL database will be examined, and the differences between NoSQL and traditional
+    databases will be laid out.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了说明NoSQL数据库的优势和劣势，将对每种NoSQL数据库进行检查，并阐明NoSQL与传统数据库之间的区别。
+- en: Types of NoSQL databases
+  id: totrans-4
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: NoSQL数据库的类型
+- en: NoSQL is a blanket term used to describe nontraditional methods of storing data
+    in a database. To make matters more confusing, NoSQL may also mean the databases
+    that are relational but did not use SQL as a query language, for example, **RethinkDB**.
+    The vast majority of NoSQL databases are not relational, unlike RDBMS, which means
+    that they cannot perform operations such as `JOIN`. The lack of a `JOIN` operation
+    is a trade-off because it allows faster reads and easier decentralization by spreading
+    data across several servers or even separate data centers.
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NoSQL是一个用来描述数据库中非传统数据存储方法的总称。更让人困惑的是，NoSQL也可能指的是关系型但没有使用SQL作为查询语言的数据库，例如**RethinkDB**。绝大多数NoSQL数据库不是关系型的，不像RDBMS，这意味着它们无法执行诸如`JOIN`之类的操作。缺少`JOIN`操作是一种权衡，因为它允许更快的读取和更容易的去中心化，通过将数据分布在多个服务器甚至是不同的数据中心。
+- en: Modern NoSQL databases include key-value stores, document stores, column family
+    stores, and graph databases.
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现代NoSQL数据库包括键值存储、文档存储、列族存储和图数据库。
+- en: Key-value stores
+  id: totrans-7
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 键值存储
+- en: A **key-value** NoSQL database acts much like a dictionary in Python. A single
+    value is associated with one key and is accessed via that key. Also, like a Python
+    dictionary, most key-value databases have the same read speed regardless of how
+    many entries there are. Advanced programmers would know this as **O(1) reads**.
+    In some key-value stores, only one key can be retrieved at a time, rather than
+    multiple rows in traditional SQL databases. In most key-value stores, the content
+    of the value is not *queryable*, but the keys are. Values are just binary blobs;
+    they can be literally anything from a string to a movie file. However, some key-value
+    stores give default types, such as strings, lists, sets, and dictionaries, while
+    still giving the option of adding binary data.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**键值** NoSQL数据库的工作方式类似于Python中的字典。一个键关联一个值，并通过该键访问。此外，就像Python字典一样，大多数键值数据库的读取速度不受条目数量的影响。高级程序员会知道这是**O(1)读取**。在一些键值存储中，一次只能检索一个键，而不是传统SQL数据库中的多行。在大多数键值存储中，值的内容是不可*查询*的，但键是可以的。值只是二进制块；它们可以是从字符串到电影文件的任何东西。然而，一些键值存储提供默认类型，如字符串、列表、集合和字典，同时还提供添加二进制数据的选项。'
+- en: Because of their simplicity, key-value stores are typically very fast. However,
+    their simplicity makes them unsuitable as the main database for most applications.
+    As such, most key-value store use cases are storing simple objects that need to
+    expire after a given amount of time. Two common examples of this pattern are storing
+    user's session data and shopping cart data. Also, key-value stores are commonly
+    used as caches for the application or for other databases. For example, results
+    from a commonly run, or CPU-intensive, query or function are stored with the query
+    or function name as a key. The application will check the cache in the key-value
+    store before running the query on the database, thereby decreasing page load times
+    and stress on the database. An example of this functionality will be shown in
+    [Chapter 10](ch10.html "Chapter 10. Useful Flask Extensions"), *Useful Flask Extensions*.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于其简单性，键值存储通常非常快。但是，它们的简单性使它们不适合大多数应用程序的主数据库。因此，大多数键值存储用例是存储需要在一定时间后过期的简单对象。这种模式的两个常见示例是存储用户会话数据和购物车数据。此外，键值存储通常用作应用程序或其他数据库的缓存。例如，经常运行或CPU密集型查询或函数的结果与查询或函数名称一起存储为键。应用程序在运行数据库上的查询之前将检查键值存储中的缓存，从而减少页面加载时间和对数据库的压力。此功能的示例将在[第10章](ch10.html
+    "第10章 有用的Flask扩展")中展示，*有用的Flask扩展*。
+- en: The most popular key-value stores are **Redis**, **Riak**, and **Amazon DynamoDB**.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最流行的键值存储是**Redis**，**Riak**和**Amazon DynamoDB**。
+- en: Document stores
+  id: totrans-11
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 文档存储
+- en: '**Document store** is one of the most popular NoSQL database types and what
+    typically replaces an RDBMS. Databases store data in collections of key-value
+    pairs called documents. These documents are schema-less, meaning no document must
+    follow the structure of another document. Also, extra keys may be appended to
+    the document after its creation. Most document stores store data in **JSON** (**JavaScript
+    Object Notation**), a superset of JSON, or XML. For example, the following are
+    two different post objects stored in JSON:'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**文档存储**是最流行的NoSQL数据库类型之一，通常用于替代RDBMS。数据库将数据存储在称为文档的键值对集合中。这些文档是无模式的，意味着没有文档必须遵循另一个文档的结构。此外，可以在文档创建后附加额外的键。大多数文档存储将数据存储在**JSON**（**JavaScript对象表示法**）中，JSON的超集，或XML中。例如，以下是存储在JSON中的两个不同的帖子对象：'
+- en: '[PRE0]'
+  id: totrans-13
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Note that the first document has no comments array. As stated before, documents
+    are schema-less, so this format is perfectly valid. The lack of a schema also
+    means that there are no type checks at the database level. There is nothing on
+    the database to stop an integer from being entered into the title field of a post.
+    Schema-less data is the most powerful feature of document stores and draws many
+    to adopt one for their apps. However, it can also be considered very dangerous,
+    as there is one less check stopping faulty or malformed data from getting into
+    your database.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，第一个文档没有评论数组。如前所述，文档是无模式的，因此此格式是完全有效的。无模式还意味着在数据库级别没有类型检查。数据库上没有任何内容可以阻止将整数输入到帖子的标题字段中。无模式数据是文档存储的最强大功能，并吸引许多人采用它们的应用程序。但是，它也可能被认为非常危险，因为有一个检查可以阻止错误或格式错误的数据进入数据库。
+- en: Some document stores collect similar objects in collections of documents to
+    make querying objects easier. However, in some document stores, all objects are
+    queried at once. Document stores store the metadata of each object, which allows
+    all of the values in each document to be queried and return matching documents.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些文档存储将类似的对象收集到文档集合中，以便更容易地查询对象。但是，在一些文档存储中，所有对象都是一次查询的。文档存储存储每个对象的元数据，这允许查询并返回匹配的文档中的所有值。
+- en: The most popular document stores are **MongoDB**, **CouchDB**, and **Couchbase**.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最流行的文档存储是**MongoDB**，**CouchDB**和**Couchbase**。
+- en: Column family stores
+  id: totrans-17
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 列族存储
+- en: '**Column family stores**, also known as wide column stores, have many things
+    in common with both key-value stores and document stores. Column family stores
+    are the fastest type of NoSQL database because they are designed for large applications.
+    Their main advantage is their ability to handle terabytes of data and still have
+    very fast read and write speeds by distributing the data across several servers
+    in an intelligent way.'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**列族存储**，也称为宽列存储，与键值存储和文档存储有许多共同之处。列族存储是最快的NoSQL数据库类型，因为它们设计用于大型应用程序。它们的主要优势是能够处理大量数据，并且通过以智能方式将数据分布在多台服务器上，仍然具有非常快的读写速度。'
+- en: Column family stores are also the hardest to understand, due in part to the
+    vernacular of column family stores, as they use many of the same terms as an RDBMS,
+    with wildly different meanings. In order to understand what a column family store
+    is clearly, let's jump straight to an example. Let's create a simple *user to
+    posts* association in a typical column family store.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 列族存储也是最难理解的，部分原因是列族存储的行话，因为它们使用与RDBMS相同的术语，但含义大相径庭。为了清楚地理解列族存储是什么，让我们直接举个例子。让我们在典型的列族存储中创建一个简单的*用户到帖子*关联。
+- en: 'First, we need a user table. In column family stores, data is stored and accessed
+    via a unique key, such as a key-value store, but the contents are unstructured
+    columns, such as a document store. Consider the following user table:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要一个用户表。在列族存储中，数据是通过唯一键存储和访问的，例如键值存储，但内容是无结构的列，例如文档存储。考虑以下用户表：
+- en: '| Key | Jack | John |'
+  id: totrans-21
+  prefs: []
+  type: TYPE_TB
+  zh: '| 键 | 杰克 | 约翰 |'
+- en: '| --- | --- | --- |'
+  id: totrans-22
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- |'
+- en: '| **Column** | **Full Name** | **Bio** | **Location** | **Full Name** | **Bio**
+    |'
+  id: totrans-23
+  prefs: []
+  type: TYPE_TB
+  zh: '| **列** | **全名** | **生物** | **位置** | **全名** | **生物** |'
+- en: '| **Value** | Jack Stouffer | This is my about me | Michigan, USA | John Doe
+    | This is my about me |'
+  id: totrans-24
+  prefs: []
+  type: TYPE_TB
+  zh: '| **值** | 杰克·斯托弗 | 这是我的个人简介 | 美国密歇根州 | 约翰·多 | 这是我的个人简介 |'
+- en: 'Note that each key holds columns, which are key-value pairs as well. Also,
+    it is not required that each key has the same number or types of columns. Each
+    key can store hundreds of unique columns, or they can all have the same number
+    of columns to make application development easier. This is in contrast to key-value
+    stores, which can hold any type of data with each key. This is also slightly different
+    to document stores, which can store types, such as arrays and dictionaries in
+    each document. Now let''s create our posts'' table:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，每个键都包含列，这些列也是键值对。而且，并不要求每个键具有相同数量或类型的列。每个键可以存储数百个唯一的列，或者它们可以都有相同数量的列，以便更容易进行应用程序开发。这与键值存储形成对比，后者可以存储每个键的任何类型的数据。这也与文档存储略有不同，后者可以在每个文档中存储类型，比如数组和字典。现在让我们创建我们的帖子表：
+- en: '| Key | Post/1 | Post/2 |'
+  id: totrans-26
+  prefs: []
+  type: TYPE_TB
+  zh: '| 键 | 帖子/1 | 帖子/2 |'
+- en: '| --- | --- | --- |'
+  id: totrans-27
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- |'
+- en: '| **Column** | **Title** | **Date** | **Text** | **Title** | **Date** | **Text**
+    |'
+  id: totrans-28
+  prefs: []
+  type: TYPE_TB
+  zh: '| **列** | **标题** | **日期** | **文本** | **标题** | **日期** | **文本** |'
+- en: '| **Value** | Hello World | 2015-01-01 | Post text… | Still Here | 2015-02-01
+    | Post text… |'
+  id: totrans-29
+  prefs: []
+  type: TYPE_TB
+  zh: '| **值** | 你好，世界 | 2015-01-01 | 发布的文本... | 仍然在这里 | 2015-02-01 | 发布的文本... |'
+- en: There are several things to understand about column family stores before we
+    continue. First, in column family stores, data can only be selected via a single
+    key or key range; there is no way to query the contents of the columns. To get
+    around this, many programmers use an external search tool with their database,
+    such as **Elasticsearch**, that stores the contents of columns in a searchable
+    format and returns matching keys to be queried on the database. This limitation
+    is why proper *schema* design is so crucial in column family stores, and must
+    be carefully thought through before storing any data.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们继续之前，有几件事情需要了解关于列族存储。首先，在列族存储中，数据只能通过单个键或键范围进行选择；无法查询列的内容。为了解决这个问题，许多程序员使用外部搜索工具与他们的数据库一起使用，比如**Elasticsearch**，它将列的内容存储在可搜索的格式中，并返回匹配的键供数据库查询。这种限制性是为什么在列族存储中适当的*模式*设计是如此关键的，必须在存储任何数据之前仔细考虑。
+- en: Second, data cannot be ordered by the content of the columns. Data can only
+    be ordered by key, which is why the keys to the posts are integers. This allows
+    the posts to be returned in the order in which they were entered. This was not
+    a requirement for the user table because there is no need to sequentially order
+    users.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，数据不能按列的内容排序。数据只能按键排序，这就是为什么帖子的键是整数的原因。这样可以按照输入顺序返回帖子。这不是用户表的要求，因为没有必要按顺序排序用户。
+- en: 'Third, there are no `JOIN` operators and we cannot query for a column that
+    would hold a user key. With our current schema, there is no way to associate a
+    post with a user. To create this functionality, we need a third table that holds
+    the user to post associations:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第三，没有`JOIN`运算符，我们无法查询包含用户键的列。根据我们当前的模式，没有办法将帖子与用户关联起来。要创建这个功能，我们需要一个第三个表来保存用户到帖子的关联：
+- en: '| Key | Jack |'
+  id: totrans-33
+  prefs: []
+  type: TYPE_TB
+  zh: '| 键 | 杰克 |'
+- en: '| --- | --- |'
+  id: totrans-34
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- |'
+- en: '| **Column** | Posts | Posts/1 | Post/1 |'
+  id: totrans-35
+  prefs: []
+  type: TYPE_TB
+  zh: '| **列** | 帖子 | 帖子/1 | 帖子/1 |'
+- en: '| **Value** |   | Posts/2 | Post/2 |'
+  id: totrans-36
+  prefs: []
+  type: TYPE_TB
+  zh: '| **值** |   | 帖子/2 | 帖子/2 |'
+- en: This is slightly different from the other tables we have seen so far. The `Posts`
+    column is named a super column, which is a column that holds other columns. In
+    this table, a super column is associated with our user key, which is holding an
+    association of the position of a post to one post. Clever readers might ask why
+    we wouldn't just store this association in our user table, much like how the problem
+    would be solved in document stores. This is because regular columns and super
+    columns cannot be held in the same table. You must choose one at the creation
+    of each table.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这与我们迄今为止看到的其他表略有不同。`帖子`列被命名为超级列，它是一个包含其他列的列。在这个表中，超级列与我们的用户键相关联，它包含了一个帖子到一个帖子的位置的关联。聪明的读者可能会问，为什么我们不把这个关联存储在用户表中，就像在文档存储中解决问题的方式一样。这是因为常规列和超级列不能存储在同一张表中。您必须在创建每个表时选择一个。
+- en: To get a list of all the posts by a user, we would first have to query the post
+    association table with our user key, use the returned list of associations to
+    get all of the keys in the posts table, and query the post table with the keys.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要获取用户的所有帖子列表，我们首先必须查询帖子关联表，使用我们的用户键，使用返回的关联列表获取帖子表中的所有键，并使用这些键查询帖子表。
+- en: If that query seems like a roundabout process to you that's because it is, and
+    it is that way by design. The limiting nature of a column family store is what
+    allows it to be so fast and handle so much data. Removing features such as searching
+    by value and column name give column family stores the ability to handle hundreds
+    of terabytes of data. It's not an exaggeration to say that SQLite is a more complex
+    database for the programmer than a typical column family store.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果这个查询对你来说似乎是一个绕圈子的过程，那是因为它确实是这样，而且它是有意设计成这样的。列族存储的限制性质使得它能够如此快速地处理如此多的数据。删除诸如按值和列名搜索等功能，使列族存储能够处理数百TB的数据。毫不夸张地说，SQLite对程序员来说比典型的列族存储更复杂。
+- en: For this reason, most Flask developers should steer clear of column family stores
+    as it adds complexity to applications that isn't necessary. Unless your application
+    is going to handle millions of reads and writes a second, using a column family
+    store is like pounding in a nail with an atomic bomb.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，大多数Flask开发人员应该避免使用列族存储，因为它给应用程序增加了不必要的复杂性。除非您的应用程序要处理每秒数百万次的读写操作，否则使用列族存储就像用原子弹钉打钉子。
+- en: The most popular column family stores are **BigTable**, **Cassandra**, and **HBase**.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最受欢迎的列族存储包括**BigTable**、**Cassandra**和**HBase**。
+- en: Graph databases
+  id: totrans-42
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 图数据库
+- en: Designed to describe and then query relationships, graph databases are like
+    document stores but have mechanisms to create and describe links between two **nodes**.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图数据库旨在描述然后查询关系，它们类似于文档存储，但具有创建和描述两个**节点**之间链接的机制。
+- en: A node in a graph store is a single piece of data, usually a collection of key-value
+    pairs or a JSON document. Nodes can be given labels to mark them as part of a
+    category, for example, a user or a group. After your nodes have been defined,
+    an arbitrary number of one-way relationships between the nodes, named **links**,
+    can be created with their own attributes. For example, if our data had two user
+    nodes and each of the two users knew each other, we would define two "knows" links
+    between them to describe that relationship. This would allow you to query all
+    the people that know one user or all the people that a user knows.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图存储中的节点是单个数据，通常是一组键值对或JSON文档。节点可以被标记为属于某个类别，例如用户或组。在定义了节点之后，可以创建任意数量的节点之间的单向关系（称为**链接**），并带有自己的属性。例如，如果我们的数据有两个用户节点，每个用户都认识对方，我们可以在它们之间定义两个“认识”链接来描述这种关系。这将允许您查询所有认识一个用户的人，或者一个用户认识的所有人。
+- en: '![Graph databases](img/B03929_07_01.jpg)'
+  id: totrans-45
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图形数据库](img/B03929_07_01.jpg)'
+- en: Graph stores also allow you to query by the link's attributes. This allows you
+    to easily create otherwise complex queries, such as all of the users that one
+    user marked as known in October 2001\. Graph stores can follow links from node
+    to node to create even more complex queries. If this example dataset had more
+    groups, we could query for groups that people we know have joined but we haven't
+    joined. Otherwise, we could query for people who are in the same groups as a user,
+    but the user doesn't know them. Queries in a graph store can also follow a large
+    number of links to answer complex questions, such as "which restaurants, that
+    have a three-star rating or more, in New York, that serve burgers, have my friends
+    liked?"
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图存储还允许您按照链接的属性进行查询。这使您可以轻松地创建否则复杂的查询，例如在2001年10月被一个用户标记为已知的所有用户。图存储可以从节点到节点跟随链接，创建更复杂的查询。如果这个示例数据集有更多的群组，我们可以查询那些我们认识的人已经加入但我们还没有加入的群组。或者，我们可以查询与某个用户在同一群组的人，但该用户不认识他们。图存储中的查询还可以跟随大量的链接来回答复杂的问题，比如“纽约有哪些评分为三星或更高的餐厅，提供汉堡，我的朋友们喜欢吗？”
+- en: The most common use case for a graph database is to build a recommendation engine.
+    For example, say we had a graph store filled with our friend data from a social
+    networking site. Using this data, we could build a mutual friend finder by querying
+    for users where more than two of our friends have marked them as a friend.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图数据库最常见的用例是构建推荐引擎。例如，假设我们有一个图存储，其中填充了来自社交网络网站的朋友数据。利用这些数据，我们可以通过查询用户来构建一个共同的朋友查找器，其中超过两个朋友标记他们为朋友。
+- en: It is very rare for a graph database to be used as the primary data store of
+    an application. Most uses of graph stores have each node acting as a representation
+    of a piece of data in their main database by storing its unique identifier and
+    a small amount of other identifying information.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图数据库很少被用作应用程序的主要数据存储。大多数图存储的用途是，每个节点都充当主数据库中数据片段的表示，通过存储其唯一标识符和少量其他标识信息。
+- en: The most popular graph stores are **Neo4j** and **InfoGrid**.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最流行的图存储是Neo4j和InfoGrid。
+- en: RDBMS versus NoSQL
+  id: totrans-50
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: RDBMS与NoSQL
+- en: NoSQL is a tool, and like any tool is has specific use cases where it excels,
+    and use cases where some other tool would be a better fit. No one would use a
+    screwdriver to pound in a nail. It's possible, but using a hammer would make the
+    job easier. One large problem with NoSQL databases is that people adopt them when
+    an RDBMS would solve the problem just as well or better.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NoSQL是一种工具，就像任何工具一样，它有特定的用例，它擅长的地方，以及其他工具更适合的用例。没有人会用螺丝刀来敲钉子。这是可能的，但使用锤子会让工作更容易。NoSQL数据库的一个很大的问题是，人们在RDBMS可以同样好甚至更好地解决问题时采用了它们。
+- en: To understand which tool to be used when, we must understand the strengths and
+    weaknesses of both systems.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要了解何时使用哪种工具，我们必须了解两种系统的优势和劣势。
+- en: The strengths of RDBMS databases
+  id: totrans-53
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: RDBMS数据库的优势
+- en: One of the biggest strengths of an RDBMS is its maturity. The technology behind
+    an RDBMS has existed for over 40 years and is based on the solid theory of relational
+    algebra and relational calculus. Because of their maturity, they have a long,
+    proven track record across many different industries of handling data in a safe
+    and secure way.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关系型数据库管理系统（RDBMS）的最大优势之一是其成熟性。RDBMS背后的技术已经存在了40多年，基于关系代数和关系演算的坚实理论。由于它们的成熟性，在许多不同行业中，它们都有着长期的、经过验证的数据处理记录。
+- en: Data safety
+  id: totrans-55
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 数据安全
+- en: Safety is also one of the biggest selling points of an RDBMS. A RDBMS has several
+    methods in place to ensure that the data entered into the database will not only
+    be correct, but that data loss is practically nonexistent. These methods combine
+    to form what is known as **ACID**, which stands for Atomicity, Consistency, Isolation,
+    and Durability. ACID is a set of rules for transactions that guarantee that the
+    transaction is handled safely.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安全性也是RDBMS的最大卖点之一。RDBMS有几种方法来确保输入到数据库中的数据不仅是正确的，而且数据丢失几乎是不存在的。这些方法结合在一起形成了所谓的**ACID**，即原子性、一致性、隔离性和持久性。ACID是一组事务规则，保证事务的安全处理。
+- en: 'First, atomicity requires that each transaction is all or nothing. If one part
+    of the transaction fails, the entire transaction fails. This is much like the
+    mentality in the Zen of Python: "Errors should never pass silently. Unless explicitly
+    silenced." If there is a problem with the data changed or entered, the transaction
+    should not keep operating because the proceeding operations most likely require
+    that the previous operations were successful.'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，原子性要求每个事务要么全部完成，要么全部失败。这很像Python之禅中的思维方式：“错误不应悄悄地过去。除非明确地被消除。”如果数据更改或输入存在问题，事务不应继续操作，因为后续操作很可能需要先前的操作成功。
+- en: Second, consistency requires that any data the transaction modifies or adds
+    follow the rules of each table. Such rules include type checks, user-defined constraints,
+    such as `FOREIGN KEY`, cascade rules, and triggers. If any of the rules are broken,
+    then by the atomicity rule, the transaction is thrown out.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，一致性要求事务修改或添加的任何数据都要遵循每个表的规则。这些规则包括类型检查、用户定义的约束，如“外键”、级联规则和触发器。如果任何规则被违反，那么根据原子性规则，事务将被取消。
+- en: Third, isolation requires that if the database runs transactions concurrently
+    to speed up writes, that the outcome of the transactions would be the same if
+    they were run serially. This is mostly a rule for database programmers and not
+    something that web developers need to worry about.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第三，隔离要求如果数据库并发运行事务以加快写入速度，那么如果它们按顺序运行，事务的结果将是相同的。这主要是数据库程序员的规则，而不是Web开发人员需要担心的事情。
+- en: Finally, durability requires that once a transaction is accepted, the data must
+    never be lost, barring a hard drive failure after the transaction is accepted.
+    If the database crashes or loses power, the durability principle requires that
+    any data written before the problem occurred still be present when the server
+    is backed up. This essentially means that all transactions must be written to
+    the disk once they are accepted.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，持久性要求一旦接受了一个事务，数据就绝不能丢失，除非在事务被接受后发生硬盘故障。如果数据库崩溃或断电，持久性原则要求在问题发生之前写入的任何数据在服务器备份时仍然存在。这基本上意味着一旦事务被接受，所有事务必须被写入磁盘。
+- en: Speed and scale
+  id: totrans-61
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 速度和规模
+- en: A common misconception is that the ACID principle makes an RDBMS unable to scale
+    and slow. This is only half true; it is completely possible for an RDBMS to scale.
+    For example, an Oracle database configured by a professional database administrator
+    can handle tens of thousands of complex queries a second. Huge companies, such
+    as Facebook, Twitter, Tumblr, and Yahoo!, are using MySQL to great effect, and
+    PostgreSQL is emerging as a favorite of many programmers due to its speed advantage
+    over MySQL.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个常见的误解是ACID原则使得关系型数据库无法扩展并且速度慢。这只是一半正确；关系型数据库完全可以扩展。例如，由专业数据库管理员配置的Oracle数据库可以处理每秒数万个复杂查询。像Facebook、Twitter、Tumblr和Yahoo!这样的大公司正在有效地使用MySQL，而由于其速度优势，PostgreSQL正在成为许多程序员的首选。
+- en: However, the largest weakness of an RDBMS is the inability to easily scale by
+    splitting the data across several databases working in tandem. It's not impossible,
+    as some detractors seem to imply, it's just harder than a NoSQL database. This
+    is due to the nature of `JOIN`, which requires a scan of the entire data in a
+    table, even if it is split across multiple servers. Several tools exist to help
+    creation of a partitioned setup, but it is still mostly a job for professional
+    database administrators.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，关系型数据库最大的弱点是无法通过将数据跨多个数据库进行分割来轻松扩展。这并非不可能，正如一些批评者所暗示的那样，只是比NoSQL数据库更困难。这是由于“JOIN”的性质，它需要扫描整个表中的所有数据，即使它分布在多个服务器上。存在一些工具来帮助创建分区设置，但这仍然主要是专业数据库管理员的工作。
+- en: Tools
+  id: totrans-64
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 工具
+- en: When evaluating a programming language, the strongest points for or against
+    adopting it are the size and activity of its community. A larger and more active
+    community means more help if you get stuck, and more open source tools are available
+    to use in your projects.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在评估编程语言时，对于或反对采用它的最有力的观点是其社区的规模和活跃程度。更大更活跃的社区意味着如果遇到困难会有更多的帮助，并且更多的开源工具可用于项目中。
+- en: It's no different with databases. An RDBMS, such as MySQL or PostgreSQL, has
+    official libraries for almost every language that is used in commercial environments
+    and unofficial libraries for everything else. Tools, such as Excel, can easily
+    download the latest data from one of these databases and allow the user to treat
+    it like it was any other dataset. Several free desktop GUIs exist for each database,
+    and some are officially supported by the databases' corporate sponsor.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据库也不例外。例如MySQL或PostgreSQL等关系型数据库为商业环境中几乎每种语言都有官方库，而其他语言也有非官方库。诸如Excel之类的工具可以轻松地从这些数据库中下载最新数据，并允许用户像对待任何其他数据集一样处理它。每个数据库都有几个免费的桌面GUI，并且一些是由数据库的公司赞助的官方支持的。
+- en: The strengths of NoSQL databases
+  id: totrans-67
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: NoSQL数据库的优势
+- en: The main reason that many use NoSQL databases is its speed advantage over traditional
+    databases. Out of the box, many NoSQL databases can outperform an RDBMS by a large
+    amount. However, the speed comes at a cost. Many NoSQL databases, especially document
+    stores, sacrifice consistency for availability. This means that they can handle
+    many concurrent reads and writes, but those writes may be in conflict with one
+    another. These databases promise "eventual consistency" rather than consistency
+    checks on each write. In short, many NoSQL databases do not provide ACID transactions,
+    or they are turned off by default. Once ACID checks are enabled, the speed of
+    the database drops to near the performance of traditional databases. Every NoSQL
+    database handles data safety differently, so it's important to read the documentation
+    carefully before choosing one over another.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多人使用NoSQL数据库的主要原因是它在传统数据库上的速度优势。许多NoSQL数据库可以在开箱即用的情况下比关系型数据库表现出色。然而，速度是有代价的。许多NoSQL数据库，特别是文档存储，为了可用性而牺牲了一致性。这意味着它们可以处理许多并发读写，但这些写入可能彼此冲突。这些数据库承诺“最终一致性”，而不是在每次写入时进行一致性检查。简而言之，许多NoSQL数据库不提供ACID事务，或者默认情况下已关闭。一旦启用ACID检查，数据库的速度会接近传统数据库的性能。每个NoSQL数据库都以不同的方式处理数据安全，因此在选择一个数据库之前仔细阅读文档非常重要。
+- en: The second feature that pulls people to NoSQL is its ability to handle unformatted
+    data. Storing data in XML or JSON allows an arbitrary structure for each document.
+    Applications that store user-designed data have benefited greatly from the adoption
+    of NoSQL. For example, a video game that allows players to submit their custom
+    levels to some central repository can now store the data in a queryable format
+    rather than in a binary blob.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 吸引人们使用NoSQL的第二个特性是其处理非格式化数据的能力。将数据存储为XML或JSON允许每个文档具有任意结构。存储用户设计的数据的应用程序从采用NoSQL中受益良多。例如，允许玩家将他们的自定义级别提交到某个中央存储库的视频游戏现在可以以可查询的格式存储数据，而不是以二进制大块存储。
+- en: The third feature that draws people to NoSQL is the ease of creating a cluster
+    of databases working in tandem. Not having `JOIN`s or only accessing values via
+    keys makes splitting the data across servers a rather trivial task when compared
+    with an RDBMS. This is due to the fact that `JOIN`s requires a scan of the entire
+    table, even if it is split across many different servers. `JOIN`s become even
+    slower when documents or keys can be assigned to a server by an algorithm as simple
+    as the starting character of its unique identifier. For example, everything that
+    starts with the letters A-H is sent to server one, I-P to server two, and Q-Z
+    to server three. This makes looking up the location of data for a connected client
+    very fast.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 吸引人们使用NoSQL的第三个特性是轻松创建一组协同工作的数据库集群。没有`JOIN`或者只通过键访问值使得在多台服务器之间分割数据相对来说是一个相当简单的任务，与关系型数据库相比。这是因为`JOIN`需要扫描整个表，即使它分布在许多不同的服务器上。当文档或键可以通过简单的算法分配到服务器时，`JOIN`变得更慢，例如，可以根据其唯一标识符的起始字符将其分配到服务器。例如，以字母A-H开头的所有内容发送到服务器一，I-P发送到服务器二，Q-Z发送到服务器三。这使得查找连接客户端的数据位置非常快。
+- en: What database to use when
+  id: totrans-71
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在选择数据库时使用哪种
+- en: So, each database has different uses. It was stated at the beginning of the
+    section that the main problem when programmers choose a NoSQL database for their
+    technology stack is that they choose it when an RDBMS would work just as well.
+    This is born out of some common misconceptions. First, people try to use a relational
+    mindset and data model and think that they will work just as well in a NoSQL database.
+    People usually come to this misunderstanding because the marketing on websites
+    for NoSQL databases is misleading and encourages users to drop their current database
+    without considering if a nonrelational model would work for their project.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，每个数据库都有不同的用途。在本节的开头就提到了一个主要问题，即程序员在选择NoSQL数据库作为技术栈时的主要问题是，他们选择了一个关系型数据库同样适用的情况下。这源于一些常见的误解。首先，人们试图使用关系型思维和数据模型，并认为它们在NoSQL数据库中同样适用。人们通常会产生这种误解，因为NoSQL数据库网站上的营销是误导性的，并鼓励用户放弃他们当前的数据库，而不考虑非关系模型是否适用于他们的项目。
+- en: Second, people believe that you must use only one data store for their application.
+    Many applications can benefit from using more than one data store. Using a Facebook
+    clone as an example, it could use MySQL for holding user data, redis to store
+    session data, a document store to hold the data for the quizzes and surveys that
+    people share with each other, and a graph database to implement a find friends
+    feature.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，人们认为必须只使用一个数据存储来进行应用程序。许多应用程序可以从使用多个数据存储中受益。以使用Facebook克隆为例，它可以使用MySQL来保存用户数据，redis来存储会话数据，文档存储来保存人们共享的测验和调查数据，以及图形数据库来实现查找朋友的功能。
+- en: If an application feature needs very fast writes, and write safety is not a
+    primary concern, then use a document store database. If you need to store and
+    query schema-less data, then you should use a document store database.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果一个应用程序功能需要非常快的写入，并且写入安全性不是主要关注点，那么就使用文档存储数据库。如果需要存储和查询无模式数据，那么应该使用文档存储数据库。
+- en: If an application feature needs to store something that deletes itself after
+    a specified time, or the data does not need to be searched, then use a key-value
+    store.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果一个应用程序功能需要存储一些在指定时间后自行删除的东西，或者数据不需要被搜索，那么就使用键值存储。
+- en: If an application feature relies on finding or describing complex relationships
+    between two or more sets of data, then use a graph store.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果一个应用程序功能依赖于查找或描述两个或多个数据集之间的复杂关系，则使用图形存储。
+- en: If an application feature needs guaranteed write safety, each entry can fix
+    into a specified schema, different sets of data in the database need to be compared
+    using JOINs, or it needs constraints on the entered data, then use an RDBMS.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果一个应用程序功能需要保证写入安全性，每个条目可以固定到指定的模式，数据库中的不同数据集需要使用JOIN进行比较，或者需要对输入的数据进行约束，那么就使用关系型数据库。
+- en: MongoDB in Flask
+  id: totrans-78
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Flask中的MongoDB
+- en: MongoDB is far and away the most popular NoSQL database. MongoDB is also the
+    best-supported NoSQL database for Flask and Python in general. Therefore, our
+    examples will focus on MongoDB.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB远远是最受欢迎的NoSQL数据库。MongoDB也是Flask和Python中最受支持的NoSQL数据库。因此，我们的示例将重点放在MongoDB上。
+- en: MongoDB is a document store NoSQL database. Documents are stored in collections,
+    which allow grouping of similar documents, but no similarities between documents
+    are necessary to store a document in a collection. Documents are defined in a
+    JSON superset named BSON, which stands for Binary JSON. BSON allows JSON to be
+    stored in binary format rather than in string format, saving a lot of space. BSON
+    also distinguishes between several different ways of storing numbers, such as
+    32-bit integers and doubles.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB是一个文档存储的NoSQL数据库。文档存储在集合中，允许对类似的文档进行分组，但在存储文档时不需要文档之间的相似性。文档在一个名为BSON的JSON超集中定义，BSON代表二进制JSON。BSON允许以二进制格式存储JSON，而不是字符串格式，节省了大量空间。BSON还区分了存储数字的几种不同方式，例如32位整数和双精度浮点数。
+- en: To understand the basics of MongoDB, we will use Flask-MongoEngine to cover
+    the same functionality of Flask-SQLAlchemy in the previous chapters. Remember
+    that these are just examples. There is no benefit in refactoring our current code
+    to use MongoDB because MongoDB cannot offer any new functionality for our use
+    case. New functionality with MongoDB will be shown in the next section.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了理解MongoDB的基础知识，我们将使用Flask-MongoEngine来覆盖前几章中Flask-SQLAlchemy的相同功能。请记住，这些只是例子。重构我们当前的代码以使用MongoDB没有任何好处，因为MongoDB无法为我们的用例提供任何新功能。MongoDB的新功能将在下一节中展示。
+- en: Installing MongoDB
+  id: totrans-82
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装MongoDB
+- en: To install MongoDB, go to [https://www.mongodb.org/downloads](https://www.mongodb.org/downloads)
+    and select your OS from the tabs under the heading "Download and Run MongoDB Yourself".
+    Every OS that has a supported version has installation instructions listed next
+    to the download button of the installer.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要安装MongoDB，请转到[https://www.mongodb.org/downloads](https://www.mongodb.org/downloads)，并从标题“下载并运行MongoDB自己”下的选项卡中选择您的操作系统。每个支持版本的操作系统都有安装说明列在安装程序的下载按钮旁边。
+- en: 'To run MongoDB, go to bash and run:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要运行MongoDB，请转到bash并运行：
+- en: '[PRE1]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: This will run a server for as long as the window is open.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在窗口打开的时间内运行服务器。
+- en: Setting Up MongoEngine
+  id: totrans-87
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设置MongoEngine
+- en: 'MongoEngine needs to be installed with pip before we can get started:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始之前，需要使用pip安装MongoEngine：
+- en: '[PRE2]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'In the `models.py` file, a mongo object will be created that represents our
+    database:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`models.py`文件中，将创建一个代表我们数据库的mongo对象：
+- en: '[PRE3]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Just like the SQLAlchemy object, our mongo object needs to be initialized on
+    the app object in `__init__.py`:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与SQLAlchemy对象一样，我们的mongo对象需要在`__init__.py`中的app对象上初始化。
+- en: '[PRE4]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Before our app will run, our `DevConfig` object in `config.py` needs to set
+    up the parameters of the mongo connection:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的应用程序运行之前，我们的`config.py`中的`DevConfig`对象需要设置mongo连接的参数：
+- en: '[PRE5]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: These are the defaults for a brand new MongoDB installation.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些是全新MongoDB安装的默认值。
+- en: Defining documents
+  id: totrans-97
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 定义文档
+- en: MongoEngine is an ORM based around Python's object system, specifically for
+    MongoDB. Unfortunately, there exists no SQLAlchemy style wrapper that supports
+    all NoSQL drivers. In an RDBMS, the implementations of SQL are so similar that
+    creating a universal interface is possible. However, the underlying implementations
+    of each document store are different enough that the task of creating a similar
+    interface would be more trouble than it is worth.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoEngine是围绕Python对象系统构建的ORM，专门用于MongoDB。不幸的是，没有支持所有NoSQL驱动程序的SQLAlchemy风格的包装器。在关系型数据库管理系统中，SQL的实现是如此相似，以至于创建一个通用接口是可能的。然而，每个文档存储的基本实现都有足够的不同，以至于创建类似接口的任务比它的价值更麻烦。
+- en: 'Each collection in your mongo database is represented by a class that inherits
+    from mongo.Document:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的mongo数据库中的每个集合都由从mongo.Document继承的类表示：
+- en: '[PRE6]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Each class variable is a representation of a key belonging to a document, which
+    is represented in this example of a Post class. The class variable name is used
+    as the key in the document.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个类变量都是文档所属的键的表示，这在本例中代表了一个Post类。类变量名称用作文档中的键。
+- en: 'Unlike SQLAlchemy, there is no need to define a primary key. A unique ID will
+    be generated for you under the ID attribute. The preceding code would generate
+    a BSON document that would resemble the following:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与SQLAlchemy不同，无需定义主键。唯一的ID将在ID属性下为您生成。前面的代码将生成一个类似于以下的BSON文档：
+- en: '[PRE7]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Field types
+  id: totrans-104
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 字段类型
+- en: 'There are a large number of fields such that each represents a distinct category
+    of data in Mongo. Unlike the underlying database, each field provides a type check
+    before the document is allowed to be saved or altered. The most used fields are
+    as follows:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多字段，每个字段代表Mongo中的一个不同数据类别。与底层数据库不同，每个字段在允许保存或更改文档之前提供类型检查。最常用的字段如下：
+- en: BooleanField
+  id: totrans-106
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: BooleanField
+- en: DateTimeField
+  id: totrans-107
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: DateTimeField
+- en: DictField
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: DictField
+- en: DynamicField
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: DynamicField
+- en: EmbeddedDocumentField
+  id: totrans-110
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: EmbeddedDocumentField
+- en: FloatField
+  id: totrans-111
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: FloatField
+- en: IntField
+  id: totrans-112
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: IntField
+- en: ListField
+  id: totrans-113
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ListField
+- en: ObjectIdField
+  id: totrans-114
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ObjectIdField
+- en: ReferenceField
+  id: totrans-115
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ReferenceField
+- en: StringField
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: StringField
+- en: Note
+  id: totrans-117
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: For a full list of fields and a detailed documentation, go to the MongoEngine
+    website at [http://docs.mongoengine.org](http://docs.mongoengine.org).
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要获取字段的完整列表和详细文档，请访问MongoEngine网站[http://docs.mongoengine.org](http://docs.mongoengine.org)。
+- en: The majority of these are named for the Python type they accept, and work the
+    same as the SQLAlchemy types. However, there are some new types that have a counterpart
+    in SQLAlchemy. `DynamicField` is a field that can hold any type of value and performs
+    no type checks on values. `DictField` can store any Python dictionary that can
+    be serialized by `json.dumps()`. The `ReferenceField` simply stores the unique
+    ID of a document, and when queried, MongoEngine will return the referenced document.
+    Counter to `ReferenceField`, `EmbeddedDocumentField` stores the passed document
+    in the parent document, so there is no need for a second query. The `ListField`
+    type represents a list of fields of a specific type.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中大多数都以它们接受的Python类型命名，并且与SQLAlchemy类型的工作方式相同。但是，还有一些新类型在SQLAlchemy中没有对应的。`DynamicField`是一个可以容纳任何类型值并且对值不执行类型检查的字段。`DictField`可以存储`json.dumps()`序列化的任何Python字典。`ReferenceField`只是存储文档的唯一ID，并且在查询时，MongoEngine将返回引用的文档。与`ReferenceField`相反，`EmbeddedDocumentField`将传递的文档存储在父文档中，因此不需要进行第二次查询。`ListField`类型表示特定类型的字段列表。
+- en: This is typically used to store a list of references to other documents or a
+    list of embedded documents to create a one-to-many relationship. If a list of
+    unknown types is needed, `DynamicField` can be used. Each field type takes some
+    common arguments, as shown in the following.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这通常用于存储对其他文档的引用列表或嵌入式文档的列表，以创建一对多的关系。如果需要一个未知类型的列表，可以使用`DynamicField`。每种字段类型都需要一些常见的参数，如下所示。
+- en: '[PRE8]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: The `primary_key` argument specifies that you do not want MongoEngine to autogenerate
+    a unique key, but the value of the field should be used as the ID. The value of
+    this field will now be accessible from both the `id` attribute and the name of
+    the field.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`primary_key`参数指定您不希望MongoEngine自动生成唯一键，而应使用字段的值作为ID。现在，该字段的值将从`id`属性和字段的名称中访问。'
+- en: '`db_field` defines what the key will be named in each document. If not set,
+    it will default to the name of the class variable.'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`db_field`定义了每个文档中键的名称。如果未设置，它将默认为类变量的名称。'
+- en: If `required` is defined as `True`, then that key must be present in the document.
+    Otherwise, the key does not have to exist for documents of that type. When a class
+    defined, nonexistent key is queried, it will return None.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果将`required`定义为`True`，则该键必须存在于文档中。否则，该类型的文档不必存在该键。当查询定义了一个类的不存在键时，它将返回None。
+- en: '`default` specifies the value that this field will be given if no value is
+    defined.'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`default`指定如果未定义值，则该字段将被赋予的值。'
+- en: If `unique` is set to `True`, MongoEngine checks to make sure that no other
+    documents in the collection will have the same value for this field.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果`unique`设置为`True`，MongoEngine会检查确保集合中没有其他文档具有该字段的相同值。
+- en: When passed a list of field names, `unique_with` will make sure that when taken
+    in combination the values of all the fields will be unique for each document.
+    This is much like multicolumn `UNIQUE` indexes in an RDBMS.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当传递字段名称列表时，`unique_with`将确保在组合中取值时，所有字段的值对于每个文档都是唯一的。这很像RDBMS中的多列`UNIQUE`索引。
+- en: Finally, when given a list, the `choices` option limits the allowable values
+    for that field to the elements in the list.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，当给定一个列表时，`choices`选项将限制该字段的可允许值为列表中的元素。
+- en: Types of documents
+  id: totrans-129
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 文档类型
+- en: MongoEngine's method to define documents allows either flexibility or rigidity
+    on a collection-by-collection basis. Inheriting from `mongo.Document` means that
+    only the keys defined in the class can be saved to the database. Those keys defined
+    in the class can be empty, but everything else will be ignored. On the other hand,
+    if your class inherits `mongo.DynamicDocument`, any extra fields set will be treated
+    as `DynamicFields` and will be saved with the document.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoEngine定义文档的方法可以根据集合的不同实现灵活性或严格性。从`mongo.Document`继承意味着只有在类中定义的键才能保存到数据库中。类中定义的键可以为空，但其他所有内容都将被忽略。另一方面，如果您的类继承`mongo.DynamicDocument`，任何设置的额外字段都将被视为`DynamicFields`并将与文档一起保存。
+- en: '[PRE9]'
+  id: totrans-131
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'To show the not recommended extreme, the following class is perfectly valid;
+    it has no required fields and allows any fields to be set:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了展示不推荐的极端情况，以下类是完全有效的；它没有必填字段，并允许设置任何字段：
+- en: '[PRE10]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'The last type of document is the `EmbeddedDocument`. The `EmbeddedDocument`
+    is simply a document that is passed to an `EmbeddedDocumentField` and stored as
+    is in the document as follows:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后一种文档类型是`EmbeddedDocument`。`EmbeddedDocument`只是一个传递给`EmbeddedDocumentField`并按原样存储在文档中的文档，如下所示：
+- en: '[PRE11]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Why use the `EmbeddedDocumentField` over the `DictField` when they seem to
+    perform the same function? The end result of using each is the same. However,
+    an embedded document defines a structure for the data, while a `DictField` can
+    be anything. for better understanding, think of it this way: `Document` is to
+    `DynamicDocument` as `EmbeddedDocument` is to `DictField`.'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么在它们似乎执行相同功能时使用`EmbeddedDocumentField`而不是`DictField`？使用每个的最终结果是相同的。然而，嵌入式文档为数据定义了一个结构，而`DictField`可以是任何东西。为了更好地理解，可以这样想：`Document`对应于`DynamicDocument`，而`EmbeddedDocument`对应于`DictField`。
+- en: The meta attribute
+  id: totrans-137
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: meta属性
+- en: 'Using the `meta` class variable, many attributes of a document can be manually
+    set. If you are working with an existing set of data and want to connect your
+    classes to the collections, set the collection key of the `meta` dictionary:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`meta`类变量，可以手动设置文档的许多属性。如果您正在处理现有数据集并希望将您的类连接到集合，请设置`meta`字典的collection键：
+- en: '[PRE12]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'You can also manually set the max number of documents in the collection and
+    how large each document can be. In this example, there can be only 10,000 documents,
+    and each document can''t be larger than 2 MB:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以手动设置集合中文档的最大数量以及每个文档的大小。在此示例中，只能有10,000个文档，每个文档的大小不能超过2 MB：
+- en: '[PRE13]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: '[PRE14]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Indexes can also be set through MongoEngine. Indexes can be single field by
+    using a string or multifield using a tuple:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 索引也可以通过MongoEngine设置。索引可以使用字符串设置单个字段，或使用元组设置多字段：
+- en: '[PRE15]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: '[PRE16]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: The default ordering of a collection can be set through the `meta` variable
+    with the **ordering key**. When `–` is prepended, it tells MongoEngine to order
+    results by descending order of that field. If `+` is prepended, it tells MongoEngine
+    to order results by ascending order of that field. This default behavior is overridden
+    if the `order_by` function is specified in a query, which will be shown in the
+    *CRUD* section.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 集合的默认排序可以通过`meta`变量和**ordering key**进行设置。当在字段前加上`-`时，它告诉MongoEngine按该字段的降序顺序排序结果。如果在字段前加上`+`，它告诉MongoEngine按该字段的升序顺序排序结果。如果在查询中指定了`order_by`函数，将覆盖此默认行为，这将在*CRUD*部分中显示。
+- en: '[PRE17]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: '[PRE18]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'The `meta` variable can also enable user-defined documents to be inherited
+    from, which is disabled by default. The subclass of the original document will
+    be treated as a member of the parent class and will be stored in the same collection
+    as follows:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`meta`变量还可以启用从用户定义的文档继承，这默认情况下是禁用的。原始文档的子类将被视为父类的成员，并将存储在同一集合中，如下所示：'
+- en: '[PRE19]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: CRUD
+  id: totrans-151
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: CRUD
+- en: As stated in [Chapter 2](ch02.html "Chapter 2. Creating Models with SQLAlchemy"),
+    Creating Models with SQLAlchemy, there are four main forms of data manipulation
+    that any data store must implement. They are creation of new data, reading existing
+    data, updating existing data, and deleting data.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如[第2章](ch02.html "第2章。使用SQLAlchemy创建模型")中所述，使用SQLAlchemy创建模型，任何数据存储必须实现四种主要形式的数据操作。它们是创建新数据，读取现有数据，更新现有数据和删除数据。
+- en: Create
+  id: totrans-153
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 创建
+- en: To create a new document, just create a new instance of the class and call the
+    `save` method.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要创建新文档，只需创建类的新实例并调用`save`方法。
+- en: '[PRE20]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Otherwise, the values can be passed as keywords in the object creation:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 否则，可以将值作为关键字传递给对象创建：
+- en: '[PRE21]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Unlike SQLAlchemy, MongoEngine does not automatically save related objects
+    stored in `ReferenceFields`. To save any changes to referenced documents along
+    with the changes to the current document, pass `cascade` as `True`:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与SQLAlchemy不同，MongoEngine不会自动保存存储在`ReferenceFields`中的相关对象。要保存对当前文档的引用文档的任何更改，请将`cascade`传递为`True`：
+- en: '[PRE22]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: If you wish to insert a document and skip its checks against the defined parameters
+    in the class definition, then pass validate as `False`.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您希望插入文档并跳过其对类定义中定义的参数的检查，则将validate传递为`False`。
+- en: '[PRE23]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Tip
+  id: totrans-162
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Remember that these checks exist for a reason. Turn this off only for a very
+    good reason
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记住这些检查是有原因的。只有在非常充分的理由下才关闭它
+- en: Write safety
+  id: totrans-164
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 写入安全性
+- en: 'By default, MongoDB does not wait for the data to be written to disk before
+    acknowledging that the write occurred. This means that it is possible for writes
+    that were acknowledged to have failed, either by hardware failure or some error
+    when the write occurred. To ensure that the data is written to disk before Mongo
+    confirms the write, use the `write_concern` keyword. The **write concern** tells
+    Mongo when it should return with an acknowledgement of the write:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，MongoDB在确认写入发生之前不会等待数据写入磁盘。这意味着已确认的写入可能失败，无论是硬件故障还是写入时发生的某些错误。为了确保数据在Mongo确认写入之前写入磁盘，请使用`write_concern`关键字。**写关注**告诉Mongo何时应该返回写入的确认：
+- en: '[PRE24]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: Note
+  id: totrans-167
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: As stated in the RDBMS versus NoSQL section, it's very important that you understand
+    how the NoSQL database that you are using treats writes. To learn more about MongoDB's
+    write concern, go to [http://docs.mongodb.org/manual/reference/write-concern/](http://docs.mongodb.org/manual/reference/write-concern/).
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如RDBMS与NoSQL部分所述，您了解您使用的NoSQL数据库如何处理写入非常重要。要了解有关MongoDB写入关注的更多信息，请访问[http://docs.mongodb.org/manual/reference/write-concern/](http://docs.mongodb.org/manual/reference/write-concern/)。
+- en: Read
+  id: totrans-169
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 阅读
+- en: 'To access the documents from the database, the `objects` attribute is used.
+    To read all of the documents in a collection, use the `all` method:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要访问数据库中的文档，使用`objects`属性。要读取集合中的所有文档，请使用`all`方法：
+- en: '[PRE25]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'To limit the number of items returned, use the `limit` method:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要限制返回的项目数量，请使用`limit`方法：
+- en: '[PRE26]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'This `limit` command is slightly different than the SQL version. In SQL, the
+    `limit` command can also be used to skip the first results. To replicate this
+    functionality, use the `skip` method as follows:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此`limit`命令与SQL版本略有不同。在SQL中，`limit`命令也可用于跳过第一个结果。要复制此功能，请使用`skip`方法如下：
+- en: '[PRE27]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'By default, MongoDB returns the results ordered by the time of their creation.
+    To control this, there is the `order_by` function:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，MongoDB返回按其创建时间排序的结果。要控制此行为，有`order_by`函数：
+- en: '[PRE28]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: If you want only the first result from a query, use the `first` method. If your
+    query returns nothing, and you expected it to, then use `first_or_404` to automatically
+    abort with a 404 error. This acts exactly the same as its Flask-SQLAlchemy counterpart
+    and is provided by Flask-MongoEngine.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您只想要查询的第一个结果，请使用`first`方法。如果您的查询返回了空值，并且您期望它是这样的，请使用`first_or_404`来自动中止并返回404错误。这与其Flask-SQLAlchemy对应物完全相同，并由Flask-MongoEngine提供。
+- en: '[PRE29]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'The same behavior is available for the `get` method, which expects the query
+    will only return one result and will raise an exception otherwise:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`get`方法也具有相同的行为，它期望查询只返回一个结果，否则将引发异常：'
+- en: '[PRE30]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'The `paginate` method is also present and has the exact same API as its Flask-SQLAlchemy
+    counterpart:'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`paginate`方法也存在，并且与其Flask-SQLAlchemy对应物具有完全相同的API：'
+- en: '[PRE31]'
+  id: totrans-183
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: Also, if your document has a `ListField` method, the `paginate_field` method
+    on the document object can be used to paginate through the items of the list.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，如果您的文档具有`ListField`方法，则可以使用文档对象上的`paginate_field`方法来分页显示列表项。
+- en: Filtering
+  id: totrans-185
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 过滤
+- en: 'If you know the exact value of the field you wish to filter by, pass its value
+    as a keyword to the `objects` method:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您知道要按字段过滤的确切值，请将其值作为关键字传递给`objects`方法：
+- en: '[PRE32]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Unlike SQLAlchemy, we cannot pass truth tests to filter our results. Instead,
+    special keyword arguments are used to test values. For example, to find all posts
+    published after January 1, 2015:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与SQLAlchemy不同，我们不能通过真值测试来过滤结果。相反，使用特殊的关键字参数来测试值。例如，要查找2015年1月1日后发布的所有帖子：
+- en: '[PRE33]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'The `__gt` appended to the end of the keyword is called an operator. MongoEngine
+    supports the following operators:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关键字末尾的`__gt`称为操作符。MongoEngine支持以下操作符：
+- en: '`ne`: not equal to'
+  id: totrans-191
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`ne`：不等于'
+- en: '`lt`: less than'
+  id: totrans-192
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`lt`：小于'
+- en: '`lte`: less than or equal to'
+  id: totrans-193
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`lte`：小于或等于'
+- en: '`gt`: greater than'
+  id: totrans-194
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`gt`：大于'
+- en: '`gte`: greater than or equal to'
+  id: totrans-195
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`gte`：大于或等于'
+- en: '`not`: negate a operator, for example, `publish_date__not__gt`'
+  id: totrans-196
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`not`：否定操作符，例如，`publish_date__not__gt`'
+- en: '`in`: value is in list'
+  id: totrans-197
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`in`：值在列表中'
+- en: '`nin`: value is not in list'
+  id: totrans-198
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`nin`：值不在列表中'
+- en: '`mod`: *value % a == b*, *a* and *b* are passed as (*a*, *b*)'
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`mod`：*value % a == b*，*a*和*b*作为(*a*, *b*)传递'
+- en: '`all`: every item in list of values provided is in the field'
+  id: totrans-200
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`all`：提供的值列表中的每个项目都在字段中'
+- en: '`size`: the size of the list'
+  id: totrans-201
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`size`：列表的大小'
+- en: '`exists`: value for field exists'
+  id: totrans-202
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`exists`：字段存在值'
+- en: 'MongoEngine also provides the following operators to test string values:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoEngine还提供了以下操作符来测试字符串值：
+- en: '`exact`: string equals the value'
+  id: totrans-204
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`exact`：字符串等于该值'
+- en: '`iexact`: string equals the value (case insensitive)'
+  id: totrans-205
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`iexact`：字符串等于该值（不区分大小写）'
+- en: '`contains`: string contains the value'
+  id: totrans-206
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`contains`：字符串包含该值'
+- en: '`icontains`: string contains the value (case insensitive)'
+  id: totrans-207
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`icontains`：字符串包含该值（不区分大小写）'
+- en: '`startswith`: string starts with the value'
+  id: totrans-208
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`startswith`：字符串以该值开头'
+- en: '`istartswith`: string starts with the value (case insensitive)'
+  id: totrans-209
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`istartswith`：字符串以该值开头（不区分大小写）'
+- en: '`endswith`: string ends with the value'
+  id: totrans-210
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`endswith`：字符串以该值结尾'
+- en: '`iendswith`: string ends with the value (case insensitive) `Update`'
+  id: totrans-211
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`iendswith`：字符串以该值结尾（不区分大小写）`更新`'
+- en: 'These operators can be combined to create the same powerful queries that were
+    created in the previous sections. For example, to find all of the posts that were
+    created after January 1, 2015 that don''t have the word `post` in the title, the
+    body text starts with the word `Lorem`, and ordered by the publish date with the
+    latest one:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些运算符可以组合在一起，创建与前几节中创建的相同强大的查询。例如，要查找所有在2015年1月1日之后创建的帖子，标题中不包含`post`一词，正文以`Lorem`一词开头，并按发布日期排序，最新的在前：
+- en: '[PRE34]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'However, if there is some complex query that cannot be represented by these
+    tools, then a raw Mongo query can be passed as well:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果有一些无法用这些工具表示的复杂查询，那么也可以传递原始的Mongo查询：
+- en: '[PRE35]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: Update
+  id: totrans-216
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 更新
+- en: To update objects, the `update` method is called on the results of a query.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要更新对象，需要在查询结果上调用`update`方法。
+- en: '[PRE36]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'If your query should only return one value, then use `update_one` to only modify
+    the first result:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果查询只应返回一个值，则使用`update_one`仅修改第一个结果：
+- en: '[PRE37]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'Unlike traditional SQL, there are many different ways to change a value in
+    MongoDB. Operators are used to change the values of a field in different ways:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与传统的SQL不同，在MongoDB中有许多不同的方法来更改值。使用运算符以不同的方式更改字段的值：
+- en: '`set`: This sets a value (same as given earlier)'
+  id: totrans-222
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`set`：这设置一个值（与之前给定的相同）'
+- en: '`unset`: This deletes a value and removes the key'
+  id: totrans-223
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`unset`：这会删除一个值并移除键'
+- en: '`inc`: This increments a value'
+  id: totrans-224
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`inc`：这增加一个值'
+- en: '`dec`: This decrements a value'
+  id: totrans-225
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`dec`：这减少一个值'
+- en: '`push`: This appends a value to a list'
+  id: totrans-226
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`push`：这将一个值附加到列表'
+- en: '`push_all`: This appends several values to a list'
+  id: totrans-227
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`push_all`：这将多个值附加到列表'
+- en: '`pop`: This removes the first or last element of a list'
+  id: totrans-228
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pop`：这会移除列表的第一个或最后一个元素'
+- en: '`pull`: This removes a value from a list'
+  id: totrans-229
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pull`：这从列表中移除一个值'
+- en: '`pull_all`: This removes several values from a list'
+  id: totrans-230
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pull_all`：这会从列表中移除多个值'
+- en: '`add_to_set`: This adds value to a list only if its not in the list already'
+  id: totrans-231
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`add_to_set`：仅当列表中不存在时，将值添加到列表中'
+- en: 'For example, if a `Python` value needs to be added to a `ListField` named tags
+    for all `Post` documents that have the `MongoEngine` tag:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，如果需要将`Python`值添加到具有`MongoEngine`标签的所有`Post`文档的名为标签的`ListField`中：
+- en: '[PRE38]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: The same write concern parameters to save exist for updates.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 相同的写关注参数对于更新存在。
+- en: '[PRE39]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Delete
+  id: totrans-236
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 删除
+- en: 'To delete a document instance, call its `delete` method:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要删除文档实例，请调用其`delete`方法：
+- en: '[PRE40]'
+  id: totrans-238
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: Relationships in NoSQL
+  id: totrans-239
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: NoSQL中的关系
+- en: As we created relationships in SQLAlchemy, we can create relationships between
+    objects in MongoEngine. Only with MongoEngine, we will be doing so without `JOIN`
+    operators.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像我们在SQLAlchemy中创建关系一样，我们可以在MongoEngine中创建对象之间的关系。只有使用MongoEngine，我们将在没有`JOIN`运算符的情况下这样做。
+- en: One-to-many relationships
+  id: totrans-241
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 一对多关系
+- en: There are two ways to create a one-to-many relationship in MongoEngine. The
+    first method is to create a relationship between two documents by using a `ReferenceField`
+    to point to the ID of another object.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在MongoEngine中创建一对多关系有两种方法。第一种方法是通过使用`ReferenceField`在两个文档之间创建关系，指向另一个对象的ID。
+- en: '[PRE41]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'Accessing the property of the `ReferenceField` gives direct access to the referenced
+    object as follows:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 访问`ReferenceField`的属性直接访问引用对象如下：
+- en: '[PRE42]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: Unlike SQLAlchemy, MongoEngine has no way to access objects that have relationships
+    to another object. With SQLAlchemy, a `db.relationship` variable could be declared,
+    which allows a user object to access all of the posts with a matching `user_id`
+    column. No such parallel exists in MongoEngine.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与SQLAlchemy不同，MongoEngine没有办法访问具有与另一个对象的关系的对象。使用SQLAlchemy，可以声明`db.relationship`变量，允许用户对象访问具有匹配`user_id`列的所有帖子。MongoEngine中不存在这样的并行。
+- en: 'A solution is to get the user ID for the posts you wish to search for and filter
+    with the user field. This is the same thing as SQLAlchemy did behind the scenes,
+    but we are just doing it manually:'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个解决方案是获取要搜索的帖子的用户ID，并使用用户字段进行过滤。这与SQLAlchemy在幕后执行的操作相同，但我们只是手动执行：
+- en: '[PRE43]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'The second way to create a one-to-many relationship is to use an `EmbeddedDocumentField`
+    with an `EmbeddedDocument`:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一对多关系的第二种方法是使用带有`EmbeddedDocument`的`EmbeddedDocumentField`：
+- en: '[PRE44]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'Accessing the `comments` property gives a list of all the embedded documents.
+    To add a new comment to the post, treat it like a list and append `comment` documents
+    to it:'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 访问`comments`属性会给出所有嵌入文档的列表。要向帖子添加新评论，将其视为列表并将`comment`文档附加到其中：
+- en: '[PRE45]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: Note that there was no call to a `save` method on the comment variable. This
+    is because the comment document is not a real document, it is only an abstraction
+    of the `DictField`. Also, keep in mind that documents can only be 16 MB large,
+    so be careful how many `EmbeddedDocumentFields` are on each document and how many
+    `EmbeddedDocuments` each one is holding.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，评论变量上没有调用`save`方法。这是因为评论文档不是真正的文档，它只是`DictField`的抽象。还要记住，文档只能有16MB大，所以要小心每个文档上有多少`EmbeddedDocumentFields`以及每个文档上有多少`EmbeddedDocuments`。
+- en: Many-to-many relationships
+  id: totrans-254
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 多对多关系
+- en: 'The concept of a many-to-many relationship does not exist in document store
+    databases. This is because with `ListFields` they become completely irrelevant.
+    To idiomatically create the tag feature for the `Post` object, add a list of strings:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文档存储数据库中不存在多对多关系的概念。这是因为使用`ListFields`它们变得完全无关紧要。为了按照惯例为`Post`对象创建标签功能，添加一个字符串列表：
+- en: '[PRE46]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Now when we wish to query for all of the `Post` objects that have a specific
+    tag, or many tags, it is a simple query:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当我们希望查询具有特定标签或多个标签的所有`Post`对象时，这是一个简单的查询：
+- en: '[PRE47]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'For the list of roles on each user object, the optional choices argument can
+    be given to restrict the possible roles:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于每个用户对象上的角色列表，可以提供可选的choices参数来限制可能的角色：
+- en: '[PRE48]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: Leveraging the power of NoSQL
+  id: totrans-261
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 利用NoSQL的强大功能
+- en: 'So far, our MongoEngine code should look like the following:'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们的MongoEngine代码应该如下所示：
+- en: '[PRE49]'
+  id: totrans-263
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'This code implements the same functionality as the SQLAlchemy models. To show
+    the unique power of NoSQL, let''s add a feature that would be possible with SQLAlchemy,
+    but that is much more difficult: different post types, each with their own custom
+    bodies. This will be much like the functionality of the popular blog platform,
+    Tumblr.'
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码实现了与SQLAlchemy模型相同的功能。为了展示NoSQL的独特功能，让我们添加一个在SQLAlchemy中可能实现但更加困难的功能：不同的帖子类型，每种类型都有自己的自定义内容。这将类似于流行博客平台Tumblr的功能。
+- en: 'To begin, allow your post type to act as a parent class and remove the text
+    field from the `Post` class as not all posts will have text on them:'
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，允许您的帖子类型充当父类，并从`Post`类中删除文本字段，因为并非所有帖子都会有文本：
+- en: '[PRE50]'
+  id: totrans-266
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Each post type will inherit from the `Post` class. Doing so will allow the
+    code to treat any `Post` subclass as if it were a `Post`. Our blogging app will
+    have four types of posts: a normal blog post, an image post, a video post, and
+    a quote post.'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每种帖子类型都将继承自`Post`类。这样做将使代码能够将任何`Post`子类视为`Post`。我们的博客应用将有四种类型的帖子：普通博客帖子、图片帖子、视频帖子和引用帖子。
+- en: '[PRE51]'
+  id: totrans-268
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Our post creation page needs to be able to create each of these post types.
+    The `PostForm` object in `forms.py`, which handles post creation, will need to
+    be modified to handle the new fields first. We will add a selection field that
+    determines the type of post, an `author` field for the quote type, an `image`
+    field to hold a URL, and a `video` field that will hold the embedded HTML iframe.
+    The `quote` and `blog` post content will both share the `text` field as follows:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的帖子创建页面需要能够创建每种帖子类型。`forms.py`中的`PostForm`对象，用于处理帖子创建，将需要修改以首先处理新字段。我们将添加一个选择字段来确定帖子类型，一个用于引用类型的`author`字段，一个用于保存URL的`image`字段，以及一个用于保存嵌入式HTML
+    iframe的`video`字段。引用和博客帖子内容都将共享`text`字段，如下所示：
+- en: '[PRE52]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'The `new_post` view function in the `blog.py` controller will also need to
+    be updated to handle the new post types:'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`blog.py`控制器中的`new_post`视图函数还需要更新以处理新的帖子类型：'
+- en: '[PRE53]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'The `new.html` file that renders our form object will need to display the new
+    fields added to the form:'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 渲染我们的表单对象的`new.html`文件将需要显示添加到表单的新字段：
+- en: '[PRE54]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'Now that we have our new inputs, we can add in some JavaScript to show and
+    hide the fields based on the type of post:'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了新的输入，我们可以添加一些JavaScript来根据帖子类型显示和隐藏字段：
+- en: '[PRE55]'
+  id: totrans-276
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'Finally, the `post.html` needs to be able to display our post types correctly.
+    We have the following:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，`post.html`需要能够正确显示我们的帖子类型。我们有以下内容：
+- en: '[PRE56]'
+  id: totrans-278
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: Summary
+  id: totrans-279
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, the fundamental differences between NoSQL and traditional SQL
+    systems were laid out. We explored the main types of NoSQL systems and why an
+    application might need, or not need, to be designed with a NoSQL database. Using
+    our app's models as a base, the power of MongoDB and MongoEngine was shown by
+    how simple it was to set up complex relationships and inheritance. In the next
+    chapter, our blogging application will be extended with a feature designed for
+    other programmers who wish to use our site to build their own service, that is,
+    RESTful endpoints.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，介绍了NoSQL和传统SQL系统之间的基本区别。我们探讨了NoSQL系统的主要类型，以及应用程序可能需要或不需要使用NoSQL数据库的原因。利用我们应用程序的模型作为基础，展示了MongoDB和MongoEngine的强大之处，以及设置复杂关系和继承的简单性。在下一章中，我们的博客应用将通过一个专为希望使用我们网站构建自己服务的其他程序员设计的功能进行扩展，即RESTful端点。

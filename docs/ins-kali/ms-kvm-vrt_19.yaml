@@ -1,0 +1,3415 @@
+- en: '*Chapter 15*: Performance Tuning and Optimization for KVM VMs'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '*第15章*：KVM VM性能调优和优化'
+- en: When we're thinking about virtualization, there are always questions that keep
+    coming up. Some of them might be simple enough, such as what are we going to get
+    out of virtualization? Does it simplify things? Is it easier to back up? But there
+    are also much more complex questions that start coming up once we've used virtualization
+    for a while. How do we speed things up on a compute level? Is there a way to do
+    more optimization? What can we tune additionally to get some more speed out of
+    our storage or network? Can we introduce some configuration changes that will
+    enable us to get more out of the existing infrastructure without investing a serious
+    amount of money in it?
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们思考虚拟化时，总会有一些问题不断出现。其中一些可能很简单，比如我们从虚拟化中能得到什么？它是否简化了事情？备份是否更容易？但是一旦我们使用虚拟化一段时间后，也会出现更复杂的问题。我们如何在计算层面加速？有没有更多的优化方法？我们可以调整什么来从存储或网络中获得更快的速度？我们可以引入一些配置更改，使我们能够在不在其中投入大量资金的情况下从现有基础设施中获得更多？
+- en: That's why performance tuning and optimization is so important to our virtualized
+    environments. As we will find out in this chapter, there are loads of different
+    parameters to consider – especially if we didn't design things properly from the
+    very start, which is usually the case. So, we're going to cover the subject of
+    design first, explain why it shouldn't be just a pure trial-and-error process,
+    and then move on to disassembling that thought process through different devices
+    and subsystems.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是为什么性能调优和优化对我们的虚拟化环境如此重要。正如我们将在本章中发现的那样，有许多不同的参数需要考虑-特别是如果我们从一开始就没有正确设计事物，这通常是情况。因此，我们将首先涵盖设计的主题，解释为什么它不应该只是一个纯粹的试错过程，然后继续通过不同的设备和子系统来解构这种思维过程。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Tuning VM CPU and memory performance – NUMA
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 调整VM CPU和内存性能- NUMA
+- en: Kernel same-page merging
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 内核同页合并
+- en: Virtio device tuning
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Virtio设备调优
+- en: Block I/O tuning
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 块I/O调优
+- en: Network I/O tuning
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 网络I/O调优
+- en: It's all about design
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 一切都关乎设计
+- en: There are some fundamental patterns that we constantly repeat in many other
+    aspects of our lives. We usually do so in IT, too. It's completely normal for
+    us not to be good at something when we just start doing it. For example, when
+    we start training in any kind of sport, we're usually not as good as we become
+    after a couple of years of sticking with it. When we start musical training, we're
+    usually much better at it after a couple of years of attending musical school.
+    The same principle applies to IT – when we start doing IT, we're nowhere near
+    as good at it as we become with time and – primarily – *experience*.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们生活的许多其他方面，我们不断重复一些基本模式。在IT中，我们通常也会这样做。当我们刚开始做某件事时，通常我们并不擅长。例如，当我们开始进行任何一种运动训练时，通常不如我们坚持几年后的水平。当我们开始音乐训练时，通常在参加音乐学校几年后我们会更擅长。同样的原则也适用于IT-当我们开始从事IT时，我们远不如随着时间和主要是经验的积累变得更加擅长。
+- en: We as humans are really good at putting *intellectual defenses* in the way of
+    our learning. We're really good at saying *I'm going to learn through my mistakes*
+    – and we usually combine that with *leave me alone*.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们人类在学习过程中很擅长在智力防御方面设置障碍。我们很擅长说“我会通过我的错误学习”-而且我们通常会将其与“别打扰我”结合起来。
+- en: The thing is – there's so much knowledge out there already, it would be silly
+    not to use it. So many people already went through the same or similar process
+    as we did; it would be a pointless exercise in futility *not* to use that experience
+    to our advantage. Furthermore, why waste time on this whole *I'm going to learn
+    through my mistakes* thing when we can learn much more from people with much more
+    experience than us?
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事实是-已经有这么多的知识存在，不去利用它就太愚蠢了。已经有这么多人经历了与我们相同或类似的过程；不利用这种经验来谋取我们的利益将是毫无意义的。此外，为什么要浪费时间在这个“我会通过我的错误学习”的事情上，当我们可以从比我们经验更丰富的人那里学到更多呢？
+- en: When we start using virtualization, we usually start small. For example, we
+    start by installing a hosted-virtualization solution, such as VMware Player, Oracle
+    VirtualBox, or something like that. Then, as time goes by, we move on to a hypervisor
+    with a couple of **Virtual Machines** (**VMs**). As the infrastructure around
+    us grows, we start following linear patterns in trying to make infrastructure
+    work *as it used to, when it was smaller*, which is a mistake. Nothing in IT is
+    linear – growth, cost, the time spent on administration…absolutely nothing. It's
+    actually rather simple to deconstruct that – as environments grow, there are more
+    co-dependencies, which means that one thing influences another, which influences
+    another, and so on. This endless matrix of influences is something that people
+    often forget, especially in the design phase.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们开始使用虚拟化时，通常会从小处开始。例如，我们开始安装托管虚拟化解决方案，如VMware Player，Oracle VirtualBox或类似的解决方案。随着时间的推移，我们会转向具有一对虚拟机（VMs）的hypervisor。随着我们周围的基础设施增长，我们开始遵循线性模式，试图使基础设施的工作方式与以前小型时相同，这是一个错误。IT中没有任何线性的东西-增长、成本、管理所花费的时间...绝对没有。实际上，解构这一点非常简单-随着环境的增长，存在更多的相互依赖关系，这意味着一件事会影响另一件事，进而影响另一件事，依此类推。这种无尽的影响矩阵是人们经常忘记的东西，特别是在设计阶段。
+- en: 'Important note:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示：
+- en: 'It''s really simple: linear design will get you nowhere, and proper design
+    is the basis of performance tuning, which leaves much less work to be done on
+    performance tuning afterward.'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这很简单：线性设计将使你一事无成，而正确的设计是性能调优的基础，这样在性能调优方面就要做的工作就少得多了。
+- en: Earlier on in this book (in [*Chapter 2*](B14834_02_Final_ASB_ePub.xhtml#_idTextAnchor029),
+    *KVM as a Virtualization Solution*), we mentioned **Non-Uniform Memory Access**
+    (**NUMA**). Specifically, we mentioned that the NUMA configuration options are
+    a *very important part of VM configuration, especially if you're designing an
+    environment that hosts loads of virtualized servers.* Let's use a couple of examples
+    to elaborate on this point further. These examples will give us a good basis to
+    take a *mile-high view* of the biggest problem in performance tuning and optimization
+    and describe how to use good design principles to get us out of many different
+    types of trouble. We're going to use Microsoft-based solutions as examples on
+    purpose – not because we're religious about using them, but because of a simple
+    fact. We have a lot of widely available documentation that we can use to our advantage
+    – design documents, best practices, shorter articles, and so on. So, let's use
+    them.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书的早期（在[第2章](B14834_02_Final_ASB_ePub.xhtml#_idTextAnchor029)中，*KVM作为虚拟化解决方案*），我们提到了**非一致性内存访问**（**NUMA**）。具体来说，我们提到了NUMA配置选项是VM配置的一个非常重要的部分，特别是如果你正在设计一个承载大量虚拟化服务器的环境。让我们用一些例子来进一步阐述这一点。这些例子将为我们提供一个很好的基础，以从一个“里程高度”的视角来看待性能调优和优化中最大的问题，并描述如何使用良好的设计原则来摆脱许多不同类型的麻烦。我们故意使用微软的解决方案作为例子
+    - 不是因为我们对使用它们有宗教信仰，而是因为一个简单的事实。我们有很多广泛可用的文档，我们可以利用它们 - 设计文档，最佳实践，简短的文章等。所以，让我们使用它们。
+- en: General hardware design
+  id: totrans-17
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 通用硬件设计
+- en: Let's say that you've just started to design your new virtualized environment.
+    When you order servers today from your channel partners – whichever they are –
+    you need to select a model from a big list. It doesn't really matter which brand
+    – there are a lot of models on offer. You can go with `1U` (so-called *pizza box*)
+    servers, which mostly have either one or two CPUs, depending on the model. Then,
+    you can select a `2U` server, a `3U` server…the list gets exponentially bigger.
+    Let's say that you selected a `2U` server with one CPU.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设你刚开始设计你的新虚拟化环境。当你今天从你的渠道合作伙伴那里订购服务器时，无论他们是谁，你需要从一个很长的列表中选择一个型号。品牌并不重要 - 有很多型号供选择。你可以选择1U（所谓的“披萨盒”）服务器，大多数情况下有一个或两个CPU，具体取决于型号。然后，你可以选择2U服务器，3U服务器……列表呈指数级增长。假设你选择了一个带有一个CPU的2U服务器。
+- en: In the next step, you select the amount of memory – let's say 96 GB or 128 GB.
+    You place your order, and a couple of days or weeks later, your server gets delivered.
+    You open it up, and you realize something – all of the RAM is connected to `CPU1`
+    memory channels. You put that in your memory bank, forget about it, and move on
+    to the next phase.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一步中，你选择内存的数量 - 比如96GB或128GB。你下订单，几天或几周后，你的服务器就送到了。你打开它，然后意识到一些事情 - 所有的RAM都连接到CPU1的内存通道。你把它放在你的内存库里，忘记它，然后继续下一个阶段。
+- en: Then, the question becomes about the micro-management of some very pedestrian
+    settings. The BIOS version of the server, the drivers on the hypervisor level,
+    and the BIOS settings (power management, C-states, Turbo Boost, hyperthreading,
+    various memory-related settings, not allowing cores to turn themselves off, and
+    so on) can have a vast influence on the performance of our VMs running on a hypervisor.
+    Therefore, it's definitely best practice to first check whether there are any
+    newer BIOS/firmware versions for our hardware, and check the manufacturer and
+    other relevant documentation to make sure that the BIOS settings are as optimized
+    as possible. Then, and only then, we can start *checkboxing* some physical and
+    deployment procedures – deploying our server in a rack, installing an OS and everything
+    that we need, and start using it.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，问题变成了一些非常普通设置的微观管理。服务器的BIOS版本，hypervisor级别的驱动程序和BIOS设置（电源管理，C状态，Turbo Boost，超线程，各种与内存相关的设置，不允许核心关闭自己等）对我们在hypervisor上运行的VM的性能有着巨大的影响。因此，最佳实践肯定是首先检查我们的硬件是否有任何更新的BIOS/固件版本，并检查制造商和其他相关文档，以确保BIOS设置尽可能优化。然后，只有在这之后，我们才能开始勾选一些物理和部署程序
+    - 在机架中部署我们的服务器，安装操作系统和我们需要的一切，然后开始使用它。
+- en: Let's say that after a while, you realize that you need to do some upgrades
+    and order some PCI Express cards – two single-port Fibre Channel 8 Gbit/s host-based
+    adapters, two single-port 10 Gbit/s Ethernet cards, and two PCI Express NVMe SSDs.
+    For example, by ordering these cards, you want to add some capabilities – to access
+    Fibre Channel storage and to speed up your backup process and VM migrations by
+    switching both of these functionalities from 1 Gbit/s to 10 Gbit/s networking.
+    You place your order, and a couple of days or weeks later, your new PCI Express
+    cards are delivered. You open them up, shut down your server, take it out of the
+    rack, and install these cards. `2U` servers usually have space for two or even
+    three PCI Express riser cards, which are effectively used for connecting additional
+    PCI Express devices. Let's say that you use the first PCI Express riser to deploy
+    the first two cards – the Fibre Channel controllers and 10 Gbit/s Ethernet cards.
+    Then, noticing that you don't have enough PCI Express connectors to connect everything
+    to the first PCI Express riser, you use the second PCI Express riser to install
+    your two PCI Express NVMe SSDs. You screw everything down, close the server cover,
+    put the server back in your rack, and power it back on. Then, you go back to your
+    laptop and connect to your server in a vain attempt to format your PCI Express
+    NVMe SSDs and use them for new VM storage. You realize that your server doesn't
+    recognize these SSDs. You ask yourself – what's going on here? Do I have a bad
+    server?
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设过了一段时间，你意识到需要进行一些升级，并订购了一些PCI Express卡 - 两个单端口光纤通道8 Gbit/s主机适配器，两个单端口10 Gbit/s以太网卡，以及两个PCI
+    Express NVMe固态硬盘。例如，通过订购这些卡，你想增加一些功能 - 访问光纤通道存储，并通过将这两个功能从1 Gbit/s切换到10 Gbit/s网络来加快备份过程和虚拟机迁移的速度。你下订单，几天或几周后，你的新PCI
+    Express卡送到了。你打开它们，关闭服务器，将其从机架中取出，并安装这些卡。`2U`服务器通常有空间可以安装两甚至三个PCI Express延长线卡，用于连接额外的PCI
+    Express设备。假设你使用第一个PCI Express延长线来部署前两张卡 - 光纤通道控制器和10 Gbit/s以太网卡。然后，注意到你没有足够的PCI
+    Express连接器将所有东西连接到第一个PCI Express延长线，你使用第二个PCI Express延长线来安装你的两个PCI Express NVMe固态硬盘。你将所有东西固定好，关闭服务器盖，将服务器放回机架，并重新开机。然后，你回到笔记本电脑上，试图格式化PCI
+    Express NVMe固态硬盘并将其用于新的虚拟机存储，却发现服务器无法识别这些固态硬盘。你问自己 - 这到底是怎么回事？我的服务器出了问题吗？
+- en: '![Figure 15.1 – A PCI Express riser for DL380p G8 – you have to insert your'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.1 - 适用于DL380p G8的PCI Express延长线 - 您必须将PCI Express卡插入其插槽'
+- en: PCI Express cards into its slots
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将PCI Express卡插入其插槽
+- en: '](img/B14834_15_01.jpg)'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_01.jpg)'
+- en: Figure 15.1 – A PCI Express riser for DL380p G8 – you have to insert your PCI
+    Express cards into its slots
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.1 - 适用于DL380p G8的PCI Express延长线 - 您必须将PCI Express卡插入其插槽
+- en: 'You call up your sales rep, and tell them that you think the server is malfunctioning
+    as it can''t recognize these new SSDs. Your sales rep connects you to the pre-sales
+    tech; you hear a small chuckle from the other side and the following information:
+    "Well, you see, you can''t do it that way. If you want to use the second PCI Express
+    riser on your server, you have to have a CPU kit (CPU plus heatsink) in your second
+    CPU socket, and memory for that second CPU, as well. Order these two things, put
+    them in your server, and your PCI Express NVMe SSDs will work without any problems."'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你给销售代表打电话，告诉他们你认为服务器出现故障，因为它无法识别这些新的固态硬盘。销售代表将你转接到售前技术支持；你听到对面传来一阵轻笑，然后得到以下信息：“嗯，你看，你不能那样做。如果你想在服务器上使用第二个PCI
+    Express延长线，你必须在第二个CPU插槽中安装一个CPU套件（CPU加散热器），以及为第二个CPU安装内存。订购这两样东西，安装到你的服务器上，你的PCI
+    Express NVMe固态硬盘就能正常工作了。”
+- en: You end your phone conversation and are left with a question mark over your
+    head – *what is going on here? Why do I need to have a second CPU and memory connected
+    to its memory controllers to use some PCI Express cards?*
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你结束了电话会话，脑海中留下了一个问号 - *这到底是怎么回事？为什么我需要连接第二个CPU和内存到其内存控制器才能使用一些PCI Express卡？*
+- en: 'This is actually related to two things:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这实际上与两件事有关：
+- en: You can't use the memory slots of an uninstalled CPU, as that memory needs a
+    memory controller, which is inside the CPU.
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你不能在未安装的CPU上使用内存插槽，因为该内存需要内存控制器，而内存控制器位于CPU内部。
+- en: You can't use PCI Express on an uninstalled CPU, as the PCI Express lanes that
+    connect PCI Express risers' cards to the CPU aren't necessarily provided by the
+    chipset – the CPU can also be used for PCI Express lanes, and it often is, especially
+    for the fastest connections, as you'll learn in a minute.
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你不能在未安装的CPU上使用PCI Express，因为连接PCI Express延长线卡到CPU的PCI Express通道并不一定由芯片组提供 -
+    CPU也可以用于PCI Express通道，而且通常是这样，特别是对于最快速的连接，你一会儿就会了解到。
+- en: We know this is confusing; we can feel your pain as we've been there. Sadly,
+    you'll have to stay with us for a little bit longer, as it gets even more confusing.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们知道这很令人困惑；我们能感受到你的痛苦，因为我们也曾经历过。不幸的是，你必须再和我们待一会儿，因为情况会变得更加混乱。
+- en: In [*Chapter 4*](B14834_04_Final_ASB_ePub.xhtml#_idTextAnchor062), *Libvirt
+    Networking*, we learned how to configure SR-IOV by using an Intel X540-AT2 network
+    controller. We mentioned that we were using the HP ProLiant DL380p G8 server when
+    configuring SR-IOV, so let's use that server for our example here, as well. If
+    you take a look at specifications for that server, you'll notice that it uses
+    an *Intel C600* chipset. If you then go to Intel's ARK website ([https://ark.intel.com](https://ark.intel.com))
+    and search for information about C600, you'll notice that it has five different
+    versions (C602, C602J, C604, C606, and C608), but the most curious part of it
+    is the fact that all of them only support eight PCI Express 2.0 lanes. Keeping
+    in mind that the server specifications clearly state that this server supports
+    PCI Express 3.0, it gets really confusing. How can that be and what kind of trickery
+    is being used here? Yes, PCI Express 3.0 cards can almost always work at PCI Express
+    2.0 speeds, but it would be misguiding at best to flat-out say that *this server
+    supports PCI Express 3.0*, and then discover that it supports it by delivering
+    PCI Express 2.0 levels of performance (twice as slow per PCI Express lane).
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[*第4章*](B14834_04_Final_ASB_ePub.xhtml#_idTextAnchor062)中，*Libvirt网络*，我们学习了如何通过使用Intel
+    X540-AT2网络控制器来配置SR-IOV。我们提到在配置SR-IOV时我们使用了HP ProLiant DL380p G8服务器，所以让我们在这里也使用该服务器作为我们的示例。如果您查看该服务器的规格，您会注意到它使用了*Intel
+    C600*芯片组。然后，如果您前往Intel的ARK网站（[https://ark.intel.com](https://ark.intel.com)）并搜索有关C600的信息，您会注意到它有五个不同的版本（C602、C602J、C604、C606和C608），但其中最耐人寻味的部分是所有这些版本都只支持8条PCI
+    Express 2.0通道。考虑到服务器规格清楚地说明该服务器支持PCI Express 3.0，这变得非常令人困惑。这是怎么回事，这里使用了什么样的诡计？是的，PCI
+    Express 3.0卡几乎总是可以以PCI Express 2.0的速度工作，但最好不要直接说*这台服务器支持PCI Express 3.0*，然后发现它通过提供PCI
+    Express 2.0级别的性能（每个PCI Express通道的速度减慢一倍）来支持它。
+- en: It's only when you go to the HP ProLiant DL380p G8 QuickSpecs document and find
+    the specific part of that document (the *Expansions Slots* part, with descriptions
+    of three different types of PCI Express risers that you can use) where all the
+    information that we need is actually spelled out for us. Let's use all of the
+    PCI Express riser details for reference and explanation. Basically, the primary
+    riser has two PCI Express v3.0 slots that are provided by processor 1 (x16 plus
+    x8), and the third slot (PCI Express 2.0 x8) is provided by the chipset. For the
+    optional riser, it says that all of the slots are provided by the CPU (x16 plus
+    x8 times two). There are actually some models that can have three PCI Express
+    risers, and for that third riser, all of the PCI Express lanes (x16 times two)
+    are also provided by processor 2.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只有当您查看HP ProLiant DL380p G8 QuickSpecs文档并找到该文档的特定部分（*扩展槽*部分，其中描述了三种不同类型的PCI
+    Express扩展槽）时，我们才能找到我们实际需要的所有信息。让我们使用所有PCI Express扩展槽的详细信息作为参考和解释。基本上，主要扩展槽由处理器1提供两个PCI
+    Express v3.0槽（x16加x8），第三个槽（PCI Express 2.0 x8）由芯片组提供。对于可选扩展槽，它表示所有槽都由CPU提供（x16加x8乘以2）。实际上，有一些型号可以有三个PCI
+    Express扩展槽，对于第三个扩展槽，所有PCI Express通道（x16乘以2）也由处理器2提供。
+- en: This is all *very important*. It's a huge factor in performance bottlenecks
+    for many scenarios, which is why we centered our example around the idea of two
+    PCI Express NVMe SSDs. We wanted to go through the whole journey with you.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一切都*非常重要*。对于许多情景来说，这是性能瓶颈的一个巨大因素，这也是为什么我们的示例围绕着两个PCI Express NVMe固态硬盘的想法展开的。我们希望与您一起完成整个旅程。
+- en: So, at this point, we can have an educated discussion about what should be the
+    de facto standard hardware design of our example server. If our intention is to
+    use these PCI Express NVMe SSDs for local storage for our VMs, then most of us
+    would treat that as a priority. That would mean that we'd absolutely want to connect
+    these devices to the PCI Express 3.0 slot so that they aren't bottlenecked by
+    PCI Express 2.0 speeds. If we have two CPUs, we're probably better off using the
+    *first PCI Express slot* in both of our PCI Express risers for that specific purpose.
+    The reasoning is simple – they're *PCI Express 3.0 compatible* and they're *provided
+    by the CPU*. Again, that's *very important* – it means that they're *directly
+    connected* to the CPU, without the *added latency* of going through the chipset.
+    Because, at the end of the day, the CPU is the central hub for everything, and
+    data going from VMs to SSDs and back will go through the CPU. From a design standpoint,
+    we should absolutely use the fact that we know this to our advantage and connect
+    our PCI Express NVMe SSDs *locally* to our CPUs.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，此时我们可以就我们示例服务器的实际标准硬件设计进行有根据的讨论。如果我们的意图是将这些PCI Express NVMe固态硬盘用作我们的VM的本地存储，那么大多数人会将这视为优先事项。这意味着我们绝对希望将这些设备连接到PCI
+    Express 3.0槽，以避免受到PCI Express 2.0速度的限制。如果我们有两个CPU，我们可能最好在我们的PCI Express扩展槽的*第一个PCI
+    Express槽*中使用这个特定目的。原因很简单-它们是*PCI Express 3.0兼容*，并且它们是*由CPU提供*。再次强调，这是*非常重要*的-这意味着它们是*直接连接*到CPU，而不需要通过芯片组的*额外延迟*。因为，归根结底，CPU是一切的中心枢纽，从VM到固态硬盘再返回的数据都将通过CPU。从设计的角度来看，我们应该绝对利用我们知道的这一点，并将我们的PCI
+    Express NVMe固态硬盘*本地*连接到我们的CPU。
+- en: The next step is related to Fibre Channel controllers and 10 Gbit/s Ethernet
+    controllers. The vast load of 8 Gbit/s Fibre Channel controllers are PCI Express
+    2.0 compatible. The same thing applies to 10 Gbit/s Ethernet adapters. So, it's
+    again a matter of priority. If you're using Fibre Channel storage a lot from our
+    example server, logic dictates that you'd want to put your new and shiny Fibre
+    Channel controllers in the fastest possible place. That would be the second PCI
+    Express slot in both of our PCI Express risers. Again, second PCI Express slots
+    are both provided by CPUs – processor 1 and processor 2\. So now, we're just left
+    with 10 Gbit/s Ethernet adapters. We said in our example scenario that we're going
+    to be using these adapters for backup and VM migration. The backup won't suffer
+    all that much if it's done via a network adapter that's on the chipset. VM migration
+    might be a tad sensitive to that. So, you connect your first 10 Gbit/s Ethernet
+    adapter to the third PCI Express slot on the primary riser (for backup, provided
+    by the chipset). Then, you also connect your second 10 Gbit/s Ethernet adapter
+    to the third PCI Express slot on the secondary riser (PCI Express lanes provided
+    by processor 2).
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一步与光纤通道控制器和10 Gbit/s以太网控制器有关。大部分8 Gbit/s光纤通道控制器都兼容PCI Express 2.0。同样的情况也适用于10
+    Gbit/s以太网适配器。因此，这又是一个优先考虑的问题。如果您从我们的示例服务器大量使用光纤通道存储，那么逻辑推断您会希望将新的光纤通道控制器放在尽可能快的位置。这将是我们的两个PCI
+    Express扩展槽中的第二个PCI Express槽。同样，第二个PCI Express槽都由CPU提供-处理器1和处理器2。现在，我们只剩下10 Gbit/s以太网适配器。在我们的示例场景中，我们说我们将使用这些适配器进行备份和VM迁移。如果通过芯片组上的网络适配器进行备份，备份不会受到太大影响。VM迁移可能对此有些敏感。因此，您将第一个10
+    Gbit/s以太网适配器连接到主扩展槽上的第三个PCI Express槽（用于备份，由芯片组提供）。然后，您还将第二个10 Gbit/s以太网适配器连接到次级扩展槽上的第三个PCI
+    Express槽（由处理器2提供的PCI Express通道）。
+- en: We've barely started on the subject of design with the hardware aspect of it,
+    and already we have such a wealth of information to process. Let's now move on
+    to the second phase of our design – which relates to VM design. Specifically,
+    we're going to discuss how to create new VMs that are designed properly from scratch.
+    However, if we're going to do that, we need to know which application this VM
+    is going to be created for. For that matter, we're going to create a scenario.
+    We're going to use a VM that we're creating to host a node in a Microsoft SQL
+    database cluster on top of a VM running Windows Server 2019\. The VM will be installed
+    on a KVM host, of course. This is a task given to us by a client. As we already
+    did the general hardware design, we're going to focus on VM design now.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们刚刚开始讨论硬件方面的设计问题，现在我们已经有了如此丰富的信息要处理。现在让我们继续进行我们设计的第二阶段-与VM设计相关。具体来说，我们将讨论如何从头开始创建正确设计的新VM。但是，如果我们要这样做，我们需要知道这个VM将为哪个应用程序创建。为此，我们将创建一个场景。我们将使用正在创建的VM来托管运行Windows
+    Server 2019的VM上的Microsoft SQL数据库集群中的一个节点。当然，该VM将安装在KVM主机上。这是客户交给我们的任务。由于我们已经完成了一般的硬件设计，现在我们将专注于VM设计。
+- en: VM design
+  id: totrans-38
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: VM设计
+- en: Creating a VM is easy – we can just go to `virt-manager`, click a couple of
+    times, and we're done. The same applies to oVirt, RedHat Enterprise Virtualization
+    Manager, OpenStack, VMware, and Microsoft virtualization solutions… it's more
+    or less the same everywhere. The problem is designing VMs properly. Specifically,
+    the problem is creating a VM that's going to be pre-tuned to run an application
+    on a very high level, which then only leaves a small number of configuration steps
+    that we can take on the server or VM side to improve performance – the premise
+    being that most of the optimization process later will be done on the OS or application
+    level.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建VM很容易-我们只需转到`virt-manager`，点击几次，就可以了。oVirt、RedHat Enterprise Virtualization
+    Manager、OpenStack、VMware和Microsoft虚拟化解决方案也是如此……几乎在任何地方都是一样的。问题在于正确设计VM。具体来说，问题在于创建一个将预先调整为在非常高的水平上运行应用程序的VM，然后只留下一小部分配置步骤，我们可以在服务器或VM端采取来提高性能-前提是后续的大部分优化过程将在操作系统或应用程序级别完成。
+- en: So, people usually start creating a VM in one of two ways – either by creating
+    a VM from scratch with *XYZ* amount of resources added to the VM, or by using
+    a template, which – as we explained in [*Chapter 8*](B14834_08_Final_ASB_ePub.xhtml#_idTextAnchor143),
+    *Creating and Modifying VM Disks, Templates, and Snapshots* – will save a lot
+    of time. Whichever way we use, there's a certain amount of resources that will
+    be configured for our VM. We then remember what we're going to use this VM for
+    (SQL), so we increase the amount of CPUs to, for example, four, and the amount
+    of memory to 16 GB. We put that VM in the local storage of our server, spool it
+    up, and start deploying updates, configuring the network, and rebooting and generally
+    preparing the VM for the final installation step, which is actually installing
+    our application (SQL Server 2016) and some updates to go along with it. After
+    we're done with that, we start creating our databases and move on to the next
+    set of tasks that need to be done.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，人们通常以两种方式之一开始创建VM-要么从头开始创建VM并向VM添加*XYZ*数量的资源，要么使用模板，正如我们在[*第8章*](B14834_08_Final_ASB_ePub.xhtml#_idTextAnchor143)中解释的那样，*创建和修改VM磁盘、模板和快照*，这将节省大量时间。无论我们使用哪种方式，都会为我们的VM配置一定数量的资源。然后，我们记住我们将使用这个VM（SQL），所以我们将CPU的数量增加到，例如，四个，内存的数量增加到16
+    GB。我们将该VM放在服务器的本地存储中，启动它，并开始部署更新，配置网络，重新启动，通常准备VM进行最终安装步骤，即实际安装我们的应用程序（SQL Server
+    2016）和一些相关更新。完成后，我们开始创建我们的数据库，并继续进行需要完成的下一组任务。
+- en: Let's take a look at this process from a design and tuning perspective next.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们从设计和调优的角度来看这个过程。
+- en: Tuning the VM CPU and memory performance
+  id: totrans-42
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 调整VM CPU和内存性能
+- en: 'There are some pretty straightforward issues with the aforementioned process.
+    Some are just engineering issues, while some are more procedural issues. Let''s
+    discuss them for a second:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述过程中有一些非常直接的问题。有些只是工程问题，而有些则更多是程序问题。让我们讨论一下：
+- en: There is no *one-size-fits-all* solution to almost anything in IT. Every VM
+    of every single client has a different set of circumstances and is in a different
+    environment that consists of different devices, servers, and so on. Don't try
+    to speed up the process to *impress* someone, as it will most definitely become
+    a problem later.
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在IT领域几乎没有*一刀切*的解决方案。每个客户的每个虚拟机都有不同的情况，并处于不同的环境中，包括不同的设备、服务器等等。不要试图加快流程以*给人留下印象*，因为这肯定会在以后成为问题。
+- en: When you're done with deployment, stop. Learn the practice of breathe in, breathe
+    out, and stop for a second and think – or wait for an hour or even a day. Remember
+    what you're designing a VM for.
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当你完成部署后，停下来。学会深呼吸，停下来思考一秒钟，或者等一个小时甚至一天。记住你设计虚拟机的目的。
+- en: Before allowing a VM to be used in production, check its configuration. The
+    number of virtual CPUs, the memory, the storage placement, the network options,
+    the drivers, software updates – everything.
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在允许虚拟机投入生产使用之前，检查其配置。虚拟CPU的数量、内存、存储位置、网络选项、驱动程序、软件更新——一切都要检查。
+- en: A lot of pre-configuration can be done before the installation phase or during
+    the template phase, before you clone the VM. If it's an existing environment that
+    you're migrating to a new one, *collect information about the old environment*.
+    Find out what the database sizes are, what storage is being used, and how happy
+    people are with the performance of their database server and the applications
+    using them.
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在安装阶段或模板阶段之前，可以进行大量的预配置。如果你正在将现有环境迁移到新环境，*收集有关旧环境的信息*。了解数据库的大小、使用的存储以及人们对其数据库服务器和使用它们的应用程序的性能满意程度。
+- en: At the end of the whole process, learn to take a *mile-high perspective* on
+    the IT-related work that you do. From a quality assurance standpoint, IT should
+    be a highly structured, procedural type of work. If you've done something before,
+    learn to document the things that you did while installing things and the changes
+    that you made. Documentation – as it stands now – is one of the biggest Achilles'
+    heels of IT. Writing documentation will make it easier for you to repeat the process
+    in the future when faced with the same (less often) or a similar (much more often)
+    scenario. Learn from the greats – just as an example, we would know much less
+    about Beethoven, for example, if he didn't keep detailed notes of the things he
+    did day in, day out. Yes, he was born in 1770 and this year will mark 250 years
+    since he was born, and that was a long time ago, but that doesn't mean that 250-year-old
+    routines are bad.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在整个过程结束时，学会对你所做的与IT相关的工作采取*高层视角*。从质量保证的角度来看，IT应该是一种高度结构化的、程序化的工作。如果你以前做过某事，学会记录你在安装过程中所做的事情和你所做的更改。文档——就目前而言——是IT的最大软肋之一。撰写文档将使你在未来面对相同（较少）或类似（更多）的情况时更容易重复这个过程。向伟人学习——举个例子，如果贝多芬没有详细记录他日复一日所做的事情，我们对他的了解就会少得多。是的，他生于1770年，今年将是他诞辰250周年，那是很久以前的事了，但这并不意味着250年前的惯例是不好的。
+- en: So now, your VM is configured and in production, and a couple of days or weeks
+    later, you get a call from the company and they ask why the performance is *not
+    all that great*. Why isn't it working just like on a physical server?
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，你的虚拟机已经配置并投入生产使用，几天或几周后，你会接到公司的电话，他们会问为什么性能*并不那么好*。为什么它的工作效果不像物理服务器一样？
+- en: 'As a rule of thumb, when you''re looking for performance issues on Microsoft
+    SQL, they can be roughly divided into four categories:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个经验法则，当你在寻找Microsoft SQL的性能问题时，它们大致可以分为四类：
+- en: Your SQL database is memory-limited.
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你的SQL数据库受内存限制。
+- en: Your SQL database is storage-limited.
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你的SQL数据库受存储限制。
+- en: Your SQL database is just misconfigured.
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你的SQL数据库配置错误。
+- en: Your SQL database is CPU-limited.
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你的SQL数据库受CPU限制。
+- en: In our experience, the first and second category can easily account for 80–85%
+    of SQL performance issues. The third would probably account for 10%, while the
+    last one is rather rare, but it still happens. Keeping that in mind, from an infrastructure
+    standpoint, when you're designing a database VM, you should always look into VM
+    memory and storage configuration first, as they are by far the most common reasons.
+    The problems just kind of accumulate and snowball from there. Specifically, some
+    of the most common key reasons for sub-par SQL VM performance is the memory location,
+    looking at it from a CPU perspective, and storage issues – latencies/IOPS and
+    bandwidth being the problem. So, let's describe these one by one.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据我们的经验，第一和第二类问题很容易占据SQL性能问题的80-85%。第三类可能占10%，而最后一类相对较少，但仍然会发生。记住，从基础设施的角度来看，当你设计数据库虚拟机时，你应该首先查看虚拟机内存和存储配置，因为它们是最常见的原因。问题会逐渐积累并不断恶化。具体来说，导致SQL虚拟机性能不佳的一些最常见的关键原因是内存位置、从CPU角度看待它，以及存储问题——延迟/IOPS和带宽成为问题。所以，让我们逐一描述这些问题。
+- en: The first issue that we need to tackle is related to – funnily enough – *geography*.
+    It's very important for a database to have its memory content as close as possible
+    to the CPU cores assigned to its VMs. This is what NUMA is all about. We can easily
+    overcome this specific issue on KVM with a bit of configuration. Let's say that
+    we chose that our VM uses four virtual CPUs. Our test server has Intel Xeon E5-2660v2
+    processors, which have 10 physical cores each. Keeping in mind that our server
+    has two of these Xeon processors, we have 20 cores at our disposal overall.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要解决的第一个问题与——有趣的是——*地理*有关。对于数据库来说，将其内存内容尽可能靠近分配给其虚拟机的CPU核心非常重要。这就是NUMA的意义所在。我们可以通过一些配置轻松地解决这个特定问题。假设我们选择我们的虚拟机使用四个虚拟CPU。我们的测试服务器配备了英特尔至强E5-2660v2处理器，每个处理器都有10个物理核心。考虑到我们的服务器有两个这样的至强处理器，我们总共有20个核心可供使用。
+- en: 'We have two basic questions to answer:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有两个基本问题要回答：
+- en: How do these four cores for our VM correlate to 20 physical cores below?
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们的虚拟机的四个核心如何与下面的20个物理核心相关？
+- en: How does that relate to the VM's memory and how can we optimize that?
+  id: totrans-59
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这与VM的内存有什么关系，我们如何优化它？
+- en: The answer to both of these questions is that it depends on *our* configuration.
+    By default, our VM might use two cores from two physical processors each and spread
+    itself in terms of memory across both of them or 3+1\. None of these configuration
+    examples are good. What you want is to have all the virtual CPU cores on *one*
+    physical processor, and you want those virtual CPU cores to use memory that's
+    local to those four physical cores – directly connected to the underlying physical
+    processor's memory controller. What we just described is the basic idea behind
+    NUMA – to have nodes (consisting of CPU cores) that act as building compute blocks
+    for your VMs with local memory.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对这两个问题的答案是取决于*我们*的配置。默认情况下，我们的VM可能会从两个物理处理器中使用两个核心，并在内存方面分布在两者之间或3+1。这些配置示例都不好。你想要的是将所有虚拟CPU核心放在*一个*物理处理器上，并且你希望这些虚拟CPU核心使用与这四个物理核心相连的内存
+    - 直接连接到基础物理处理器的内存控制器。我们刚刚描述的是NUMA背后的基本思想 - 为你的VM提供作为本地内存的构建计算块的节点（由CPU核心组成）。
+- en: If at all possible, you want to reserve all the memory for that VM so that it
+    doesn't swap somewhere outside of the VM. In KVM, that *outside of the VM* would
+    be in the KVM host swap space. Having access to real RAM memory all of the time
+    is a performance and SLA-related configuration option. If the VM uses a bit of
+    underlying swap partition that acts as its memory, it will not have the same performance.
+    Remember, swapping is usually done on some sort of local RAID array, an SD card,
+    or a similar medium, which are many orders of magnitude slower in terms of bandwidth
+    and latency compared to real RAM memory. If you want a high-level statement about
+    this – avoid memory overcommitment on KVM hosts at all costs. The same goes for
+    the CPU, and this is a commonly used best practice on any other kind of virtualization
+    solution, not just on KVM.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果可能的话，你希望为该VM保留所有内存，这样它就不会在VM之外的某个地方交换。在KVM中，*VM之外*将在KVM主机交换空间中。始终访问真正的RAM内存是性能和SLA相关的配置选项。如果VM使用一些基础交换分区作为其内存，它的性能将不同。请记住，交换通常是在某种本地RAID阵列、SD卡或类似介质上进行的，与真正的RAM内存相比，这些介质在带宽和延迟方面慢得多。如果你想对此做出高层次的陈述
+    - 不惜一切代价避免KVM主机上的内存过度承诺。对于CPU也是如此，这是任何其他虚拟化解决方案上常用的最佳实践，而不仅仅是在KVM上。
+- en: Furthermore, for critical resources, such as a database VM, it definitely makes
+    sense to *pin* vCPUs to specific physical cores. That means that we can use specific
+    physical cores to run a VM, and we should configure other VMs running on the same
+    host *not* to use those cores. That way, we're *reserving* these CPU cores specifically
+    for a single VM, thus configuring everything for maximum performance not to be
+    influenced by other VMs running on the physical server.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，对于关键资源，比如数据库VM，将vCPU固定到特定的物理核心确实是有意义的。这意味着我们可以使用特定的物理核心来运行一个VM，并且我们应该配置在同一主机上运行的其他VM*不*使用这些核心。这样，我们就可以*保留*这些CPU核心专门用于单个VM，从而配置一切以获得最大性能，不受运行在物理服务器上的其他VM的影响。
+- en: Yes, sometimes managers and company owners won't like you because of this best
+    practice (as if you're to blame), as it requires proper planning and enough resources.
+    But that's something that they have to live with – or not, whichever they prefer.
+    Our job is to make the IT system run as best as it possibly can.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 是的，有时经理和公司所有者不会喜欢你因为这个最佳实践（好像是你的错），因为这需要适当的规划和足够的资源。但这是他们必须接受的事情 - 或者不接受，看他们的选择。我们的工作是尽可能使IT系统运行得最好。
+- en: VM design has its basic principles, such as the CPU and memory design, NUMA
+    configuration, configuring devices, storage and network configuration, and so
+    on. Let's go through all of these topics step by step, starting with an advanced
+    CPU-based feature that can really help make our systems run as best as possible
+    if used properly – CPU pinning.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: VM设计有其基本原则，如CPU和内存设计、NUMA配置、配置设备、存储和网络配置等。让我们逐步地逐个讨论所有这些主题，从一个高级的基于CPU的功能开始，如果正确使用，它确实可以帮助我们的系统尽可能地运行得最好
+    - CPU固定。
+- en: CPU pinning
+  id: totrans-65
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: CPU固定
+- en: CPU pinning is nothing but the process of setting the *affinity* between the
+    vCPU and the physical CPU core of the host so that the vCPU will be executing
+    on that physical CPU core only. We can use the `virsh vcpupin` command to bind
+    a vCPU to a physical CPU core or to a subset of physical CPU cores.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: CPU固定只是设置vCPU和主机物理CPU核心之间*亲和性*的过程，以便vCPU只在该物理CPU核心上执行。我们可以使用`virsh vcpupin`命令将vCPU绑定到物理CPU核心或物理CPU核心的子集。
+- en: 'There are a couple of best practices when doing vCPU pinning:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在进行vCPU固定时有一些最佳实践：
+- en: If the number of guest vCPUs is more than the single NUMA node CPUs, don't go
+    for the default pinning option.
+  id: totrans-68
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果客人vCPU的数量超过单个NUMA节点的CPU数量，则不要使用默认的固定选项。
+- en: If the physical CPUs are spread across different NUMA nodes, it is always better
+    to create multiple guests and pin the vCPUs of each guest to physical CPUs in
+    the same NUMA node. This is because accessing different NUMA nodes, or running
+    across multiple NUMA nodes, has a negative impact on performance, especially for
+    memory-intensive applications.
+  id: totrans-69
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果物理CPU分布在不同的NUMA节点上，最好创建多个虚拟机，并将每个虚拟机的vCPU固定到同一NUMA节点中的物理CPU。这是因为访问不同的NUMA节点，或者跨多个NUMA节点运行，对性能有负面影响，特别是对于内存密集型应用程序。
+- en: 'Let''s look at the steps of vCPU pinning:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看看vCPU固定的步骤：
+- en: Execute `virsh nodeinfo` to gather details about the host CPU configuration:![Figure
+    15.2 – Information about our KVM node
+  id: totrans-71
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 执行`virsh nodeinfo`以收集有关主机CPU配置的详细信息：![图15.2 - 关于我们的KVM节点的信息
+- en: '](img/B14834_15_02.jpg)'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_02.jpg)'
+- en: Figure 15.2 – Information about our KVM node
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.2 - 关于我们的KVM节点的信息
+- en: The next step is to get the CPU topology by executing the `virsh capabilities`
+    command and check the section tagged `<topology>`:![Figure 15.3 – The virsh capabilities
+    output with all the visible physical CPU cores
+  id: totrans-74
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下一步是通过执行`virsh capabilities`命令并检查标记为`<topology>`的部分来获取CPU拓扑结构：![图15.3 – 具有所有可见物理CPU核心的virsh
+    capabilities输出
+- en: '](img/B14834_15_03.jpg)'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_03.jpg)'
+- en: Figure 15.3 – The virsh capabilities output with all the visible physical CPU
+    cores
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.3 – 具有所有可见物理CPU核心的virsh capabilities输出
+- en: Once we have identified the topology of our host, the next step is to start
+    pinning the vCPUs.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们确定了主机的拓扑结构，下一步就是开始固定vCPU。
+- en: Let's first check the current affinity or pinning configuration with the guest
+    named `SQLForNuma`, which has four vCPUs:![Figure 15.4 – Checking the default
+    vcpupin settings
+  id: totrans-78
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们首先检查名为`SQLForNuma`的客户端的当前亲和力或固定配置，该客户端有四个vCPU：![图15.4 – 检查默认的vcpupin设置
+- en: '](img/B14834_15_04.jpg)'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_04.jpg)'
+- en: Figure 15.4 – Checking the default vcpupin settings
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.4 – 检查默认的vcpupin设置
+- en: Let's change that by using CPU pinning.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过使用CPU固定来改变这一点。
+- en: Let's pin `vCPU0` to physical core 0, `vCPU1` to physical core 1, `vCPU2` to
+    physical core 2, and `vCPU3` to physical core 3:![Figure 15.5 – Configuring CPU
+    pinning
+  id: totrans-82
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们将`vCPU0`固定到物理核心0，`vCPU1`固定到物理核心1，`vCPU2`固定到物理核心2，`vCPU3`固定到物理核心3：![图15.5
+    – 配置CPU固定
+- en: '](img/B14834_15_05.jpg)'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_05.jpg)'
+- en: Figure 15.5 – Configuring CPU pinning
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.5 – 配置CPU固定
+- en: By using `virsh vcpupin`, we changed a fixed virtual CPU allocation for this
+    VM.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过使用`virsh vcpupin`，我们改变了此VM的固定虚拟CPU分配。
+- en: 'Let''s use `virsh dumpxml` on this VM to check the configuration change:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在此VM上使用`virsh dumpxml`来检查配置更改：
+- en: '![Figure 15.6 – CPU pinning VM configuration changes'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.6 – CPU固定VM配置更改'
+- en: '](img/B14834_15_06.jpg)'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_06.jpg)'
+- en: Figure 15.6 – CPU pinning VM configuration changes
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.6 – CPU固定VM配置更改
+- en: Notice the CPU affinity listed in the `virsh` command and the `<cputune>` tag
+    in the XML dump of the running guest. As the XML tag says, this comes under the
+    CPU tuning section of the guest. It is also possible to configure a set of physical
+    CPUs for a particular vCPU instead of a single physical CPU.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意`virsh`命令中列出的CPU亲和力以及运行客户端的XML转储中的`<cputune>`标记。正如XML标记所说，这属于客户端的CPU调整部分。还可以配置一组物理CPU用于特定vCPU，而不是单个物理CPU。
+- en: There are a couple of things to remember. vCPU pinning can improve performance;
+    however, this depends on the host configuration and the other settings on the
+    system. Make sure you do enough tests and validate the settings.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有几件事情要记住。 vCPU固定可以提高性能；但是，这取决于主机配置和系统上的其他设置。确保进行足够的测试并验证设置。
+- en: 'You can also make use of `virsh vcpuinfo` to verify the pinning. The output
+    of the `virsh vcpuinfo` command is as follows:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以使用`virsh vcpuinfo`来验证固定。`virsh vcpuinfo`命令的输出如下：
+- en: '![Figure 15.7 – virsh vcpuinfo for our VM'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.7 – 用于我们的VM的virsh vcpuinfo'
+- en: '](img/B14834_15_07.jpg)'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_07.jpg)'
+- en: Figure 15.7 – virsh vcpuinfo for our VM
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.7 – 用于我们的VM的virsh vcpuinfo
+- en: If we're doing this on a busy host, it will have consequences. Sometimes, we
+    literally won't be able to start our SQL machine because of these settings. So,
+    for the greater good (the SQL VM working instead of not wanting to start), we
+    can change the memory mode configuration from `strict` to `interleave` or `preferred`,
+    which will relax the insistence on using strictly local memory for this VM.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们在繁忙的主机上进行此操作，将会产生后果。有时，我们可能无法启动我们的SQL机器，因为这些设置。因此，为了更大的利益（SQL VM能够工作而不是不想启动），我们可以将内存模式配置从`strict`更改为`interleave`或`preferred`，这将放宽对于为此VM严格使用本地内存的坚持。
+- en: Let's now explore the memory tuning options as they are the next logical thing
+    to discuss.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们探讨内存调整选项，因为这是下一个逻辑要讨论的事情。
+- en: Working with memory
+  id: totrans-98
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 内存调整
+- en: Memory is a precious resource for most environments, isn't it? Thus, the efficient
+    use of memory should be achieved by tuning it. The first rule in optimizing KVM
+    memory performance is not to allocate more resources to a guest during setup than
+    it will use.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于大多数环境来说，内存都是宝贵的资源，不是吗？因此，应通过调整来实现对内存的有效使用。优化KVM内存性能的第一条规则是在设置期间不要为客户端分配比其使用的资源更多的资源。
+- en: 'We will discuss the following in greater detail:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将更详细地讨论以下内容：
+- en: Memory allocation
+  id: totrans-101
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 内存分配
+- en: Memory tuning
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 内存调整
+- en: Memory backing
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 内存支持
+- en: Let's start by explaining how to configure memory allocation for a virtual system
+    or guest.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从解释如何为虚拟系统或客户端配置内存分配开始。
+- en: Memory allocation
+  id: totrans-105
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 内存分配
+- en: 'To make the allocation process simple, we will consider the `virt-manager`
+    libvirt client again. Memory allocation can be done from the window shown in the
+    following screenshot:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使分配过程简单，我们将再次考虑`virt-manager` libvirt客户端。内存分配可以从以下截图中显示的窗口中完成：
+- en: '![Figure 15.8 – VM memory options'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.8 – VM内存选项'
+- en: '](img/B14834_15_08.jpg)'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_08.jpg)'
+- en: Figure 15.8 – VM memory options
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.8 – VM内存选项
+- en: 'As you can see in the preceding screenshot, there are two main options: **Current
+    allocation** and **Maximum allocation**:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您在前面的截图中所看到的，有两个主要选项：**当前分配**和**最大分配**：
+- en: '**Maximum allocation**: The runtime maximum memory allocation of the guest.
+    This is the maximum memory that can be allocated to the guest when it''s running.'
+  id: totrans-111
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**最大分配**：客户端的运行时最大内存分配。这是客户端在运行时可以分配的最大内存。'
+- en: '**Current allocation**: How much memory a guest always uses. For memory ballooning
+    reasons, we can have this value lower than the maximum.'
+  id: totrans-112
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**当前分配**：客户端始终使用的内存量。出于内存球形原因，我们可以将此值设置为低于最大值。'
+- en: The `virsh` command can be used to tune these parameters. The relevant `virsh`
+    command options are `setmem` and `setmaxmem`.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`virsh`命令可用于调整这些参数。相关的`virsh`命令选项是`setmem`和`setmaxmem`。'
+- en: Memory tuning
+  id: totrans-114
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 内存调整
+- en: The memory tuning options are added under `<memtune>` of the guest configuration
+    file.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 内存调整选项添加在客户端配置文件的`<memtune>`下。
+- en: Additional memory tuning options can be found at [http://libvirt.org/formatdomain.html#elementsMemoryTuning](http://libvirt.org/formatdomain.html#elementsMemoryTuning).
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其他内存调整选项可以在[http://libvirt.org/formatdomain.html#elementsMemoryTuning](http://libvirt.org/formatdomain.html#elementsMemoryTuning)找到。
+- en: 'The admin can configure the memory settings of a guest manually. If the `<memtune>`
+    configuration is omitted, the default memory settings apply for a guest. The `virsh`
+    command at play here is as follows:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 管理员可以手动配置客户机的内存设置。如果省略了`<memtune>`配置，那么默认的内存设置将适用于客户机。这里使用的`virsh`命令如下：
+- en: '[PRE0]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'It can have any of the following values; this best practice is well documented
+    in the man page:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它可以具有以下任何值；这个最佳实践在man页面中有很好的记录：
+- en: '[PRE1]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'The default/current values that are set for the `memtune` parameter can be
+    fetched as shown:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以获取为`memtune`参数设置的默认/当前值，如下所示：
+- en: '![Figure 15.9 – Checking the memtune settings for the VM'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.9 - 检查VM的memtune设置'
+- en: '](img/B14834_15_09.jpg)'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_09.jpg)'
+- en: Figure 15.9 – Checking the memtune settings for the VM
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.9 - 检查VM的memtune设置
+- en: When setting `hard_limit`, you should not set this value too low. This might
+    lead to a situation in which a VM is terminated by the kernel. That's why determining
+    the correct amount of resources for a VM (or any other process) is such a design
+    problem. Sometimes, designing things properly seems like dark arts.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在设置`hard_limit`时，不应将此值设置得太低。这可能导致虚拟机被内核终止。这就是为什么确定虚拟机（或任何其他进程）的正确资源量是一个设计问题。有时，正确设计东西似乎就像黑暗艺术一样。
+- en: 'To learn more about how to set these parameters, please see the help output
+    for the `memtune` command in the following screenshot:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要了解如何设置这些参数，请参阅以下截图中`memtune`命令的帮助输出：
+- en: '![Figure 15.10 – Checking virsh help memtune'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.10 - 检查virsh帮助memtune'
+- en: '](img/B14834_15_10.jpg)'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_10.jpg)'
+- en: Figure 15.10 – Checking virsh help memtune
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.10 - 检查virsh帮助memtune
+- en: As we have covered memory allocation and tuning, the final option is memory
+    backing.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们讨论了内存分配和调整之后，最后一个选项是内存后备。
+- en: Memory backing
+  id: totrans-131
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 内存后备
+- en: 'The following is the guest XML representation of memory backing:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是内存后备的客户机XML表示：
+- en: '[PRE2]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'You may have noticed that there are three main options for memory backing:
+    `locked`, `nosharepages`, and `hugepages`. Let''s go through them one by one,
+    starting with `locked`.'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到内存后备有三个主要选项：`locked`、`nosharepages`和`hugepages`。让我们逐一介绍它们，从`locked`开始。
+- en: locked
+  id: totrans-135
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: locked
+- en: 'In KVM virtualization, guest memory lies in the process address space of the
+    `qemu-kvm` process in the KVM host. These guest memory pages can be swapped out
+    by the Linux kernel at any time, based on the requirement that the host has, and
+    this is where `locked` can help. If you set the memory backing option of the guest
+    to `locked`, the host will not swap out memory pages that belong to the virtual
+    system or guest. The virtual memory pages in the host system memory are locked
+    when this option is enabled:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在KVM虚拟化中，客户机内存位于KVM主机中的`qemu-kvm`进程的进程地址空间中。这些客户机内存页面可以根据主机的需求随时被Linux内核交换出去，这就是`locked`可以帮助的地方。如果将客户机的内存后备选项设置为`locked`，主机将不会交换属于虚拟系统或客户机的内存页面。当启用此选项时，主机系统内存中的虚拟内存页面将被锁定：
+- en: '[PRE3]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: We need to use `<memtune>` to set `hard_limit`. The calculus is simple – whatever
+    the amount of memory for the guest we need plus overhead.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要使用`<memtune>`来设置`hard_limit`。计算很简单 - 我们需要为客户机加上开销的内存量。
+- en: nosharepages
+  id: totrans-139
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: nosharepages
+- en: 'The following is the XML representation of `nosharepages` from the guest configuration
+    file:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是来自客户机配置文件的`nosharepages`的XML表示：
+- en: '[PRE4]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: There are different mechanisms that can enable the sharing of memory when the
+    memory pages are identical. Techniques such as `nosharepages` option instructs
+    the hypervisor to disable shared pages for this guest – that is, setting this
+    option will prevent the host from deduplicating memory between guests.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有不同的机制可以在内存页面相同的情况下实现内存共享。诸如`nosharepages`选项之类的技术指示了虚拟化程序禁用此客户机的共享页面 - 也就是说，设置此选项将阻止主机在客户机之间进行内存去重。
+- en: hugepages
+  id: totrans-143
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: hugepages
+- en: 'The third and final option is `hugepages`, which can be represented in XML
+    format, as follows:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第三个也是最后一个选项是`hugepages`，可以用XML格式表示如下：
+- en: '[PRE5]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: HugePages were introduced in the Linux kernel to improve the performance of
+    memory management. Memory is managed in blocks known as pages. Different architectures
+    (i386, ia64) support different page sizes. We don't necessarily have to use the
+    default setting for x86 CPUs (4 KB memory pages), as we can use larger memory
+    pages (2 MB to 1 GB), a feature that's called HugePages. A part of the CPU called
+    the **Memory Management Unit** (**MMU**) manages these pages by using a list.
+    The pages are referenced through page tables, and each page has a reference in
+    the page table. When a system wants to handle a huge amount of memory, there are
+    mainly two options. One of them involves increasing the number of page table entries
+    in the hardware MMU. The second method increases the default page size. If we
+    opt for the first method of increasing the page table entries, it is really expensive.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HugePages是在Linux内核中引入的，以改善内存管理的性能。内存以称为页面的块进行管理。不同的架构（i386、ia64）支持不同的页面大小。对于x86
+    CPU（4 KB内存页面）来说，我们不一定要使用默认设置，因为我们可以使用更大的内存页面（2 MB到1 GB），这个功能称为HugePages。CPU的一个部分称为**内存管理单元**（**MMU**）通过使用列表来管理这些页面。页面通过页表引用，并且每个页面在页表中都有一个引用。当系统想要处理大量内存时，主要有两种选项。其中一种涉及增加硬件MMU中的页表条目数。第二种方法是增加默认页面大小。如果我们选择增加页表条目的第一种方法，那么成本就会很高。
+- en: The second and more efficient method when dealing with large amounts of memory
+    is using HugePages or increased page sizes by using HugePages. The different amounts
+    of memory that each and every server has means that there is a need for different
+    page sizes. The default values are okay for most situations, while huge memory
+    pages (for example, 1 GB) are more efficient if we have large amounts of memory
+    (hundreds of gigabytes or even terabytes). This means less *administrative* work
+    in terms of referencing memory pages and more time spent actually getting the
+    content of these memory pages, which can lead to a significant performance boost.
+    Most of the known Linux distributions can use HugePages to manage large memory
+    amounts. A process can use HugePages memory support to improve performance by
+    increasing the CPU cache hits against the **Translation LookAside Buffer** (**TLB**),
+    as explained in [*Chapter 2*](B14834_02_Final_ASB_ePub.xhtml#_idTextAnchor029),
+    *KVM as a Virtualization Solution*. You already know that guest systems are simply
+    processes in a Linux system, thus the KVM guests are eligible to do the same.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 处理大量内存的第二种更有效的方法是使用HugePages或通过使用HugePages增加页面大小。每台服务器的不同内存量意味着需要不同的页面大小。默认值对大多数情况都可以，而巨大的内存页面（例如1
+    GB）在我们有大量内存（数百GB甚至TB）时更有效。这意味着在引用内存页面方面需要更少的*管理*工作，而实际上花费更多时间获取这些内存页面的内容，这可能会导致显著的性能提升。大多数已知的Linux发行版都可以使用HugePages来管理大量内存。进程可以使用HugePages内存支持通过增加CPU缓存命中来提高性能，这是在[*第2章*](B14834_02_Final_ASB_ePub.xhtml#_idTextAnchor029)中解释的，*KVM作为虚拟化解决方案*。您已经知道，客户系统只是Linux系统中的进程，因此KVM客户也有资格执行相同的操作。
+- en: 'Before we move on, we should also mention `MADV_HUGEPAGE` regions (to avoid
+    the risk of consuming more memory resources), or enabled system-wide. There are
+    three main options for configuring THP in a system: `always`, `madvise`, and `never`:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们继续之前，我们还应该提到`MADV_HUGEPAGE`区域（以避免消耗更多的内存资源），或者在整个系统中启用。系统中配置THP有三个主要选项：`always`，`madvise`和`never`。
+- en: '[PRE6]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'From the preceding output, we can see that the current THP setting in our server
+    is `madvise`. Other options can be enabled by using one of the following commands:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从前面的输出中，我们可以看到我们服务器中当前的THP设置为`madvise`。其他选项可以通过使用以下命令之一来启用：
+- en: '[PRE7]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'In short, what these values mean is the following:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，这些值的含义如下：
+- en: '`always`: Always use THP.'
+  id: totrans-153
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`always`：始终使用THP。'
+- en: '`madvise`: Use HugePages only in `MADV_HUGEPAGE`.'
+  id: totrans-154
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`madvise`：仅在`MADV_HUGEPAGE`中使用HugePages。'
+- en: '`never`: Disable the feature.'
+  id: totrans-155
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`never`：禁用该功能。'
+- en: The system settings for performance are automatically optimized by THP. We can
+    have performance benefits by using memory as cache. It is possible to use static
+    HugePages when THP is in place or in other words THP won't prevent it from using
+    a static method. If we don't configure our KVM hypervisor to use static HugePages,
+    it will use 4 Kb transparent HugePages. The advantages we get from using HugePages
+    for a KVM guest's memory are that less memory is used for page tables and TLB
+    misses are reduced; obviously, this increases performance. But keep in mind that
+    when using HugePages for guest memory, you can no longer swap or balloon guest
+    memory.
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: THP会自动优化性能设置。通过将内存用作缓存，我们可以获得性能优势。当THP存在时，可以使用静态HugePages，或者换句话说，THP不会阻止使用静态方法。如果我们不配置KVM
+    hypervisor来使用静态HugePages，它将使用4 KB的透明HugePages。使用HugePages来管理KVM客户端内存的优势在于，用于页表的内存更少，TLB缺失减少；显然，这会提高性能。但请记住，当为客户端内存使用HugePages时，您将无法再交换或收缩客户端内存。
+- en: 'Let''s have a quick look at how to use static HugePages in your KVM setup.
+    First, let''s check the current system configuration – it''s clear that the HugePages
+    size in this system is currently set at 2 MB:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们快速看一下如何在KVM设置中使用静态HugePages。首先，让我们检查当前的系统配置 - 很明显，这个系统中的HugePages大小目前设置为2
+    MB：
+- en: '![Figure 15.11 – Checking the HugePages settings'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.11 - 检查HugePages设置'
+- en: '](img/B14834_15_11.jpg)'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_11.jpg)'
+- en: Figure 15.11 – Checking the HugePages settings
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.11 - 检查HugePages设置
+- en: We're primarily talking about all the attributes starting with HugePages, but
+    it's worth mentioning what the `AnonHugePages` attribute is. The `AnonHugePages`
+    attribute tells us the current THP usage on the system level.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们主要讨论以HugePages开头的所有属性，但值得一提的是`AnonHugePages`属性。`AnonHugePages`属性告诉我们系统级别上当前THP的使用情况。
+- en: 'Now, let''s configure KVM to use a custom HugePages size:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们配置KVM以使用自定义的HugePages大小：
+- en: 'View the current explicit `hugepages` value by running the following command
+    or fetch it from `sysfs`, as shown:'
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过运行以下命令查看当前显式的`hugepages`值或从`sysfs`中获取它，如下所示：
+- en: '[PRE8]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: We can also use the `sysctl -a |grep huge` command:![Figure 15.12 – The sysctl
+    hugepages settings
+  id: totrans-165
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还可以使用`sysctl -a |grep huge`命令：![图15.12 - sysctl hugepages设置
+- en: '](img/B14834_15_12.jpg)'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_12.jpg)'
+- en: Figure 15.12 – The sysctl hugepages settings
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.12 - sysctl hugepages设置
+- en: 'As the HugePage size is 2 MB, we can set hugepages in increments of 2 MB. To
+    set the number of hugepages to 2,000, use the following command:'
+  id: totrans-168
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 由于HugePage大小为2 MB，我们可以按2 MB的增量设置hugepages。要将hugepages的数量设置为2,000，请使用以下命令：
+- en: '[PRE9]'
+  id: totrans-169
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: The total memory assigned for hugepages cannot be used by applications that
+    are not hugepage-aware – that is, if you over-allocate hugepages, normal operations
+    of the host system can be affected. In our examples, 2048*2 MB would equal 4,096
+    MB of memory, which we should have available when we do this configuration.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 巨大页面分配的总内存不能被不了解巨大页面的应用程序使用 - 也就是说，如果你过度分配了巨大页面，主机系统的正常操作可能会受到影响。在我们的例子中，2048*2
+    MB将等于4096 MB的内存，在进行此配置时我们应该有这么多可用的内存。
+- en: 'We need to tell the system that this type of configuration is actually OK and
+    configure `/etc/security/limits.conf` to reflect that. Otherwise, the system might
+    refuse to give us access to 2,048 hugepages times 2 MB of memory. We need to add
+    two lines to that file:'
+  id: totrans-171
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们需要告诉系统这种类型的配置实际上是可以的，并配置`/etc/security/limits.conf`以反映这一点。否则，系统可能会拒绝给我们访问2,048个2
+    MB内存的巨大页面。我们需要在该文件中添加两行：
+- en: '[PRE10]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'To make it persistent, you can use the following:'
+  id: totrans-173
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要使其持久化，您可以使用以下命令：
+- en: '[PRE11]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Then, mount the `fs` hugepages, reconfigure the VM, and restart the host:'
+  id: totrans-175
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，挂载`fs`大页，重新配置虚拟机，并重新启动主机：
+- en: '[PRE12]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Reconfigure the HugePage-configured guest by adding the following settings
+    in the VM configuration file:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过在虚拟机配置文件中添加以下设置来重新配置已配置大页的虚拟机：
+- en: '[PRE13]'
+  id: totrans-178
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'It''s time to shut down the VM and reboot the host. Inside the VM, do the following:'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是关闭虚拟机并重新启动主机的时候。在虚拟机内执行以下操作：
+- en: '[PRE14]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'On the host, do the following:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在主机上，执行以下操作：
+- en: '[PRE15]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: After the host reboot and the restart of the VM, it will now start using the
+    hugepages.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主机重新启动并重新启动虚拟机后，它现在将开始使用大页。
+- en: The next topic is related to sharing memory content between multiple VMs, referred
+    to as KSM. This technology is heavily used to *save* memory. At any given moment,
+    when multiple VMs are powered on the virtualization host, there's a big statistical
+    chance that those VMs have blocks of memory contents that are the same (they have
+    the same contents). Then, there's no reason to store the same contents multiple
+    times. Usually, we refer to KSM as a deduplication process being applied to memory.
+    Let's learn how to use and configure KSM.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一个主题与在多个虚拟机之间共享内存内容有关，称为KSM。这项技术被广泛用于*节省*内存。在任何给定时刻，当虚拟化主机上启动多个虚拟机时，这些虚拟机有很大的统计机会具有相同的内存内容块（它们具有相同的内容）。然后，没有理由多次存储相同的内容。通常，我们将KSM称为应用于内存的去重复过程。让我们学习如何使用和配置KSM。
+- en: Getting acquainted with KSM
+  id: totrans-185
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 熟悉KSM
+- en: KSM is a feature that allows the sharing of identical pages between the different
+    processes running on a system. We might presume that the identical pages exist
+    due to certain reasons—for example, if there are multiple processes spawned from
+    the same binary or something similar. There is no rule such as this though. KSM
+    scans these identical memory pages and consolidates a **Copy-on-Write** (**COW**)
+    shared page. COW is nothing but a mechanism where when there is an attempt to
+    change a memory region that is shared and common to more than one process, the
+    process that requests the change gets a new copy and the changes are saved in
+    it.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: KSM是一个允许不同进程之间共享相同页面的功能。我们可能会认为相同的页面存在是由于某些原因，例如，如果有多个进程从相同的二进制文件生成，或者类似的情况。但实际上并没有这样的规则。KSM扫描这些相同的内存页面，并合并一个写时复制的共享页面。写时复制是一种机制，当试图更改一个被多个进程共享的内存区域时，请求更改的进程会得到一个新的副本，并将更改保存在其中。
+- en: Even though the consolidated COW shared page is accessible by all the processes,
+    whenever a process tries to change the content (write to that page), the process
+    gets a new copy with all of the changes. By now, you will have understood that,
+    by using KSM, we can reduce physical memory consumption. In the KVM context, this
+    can really add value, because guest systems are `qemu-kvm` processes in the system,
+    and there is a huge possibility that all the VM processes will have a good amount
+    of similar memory.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管所有进程都可以访问合并的写时复制共享页面，但每当一个进程尝试更改内容（向该页面写入）时，该进程都会得到一个带有所有更改的新副本。到目前为止，您可能已经了解到，通过使用KSM，我们可以减少物理内存消耗。在KVM环境中，这确实可以增加价值，因为客户端系统是系统中的`qemu-kvm`进程，并且所有虚拟机进程很可能具有大量相似的内存。
+- en: For KSM to work, the process/application has to register its memory pages with
+    KSM. In KVM-land, KSM allows guests to share identical memory pages, thus achieving
+    an improvement in memory consumption. That might be some kind of application data,
+    a library, or anything else that's used frequently. This shared page or memory
+    is marked as `copy on write`. In short, KSM avoids memory duplication and it's
+    really useful when similar guest OSes are present in a KVM environment.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使KSM工作，进程/应用程序必须向KSM注册其内存页面。在KVM环境中，KSM允许客户端共享相同的内存页面，从而提高内存消耗。这可能是某种应用程序数据、库或其他经常使用的内容。这个共享的页面或内存被标记为“写时复制”。简而言之，KSM避免了内存重复，当KVM环境中存在相似的客户端操作系统时，它非常有用。
+- en: By using the theory of prediction, KSM can provide enhanced memory speed and
+    utilization. Mostly, this common shared data is stored in cache or main memory,
+    which causes fewer cache misses for the KVM guests. Also, KSM can reduce the overall
+    guest memory footprint so that, in a way, it allows the user to do memory overcommitting
+    in a KVM setup, thus supplying the greater utilization of available resources.
+    However, we have to keep in mind that KSM requires more CPU resources to identify
+    the duplicate pages and to perform tasks such as sharing/merging.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过使用预测理论，KSM可以提供增强的内存速度和利用率。大多数情况下，这些共享数据存储在缓存或主内存中，这会导致KVM客户端的缓存未命中减少。此外，KSM可以减少客户端内存占用，从某种程度上允许用户在KVM设置中进行内存超额分配，从而提供更大的资源利用率。然而，我们必须记住，KSM需要更多的CPU资源来识别重复页面并执行共享/合并等任务。
+- en: 'Previously, we mentioned that the processes have to mark the *pages* to show
+    that they are eligible candidates for KSM to operate. The marking can be done
+    by a process based on the `MADV_MERGEABLE` flag, which we will discuss in the
+    next section. You can explore the use of this flag in the `madvise` man page:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之前，我们提到进程必须标记*页面*，以表明它们是KSM操作的合格候选者。这种标记可以由基于`MADV_MERGEABLE`标志的进程完成，我们将在下一节中讨论。您可以在`madvise`手册页中了解有关此标志的用法：
+- en: '[PRE16]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'So, the kernel has to be configured with KSM, as follows:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，内核必须配置KSM，如下所示：
+- en: '![Figure 15.13 – Checking the KSM settings'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.13 - 检查KSM设置'
+- en: '](img/B14834_15_13.jpg)'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_13.jpg)'
+- en: Figure 15.13 – Checking the KSM settings
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.13 - 检查KSM设置
+- en: 'KSM gets deployed as a part of the `qemu-kvm` package. Information about the
+    KSM service can be fetched from the `sysfs` filesystem, in the `/sys` directory.
+    There are different files available in this location, reflecting the current KSM
+    status. These are updated dynamically by the kernel, and it has a precise record
+    of the KSM usage and statistics:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: KSM作为`qemu-kvm`软件包的一部分部署。可以从`sysfs`文件系统中的`/sys`目录中获取有关KSM服务的信息。在这个位置有不同的文件，反映了当前KSM的状态。这些文件由内核动态更新，并且它有KSM使用和统计的精确记录：
+- en: '![Figure 15.14 – The KSM settings in sysfs'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.14 - sysfs中的KSM设置'
+- en: '](img/B14834_15_14.jpg)'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_14.jpg)'
+- en: Figure 15.14 – The KSM settings in sysfs
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.14 - sysfs中的KSM设置
+- en: In an upcoming section, we will discuss the `ksmtuned` service and its configuration
+    variables. As `ksmtuned` is a service to control KSM, its configuration variables
+    are analogous to the files we see in the `sysfs` filesystem. For more details,
+    you can check out [https://www.kernel.org/doc/html/latest/admin-guide/mm/ksm.html](https://www.kernel.org/doc/html/latest/admin-guide/mm/ksm.html).
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的部分中，我们将讨论`ksmtuned`服务及其配置变量。由于`ksmtuned`是一个控制KSM的服务，其配置变量类似于我们在`sysfs`文件系统中看到的文件。有关更多详细信息，请查看[https://www.kernel.org/doc/html/latest/admin-guide/mm/ksm.html](https://www.kernel.org/doc/html/latest/admin-guide/mm/ksm.html)。
+- en: 'It is also possible to tune these parameters with the `virsh` command. The
+    `virsh node-memory-tune` command does this job for us. For example, the following
+    command specifies the number of pages to scan before the shared memory service
+    goes to sleep:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还可以使用`virsh`命令调整这些参数。`virsh node-memory-tune`命令可以为我们完成这项工作。例如，以下命令指定在共享内存服务进入休眠之前要扫描的页面数：
+- en: '[PRE17]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: As with any other service, the `ksmtuned` service also has logs stored in a
+    log file, `/var/log/ksmtuned`. If we add `DEBUG=1` to `/etc/ksmtuned.conf`, we
+    will have logging from any kind of KSM tuning actions. Refer to [https://www.kernel.org/doc/Documentation/vm/ksm.txt](https://www.kernel.org/doc/Documentation/vm/ksm.txt)
+    for more details.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与任何其他服务一样，`ksmtuned`服务也有日志存储在日志文件`/var/log/ksmtuned`中。如果我们在`/etc/ksmtuned.conf`中添加`DEBUG=1`，我们将从任何类型的KSM调整操作中获得日志记录。有关更多详细信息，请参阅[https://www.kernel.org/doc/Documentation/vm/ksm.txt](https://www.kernel.org/doc/Documentation/vm/ksm.txt)。
+- en: 'Once we start the KSM service, as shown next, you can watch the values change
+    depending on the KSM service in action:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们启动了KSM服务，如下所示，您可以观察值的变化，具体取决于KSM服务的操作：
+- en: '[PRE18]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'We can then check the status of the `ksm` service like this:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以像这样检查`ksm`服务的状态：
+- en: '![Figure 15.15 – The ksm service command and the ps command output'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.15 - ksm服务命令和ps命令输出'
+- en: '](img/B14834_15_15.jpg)'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_15.jpg)'
+- en: Figure 15.15 – The ksm service command and the ps command output
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.15 - ksm服务命令和ps命令输出
+- en: 'Once the KSM service is started and we have multiple VMs running on our host,
+    we can check the changes by querying `sysfs` by using the following command multiple
+    times:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦KSM服务启动并且我们的主机上有多个虚拟机正在运行，我们可以使用以下命令多次查询`sysfs`来检查变化：
+- en: '[PRE19]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Let's explore the `ksmtuned` service in more detail. The `ksmtuned` service
+    is designed so that it goes through a cycle of actions and adjusts KSM. This cycle
+    of actions continues its work in a loop. Whenever a guest system is created or
+    destroyed, libvirt will notify the `ksmtuned` service.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们更详细地探讨`ksmtuned`服务。`ksmtuned`服务被设计成经历一系列动作并调整KSM。这个动作循环会不断地工作。每当创建或销毁一个客户系统时，libvirt都会通知`ksmtuned`服务。
+- en: 'The `/etc/ksmtuned.conf` file is the configuration file for the `ksmtuned`
+    service. Here is a brief explanation of the configuration parameters available.
+    You can see these configuration parameters match with the KSM files in `sysfs`:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`/etc/ksmtuned.conf`文件是`ksmtuned`服务的配置文件。以下是可用的配置参数的简要说明。您可以看到这些配置参数与`sysfs`中的KSM文件相匹配：'
+- en: '[PRE20]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: KSM is designed to improve performance and allow memory overcommits. It serves
+    this purpose in most environments; however, KSM may introduce a performance overhead
+    in some setups or environments – for example, if you have a few VMs that have
+    similar memory content when you start them and loads of memory-intensive operations
+    afterward. This will create issues as KSM will first work very hard to reduce
+    the memory footprint, and then lose time to cover for all of the memory content
+    differences between multiple VMs. Also, there is a concern that KSM may open a
+    channel that could potentially be used to leak information across guests, as has
+    been well documented in the past couple of years. If you have these concerns or
+    if you see/experience KSM not helping to improve the performance of your workload,
+    it can be disabled.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: KSM旨在提高性能并允许内存超额分配。在大多数环境中，它都能够实现这一目的；然而，在某些设置或环境中，KSM可能会引入性能开销 - 例如，如果您有一些虚拟机在启动时具有相似的内存内容，然后进行大量的内存密集型操作。这将会导致问题，因为KSM首先会非常努力地减少内存占用，然后浪费时间来处理多个虚拟机之间的所有内存内容差异。此外，有人担心KSM可能打开一个潜在的渠道，可能被用于在客户之间泄露信息，这在过去几年中已经有充分的记录。如果您有这些担忧，或者如果您看到/经历KSM没有帮助提高工作负载的性能，可以将其禁用。
+- en: 'To disable KSM, stop the `ksmtuned` and `ksm` services in your system by executing
+    the following:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要禁用KSM，通过执行以下命令停止系统中的`ksmtuned`和`ksm`服务：
+- en: '[PRE21]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: We have gone through the different tuning options for CPU and memory. The next
+    big subject that we need to cover is NUMA configuration, where both CPU and memory
+    configuration become a part of a larger story or context.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经研究了CPU和内存的不同调优选项。接下来我们需要讨论的下一个重要主题是NUMA配置，其中CPU和内存配置成为更大故事或背景的一部分。
+- en: Tuning the CPU and memory with NUMA
+  id: totrans-219
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用NUMA调整CPU和内存
+- en: Before we start tuning the CPU and memory for NUMA-capable systems, let's see
+    what NUMA is and how it works.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开始为NUMA可用系统调整CPU和内存之前，让我们看看NUMA是什么以及它是如何工作的。
+- en: Think of NUMA as a system where you have more than one system bus, each serving
+    a small set of processors and associated memory. Each group of processors has
+    its own memory and possibly its own I/O channels. It may not be possible to stop
+    or prevent running VM access across these groups. Each of these groups is known
+    as a **NUMA node**.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将NUMA视为一个系统，其中有多个系统总线，每个总线为一小组处理器和关联内存提供服务。每组处理器都有自己的内存，可能还有自己的I/O通道。可能无法阻止或阻止运行的VM跨越这些组。这些组中的每一个称为**NUMA节点**。
+- en: In this concept, if a process/thread is running on a NUMA node, the memory on
+    the same node is called local memory and memory residing on a different node is
+    known as foreign/remote memory. This implementation is different from the **Symmetric
+    Multiprocessor System** (**SMP**), where the access time for all of the memory
+    is the same for all the CPUs, as memory access happens through a centralized bus.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个概念中，如果一个进程/线程在一个NUMA节点上运行，同一节点上的内存称为本地内存，而驻留在不同节点上的内存称为外部/远程内存。这种实现与**对称多处理系统**（**SMP**）不同，SMP中所有内存的访问时间对所有CPU都是相同的，因为内存访问是通过一个集中的总线进行的。
+- en: 'An important subject in discussing NUMA is the NUMA ratio. The NUMA ratio is
+    a measure of how quickly a CPU can access local memory compared to how quickly
+    it can access remote/foreign memory. For example, if the NUMA ratio is 2.0, then
+    it takes twice as long for the CPU to access remote memory. If the NUMA ratio
+    is 1, that means that we''re using SMP. The bigger the ratio, the bigger the latency
+    price (overhead) that a VM memory operation will have to pay before getting the
+    necessary data (or saving it). Before we explore tuning in more depth, let''s
+    discuss exploring the NUMA topology of a system. One of the easiest ways to show
+    the current NUMA topology is via the `numactl` command:'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 讨论NUMA的一个重要主题是NUMA比率。NUMA比率是衡量CPU访问本地内存相对于访问远程/外部内存的速度的指标。例如，如果NUMA比率为2.0，则CPU访问远程内存的时间是访问本地内存的两倍。如果NUMA比率为1，这意味着我们正在使用SMP。比率越大，VM内存操作在获取必要数据（或保存数据）之前必须支付的延迟成本（开销）就越大。在更深入地探讨调优之前，让我们讨论一下系统的NUMA拓扑。显示当前NUMA拓扑的最简单方法之一是通过`numactl`命令：
+- en: '![Figure 15.16 – The numactl -H output'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.16 - numactl -H输出'
+- en: '](img/B14834_15_16.jpg)'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_16.jpg)'
+- en: Figure 15.16 – The numactl -H output
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.16 - numactl -H输出
+- en: 'The preceding `numactl` output conveys that there are 10 CPUs in the system
+    and they belong to a single NUMA node. It also lists the memory associated with
+    each NUMA node and the node distance. When we discussed CPU pinning, we displayed
+    the topology of the system using the `virsh` capabilities. To get a graphical
+    view of the NUMA topology, you can make use of a command called `lstopo`, which
+    is available with the `hwloc` package in CentOS-/Red Hat-based systems:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的`numactl`输出表明系统中有10个CPU，它们属于单个NUMA节点。它还列出了与每个NUMA节点关联的内存和节点距离。当我们讨论CPU固定时，我们使用`virsh`功能显示了系统的拓扑结构。要获得NUMA拓扑的图形视图，可以使用一个名为`lstopo`的命令，该命令在基于CentOS-/Red
+    Hat的系统中与`hwloc`软件包一起提供：
+- en: '![Figure 15.17 – The lstopo command to visualize the NUMA topology'
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.17 - 使用lstopo命令可视化NUMA拓扑'
+- en: '](img/B14834_15_17.jpg)'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_17.jpg)'
+- en: Figure 15.17 – The lstopo command to visualize the NUMA topology
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.17 - 使用lstopo命令可视化NUMA拓扑
+- en: This screenshot also shows the PCI devices associated with the NUMA nodes. For
+    example, `ens*` (network interface) devices are attached to NUMA node 0\. Once
+    we have the NUMA topology of the system and understand it, we can start tuning
+    it, specially for the KVM virtualized setup.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此截图还显示了与NUMA节点关联的PCI设备。例如，`ens*`（网络接口）设备连接到NUMA节点0。一旦我们了解了系统的NUMA拓扑，就可以开始调整它，特别是针对KVM虚拟化设置。
+- en: NUMA memory allocation policies
+  id: totrans-232
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: NUMA内存分配策略
+- en: 'By modifying the VM XML configuration file, we can do NUMA tuning. Tuning NUMA
+    introduces a new element tag called `numatune`:'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过修改VM XML配置文件，我们可以进行NUMA调优。调优NUMA引入了一个名为`numatune`的新元素标签：
+- en: '[PRE22]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'This is also configurable via the `virsh` command, as shown:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这也可以通过`virsh`命令进行配置，如下所示：
+- en: '![Figure 15.18 – Using virsh numatune to configure the NUMA settings'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.18 - 使用virsh numatune配置NUMA设置'
+- en: '](img/B14834_15_18.jpg)'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_18.jpg)'
+- en: Figure 15.18 – Using virsh numatune to configure the NUMA settings
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.18 - 使用virsh numatune配置NUMA设置
+- en: 'The XML representation of this tag is as follows:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此标签的XML表示如下：
+- en: '[PRE23]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Even though the element called `numatune` is optional, it is provided to tune
+    the performance of the NUMA host by controlling the NUMA policy for the domain
+    process. The main sub-tags of this optional element are `memory` and `nodeset`.
+    Some notes on these sub-tags are as follows:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管名为`numatune`的元素是可选的，但它是用来通过控制域进程的NUMA策略来调整NUMA主机性能的。此可选元素的主要子标签是`memory`和`nodeset`。有关这些子标签的一些说明如下：
+- en: '`memory`: This element describes the memory allocation process on the NUMA
+    node. There are three policies that govern memory allocation for NUMA nodes:'
+  id: totrans-242
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`memory`：此元素描述了NUMA节点上的内存分配过程。有三种策略来管理NUMA节点的内存分配：'
+- en: 'a) `Strict`: When a VM tries to allocate memory and that memory isn''t available,
+    allocation will fail.'
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: a) `Strict`：当虚拟机尝试分配内存并且内存不可用时，分配将失败。
+- en: 'b) `Interleave`: Nodeset-defined round-robin allocation across NUMA nodes.'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: b) `Interleave`：在NUMA节点之间进行循环分配。
+- en: 'c) `Preferred`: The VM tries to allocate memory from a preferred node. If that
+    node doesn''t have enough memory, it can allocate memory from the remaining NUMA
+    nodes.'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: c) `Preferred`：虚拟机尝试从首选节点分配内存。如果该节点没有足够的内存，它可以从剩余的NUMA节点分配内存。
+- en: '`nodeset`: Specifies a NUMA node list available on the server.'
+  id: totrans-246
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`nodeset`：指定服务器上可用的NUMA节点列表。'
+- en: 'One of the important attributes here is *placement*, as explained at the following
+    URL – [https://libvirt.org/formatdomain.html](https://libvirt.org/formatdomain.html):'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里的一个重要属性是*placement*，在以下URL中有解释 - [https://libvirt.org/formatdomain.html](https://libvirt.org/formatdomain.html)：
+- en: '"Attribute placement can be used to indicate the memory placement mode for
+    domain process, its value can be either "static" or "auto", defaults to placement
+    of vCPU, or "static" if nodeset is specified. "auto" indicates the domain process
+    will only allocate memory from the advisory nodeset returned from querying numad,
+    and the value of attribute nodeset will be ignored if it''s specified. If placement
+    of vCPU is ''auto'', and numatune is not specified, a default numatune with placement
+    ''auto'' and mode ''strict'' will be added implicitly."'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"属性放置可用于指示域进程的内存放置模式，其值可以是"static"或"auto"，默认为vCPU的放置，或者如果指定了nodeset，则为"static"。"auto"表示域进程将仅从查询numad返回的建议nodeset分配内存，如果指定了属性nodeset的值将被忽略。如果vCPU的放置是''auto''，并且未指定numatune，则将隐式添加一个默认的numatune，其放置为''auto''，模式为''strict''。"'
+- en: We need to be careful with these declarations, as there are inheritance rules
+    that apply. For example, the `<numatune>` and `<vcpu>` elements default to the
+    same value if we specify the `<nodeset>` element. So, we can absolutely configure
+    different CPU and memory tuning options, but also be aware of the fact that these
+    options can be inherited.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要小心这些声明，因为有适用的继承规则。例如，如果我们指定了`<nodeset>`元素，`<numatune>`和`<vcpu>`元素默认为相同的值。因此，我们绝对可以配置不同的CPU和内存调优选项，但也要意识到这些选项可以被继承。
+- en: There are some more things to consider when thinking about CPU pinning in the
+    NUMA context. We discussed the basis of CPU pinning earlier in this chapter, as
+    it gives us better, predictable performance for our VMs and can increase cache
+    efficiency. Just as an example, let's say that we want to run a VM as fast as
+    possible. It would be prudent to run it on the fastest storage available, which
+    would be on a PCI Express bus on the CPU socket where we pinned the CPU cores.
+    If we're not using an NVMe SSD local to that VM, we can use a storage controller
+    to achieve the same thing. However, if the storage controller that we're using
+    to access VM storage is physically connected to another CPU socket, that will
+    lead to latency. For latency-sensitive applications, that will mean a big performance
+    hit.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在考虑NUMA上下文中的CPU固定时，还有一些要考虑的事情。我们在本章的早些时候讨论了CPU固定的基础，因为它可以为我们的虚拟机提供更好、更可预测的性能，并且可以提高缓存效率。举个例子，假设我们想尽可能快地运行一个虚拟机。明智的做法是在固定CPU核心的CPU插槽上运行它，这样可以在最快的存储上运行，这将在PCI
+    Express总线上。如果我们没有使用NVMe SSD本地运行虚拟机，我们可以使用存储控制器来实现相同的效果。但是，如果我们用来访问虚拟机存储的存储控制器物理连接到另一个CPU插槽，那将导致延迟。对于延迟敏感的应用程序，这将意味着性能大幅下降。
+- en: However, we also need to be aware of the other extreme – if we do too much pinning,
+    it can create other problems in the future. For example, if our servers are not
+    architecturally the same (having the same amount of cores and memory), migrating
+    VMs might become problematic. We can create a scenario where we're migrating a
+    VM with CPU cores pinned to cores that don't exist on the target server of our
+    migration process. So, we always need to be careful about what we do with the
+    configuration of our environments so that we don't take it too far.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，我们也需要意识到另一个极端——如果我们进行过多的固定，将来可能会产生其他问题。例如，如果我们的服务器在架构上不同（具有相同数量的核心和内存），迁移虚拟机可能会变得棘手。我们可能会出现这样的情况，即迁移过程中将CPU核心固定到目标服务器上不存在的核心。因此，我们在配置环境时总是需要小心，以免走得太远。
+- en: The next subject on our list is `emulatorpin`, which can be used to pin our
+    `qemu-kvm` emulator to a specific CPU core so that it doesn't influence the performance
+    of our VM cores. Let's learn how to configure that.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们列表上的下一个主题是`emulatorpin`，它可以用来将我们的`qemu-kvm`模拟器固定到特定的CPU核心，以便它不影响我们虚拟机核心的性能。让我们学习如何配置它。
+- en: Understanding emulatorpin
+  id: totrans-253
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 理解emulatorpin
+- en: 'The `emulatorpin` option also falls into the CPU tuning category. The XML representation
+    of this would be as follows:'
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`emulatorpin`选项也属于CPU调优类别。其XML表示如下：'
+- en: '[PRE24]'
+  id: totrans-255
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: The `emulatorpin` element is optional and is used to pin the emulator (`qemu-kvm`)
+    to a host physical CPU. This does not include the vCPU or IO threads from the
+    VM. If this is omitted, the emulator is pinned to all the physical CPUs of the
+    host system by default.
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`emulatorpin`元素是可选的，用于将模拟器（`qemu-kvm`）固定到主机物理CPU。这不包括来自VM的vCPU或IO线程。如果省略此项，模拟器将默认固定到主机系统的所有物理CPU。'
+- en: 'Important note:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示：
+- en: Please note that `<vcpupin>`, `<numatune>`, and `<emulatorpin>` should be configured
+    together to achieve optimal, deterministic performance when you tune a NUMA-capable
+    system.
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，当您调整支持NUMA的系统时，应该一起配置`<vcpupin>`、`<numatune>`和`<emulatorpin>`，以实现最佳的确定性性能。
+- en: 'Before we leave this section, there are a couple more things to cover: the
+    guest system NUMA topology and hugepage memory backing with NUMA.'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们离开这一部分之前，还有一些事情需要涵盖：客户端系统NUMA拓扑和NUMA的大页内存支持。
+- en: 'Guest NUMA topology can be specified using the `<numa>` element in the guest
+    XML configuration; some call this virtual NUMA:'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以使用`<numa>`元素在客户端XML配置中指定客户端NUMA拓扑结构；有些人称之为虚拟NUMA：
+- en: '[PRE25]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: The `cell id` element tells the VM which NUMA node to use, while the `cpus`
+    element configures a specific core (or cores). The `memory` element assigns the
+    amount of memory per node. Each NUMA node is indexed by number, starting from
+    `0`.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`cell id`元素告诉虚拟机使用哪个NUMA节点，而`cpus`元素配置特定的核心（或核心）。`memory`元素为每个节点分配内存量。每个NUMA节点都以数字索引，从`0`开始。'
+- en: 'Previously, we discussed the `memorybacking` element, which can be specified
+    to use hugepages in guest configurations. When NUMA is present in a setup, the
+    `nodeset` attribute can be used to configure the specific hugepage size per NUMA
+    node, which may come in handy as it ties a given guest''s NUMA nodes to certain
+    hugepage sizes:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之前，我们讨论了`memorybacking`元素，可以在客户端配置中指定使用大页。当NUMA存在于设置中时，`nodeset`属性可用于配置每个NUMA节点的特定大页大小，这可能会很有用，因为它将给定客户端的NUMA节点与某些大页大小联系起来：
+- en: '[PRE26]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: This type of configuration can optimize the memory performance, as guest NUMA
+    nodes can be moved to host NUMA nodes as required, while the guest can continue
+    to use the hugepages allocated by the host.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种配置可以优化内存性能，因为客户端NUMA节点可以根据需要移动到主机NUMA节点，同时客户端可以继续使用主机分配的大页。
+- en: NUMA tuning also has to consider the NUMA node locality for PCI devices, especially
+    when a PCI device is being passed through to the guest from the host. If the relevant
+    PCI device is affiliated to a remote NUMA node, this can affect data transfer
+    and thus hurt the performance.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NUMA调整还必须考虑PCI设备的NUMA节点局部性，特别是当从主机向客户端传递PCI设备时。如果相关的PCI设备隶属于远程NUMA节点，这可能会影响数据传输，从而影响性能。
+- en: The easiest way to display the NUMA topology and PCI device affiliation is by
+    using the `lstopo` command that we discussed earlier. The non-graphic form of
+    the same command can also be used to discover this configuration. Please refer
+    to the earlier sections.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显示NUMA拓扑和PCI设备关联的最简单方法是使用我们之前讨论过的`lstopo`命令。同样命令的非图形形式也可以用来发现这个配置。请参考前面的章节。
+- en: KSM and NUMA
+  id: totrans-268
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: KSM和NUMA
+- en: 'We discussed KSM in enough detail in previous sections. KSM is NUMA-aware,
+    and it can manage KSM processes happening on multiple NUMA nodes. If you remember,
+    we encountered a `sysfs` entry called `merge_across_node` when we fetched KSM
+    entries from `sysfs`. That''s the parameter that we can use to manage this process:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在前面的章节中详细讨论了KSM。KSM是NUMA感知的，它可以管理发生在多个NUMA节点上的KSM进程。如果你还记得，当我们从sysfs获取KSM条目时，遇到了一个名为`merge_across_node`的`sysfs`条目。这是我们可以用来管理这个进程的参数：
+- en: '[PRE27]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: If this parameter is set to `0`, KSM only merges memory pages from the same
+    NUMA node. If it's set to `1` (as is the case here), it will merge *across* the
+    NUMA nodes. That means that the VM CPUs that are running on the remote NUMA node
+    will experience latency when accessing a KSM-merged page.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果这个参数设置为`0`，KSM只会合并来自同一NUMA节点的内存页面。如果设置为`1`（就像这里的情况一样），它将跨越NUMA节点进行合并。这意味着运行在远程NUMA节点上的VM
+    CPU在访问合并的KSM页面时会遇到延迟。
+- en: Obviously, you know the guest XML entry (the `memorybacking` element) for asking
+    the hypervisor to disable shared pages for the guest. If you don't remember, please
+    refer back to the memory tuning section for details of this element. Even though
+    we can configure NUMA manually, there is something called automatic NUMA balancing.
+    We did mention it earlier, but let's see what this concept involves.
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，你知道客户端XML条目（`memorybacking`元素）用于要求虚拟机监视程序为客户端禁用共享页面。如果你不记得了，请参考内存调整部分，了解这个元素的详细信息。尽管我们可以手动配置NUMA，但还有一种叫做自动NUMA平衡的东西。我们之前提到过它，但让我们看看这个概念涉及了什么。
+- en: Automatic NUMA balancing
+  id: totrans-273
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 自动NUMA平衡
+- en: 'The main aim of automatic NUMA balancing is to improve the performance of different
+    applications running in a NUMA-aware system. The strategy behind its design is
+    simple: if an application is using local memory to the NUMA node where vCPUs are
+    running, it will have better performance. By using automatic NUMA balancing, KVM
+    tries to shift vCPUs around so that they are local (as much as possible) to the
+    memory addresses that the vCPUs are using. This is all done automatically by the
+    kernel when automatic NUMA balancing is active. Automatic NUMA balancing will
+    be enabled when booted on the hardware with NUMA properties. The main conditions
+    or criteria are as follows:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 自动NUMA平衡的主要目的是提高在NUMA感知系统中运行的不同应用程序的性能。其设计背后的策略很简单：如果一个应用程序使用本地内存到vCPU所在的NUMA节点，它将具有更好的性能。通过使用自动NUMA平衡，KVM尝试将vCPU移动到本地（尽可能多）的内存地址，以便vCPU使用。这一切都是在自动NUMA平衡激活时由内核自动完成的。当在具有NUMA属性的硬件上引导时，将启用自动NUMA平衡。主要条件或标准如下：
+- en: '`numactl --hardware`: Shows multiple nodes'
+  id: totrans-275
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`numactl --hardware`：显示多个节点'
+- en: '`cat /sys/kernel/debug/sched_features`: Shows NUMA in the flags'
+  id: totrans-276
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`cat /sys/kernel/debug/sched_features`：在标志中显示NUMA'
+- en: 'To illustrate the second point, see the following code block:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了说明第二点，看下面的代码块：
+- en: '[PRE28]'
+  id: totrans-278
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'We can check whether it is enabled in the system via the following method:'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过以下方法检查系统中是否启用了这个功能：
+- en: '[PRE29]'
+  id: totrans-280
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Obviously, we can disable automatic NUMA balancing via the following:'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，我们可以通过以下方式禁用自动NUMA平衡：
+- en: '[PRE30]'
+  id: totrans-282
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'The automatic NUMA balancing mechanism works based on the number of algorithms
+    and data structures. The internals of this method are based on the following:'
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 自动NUMA平衡机制基于多种算法和数据结构。这种方法的内部基于以下内容：
+- en: NUMA hinting page faults
+  id: totrans-284
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: NUMA提示页面错误
+- en: NUMA page migration
+  id: totrans-285
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: NUMA页面迁移
+- en: Pseudo-interleaving
+  id: totrans-286
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 伪交错
+- en: Fault statistics
+  id: totrans-287
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 故障统计
+- en: Task placement
+  id: totrans-288
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 任务放置
+- en: Task grouping
+  id: totrans-289
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 任务分组
+- en: One of the best practices or recommendations for a KVM guest is to limit its
+    resource to the amount of resources on a single NUMA node. Put simply, this avoids
+    the unnecessary splitting of VMs across NUMA nodes, which can degrade the performance.
+    Let's start by checking the current NUMA configuration. There are multiple available
+    options to do this. Let's start with the `numactl` command, NUMA daemon, and `numastat`,
+    and then go back to using a well-known command, `virsh`.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: KVM客户端的最佳实践或建议之一是将其资源限制在单个NUMA节点上的资源量。简而言之，这可以避免将VMs不必要地分割到NUMA节点上，从而降低性能。让我们从检查当前的NUMA配置开始。有多种可用的选项来执行此操作。让我们从`numactl`命令、NUMA守护程序和`numastat`开始，然后再回到使用一个众所周知的命令`virsh`。
+- en: The numactl command
+  id: totrans-291
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: numactl命令
+- en: 'The first option to confirm NUMA availability uses the `numactl` command, as
+    shown:'
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确认NUMA可用性的第一个选项使用`numactl`命令，如下所示：
+- en: '![Figure 15.19 – The numactl hardware output'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.19 - numactl硬件输出'
+- en: '](img/B14834_15_19.jpg)'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_19.jpg)'
+- en: Figure 15.19 – The numactl hardware output
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.19 - numactl硬件输出
+- en: 'This lists only one node. Even though this conveys the unavailability of NUMA,
+    further clarification can be done by running the following command:'
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这只列出一个节点。即使这表明了NUMA的不可用性，也可以通过运行以下命令进行进一步澄清：
+- en: '[PRE31]'
+  id: totrans-297
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: This will *not* list NUMA flags if the system is not NUMA-aware.
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果系统不支持NUMA，这将*不*列出NUMA标志。
+- en: Generally, don't make VMs *wider* than what a single NUMA node can provide.
+    Even if the NUMA is available, the vCPUs are bound to the NUMA node and not to
+    a particular physical CPU.
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，不要使虚拟机*宽*于单个NUMA节点所能提供的范围。即使NUMA可用，vCPU也绑定到NUMA节点，而不是特定的物理CPU。
+- en: Understanding numad and numastat
+  id: totrans-300
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 了解numad和numastat
+- en: 'The `numad` man page states the following:'
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`numad`手册页中指出：'
+- en: numad is a daemon to control efficient use of CPU and memory on systems with
+    NUMA topology.
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: numad是一个守护程序，用于控制具有NUMA拓扑的系统上CPU和内存的有效使用。
+- en: '`numad` is also known as the automatic `numad` man page states the following:'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`numad`也被称为自动`numad`手册页中指出：'
+- en: '"numad is a user-level daemon that provides placement advice and process management
+    for efficient use of CPUs and memory on systems with NUMA topology."'
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"numad是一个用户级守护程序，为具有NUMA拓扑的系统上的CPU和内存的有效使用提供放置建议和进程管理。"'
+- en: '`numad` is a system daemon that monitors the NUMA topology and resource usage.
+    It will attempt to locate processes for efficient NUMA locality and affinity,
+    dynamically adjusting to changing system conditions. `numad` also provides guidance
+    to assist management applications with the initial manual binding of CPU and memory
+    resources for their processes. Note that `numad` is primarily intended for server
+    consolidation environments, where there might be multiple applications or multiple
+    virtual guests running on the same server system. `numad` is most likely to have
+    a positive effect when processes can be localized in a subset of the system''s
+    NUMA nodes. If the entire system is dedicated to a large in-memory database application,
+    for example, especially if memory accesses will likely remain unpredictable, `numad`
+    will probably not improve performance.'
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`numad`是一个系统守护程序，用于监视NUMA拓扑和资源使用情况。它将尝试定位进程以实现有效的NUMA局部性和亲和性，并根据系统条件的变化进行动态调整。`numad`还提供指导，以帮助管理应用程序为其进程的CPU和内存资源进行初始手动绑定。请注意，`numad`主要用于服务器整合环境，可能在同一服务器系统上运行多个应用程序或多个虚拟客户机。当进程可以在系统的NUMA节点子集中定位时，`numad`可能会产生积极的影响。例如，如果整个系统专用于大型内存数据库应用程序，特别是如果内存访问可能保持不可预测，`numad`可能不会提高性能。'
+- en: 'To adjust and align the CPUs and memory resources automatically according to
+    the NUMA topology, we need to run `numad`. To use `numad` as an executable, just
+    run the following:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了根据NUMA拓扑自动调整和对齐CPU和内存资源，我们需要运行`numad`。要将`numad`用作可执行文件，只需运行以下命令：
+- en: '[PRE32]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'You can check whether this is started as shown:'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以检查是否已启动如下所示：
+- en: '![Figure 15.20 – Checking whether numad is active'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.20 - 检查numad是否处于活动状态'
+- en: '](img/B14834_15_20.jpg)'
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_20.jpg)'
+- en: Figure 15.20 – Checking whether numad is active
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.20 - 检查numad是否处于活动状态
+- en: 'Once the `numad` binary is executed, it will start the alignment, as shown
+    in the following screenshot. In our system, we have the following VM running:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦执行`numad`二进制文件，它将开始对齐，如下截图所示。在我们的系统中，我们有以下正在运行的虚拟机：
+- en: '![Figure 15.21 – Listing running VMs'
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.21 - 列出正在运行的虚拟机'
+- en: '](img/B14834_15_21.jpg)'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_21.jpg)'
+- en: Figure 15.21 – Listing running VMs
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.21 - 列出正在运行的虚拟机
+- en: 'You can use the `numastat` command, covered in an upcoming section, to monitor
+    the difference before and after running the `numad` service. It will run continuously
+    by using the following command:'
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用`numastat`命令来监视运行`numad`服务之前和之后的差异，该命令将通过以下命令持续运行：
+- en: '[PRE33]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: We can always stop it, but that will not change the NUMA affinity state that
+    was configured by `numad`. Now let's move on to `numastat`.
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以随时停止它，但这不会改变`numad`配置的NUMA亲和状态。现在让我们转到`numastat`。
+- en: 'The `numactl` package provides the `numactl` binary/command and the `numad`
+    package provides the `numad` binary/command:'
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`numactl`软件包提供`numactl`二进制/命令，`numad`软件包提供`numad`二进制/命令：'
+- en: '![Figure 15.22 – The numastat command output for the qemu-kvm process'
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.22 - qemu-kvm进程的numastat命令输出'
+- en: '](img/B14834_15_22.jpg)'
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_22.jpg)'
+- en: Figure 15.22 – The numastat command output for the qemu-kvm process
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.22 - qemu-kvm进程的numastat命令输出
+- en: 'Important note:'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示：
+- en: The numerous memory tuning options that we have used have to be thoroughly tested
+    using different workloads before moving the VM to production.
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在将虚拟机移至生产环境之前，必须对我们使用的众多内存调整选项进行全面测试。
+- en: Before we jump on to the next topic, we'd just like to remind you of a point
+    we made earlier in this chapter. Live-migrating a VM with pinned resources might
+    be complicated, as you have to have some form of compatible resources (and their
+    amount) on the target host. For example, the target host's NUMA topology doesn't
+    have to be aligned with the source host's NUMA topology. You should consider this
+    fact when you tune a KVM environment. Automatic NUMA balancing may help, to a
+    certain extent, the need for manually pinning guest resources, though.
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们转到下一个主题之前，我们想提醒您本章前面提到的一个观点。迁移具有固定资源的虚拟机可能会很复杂，因为您必须在目标主机上拥有某种兼容资源（及其数量）。例如，目标主机的NUMA拓扑结构不必与源主机的NUMA拓扑结构对齐。在调整KVM环境时，您应考虑这一事实。自动NUMA平衡可能在一定程度上有所帮助，减少手动固定客户资源的需求。
+- en: Virtio device tuning
+  id: totrans-326
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Virtio设备调整
+- en: In the virtualization world, a comparison is always made with bare-metal systems.
+    Paravirtualized drivers enhance the performance of guests and try to retain near-bare-metal
+    performance. It is recommended to use paravirtualized drivers for fully virtualized
+    guests, especially when the guest is running with I/O-heavy tasks and applications.
+    `lguest`. Virtio was introduced to achieve a common framework for hypervisors
+    for IO virtualization.
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在虚拟化世界中，总是将其与裸机系统进行比较。半虚拟化驱动程序增强了客户机的性能，并尝试保持接近裸机的性能。建议为完全虚拟化的客户机使用半虚拟化驱动程序，特别是当客户机运行I/O密集型任务和应用程序时。`lguest`。Virtio被引入以实现IO虚拟化的一种通用框架。
+- en: 'In short, when we use paravirtualized drivers, the VM OS knows that there''s
+    a hypervisor beneath it, and therefore uses frontend drivers to access it. The
+    frontend drivers are part of the guest system. When there are emulated devices
+    and someone wants to implement backend drivers for these devices, hypervisors
+    do this job. The frontend and backend drivers communicate through a virtio-based
+    path. Virtio drivers are what KVM uses as paravirtualized device drivers. The
+    basic architecture looks like this:'
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，当我们使用半虚拟化驱动程序时，VM操作系统知道其下面有一个hypervisor，因此使用前端驱动程序来访问它。前端驱动程序是客户系统的一部分。当存在模拟设备并且有人想要为这些设备实现后端驱动程序时，hypervisor会执行此工作。前端和后端驱动程序通过基于virtio的路径进行通信。
+    Virtio驱动程序是KVM用作半虚拟化设备驱动程序的。基本架构如下：
+- en: '![Figure 15.23 – The Virtio architecture'
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.23 – Virtio架构'
+- en: '](img/B14834_15_23.jpg)'
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_23.jpg)'
+- en: Figure 15.23 – The Virtio architecture
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.23 – Virtio架构
+- en: There are mainly two layers (virt queue and virtual ring) to support communication
+    between the guest and the hypervisor.
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主要有两层（virt队列和虚拟环）来支持客户和hypervisor之间的通信。
+- en: '**Virt queue** and **virtual ring** (**vring**) are the transport mechanism
+    implementations in virtio. Virt queue (virtio) is the queue interface that attaches
+    the frontend and backend drivers. Each virtio device has its own virt queues and
+    requests from guest systems are put into these virt queues. Each virt queue has
+    its own ring, called a vring, which is where the memory is mapped between QEMU
+    and the guest. There are different virtio drivers available for use in a KVM guest.'
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Virt队列**和**虚拟环**（**vring**）是virtio中的传输机制实现。 Virt队列（virtio）是连接前端和后端驱动程序的队列接口。每个virtio设备都有自己的virt队列，并且来自客户系统的请求被放入这些virt队列中。每个virt队列都有自己的环，称为vring，这是QEMU和客户之间映射内存的地方。在KVM客户中有不同的virtio驱动程序可供使用。'
+- en: 'The devices are emulated in QEMU, and the drivers are part of the Linux kernel,
+    or an extra package for Windows guests. Some examples of device/driver pairs are
+    as follows:'
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些设备在QEMU中是模拟的，驱动程序是Linux内核的一部分，或者是Windows客户的额外软件包。以下是一些设备/驱动程序对的示例：
+- en: '`virtio-net`: The virtio network device is a virtual Ethernet card. `virtio-net`
+    provides the driver for this.'
+  id: totrans-335
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`virtio-net`：virtio网络设备是一个虚拟以太网卡。`virtio-net`为此提供驱动程序。'
+- en: '`virtio-blk`: The virtio block device is a simple virtual block device (that
+    is, a disk). `virtio-blk` provides the block device driver for the virtual block
+    device.'
+  id: totrans-336
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`virtio-blk`：virtio块设备是一个简单的虚拟块设备（即磁盘）。`virtio-blk`为虚拟块设备提供块设备驱动程序。'
+- en: '`virtio-balloon`: The virtio memory balloon device is a device for managing
+    guest memory.'
+  id: totrans-337
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`virtio-balloon`：virtio内存气球设备是用于管理客户内存的设备。'
+- en: '`virtio-scsi`: The virtio SCSI host device groups together one or more disks
+    and allows communicating to them using the SCSI protocol.'
+  id: totrans-338
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`virtio-scsi`：virtio SCSI主机设备将一个或多个磁盘组合在一起，并允许使用SCSI协议与它们通信。'
+- en: '`virtio-console`: The virtio console device is a simple device for data input
+    and output between the guest and host userspace.'
+  id: totrans-339
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`virtio-console`：virtio控制台设备是用于客户和主机用户空间之间的数据输入和输出的简单设备。'
+- en: '`virtio-rng`: The virtio entropy device supplies high-quality randomness for
+    guest use, and so on.'
+  id: totrans-340
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`virtio-rng`：virtio熵设备为客户提供高质量的随机性，并供客户使用等等。'
+- en: In general, you should make use of these virtio devices in your KVM setup for
+    better performance.
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一般来说，您应该在KVM设置中使用这些virtio设备以获得更好的性能。
+- en: Block I/O tuning
+  id: totrans-342
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 块I/O调整
+- en: Going back to basics – a virtual disk of a VM can be either a block device or
+    an image file. For better VM performance, a block device-based virtual disk is
+    preferred over an image file that resides on a remote filesystem such as NFS,
+    GlusterFS, and so on. However, we cannot ignore that the file backend helps the
+    virt admin to better manage guest disks and it is immensely helpful in some scenarios.
+    From our experience, we have noticed most users make use of disk image files,
+    especially when performance is not much of a concern. Keep in mind that the total
+    number of virtual disks that can be attached to a VM has a limit. At the same
+    time, there is no restriction on mixing and using block devices and files and
+    using them as storage disks for the same guest.
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到基础知识-VM的虚拟磁盘可以是块设备，也可以是镜像文件。为了获得更好的VM性能，首选基于块设备的虚拟磁盘，而不是位于远程文件系统（如NFS、GlusterFS等）上的镜像文件。但是，我们不能忽视文件后端有助于virt管理员更好地管理客户磁盘，并且在某些情况下非常有帮助。根据我们的经验，我们注意到大多数用户在性能不是太大问题时使用磁盘镜像文件。请记住，可以附加到VM的虚拟磁盘的总数有限。同时，可以混合和使用块设备和文件，并将它们用作同一客户的存储磁盘，没有限制。
+- en: A guest treats the virtual disk as its storage. When an application inside a
+    guest OS writes data to the local storage of the guest system, it has to pass
+    through a couple of layers. That said, this I/O request has to traverse through
+    the filesystem on the storage and the I/O subsystem of the guest OS. After that,
+    the `qemu-kvm` process passes it to the hypervisor from the guest OS. Once the
+    I/O is within the realm of the hypervisor, it starts processing the I/O like any
+    other applications running in the host OS. Here, you can see the number of layers
+    that the I/O has to pass through to complete an I/O operation. Hence, the block
+    device backend performs better than the image file backend.
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 客户将虚拟磁盘视为其存储。当客户操作系统内的应用程序将数据写入客户系统的本地存储时，它必须通过几个层。也就是说，这个I/O请求必须通过存储上的文件系统和客户操作系统的I/O子系统。之后，`qemu-kvm`进程将其从客户操作系统传递给hypervisor。一旦I/O在hypervisor的范围内，它就开始像主机操作系统中运行的任何其他应用程序一样处理I/O。在这里，您可以看到I/O必须通过的层数，以完成I/O操作。因此，块设备后端的性能优于镜像文件后端。
+- en: 'The following are our observations on disk backends and file- or image-based
+    virtual disks:'
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是我们对磁盘后端和基于文件或镜像的虚拟磁盘的观察：
+- en: A file image is part of the host filesystem and it creates an additional resource
+    demand for I/O operations compared to the block device backend.
+  id: totrans-346
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文件镜像是主机文件系统的一部分，并且与块设备后端相比，它对I/O操作创建了额外的资源需求。
+- en: Using sparse image files helps to over allocate host storage but its usage will
+    reduce the performance of the virtual disk.
+  id: totrans-347
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用稀疏镜像文件有助于超额分配主机存储，但使用它会降低虚拟磁盘的性能。
+- en: The improper partitioning of guest storage when using disk image files can cause
+    unnecessary I/O operations. Here, we are mentioning the alignment of standard
+    partition units.
+  id: totrans-348
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在使用磁盘镜像文件时，不正确的分区可能会导致不必要的I/O操作。在这里，我们提到了标准分区单元的对齐。
+- en: At the start of this chapter, we discussed virtio drivers, which give better
+    performance. So, it's recommended that you use the virtio disk bus when configuring
+    the disk, rather than the IDE bus. The `virtio_blk` driver uses the virtio API
+    to provide high performance for storage I/O device, thus increasing storage performance,
+    especially in large enterprise storage systems. We discussed the different storage
+    formats available in [*Chapter 5*](B14834_05_Final_ASB_ePub.xhtml#_idTextAnchor079),
+    *Libvirt Storage*; however, the main ones are the `raw` and `qcow` formats. The
+    best performance will be achieved when you are using the `raw` format. There is
+    obviously a performance overhead delivered by the format layer when using `qcow`.
+    Because the format layer has to perform some operations at times, for example,
+    if you want to grow a `qcow` image, it has to allocate the new cluster and so
+    on. However, `qcow` would be an option if you want to make use of features such
+    as snapshots. These extra facilities are provided with the image format, `qcow`.
+    Some performance comparisons can be found at [http://www.Linux-kvm.org/page/Qcow2](http://www.Linux-kvm.org/page/Qcow2).
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的开头，我们讨论了virtio驱动程序，它可以提供更好的性能。因此，建议在配置磁盘时使用virtio磁盘总线，而不是IDE总线。`virtio_blk`驱动程序使用virtio
+    API为存储I/O设备提供高性能，从而提高存储性能，特别是在大型企业存储系统中。我们在[*第5章*](B14834_05_Final_ASB_ePub.xhtml#_idTextAnchor079)中讨论了可用的不同存储格式；然而，主要的是`raw`和`qcow`格式。当使用`raw`格式时将获得最佳性能。当使用`qcow`时，格式层会带来一些性能开销。因为格式层有时必须执行一些操作，例如，如果要扩展`qcow`镜像，它必须分配新的簇等。但是，如果要使用快照等功能，`qcow`将是一个选择。这些额外的功能是由镜像格式`qcow`提供的。一些性能比较可以在[http://www.Linux-kvm.org/page/Qcow2](http://www.Linux-kvm.org/page/Qcow2)找到。
+- en: 'There are three options that can be considered for I/O tuning, which we discussed
+    in [*Chapter 7*](B14834_07_Final_ASB_ePub.xhtml#_idTextAnchor125), *Virtual Machine
+    – Installation, Configuration, and Life Cycle Management*:'
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有三种可以考虑的I/O调优选项，我们在[*第7章*](B14834_07_Final_ASB_ePub.xhtml#_idTextAnchor125)中讨论过，*虚拟机-安装、配置和生命周期管理*：
+- en: Cache mode
+  id: totrans-351
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 缓存模式
+- en: I/O mode
+  id: totrans-352
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: I/O模式
+- en: I/O tuning
+  id: totrans-353
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: I/O调优
+- en: Let's briefly go through some XML settings so that we can implement them on
+    our VMs.
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们简要地浏览一些XML设置，以便我们可以在我们的虚拟机上实施它们。
+- en: 'The cache option settings can reflect in the guest XML, as follows:'
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 缓存选项设置可以在虚拟机XML中反映如下：
+- en: '[PRE34]'
+  id: totrans-356
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'The XML representation of I/O mode configuration is similar to the following:'
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: I/O模式配置的XML表示类似于以下内容：
+- en: '[PRE35]'
+  id: totrans-358
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'In terms of I/O tuning, a couple of additional remarks:'
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在I/O调优方面，还有一些额外的说明：
+- en: Limiting the disk I/O of each guest may be required, especially when multiple
+    guests exist in our setup.
+  id: totrans-360
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 可能需要限制每个虚拟机的磁盘I/O，特别是在我们的设置中存在多个虚拟机时。
+- en: If one guest is keeping the host system busy with the number of disk I/Os generated
+    from it (noisy neighbor problem), that's not fair to the other guests.
+  id: totrans-361
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果一个虚拟机通过生成的磁盘I/O数量使主机系统繁忙（嘈杂的邻居问题），这对其他虚拟机是不公平的。
+- en: Generally speaking, it is the system/virt administrator's responsibility to
+    ensure all the running guests get enough resources to work on—in other words,
+    the **Quality of Service** (**QOS**).
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一般来说，系统/虚拟管理员有责任确保所有正在运行的虚拟机获得足够的资源来工作，换句话说，这就是**服务质量**（**QOS**）。
+- en: 'Even though the disk I/O is not the only resource that has to be considered
+    to guarantee QoS, this has some importance. Tuning I/O can prevent a guest system
+    from monopolizing shared resources and lowering the performance of other guests
+    running on the same host. This is really a requirement, especially when the host
+    system is serving a `virsh blkdeviotune` command. The different options that can
+    be set using this command are displayed as follows:'
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然磁盘I/O并不是唯一需要考虑以保证QoS的资源，但它也很重要。调整I/O可以防止虚拟机系统垄断共享资源并降低在同一主机上运行的其他虚拟机的性能。这确实是一个要求，特别是当主机系统正在执行`virsh
+    blkdeviotune`命令时。可以使用该命令设置的不同选项如下所示：
+- en: '![Figure 15.24 – Excerpt from the virsh blkdeviotune –help command'
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.24-摘自virsh blkdeviotune –help命令'
+- en: '](img/B14834_15_24.jpg)'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_24.jpg)'
+- en: Figure 15.24 – Excerpt from the virsh blkdeviotune –help command
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.24-摘自virsh blkdeviotune –help命令
+- en: Details about parameters such as `total-bytes-sec`, `read-bytes-sec`, `writebytes-sec`,
+    `total-iops-sec`, and so on are easy to understand from the preceding command
+    output. They are also documented in the `virsh` command man page.
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于参数的详细信息，如`total-bytes-sec`、`read-bytes-sec`、`writebytes-sec`、`total-iops-sec`等，可以从前面的命令输出中很容易理解。它们也在`virsh`命令手册页中有记录。
+- en: 'For example, to throttle the `vdb` disk on a VM called `SQLForNuma` to 200
+    I/O operations per second and 50 MB-per-second throughput, run this command:'
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，要限制名为`SQLForNuma`的VM上的`vdb`磁盘的I/O操作为每秒200次，吞吐量为每秒50MB，运行以下命令：
+- en: '[PRE36]'
+  id: totrans-369
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: Next, we are going to look at network I/O tuning.
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将看一下网络I/O调优。
+- en: Network I/O tuning
+  id: totrans-371
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 网络I/O调优
+- en: 'What we''ve seen in most KVM environments is that all the network traffic from
+    a guest will take a single network path. There won''t be any traffic segregation,
+    which causes congestion in most KVM setups. As a first step for network tuning,
+    we''d advise trying different networks or dedicated networks for management, backups,
+    or live migration. But when you have more than one network interface for your
+    traffic, please try to avoid multiple network interfaces for the same network
+    or segment. If this is at all in play, apply some network tuning that is common
+    for such setups; for example, use `arp_filter` to control ARP Flux. ARP Flux happens
+    when a VM has more than one network interface and is using them actively to reply
+    to ARP requests, so we should do the following:'
+  id: totrans-372
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大多数KVM环境中，我们看到的是来自客户机的所有网络流量都会经过单一的网络路径。不会有任何流量隔离，这会导致大多数KVM设置中的拥塞。作为网络调优的第一步，我们建议尝试不同的网络或专用网络用于管理、备份或实时迁移。但是，当您有多个网络接口用于流量时，请尽量避免多个网络接口用于相同的网络或段。如果这种情况确实存在，请应用一些常见的网络调优设置；例如，使用`arp_filter`来控制ARP
+    Flux。当虚拟机具有多个网络接口并且正在使用它们积极地回复ARP请求时，就会发生ARP Flux，因此我们应该执行以下操作：
+- en: '[PRE37]'
+  id: totrans-373
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: After that, you need to edit `/etc/sysctl.conf` to make this setting persistent.
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您需要编辑`/etc/sysctl.conf`以使此设置持久化。
+- en: For more information on ARP Flux, please refer to [http://linux-ip.net/html/ether-arp.html#ether-arp-flux](http://linux-ip.net/html/ether-arp.html#ether-arp-flux).
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关ARP Flux的更多信息，请参阅[http://linux-ip.net/html/ether-arp.html#ether-arp-flux](http://linux-ip.net/html/ether-arp.html#ether-arp-flux)。
+- en: 'Additional tuning can be done on the driver level; that said, by now we know
+    that virtio drivers give better performance compared to emulated device APIs.
+    So, obviously, using the `virtio_net` driver in guest systems should be taken
+    into account. When we use the `virtio_net` driver, it has a backend driver in
+    `qemu` that takes care of the communication initiated from the guest network.
+    Even if this was performing better, some more enhancements in this area introduced
+    a new driver called `vhost_net`, which provides in-kernel virtio devices for KVM.
+    Even though vhost is a common framework that can be used by different drivers,
+    the network driver, `vhost_net`, was one of the first drivers. The following diagram
+    will make this clearer:'
+  id: totrans-376
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在驱动程序级别可以进行额外的调优；也就是说，现在我们知道virtio驱动程序与模拟设备API相比提供了更好的性能。因此，显然，应考虑在客户系统中使用`virtio_net`驱动程序。当我们使用`virtio_net`驱动程序时，它在`qemu`中有一个后端驱动程序来处理来自客户网络的通信。即使这样性能更好，该领域的一些增强引入了一个称为`vhost_net`的新驱动程序，为KVM提供了内核中的virtio设备。尽管vhost是一个可以被不同驱动程序使用的常见框架，但网络驱动程序`vhost_net`是最早的驱动程序之一。以下图表将使这一点更清晰：
+- en: '![Figure 15.25 – The vhost_net architecture'
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.25 – vhost_net架构'
+- en: '](img/B14834_15_25.jpg)'
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_25.jpg)'
+- en: Figure 15.25 – The vhost_net architecture
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.25 – vhost_net架构
+- en: As you may have noticed, the number of context switches is really reduced with
+    the new path of communication. The good news is that there is no extra configuration
+    required in guest systems to support vhost because there is no change to the frontend
+    driver.
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您可能已经注意到的那样，通过新的通信路径，上下文切换的数量确实减少了。好消息是，支持vhost不需要在客户系统中进行额外的配置，因为前端驱动程序没有变化。
+- en: '`vhost_net` reduces copy operations, lowers latency and CPU usage, and thus
+    yields better performance. First of all, the kernel module called `vhost_net`
+    (refer to the screenshot in the next section) has to be loaded in the system.
+    As this is a character device inside the host system, it creates a device file
+    called `/dev/vhost-net` on the host.'
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`vhost_net`减少了复制操作，降低了延迟和CPU使用率，从而提高了性能。首先，系统中必须加载名为`vhost_net`的内核模块（请参阅下一节中的屏幕截图）。由于这是主机系统中的字符设备，它在主机上创建了一个名为`/dev/vhost-net`的设备文件。'
+- en: How to turn it on
+  id: totrans-382
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何打开它
+- en: 'When QEMU is launched with `-netdev tap,vhost=on`, it will instantiate the
+    `vhost-net` interface by using `ioctl()` calls. This initialization process binds
+    `qemu` with a `vhost-net` instance, along with other operations such as feature
+    negotiations and so on:'
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当使用`-netdev tap,vhost=on`启动QEMU时，它将通过使用`ioctl()`调用来实例化`vhost-net`接口。此初始化过程将`qemu`与`vhost-net`实例绑定在一起，以及其他操作，如特性协商等等：
+- en: '![Figure 15.26 – Checking vhost kernel modules'
+  id: totrans-384
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图15.26 – 检查vhost内核模块'
+- en: '](img/B14834_15_26.jpg)'
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/B14834_15_26.jpg)'
+- en: Figure 15.26 – Checking vhost kernel modules
+  id: totrans-386
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图15.26 – 检查vhost内核模块
+- en: 'One of the parameters available with the `vhost_net` module is `experimental_
+    zcopytx`. What does it do? This parameter controls something called bridge zero
+    copy transmit. Let''s see what this means (as stated on [http://www.google.com/patents/US20110126195](http://www.google.com/patents/US20110126195)):'
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`vhost_net`模块可用的参数之一是`experimental_ zcopytx`。它是做什么的？此参数控制称为桥接零拷贝传输的内容。让我们看看这意味着什么（如[http://www.google.com/patents/US20110126195](http://www.google.com/patents/US20110126195)所述）：'
+- en: '"A system for providing a zero copy transmission in virtualization environment
+    includes a hypervisor that receives a guest operating system (OS) request pertaining
+    to a data packet associated with a guest application, where the data packet resides
+    in a buffer of the guest OS or a buffer of the guest application and has at least
+    a partial header created during the networking stack processing. The hypervisor
+    further sends, to a network device driver, a request to transfer the data packet
+    over a network via a network device, where the request identifies the data packet
+    residing in the buffer of the guest OS or the buffer of the guest application,
+    and the hypervisor refrains from copying the data packet to a hypervisor buffer."'
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “用于在虚拟化环境中提供零拷贝传输的系统包括一个接收与客户应用程序相关的数据包的客户操作系统（OS）请求的超级监视程序，其中数据包位于客户OS的缓冲区或客户应用程序的缓冲区中，并且在网络堆栈处理期间创建了至少部分标头。超级监视程序进一步向网络设备驱动程序发送请求，以通过网络设备将数据包传输到网络上，其中请求标识了位于客户OS的缓冲区或客户应用程序的缓冲区中的数据包，并且超级监视程序避免将数据包复制到超级监视程序缓冲区。”
+- en: 'If your environment uses large packet sizes, configuring this parameter may
+    have a noticeable effect. The host CPU overhead is reduced by configuring this
+    parameter when the guest communicates to the external network. This does not affect
+    the performance in the following scenarios:'
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您的环境使用大数据包大小，则配置此参数可能会产生显着影响。当客户端与外部网络通信时，通过配置此参数可以减少主机CPU开销。这不会影响以下情况的性能：
+- en: Guest-to-guest communication
+  id: totrans-390
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 客户端到客户端的通信
+- en: Guest-to-host communication
+  id: totrans-391
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 客户端到主机的通信
+- en: Small packet workloads
+  id: totrans-392
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 小数据包工作负载
+- en: Also, the performance improvement can be obtained by enabling multi queue `virtio-net`.
+    For additional information, check out [https://fedoraproject.org/wiki/Features/MQ_virtio_net](https://fedoraproject.org/wiki/Features/MQ_virtio_net).
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，通过启用多队列`virtio-net`也可以获得性能改进。有关更多信息，请访问[https://fedoraproject.org/wiki/Features/MQ_virtio_net](https://fedoraproject.org/wiki/Features/MQ_virtio_net)。
+- en: One of the bottlenecks when using `virtio-net` was its single RX and TX queue.
+    Even though there are more vCPUs, the networking throughput was affected by this
+    limitation. `virtio-net` is a single-queue type of queue, so multi-queue `virtio-net`
+    was developed. Before this option was introduced, virtual NICs could not utilize
+    the multi-queue support that is available in the Linux kernel.
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`virtio-net`时的一个瓶颈是其单个RX和TX队列。即使有更多的vCPUs，网络吞吐量也受到此限制的影响。`virtio-net`是一种单队列类型的队列，因此开发了多队列`virtio-net`。在引入此选项之前，虚拟网卡无法利用Linux内核中可用的多队列支持。
+- en: 'This bottleneck is lifted by introducing multi-queue support in both frontend
+    and backend drivers. This also helps guests scale with more vCPUs. To start a
+    guest with two queues, you could specify the `queues` parameters to both `tap`
+    and `virtio-net`, as follows:'
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过在前端和后端驱动程序中引入多队列支持来解决这个瓶颈。这也有助于客户端使用更多vCPUs进行扩展。要启动具有两个队列的客户端，可以将`queues`参数指定为`tap`和`virtio-net`，如下所示：
+- en: '[PRE38]'
+  id: totrans-396
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'The equivalent guest XML is as follows:'
+  id: totrans-397
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 等效的客户端XML如下：
+- en: '[PRE39]'
+  id: totrans-398
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Here, `M` can be `1` to `8`, as the kernel supports up to eight queues for
+    a multi-queue tap device. Once it''s configured for `qemu`, inside the guest,
+    we need to enable multi-queue support with the `ethtool` command. Enable the multi-queue
+    through `ethtool` (where the value of `K` is from `1` to `M`), as follows:'
+  id: totrans-399
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，`M`可以是`1`到`8`，因为内核支持多达八个队列的多队列tap设备。一旦为`qemu`配置了这个参数，在客户端内部，我们需要使用`ethtool`命令启用多队列支持。通过`ethtool`启用多队列（其中`K`的值从`1`到`M`），如下所示：
+- en: '[PRE40]'
+  id: totrans-400
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'You can check the following link to see when multi-queue `virtio-net` provides
+    the greatest performance benefit: [https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-networking-techniques](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-networking-techniques).'
+  id: totrans-401
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以查看以下链接，了解多队列`virtio-net`何时提供最大的性能优势：[https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-networking-techniques](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-networking-techniques)。
+- en: Don't use the options mentioned on the aforementioned URL blindly – please test
+    the impact on your setup, because the CPU consumption will be greater in this
+    scenario even though the network throughput is impressive.
+  id: totrans-402
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要盲目使用上述URL中提到的选项-请测试对您的设置的影响，因为在这种情况下，即使网络吞吐量令人印象深刻，CPU消耗也会更大。
+- en: KVM guest time-keeping best practices
+  id: totrans-403
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: KVM客户端时间保持最佳实践
+- en: There are different mechanisms for time-keeping. One of the best-known techniques
+    is **Network Time Protocol** (**NTP**). By using NTP, we can synchronize clocks
+    to great accuracy, even when using networks that have jitter (variable latency).
+    One thing that needs to be considered in a virtualization environment is the maxim
+    that the guest time should be in sync with the hypervisor/host, because it affects
+    a lot of guest operations and can cause unpredictable results if they are not
+    in sync.
+  id: totrans-404
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有不同的时间保持机制。其中最著名的技术之一是**网络时间协议**（**NTP**）。通过使用NTP，我们可以使时钟同步到很高的精度，即使在具有抖动（可变延迟）的网络上也可以。在虚拟化环境中需要考虑的一件事是，客户端时间应与hypervisor/host同步，因为它会影响很多客户端操作，如果它们不同步可能会导致不可预测的结果。
+- en: There are different ways to achieve time sync, however; it depends on the setup
+    you have. We have seen people using NTP, setting the system clock from the hardware
+    clock using `hwclock –s`, and so on. The first thing that needs to be considered
+    here is trying to make the KVM host time in sync and stable. You can use NTP-like
+    protocols to achieve this. Once it's in place, the guest time has to be kept in
+    sync. Even though there are different mechanisms for doing that, the best option
+    would be using `kvm-clock`.
+  id: totrans-405
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有不同的方法可以实现时间同步，但这取决于您的设置。我们已经看到人们使用NTP，使用`hwclock –s`从硬件时钟设置系统时钟等。这里需要考虑的第一件事是尝试使KVM主机时间同步和稳定。您可以使用类似NTP的协议来实现这一点。一旦设置好，客户端时间必须保持同步。尽管有不同的机制可以做到这一点，但最好的选择是使用`kvm-clock`。
+- en: kvm-clock
+  id: totrans-406
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: kvm-clock
+- en: '`kvm-clock` is also known as a virtualization-aware (paravirtualized) clock
+    device. When `kvm-clock` is in use, the guest asks the hypervisor about the current
+    time, guaranteeing both stable and accurate timekeeping. The functionality is
+    achieved by the guest registering a page and sharing the address with the hypervisor.
+    This is a shared page between the guest and the hypervisor. The hypervisor keeps
+    updating this page unless it is asked to stop. The guest can simply read this
+    page whenever it wants time information. However, please note that the hypervisor
+    should support `kvm-clock` for the guest to use it. For more details, you can
+    check out [https://lkml.org/lkml/2010/4/15/355](https://lkml.org/lkml/2010/4/15/355).'
+  id: totrans-407
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`kvm-clock`也被称为虚拟化感知（半虚拟化）时钟设备。当使用`kvm-clock`时，客户端询问宿主机当前时间，保证了稳定和准确的时间记录。这一功能是通过客户端注册一个页面并与宿主机共享地址来实现的。这是客户端和宿主机之间的共享页面。宿主机不断更新此页面，除非被要求停止。客户端可以在需要时间信息时简单地读取此页面。但请注意，宿主机应支持`kvm-clock`供客户端使用。有关更多详细信息，您可以查看[https://lkml.org/lkml/2010/4/15/355](https://lkml.org/lkml/2010/4/15/355)。'
+- en: 'By default, most of the newer Linux distributions use `kvm_clock` are configured
+    inside the guest via the following method:'
+  id: totrans-408
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，大多数较新的Linux发行版都使用`kvm_clock`通过以下方法在客户端进行配置：
+- en: '[PRE41]'
+  id: totrans-409
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'You can also use `ntpd` or `chrony` as your clock sources on Linux, which requires
+    minimal configuration. In your Linux VM, edit `/etc/ntpd.conf` or `/etc/chronyd.conf`
+    and modify the *server* configuration lines to point to your NTP servers by IP
+    address. Then, just enable and start the service that you''re using (we''re using
+    `chrony` as an example here):'
+  id: totrans-410
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以在Linux上使用`ntpd`或`chrony`作为时钟源，这需要最少的配置。在您的Linux虚拟机中，编辑`/etc/ntpd.conf`或`/etc/chronyd.conf`，并修改*server*配置行，将其指向NTP服务器的IP地址。然后，只需启用并启动您正在使用的服务（这里我们使用`chrony`作为示例）：
+- en: '[PRE42]'
+  id: totrans-411
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: There's another, a bit newer, protocol that's being heavily pushed for time
+    synchronization, which is called the `ntpd` or `chronyd`. It uses timestamping
+    on the network interface, and external sources, and the computer's system clock
+    for synchronization.
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有另一种比较新的协议被大力推广用于时间同步，称为`ntpd`或`chronyd`。它使用网络接口上的时间戳和外部来源以及计算机的系统时钟进行同步。
+- en: 'Installing all of the necessary pre-requisites is just a matter of one `yum`
+    command to enable and start a service:'
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装所有必要的先决条件只需要一个`yum`命令来启用和启动服务：
+- en: '[PRE43]'
+  id: totrans-414
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: By default, the `ptp4l` service will use the `/etc/sysconfig/ptp4l` configuration
+    file, which is usually bound to the first network interface. If you want to use
+    some other network interface, the simplest thing to do would be to edit the configuration
+    file, change the interface name, and restart the service via `systemctl`.
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，`ptp4l`服务将使用`/etc/sysconfig/ptp4l`配置文件，通常绑定到第一个网络接口。如果您想使用其他网络接口，最简单的方法就是编辑配置文件，更改接口名称，然后通过`systemctl`重新启动服务。
+- en: 'Now, from the perspective of VMs, we can help them time sync by doing a little
+    bit of configuration. We can add the `ptp_kvm` module to the global KVM host configuration,
+    which is going to make our PTP as a service available to `chronyd` as a clock
+    source. This way, we don''t have to do a lot of additional configuration. So,
+    just add `ptp_kvm` as a string to the default KVM configuration, as follows:'
+  id: totrans-416
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，从VM的角度来看，我们可以通过进行一些配置来帮助它们进行时间同步。我们可以将`ptp_kvm`模块添加到全局KVM主机配置中，这将使我们的PTP作为服务可用于`chronyd`作为时钟源。这样，我们就不必进行大量额外的配置。因此，只需将`ptp_kvm`作为字符串添加到默认的KVM配置中，如下所示：
+- en: '[PRE44]'
+  id: totrans-417
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'By doing this, a `ptp` device will be created in the `/dev` directory, which
+    we can then use as a `chrony` time source. Add the following line to `/etc/chrony.conf`
+    and restart `chronyd`:'
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这样做，将在`/dev`目录中创建一个`ptp`设备，然后我们可以将其用作`chrony`的时间源。将以下行添加到`/etc/chrony.conf`并重新启动`chronyd`：
+- en: '[PRE45]'
+  id: totrans-419
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: By using an API call, all Linux VMs are capable of then getting their time from
+    the physical host running them.
+  id: totrans-420
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过使用API调用，所有Linux虚拟机都能从运行它们的物理主机获取时间。
+- en: Now that we've covered a whole bunch of VM configuration options in terms of
+    performance tuning and optimization, it's time to finally step away from all of
+    these micro-steps and focus on the bigger picture. Everything that we've covered
+    so far in terms of VM design (related to the CPU, memory, NUMA, virtio, block,
+    network, and time configuration) is only as important as what we're using it for.
+    Going back to our original scenario – a SQL VM – let's see how we're going to
+    configure our VM properly in terms of the software that we're going to run on
+    it.
+  id: totrans-421
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经涵盖了大量关于VM配置选项的性能调整和优化，现在是时候最终摆脱所有这些微小的步骤，关注更大的画面。到目前为止，我们所涵盖的所有VM设计（与CPU、内存、NUMA、virtio、块、网络和时间配置相关）只有在我们使用它时才重要。回到我们最初的场景——一个SQL
+    VM——让我们看看我们将如何根据我们将在其上运行的软件来正确配置我们的VM。
+- en: Software-based design
+  id: totrans-422
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 基于软件的设计
+- en: Remember our initial scenario, involving a Windows Server 2019-based VM that
+    should be a node in a Microsoft SQL Server cluster? We covered a lot of the settings
+    in terms of tuning, but there's more to do – much more. We need to be asking some
+    questions. The sooner we ask these questions, the better, as they're going to
+    have a key influence on our design.
+  id: totrans-423
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还记得我们最初的场景吗，涉及一个应该是Microsoft SQL Server集群中的节点的基于Windows Server 2019的VM吗？我们在调整方面涵盖了很多设置，但还有更多要做——要做的事情更多。我们需要问一些问题。我们越早问这些问题越好，因为它们将对我们的设计产生关键影响。
+- en: 'Some questions we may ask are as follows:'
+  id: totrans-424
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可能会问的一些问题如下：
+- en: Excuse me, dear customer, when you say *cluster*, what do you mean specifically,
+    as there are different SQL Server clustering methodologies?
+  id: totrans-425
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对不起，亲爱的客户，当您说*集群*时，您具体指的是什么，因为有不同的SQL Server集群方法学？
+- en: Which SQL licenses do you have or are you planning to buy?
+  id: totrans-426
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您有哪些SQL许可证，或者您打算购买哪些？
+- en: Do you need active-active, active-passive, a backup solution, or something else?
+  id: totrans-427
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您需要主动-主动、主动-被动、备份解决方案还是其他什么？
+- en: Is this a single-site or a multi-site cluster?
+  id: totrans-428
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这是一个单站点还是多站点集群？
+- en: Which SQL features do you need exactly?
+  id: totrans-429
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您确切需要哪些SQL功能？
+- en: Which licenses do you have and how much are you willing to spend on them?
+  id: totrans-430
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你有哪些许可证，你愿意为它们花多少钱？
+- en: Is your application capable of working with a SQL cluster (for example, in a
+    multi-site scenario)?
+  id: totrans-431
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你的应用程序是否能够与SQL集群一起工作（例如，在多站点场景中）？
+- en: What kind of storage system do you have?
+  id: totrans-432
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你有什么样的存储系统？
+- en: What amount of IOPS can your storage system provide?
+  id: totrans-433
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你的存储系统可以提供多少IOPS？
+- en: How are latencies on your storage?
+  id: totrans-434
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你的存储的延迟如何？
+- en: Do you have a storage subsystem with different tiers?
+  id: totrans-435
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你有不同层次的存储子系统吗？
+- en: What are the service levels of these tiers in terms of IOPS and latency?
+  id: totrans-436
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这些层次的服务水平在IOPS和延迟方面是多少？
+- en: If you have multiple storage tiers, can we create SQL VMs in accordance with
+    the best practices – for example, place data files and log files on separate virtual
+    disks?
+  id: totrans-437
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果你有多个存储层，我们是否可以根据最佳实践创建SQL VMs，例如将数据文件和日志文件放在单独的虚拟磁盘上？
+- en: Do you have enough disk capacity to meet your requirements?
+  id: totrans-438
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你有足够的磁盘容量来满足你的需求吗？
+- en: These are just licensing, clustering, and storage-related questions, and they
+    are not going to go away. They need to be asked, without hesitation, and we need
+    to get real answers before deploying things. We have just mentioned 14 questions,
+    but there are actually many more.
+  id: totrans-439
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些只是许可、集群和存储相关的问题，它们不会消失。我们需要毫不犹豫地提出这些问题，并在部署之前得到真实的答案。我们刚刚提到了14个问题，但实际上还有更多。
+- en: 'Furthermore, we need to think about other aspects of VM design. It would be
+    prudent to ask some questions such as the following:'
+  id: totrans-440
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们需要考虑VM设计的其他方面。询问一些问题是明智的，比如：
+- en: How much memory can you give for SQL VMs?
+  id: totrans-441
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你可以为SQL VM提供多少内存？
+- en: Which servers do you have, which processors are they using, and how much memory
+    do you have per socket?
+  id: totrans-442
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你有哪些服务器，它们使用哪些处理器，每个插槽有多少内存？
+- en: Are you using any latest-gen technologies, such as persistent memory?
+  id: totrans-443
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你是否正在使用任何最新一代技术，比如持久内存？
+- en: Do you have any information about the scale and/or amount of queries that you're
+    designing this SQL infrastructure for?
+  id: totrans-444
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你有关于你正在为这个SQL基础架构设计的规模和/或查询量的任何信息吗？
+- en: Is money a big deciding factor in this project (as it will influence a number
+    of design decisions as SQL is licensed per core)? There's also the question of
+    Standard versus Enterprise pricing.
+  id: totrans-445
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在这个项目中，金钱是一个重要的决定因素吗（因为它将影响许多设计决策，因为SQL是按核心许可的）？还有标准与企业定价的问题。
+- en: 'This stack of questions actually points to one very, very important part of
+    VM design, which is related to memory, memory locality, the relationship between
+    CPU and memory, and also one of the most fundamental questions of database design
+    – latency. A big part of that is related to correct VM storage design – the correct
+    storage controller, storage system, cache settings, and so on, and VM compute
+    design – which is all about NUMA. We''ve explained all of those settings in this
+    chapter. So, to configure our SQL VM properly, here''s a list of the high-level
+    steps that we should follow:'
+  id: totrans-446
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一系列问题实际上指向了VM设计中非常重要的一部分，与内存、内存位置、CPU和内存之间的关系以及数据库设计中最基本的问题之一——延迟有关。其中很大一部分与正确的VM存储设计有关——正确的存储控制器、存储系统、缓存设置等，以及VM计算设计——这一切都与NUMA有关。我们在本章中解释了所有这些设置。因此，为了正确配置我们的SQL
+    VM，这里是我们应该遵循的高级步骤清单：
+- en: Configure a VM with the correct NUMA settings and local memory. Start with four
+    vCPUs for licensing reasons and then figure out whether you need more (such as
+    if your VM becomes CPU-limited, which you will see from performance graphs and
+    SQL-based performance monitoring tools).
+  id: totrans-447
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 配置具有正确NUMA设置和本地内存的VM。出于许可原因，从四个vCPU开始，然后找出是否需要更多（例如，如果你的VM变得受限于CPU，你将从性能图表和基于SQL的性能监控工具中看到）。
+- en: If you want to reserve CPU capacity, make use of CPU pinning so that specific
+    CPU cores on the physical server's CPU is always used for the SQL VM, and only
+    that. Isolate other VMs to the *remaining* cores.
+  id: totrans-448
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果你想保留CPU容量，利用CPU固定，以便物理服务器CPU上的特定CPU核心始终用于SQL VM，而且只用于它。将其他VM隔离到*剩余*核心。
+- en: Reserve memory for the SQL VM so that it doesn't swap, as only using real RAM
+    memory will guarantee smooth performance that's not influenced by noisy neighbors.
+  id: totrans-449
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为SQL VM保留内存，以防止交换，因为只有使用真正的RAM内存才能保证性能平稳，不受到嘈杂的邻居的影响。
+- en: Configure KSM per VM if necessary and avoid using it on SQL VMs as it might
+    introduce latency. In the design phase, make sure you buy as much RAM memory as
+    possible so that memory doesn't become an issue as it will be a very costly issue
+    in terms of performance if a server doesn't have enough of it. Don't *ever* overcommit
+    memory.
+  id: totrans-450
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如有必要，为每个VM配置KSM，并避免在SQL VM上使用它，因为它可能引入延迟。在设计阶段，确保购买尽可能多的RAM内存，以免内存成为问题，因为如果服务器没有足够的内存，这将是一个非常昂贵的性能问题。绝对不要过度分配内存。
+- en: Configure the VM with multiple virtual hard disks and put those hard disks in
+    storage that can provide levels of service needed in terms of latency, overhead,
+    and caching. Remember, an OS disk doesn't necessarily need write caching, but
+    database and log disks will benefit from it.
+  id: totrans-451
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 配置具有多个虚拟硬盘的VM，并将这些硬盘放在可以提供所需服务水平的存储中，包括延迟、开销和缓存。记住，操作系统磁盘不一定需要写缓存，但数据库和日志磁盘将受益于它。
+- en: Use separate physical connections from your hosts to your storage devices and
+    tune storage to get as much performance out of it as possible. Don't oversubscribe
+    – both on the links level (too many VMs going through the same infrastructure
+    to the *same* storage device) and the datastore level (don't put one datastore
+    on a storage device and store all VMs on it as it will negatively impact performance
+    – isolate workloads, create multiple targets via multiple links, and use masking
+    and zoning).
+  id: totrans-452
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用主机到存储设备的单独物理连接，并调整存储以尽可能提高性能。不要过度订阅——无论是在链路级别（太多VM通过相同的基础设施连接到*相同*的存储设备）还是数据存储级别（不要将一个数据存储放在一个存储设备上并将所有VM存储在其中，因为这会对性能产生负面影响——隔离工作负载，通过多个链接创建多个目标，并使用掩码和分区）。
+- en: Configure multipathing, load balancing, and failover – to get as much performance
+    out of your storage, yes, but also to have redundancy.
+  id: totrans-453
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 配置多路径、负载平衡和故障转移-以获得尽可能多的存储性能，同时也具有冗余性。
+- en: Install the correct virtio drivers, use vhost drivers or SR-IOV if necessary,
+    and minimize the overhead on every level.
+  id: totrans-454
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安装正确的virtio驱动程序，如有必要使用vhost驱动程序或SR-IOV，并尽量减少每个级别的开销。
+- en: Tune the VM guest OS – turn off unnecessary services, switch the power profile
+    to `High Performance` (most Microsoft OSes have a default setting that puts the
+    power profile into `Balanced` mode for some reason). Tune the BIOS settings and
+    check the firmware and OS updates – everything – from top to bottom. Take notes,
+    measure, benchmark, and use previous benchmarks as baselines when updating and
+    changing the configuration so that you know which way you're going.
+  id: totrans-455
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 调整VM客户操作系统-关闭不必要的服务，将电源配置文件切换到“高性能”（大多数Microsoft操作系统出于某种原因将电源配置文件设置为“平衡”模式）。调整BIOS设置并检查固件和操作系统更新-从上到下的所有内容。做笔记，测量，进行基准测试，并在更新和更改配置时使用以前的基准测试作为基线，以便了解自己的方向。
+- en: When using iSCSI, configure jumbo frames as in most use cases, this will have
+    a positive influence on the storage performance, and make sure that you check
+    the storage device vendor's documentation for any best practices in that regard.
+  id: totrans-456
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在使用iSCSI时，配置巨帧，因为在大多数情况下，这将对存储性能产生积极影响，并确保您查看存储设备供应商的文档以了解相关的最佳实践。
+- en: The takeway of this chapter is the following – don't just blindly install an
+    application just because a client asks you to install it. It will come to haunt
+    you later on, and it will be much, much more difficult to resolve any kind of
+    problems and complaints. Take your time and do it right. Prepare for the whole
+    process by reading the documentation, as it's widely available.
+  id: totrans-457
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的要点是-不要仅仅因为客户要求安装应用程序而盲目安装。这将在以后困扰你，并且解决任何问题和投诉将会更加困难。花时间并且做对。通过阅读文档来为整个过程做好准备，因为文档是广泛可用的。
+- en: Summary
+  id: totrans-458
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we did some digging, going deep into the land of KVM performance
+    tuning and optimization. We discussed many different techniques, varying from
+    simple ones, such as CPU pinning, to much more complex ones, such as NUMA and
+    proper NUMA configuration. Don't be put off by this, as learning design is a process,
+    and designing things correctly is a craft that can always be improved with learning
+    and experience. Think of it this way – when architects were designing the highest
+    skyscrapers in the world, didn't they move the goalposts farther and farther with
+    each new highest building?
+  id: totrans-459
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们深入探讨了KVM性能调优和优化的领域。我们讨论了许多不同的技术，从简单的CPU固定到更复杂的NUMA和适当的NUMA配置。不要被吓到，因为学习设计是一个过程，正确设计是一门可以通过学习和经验不断改进的技艺。想想这样的事情-当建筑师设计世界上最高的摩天大楼时，他们是否每次建造新的最高建筑物时都将目标进一步推进？
+- en: In the next chapter – the final chapter of this book - we will discuss troubleshooting
+    your environments. It's at least partially related to this chapter, as we will
+    be troubleshooting some issues related to performance as well. Go through this
+    chapter multiple times before switching to the troubleshooting chapter – it will
+    be very, very beneficial for your overall learning process.
+  id: totrans-460
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章-本书的最后一章中-我们将讨论如何排除环境中的故障。这至少部分与本章相关，因为我们将排除一些与性能相关的问题。在切换到故障排除章节之前，多次阅读本章对您的整体学习过程将非常有益。
+- en: Questions
+  id: totrans-461
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题
+- en: What is CPU pinning?
+  id: totrans-462
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 什么是CPU固定？
+- en: What does KSM do?
+  id: totrans-463
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: KSM是做什么的？
+- en: How do we enhance the performance of block devices?
+  id: totrans-464
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们如何增强块设备的性能？
+- en: How do we tune the performance of network devices?
+  id: totrans-465
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们如何调整网络设备的性能？
+- en: How can we synchronize clocks in virtualized environments?
+  id: totrans-466
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们如何在虚拟化环境中同步时钟？
+- en: How do we configure NUMA?
+  id: totrans-467
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们如何配置NUMA？
+- en: How do we configure NUMA and KSM to work together?
+  id: totrans-468
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们如何配置NUMA和KSM一起工作？
+- en: Further reading
+  id: totrans-469
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 进一步阅读
+- en: 'Please refer to the following links for more information:'
+  id: totrans-470
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关更多信息，请参考以下链接：
+- en: 'RedHat Enterprise Linux 7 – installing, configuring, and managing VMs on a
+    RHEL physical machine: [https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_deployment_and_administration_guide/index](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_deployment_and_administration_guide/index)'
+  id: totrans-471
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: RedHat Enterprise Linux 7-在RHEL物理机上安装、配置和管理VM：[https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_deployment_and_administration_guide/index](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_deployment_and_administration_guide/index)
+- en: 'vCPU pinning: [http://libvirt.org/formatdomain.html#elementsCPUTuning](http://libvirt.org/formatdomain.html#elementsCPUTuning)'
+  id: totrans-472
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: vCPU固定：[http://libvirt.org/formatdomain.html#elementsCPUTuning](http://libvirt.org/formatdomain.html#elementsCPUTuning)
+- en: 'KSM kernel documentation: [https://www.kernel.org/doc/Documentation/vm/ksm.txt](https://www.kernel.org/doc/Documentation/vm/ksm.txt)'
+  id: totrans-473
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: KSM内核文档：[https://www.kernel.org/doc/Documentation/vm/ksm.txt](https://www.kernel.org/doc/Documentation/vm/ksm.txt)
+- en: 'Placement: [http://libvirt.org/formatdomain.html#elementsNUMATuning](http://libvirt.org/formatdomain.html#elementsNUMATuning)'
+  id: totrans-474
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 放置：[http://libvirt.org/formatdomain.html#elementsNUMATuning](http://libvirt.org/formatdomain.html#elementsNUMATuning)
+- en: 'Automatic NUMA balancing: [https://www.redhat.com/files/summit/2014/summit2014_riel_chegu_w_0340_automatic_numa_balancing.pdf](https://www.redhat.com/files/summit/2014/summit2014_riel_chegu_w_0340_automatic_numa_balancing.pdf)'
+  id: totrans-475
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自动NUMA平衡：[https://www.redhat.com/files/summit/2014/summit2014_riel_chegu_w_0340_automatic_numa_balancing.pdf](https://www.redhat.com/files/summit/2014/summit2014_riel_chegu_w_0340_automatic_numa_balancing.pdf)
+- en: 'Virtio 1.1 specification: [http://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html](http://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html)'
+  id: totrans-476
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Virtio 1.1规范：[http://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html](http://docs.oasis-open.org/virtio/virtio/v1.1/virtio-v1.1.html)
+- en: 'ARP Flux: [http://Linux-ip.net/html/ether-arp.html#ether-arp-flux](http://Linux-ip.net/html/ether-arp.html#ether-arp-flux)'
+  id: totrans-477
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ARP Flux：[http://Linux-ip.net/html/ether-arp.html#ether-arp-flux](http://Linux-ip.net/html/ether-arp.html#ether-arp-flux)
+- en: 'MQ virtio: [https://fedoraproject.org/wiki/Features/MQ_virtio_net](https://fedoraproject.org/wiki/Features/MQ_virtio_net)'
+  id: totrans-478
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'MQ virtio: [https://fedoraproject.org/wiki/Features/MQ_virtio_net](https://fedoraproject.org/wiki/Features/MQ_virtio_net)'
+- en: 'libvirt NUMA tuning on RHEL 7: [https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-numa-numa_and_libvirt](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-numa-numa_and_libvirt)'
+  id: totrans-479
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: RHEL 7上的libvirt NUMA调优：[https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-numa-numa_and_libvirt](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-numa-numa_and_libvirt)

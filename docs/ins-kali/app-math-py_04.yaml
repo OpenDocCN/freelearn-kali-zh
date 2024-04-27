@@ -1,0 +1,2070 @@
+- en: Working with Randomness and Probability
+  id: totrans-0
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 处理随机性和概率
+- en: In this chapter, we will discuss randomness and probability. We will start by
+    briefly exploring the fundamentals of probability by selecting elements from a
+    set of data. Then, we will learn how to generate (pseudo) random numbers using
+    Python and NumPy, and how to generate samples according to a specific probability
+    distribution. We will conclude the chapter by looking at a number of advanced
+    topics covering random processes and Bayesian techniques, and using Markov chain
+    Monte Carlo methods to estimate parameters on a simple model.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将讨论随机性和概率。我们将首先通过从数据集中选择元素来简要探讨概率的基本原理。然后，我们将学习如何使用Python和NumPy生成（伪）随机数，以及如何根据特定概率分布生成样本。最后，我们将通过研究涵盖随机过程和贝叶斯技术的一些高级主题，并使用马尔可夫链蒙特卡洛方法来估计简单模型的参数来结束本章。
+- en: Probability is a quantification of the likelihood of a specific event occurring.
+    We use probabilities intuitively all of the time, although sometimes the formal
+    theory can be quite counterintuitive. Probability theory aims to describe the
+    behavior of *random variables*, whose value is not known, but where the probabilities
+    of the value of this random variable taking some (range of) values is known. These
+    probabilities are usually in the form of one of several probability distributions.
+    Arguably, the most famous such probability distribution is normal distribution
+    which, for example, can describe the spread of a certain characteristic over a
+    large population.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 概率是特定事件发生的可能性的量化。我们在日常生活中直观地使用概率，尽管有时正式理论可能相当反直觉。概率论旨在描述*随机变量*的行为，其值是未知的，但是该随机变量取某些（范围的）值的概率是已知的。这些概率通常以几种概率分布的形式存在。可以说，最著名的概率分布是正态分布，例如，它可以描述大规模人口中某一特征的分布。
+- en: We will see probability again in a more applied setting in [Chapter6](87b0f91d-3086-41a9-995d-27fe7d364e8b.xhtml),
+    *Working with Data and Statistics*, where we discuss statistics. Here, we will
+    put probability theory to use to quantify errors and build a systematic theory
+    of analyzing data.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在[第6章](87b0f91d-3086-41a9-995d-27fe7d364e8b.xhtml) *处理数据和统计* 中再次在更应用的环境中看到概率，那里我们将讨论统计学。在这里，我们将利用概率理论来量化误差，并建立一个系统的数据分析理论。
+- en: 'In this chapter, we will cover the following recipes:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下示例：
+- en: Selecting items at random
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 随机选择项目
+- en: Generating random data
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成随机数据
+- en: Changing the random number generator
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更改随机数生成器
+- en: Generating normally distributed random numbers
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成正态分布的随机数
+- en: Working with random processes
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理随机过程
+- en: Analyzing conversion rates with Bayesian techniques
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用贝叶斯技术分析转化率
+- en: Estimating parameters with Monte Carlo simulations
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用蒙特卡罗模拟估计参数
+- en: Technical requirements
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: 'For this chapter, we require the standard scientific Python packages, NumPy,
+    Matplotlib, and SciPy. We will also require the PyMC3 package for the final recipe.
+    You can install this using your favorite package manager, such as `pip`:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于本章，我们需要标准的科学Python包NumPy、Matplotlib和SciPy。我们还需要PyMC3包来完成最后的示例。您可以使用您喜欢的软件包管理器（如`pip`）来安装它：
+- en: '[PRE0]'
+  id: totrans-14
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: This command will install the most recent version of PyMC3, which, at the time
+    of writing, was 3.9.2\. This package provides facilities for probabilistic programming,
+    which involves performing many calculations driven by randomly generated data
+    to understand the likely distribution of a solution to a problem.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此命令将安装PyMC3的最新版本，在撰写本文时为3.9.2。该软件包提供了概率编程的功能，涉及执行许多由随机生成的数据驱动的计算，以了解问题解的可能分布。
+- en: The code for this chapter can be found in the `Chapter 04` folder of the GitHub
+    repository at [https://github.com/PacktPublishing/Applying-Math-with-Python/tree/master/Chapter%2004](https://github.com/PacktPublishing/Applying-Math-with-Python/tree/master/Chapter%2004).
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的代码可以在GitHub存储库的`Chapter 04`文件夹中找到：[https://github.com/PacktPublishing/Applying-Math-with-Python/tree/master/Chapter%2004](https://github.com/PacktPublishing/Applying-Math-with-Python/tree/master/Chapter%2004)。
+- en: 'Check out the following video to see the Code in Action: [https://bit.ly/2OP3FAo](https://bit.ly/2OP3FAo).'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看以下视频以查看代码实际运行情况：[https://bit.ly/2OP3FAo](https://bit.ly/2OP3FAo)。
+- en: Selecting items at random
+  id: totrans-18
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 随机选择项目
+- en: At the core of probability and randomness is the idea of selecting an item from
+    some kind of collection. As we know, the probability of selecting an item from
+    a collection quantifies the likelihood of that item being selected. Randomness
+    describes the selection of items from a collection according to the probabilities
+    without any additional bias. The opposite of a random selection might be described
+    as a *deterministic* selection. In general, it is very difficult to replicate
+    a purely random process using a computer, because computers and their processing
+    are inherently deterministic. However, we can generate sequences of pseudo-random
+    numbers that, when properly constructed, demonstrate a reasonable approximation
+    of randomness.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 概率和随机性的核心是从某种集合中选择一个项目的概念。我们知道，从集合中选择项目的概率量化了被选择的项目的可能性。随机性描述了根据概率从集合中选择项目，而没有任何额外的偏见。随机选择的相反可能被描述为*确定性*选择。一般来说，使用计算机复制纯随机过程是非常困难的，因为计算机及其处理本质上是确定性的。然而，我们可以生成伪随机数序列，当正确构造时，可以展示出对随机性的合理近似。
+- en: In this recipe, we will select items from a collection and learn some of the
+    key terminology associated with probability and randomness that we will need throughout
+    this chapter.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们将从集合中选择项目，并学习本章中将需要的一些与概率和随机性相关的关键术语。
+- en: Getting ready
+  id: totrans-21
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The Python Standard Library contains a module for generating (pseudo) random
+    numbers called `random`, but in this recipe, and throughout this chapter, we will
+    instead use the NumPy `random` module. The routines in the NumPy `random` module
+    can be used to generate arrays of random numbers and are slightly more flexible
+    than their standard library counterparts. As usual, we import NumPy under the
+    alias `np`.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Python标准库包含一个用于生成（伪）随机数的模块称为`random`，但在这个示例中，以及本章的其他地方，我们将使用NumPy的`random`模块。NumPy的`random`模块中的例程可以用来生成随机数数组，比标准库中的例程更灵活。和往常一样，我们使用别名`np`导入NumPy。
+- en: Before we can proceed, we need to fix some terminology. A *sample space* is
+    a set (a collection with no repeated elements), and an *event* is a subset of
+    the sample space. The *probability* that an event *A* occurs is denoted as *P*(*A*),
+    and is a number between 0 and 1\. A probability of 0 indicates that the event
+    can never occur, while a probability of 1 indicates that an event will certainly
+    occur. The probability of the whole sample space must be 1.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们继续之前，我们需要确定一些术语。*样本空间*是一个集合（一个没有重复元素的集合），*事件*是样本空间的子集。事件*A*发生的*概率*表示为*P*(*A*)，是0到1之间的数字。概率为0表示事件永远不会发生，而概率为1表示事件一定会发生。整个样本空间的概率必须为1。
+- en: When the sample space is discrete, then probabilities are just numbers between
+    0 and 1 associated with each of the elements, where the sum of all these numbers
+    is 1\. This gives meaning to the probability of selecting a single item (an event
+    consisting of a single element) from a collection. We will consider methods for
+    selecting items from a discrete collection here and deal with the *continuous*
+    case in the *Generating normally distributed random numbers* recipe.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当样本空间是离散的时，概率就是与每个元素相关的0到1之间的数字，所有这些数字的总和为1。这赋予了从集合中选择单个项目（由单个元素组成的事件）的概率以意义。我们将在这里考虑从离散集合中选择项目的方法，并在“生成正态分布随机数”示例中处理*连续*情况。
+- en: How to do it...
+  id: totrans-25
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'Perform the following steps to select items at random from a container:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行以下步骤从容器中随机选择项目：
+- en: 'The first step is to set up the random number generator. For the moment, we
+    will use the default random number generator for NumPy, which is recommended in
+    most cases. We can do this by calling the `default_rng`routine from the NumPy
+    `random`module, which will return an instance of a random number generator. We
+    will usually call this function without a seed, but for this recipe, we will add
+    the seed `12345` so that our results are repeatable:'
+  id: totrans-27
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 第一步是设置随机数生成器。目前，我们将使用NumPy的默认随机数生成器，在大多数情况下这是推荐的。我们可以通过调用NumPy的`random`模块中的`default_rng`例程来实现这一点，这将返回一个随机数生成器的实例。通常情况下，我们会不带种子地调用这个函数，但是在这个示例中，我们将添加种子`12345`，以便我们的结果是可重复的：
+- en: '[PRE1]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Next, we need to create the data and probabilities that we will select from.
+    This step can be skipped if you already have the data stored or if you want to
+    select elements with equal probabilities:'
+  id: totrans-29
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要创建数据和概率，我们将从中进行选择。如果您已经存储了数据，或者希望以相等的概率选择元素，则可以跳过此步骤：
+- en: '[PRE2]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'As a quick sanity test, we can use an assertion to check that these probabilities
+    do indeed sum to 1:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个快速的健全性测试，我们可以使用断言来检查这些概率确实相加为1：
+- en: '[PRE3]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Now, we can use the `choice`method on the random number generator, `rng`, to
+    select the samples from `data`according to the probabilities just created. For
+    this selection, we want to turn the replacement on, so calling the method multiple
+    times can select from the whole of `data`:'
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们可以使用随机数生成器`rng`上的`choice`方法，根据刚刚创建的概率从`data`中选择样本。对于这种选择，我们希望打开替换，因此调用该方法多次可以从整个`data`中选择：
+- en: '[PRE4]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'To select multiple items from `data`, we can also supply the `size`argument,
+    which specifies the shape of the array to be selected. This plays the same role
+    as the `shape`keyword argument to many of the other NumPy array creation routines.
+    The argument given to `size`can be either an integer or a tuple of integers:'
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要从`data`中选择多个项目，我们还可以提供`size`参数，该参数指定要选择的数组的形状。这与许多其他NumPy数组创建例程的`shape`关键字参数起着相同的作用。给定`size`的参数可以是整数或整数元组：
+- en: '[PRE5]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: How it works...
+  id: totrans-37
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理…
+- en: The `default_rng` routine creates a new **pseudo random number generator** (**PRNG**)
+    instance (with or without a seed) that can be used to generate random numbers
+    or, as we saw in the recipe, select items at random from predefined data. NumPy
+    also has an **implicit state**-based interface for generating random numbers using
+    routines directly from the `random` module. However, it is generally advisable
+    to create the generator explicitly, using `default_rng` or create a `Generator`
+    instance yourself. Being more explicit in this way is more Pythonic, and should
+    lead to more reproducible results (in some sense).
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`default_rng`例程创建一个新的**伪随机数生成器**（**PRNG**）实例（带有或不带有种子），可以用来生成随机数，或者如我们在示例中看到的，从预定义数据中随机选择项目。NumPy还具有基于**隐式状态**的接口，可以直接使用`random`模块中的例程生成随机数。然而，通常建议显式地创建生成器，使用`default_rng`或自己创建`Generator`实例。以这种方式更加明确更符合Python的风格，并且应该会导致更可重现的结果（在某种意义上）。'
+- en: A **seed** is a value that is passed to a random number generator in order to
+    generate the values. The generator generates a sequence of numbers in a completely
+    deterministic way based only on the seed. This means that two instances of the
+    same PRNGs provided with the same seed will generate the same sequence of random
+    numbers. If no seed is provided, the generators typically produce a seed that
+    depends on the user's system.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**种子**是传递给随机数生成器以生成值的值。生成器以完全确定的方式基于种子生成一系列数字。这意味着给定相同种子的相同PRNG的两个实例将生成相同的随机数序列。如果没有提供种子，生成器通常会产生一个依赖于用户系统的种子。'
+- en: The `Generator` class from NumPy is a wrapper around a low-level pseudo random
+    bit generator, which is where the random numbers are actually generated. In recent
+    versions of NumPy, the default PRNG algorithm is the 128-bit *permuted congruential
+    generator.* By contrast, Python's built-in `random` module uses a Mersenne Twister
+    PRNG. More information about the different options for PRNG algorithms is given
+    in the *Changing the random number generator* recipe.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NumPy的`Generator`类是低级伪随机比特生成器的包装器，这是实际生成随机数的地方。在最近的NumPy版本中，默认的PRNG算法是128位*置换同余生成器*。相比之下，Python内置的`random`模块使用Mersenne
+    Twister PRNG。有关不同PRNG算法的更多信息，请参阅*更改随机数生成器*示例。
+- en: The `choice` method on a `Generator` instance performs selections according
+    to random numbers generated by the underlying `BitGenerator`. The optional `p`
+    keyword argument specifies the probability associated with each item from the
+    data provided. If this argument isn't provided, then a *uniform probability* is
+    assumed, where each item has equal probability of being selected. The `replace`
+    keyword argument specifies whether selections should be made with or without a
+    replacement. We turned replacement on so that the same element can be selected
+    more than once. The `choice` method uses the random numbers given by the generator
+    to make the selections, which means that two PRNGs of the same type using the
+    same seed will select the same items when using the `choice` method.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Generator`实例上的`choice`方法根据底层`BitGenerator`生成的随机数执行选择。可选的`p`关键字参数指定与提供的数据中的每个项目相关联的概率。如果没有提供此参数，则假定*均匀概率*，其中每个项目被选择的概率相等。`replace`关键字参数指定是否应进行带或不带替换的选择。我们打开了替换，以便可以多次选择相同的元素。`choice`方法使用生成器给出的随机数进行选择，这意味着使用相同种子的相同类型的两个PRNG在使用`choice`方法时将选择相同的项目。'
+- en: There's more...
+  id: totrans-42
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The `choice` method can also be used to create random samples of a given size
+    by passing `replace=False` as an argument. This guarantees the selection of distinct
+    items from the data, which is good for generating a random sample. This might
+    be used, for example, to select users to test a new version of an interface from
+    the whole group of users; most sample statistical techniques rely on randomly
+    selected samples.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`choice`方法也可以通过将`replace=False`作为参数来创建给定大小的随机样本。这保证了从数据中选择不同的项目，这对于生成随机样本是有利的。例如，这可能用于从整个用户组中选择用户来测试界面的新版本；大多数样本统计技术依赖于随机选择的样本。'
+- en: Generating random data
+  id: totrans-44
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 生成随机数据
+- en: Many tasks involve generating large quantities of random numbers, which, in
+    their most basic form, are either integers or floating-point numbers (double precision)
+    lying in the range 0 ≤ *x* < 1\. Ideally, these numbers should be selected uniformly,
+    so that if we draw a large quantity of such numbers, they should be distributed
+    roughly evenly across the range 0 ≤ *x* < 1.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多任务涉及生成大量的随机数，这些随机数在它们最基本的形式下要么是整数，要么是浮点数（双精度），位于范围0 ≤ *x* < 1\. 理想情况下，这些数字应该是均匀选择的，这样如果我们绘制大量这样的数字，它们应该大致均匀地分布在范围0
+    ≤ *x* < 1之间。
+- en: In this recipe, we will see how to generate large quantities of random integers
+    and floating-point numbers using NumPy, and show the distribution of these numbers
+    using a histogram.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们将看到如何使用NumPy生成大量的随机整数和浮点数，并使用直方图显示这些数字的分布。
+- en: Getting ready
+  id: totrans-47
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'Before we start, we need to import the `default_rng` routine from the NumPy
+    `random` module and create an instance of the default random number generator
+    to use in the recipe:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始之前，我们需要从NumPy的`random`模块中导入`default_rng`例程，并创建默认随机数生成器的实例以在示例中使用：
+- en: '[PRE6]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: We have discussed this process in the *Selecting items at random* recipe.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经在*随机选择项目*示例中讨论了这个过程。
+- en: We also import the Matplotlib `pyplot` module under the alias `plt`.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还将Matplotlib的`pyplot`模块导入为别名`plt`。
+- en: How to do it...
+  id: totrans-52
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Perform the following steps to generate uniform random data and plot a histogram
+    to understand its distribution:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行以下步骤生成均匀随机数据并绘制直方图以了解其分布：
+- en: 'To generate random floating-point numbers between 0 and 1, including 0 but
+    not 1, we use the `random` method on the `rng` object:'
+  id: totrans-54
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要生成0到1之间的随机浮点数，包括0但不包括1，我们使用`rng`对象上的`random`方法：
+- en: '[PRE7]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'To generate random integers, we use the `integers` method on the `rng` object.
+    This will return integers in the specified range:'
+  id: totrans-56
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要生成随机整数，我们使用`rng`对象上的`integers`方法。这将返回指定范围内的整数：
+- en: '[PRE8]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'To examine the distribution of the random floating-point numbers, we first
+    need to generate a large array of random numbers, just as we did in *Step 1*.
+    While this is not strictly necessary, a larger sample will be able to show the
+    distribution more clearly. We generate these numbers as follows:'
+  id: totrans-58
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了检查随机浮点数的分布，我们首先需要生成一个大数组的随机数，就像我们在*步骤1*中所做的那样。虽然这并不是严格必要的，但更大的样本将能够更清楚地显示分布。我们生成这些数字如下：
+- en: '[PRE9]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'To show the distribution of the numbers we have generated, we plot a *histogram*
+    of the data:'
+  id: totrans-60
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了显示我们生成的数字的分布，我们绘制了数据的*直方图*：
+- en: '[PRE10]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'The resulting plot is shown in *Figure 4.1*. As we can see, the data is roughly
+    evenly distributed across the whole range:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 生成的图表显示在*图4.1*中。正如我们所看到的，数据大致均匀地分布在整个范围内：
+- en: '![](assets/ec4fd1ac-8e09-462c-90f1-62d20e668fa6.png)'
+  id: totrans-63
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ec4fd1ac-8e09-462c-90f1-62d20e668fa6.png)'
+- en: 'Figure 4.1: Histogram of randomly generated random numbers between 0 and 1'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.1：在0和1之间生成的随机数的直方图
+- en: How it works...
+  id: totrans-65
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: The `Generator` interface provides three simple methods for generating basic
+    random numbers, not including the `choice` method that we discussed in the *Selecting
+    items at random* recipe. In addition to the `random` method, for generating random
+    floating-point numbers, and the `integers` method, for generating random integers,
+    there is also a `bytes` method for generating raw random bytes. Each of these
+    methods calls a relevant method on the underlying `BitGenerator` instance. Each
+    of these methods also enables the data type of the generated numbers to be changed,
+    for example, from double to single precision floating-point numbers.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Generator`接口提供了三种简单的方法来生成基本的随机数，不包括我们在*随机选择项目*示例中讨论的`choice`方法。除了`random`方法用于生成随机浮点数，`integers`方法用于生成随机整数，还有一个`bytes`方法用于生成原始的随机字节。这些方法中的每一个都调用底层`BitGenerator`实例上的相关方法。这些方法还允许生成的数字的数据类型进行更改，例如，从双精度到单精度浮点数。'
+- en: There's more...
+  id: totrans-67
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The `integers` method on the `Generator` class combines the functionality of
+    the `randint` and `random_integers` methods on the old `RandomState` interface
+    through the addition of the `endpoint` optional argument. (In the old interface,
+    the `randint` method excluded the upper end point, whereas the `random_integers`
+    method included the upper end point.) All of the random data generating methods
+    on `Generator` allow the data type of the data they generate to be customized,
+    which was not possible using the old interface. (This interface was introduced
+    in NumPy 1.17.)
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Generator`类上的`integers`方法通过添加`endpoint`可选参数，结合了旧的`RandomState`接口上的`randint`和`random_integers`方法的功能。（在旧接口中，`randint`方法排除了上限点，而`random_integers`方法包括了上限点。）`Generator`上的所有随机数据生成方法都允许自定义生成的数据类型，而在旧接口中是不可能的。（这个接口是在NumPy
+    1.17中引入的。）'
+- en: In *Figure 4.1*, we can see that the histogram of the data that we generated
+    is approximately uniform over the range 0 ≤ *x* < 1\. That is, all of the bars
+    are approximately level. (They are not completely level due to the random nature
+    of the data.) This is what we expect from uniformly distributed random numbers,
+    such as those generated by the `random` method. We will explain distributions
+    of random numbers in greater detail in the *Generating normally distributed random
+    numbers* recipe.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在*图4.1*中，我们可以看到我们生成的数据的直方图在范围0 ≤ *x* < 1上大致均匀。也就是说，所有的柱状图大致是水平的。（由于数据的随机性，它们并不完全水平。）这是我们从`random`方法生成的均匀分布的随机数所期望的。我们将在*生成正态分布随机数*的示例中更详细地解释随机数的分布。
+- en: Changing the random number generator
+  id: totrans-70
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更改随机数生成器
+- en: The `random` module in NumPy provides several alternatives to the default PRNG,
+    which uses a 128-bit permutation congruential generator. While this is a good
+    general-purpose random number generator, it might not be sufficient for your particular
+    needs. For example, this algorithm is very different from the one used in Python’s
+    internal random number generator. We will follow the guidelines for best practice
+    set out in the NumPy documentation for running repeatable, but suitably random,
+    simulations.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NumPy中的`random`模块提供了几种替代默认PRNG的选择，它使用了128位置换同余生成器。虽然这是一个很好的通用随机数生成器，但对于您的特定需求可能不够。例如，这个算法与Python内部的随机数生成器使用的算法非常不同。我们将遵循NumPy文档中为运行可重复但适当随机的模拟设置的最佳实践指南。
+- en: In this recipe, we will show you how to change to an alternative pseudo random
+    number generator, and how to use seeds effectively in your programs.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们将向您展示如何切换到另一种伪随机数生成器，并如何在程序中有效地使用种子。
+- en: Getting ready
+  id: totrans-73
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'As usual, we import NumPy under the alias `np`. Since we will be using multiple
+    items from the `random` package, we import that module from NumPy, too, using
+    the following code:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像往常一样，我们使用别名`np`导入NumPy。由于我们将使用`random`包中的多个项目，我们也从NumPy中导入该模块，使用以下代码：
+- en: '[PRE11]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: You will need to select one of the alternative random number generators that
+    are provided by NumPy (or define your own; refer to the *There's more...* section
+    in this recipe). For this recipe, we will use the MT19937 random number generator,
+    which uses a Mersenne Twister-based algorithm like the one used in Python's internal
+    random number generator.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您需要选择NumPy提供的替代随机数生成器之一（或者定义自己的；请参阅本示例中的*还有更多...*部分）。在本示例中，我们将使用MT19937随机数生成器，它使用了类似于Python内部随机数生成器中使用的Mersenne
+    Twister算法。
+- en: How to do it...
+  id: totrans-77
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'The following steps show how to generate seeds and different random number
+    generators in a reproducible way:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下步骤展示了如何以可重现的方式生成种子和不同的随机数生成器：
+- en: 'We will generate a `SeedSequence` object that can reproducibly generate new
+    seeds from a given source of entropy. We can either provide our own entropy as
+    an integer, very much like how we provide the seed to `default_rng`, or we can
+    let Python gather entropy from the operating system. We will use the latter case
+    here, to demonstrate its use. For this, we do not provide any additional arguments
+    to create the `SeedSequence` object:'
+  id: totrans-79
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将生成一个`SeedSequence`对象，可以从给定的熵源可重现地生成新的种子。我们可以像为`default_rng`提供种子一样提供我们自己的熵，或者让Python从操作系统中收集熵。在这里，我们将使用后者，以演示其用法。为此，我们不提供任何额外的参数来创建`SeedSequence`对象：
+- en: '[PRE12]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now that we have a means to generate the seeds for random number generators
+    for the rest of the session, we next log the entropy so that we can reproduce
+    this session later, if necessary. The following is an example of what the entropy
+    should look like; your results will inevitably differ somewhat:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们有了一种方法来为会话的其余部分生成随机数生成器的种子，接下来我们记录熵，以便以后如果需要的话可以重现这个会话。以下是熵应该看起来的示例；您的结果必然会有些不同：
+- en: '[PRE13]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Now, we can create the underlying `BitGenerator` instance that will provide
+    the random numbers for the wrapping `Generator` object:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们可以创建底层的`BitGenerator`实例，为包装的`Generator`对象提供随机数：
+- en: '[PRE14]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Next, we create the wrapping `Generator` object around this `BitGenerator`
+    instance to create a usable random number generator:'
+  id: totrans-85
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们创建包装`Generator`对象以围绕此`BitGenerator`实例创建可用的随机数生成器：
+- en: '[PRE15]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: How it works...
+  id: totrans-87
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'As mentioned in the *Selecting items at random* recipe, the `Generator` class
+    is a wrapper around an underlying `BitGenerator` that implements a given pseudo
+    random number algorithm. NumPy provides several implementations of pseudo random
+    number algorithms through the various subclasses of the `BitGenerator` class:
+    `PCG64` (default); `MT19937` (as seen in this recipe); `Philox`; and `SFC64`.
+    These bit generators are implemented in Cython.'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如*随机选择项目*配方中所述，`Generator`类是围绕实现给定伪随机数算法的基础`BitGenerator`的包装器。NumPy通过`BitGenerator`类的各种子类提供了几种伪随机数算法的实现：`PCG64`（默认）；`MT19937`（在此配方中看到）；`Philox`；和`SFC64`。这些位生成器是用Cython实现的。
+- en: The `PCG64` generator should provide high-performance random number generation
+    with good statistical quality. (This might not be the case on 32 bit systems.)
+    The `MT19937` generator is slower than more modern PRNGs and does not produce
+    random numbers with good statistical properties. However, this is the random number
+    generator algorithm that is used by the Python Standard Library `random` module.
+    The `Philox` generator is relatively slow, but produces random numbers of very
+    high quality, and the `SFC64` generator is fast and of good quality, but lacks
+    some features available in other generators.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`PCG64`生成器应该提供具有良好统计质量的高性能随机数生成。 （在32位系统上可能不是这种情况。）`MT19937`生成器比更现代的PRNG慢，不会产生具有良好统计特性的随机数。然而，这是Python标准库`random`模块使用的随机数生成器算法。`Philox`生成器相对较慢，但产生非常高质量的随机数，而`SFC64`生成器速度快，质量良好，但缺少其他生成器可用的一些功能。'
+- en: The `SeedSequence` object created in this recipe is a means to create seeds
+    for random number generators in an independent and reproducible manner. In particular,
+    this is useful if you need to create independent random number generators for
+    several parallel processes, but still need to be able to reconstruct each session
+    later to debug or inspect results. The entropy stored on this object is a 128-bit
+    integer that was gathered from the operating system, and serves as a source of
+    random seeds.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此配方中创建的`SeedSequence`对象是以独立且可重现的方式为随机数生成器创建种子的一种方法。特别是，如果您需要为几个并行进程创建独立的随机数生成器，但仍然需要能够稍后重建每个会话以进行调试或检查结果，这将非常有用。存储在此对象上的熵是从操作系统中收集的128位整数，它作为随机种子的来源。
+- en: The `SeedSequence` object allows us to create a separate random number generator
+    for each process/thread that are independent of one another, which eliminates
+    any data race problems that might make results unpredictable. It also generates
+    seed values that are very different from one another, which can help avoid problems
+    with some PRNGs (such as MT19937, which can produce very similar streams with
+    two similar 32-bit integer seed values). Obviously having two independent random
+    number generators producing the same or very similar values will be problematic
+    when we are depending on the independence of these values.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`SeedSequence`对象允许我们为每个独立的进程/线程创建一个独立的随机数生成器，这些生成器彼此独立，消除了可能使结果不可预测的数据竞争问题。它还生成非常不同的种子值，这可以帮助避免一些PRNG（例如MT19937，它可以使用两个相似的32位整数种子值产生非常相似的流）的问题。显然，当我们依赖这些值的独立性时，有两个独立的随机数生成器产生相同或非常相似的值将是有问题的。'
+- en: There's more...
+  id: totrans-92
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The `BitGenerator` class serves as a common interface for generators of raw
+    random integers. The classes mentioned previously are those that are implemented
+    in NumPy with the `BitGenerator` interface. You can also create your own `BitGenerator`
+    subclasses, although this needs to be implemented in Cython.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`BitGenerator`类充当原始随机整数生成器的通用接口。先前提到的类是NumPy中使用`BitGenerator`接口实现的类。您也可以创建自己的`BitGenerator`子类，尽管这需要在Cython中实现。'
+- en: Refer to the NumPy documentation at [https://numpy.org/devdocs/reference/random/extending.html#new-bit-generators](https://numpy.org/devdocs/reference/random/extending.html#new-bit-generators)
+    for more information.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关更多信息，请参阅NumPy文档[https://numpy.org/devdocs/reference/random/extending.html#new-bit-generators](https://numpy.org/devdocs/reference/random/extending.html#new-bit-generators)。
+- en: Generating normally distributed random numbers
+  id: totrans-95
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 生成正态分布的随机数
+- en: In the *Generating random data* recipe, we generated random floating-point numbers
+    following a uniform distribution between 0 and 1, but not including 1\. However,
+    in most cases where we require random data, we need to instead follow one of several
+    different **distributions**. Roughly speaking, a **distribution function** is
+    a function *f*(*x*) that describes the probability that a random variable has
+    a value that is below *x*. In practical terms, the distribution describes the
+    spread of the random data over a range. In particular, if we create a histogram
+    of data that follows a particular distribution, then it should roughly resemble
+    the graph of the distribution function. This is best seen by example.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在*生成随机数据*配方中，我们生成了在0和1之间遵循均匀分布的随机浮点数，但不包括1。然而，在大多数需要随机数据的情况下，我们需要遵循几种不同的**分布**之一。粗略地说，**分布函数**是一个描述随机变量具有低于*x*值的概率的函数*f*(*x*)。在实际情况下，分布描述了随机数据在范围内的分布。特别是，如果我们创建遵循特定分布的数据的直方图，那么它应该大致类似于分布函数的图形。这最好通过示例来看。
+- en: One of the most common distributions is **normal distribution**, which appears
+    frequently in statistics and forms the basis for many statistical methods that
+    we will see in [Chapter 6](87b0f91d-3086-41a9-995d-27fe7d364e8b.xhtml), *Working
+    with Data and Statistics*. In this recipe, we will demonstrate how to generate
+    data following the normal distribution, and plot a histogram of this data to see
+    the shape of the distribution.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最常见的分布之一是**正态分布**，在统计学中经常出现，并且构成了我们将在[第6章](87b0f91d-3086-41a9-995d-27fe7d364e8b.xhtml)中看到的许多统计方法的基础，*处理数据和统计*。在这个示例中，我们将演示如何生成遵循正态分布的数据，并绘制这些数据的直方图以查看分布的形状。
+- en: Getting ready
+  id: totrans-98
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'As in the *Generating random data* recipe, we import the `default_rng` routine
+    from the NumPy `random` module and create a `Generator` instance with a seeded
+    generator for demonstration purposes:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与*生成随机数据*示例中一样，我们从NumPy的`random`模块中导入`default_rng`例程，并创建一个具有种子生成器的`Generator`实例以进行演示：
+- en: '[PRE16]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: As usual, we have the Matplotlib `pyplot` module imported as `plt`, and NumPy
+    imported as `np`.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像往常一样，我们导入了Matplotlib的`pyplot`模块并将其命名为`plt`，以及导入了NumPy并将其命名为`np`。
+- en: How to do it...
+  id: totrans-102
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何操作...
+- en: 'In the following steps, we generate random data that follows a normal distribution:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的步骤中，我们生成遵循正态分布的随机数据：
+- en: 'We use the `normal` method on our `Generator` instance to generate the random
+    data according to the `normal` distribution. The normal distribution has two *parameters*,
+    *location* and *scale.* There is also an optional `size` argument that specifies
+    the shape of the generated data. (See the *Generating random data* recipe for
+    more information on the `size` argument.) We generate an array of 10,000 values
+    to get a reasonably sized sample:'
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们在`Generator`实例上使用`normal`方法来生成符合`normal`分布的随机数据。正态分布有两个*参数*，*位置*和*比例*。还有一个可选的`size`参数，用于指定生成数据的形状。（有关`size`参数的更多信息，请参见*生成随机数据*示例。）我们生成一个包含10,000个值的数组，以获得一个相当大的样本：
+- en: '[PRE17]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Next, we plot a histogram of this data. We have increased the number of `bins`
+    in the histogram. This isn''t strictly necessary as the default number (10) is
+    perfectly adequate, but it does show the distribution slightly better:'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们将绘制这些数据的直方图。我们增加了直方图中的`bins`数量。这并不是严格必要的，因为默认数量（10）已经足够了，但这样做可以更好地显示分布：
+- en: '[PRE18]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Next, we create a function that will generate the expected density for a range
+    of values. This is given by multiplying the probability density function for normal
+    distribution by the number of samples (10,000):'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们创建一个函数，用于生成一系列值的预期密度。这是通过将正态分布的概率密度函数乘以样本数（10,000）得到的：
+- en: '[PRE19]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Finally, we plot our expected distribution over the histogram of our data:'
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们在数据的直方图上绘制我们的预期分布：
+- en: '[PRE20]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'The result is shown in *Figure 4.2*. We can see here that the distribution
+    of our sampled data closely follows the expected distribution from the normal
+    distribution curve:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果显示在*图4.2*中。我们可以看到这里，我们抽样数据的分布与正态分布曲线的预期分布非常接近：
+- en: '![](assets/9499ac0a-e1ba-40bd-a8a1-039e42ed3d24.png)'
+  id: totrans-113
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/9499ac0a-e1ba-40bd-a8a1-039e42ed3d24.png)'
+- en: 'Figure 4.2: Histogram of data drawn from a normal distribution centered at
+    5 with a scale of 3, with the expected density overlaid'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.2：从均值为5，比例为3的正态分布中绘制的数据的直方图，并叠加了预期密度
+- en: How it works...
+  id: totrans-115
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: 'Normal distribution has a probability density function defined by the following
+    formula:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正态分布具有以下公式定义的概率密度函数：
+- en: '![](assets/6198a9a0-658b-480f-a42a-abcb58c27969.png)'
+  id: totrans-117
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/6198a9a0-658b-480f-a42a-abcb58c27969.png)'
+- en: 'This is related to the normal distribution function *F*(*x*) according to the
+    following formula:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这与正态分布函数*F*(*x*)相关，根据以下公式：
+- en: '![](assets/c351a1d8-481f-48c8-a1ba-6f8c1c5128ab.png)'
+  id: totrans-119
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/c351a1d8-481f-48c8-a1ba-6f8c1c5128ab.png)'
+- en: This probability density function peaks at the mean value, which coincides with
+    the location parameter, and the width of the "bell shape" is determined by the
+    scale parameter. We can see in *Figure 4.2* that the histogram of the data generated
+    by the `normal` method on the `Generator` object fits the expected distribution
+    very closely.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个概率密度函数在均值处达到峰值，与位置参数重合，而"钟形曲线"的宽度由比例参数确定。我们可以在*图4.2*中看到，由`Generator`对象上的`normal`方法生成的数据的直方图非常接近预期分布。
+- en: The `Generator` class uses a 256-step Ziggurat method to generate normally distributed
+    random data, which is fast compared to the Box-Muller or inverse CDF implementations
+    that are also available in NumPy.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Generator`类使用256步Ziggurat方法生成正态分布的随机数据，与NumPy中还可用的Box-Muller或逆CDF实现相比，速度更快。'
+- en: There's more...
+  id: totrans-122
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The normal distribution is one example of a *continuous* probability distribution,
+    in that it is defined for real numbers and the distribution function is defined
+    by an integral (rather than a sum). An interesting feature of normal distribution
+    (and other continuous probability distributions) is that the probability of selecting
+    any given real number is 0\. This is reasonable, because it only makes sense to
+    measure the probability that a value selected in this distribution lies within
+    a given range. (It shouldn't make sense that the probability of selecting a specific
+    value should be not zero.)
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正态分布是*连续*概率分布的一个例子，因为它是针对实数定义的，并且分布函数是由积分（而不是求和）定义的。正态分布（以及其他连续概率分布）的一个有趣特征是，选择任何给定实数的概率都是0。这是合理的，因为只有在给定范围内测量所选分布中的值的概率才有意义。（选择特定值的概率为零是没有意义的。）
+- en: The normal distribution is important in statistics, mostly due to the *central
+    limit theorem.* Roughly speaking, this theorem states that sums of **independent
+    and identically distributed** (**IID**) random variables, with a common mean and
+    variance, are eventually like normal distribution with the common mean and variance.
+    This holds, regardless of the actual distribution of these random variables. This
+    allows us to use statistical tests based on normal distribution in many cases
+    even if the actual distribution of the variables is not necessarily normal. (We
+    do, however, need to be extremely cautious when appealing to the central limit
+    theorem.)
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正态分布在统计学中很重要，主要是因为*中心极限定理*。粗略地说，该定理指出，具有共同均值和方差的**独立同分布**(**IID**)随机变量的总和最终会像具有共同均值和方差的正态分布。这适用于这些随机变量的实际分布。这使我们能够在许多情况下使用基于正态分布的统计检验，即使变量的实际分布不一定是正态的。(但是，当引用中心极限定理时，我们需要非常谨慎。)
+- en: 'There are many other continuous probability distributions aside from normal
+    distribution. We have already encountered *uniform* distribution over the range
+    0 to 1\. More generally, uniform distribution over the range *a* *≤ x**≤ b* has
+    a probability density function given by the following equation:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了正态分布之外，还有许多其他连续概率分布。我们已经遇到了在0到1范围内的*均匀*分布。更一般地，范围为*a* *≤ x**≤ b*的均匀分布具有以下概率密度函数：
+- en: '![](assets/b90f2536-cab6-4685-947a-581c0281f2d4.png)'
+  id: totrans-126
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/b90f2536-cab6-4685-947a-581c0281f2d4.png)'
+- en: Other common examples of continuous probability density functions include *exponential*
+    distribution, *beta* distribution, and *gamma* distribution*.* Each of these distributions
+    has a corresponding method on the `Generator` class that generates random data
+    from that distribution. These are typically named according to the name of the
+    distribution, all in lowercase letters. So, for the aforementioned distributions,
+    the corresponding methods are `exponential`, `beta`, and `gamma`. These distributions
+    each have one or more *parameters*, like location and scale for normal distribution,
+    that determine the final shape of the distribution. You may need to consult the
+    NumPy documentation ([https://numpy.org/doc/1.18/reference/random/generator.html#numpy.random.Generator](https://numpy.org/doc/1.18/reference/random/generator.html#numpy.random.Generator))
+    or other sources to see what parameters are required for each distribution. The
+    NumPy documentation also lists the probability distributions from which random
+    data can be generated.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连续概率密度函数的其他常见例子包括*指数*分布、*贝塔*分布和*伽玛*分布。每个分布都有一个对应的`Generator`类的方法，用于从该分布生成随机数据。这些方法通常根据分布的名称命名，全部使用小写字母。因此，对于上述分布，对应的方法分别是`exponential`、`beta`和`gamma`。这些分布都有一个或多个*参数*，例如正态分布的位置和尺度，用于确定分布的最终形状。您可能需要查阅NumPy文档([https://numpy.org/doc/1.18/reference/random/generator.html#numpy.random.Generator](https://numpy.org/doc/1.18/reference/random/generator.html#numpy.random.Generator))或其他来源，以查看每个分布需要哪些参数。NumPy文档还列出了可以生成随机数据的概率分布。
+- en: Working with random processes
+  id: totrans-128
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 处理随机过程
+- en: Random processes exist everywhere. Roughly speaking, a random process is a system
+    of related random variables, usually indexed with respect to time *t ≥ 0*, for
+    a continuous random process, or by natural numbers *n = 1, 2, …*, for a discrete
+    random process. Many (discrete) random processes satisfy the **Markov property**,
+    which makes them a **Markov chain***.* The Markov property is the statement that
+    the process is *memoryless*, in that only the current value is important for the
+    probabilities of the next value.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随机过程无处不在。粗略地说，随机过程是一组相关的随机变量系统，通常是关于时间*t ≥ 0*的索引，对于连续随机过程，或者是关于自然数*n = 1, 2,
+    …*的索引，对于离散随机过程。许多(离散)随机过程满足**马尔可夫性质**，这使它们成为**马尔可夫链**。马尔可夫性质是指该过程是*无记忆*的，即只有当前值对于下一个值的概率是重要的。
+- en: 'In this recipe, we will examine a simple example of a random process that models
+    the number of bus arrivals at a stop over time. This process is called a **Poisson
+    process**. A Poisson process *N*(*t*) has a single parameter, *λ*, which is usually
+    called the *intensity* or *rate*, and the probability that *N*(*t*) takes the
+    value *n* at a given time *t* is given by the following formula:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本教程中，我们将研究一个简单的随机过程示例，该示例模拟了一段时间内公交车到站的数量。这个过程被称为**泊松过程**。泊松过程*N*(t)有一个参数*λ*，通常称为*强度*或*速率*，在给定时间*t*时，*N*(t)取值为*n*的概率由以下公式给出：
+- en: '![](assets/106772d7-94ec-4fa7-b32a-d60d705df5cc.png)'
+  id: totrans-131
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/106772d7-94ec-4fa7-b32a-d60d705df5cc.png)'
+- en: This equation describes the probability that *n* buses have arrived by time
+    *t*. Mathematically, this equation means that *N*(*t*) has a Poisson distribution
+    with the parameter *λt*. There is, however, an easy way to construct a Poisson
+    process by taking sums of inter-arrival times that follow an exponential distribution.
+    For instance, let *X[i]* be the time between the (*i-1*)-st*arrival and the *i*-th
+    arrival, which are exponentially distributed with parameter *λ*. Now, we take
+    the following equation:*
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个方程描述了在时间*t*之前到达的*n*辆公共汽车的概率。数学上，这个方程意味着*N*(t)服从参数为*λt*的泊松分布。然而，有一种简单的方法可以通过取遵循指数分布的到达间隔时间的总和来构建泊松过程。例如，让*X[i]*表示第(*i-1*)次到达和第*i*次到达之间的时间，这些时间遵循参数为*λ*的指数分布。现在，我们得到以下方程：
+- en: '*![](assets/8c051194-080f-40e5-82a4-cad043e6dcd6.png)'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*![](assets/8c051194-080f-40e5-82a4-cad043e6dcd6.png)'
+- en: Here, the number *N(t)* is the maximum *n* such that *T_n <= t*. This is the
+    construction that we will work through in this recipe. We will also estimate the
+    intensity of the process by taking the mean of the inter-arrival times.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，数字*N(t)*是最大的*n*，使得*T_n <= t*。这是我们将在本教程中进行的构造。我们还将通过计算到达间隔时间的平均值来估计该过程的强度。
+- en: Getting ready
+  id: totrans-135
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'Before we start, we import the `default_rng` routine from NumPy''s `random`
+    module and create a new random number generator with a seed for the purpose of
+    demonstration:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始之前，我们从NumPy的`random`模块中导入`default_rng`例程，并创建一个新的随机数生成器，为了演示目的设置了一个种子：
+- en: '[PRE21]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: In addition to the random number generator, we also import NumPy as `np` and
+    the Matplotlib `pyplot` module as `plt`. We also need to have the SciPy package
+    available.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了随机数生成器，我们还导入NumPy作为`np`和Matplotlib的`pyplot`模块作为`plt`。我们还需要有SciPy包可用。
+- en: How to do it...
+  id: totrans-139
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何操作...
+- en: 'The following steps show how to model the arrival of buses using a Poisson
+    process:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来的步骤展示了如何使用泊松过程模拟公交车的到达：
+- en: 'Our first task is to create the sample inter-arrival times by sampling data
+    from an exponential distribution. The `exponential` method on the NumPy `Generator`
+    class requires a `scale` parameter, which is *1/λ*, where *λ* is the rate. We
+    choose a rate of 4, and create 50 sample inter-arrival times:'
+  id: totrans-141
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们的第一个任务是通过从指数分布中抽样数据来创建样本到达时间间隔。NumPy的`Generator`类上的`exponential`方法需要一个`scale`参数，这是*1/λ*，其中*λ*是速率。我们选择速率为4，并创建50个样本到达时间间隔：
+- en: '[PRE22]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Next, we compute the actual arrival times by using the `accumulate` method
+    of the NumPy `add` universal function. We also create an array containing the
+    integers 0 to 49, representing the number of arrivals at each point:'
+  id: totrans-143
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们使用NumPy的`add`通用函数的`accumulate`方法计算实际到达时间。我们还创建一个包含0到49的整数的数组，表示每个点的到达次数：
+- en: '[PRE23]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Next, we plot the arrivals over time using the `step` plotting method:'
+  id: totrans-145
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们使用`step`绘图方法绘制随时间到达的情况：
+- en: '[PRE24]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'The result is shown in *Figure 4.3*, where the length of each horizontal line
+    represents the inter-arrival times:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果显示在*图4.3*中，每条水平线的长度代表了到达时间间隔：
+- en: '![](assets/1ff070ea-f4f3-49fd-b260-be6acd827068.png)'
+  id: totrans-148
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/1ff070ea-f4f3-49fd-b260-be6acd827068.png)'
+- en: 'Figure 4.3: Arrivals over time, where inter-arrival times are exponentially
+    distributed, which makes the number of arrivals at a time a Poisson process'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.3：随时间到达，其中到达时间间隔呈指数分布，使得某一时间的到达次数成为泊松过程
+- en: 'Next, we define a function that will evaluate the probability distribution
+    of the counts at a time, which we will take as `1` here. This uses the formula
+    for the Poisson distribution that we gave in the introduction to this recipe:'
+  id: totrans-150
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们定义一个函数，将评估在某个时间内计数的概率分布，这里我们取`1`。这使用了我们在本篇介绍中给出的泊松分布公式：
+- en: '[PRE25]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'Now, we plot the probability distribution over the count per unit of time,
+    since we chose `time=1` in the previous step. We will add to this plot later:'
+  id: totrans-152
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们绘制每单位时间的计数的概率分布，因为在上一步中我们选择了`time=1`。我们稍后会在这个图上添加内容：
+- en: '[PRE26]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Now, we move on to estimate the rate from our sample data. We do this by computing
+    the mean of the inter-arrival times, which, for exponential distribution, is an
+    estimator of the scale *1/λ*:'
+  id: totrans-154
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们继续从我们的样本数据中估计速率。我们通过计算到达时间间隔的均值来实现这一点，对于指数分布来说，这是一个*1/λ*的估计量：
+- en: '[PRE27]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Finally, we plot the probability distribution with this estimated rate for the
+    counts per unit of time. We plot this on top of the true probability distribution
+    that we produced in *Step 5:*
+  id: totrans-156
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们使用估计的速率绘制每单位时间的计数的概率分布。我们将这个绘制在我们在*步骤5*中产生的真实概率分布上：
+- en: '[PRE28]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'The resulting plot is given in *Figure 4.4*, where we can see that, apart from
+    a small discrepancy, the estimated distribution is very close to the true distribution:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 得到的图在*图4.4*中，我们可以看到，除了一点小差异外，估计的分布非常接近真实分布：
+- en: '![](assets/59f7bc51-399f-4b12-93d9-6193c357c47d.png)'
+  id: totrans-159
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/59f7bc51-399f-4b12-93d9-6193c357c47d.png)'
+- en: 'Figure 4.4: Poisson distribution of the number of arrivals per time unit, the
+    true distribution, and the distribution estimated from the sampled data'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.4：单位时间内到达次数的泊松分布，真实分布，以及从采样数据估计的分布
+- en: How it works...
+  id: totrans-161
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: A Poisson process is a counting process that counts the number of events (bus
+    arrivals) that occur in an amount of time if the events are randomly spaced (in
+    time) with an exponential distribution with a fixed parameter. We constructed
+    the Poisson process by sampling inter-arrival times from exponential distribution,
+    following the construction we described in the introduction. However, it turns
+    out that this fact (that the inter-arrival times are exponentially distributed)
+    is a property of all Poisson processes when they are given their formal definition
+    in terms of probabilities.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 泊松过程是一个计数过程，它计算在一段时间内发生的事件（公交车到达）的数量，如果事件在时间上是随机间隔的（时间上）并且具有固定参数的指数分布。我们通过从指数分布中抽样到达时间间隔来构建泊松过程，遵循我们在介绍中描述的构建过程。然而，事实证明，当泊松过程在概率方面给出其正式定义时，这一事实（到达时间间隔呈指数分布）是所有泊松过程的属性。
+- en: In this recipe, we sampled 50 points from an exponential distribution with a
+    given `rate` parameter. We had to do a small conversion because the NumPy `Generator`
+    method for sampling from an exponential distribution uses a related `scale` parameter,
+    which is `1` over the `rate`. Once we have these points, we create an array that
+    contains cumulative sums of these exponentially distributed numbers. This creates
+    our arrival times. The actual Poisson process is that displayed in *Figure 4.3*,
+    and is a combination of the arrival times with the corresponding number of events
+    that had occurred at that time.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本篇中，我们从具有给定`rate`参数的指数分布中抽样了50个点。我们必须进行一些小的转换，因为NumPy的`Generator`方法用于从指数分布中抽样使用了一个相关的`scale`参数，即`1`除以`rate`。一旦我们有了这些点，我们创建一个包含这些指数分布数字的累积和的数组。这创建了我们的到达时间。实际的泊松过程是在*图4.3*中显示的，是到达时间和在该时间发生的事件数量的组合。
+- en: The mean (expected value) of an exponential distribution coincides with the
+    scale parameter, so the mean of a sample drawn from an exponential distribution
+    is one way to estimate the scale (rate) parameter. This estimate will not be perfect,
+    since our sample is relatively small. This is why there is a small discrepancy
+    between the two plots in *Figure 4.4*.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 指数分布的均值（期望值）与比例参数相符，因此从指数分布中抽取的样本的均值是估计比例（速率）参数的一种方法。由于我们的样本相对较小，这种估计不会完美。这就是为什么在*图4.4*中两个图之间存在一些小的差异。
+- en: There's more...
+  id: totrans-165
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: There are many types of random processes describing a wide variety of real-world
+    scenarios. In this recipe, we modeled arrival times using a Poisson process. A
+    Poisson process is a continuous random process, meaning that it is parameterized
+    by a continuous variable, *t* ≥ 0, rather than a discrete variable, *n*=1,2,….
+    Poisson processes are actually Markov chains, under a suitably generalized definition
+    of a Markov chain, and also an example of a *renewal process*. A renewal process
+    is a process that describes the number of events that occur within a period of
+    time. The Poisson process described here is an example of a renewal process.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多类型的随机过程描述各种真实世界的情景。在这个示例中，我们使用泊松过程模拟到达时间。泊松过程是一个连续的随机过程，这意味着它是由一个连续变量*t*≥0来参数化的，而不是一个离散变量*n*=1,2,….泊松过程实际上是马尔可夫链，在适当的马尔可夫链定义下，也是*更新过程*的一个例子。更新过程描述了在一段时间内发生的事件数量。这里描述的泊松过程是更新过程的一个例子。
+- en: 'Many Markov chains also satisfy some properties in addition to their defining
+    Markov property. For example, a Markov chain is *homogeneous* if the following
+    equality holds for all *n*, *i*, and *j* values:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多马尔可夫链除了其定义的马尔可夫性质外，还满足一些其他属性。例如，如果对于所有*n*、*i*和*j*值，以下等式成立，则马尔可夫链是*均匀的*：
+- en: '![](assets/2d2f34e4-b2c4-4759-8708-732d78597133.png)'
+  id: totrans-168
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/2d2f34e4-b2c4-4759-8708-732d78597133.png)'
+- en: In simple terms, this means that the probabilities of moving from one state
+    to another over a single step does not change as we increase the number of steps.
+    This is extremely useful for examining the long-term behavior of a Markov chain.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简单来说，这意味着在单个步骤中从一个状态转移到另一个状态的概率随着步数的增加而不变。这对于检查马尔可夫链的长期行为非常有用。
+- en: It is very easy to construct simple examples of homogeneous Markov chains. Suppose
+    that we have two states, *A* and *B*. At any given step, we could be either at
+    state *A* or at state *B.* We move between states according to a probability.
+    For instance, let's say that the probability of transitioning from state *A*to
+    state *A* is 0.4, and that theprobability of transitioning from *A*to *B*is 0.6.*Similarly,
+    let's say that the probability of transitioning from *B* to *B*is 0.2, and transitioning
+    from *B*to *A* is 0.8\. Notice that both the probability of switching plus the
+    probability of staying the same sum to 1 in both cases. We can represent the probability
+    of transitioning from each state in matrix form given, in this case, by the following
+    equation:*
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 构建均匀马尔可夫链的简单示例非常容易。假设我们有两个状态*A*和*B*。在任何给定的步骤中，我们可能处于状态*A*或状态*B*。我们根据概率在状态之间移动。例如，假设从状态*A*转移到状态*A*的概率为0.4，从状态*A*转移到状态*B*的概率为0.6。同样，假设从状态*B*转移到状态*B*的概率为0.2，从状态*B*转移到状态*A*的概率为0.8。请注意，在这两种情况下，切换的概率加上保持不变的概率总和为1。我们可以用矩阵形式表示每个状态的转移概率，如下所示：
+- en: '*![](assets/7b1faeb6-1ed9-4eac-98c4-98e68a4d9bac.png)'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*![](assets/7b1faeb6-1ed9-4eac-98c4-98e68a4d9bac.png)'
+- en: 'This matrix is called the *transition matrix*. The idea here is that the probability
+    of being in a particular state after a step is given by multiplying the vector
+    containing the probability of being in state *A* and *B* (position 0 and 1, respectively).
+    For example, if we start in state *A* then the probability vector will contain
+    a 1 at index 0 and 0 at index 1\. Then, the probability of being in state *A*
+    after 1 step is given by 0.4, and the probability of being in state *B* is 0.6\.
+    This is what we expect, given the probabilities we outlined previously. However,
+    we could also write this calculation using the matrix formula:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个矩阵被称为*转移矩阵*。这里的想法是，一步后处于特定状态的概率是通过将包含状态*A*和*B*的概率的向量（分别为位置0和1）相乘得到的。例如，如果我们从状态*A*开始，那么概率向量将在索引0处包含1，在索引1处包含0。然后，一步后处于状态*A*的概率为0.4，处于状态*B*的概率为0.6。这是我们预期的结果，根据我们之前概述的概率。然而，我们也可以使用矩阵公式来表示这个计算：
+- en: '![](assets/0c516c06-936a-46cc-a55c-ea87ff1cdfa9.png)'
+  id: totrans-173
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/0c516c06-936a-46cc-a55c-ea87ff1cdfa9.png)'
+- en: 'To get the probability of being in either state after two steps, we multiply
+    the right-hand side vector again by the transition matrix, *T*, to obtain the
+    following:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了得到两个步骤后处于任一状态的概率，我们再次将右侧向量乘以转移矩阵*T*，得到以下结果：
+- en: '![](assets/ee656e40-e42a-4549-91ee-498b80325245.png)'
+  id: totrans-175
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ee656e40-e42a-4549-91ee-498b80325245.png)'
+- en: We can continue this process *ad infinitum* to obtain a sequence of state vectors,
+    which constitute our Markov chain. This construction can be applied, with more
+    states if necessary, to model many simple, real-world problems.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以无限地继续这个过程，得到一系列状态向量，构成我们的马尔可夫链。这种构造可以应用于许多简单的真实世界问题，如果需要，可以使用更多的状态。
+- en: Analyzing conversion rates with Bayesian techniques
+  id: totrans-177
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用贝叶斯技术分析转化率
+- en: Bayesian probability allows us to systematically update our understanding (in
+    a probabilistic sense) of a situation by considering data. In more technical language,
+    we update the *prior* distribution (our current understanding) using data to obtain
+    a *posterior* distribution. This is particularly useful, for example, when examining
+    the proportion of users who go on to buy a product after viewing a website. We
+    start with our prior belief distribution. For this we will use the *beta* distribution,
+    which models the probability of success given numbers of successes (completed
+    purchases) against failures (no purchases). For this recipe, we will assume that
+    our prior belief is that we expect 25 successes from 100 views (75 fails). This
+    means that our prior belief follows a beta (25, 75) distribution. Let's say that
+    we wish to calculate the probability that the true rate of success is at least
+    33%.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 贝叶斯概率允许我们通过考虑数据系统地更新我们对情况的理解（以概率意义）。更加技术性的说法是，我们使用数据更新*先验*分布（我们当前的理解）以获得*后验*分布。例如，当检查用户在查看网站后购买产品的比例时，这是特别有用的。我们从我们的先验信念分布开始。为此，我们将使用*beta*分布，该分布模拟了成功的概率，给定成功（完成购买）和失败（未购买）的数量。在这个示例中，我们假设我们的先验信念是，我们期望从100次浏览中获得25次成功（75次失败）。这意味着我们的先验信念遵循beta（25,
+    75）分布。假设我们希望计算成功率至少为33%的概率。
+- en: Our method is roughly divided into three steps. We first need to understand
+    our prior belief for the conversion rate, which we have decided follows a beta
+    (25, 75) distribution. We compute the probability that the conversion rate is
+    at least 33% by integrating (numerically) the probability density function for
+    the prior distribution from 0.33 to 1\. The next step is to apply the Bayesian
+    reasoning to update our prior belief with new information. Then, we can perform
+    the same integration with the posterior belief to examine the probability that
+    the conversion rate is at least 33% given this new information.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的方法大致分为三个步骤。首先，我们需要了解我们对转化率的先验信念，我们决定其遵循beta（25, 75）分布。我们通过（数值）积分先验分布的概率密度函数来计算转化率至少为33%的概率，从0.33到1。下一步是应用贝叶斯推理来使用新信息更新我们的先验信念。然后，我们可以使用后验信念执行相同的积分，以检查在给定这些新信息的情况下，转化率至少为33%的概率。
+- en: In this recipe, we will see how to use Bayesian techniques to update a prior
+    belief based on new information for our hypothetical website.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们将看到如何使用贝叶斯技术根据我们假设的网站的新信息更新先验信念。
+- en: Getting ready
+  id: totrans-181
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: As usual, we will need the NumPy and Matplotlib packages imported as `np` and
+    `plt`, respectively. We will also require the SciPy package, imported as `sp`.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像往常一样，我们需要导入NumPy和Matplotlib包，分别命名为`np`和`plt`。我们还需要导入SciPy包，命名为`sp`。
+- en: How to do it...
+  id: totrans-183
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'The following steps show how to estimate and update conversion rate estimations
+    using Bayesian reasoning:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下步骤显示了如何使用贝叶斯推理来估计和更新转化率估计：
+- en: 'The first step is to set up the prior distribution. For this we use the `beta`
+    distribution object from the SciPy `stats` module, which has various methods for
+    working with the beta distribution. We import the `beta` distribution from the
+    `stats` module under the alias `beta_dist` and then create a convenience function
+    for the probability density function:'
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 第一步是建立先验分布。为此，我们使用SciPy的stats模块中的`beta`分布对象，该对象具有各种用于处理beta分布的方法。我们从`stats`模块中导入`beta`分布，并使用别名`beta_dist`创建一个方便的概率密度函数：
+- en: '[PRE29]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Next, we need to compute the probability, under the prior belief distribution,
+    that the success rate is at least 33%. To do this, we use the `quad` routine from
+    the SciPy `integrate` module, which performs numerical integration of a function.
+    We use this to integrate the probability density function for the beta distribution,
+    imported in *Step 1*, with our prior parameters. We print the probability according
+    to our prior distribution to the console:'
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要计算在先验信念分布下，成功率至少为33%的概率。为此，我们使用SciPy的integrate模块中的`quad`例程，该例程执行函数的数值积分。我们使用这个例程来积分beta分布的概率密度函数（在*步骤1*中导入），并使用我们的先验参数。我们将根据我们的先验分布将概率打印到控制台上：
+- en: '[PRE30]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Now, suppose we have received some information about successes and failures
+    over a new period of time. For example, we observed 122 successes and 257 failures
+    over this period. We create new variables to reflect these values:'
+  id: totrans-189
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，假设我们已经收到了关于一个新时间段内成功和失败的一些信息。例如，我们观察到这段时间内有122次成功和257次失败。我们创建新的变量来反映这些值：
+- en: '[PRE31]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'To obtain the parameter values for the posterior distribution with a beta distribution,
+    we simply add the observed successes and failures to the `prior_alpha` and `prior_beta`
+    parameters, respectively:'
+  id: totrans-191
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要获得beta分布的后验分布的参数值，我们只需将观察到的成功和失败添加到`prior_alpha`和`prior_beta`参数中：
+- en: '[PRE32]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Now, we repeat our numerical integration to compute the probability that the
+    success rate is now above 33% using the posterior distribution (with our new parameters
+    computed earlier). Again, we print this probability in the terminal:'
+  id: totrans-193
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们重复数值积分，使用后验分布（使用先前计算的新参数）计算成功率现在高于33%的概率。然后，我们在终端打印这个概率：
+- en: '[PRE33]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'We can see here that the new probability, given the updated posterior distribution,
+    is 13% as opposed to the prior 3%. This is a significant difference, although
+    we are still not confident that the conversion rate is above 33% given these values.
+    Now, we plot the prior and posterior distribution to visualize this increase in
+    probability. To start with, we create an array of values and evaluate our probability
+    density function based on these values:'
+  id: totrans-195
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们可以看到，根据更新后的后验分布，新的概率为13%，而不是先前的3%。这是一个显著的差异，尽管我们仍然不能确定在给定这些值的情况下转化率是否高于33%。现在，我们绘制先验和后验分布，以可视化这种概率增加。首先，我们创建一个值数组，并根据这些值评估我们的概率密度函数：
+- en: '[PRE34]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Finally, we plot the two probability density functions computed in *Step 6*
+    onto a new plot:'
+  id: totrans-197
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们将在一个新的图中绘制*步骤6*中计算的两个概率密度函数：
+- en: '[PRE35]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'The resulting plot is shown in *Figure 4.5*, where we can see that the posterior
+    distribution is much more narrow and centered to the right of the prior:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果图显示在*图4.5*中，我们可以看到后验分布比先验分布更窄，且向右集中：
+- en: '![](assets/6f4a1bb6-f47b-4b3a-b93e-73c8dd97dfe9.png)'
+  id: totrans-200
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/6f4a1bb6-f47b-4b3a-b93e-73c8dd97dfe9.png)'
+- en: 'Figure 4.5: Prior and posterior distributions of a success rate following a
+    beta distribution'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.5：遵循beta分布的成功率的先验和后验分布
+- en: How it works...
+  id: totrans-202
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: Bayesian techniques work by taking a prior belief (probability distribution)
+    and using *Bayes' theorem* to combine the prior belief with the likelihood of
+    our data given this prior belief to form a posterior belief. This is actually
+    similar to how we might understand things in real life. For example, when you
+    wake up on a given day, you might have the belief (from a forecast or otherwise)
+    that there is a 40% chance of rain outside. Upon opening the blinds, you see that
+    it is very cloudy outside, which might indicate that rain is more likely, so we
+    update our belief according to this new data, to say a 70% chance of rain.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 贝叶斯技术通过采用先验信念（概率分布）并使用*贝叶斯定理*将先验信念与给定此先验信念的数据的可能性相结合，形成后验信念。这实际上类似于我们在现实生活中理解事物的方式。例如，当你在某一天醒来时，你可能会相信（来自预报或其他方式）外面下雨的可能性是40%。打开窗帘后，你看到外面非常多云，这可能表明下雨的可能性更大，因此我们根据这些新数据更新我们的信念，说有70%的可能性会下雨。
+- en: 'To understand how this works, we need to understand *conditional probability*.
+    Conditional probability deals with the probability that one event will occur *given
+    that* another event has already occurred. In symbols, the probability of event
+    *A* given that event *B* has occurred is written as follows:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要理解这是如何工作的，我们需要了解*条件概率*。条件概率涉及一个事件在另一个事件已经发生的情况下发生的概率。用符号表示，事件*B*发生的情况下事件*A*发生的概率如下所示：
+- en: '![](assets/5a3c0d70-ca6f-414e-bb4f-e1f05232bd59.png)'
+  id: totrans-205
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/5a3c0d70-ca6f-414e-bb4f-e1f05232bd59.png)'
+- en: 'Bayes'' theorem is a powerful tool that can be written (symbolically) as follows:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 贝叶斯定理是一个强大的工具，可以用以下方式（符号化）表示：
+- en: '![](assets/66cca2d1-4176-43e5-aa37-302a06dd800f.png)'
+  id: totrans-207
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/66cca2d1-4176-43e5-aa37-302a06dd800f.png)'
+- en: 'The probability *P*(*A*) represents our prior belief. The event *B* represents
+    the data that we have gathered, so that *P*(*B* | *A*) is the likelihood that
+    our data arose given our prior belief. The probability *P*(*B*) represents the
+    probability that our data arose, and *P*(*A* | *B*) represents our posterior belief
+    given the data. In practice, the probability *P*(*B*) can be difficult to calculate
+    or otherwise estimate, so it is quite common to replace the strong equality above
+    with a proportional version of Bayes'' theorem:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 概率*P*(*A*)代表我们的先验信念。事件*B*代表我们收集到的数据，因此*P*(*B* | *A*)是我们的数据出现在我们先验信念下的可能性。概率*P*(*B*)代表我们的数据出现的可能性，*P*(*A*
+    | *B*)代表我们的后验信念给定数据。在实践中，概率*P*(*B*)可能很难计算或估计，因此用贝叶斯定理的比例版本替换上面的强等式是非常常见的：
+- en: '![](assets/ebdc2354-2595-40dc-b038-949ee0ca5fe0.png)'
+  id: totrans-209
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ebdc2354-2595-40dc-b038-949ee0ca5fe0.png)'
+- en: 'In the recipe, we assumed that our prior was beta distributed. The beta distribution
+    has a probability density function given by the following equation:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个配方中，我们假设我们的先验分布是beta分布。Beta分布的概率密度函数由以下方程给出：
+- en: '![](assets/a78a4ebb-bebe-49fe-89cb-908ef5f74e07.png)'
+  id: totrans-211
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/a78a4ebb-bebe-49fe-89cb-908ef5f74e07.png)'
+- en: 'Here, *Γ*(*α*) is the gamma function. The likelihood is binomially distributed,
+    which has a probability density function given by the following equation:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里，*Γ*(*α*)是伽玛函数。可能性是二项分布的，其概率密度函数由以下方程给出：
+- en: '![](assets/8535466c-882c-4283-a838-58a01e26e23c.png)'
+  id: totrans-213
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/8535466c-882c-4283-a838-58a01e26e23c.png)'
+- en: Here, *k* is the number of observations, and *j* is one of those that was successful.
+    In the recipe, we observed *m = 122* successes and *n* = 257 failures, which gives
+    *k = m + n = 379* and *j = m = 122*. To calculate the posterior distribution,
+    we can use the fact that the beta distribution is a conjugate prior for the binomial
+    distribution to see that the right-hand side of the proportional form of Bayes'
+    theorem is beta distributed with parameters *α + m**and *β +* *n**.**This is what
+    we used in the recipe. The fact that the beta distribution is a conjugate prior
+    for binomial random variables makes them useful in Bayesian statistics.**
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里，*k*是观察次数，*j*是其中一个成功的次数。在这个配方中，我们观察到*m = 122*次成功和*n* = 257次失败，这给出*k = m +
+    n = 379*和*j = m = 122*。要计算后验分布，我们可以使用beta分布是二项分布的共轭先验的事实，看到贝叶斯定理的比例形式的右侧是具有参数*α
+    + m**和*β +* *n**的beta分布。**这就是我们在这个配方中使用的。Beta分布是二项随机变量的共轭先验的事实使它们在贝叶斯统计中非常有用。**
+- en: '**The method we demonstrated in this recipe is a rather basic example of using
+    a Bayesian method, but it is still useful for updating our prior beliefs given
+    new data in a systematic way.'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**我们在这个配方中展示的方法是使用贝叶斯方法的一个相当基本的例子，但它仍然对以系统的方式更新我们的先验信念给出了有用的方法。'
+- en: There's more...
+  id: totrans-216
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: Bayesian methods can be used for a wide variety of tasks, making it a powerful
+    tool. In this recipe, we used a Bayesian approach to model the success rate of
+    a website based on our prior belief of how it performs and additional data gathered
+    from users. This is a rather complex example since we modeled our prior belief
+    on a beta distribution. Here is another example of using Bayes' theorem to examine
+    two competing hypotheses using only simple probabilities (numbers between 0 and
+    1).
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 贝叶斯方法可以用于各种各样的任务，使其成为一个强大的工具。在这个配方中，我们使用了贝叶斯方法来基于我们对网站表现的先验信念和从用户那里收集到的额外数据来建模网站的成功率。这是一个相当复杂的例子，因为我们将我们的先验信念建模为beta分布。这里是另一个使用贝叶斯定理来检验两个竞争假设的例子，只使用简单的概率（0到1之间的数字）。
+- en: 'Suppose you place your keys in the same place every day when you return home,
+    but one morning you wake up to find that they are not in this place. After searching
+    for a short time, you cannot find them and so conclude that they must have vanished
+    from existence. Let''s call this hypothesis *H[1]*. Now, *H[1]* certainly explains
+    the data, *D*, that you cannot find your keys, hence the likelihood *P*(*D* |
+    *H[1]*) = 1\. (If your keys vanished from existence, then you could not possibly
+    find them.) An alternative hypothesis is that you simply placed them somewhere
+    else when you got home the night before. Let''s call this hypothesis *H[2]*. Now
+    this hypothesis also explains the data, so *P*(*D* | *H[2]*) = 1, but in reality,
+    *H[2]* is far more plausible than *H[1]*. Let''s say that the probability that
+    your keys completely vanished from existence is 1 in 1 million – this is a huge
+    overestimation, but we need to keep the numbers reasonable – while you estimate
+    that the probability that you placed them elsewhere the night before is 1 in 100\.
+    Computing the posterior probabilities, we have the following:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设你每天回家时都把钥匙放在同一个地方，但有一天早上你醒来发现它们不在那里。搜索了一会儿后，你找不到它们，于是得出结论它们必须已经从存在中消失了。让我们称这个假设为*H[1]*。现在，*H[1]*确实解释了你找不到钥匙的数据*D*，因此似然*P*(*D*
+    | *H[1]*) = 1。 （如果你的钥匙从存在中消失了，那么你不可能找到它们。）另一个假设是你昨晚回家时把它们放在了别的地方。让我们称这个假设为*H[2]*。现在这个假设也解释了数据，所以*P*(*D*
+    | *H[2]*) = 1，但实际上，*H[2]*比*H[1]*更合理。假设你的钥匙完全消失的概率是100万分之1——这是一个巨大的高估，但我们需要保持合理的数字——而你估计你昨晚把它们放在别的地方的概率是100分之1。计算后验概率，我们有以下结果：
+- en: '![](assets/2fd79ac1-310f-49a9-b24b-a1c5643b1e75.png)'
+  id: totrans-219
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/2fd79ac1-310f-49a9-b24b-a1c5643b1e75.png)'
+- en: This highlights the reality that it is 10,000 times more likely that you simply
+    misplaced your keys as opposed to the fact that they simply vanished. Sure enough,
+    you soon find your keys already in your pocket, because you had picked them up
+    earlier that morning.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这突显了一个现实，那就是你简单地把钥匙放错地方的可能性要比它们突然消失的可能性大10,000倍。果然，你很快就发现你的钥匙已经在口袋里了，因为你早上早些时候已经把它们拿起来了。
+- en: Estimating parameters with Monte Carlo simulations
+  id: totrans-221
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用蒙特卡洛模拟估计参数
+- en: Monte Carlo methods broadly describe techniques that use random sampling to
+    solve problems. These techniques are especially powerful when the underlying problem
+    involves some kind of uncertainty. The general method involves performing large
+    numbers of simulations, each sampling different inputs according to a given probability
+    distribution, and then aggregating the results to give a better approximation
+    of the true solution than any individual sample solution.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 蒙特卡洛方法广泛描述了使用随机抽样解决问题的技术。当潜在问题涉及某种不确定性时，这些技术尤其强大。一般方法涉及执行大量模拟，每个模拟根据给定的概率分布抽样不同的输入，然后聚合结果，以给出比任何单个样本解更好的真实解的近似。
+- en: '**Markov Chain Monte Carlo** (**MCMC**) is a specific kind of Monte Carlo simulation
+    in which we construct a Markov chain of successively better approximations of
+    the true distribution that we seek. This works by accepting or rejecting a proposed
+    state, sampled at random, based on carefully selected *acceptance probabilities*
+    at each stage, with the aim of constructing a Markov chain whose unique stationary
+    distribution is precisely the unknown distribution that we wish to find.'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**马尔可夫链蒙特卡洛**（**MCMC**）是一种特定类型的蒙特卡洛模拟，其中我们构建一个马尔可夫链，逐步得到我们寻求的真实分布的更好近似。这是通过在每个阶段基于精心选择的*接受概率*接受或拒绝随机抽样的提议状态来实现的，旨在构建一个唯一的稳态分布恰好是我们希望找到的未知分布的马尔可夫链。'
+- en: In this recipe, we will use the PyMC3 package and MCMC methods to estimate the
+    parameters of a simple model. The package will deal with most of the technical
+    details of running simulations, so we don't need to go any further into the details
+    of how the different MCMC algorithms actually work.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个食谱中，我们将使用PyMC3包和MCMC方法来估计一个简单模型的参数。该包将处理运行模拟的大部分技术细节，因此我们不需要进一步了解不同MCMC算法的工作原理。
+- en: Getting ready
+  id: totrans-225
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'As usual, we import the NumPy package and Matplotlib `pyplot` module as `np`
+    and `plt`, respectively. We also import and create a default random number generator,
+    with a seed for the purpose of demonstration, as follows:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像往常一样，我们导入NumPy包和Matplotlib `pyplot`模块，分别命名为`np`和`plt`。我们还导入并创建一个默认的随机数生成器，为了演示目的，设置了一个种子：
+- en: '[PRE36]'
+  id: totrans-227
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: We will also need a module from the SciPy package for this recipe as well as
+    the PyMC3 package, which is a package for probabilistic programming.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个食谱，我们还需要从SciPy包中导入一个模块，以及PyMC3包，这是一个用于概率编程的包。
+- en: How to do it...
+  id: totrans-229
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Perform the following steps to use Markov chain Monte Carlo simulations to
+    estimate the parameters of a simple model using sample data:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行以下步骤，使用马尔可夫链蒙特卡洛模拟来估计简单模型的参数：
+- en: 'Our first task is to create a function that represents the underlying structure
+    that we wish to identify. In this case, we will be estimating the coefficients
+    of a quadratic (a polynomial of degree 2). This function takes two arguments,
+    which are the points in the range, which is fixed, and the variable parameters
+    that we wish to estimate:'
+  id: totrans-231
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们的第一个任务是创建一个代表我们希望识别的基本结构的函数。在这种情况下，我们将估计二次函数的系数。这个函数接受两个参数，一个是固定的范围内的点，另一个是我们希望估计的变量参数：
+- en: '[PRE37]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'Next, we set up the `true` parameters and a `size` parameter that will determine
+    how many points are in the sample that we generate:'
+  id: totrans-233
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们设置`true`参数和一个`size`参数，确定我们生成的样本中有多少点：
+- en: '[PRE38]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'We generate the sample that we will use to estimate the parameters. This will
+    consist of the underlying data, generated by the `underlying` function we defined
+    in *Step 1*, plus some random noise that follows a normal distribution. We first
+    generate a range of *x* values, which will stay constant throughout the recipe,
+    and then use the `underlying` function and the `normal` method on our random number
+    generator to generate the sample data:'
+  id: totrans-235
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们生成将用于估计参数的样本。这将包括由我们在*Step 1*中定义的`underlying`函数生成的基础数据，以及遵循正态分布的一些随机噪音。我们首先生成一系列*x*值，这将在整个配方中保持不变，然后使用`underlying`函数和我们的随机数生成器上的`normal`方法来生成样本数据：
+- en: '[PRE39]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'It is a good idea to plot the sample data, with the underlying data overlaid,
+    before we begin the analysis. We use the `scatter` plotting method to plot only
+    the data points (without connecting lines), and then plot the underlying quadratic
+    structure using a dashed line:'
+  id: totrans-237
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在开始分析之前，将样本数据与基础数据叠加在一起是一个好主意。我们使用`scatter`绘图方法仅绘制数据点（不连接线），然后使用虚线绘制基础的二次结构：
+- en: '[PRE40]'
+  id: totrans-238
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'The result is *Figure 4.6*, where we can see that the shape of the underlying
+    model is still visible even with the noise, although the exact parameters of this
+    model are no longer obvious:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果是*图4.6*，我们可以看到即使有噪音，基础模型的形状仍然可见，尽管这个模型的确切参数不再明显：
+- en: '![](assets/c8c9b89d-be0d-4861-b5ce-7bb06bef685d.png)'
+  id: totrans-240
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/c8c9b89d-be0d-4861-b5ce-7bb06bef685d.png)'
+- en: 'Figure 4.6: Sampled data with the underlying model overlaid'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.6：叠加了基础模型的采样数据
+- en: 'We are ready to start our analysis, so we now import the PyMC3 package under
+    the alias `pm` as follows:'
+  id: totrans-242
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们已经准备好开始我们的分析，所以现在导入PyMC3包并使用别名`pm`如下：
+- en: '[PRE41]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'The basic object of PyMC3 programming is the `Model` class, which is usually
+    created using the context manager interface. We also create our prior distributions
+    for the parameters. In this case, we will assume that our prior parameters are
+    normally distributed with a mean of 1 and a standard deviation of 1\. We need
+    3 parameters, so we provide the `shape` argument. The `Normal` class creates random
+    variables that will be used in the Monte Carlo simulations:'
+  id: totrans-244
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: PyMC3编程的基本对象是`Model`类，通常使用上下文管理器接口创建。我们还为参数创建先验分布。在这种情况下，我们假设我们的先验参数服从均值为1，标准差为1的正态分布。我们需要3个参数，因此我们提供`shape`参数。`Normal`类创建将在蒙特卡洛模拟中使用的随机变量：
+- en: '[PRE42]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'We create a model for the underlying data, which can be done by passing the
+    random variable, `param`, that we created in *Step 6* into the `underlying` function
+    that we defined in *Step 1*. We also create a variable that handles our observations.
+    For this we use the `Normal` class, since we know that our noise is normally distributed
+    around the underlying data, `y`. We set a standard deviation of `2`, and pass
+    our observed `sample` data into the `observed` keyword argument (this is also
+    inside the `Model` context):'
+  id: totrans-246
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们为基础数据创建一个模型，可以通过将我们在*Step 6*中创建的随机变量`param`传递给我们在*Step 1*中定义的`underlying`函数来完成。我们还创建一个处理我们观测值的变量。为此，我们使用`Normal`类，因为我们知道我们的噪音在基础数据`y`周围是正态分布的。我们设置标准差为`2`，并将我们观察到的`sample`数据传递给`observed`关键字参数（这也在`Model`上下文中）：
+- en: '[PRE43]'
+  id: totrans-247
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'To run the simulations, we need only call the `sample` routine inside the `Model`
+    context. We pass the `cores` argument to speed up the calculations, but leave
+    all of the other arguments at the default values:'
+  id: totrans-248
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要运行模拟，我们只需要在`Model`上下文中调用`sample`例程。我们传递`cores`参数以加快计算速度，但将所有其他参数保持默认值：
+- en: '[PRE44]'
+  id: totrans-249
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: These simulations should take a short time to execute.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些模拟应该需要很短的时间来执行。
+- en: 'Next, we plot the posterior distributions that use the `plot_posterior` routine
+    from PyMC3\. This routine takes the `trace` result from the sampling step that
+    performed the simulations. We create our own figure and axes using the `plt.subplots`
+    routine in advance, but this isn''t strictly necessary. We are using three subplots
+    on a single figure, and we pass the `axs2`tuple of `Axes` to the plotting routing
+    under the `ax` keyword argument:'
+  id: totrans-251
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们绘制使用PyMC3中的`plot_posterior`例程的后验分布。这个例程使用了从进行模拟的采样步骤中得到的`trace`结果。我们提前使用`plt.subplots`例程创建自己的图和坐标轴，但这并不是严格必要的。我们在单个图上使用了三个子图，并将`axs2`的`Axes`元组传递给绘图例程的`ax`关键字参数：
+- en: '[PRE45]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'The resulting plot is shown in *Figure 4.7*, where you can see that each of
+    these distributions is approximately normal, with a mean that is similar to the
+    true parameter values:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果图显示在*图4.7*中，您可以看到每个分布都近似正态，均值与真实参数值相似：
+- en: '![](assets/f1707e92-3bf1-4e86-8ba7-42786c9002b8.png)'
+  id: totrans-254
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/f1707e92-3bf1-4e86-8ba7-42786c9002b8.png)'
+- en: 'Figure 4.7: Posterior distributions of estimated parameters'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.7：估计参数的后验分布
+- en: 'Now retrieve the mean of each of the estimated parameters from the trace by
+    using the `mean` method on the `params` item from the trace, which is simply a
+    NumPy array. We pass the `axis=0` argument because we want the mean of each of
+    the rows of the matrix of parameter estimates. We print these estimated parameters
+    in the terminal:'
+  id: totrans-256
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在通过使用`trace`中的`params`项上的`mean`方法检索每个估计参数的均值，这只是一个NumPy数组。我们传递`axis=0`参数，因为我们想要矩阵参数估计的每一行的均值。我们在终端打印这些估计参数：
+- en: '[PRE46]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Finally, we use our estimated parameters to generate our estimated underlying
+    data by passing the *x* values and the estimated parameters to the `underlying`
+    function defined in *Step 1*. We then plot this estimated underlying data together
+    with the true underlying data on the same axes:'
+  id: totrans-258
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们使用我们估计的参数通过将*x*值和估计的参数传递给*Step 1*中定义的`underlying`函数来生成我们估计的基础数据。然后我们在同一坐标轴上绘制这个估计的基础数据和真实的基础数据：
+- en: '[PRE47]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'The resulting plot is in *Figure 4.8*, where there is only a small difference
+    between these two models on this range:'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果图在*图4.8*中，这两个模型在这个范围内只有很小的差异：
+- en: '![](assets/e6a65709-18f5-4568-8c9f-42cb68ac02c1.png)'
+  id: totrans-261
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/e6a65709-18f5-4568-8c9f-42cb68ac02c1.png)'
+- en: 'Figure 4.8: True model and estimated model plotted on the same axes. There
+    is a small discrepancy between the estimated parameters and the true parameters'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4.8：真实模型和估计模型绘制在同一坐标轴上。估计参数和真实参数之间存在一些小差异
+- en: How it works...
+  id: totrans-263
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: The interesting part of the code in this recipe can be found in the `Model`
+    context manager. This object keeps track of the random variables, orchestrates
+    the simulations, and keeps track of the state. The context manager gives us a
+    convenient way to separate the probabilistic variables from the surrounding code.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个示例中代码的有趣部分可以在`Model`上下文管理器中找到。这个对象跟踪随机变量，编排模拟，并跟踪状态。上下文管理器为我们提供了一个方便的方法，将概率变量与周围代码分开。
+- en: We start by proposing a prior distribution for the distribution of the random
+    variables representing our parameters, of which there are three. We proposed a
+    normal distribution since we know that the parameters cannot stray too far from
+    the value 1\. (We can tell this by looking at the plot that we generated in *Step
+    4*, for example.) Using a normal distribution will give a higher probability to
+    the values that are close to the current values. Next, we add the details relating
+    to the observed data, which is used to calculate the acceptance probabilities
+    that are used to either accept or reject a state. Finally, we start the sampler
+    using the `sample` routine. This constructs the Markov chain and generates all
+    of the step data.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们为代表我们的参数的随机变量的分布提出了先验分布，其中有三个参数。我们提出了正态分布，因为我们知道参数不能偏离值1太远。（例如，通过查看我们在*步骤4*中生成的图表可以得知。）使用正态分布将使靠近当前值的值具有更高的概率。接下来，我们添加了与观察数据相关的细节，这些细节用于计算用于接受或拒绝状态的接受概率。最后，我们使用`sample`例程启动采样器。这构建了马尔可夫链并生成了所有步骤数据。
+- en: The `sample` routine sets up the sampler based on the types of variables that
+    will be simulated. Since the normal distribution is a continuous variable, the
+    `sample` routine selected the **No U-turn sampler** (**NUTS**). This is a reasonable
+    general-purpose sampler for continuous variables. A common alternative to NUTS
+    is the Metropolis sampler, which is less reliable but faster than NUTS in some
+    cases. The PyMC3 documentation recommends using NUTS whenever possible.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`sample`例程根据将要模拟的变量的类型设置了采样器。由于正态分布是一个连续变量，`sample`例程选择了**无U转弯采样器**（NUTS）。这是一个适用于连续变量的合理通用采样器。NUTS的一个常见替代品是Metropolis采样器，在某些情况下比NUTS更快但不太可靠。PyMC3文档建议尽可能使用NUTS。'
+- en: Once the sampling is complete, we plotted the posterior distribution of the
+    trace (the states given by the Markov chain) to see the final shape of the approximations
+    we generated. We can see here that all three of our random variables (parameters)
+    are normally distributed around approximately the correct value.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦采样完成，我们绘制了轨迹的后验分布（由马尔可夫链给出的状态），以查看我们生成的近似的最终形状。我们可以看到，我们的三个随机变量（参数）都大致上以正确的值为中心呈正态分布。
+- en: Under the hood, PyMC3 uses Theano to speed up its calculations. This makes it
+    possible for PyMC3 to perform computations on a **Graphics Processing Unit** (**GPU**)
+    rather than on the **Central Processing Unit** (**CPU**) for a considerable boost
+    to computation speed. Theano also supports the dynamic generation of C code to
+    improve computation speeds further.
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在幕后，PyMC3使用Theano来加速计算。这使得PyMC3能够在**图形处理单元**（GPU）上执行计算，而不是在**中央处理单元**（CPU）上，从而大大提高了计算速度。Theano还支持动态生成C代码以进一步提高计算速度。
+- en: There's more...
+  id: totrans-269
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The Monte Carlo method is very flexible, and the example we gave here is one
+    particular case where it can be used. A more typical basic example of where the
+    Monte Carlo method is applied is in estimating the value of integrals, commonly,
+    Monte Carlo integration. A really interesting case of Monte Carlo integration
+    is estimating the value of π ≈ 3.1415\. Let's briefly look at how this works.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 蒙特卡洛方法非常灵活，我们在这里给出的例子是它可以使用的一个特定情况。蒙特卡洛方法应用的一个更典型的基本例子是估计积分的值，通常是蒙特卡洛积分。蒙特卡洛积分的一个非常有趣的案例是估计π的值≈3.1415。让我们简要地看一下它是如何工作的。
+- en: First, we take the unit disk, whose radius is 1 and therefore has an area, π.
+    We can enclose this disk inside a square with vertices at the points (1, 1), (-1,
+    1), (1, -1), and (-1, -1). This square has an area 4, since the edge length is
+    2\. Now we can generate random points uniformly over this square. When we do this,
+    the probability that any one of these random points lies inside a given region
+    is proportional to the area of that region. Thus, the area of a region can be
+    estimated by multiplying the proportion of randomly generated points that lie
+    within the region by the total area of the square. In particular, we can estimate
+    the area of the disk by simply multiplying the number of randomly generate points
+    that lie within the disk by 4, and dividing by the total number of points we generated.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们取单位圆盘，其半径为1，因此面积为π。我们可以将这个圆盘包含在一个顶点为（1,1），（-1,1），（1，-1），和（-1，-1）的正方形内。由于边长为2，这个正方形的面积为4。现在我们可以在这个正方形上均匀地生成随机点。当我们这样做时，任何一个随机点位于给定区域内的概率与该区域的面积成比例。因此，通过将随机生成的点中位于该区域内的比例乘以正方形的总面积，可以估计出一个区域的面积。特别地，我们可以通过简单地将位于圆盘内的随机生成点的数量乘以4，并除以我们生成的总点数来估计圆盘的面积。
+- en: 'We can easily write a function in Python that performs this calculation, which
+    might be the following:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以很容易地用Python编写一个执行这个计算的函数，可能是以下内容：
+- en: '[PRE48]'
+  id: totrans-273
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'Running this function just once will give a reasonable approximation of π:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仅运行此函数一次将给出对π的合理近似：
+- en: '[PRE49]'
+  id: totrans-275
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'We can improve the accuracy of our estimation by using more points, but we
+    could also run this a number of times and average the results. Let''s run this
+    simulation 100 times and average the results (we''ll use concurrent futures to
+    parallelize this so that we can run larger numbers of samples if we want):'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过使用更多的点来提高我们的估计准确性，但我们也可以多次运行这个过程并平均结果。让我们运行这个模拟100次并平均结果（我们将使用并发 futures
+    来并行化这个过程，这样我们就可以运行更多的样本）：
+- en: '[PRE50]'
+  id: totrans-277
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Running this code once prints the estimated value of π as 3.1415752, which is
+    an even better estimate of the true value.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行此代码一次会打印出估计的π值为3.1415752，这是对真实值的更好估计。
+- en: See also
+  id: totrans-279
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The PyMC3 package has many features that are documented by numerous examples
+    ([https://docs.pymc.io/](https://docs.pymc.io/)). There is also another probabilistic
+    programming library based on TensorFlow ([https://www.tensorflow.org/probability](https://www.tensorflow.org/probability)).
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: PyMC3软件包有许多功能，有许多示例文档（[https://docs.pymc.io/](https://docs.pymc.io/)）。还有另一个基于TensorFlow的概率编程库（[https://www.tensorflow.org/probability](https://www.tensorflow.org/probability)）。
+- en: Further reading
+  id: totrans-281
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 进一步阅读
+- en: 'A good, comprehensive reference for probability and random processes is the
+    following book:'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于概率和随机过程的一个很好的综合参考书是以下书籍：
+- en: '*Grimmett, G. and Stirzaker, D. (2009). Probability and random processes*.
+    3rd ed. Oxford: Oxford Univ. Press*.*'
+  id: totrans-283
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Grimmett, G. and Stirzaker, D. (2009). Probability and random processes*.
+    3rd ed. Oxford: Oxford Univ. Press*.*'
+- en: 'An easy introduction to Bayes'' theorem and Bayesian statistics is the following:'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对贝叶斯定理和贝叶斯统计的简单介绍如下：
+- en: '*Kurt, W. (2019).Bayesian statistics the fun way*. San Francisco, CA: No Starch
+    Press, Inc*.*****'
+  id: totrans-285
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Kurt, W. (2019).Bayesian statistics the fun way*. San Francisco, CA: No Starch
+    Press, Inc*.*****'

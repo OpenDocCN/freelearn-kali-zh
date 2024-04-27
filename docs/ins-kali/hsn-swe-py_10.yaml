@@ -1,0 +1,1613 @@
+- en: Thinking About Business Object Data Persistence
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 考虑业务对象数据持久性
+- en: It's a given that most programs and systems have a need to store and retrieve
+    data to operate with. The alternative, embedding data into the code itself, is
+    simply not practical, after all. The specific shape of the data storage involved
+    can vary wildly, based on the underlying storage mechanism, the specific needs
+    of an application or service, and even on nominally non-technical constraints
+    such as the need to not require end users to install other software, but the fundamental
+    need remains the same, no matter what those factors add up to.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大多数程序和系统都需要存储和检索数据以进行操作。毕竟，将数据嵌入代码本身是不切实际的。涉及的数据存储形式可以根据底层存储机制、应用程序或服务的特定需求，甚至名义上的非技术约束（如不需要用户安装其他软件）而大相径庭，但无论这些因素加起来是什么，根本需求始终是一样的。
+- en: 'The various component projects/sub-systems of `hms_sys` are no exception to
+    this:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`hms_sys`的各个组件项目/子系统也不例外：'
+- en: The **Artisan** **Application** will need to allow **Artisan** users to manage
+    the **products** that the **Artisan** is creating and selling, and to manage at
+    least some of their own business entity data
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Artisan** **Application**需要允许**Artisan**用户管理**Artisan**正在创建和销售的**products**，并且至少需要管理部分自己的业务实体数据'
+- en: The **Artisan** **Gateway** service will probably need to at least stage data
+    for **artisans**, **products**, and **orders**, with associated **Customer** and
+    **Address** objects, as the data those objects contain moves through various processes
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Artisan** **Gateway**服务可能至少需要为**artisans**、**products**和**orders**以及相关的**Customer**和**Address**对象分阶段数据，因为这些对象包含的数据会通过各种流程移动'
+- en: The **Central Office Application** will need to be able to manage parts of **Artisan** and
+    **Product** data, and may need to read order data, if only for troubleshooting
+    purposes
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Central Office Application**需要能够管理**Artisan**和**Product**的部分数据，并且可能需要读取订单数据，即使只是出于故障排除目的'
+- en: 'So far, no specific requirements exist for how this data is going to be persisted,
+    or even where, though it''s probable that the **Artisan Application** will need
+    to keep data locally and propagate it up to or through the **Artisan Gateway**,
+    where the **Central Office Application** will access it, as shown in the following
+    diagram:'
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，还没有具体的要求说明这些数据将如何持久化，甚至在哪里，尽管**Artisan Application**可能需要在本地保留数据并将其传播到**Artisan
+    Gateway**或通过**Central Office Application**访问，如下图所示：
+- en: '![](assets/3153758b-360e-4547-8b76-8a2ecadae869.png)'
+  id: totrans-7
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/3153758b-360e-4547-8b76-8a2ecadae869.png)'
+- en: This iteration will work through the requirements, implementation, and testing
+    of the data persistence mechanisms involved for each of the component projects
+    in `hms_sys`, starting with some basic analysis of the needs and scope that is
+    specific to each component project. However, at this point, we don't have any
+    clear direction as to what the backend data storage even looks like, so we can't
+    really write any stories that provide useful guidance for how to implement data
+    persistence. Clearly, then, more investigation will be needed before planning
+    and executing this iteration.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本次迭代将通过对`hms_sys`中各个组件项目的数据持久性机制的需求、实施和测试进行分析，从而开始一些基本的分析。然而，目前我们甚至不清楚后端数据存储是什么样子，因此我们无法编写任何有用的指导如何实现数据持久性的故事。显然，这需要更多的调查工作才能在规划和执行本次迭代之前进行。
+- en: 'This chapter will examine the following topics:'
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将研究以下主题：
+- en: How an iterative (Agile) process usually handles stories that don't have sufficient
+    information to execute against
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 迭代（敏捷）过程通常如何处理没有足够信息来执行的故事
+- en: What data storage and persistence options are available, in general
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一般有哪些数据存储和持久性选项
+- en: What data access strategies should be examined, before making a decision about
+    how the various `hms_sys` component projects will deal with data access
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在决定各种`hms_sys`组件项目如何处理数据访问之前，应该检查哪些数据访问策略
+- en: Iterations are (somewhat) flexible
+  id: totrans-13
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 迭代是（在某种程度上）灵活的
+- en: 'In many Agile methodologies, there are specific artefacts and/or processes
+    intended to handle the kinds of scenario that this iteration is starting in—there
+    is a need, even if it''s only implied, for some functionality, but not enough
+    information is available to actually make any development progress against that
+    need. There might even be stories already in place that appear to be complete,
+    but that are lacking some nuts-and-bolts details that are needed for development
+    to progress. In this case, those stories might resemble the following:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在许多敏捷方法中，有特定的工件和/或流程旨在处理这种迭代开始的情况——即存在某种功能的需求，即使只是暗示性的，但实际上没有足够的信息来对这种需求进行任何开发进展。甚至可能已经有一些看似完整的故事，但缺少了一些开发所需的细节。在这种情况下，这些故事可能类似于以下内容：
+- en: As an **Artisan**, I need my **Product **data to be stored locally, so that
+    I can work with it without having to worry about connecting to an external system
+    that I may not have ready access to at the moment
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 作为**Artisan**，我需要我的**Product**数据被本地存储，这样我就可以在不必担心连接到可能无法立即访问的外部系统的情况下使用它。
+- en: As a **Product Manager**/**Approver**, I need to be able to access **Product**
+    information across any/all **artisans** so that I can manage the availability
+    of those products in the web store
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 作为**产品经理**/**批准人**，我需要能够访问任何/所有**artisans**的**Product**信息，以便我可以在网店中管理这些产品的可用性
+- en: As a **System Administrator**, I need the **Artisan Gateway** to store **Product**
+    and related data separate from the main **Web Store** application so that it can
+    be safely staged before being released to the public site
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 作为**系统管理员**，我需要**Artisan Gateway**将**Product**和相关数据与主**Web Store**应用程序分开存储，以便在发布到公共站点之前可以安全地分阶段处理
+- en: All of these stories might look complete in that they are defining what needs
+    to happen from each user's perspective, but they lack any information about how
+    those should function.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些故事看起来可能都是完整的，因为它们定义了每个用户的需求，但它们缺乏关于这些功能应如何运作的任何信息。
+- en: Enter the Spike.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 进入Spike。
+- en: 'Spikes, which originated with the XP methodology and have been adopted (officially
+    or otherwise) across several other Agile methodologies, are essentially stories
+    whose purpose is to research and return usable planning details for other stories.
+    Ideally, stories that need Spikes generated around them will be identified before
+    they enter an iteration—if that doesn''t occur, stories whose information is lacking
+    will be unworkable, and some sort of shuffle will inevitably take place to either
+    defer the incomplete stories until their spikes have been completed, or incorporate
+    the spikes and their results into a revised iteration plan. The former will frequently
+    be the more likely of the two, though, since without the information from the
+    Spike estimating the target stories will be difficult at best, and perhaps impossible.
+    The spike stories that relate to the original stories that we mentioned previously
+    might be written like so:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尖峰，起源于XP方法论，并已被其他几种敏捷方法论（正式或非正式地）采纳，本质上是为了研究并返回其他故事可用的计划细节的故事。理想情况下，需要围绕它们生成尖峰的故事将在进入迭代之前被识别出来
+    - 如果这种情况没有发生，信息不足的故事将是无法工作的，并且不可避免地会发生某种洗牌，以推迟不完整的故事直到它们的尖峰完成，或者将尖峰及其结果纳入修订后的迭代计划中。前者往往更有可能发生，因为没有来自尖峰的信息，估算目标故事将是非常困难的，甚至可能是不可能的。与我们之前提到的原始故事相关的尖峰故事可能会被写成这样：
+- en: As a developer, I need to know how **Artisan** **Application** data is to be
+    stored and retrieved so that I can write code for those processes accordingly
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 作为开发人员，我需要知道Artisan应用程序数据的存储和检索方式，以便我可以为这些过程编写代码
+- en: As a developer, I need to know how **Central** **Office Application** data is
+    to be stored and retrieved so that I can write code for those processes accordingly
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 作为开发人员，我需要知道中央办公应用程序数据的存储和检索方式，以便我可以为这些过程编写代码
+- en: As a developer, I need to know how **Artisan Gateway** data is to be stored
+    and retrieved so that I can write code for those processes accordingly
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 作为开发人员，我需要知道Artisan Gateway数据的存储和检索方式，以便我可以为这些过程编写代码
+- en: In order to work through and resolve these spikes, and to finalize the stories
+    for this iteration, it'll be helpful to know what options are available. Once
+    those have been explored, they can be weighed in the context of the applications
+    and the service layer of the system, and some final decisions about implementation
+    approaches can be made, along with some final stories being written to work against.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了解决这些问题并完成本次迭代的故事，了解可用的选项将是有帮助的。一旦这些选项被探索，它们可以在应用程序和系统的服务层的背景下进行权衡，并可以做出一些最终的实施方法决策，以及编写一些最终的故事来应对。
+- en: Data storage options
+  id: totrans-25
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 数据存储选项
+- en: 'All of the options that will be given serious consideration have a few common
+    properties:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有将受到认真考虑的选项都具有一些共同的特性：
+- en: They will allow data to be stored offline, so that the application or service
+    program doesn't need to be running constantly in order to ensure that the relevant
+    data isn't lost
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 他们将允许数据脱机存储，这样应用程序或服务程序不需要持续运行以确保相关数据不会丢失
+- en: 'They have to allow the applications and service to perform at least three of
+    the four standard **CRUD** operations:'
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它们必须允许应用程序和服务执行至少四个标准CRUD操作中的三个：
+- en: '**C****reate**: Allowing data for new objects to be stored.'
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建：允许存储新对象的数据。
+- en: '**R****ead**: Allowing access to data for existing objects, one at a time,
+    all at once, and possibly with some filtering/searching capabilities.'
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 读取：允许访问现有对象的数据，一次一个，一次全部，可能还带有一些过滤/搜索功能。
+- en: '**U****pdate**: Allowing existing data to be altered when/if needed.'
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更新：允许在需要时更改现有数据。
+- en: '**D****elete**: Allowing (perhaps) the ability to remove data for objects that
+    are no longer relevant. At a minimum, flagging such data so that it''s not generally
+    available will work as well.'
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 删除：允许（也许）删除不再相关的对象的数据。至少，标记这样的数据，以便它不会普遍可用也可以。
+- en: 'They should also be examined and evaluated in terms of **ACID** characteristics,
+    though not all of these properties may be essential in the context of the data
+    needs of `hms_sys`. None should be unachievable, however:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它们还应该根据ACID特性进行检查和评估，尽管这些属性中并非所有都可能在`hms_sys`的数据需求背景下是必不可少的。然而，没有一个是不可实现的：
+- en: '**A****tomicity**: Data transactions should be all or nothing, so that if part
+    of a data-write fails, the entire dataset being written should also fail, leaving
+    data in a stable state'
+  id: totrans-34
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 原子性：数据交易应该是全有或全无的，因此如果数据写入的一部分失败，正在写入的整个数据集也应该失败，使数据处于稳定状态
+- en: '**C****onsistency**: Data transactions should always result in a valid data
+    state across the entire dataset, observing and obeying any storage system rules
+    (application-level rules are the responsibility of the applications, though)'
+  id: totrans-35
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一致性：数据交易应始终导致整个数据集中的有效数据状态，遵守和遵守任何存储系统规则（应用级规则是应用程序的责任）
+- en: '**Isolat****ion**: Data transactions should always result in the same end state
+    that would occur if their component changes were executed one at a time in the
+    same order'
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 隔离性：数据交易应始终导致与它们的组成更改按相同顺序逐个执行时会发生的最终状态相同
+- en: '**D****urability**: Data transactions should, once committed, be stored in
+    a fashion that prevents loss due to system crashes, power-down, and so on'
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 耐久性：一旦提交，数据交易应以防止由系统崩溃、断电等原因造成的损失的方式存储
+- en: Relational databases
+  id: totrans-38
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 关系数据库
+- en: '**Relational Database Management Systems** (**RDBMSes**) are one of the more
+    mature data storage approaches available for applications, with options that have
+    been in common use for decades. They typically store data as individual records
+    (sometimes called **rows**) in tables (or relations*)* that define field names
+    (**columns**) and types for all member records. Tables often define a primary
+    key field that provides a unique identifier for each record in the table. A simple
+    example of a table that defines user records might resemble the following:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**关系数据库管理系统**（**RDBMSes**）是可用于应用程序的更成熟的数据存储方法之一，其选项已经普遍使用了几十年。它们通常将数据存储为表中的单独记录（有时称为**行**），这些表（或**关系**）定义了所有成员记录的字段名称（**列**）和类型。表通常定义了一个主键字段，为表中的每条记录提供唯一标识符。一个简单的定义用户记录的表的示例可能如下所示：'
+- en: '![](assets/5e038e50-4222-4c9f-be26-bedad3bd993e.png)'
+  id: totrans-40
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/5e038e50-4222-4c9f-be26-bedad3bd993e.png)'
+- en: Each record in a table is, then, a consistent structure of data—all users in
+    the preceding example would have `user_id`, `first_name`, `last_name`, and `email_address`
+    values, though the values for the fields other than `user_id` might be empty,
+    or `NULL`. The data from any table can be accessed or assembled through a query
+    without having to change the tables themselves, and it's possible to join tables
+    in a query so that, say, users in one table can be associated with records that
+    they own in another—orders, perhaps.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表中的每条记录都是一致的数据结构，例如在前面的例子中，所有用户都会有`user_id`、`first_name`、`last_name`和`email_address`的值，尽管除`user_id`之外的字段的值可能为空或为`NULL`。任何表中的数据都可以通过查询访问或组装，而无需更改表本身，并且可以在查询中连接表，以便在另一个表中关联拥有的记录，例如订单。
+- en: This structure is often referred to as a schema, and it both defines structure
+    and enforces data constraints such as value type and size.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种结构通常被称为模式，它既定义了结构，又强制执行数据约束，如值类型和大小。
+- en: The most common query language for relational databases is the **Structured
+    Query Language** (**SQL**)—or at least some variant of it. SQL is an ANSI standard,
+    but there are a number of variants available. There may be others, but SQL is
+    almost certainly the most popular option, and is very mature and stable.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关系数据库最常见的查询语言是**结构化查询语言**（**SQL**）—或者至少是它的某个变体。SQL是一种ANSI标准，但有许多可用的变体。可能还有其他的，但SQL几乎肯定是最受欢迎的选择，并且非常成熟和稳定。
+- en: SQL is a complex enough topic in its own right, even setting aside its variations
+    across database engines, to warrant a book of its own. We'll explore a little
+    bit of SQL as `hms_sys` iterations progress, though, with some explanation of
+    what is happening.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SQL本身就是一个复杂的话题，即使不考虑它在数据库引擎之间的变化，也足以值得一本专门的书。随着`hms_sys`迭代的进行，我们将探讨一些SQL，并解释发生了什么。
+- en: Advantages and drawbacks
+  id: totrans-45
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 优点和缺点
+- en: One of the more significant advantages of a relational database data store is
+    its ability to retrieve related records in a single query request—the user/orders
+    structure mentioned earlier, for example. Most relational databases systems will
+    also allow multiple queries to be made in a single request, and will return a
+    collection of records for each of those queries as a single result set. The same
+    user- and orders-table structure could, for example, be queried to return a single
+    user and all of that user's orders, which has some advantages in application object
+    structures where one object type has one or more collections of objects associated
+    with them.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关系数据库数据存储的一个更重要的优势是它能够在单个查询请求中检索相关记录，例如前面提到的用户/订单结构。大多数关系数据库系统还允许在单个请求中进行多个查询，并将每个查询的记录集作为单个结果集返回。例如，可以查询相同的用户和订单表结构，以返回单个用户及该用户的所有订单，这在应用程序对象结构中具有一些优势，其中一个对象类型具有一个或多个与其关联的对象集合。
+- en: Another potentially significant advantage to most relational database engines
+    is their support for transactions—allowing a potentially complex set of changes
+    to, or insertions of data, to roll back as a whole if any single data manipulation
+    fails for any reason. This is virtually guaranteed to be available in any SQL
+    RDBMS, and is a very significant advantage when dealing with financial systems.
+    Support for transactions may be a functional requirement for systems that deal
+    with moving money around—if it isn't, it's probably worth asking why it isn't.
+    Support for transactions that encompass multiple operations is a key aspect of
+    full ACID compliance—without it, the atomicity, consistency, and (to some extent)
+    isolation criteria will be suspect. Fortunately, almost any relational database
+    system that's worthy of being called one at all will provide transaction support
+    sufficient enough for any need likely to arise.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于大多数关系数据库引擎来说，另一个可能重要的优势是它们对事务的支持——允许一组潜在复杂的数据更改或插入在任何单个数据操作失败的情况下作为一个整体回滚。这几乎可以保证在任何SQL
+    RDBMS中都可以使用，并且在处理金融系统时是非常重要的优势。对于处理资金流动的系统，事务支持可能是一个功能性要求——如果不是，那么很可能值得问一下为什么不是。支持跨多个操作的事务是完全ACID兼容性的一个关键方面——如果没有，原子性、一致性和（在某种程度上）隔离标准将受到怀疑。幸运的是，几乎任何值得被称为关系数据库系统的系统都将提供足够满足任何可能出现的需求的事务支持。
+- en: Many relational database systems also support the creation of views and stored
+    procedures/functions that can make data access faster and more stable as well.
+    Views are, for all practical purposes, predefined queries, often across multiple
+    tables, and are often built to retrieve specific data subsets across the tables
+    they are tied to. Stored procedures and functions can be thought of as approximate
+    equivalents to application functions, accepting certain input, performing some
+    set of tasks, and perhaps returning data that was generated by the execution of
+    those tasks. At a minimum, stored procedures can be used in place of writing queries,
+    which has some performance and security benefits.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多关系数据库系统还支持创建视图和存储过程/函数，可以使数据访问更快速、更稳定。视图在实际上是预定义的查询，通常跨越多个表，并且通常用于检索与它们绑定的表中的特定数据子集。存储过程和函数可以被视为应用程序函数的近似等价物，接受某些输入，执行一些任务，并可能返回由执行这些任务生成的数据。至少，存储过程可以用来代替编写查询，这具有一些性能和安全性的好处。
+- en: The schema inherent to tables in most relational databases is both an advantage
+    and a drawback, potentially. Since that schema enforces data constraints, there
+    is less likelihood of having bad data living in a table. Fields that are expected
+    to be string values, or integer values, will always be string or integer values,
+    because it's simply not possible to set a string field to a non-string value.
+    Those constraints ensure data type integrity. The trade-off for that, though,
+    is that value types (and sometimes the values themselves) may have to be checked
+    and/or converted when going into or coming out of the data store.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大多数关系数据库中表的固有模式可能既是优势也是缺点。由于该模式强制执行数据约束，因此表中存在不良数据的可能性较小。预期为字符串值或整数值的字段将始终是字符串或整数值，因为不可能将字符串字段设置为非字符串值。这些约束确保数据类型的完整性。然而，这种权衡是，值类型（有时甚至是值本身）在进入或离开数据存储时可能需要进行检查和/或转换。
+- en: If relational databases have a downside, it's probably that the structures of
+    the tables containing data are fixed, so making changes to those requires more
+    time and effort, and those changes can have effects on the code that accesses
+    them. Changing a field name in a database, for example, may well break application
+    functionality that references that field name. Most relational database systems
+    also require separate software installations, and server hardware that is operational
+    at all times, like associated applications are. This may or may not be a concern
+    for any given project, but can be a cost consideration, particularly if that server
+    lives in someone else's infrastructure.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果关系数据库有一个缺点，那可能是包含数据的表的结构是固定的，因此对这些表进行更改需要更多的时间和精力，而这些更改可能会影响访问它们的代码。例如，在数据库中更改字段名称很可能会破坏引用该字段名称的应用功能。大多数关系数据库系统还需要单独的软件安装和全天候运行的服务器硬件，就像相关的应用程序一样。这可能对任何特定项目是一个问题，也可能不是，但特别是如果该服务器位于他人的基础设施中，这可能是一个成本考虑因素。
+- en: Scaling an RDBMS may be limited to adding more horsepower to the server itself—improving
+    the hardware specifications, adding RAM, or moving databases to new, more powerful
+    servers. Some of the aforementioned database engines have additional packages
+    that can provide multi-server scale, though, such as scaling horizontally into
+    multiple servers that still act like a single database server.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 扩展关系数据库管理系统可能仅限于为服务器本身增加更多的性能——改进硬件规格、增加内存或将数据库移动到新的更强大的服务器。前述的一些数据库引擎还有额外的软件包，可以提供多服务器规模，例如横向扩展到多个仍然像单个数据库服务器一样的服务器。
+- en: MySQL/MariaDB
+  id: totrans-52
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: MySQL/MariaDB
+- en: MySQL is a popular RDBMS that started as an open source project in the mid 1990s.
+    MariaDB is a community-maintained fork of MySQL, intended to serve as a drop-in
+    replacement for MySQL, and to remain available as an open source option in case
+    MySQL (now owned by Oracle) every ceases to be released under an open source license.
+    MySQL and MariaDB are, at the time of writing this book, interchangeable.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MySQL是一种流行的关系数据库管理系统，始于1990年代中期的一个开源项目。MariaDB是MySQL的一个由社区维护的分支，旨在作为MySQL的一个可替换的替代品，并且在MySQL（现在由Oracle拥有）停止以开源许可发布时仍然作为一个开源选项可用。在撰写本书时，MySQL和MariaDB是可以互换的。
+- en: Both use the same variant of SQL, with mostly trivial syntax differences from
+    standard SQL that are typically very straightforward. MySQL is—and MariaDB is
+    presumed to be—more optimized for reading/retrieving data than for writing it,
+    but for many applications, those optimizations will likely not be noticeable.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 两者使用相同的SQL变体，与标准SQL的语法差异通常非常简单。MySQL是——而MariaDB被认为是——更适用于读取/检索数据而不是写入数据，但对于许多应用程序来说，这些优化可能不会明显。
+- en: MySQL and MariaDB can be horizontally scaled through the use of clustering and/or
+    replication software additions to a base installation to meet high availability
+    or load needs, though for this to really be effective additional servers (real
+    or virtual) are necessary.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MySQL和MariaDB可以通过使用集群化和/或复制软件附加到基本安装来进行横向扩展，以满足高可用性或负载需求，尽管为了真正有效，需要额外的服务器（真实或虚拟）。
+- en: There are several Python libraries for connecting to and interacting with MySQL,
+    and since MariaDB is intended to be able to directly replace MySQL, those same
+    libraries are expected to work without modification for MariaDB access.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有几个Python库可用于连接和与MySQL交互，由于MariaDB旨在能够直接替代MySQL，因此预计这些相同的库可以在不修改的情况下用于MariaDB访问。
+- en: MS-SQL
+  id: totrans-57
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: MS-SQL
+- en: Microsoft's SQL Server is a proprietary SQL-based DBMS, using its own variant
+    of standard SQL (T-SQL—like MySQL's variants, the differences are generally trivial,
+    at least for simple to somewhat complex needs).
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微软的SQL Server是一种专有的基于SQL的数据库管理系统，使用自己的标准SQL变体（T-SQL——就像MySQL的变体一样，差异通常是微不足道的，至少对于简单到稍微复杂的需求来说）。
+- en: MS-SQL also has clustering and replication options for high availability and
+    load scenarios, with the same need for discrete servers to maximize the effectiveness
+    of horizontal scaling.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MS-SQL也具有用于高可用性和负载场景的集群和复制选项，需要离散服务器以最大化水平扩展的效果。
+- en: 'There are at least two Python options for connecting to and working with MS-SQL
+    databases:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 至少有两种Python选项可用于连接和处理MS-SQL数据库：
+- en: '`pymssql`: This specifically leverages the **Tabular Data Stream** (**TDS**)
+    protocol used by MS-SQL, and allows more direct connection to a backend engine'
+  id: totrans-61
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pymssql`：这专门利用了MS-SQL使用的**表格数据流**（**TDS**）协议，并允许更直接地连接到后端引擎'
+- en: '`pyodbc`: This provides database connectivity through the **Open Database Connectivity**
+    (**ODBC**) protocol, which Microsoft has placed its confidence in as of mid-2018'
+  id: totrans-62
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pyodbc`：这通过**开放数据库连接**（**ODBC**）协议提供数据库连接，微软在2018年中已经对其表示信心'
+- en: PostgresQL
+  id: totrans-63
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: PostgresQL
+- en: PostgreSQL is another open source database option—an object-relational database
+    system that is designed with an emphasis on standards compliance. As an ORDBMS,
+    it allows data structures to be defined in a more object-oriented fashion, with
+    tables that act like classes with the ability to inherit from other tables/classes.
+    It still uses SQL—its own variant, but again, with mostly trivial differences
+    for most development purposes—and has several Python options for connecting to
+    and working with a database. It also has replication and clustering support, with
+    the same sort of caveats noted for previous options.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: PostgreSQL是另一个开源数据库选项，是一种设计重点在于符合标准的对象关系数据库系统。作为ORDBMS，它允许以更面向对象的方式定义数据结构，具有类似于从其他表/类继承的类的功能。它仍然使用SQL——它自己的变体，但对于大多数开发目的来说，差异基本可以忽略，并且有几种Python选项可用于连接和处理数据库。它还具有复制和集群支持，与先前选项的注意事项相同。
+- en: NoSQL databases
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: NoSQL数据库
+- en: 'At the time of writing, there were dozens of NoSQL database options available,
+    both as standalone/local service installations and as cloud database options.
+    The driving factors behind the designs of most of them include an emphasis on
+    the following:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在撰写本文时，有数十种NoSQL数据库选项可用，既作为独立/本地服务安装，也作为云数据库选项。它们设计的主要驱动因素包括以下重点：
+- en: '**Support for massive numbers of users:** Tens of thousands of concurrent users,
+    maybe millions—and supporting them should have as small a performance impact as
+    possible'
+  id: totrans-67
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**支持大量用户：**数以万计的并发用户，也许是数百万，并且应尽可能小地影响其性能'
+- en: '**High availability and reliability:** Being able to interact with the data
+    even if one or more database nodes were to go completely offline'
+  id: totrans-68
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**高可用性和可靠性：**即使一个或多个数据库节点完全离线，也能与数据进行交互'
+- en: '**Supporting highly fluid data structures:** Allowing structured data that
+    isn''t bound to a rigid data schema, perhaps even across records in the same data
+    store collection'
+  id: totrans-69
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**支持高度流动的数据结构：**允许结构化数据不受严格的数据模式约束，甚至可以跨同一数据存储集合中的记录'
+- en: From a development perspective, the last point in this list is perhaps the most
+    significant, allowing almost arbitrary data structures to be defined as needed.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从开发的角度来看，这个列表中的最后一点可能是最重要的，允许根据需要定义几乎任意的数据结构。
+- en: 'If the concept of a table in a RDBMS is a storage model, there are a number
+    of alternative storage models across the NoSQL database continuum:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果在关系型数据库管理系统（RDBMS）中，表的概念是一种存储模型，那么在NoSQL数据库连续体中有许多替代存储模型：
+- en: '**Document stores:** Each record equivalent is a document containing whatever
+    data structure it was created with. Documents are often JSON data structures,
+    and as such allow for some differentiation between different data types—strings,
+    numbers, and booleans as simple values, nested lists/arrays and objects for more
+    complex data structures—and also allow for the use of a formal `null` value.'
+  id: totrans-72
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**文档存储：**每个记录等价物都是包含创建时使用的任何数据结构的文档。文档通常是JSON数据结构，因此允许在不同数据类型之间进行一些区分——字符串、数字和布尔作为简单值，嵌套列表/数组和对象用于更复杂的数据结构，并且还允许使用正式的`null`值。'
+- en: '**Key/Value stores:** Each record equivalent is simply a value, of whatever
+    type, and is identified by a single unique key. This approach could be thought
+    of as a database that is equivalent to a single Python `dict` structure.'
+  id: totrans-73
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**键/值存储：**每个记录等价物只是一个值，可以是任何类型，并且由单个唯一键标识。这种方法可以被认为是等同于单个Python `dict`结构的数据库。'
+- en: '**Wide column stores:** Each record could be thought of as belonging to a RDBMS
+    table with a very large (infinite?) number of columns available, perhaps with
+    a primary key, or perhaps not.'
+  id: totrans-74
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**宽列存储：**每个记录可以被认为属于具有非常大（无限？）数量列的RDBMS表，也许有主键，也许没有。'
+- en: There are also some variants that feel like they combine aspects of these basic
+    models. Creating a data store in Amazon's DynamoDB, for example, starts by defining
+    a table, which requires a key field to be defined, and allows a secondary key
+    field to be defined as well. Once those have been created, though, the contents
+    of those tables acts like a document store. The net result, then, act like a key/document
+    store (a key/value store where each key points to a document).
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有一些变体感觉像是结合了这些基本模型的方面。例如，在Amazon的DynamoDB中创建数据存储，首先要定义一个表，需要定义一个键字段，并且还允许定义一个辅助键字段。一旦创建了这些，这些表的内容就像一个文档存储一样。因此，最终的结果就像一个键/文档存储（每个键指向一个文档的键/值存储）。
+- en: 'NoSQL databases are typically non-relational, though there are exceptions to
+    this. From a development perspective, this implies that one of at least three
+    approaches needs to be taken into consideration when dealing with application
+    data that is stored and retrieved from a NoSQL data store:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NoSQL数据库通常是非关系型的，尽管也有例外。从开发的角度来看，这意味着在处理存储和检索来自NoSQL数据存储的应用程序数据时，至少需要考虑三种方法之一：
+- en: Never use data that relates to other data—assure that every record contains
+    everything it needs as a single entity. The trade-off here is that it will be
+    difficult, if not impossible, to account for situations where a record (or the
+    object that the record is associated with) is shared by two or more other records/objects.
+    An example of that might be a user group that multiple users are a member of.
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 永远不要使用与其他数据相关的数据——确保每个记录都包含作为单个实体所需的一切。这里的折衷是，很难，甚至不可能解决记录（或与记录关联的对象）被两个或更多其他记录/对象共享的情况。一个例子可能是多个用户都是成员的用户组。
+- en: Deal with the relationships between records in the code that works with those
+    records. Using the same users/groups concept just mentioned, that might involve
+    a `Group` object, reading all the relevant `User` records and populating a `users`
+    property with `User` objects from that data during instantiation. There might
+    be some risk of concurrent changes interfering with each other, but not significantly
+    more than the same sort of process would risk in a RDBMS-backed system. This approach
+    also implies that data will be organized by object type—a distinct collection
+    of `User` object data and a distinct collection of `Group` object data, perhaps—but
+    any mechanism that allows the different object types to be differentiated will
+    work.
+  id: totrans-78
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理代码中与记录之间的关系。使用刚提到的相同的用户/组概念，这可能涉及到一个“Group”对象，读取所有相关的“User”记录，并在实例化过程中使用来自该数据的“User”对象填充“users”属性。可能会有一些并发更改相互干扰的风险，但不会比在基于关系型数据库的系统中进行相同类型的过程的风险更大。这种方法还意味着数据将按对象类型进行组织——一个独立的“User”对象数据集合和一个独立的“Group”对象数据集合，但任何允许区分不同对象类型的机制都可以工作。
+- en: Pick a backend data store engine that provides some sort of relational support.
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 选择一个提供某种关系支持的后端数据存储引擎。
+- en: NoSQL databases are also less likely to support transactions, though again there
+    are options that do provide full ACID-compliant transaction capabilities, and
+    the criteria/options for dealing with transactional requirements at the data store
+    level are very similar to those mentioned previously, that is, dealing with relational
+    capabilities. Even those without any transaction support are still going to be
+    ACID-compliant for single records—at that level of complexity, all that is required
+    to be compliant is that the record is successfully stored.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: NoSQL数据库也不太可能支持事务，尽管再次有提供完全符合ACID的事务能力的选项，处理数据存储级别的事务要求的标准/选项与前面提到的处理关系能力的标准/选项非常相似。即使没有任何事务支持的数据库仍然会对单个记录进行ACID兼容——在这个复杂程度上，要求兼容的是记录是否成功存储。
+- en: Advantages and drawbacks
+  id: totrans-81
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 优势和缺点
+- en: 'Given the high availability and concurrent user focus behind most NoSQL options,
+    it should come as no great surprise that they are better suited than their RDBMS
+    counterparts for applications where availability and the ability to scale is important.
+    Those properties are even more important in big data applications, and applications
+    that live in the cloud—as evidenced by the fact that the major cloud providers
+    all have their own offerings in that space, as well as providing starting-points
+    for some well-known NoSQL options:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 鉴于大多数NoSQL选项背后的高可用性和并发用户关注，他们比关系型数据库管理系统更适合于可用性和可扩展性重要的应用程序，这一点应该并不奇怪。这些属性在大数据应用程序和云中更为重要，正如主要云提供商都在这一领域提供自己的产品，并为一些知名的NoSQL选项提供起点所证明的那样：
+- en: 'Amazon (AWS):'
+  id: totrans-83
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊（AWS）：
+- en: DynamoDB
+  id: totrans-84
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: DynamoDB
+- en: 'Google:'
+  id: totrans-85
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 谷歌：
+- en: Bigtable (for big data needs)
+  id: totrans-86
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Bigtable（用于大数据需求）
+- en: Datastore
+  id: totrans-87
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据存储
+- en: 'Microsoft (Azure):'
+  id: totrans-88
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 微软（Azure）：
+- en: Cosmos DB (formerly DocumentDB)
+  id: totrans-89
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Cosmos DB（前身为DocumentDB）
+- en: Azure Table Storage
+  id: totrans-90
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Azure表存储
+- en: The ability to more or less arbitrarily define data structures can also be a
+    significant advantage during development, since it eliminates the need for defining
+    database schemas and tables. The trade-off for that, potentially, at least, is
+    that since data structures can change just as arbitrarily, code that uses them
+    has to be written to be tolerant of those structure changes, or some sort of conscious
+    effort may have to be planned to apply the changes to existing data items without
+    disrupting systems and their usage.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开发过程中，更或多或少地任意定义数据结构的能力也可以是一个重要的优势，因为它消除了定义数据库模式和表的需要。潜在的折衷是，由于数据结构可以同样任意地改变，使用它们的代码必须被编写为容忍这些结构的变化，或者可能必须计划一些有意识的努力来应用这些变化到现有数据项，而不会破坏系统和它们的使用。
+- en: Consider, as an example, the `User` class mentioned earlier—if a `password_hash`
+    property needs to be added to the class, in order to provide authentication/authorization
+    support, the instantiation code will likely have to account for it, and any existing
+    user-object records won't have the field already. On the code side, that may not
+    be that big a deal—making `password_hash` an optional argument during initialization
+    would take care of allowing the objects to be created, and storing it as a null
+    value in the data if it hasn't been set would take care of the data storage side,
+    but some sort of mechanism would need to be planned, designed, and implemented
+    to prompt users to supply a password in order to store the real value. The same
+    sort of process would have to occur if a similar change were made in an RDBMS-backed
+    system, but the odds are good enough that there would be established processes
+    for making changes to database schemas, and those would probably include both
+    altering the schema and assuring that all records have a known starting value.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，考虑之前提到的`User`类 - 如果需要向类添加`password_hash`属性，以提供身份验证/授权支持，实例化代码可能需要考虑它，并且任何现有的用户对象记录可能不会有该字段。在代码方面，这可能并不是什么大问题
+    - 在初始化期间将`password_hash`作为可选参数处理将允许创建对象，并且如果未设置它，则将其存储为null值将处理数据存储方面，但需要计划、设计和实施某种机制以提示用户提供密码以存储真实值。如果在基于RDBMS的系统中进行类似更改，将需要发生相同类型的过程，但很可能会有已建立的流程来更改数据库模式，并且这些流程可能包括修改模式和确保所有记录具有已知起始值。
+- en: 'Given the number of options available, it should also not be surprising that
+    there are differences (sometimes significant ones) between them with respect to
+    performing similar tasks. That is, retrieving a record from the data, given nothing
+    more than a unique identifier for the item to be retrieved (`id_value`), uses
+    different libraries and syntax/structure based on the engine behind the data store:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到可用的选项数量，也不足为奇的是它们在执行类似任务时存在差异（有时是显著的）。也就是说，从数据中检索记录，只需提供要检索的项目的唯一标识符（`id_value`），使用不同的库和基于数据存储引擎的语法/结构：
+- en: 'In MongoDB (using a `connection` object):'
+  id: totrans-94
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在MongoDB中（使用`connection`对象）：
+- en: '`connection.find_one({''unique_id'':''id_value''})`'
+  id: totrans-95
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`connection.find_one({''unique_id'':''id_value''})`'
+- en: 'In Redis (using a `redis connection`):'
+  id: totrans-96
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Redis中（使用`redis connection`）：
+- en: '`connection.get(''id_value'')`'
+  id: totrans-97
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`connection.get(''id_value'')`'
+- en: 'In Cassandra (using a `query` value and a `criteria` list, executing against
+    a Cassandra `session` object):'
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Cassandra中（使用`query`值和`criteria`列表，针对Cassandra`session`对象执行）：
+- en: '`session.execute(query, criteria)`'
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`session.execute(query, criteria)`'
+- en: It's quite possible that each different engine will have its own distinct methods
+    for performing the same tasks, though there may be some common names that emerge—there
+    are only so many alternatives for function or method names, like get or find,
+    that make sense, after all. If a system needs to be able to work with multiple
+    different data store backend engines, those are good candidates for designing
+    and implementing a common (probably abstract) data store adapter.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个不同的引擎可能会有其自己独特的执行相同任务的方法，尽管可能会出现一些常见的名称 - 毕竟，对于函数或方法名称，如get或find，只有那么多的替代方案是有意义的。如果系统需要能够与多个不同的数据存储后端引擎一起工作，这些都是设计和实施通用（可能是抽象的）数据存储适配器的良好候选者。
+- en: Since relational and transactional support varies from one engine to another,
+    this inconsistency can be a drawback to a NoSQL-based data store as well, though
+    there are at least some options that can be pursued if they are lacking.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于关系和事务支持因引擎而异，这种不一致性也可能是NoSQL数据存储的一个缺点，尽管如果它们缺乏，至少有一些选项可以追求。
+- en: MongoDB
+  id: totrans-102
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: MongoDB
+- en: MongoDB is a free, open source, NoSQL document store engine—that is, it stores
+    whole data structures as individual documents that are, if not JSON, very JSON-like.
+    Data sent to and retrieved from a `MongoDB` database in Python uses Python-native
+    data types (`dict` and `list` collections, any simple types such as `str` and
+    `int`, and probably other standard types like `datetime` objects).
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB是一个免费的开源NoSQL文档存储引擎 - 也就是说，它将整个数据结构存储为单独的文档，如果不是JSON，也非常类似于JSON。在Python中发送到和从`MongoDB`数据库检索的数据使用Python本机数据类型（`dict`和`list`集合，任何简单类型，如`str`和`int`，可能还有其他标准类型，如`datetime`对象）。
+- en: MongoDB was designed to be usable as a distributed database, supporting high
+    availability, horizontal scaling, and geographic distribution out of the box.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MongoDB被设计为可用作分布式数据库，支持高可用性、水平扩展和地理分布。
+- en: Like most NoSQL data storage solutions, MongoDB is schema-less, allowing documents
+    within a MongoDB collection (roughly equivalent to a table in an RDBMS) to have
+    totally different structures.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像大多数NoSQL数据存储解决方案一样，MongoDB是无模式的，允许MongoDB集合中的文档（大致相当于RDBMS中的表）具有完全不同的结构。
+- en: Other NoSQL options
+  id: totrans-106
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 其他NoSQL选项
+- en: 'There are, as noted, dozens of NoSQL database options to pick and choose from.
+    Three of the more popular options for locally installed NoSQL databases with Python
+    drivers/support are as follows:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，有数十种NoSQL数据库选项可供选择。以下是三种具有Python驱动程序/支持的本地安装的NoSQL数据库的更受欢迎的选项：
+- en: '**Redis**: A key/value store engine'
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Redis**：键/值存储引擎'
+- en: '**Cassandra**: A wide-column store engine'
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Cassandra**：宽列存储引擎'
+- en: '**Neo4j**: A graph database'
+  id: totrans-110
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Neo4j**：图数据库'
+- en: Other data storage options
+  id: totrans-111
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 其他数据存储选项
+- en: 'Another option—one that is probably not going to work well for large quantities
+    of data, or under significant concurrent user-load—is simply to store application
+    data locally as one to many files on the local machine. With the advent of simple
+    structured data representation formats such as JSON, this can be a better option
+    than it might seem at first glance, at least for certain needs: JSON, in particular,
+    with its basic value-type support and the ability to represent arbitrarily complex
+    or large data structures, is a reasonable storage format.'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个选项——对于大量数据或在重要并发用户负载下可能效果不佳的选项——是将应用程序数据简单地存储为本地机器上的一对多文件。随着简单结构化数据表示格式（如JSON）的出现，这可能比乍一看更好，至少对于某些需求来说：特别是JSON，具有基本值类型支持和表示任意复杂或大型数据结构的能力，是一个合理的存储格式。
+- en: The most significant impediment is making sure that data access has at least
+    some degree of ACID compliance, though, as with NoSQL databases, if all transactions
+    are single records, ACID compliance can still be counted on, for the same reason—the
+    sheer simplicity of the transaction.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最大的障碍是确保数据访问至少具有一定程度的ACID兼容性，尽管与NoSQL数据库一样，如果所有事务都是单个记录，仍然可以依靠ACID兼容性，原因是事务的简单性。
+- en: The other significant concern that would have to be addressed in using files
+    to store application data is how the language or the underlying OS handles file
+    locking. If either allows a file that's open for writing to be read while the
+    write is in process or incomplete, it's just a matter of time until a read of
+    an incomplete data file misreads the data available, then commits the bad data
+    to the file, probably resulting in loss of data at a minimum, and perhaps breaking
+    the entire data store in the process.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用文件存储应用程序数据时必须解决的另一个重要问题是语言或基础操作系统如何处理文件锁定。如果其中一个允许在写入过程中或不完整的情况下读取打开的文件，那么读取不完整数据文件的读取就会误读可用数据，然后将错误数据提交到文件中，可能导致至少数据丢失，甚至可能在过程中破坏整个数据存储。
+- en: That would be bad, obviously.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然那将是不好的。
+- en: Speed of access could be a concern as well, since file access is slower than
+    access to and from data stored in memory.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 访问速度也可能是一个问题，因为文件访问比内存中存储的数据访问速度要慢。
+- en: 'That said, there are strategies that can be applied to make a local file-based
+    data store immune to that sort of failure, provided that the data is only accessed
+    from a single source in the code. Addressing the potential access-speed concern
+    can also be accomplished in the same process, which would resemble the following:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也就是说，有一些策略可以应用于使本地基于文件的数据存储免受这种失败的影响，只要数据只从代码中的单一来源访问。解决潜在的访问速度问题也可以在同一过程中完成，过程如下：
+- en: 'The program that uses data starts:'
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用数据的程序开始：
+- en: Data is read into memory from a persistent file system data store
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从持久文件系统数据存储中将数据读入内存
+- en: 'The program is used, and a data-access occurs:'
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用程序，并发生数据访问：
+- en: Data is read from the copy in memory, and passed off to the user
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从内存中读取数据的副本，并传递给用户
+- en: 'Data is altered in some fashion:'
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 以某种方式更改数据：
+- en: The alteration is noted, and the change(s) is/are committed to the file system
+    data store before returning control to the user
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 注意到更改，并在返回控制权给用户之前将更改提交到文件系统数据存储
+- en: 'The program is shut down:'
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 关闭程序：
+- en: Before terminating, all data is checked to assure that no changes are still
+    pending
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在终止之前，将检查所有数据以确保没有仍在等待的更改
+- en: If there are changes, wait for them to complete
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果有变化，请等待它们完成
+- en: If necessary, re-write all data to the file system data store
+  id: totrans-127
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果需要，将所有数据重新写入文件系统数据存储
+- en: Selecting a data storage option
+  id: totrans-128
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 选择数据存储选项
+- en: 'Looking at the logical architecture for `hms_sys`, and allowing for a local
+    data store for the **Artisan Application** that wasn''t in the original diagram,
+    there are three databases that development needs to be concerned with:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看`hms_sys`的逻辑架构，并允许**Artisan Application**使用原始图表中不存在的本地数据存储，开发需要关注三个数据库：
+- en: '![](assets/f7054630-6ba8-4568-b1a2-e938bd1bb3e3.png)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/f7054630-6ba8-4568-b1a2-e938bd1bb3e3.png)'
+- en: The **Web-Store Database** is attached to the **Web-Store Application**, and
+    cannot be modified as a result. The current expectation is that modifications
+    to data in that database will be handled by a call to the API that the **Web-Store
+    Application** makes available. At this point, then, data access to and from this
+    database can be set aside.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Web-Store Database**连接到**Web-Store Application**，因此无法进行修改。当前的期望是对该数据库中的数据进行修改将通过**Web-Store
+    Application**提供的API调用来处理。因此，此时可以搁置对该数据库的数据访问。'
+- en: 'The `artisan` **Database**, on the other hand, doesn''t exist yet at all, and
+    will have to be created as part of the development of `hms_sys`. It feels safe
+    to assume, given the artisan-level, installation-related stories from the first
+    iteration, that keeping the number of software installations they need to perform
+    to the minimum possible is preferable. That, in turn, suggests that a local file
+    system data store is probably going to be the preferred option at the **Artisan
+    Application** level. That allows for the following:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，`artisan` **Database**根本不存在，将必须在开发`hms_sys`的过程中创建。可以安全地假设，鉴于第一次迭代中与安装相关的artisan级别的故事，最好尽可能减少他们需要执行的软件安装数量。这反过来又表明，在**Artisan
+    Application**级别，本地文件系统数据存储可能是首选选项。这允许以下操作：
+- en: The data store is generated locally during the installation or initial setup
+    of the application
+  id: totrans-133
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据存储在安装或应用程序的初始设置期间在本地生成
+- en: The **Artisan**'s can manage their data locally, even if they are offline
+  id: totrans-134
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**工匠**可以在本地管理他们的数据，即使他们离线'
+- en: Data storage to be managed without any additional software installation on the
+    part of the **Artisan**
+  id: totrans-135
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Artisan**无需进行任何额外的软件安装来管理数据存储'
+- en: Since the **Artisan Application** is expected to be a local desktop application,
+    this fits neatly into the set of processes noted previously for making a file-based
+    data store safe and stable. There is some risk of data conflicts if the **Artisan**
+    has more than one **Artisan** **Application** installed (one each on multiple
+    machines, for example), but that risk would exist for any local data store option,
+    realistically—short of moving the data store to a common online database, there
+    really isn't a way to mitigate that particular concern, and that's outside the
+    development scope for `hms_sys` at present.
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于预计**Artisan应用程序**将是本地桌面应用程序，这很好地符合之前提到的一组过程，以使基于文件的数据存储安全稳定。如果**Artisan**安装了多个**Artisan应用程序**（例如在多台机器上各安装一个），则存在一些数据冲突的风险，但实际上任何本地数据存储选项都会存在这种风险
+    - 除非将数据存储移到共同的在线数据库，否则真的没有办法减轻这种特定的担忧，而这超出了目前`hms_sys`的开发范围。
+- en: The idea of centralizing data and applications alike will be examined in more
+    detail later. For now, everything at the Artisan level will reside locally with
+    the Artisan Application.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于集中数据和应用程序的想法将在以后更详细地进行检查。目前，Artisan级别的所有内容都将与Artisan应用程序本地驻留。
+- en: The `hms_sys` **Database** also doesn't exist at all yet. Unlike the `artisan`
+    **Database**, though, it is intended to allow multiple concurrent users—any number
+    of central office users might be reviewing or managing products at any given time
+    as artisans are submitting product information to be reviewed, and orders relayed
+    or pulled from the web store could be set in motion to the relevant artisans while
+    those activities are going on, too. Taken together, these are sufficient to rule
+    out the local file store approach—it might well still be doable, and might even
+    be viable at current levels of usage, but could quickly run into scaling concerns
+    if the usage/load grew too much.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`hms_sys` **数据库**目前也不存在。不像`artisan` **数据库**，它旨在允许多个并发用户 - 任何数量的中央办公室用户可能在任何给定时间审查或管理产品，因为工匠正在提交产品信息进行审查，并且在这些活动进行时，也可以设置相关工匠的订单从网络商店中中继或拉出。综合起来，这足以排除本地文件存储方法
+    - 它可能仍然可以做到，并且在当前使用水平下甚至可能是可行的，但如果使用/负载增加太多，可能会迅速遇到扩展问题。'
+- en: 'Given that, even if we don''t really know what backend engine will be in use,
+    knowing that it won''t be the same storage mechanism that the **Artisan Application**
+    uses confirms the idea noted earlier that we''d be well-served to define a common
+    data access method set, generate some sort of abstraction around that structure,
+    and define concrete implementations at each application- or service-object level.
+    The advantages of taking that approach really boil down to variations of the same
+    **Object-Oriented Design Principle** (**OODP**): polymorphism.'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到，即使我们不知道将使用什么后端引擎，知道它不会是**Artisan应用程序**使用的相同存储机制，就确认了之前提到的想法，即我们最好定义一个通用的数据访问方法集，围绕该结构生成某种抽象，并在每个应用程序或服务对象级别定义具体实现。采取这种方法的优势实际上归结为相同的**面向对象设计原则**（**OODP**）的变体：多态。
+- en: Polymorphism (and programming to an interface)
+  id: totrans-140
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 多态（和面向接口编程）
+- en: '**Polymorphism**, in its simplest terms, is the ability for objects to be interchangeable
+    in the code without breaking anything. In order to accomplish that, those objects
+    must present common public interface members—the same accessible properties and
+    methods—across the board. Ideally, those common interface members should be the
+    only interface members as well, otherwise there is a risk of breaking the interchangeability
+    of those objects. In a class-based structure, it''s usually a good idea to have
+    that interface defined as an individual abstraction—an ABC in Python, with or
+    without concrete members. Consider the following collection of classes for making
+    connections to and querying against various relational database backends:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**多态**，简单来说，是对象在代码中可以互换而不会破坏任何东西的能力。为了实现这一点，这些对象必须在整个范围内呈现公共接口成员 - 相同的可访问属性和方法。理想情况下，这些公共接口成员也应该是唯一的接口成员，否则有破坏这些对象互换性的风险。在基于类的结构中，通常最好将该接口定义为一个单独的抽象
+    - 在Python中是一个ABC，有或没有具体成员。考虑以下一组用于连接和查询各种关系数据库后端的类：'
+- en: '![](assets/ce655e2f-48f4-4520-82d8-e47db56b42eb.png)'
+  id: totrans-142
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ce655e2f-48f4-4520-82d8-e47db56b42eb.png)'
+- en: 'Where:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中：
+- en: '`BaseDatabaseConnector` is an abstract class that requires a query method to
+    be implemented by all derived classes, and provides `host`, `database`, `user`,
+    and `password` properties that will be used to actually connect to a given database'
+  id: totrans-144
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`BaseDatabaseConnector`是一个抽象类，要求所有派生类实现一个查询方法，并提供`host`，`database`，`user`和`password`属性，这些属性将用于实际连接到给定的数据库'
+- en: The concrete classes, `MySQLConnector`, `MSSQLConnector`, and `ODBCConnector`,
+    each implement the required `query` method, allowing instances to actually execute
+    queries against the database that the instance is connected to
+  id: totrans-145
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 具体类`MySQLConnector`，`MSSQLConnector`和`ODBCConnector`分别实现了所需的`query`方法，允许实例实际执行针对连接到的数据库的查询
+- en: Provided that the connection properties (`host`, …, `password`) were stored
+    in a configuration file (or anywhere outside the actual code itself, really),
+    along with some way to specify which connector type to use, it wouldn't be difficult
+    to allow those different connection types to be defined at runtime, or maybe even
+    switched out during execution.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只要连接属性（`host`，…，`password`）存储在配置文件中（或者实际代码之外的任何地方），并且有一种方法来指定在运行时定义哪种连接器类型，甚至可能在执行期间切换，那么允许在运行时定义这些不同连接类型并不难。
+- en: This interchangeability, in turn, allows code to be written that doesn't need
+    to know anything about how a process works, just how it should be called, and
+    what it's expected to return as a result. This is a practical illustration of
+    the idea of programming to an interface, not to an implementation, which was mentioned
+    in [Chapter 5](https://cdp.packtpub.com/hands_on_software_engineering_with_python/wp-admin/post.php?post=29&action=edit), *The
+    hms_sys System Project,* as well as the concept of encapsulating what varies.
+    The two often go hand-in-hand, as they do in this case.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种可互换性反过来又允许编写代码，而不需要了解进程如何工作，只需要知道应该如何调用以及期望返回什么结果。这是编程到接口而不是到实现的实际示例，这在第5章《hms_sys系统项目》中提到，以及封装变化的概念。这两者经常同时出现，就像在这种情况下一样。
+- en: There is another benefit to the ability to replace objects in this fashion,
+    which might be called future-proofing a code base. If, at some time in the future,
+    the code that uses the data connectors shown previously were suddenly in need
+    of being able to connect to and use a database engine that wasn't available already,
+    the level of effort to make it available would be relatively small, provided that
+    it used the same connection arguments and a similar connection process as the
+    ones that were already in place. All that would need to be done, for example,
+    to create a `PostgreSQLConnector` (used to connect to a `PostgreSQL` database),
+    would be to create the class, derive it from `BaseDatabaseConnector`, and implement
+    the required `query` method. It would still require some development effort, but
+    not as much as would probably be needed if each database connection process had
+    its own distinct classes to contend with.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以这种方式替换对象还有另一个好处，可以称之为未来证明代码库。如果在将来的某个时候，使用先前显示的数据连接器的代码突然需要能够连接到并使用尚未可用的数据库引擎，那么使其可用的工作量将相对较小，前提是它使用了与已经存在的连接参数和类似的连接过程。例如，要创建一个`PostgreSQLConnector`（用于连接到`PostgreSQL`数据库），只需要创建这个类，从`BaseDatabaseConnector`派生，并实现所需的`query`方法。这仍然需要一些开发工作，但不像如果每个数据库连接过程都有自己独特的类那样需要的工作量那么大。
+- en: Data access design strategies
+  id: totrans-149
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 数据访问设计策略
+- en: The last bit of analysis that we need to undertake before we can start writing
+    out the stories for this iteration involves determining where the responsibility
+    for object data access is going to live. In a script or another purely procedural
+    context, it would probably suffice to simply connect to a data source, read the
+    data from it as needed, modify it as needed, and write any changes back out again,
+    but that would only be viable because the entire procedure would be relatively
+    static.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开始为这个迭代编写故事之前，我们需要进行的最后一点分析是确定对象数据访问的责任将在哪里。在脚本或其他纯过程化的上下文中，简单地连接到数据源，根据需要读取数据，根据需要修改数据，并将任何更改重新写出可能就足够了，但这只有在整个过程相对静态时才可行。
+- en: In an application or service such as `hms_sys`, data use is very much a random-access
+    scenario—there may be common procedures that might even look a lot like a simple
+    script's step-by-step implementations, but those processes could (and will) be
+    initiated in a fashion that may be totally unpredictable.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`hms_sys`这样的应用程序或服务中，数据使用非常像是随机访问的场景——可能会有常见的程序，甚至看起来很像简单脚本的逐步实现，但这些过程可能（并且将）以完全不可预测的方式启动。
+- en: That, then, means that we need to have data access processes that are easily
+    called and repeatable with minimal effort. Given that we already know that at
+    least two different data storage mechanisms will be in play, it would also make
+    future support and development a lot easier if we could design these processes
+    so that the exact same method calls could be used, no matter what the underlying
+    data store looks like—again, abstracting the processes, and allowing code to use
+    interfaces, not implementations.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着我们需要具有易于调用和可重复的数据访问过程，而且需要付出最小的努力。考虑到我们已经知道至少会有两种不同的数据存储机制在起作用，如果我们能够设计这些过程，使得无论底层数据存储看起来如何，都可以使用完全相同的方法调用，那么未来的支持和开发也会变得更加容易——再次抽象出这些过程，让代码使用接口而不是实现。
+- en: One option that would accomplish this sort of abstraction starts at the data
+    source, making each data source aware of the object-types that are in play, and
+    storing the information that it needs to be able to perform CRUD operations for
+    each object-type somewhere. That's technically a workable implementation, but
+    it will get very complicated very quickly, because each combination of data store
+    and business object type needs to be accounted for and maintained. Even if the
+    initial class set is limited to three data store variants (the file system data
+    store of the **Artisan Application**, a generic RDBMS data store, and a generic
+    NoSQL data store), that's four operations (CRUD) across three data store types
+    for four business objects, for a total of 48 permutations (4 × 3 × 4) that have
+    to be built, tested, and maintained. Each new operation added into the mix, such
+    as, say, the ability to search a business object data store, as well as each new
+    business object type to be persisted and each new data store type, increases that
+    permutation count multiplicatively—adding one of each increases the count to 75
+    items (5 × 3 × 5) that have to be dealt with—which could easily get out of control.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一种可以实现这种抽象的选项是从数据源开始，使每个数据源都意识到正在进行的对象类型，并存储它需要能够为每个对象类型执行CRUD操作的信息。这在技术上是可行的实现，但会变得非常复杂，因为需要考虑和维护每种数据存储和业务对象类型的组合。即使初始类集仅限于三种数据存储变体（**Artisan
+    Application**的文件系统数据存储，通用RDBMS数据存储和通用NoSQL数据存储），也有四种操作（CRUD）跨三种数据存储类型的四种业务对象，总共有48种排列组合（4×3×4）需要构建、测试和维护。每添加一个新的操作，比如说，能够搜索业务对象数据存储，以及每个新的需要持久化的业务对象类型和每种新的数据存储类型，都会使排列组合数量成倍增加——每增加一个，数量就增加到75个项目（5×3×5），这可能很容易失控。
+- en: 'If we take a step back and think about what we actually need for all of those
+    combinations, a different and more manageable solution is possible. For each and
+    every business object that needs to be persisted, we need to be able to do the
+    following:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们退一步思考我们实际需要的所有这些组合，可能存在一种不同且更可管理的解决方案。对于每个需要持久化的业务对象，我们需要能够执行以下操作：
+- en: Create a record for a new object.
+  id: totrans-155
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为新对象创建记录。
+- en: Read a record for a single object, identified somehow, and return an instance
+    for that item.
+  id: totrans-156
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 读取单个对象的记录，以某种方式标识，并返回该项的实例。
+- en: Update the record for a single object after changes have been made to it.
+  id: totrans-157
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在对其进行更改后，更新单个对象的记录。
+- en: Delete the record for a single object.
+  id: totrans-158
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 删除单个对象的记录。
+- en: Find and return zero-to-many objects based on matches to some criteria.
+  id: totrans-159
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 根据某些条件匹配找到并返回零到多个对象。
+- en: It might also be useful to be able to flag objects as being in specific states—active
+    versus inactive, and deleted (without actually deleting the underlying record),
+    perhaps. Tracking created and/or updated dates/times is also a common practice—it's
+    sometimes useful for sorting purposes, if nothing else.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 能够标记对象处于特定状态——活动与非活动，以及已删除（实际上没有删除基础记录）可能也很有用。跟踪创建和/或更新日期/时间也是一种常见做法——这有时对于排序目的很有用，如果没有其他用途的话。
+- en: 'All of the CRUD operations relate directly to the object type itself—that is,
+    we need to be able to create, read, update, delete, and find `Artisan` objects
+    in order to work with them. The various object properties of those instances can
+    be retrieved and populated as needed in the context of the instance''s creation,
+    created as part of the instance''s creation process, or updated with the owning
+    instance or individually as needed. With those subordinate actions in mind, keeping
+    track of whether an object''s record needs to be created or updated will probably
+    be useful as well. Finally, we''ll need to keep track of some unique identifier
+    for each object''s state data record in the data store. Putting all of those together,
+    the following is what a `BaseDataObject` ABC might look like:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有CRUD操作直接与对象类型本身相关——也就是说，我们需要能够创建、读取、更新、删除和查找“Artisan”对象，以便与它们一起使用。这些实例的各种对象属性可以根据需要在实例创建的上下文中检索和填充，作为实例创建过程的一部分创建，或根据需要与拥有实例或单独更新。考虑到这些从属操作，跟踪对象的记录是否需要创建或更新也可能很有用。最后，我们需要跟踪每个对象状态数据记录在数据存储中的唯一标识符。将所有这些放在一起，以下是“BaseDataObject”
+    ABC可能看起来像的：
+- en: '![](assets/27441a06-1d8a-4271-a12f-d043113f975b.png)'
+  id: totrans-162
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/27441a06-1d8a-4271-a12f-d043113f975b.png)'
+- en: 'The properties are all concrete, with implementations baked in at the `BaseDataObject`
+    level:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些属性都是具体的，在`BaseDataObject`级别内部实现：
+- en: '`oid` is the unique identifier of the object, and is a `UUID` value that will
+    be stored as, and converted from, a string during data access.'
+  id: totrans-164
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`oid`是对象的唯一标识符，是一个`UUID`值，在数据访问期间将存储为字符串并转换。'
+- en: '`created` and `modified` are Python `datetime` objects, and may also need to
+    be converted to and from string-value representations during data access.'
+  id: totrans-165
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`created`和`modified`是Python `datetime`对象，可能也需要在数据访问期间转换为字符串值表示。'
+- en: '`is_active` is a flag that indicates whether or not a given record should be
+    considered active, which allows for some management of active/inactive state for
+    records and thus for objects that those records represent.'
+  id: totrans-166
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`is_active`是一个标志，指示是否应将给定记录视为活动记录，这允许对记录的活动/非活动状态进行一些管理，从而对应该记录的对象进行管理。'
+- en: '`is_deleted` is a similar flag, indicating whether the record/object should
+    be considered as deleted, even if it really still exists in the database.'
+  id: totrans-167
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`is_deleted`是一个类似的标志，指示记录/对象是否应被视为已删除，即使它实际上仍然存在于数据库中。'
+- en: '`is_dirty` and `is_new` are flags that keep track of whether an object''s corresponding
+    record needs to be updated (because it''s been changed) or created (because it''s
+    new), respectively. They are local properties, and will not be stored in a database.'
+  id: totrans-168
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`is_dirty`和`is_new`是标志，用于跟踪对象的相应记录是否需要更新（因为它已更改）或创建（因为它是新的）。它们是本地属性，不会存储在数据库中。'
+- en: Using a `UUID` instead of a numeric sequence requires a bit more work, but has
+    some security advantages, especially in web application and service implementations—`UUID`
+    values are not easily predictable, and have 16^(32) possible values, making automated
+    exploits against them much more time-consuming.There may be requirements (or at
+    least a desire) to not really delete records, ever. It's not unusual in certain
+    industries, or for publicly traded companies who are required to meet certain
+    data-audit criteria, to want to keep all data, at least for some period of time.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用 `UUID` 而不是数字序列需要更多的工作，但在网络应用程序和服务实现中具有一些安全优势——`UUID` 值不容易预测，并且有 16^(32) 个可能的值，使得对它们的自动化利用变得更加耗时。可能存在要求（或至少有一种愿望）永远不真正删除记录。在某些行业或者对于需要满足某些数据审计标准的上市公司来说，希望至少在一段时间内保留所有数据并不罕见。
+- en: '`BaseDataObject` defines two concrete and three abstract instance methods:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`BaseDataObject` 定义了两个具体的和三个抽象的实例方法：'
+- en: '`create` (abstract and protected) will require derived classes to implement
+    a process for creating and writing a state data record to the relevant database.'
+  id: totrans-171
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`create`（抽象和受保护的）将要求派生类实现一个过程，用于创建和写入相关数据库的状态数据记录。'
+- en: '`matches` (concrete) will return a Boolean value if the property values of
+    the instance that it''s called from match the corresponding values of the criteria
+    passed to it. This will be instrumental in implementing criteria-based filtering
+    in the get method, which will be discussed shortly.'
+  id: totrans-172
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`matches`（具体）将在被调用的实例的属性值与传递给它的条件的相应值匹配时返回一个布尔值。这将在 `get` 方法中实现基于条件的过滤中起到关键作用，这将很快讨论。'
+- en: '`save` (concrete) will check the instance''s `is_dirty` flag, calling the instance''s
+    `update` method and exiting if it''s `True`, then check the `is_new` flag, calling
+    the instance''s `create` method if it is `True`. The net result of this is that
+    any object deriving from `BaseDataObject` can simply be told to `save` itself,
+    and the appropriate action will be taken, even if it''s no action.'
+  id: totrans-173
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`save`（具体）将检查实例的 `is_dirty` 标志，调用实例的 `update` 方法并在其为 `True` 时退出，然后检查 `is_new`
+    标志，如果为 `True` 则调用实例的 `create` 方法。这样做的最终结果是，任何继承自 `BaseDataObject` 的对象都可以简单地被告知
+    `save` 自身，将采取适当的操作，即使它没有任何操作。'
+- en: '`to_data_dict` (abstract) will return a `dict` representation of the object''s
+    state data, with values in formats and of types that can be written to the database
+    that state data records live in.'
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`to_data_dict`（抽象）将返回对象状态数据的 `dict` 表示，其中的值以可以写入状态数据记录所在的数据库的格式和类型为准。'
+- en: '`update` (abstract and protected) is the update implementation counterpart
+    to the `create` method, and is used to update an existing state data record for
+    an object.'
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`update`（抽象和受保护的）是 `create` 方法的更新实现对应物，用于更新对象的现有状态数据记录。'
+- en: '`BaseDataObject` also defines four class methods, all of which are abstract—each
+    of these methods, then, is bound to the *class* itself, not to instances of the
+    class, and must be implemented by other classes that derive from `BaseDataObject`:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`BaseDataObject` 还定义了四个类方法，所有这些方法都是抽象的——因此，这些方法中的每一个都绑定到*类*本身，而不是类的实例，并且必须由从
+    `BaseDataObject` 派生的其他类实现：'
+- en: '`delete` performs a physical record deletion for each record identified by
+    the provided `*oids`.'
+  id: totrans-177
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`delete` 对由提供的 `*oids` 标识的每条记录执行物理记录删除。'
+- en: '`from_data_dict` returns an instance of the class, populated with the state
+    data in the `data_dict` provided, which will usually result from a query against
+    the database that those records live in. It''s the counterpart of the `to_data_dict`
+    method, which we already described.'
+  id: totrans-178
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`from_data_dict` 返回一个填充有提供的 `data_dict` 中的状态数据的类的实例，这通常是从针对这些记录所在的数据库的查询中得到的。它是
+    `to_data_dict` 方法的对应物，我们已经描述过了。'
+- en: '`get` is the primary mechanism for returning objects with state data retrieved
+    from the database. It''s been defined to allow both specific records (the `*oids`
+    argument list) and filtering criteria (in the `**criteria` keyword arguments,
+    which is expected to be the criteria argument passed to matches for each object),
+    and will return an unsorted list of object instances according to those values.'
+  id: totrans-179
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`get` 是从数据库中检索状态数据的主要机制。它被定义为允许返回特定记录（`*oids` 参数列表）和过滤条件（在 `**criteria` 关键字参数中，这些参数预期将传递给每个对象的匹配条件），并将根据这些值返回一个未排序的对象实例列表。'
+- en: '`sort` accepts a list of objects and sorts them using a callback function or
+    method passed in `sort_by`.'
+  id: totrans-180
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`sort` 接受一个对象列表，并使用传递给 `sort_by` 的回调函数或方法对它们进行排序。'
+- en: '`BaseDataObject` captures all of the functional requirements and common properties
+    that would need to be present in order to let the business object classes and
+    instances take responsibility for their data storage interactions. Setting aside
+    any database engine concerns for the moment, defining a data persistence-capable
+    business object class such as an `Artisan` in the **Artisan Application** becomes
+    very simple—the final, concrete `Artisan` class just needs to inherit from `BaseArtisan`
+    and `BaseDataObject`, as follows, and then implement the nine required abstract
+    methods that are required by those parent classes:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`BaseDataObject` 捕获了所有功能要求和常见属性，这些属性需要存在才能让业务对象类和实例负责其数据存储交互。暂时不考虑任何数据库引擎问题，定义一个数据持久性能力的业务对象类，比如
+    **Artisan Application** 中的 `Artisan`，变得非常简单——最终的具体 `Artisan` 类只需要继承自 `BaseArtisan`
+    和 `BaseDataObject`，然后实现这些父类所需的九个抽象方法。'
+- en: '![](assets/3df11c98-040d-47f9-b173-7dd6316a8127.png)'
+  id: totrans-182
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/3df11c98-040d-47f9-b173-7dd6316a8127.png)'
+- en: 'This approach would suffice if it could be safely assumed that any given application
+    or service instance will always use the same data store backend for each business
+    object type. Any engine-specific needs or capabilities could simply be added to
+    each final concrete class. It would also be possible, though, to collect any properties
+    needed by specific data store engines (MongoDB and MySQL, for example) into an
+    additional layer of abstraction, then have the final concrete objects derive from
+    one of those instead:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果可以安全地假定任何给定的应用程序或服务实例将始终为每种业务对象类型使用相同的数据存储后端，那么这种方法就足够了。任何特定于引擎的需求或功能都可以简单地添加到每个最终的具体类中。但是，也可以将特定数据存储引擎（例如MongoDB和MySQL）所需的任何属性收集到一个额外的抽象层中，然后让最终的具体对象从其中一个派生出来：
+- en: '![](assets/cf623f73-1b8e-4027-b16d-50774d8ca167.png)'
+  id: totrans-184
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/cf623f73-1b8e-4027-b16d-50774d8ca167.png)'
+- en: In this scenario, the final `Artisan` class could derive from either `MongoDataObject`
+    or `MySQLDataObject`, and those could enforce the provision of any data required
+    to execute the data access methods against those specific backend engines. Those
+    middle-layer ABCs might also provide some helper methods for tasks that are relevant
+    for each engine type—taking the template SQL in the `create_sql` class attribute,
+    for example, and populating it with instance data values from `to_data_dict()`
+    results in being able to create the final SQL for a MySQL call to create an instance.
+    This approach would keep most of the data access information needed by any given
+    business object class in that class, and associated with the business object itself,
+    which doesn't feel like a bad idea, though it has the potential to get complex
+    if a lot of combinations need to be supported. It would also keep the level of
+    effort involved in adding adding new functionality to all data objects (at the
+    `BaseDataObject` level of the class tree) more manageable—the addition of new
+    abstract functionality would still require implementation in all derived concrete
+    classes, but any concrete changes would simply be inherited and immediately available.
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，最终的`Artisan`类可以从`MongoDataObject`或`MySQLDataObject`中派生出来，并且可以强制执行执行针对这些特定后端引擎的数据访问方法所需的任何数据。这些中间层的ABC也可能为每种引擎类型提供一些有用的方法，例如，使用`create_sql`类属性中的模板SQL，并用`to_data_dict()`结果中的实例数据值填充它，可以创建用于MySQL调用创建实例的最终SQL。这种方法将保持任何给定业务对象类所需的大部分数据访问信息在该类中，并与业务对象本身相关联，这看起来不像一个坏主意，尽管如果需要支持很多组合，它有可能变得复杂。它还将保持向所有数据对象添加新功能所需的工作量（在类树的`BaseDataObject`级别）更可管理——添加新的抽象功能仍然需要在所有派生的具体类中实现，但任何具体的更改将被继承并立即可用。
+- en: Data access decisions
+  id: totrans-186
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 数据访问决策
+- en: With all of these factors in mind, then, it's time to make some decisions about
+    how the various component projects' objects will deal with keeping track of their
+    data. In the interests of having a single interface around all object data access,
+    we'll implement the `BaseDataObject` ABC described previously, or something very
+    similar to it, and derive our final data-persisting concrete classes from a combination
+    of that ABC and the relevant business object class built in the previous iteration.
+    Finally what we'll end up with are classes for what we'll call data objects, which
+    are capable of reading and writing their own data.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了所有这些因素，现在是时候做出一些关于各个组件项目的对象如何跟踪其数据的决定了。为了在所有对象数据访问周围有一个单一的接口，我们将实现先前描述的`BaseDataObject`
+    ABC，或者非常类似它的东西，并从先前迭代中构建的相关业务对象类的组合中派生出我们最终的数据持久化具体类。最终，我们将得到我们所谓的数据对象的类，它们能够读取和写入自己的数据。
+- en: In the **Artisan Application**, since we don't need to worry about concurrent
+    users interacting with the data at the same time, and since we don't want to burden
+    an **Artisan** user with additional software installations unless there's no better
+    alternative, we'll construct a data persistence mechanism by using local files
+    to store object data.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在**Artisan Application**中，由于我们不需要担心并发用户同时与数据交互，也不想在没有更好的选择的情况下给**Artisan**用户增加额外的软件安装，我们将使用本地文件来存储对象数据来构建数据持久性机制。
+- en: In the code that will be running in a Central Office context, we will have concurrent
+    users, at least potentially, so data storage will need to be centralized in a
+    dedicated database system. There's no discernible need for a formal, database
+    resident schema (though having one wouldn't be a bad thing), so using a NoSQL
+    option should allow shorter development time, and allow some flexibility in case
+    data structures need to change unexpectedly. We'll reexamine those options in
+    more detail when we get to that portion of the development effort.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在将在中央办公室环境中运行的代码中，我们将有并发用户，至少可能会有，并且数据存储需要集中在专用数据库系统中。没有明显需要正式的数据库驻留模式（尽管有一个也不是坏事），因此使用NoSQL选项应该可以缩短开发时间，并在数据结构需要意外更改时提供一些灵活性。当我们到达开发工作的那部分时，我们将更详细地重新审视这些选项。
+- en: Why start from scratch?
+  id: totrans-190
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为什么要从头开始？
+- en: This functional structure is going to be built from the ground up, but there
+    are other options that might work as well, or even better in other contexts. There
+    are, for example, several **Object Relational Mapper** (**ORM**) packages/libraries
+    available that would allow the definition of databases and structure to be defined
+    in code and propagated out to a data store, some of which are integrated into
+    full application frameworks. These include Django's `models` module, which is
+    part of the overall Django web application framework, a common and popular option
+    for developing web applications. Other variants include SQLAlchemy, providing
+    an abstraction layer over SQL operations and an ORM to work with an object's data.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种功能结构将从头开始构建，但在其他情境中可能也有其他可以起作用甚至更好的选择。例如，有几个**对象关系映射器**（**ORM**）包/库可供使用，允许在代码中定义数据库和结构，并传播到数据存储中，其中一些集成到完整的应用程序框架中。这些包括Django的`models`模块，它是整体Django
+    web应用程序框架的一部分，是开发Web应用程序的常见和流行选项。其他变体包括SQLAlchemy，提供了一个在SQL操作上的抽象层和一个用于处理对象数据的ORM。
+- en: There are also specific driver libraries for several database options (SQL and
+    NoSQL both), some of which may provide ORM functionality, but all of which provide
+    at least the basic capability to connect to a data source and execute queries
+    or perform operations against those data sources. It's quite possible to write
+    code that simply executes SQL against an RDBMS such as MySQL or MariaDB, or executes
+    functions that correspond to that SQL against a NoSQL engine like MongoDB or even
+    cloud-resident data stores such as Amazon's DynamoDB. For simple applications,
+    that may actually be a better approach, at least initially. It would keep the
+    development time down, since the various abstraction layers that we've explored
+    so far simply wouldn't be in the picture at all, and the code itself would have
+    a certain type of simplicity, since all it would need to do is execute basic CRUD
+    operations, and maybe not even all of those.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有特定的驱动程序库适用于几种数据库选项（SQL和NoSQL都有），其中一些可能提供ORM功能，但所有这些都至少提供连接到数据源并执行查询或对这些数据源执行操作的基本功能。完全可以编写代码，简单地执行针对RDBMS（如MySQL或MariaDB）的SQL，或者执行与该SQL对应的函数针对NoSQL引擎（如MongoDB）或甚至云驻留数据存储（如Amazon的DynamoDB）。对于简单的应用程序，这实际上可能是一个更好的方法，至少最初是这样。这将减少开发时间，因为迄今为止我们探讨的各种抽象层根本不会出现在图中，而且代码本身会具有一定类型的简单性，因为它所需要做的就是执行基本的CRUD操作，甚至可能并非所有这些操作。
+- en: The data objects structure that is being developed for `hms_sys` will expose
+    a lot of the underlying principles that go into the design of a data access framework,
+    and that's part of the reason that the from-the-ground-up approach it entails
+    was selected. Another reason is that, because it will live somewhere between a
+    full-on ORM approach and the a low-level "execute a query against a connection"
+    implementation strategy, it will show a lot of the relevant aspects of both of those
+    approaches.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正在为`hms_sys`开发的数据对象结构将暴露出许多涉及数据访问框架设计的基本原则，这也是选择从头开始的方法的部分原因。另一个原因是，因为它将处于全面ORM方法和低级“执行对连接的查询”实现策略之间的某个地方，它将展示这两种方法的许多相关方面。
+- en: Summary
+  id: totrans-194
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: There are a lot of options available for data access mechanisms and processes,
+    and while there will occasionally be requirements in play that more or less mandate
+    one of them over the others, there may not be a single right approach across all
+    development efforts. In particular, if time is of the essence, looking for an
+    off-the-shelf solution is probably a good place to start, but if requirements
+    or other constraints don't allow for one of those to be easily applied, creating
+    a custom solution is not out of the question either.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据访问机制和流程有很多选择，虽然偶尔会有要求几乎强制使用其中一种，但可能没有一种方法适用于所有开发工作。特别是，如果时间很重要，寻找现成的解决方案可能是一个很好的起点，但如果要求或其他限制不允许轻松应用其中之一，创建自定义解决方案也是可以的。
+- en: The logical starting point, before getting into the weeds with specific data
+    storage mechanisms, is probably to define the abstraction layer over the collective
+    data access needs— that is, defining the `BaseDataObject` ABC—so that's what we'll
+    tackle next.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入研究特定数据存储机制之前，逻辑的起点可能是定义集体数据访问需求的抽象层-即定义`BaseDataObject` ABC-这就是我们接下来要解决的问题。

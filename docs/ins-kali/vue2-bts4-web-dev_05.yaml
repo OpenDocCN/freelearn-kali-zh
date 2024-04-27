@@ -1,0 +1,1229 @@
+- en: Chapter 6. Please Authenticate!
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第6章。请进行身份验证！
+- en: In the previous chapter, we connected our ProFitOro application to the real-time
+    database. Whenever a user updates the Pomodoro timer settings, these are stored
+    in the database and immediately propagated between the components that use them.
+    Since we had no authentication mechanism, we had to use a fake user in order to
+    be able to test our changes. In this chapter, we are going to have real users!
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们将ProFitOro应用程序连接到了实时数据库。每当用户更新番茄钟计时器设置时，这些设置都会存储在数据库中，并立即在使用它们的组件之间传播。由于我们没有身份验证机制，我们不得不使用一个虚假用户来测试我们的更改。在本章中，我们将拥有真正的用户！
+- en: 'We will use the Firebase authentication API in this regard. So in this chapter,
+    we are going to do the following:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这方面，我们将使用Firebase身份验证API。因此，在本章中，我们将做以下事情：
+- en: Discuss the meaning of AAA and the difference between authentication and authorization
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 讨论AAA的含义以及身份验证和授权之间的区别
+- en: Explore the Firebase authentication API
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 探索Firebase身份验证API
+- en: Create a page for sign-in and login, and connect it with the Firebase authentication
+    API
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建一个登录页面，并将其与Firebase身份验证API连接
+- en: Connect the user's settings with the user's authentication
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将用户的设置与用户的身份验证连接起来
+- en: AAA explained
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 解释AAA
+- en: '**Triple-A**, or **AAA**, stands for **Authentication, Authorization, and Accounting**.
+    Initially, this term was invented as a term to describe the security network protocol;
+    however, it can be easily applied to any system, web resource, or site.'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**AAA**代表**身份验证、授权和计费**。最初，这个术语是用来描述安全网络协议的，然而，它可以很容易地应用于任何系统、网络资源或站点。'
+- en: So, what does AAA mean and why should we bother?
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，AAA是什么意思，为什么我们要关心呢？
+- en: '**Authentication** is the process of uniquely identifying the users of a system.
+    An authenticated user is a user whose access to a system is granted. Usually,
+    the authentication is done via some username and password. When you have to provide
+    your username and password to open your Facebook page, you are authenticating
+    yourself.'
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**身份验证**是唯一识别系统用户的过程。经过身份验证的用户是被授予对系统访问权限的用户。通常，身份验证是通过一些用户名和密码来完成的。当您必须提供用户名和密码来打开您的Facebook页面时，您正在进行身份验证。'
+- en: Your passport is a way of authenticating yourself at the airport. The passport
+    control agent will look at your face and then check your passport. So anything
+    that allows you to *pass* is a part of your authentication. It can be a special
+    word (password) that is only known by you and the system or it can be something
+    that you port (passport) with you that can help the system to uniquely identify
+    you.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的护照是在机场验证自己身份的一种方式。护照控制人员会看着你的脸，然后检查你的护照。因此，任何允许您“通过”的东西都是您身份验证的一部分。它可以是一个只有您和系统知道的特殊词（密码），也可以是您随身携带的可以帮助系统唯一识别您的东西（护照）。
+- en: '**Authorization** is a way to control what resources each user has rights (permissions)
+    to access. If you are developing Facebook applications, you have access to the
+    developer''s page, whereas usual users don''t have access to this page.'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**授权**是一种控制每个用户有权（权限）访问哪些资源的方式。如果您正在开发Facebook应用程序，您可以访问开发者页面，而普通用户无法访问此页面。'
+- en: '**Accounting** measures resources allocated for each user. If you have a Dropbox
+    business standard account, you can use up to 2 TB of storage space, whereas having
+    a normal free Dropbox account gives you only 2 GB of space.'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**计费**衡量为每个用户分配的资源。如果您拥有Dropbox商业标准帐户，您可以使用高达2TB的存储空间，而拥有普通免费Dropbox帐户只能获得2GB的空间。'
+- en: For our application, we should be concerned with the first two As of Triple-A
+    – *Authentication* and *Authorization*. In computer science, we often use term
+    **auth**, referring rather to authentication or authorization or even to both
+    of them at the same time. So we will implement auth, where auth refers to both
+    authentication and authorization. What is the difference between these two terms
+    in the context of our ProFitOro application? Well, authentication will allow users
+    to log in to the system, so this is easy. What about authorization?
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的应用程序，我们应该关注Triple-A的前两个部分——*身份验证*和*授权*。在计算机科学中，我们经常使用术语**auth**，指的是身份验证或授权，甚至同时指两者。因此，我们将实现auth，其中auth同时指身份验证和授权。在我们的ProFitOro应用程序的上下文中，这两个术语有什么区别呢？嗯，身份验证将允许用户登录到系统中，所以这很容易。授权呢？
+- en: Do you remember that we decided that only authenticated users will have access
+    to the configuration of Pomodoro settings and statistical data? This is authorization.
+    Later on, we might go further and implement a special role – fitness trainer.
+    The users with this role will have access to the workouts area and be able to
+    add new workouts.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还记得我们决定只有经过身份验证的用户才能访问番茄工作法设置和统计数据吗？这就是授权。以后，我们可能会进一步实现一个特殊的角色——健身教练。拥有这个角色的用户将能够访问锻炼区域并能够添加新的锻炼。
+- en: In this chapter, we will use the Firebase authentication mechanism to add the
+    possibility of signing in and logging in to our application and to control what
+    users have access to.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将使用Firebase身份验证机制，以添加登录和登陆到我们的应用程序的可能性，并控制用户可以访问的内容。
+- en: How does authentication work with Firebase?
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Firebase如何进行身份验证？
+- en: In the previous chapter, you learned how to use the Firebase API to create a
+    Firebase application instance and use it through your application. We were able
+    to access the database, read it, and store data in it.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，您学习了如何使用Firebase API创建Firebase应用程序实例，并通过应用程序使用它。我们能够访问数据库，读取它，并在其中存储数据。
+- en: 'The way you work with the Firebase authentication API is very similar. You
+    create a Firebase instance, providing a `config` object to it, and you use the
+    `firebase.auth()` method to access different methods related with the authentication.
+    Check your Firebase console''s **Authentication** tab:'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您使用Firebase身份验证API的方式非常相似。您创建一个Firebase实例，向其提供一个`config`对象，并使用`firebase.auth()`方法来访问与身份验证相关的不同方法。检查您的Firebase控制台的**身份验证**选项卡：
+- en: '![How does authentication work with Firebase?](../images/00095.jpeg)'
+  id: totrans-20
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Firebase如何进行身份验证？](../images/00095.jpeg)'
+- en: There are no users yet but we will fix it in a minute!
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在还没有用户，但我们将在一分钟内解决这个问题！
+- en: 'The Firebase SDK provides several ways for users to authenticate:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Firebase SDK提供了几种用户身份验证的方式：
+- en: '**Email and password based authentication**: The classic way for authenticating
+    users. Firebase provides a way to sign in users with email/password and log them
+    in. It also provides methods to reset the user password.'
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 基于电子邮件和密码的身份验证：对用户进行身份验证的经典方式。Firebase提供了一种使用电子邮件/密码登录用户并将其登录的方法。它还提供了重置用户密码的方法。
+- en: '**Federated entity provider authentication**: The way of authenticating users
+    with an external entity provider, such as Google, Facebook, Twitter, or GitHub.'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 联合实体提供者身份验证：与外部实体提供者（如Google、Facebook、Twitter或GitHub）对用户进行身份验证的方式。
+- en: '**Phone number authentication**: The way of authenticating users by sending
+    them an SMS with a code that they will have to input to confirm their identity.'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 电话号码身份验证：通过向用户发送包含验证码的短信来对用户进行身份验证，用户需要输入验证码以确认其身份。
+- en: '**Custom auth system integration**: The way of integrating an already existing
+    auth solution with the Firebase authentication API.'
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自定义身份验证系统集成：将已经存在的身份验证解决方案与Firebase身份验证API集成的方式。
+- en: '**Anonymous user authentication**: The way of providing Firebase features (such
+    as access to the Firebase database) without being authenticated. We can, for example,
+    use this anonymous account to provide access to the default configuration stored
+    in the database.'
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**匿名用户身份验证**：提供Firebase功能（例如访问Firebase数据库）而无需进行身份验证的方式。例如，我们可以使用此匿名帐户来提供对数据库中存储的默认配置的访问权限。'
+- en: For our application, we will use the first and the last methods, so we will
+    allow users to sign in and log in using their email and password combination and
+    we will allow anonymous users to use the basic functionality of the application.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的应用程序，我们将使用第一个和最后一个方法，因此我们将允许用户使用其电子邮件和密码组合进行登录和登录，并且我们将允许匿名用户使用应用程序的基本功能。
+- en: 'You should explicitly activate both methods in your Firebase console. Just
+    open the **Authentication** tab of your Firebase project, click on the sign-in
+    method link, and enable these two methods:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该在Firebase控制台中明确激活这两种方法。只需打开Firebase项目的**身份验证**选项卡，单击登录方法链接，然后启用这两种方法：
+- en: '![How does authentication work with Firebase?](../images/00096.jpeg)'
+  id: totrans-30
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Firebase如何与身份验证工作？](../images/00096.jpeg)'
+- en: Explicitly enable email/password and the anonymous sign-in methods
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 明确启用电子邮件/密码和匿名登录方法
+- en: 'The workflow of using the Firebase authentication API is the following:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Firebase身份验证API的工作流程如下：
+- en: Create all the necessary methods for the sign-in and login.
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建所有必要的方法进行登录和登录。
+- en: Implement all the necessary UI for your authentication.
+  id: totrans-34
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为您的身份验证实现所有必要的UI。
+- en: Connect changes in the UI to the authentication methods.
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将UI的更改连接到身份验证方法。
+- en: Did you spot something nice in step 3? *Connect changes in the UI to the authentication
+    methods*. You remember that we are dealing with a reactive data binding framework,
+    don't you? So this is going to be fun!
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第3步中发现了什么有趣的东西吗？*将UI的更改连接到身份验证方法*。您还记得我们正在处理一种响应式数据绑定框架，对吧？所以这将会很有趣！
+- en: How to connect the Firebase authentication API to a web application
+  id: totrans-37
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何将Firebase身份验证API连接到Web应用程序
+- en: 'In order to connect your application to the Firebase authentication API, you
+    should start by creating a Firebase application instance:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了将您的应用程序连接到Firebase身份验证API，您应该首先创建一个Firebase应用程序实例：
+- en: '[PRE0]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'You can find the necessary keys and URLs in the popup that opens if you click
+    on the **Web Setup** button:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在弹出窗口中找到必要的密钥和URL，如果单击**Web设置**按钮将打开该窗口：
+- en: '![How to connect the Firebase authentication API to a web application](../images/00097.jpeg)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_IMG
+  zh: '![如何将Firebase身份验证API连接到Web应用程序](../images/00097.jpeg)'
+- en: The setup config to use Firebase in a web application
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Web应用程序中使用Firebase的设置配置
+- en: 'Now you can use the app instance to access the `auth()` object and its methods.
+    Check out the official Firebase documentation regarding the authentication API:
+    [https://firebase.google.com/docs/auth/users](https://firebase.google.com/docs/auth/users).'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您可以使用应用程序实例来访问`auth()`对象及其方法。查看有关身份验证API的官方Firebase文档：[https://firebase.google.com/docs/auth/users](https://firebase.google.com/docs/auth/users)。
+- en: 'The most important part of the API for us is the methods to create and sign
+    in a user, and the method that listens to the changes in the authentication state:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对我们来说API最重要的部分是创建和登录用户的方法，以及监听身份验证状态变化的方法：
+- en: '[PRE1]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Or:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者：
+- en: '[PRE2]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'The method that listens to the changes in the authentication state of the application
+    is called `onAuthStateChanged`. You can set the important properties inside of
+    this method considering the state your application needs to have depending on
+    the user being logged in or not:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 监听应用程序身份验证状态变化的方法称为`onAuthStateChanged`。您可以在此方法中设置重要属性，考虑应用程序根据用户是否已登录需要具有的状态：
+- en: '[PRE3]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: That is all! In our application, we just have to provide a visual way to pass
+    the username and the password to the API.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样！在我们的应用程序中，我们只需要提供一种可视方式将用户名和密码传递给API。
+- en: Authenticating to the ProFitOro application
+  id: totrans-51
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 认证到ProFitOro应用程序
+- en: 'Let us now make signing in and logging in to our ProFitOro application possible!
+    First, we have to set up the Firebase instance and figure out where we should
+    put all the methods related to authentication. The Firebase application initialization
+    has already been done inside the `store/index.js` file. Just add the `apiKey`
+    and `authDomain` configuration entries if you still do not have them included
+    in the `config`:'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们让ProFitOro应用程序的登录和注销成为可能！首先，我们必须设置Firebase实例，并找出应该将所有与身份验证相关的方法放在哪里。Firebase应用程序初始化已经在store/index.js文件中完成。如果您仍然没有在config中包含它们，请添加apiKey和authDomain配置条目：
+- en: '[PRE4]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'I will also export `firebaseApp` within the store''s state property using the
+    spread `…` operator:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还将使用扩展运算符在store的state属性中导出firebaseApp：
+- en: '[PRE5]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'I will also add a `user` property to our state so we can reset it on the `onAuthStateChanged`
+    listener''s handler:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还将向我们的状态添加一个用户属性，以便我们可以在onAuthStateChanged监听器的处理程序上重置它：
+- en: '[PRE6]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Let us also create a small mutation that will reset the value of the `user`
+    object to the given value:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们还创建一个小的变异，将用户对象的值重置为给定值：
+- en: '[PRE7]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Now we are totally ready to create the needed actions. I will create four actions
+    that are indispensable for our application:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经完全准备好创建所需的操作。我将创建四个对我们的应用程序至关重要的操作：
+- en: '`createUser`: This action will call the Firebase auth `createUserWithEmailAndPassword`
+    with the given email and password'
+  id: totrans-61
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: createUser：此操作将调用Firebase auth的createUserWithEmailAndPassword方法，使用给定的电子邮件和密码
+- en: '`authenticate`: This action will call the Firebase auth `signInWithEmailAndPassword`
+    method to sign in the user with the given email and password'
+  id: totrans-62
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: authenticate：此操作将调用Firebase auth的signInWithEmailAndPassword方法以使用给定的电子邮件和密码登录用户
+- en: '`logout`: This action will call the Firebase auth `signOut` method'
+  id: totrans-63
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 注销：此操作将调用Firebase auth的signOut方法
+- en: '`bindAuth`: This action will just set up the `onAuthStateChanged` callback
+    and commit the `setUser` mutation'
+  id: totrans-64
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: bindAuth：此操作将设置onAuthStateChanged回调并提交setUser变异
+- en: 'To start with, let us implement these actions in a very easy way, without any
+    callbacks attached. So they will look like this:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们以一种非常简单的方式实现这些操作，而不附加任何回调。因此，它们将如下所示：
+- en: '[PRE8]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Great! Now let''s attach the `bindAuth` action to the `created` method of the
+    main `App.vue` component:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！现在让我们将bindAuth操作附加到主App.vue组件的created方法上：
+- en: '[PRE9]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Now, once the application is created, the listener to the authentication state
+    will be bound immediately. What can we do with it? Right now, the only component
+    that the `App.vue` component shows immediately is the main content component.
+    However, if the user is not logged in, we should actually show the landing page
+    component to offer the possibility to the user to sign in or log in. We can do
+    it easily using the `v-if` directive bound to the `user` property. If the user
+    is defined, let''s show the main content component; otherwise, let''s show the
+    landing page component. How easy is that? Our `App.vue` component''s template
+    will look like this:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，一旦应用程序被创建，身份验证状态的监听器将立即绑定。我们可以做什么？现在，App.vue组件立即显示的唯一组件是主内容组件。但是，如果用户没有登录，我们实际上应该显示着陆页组件，以提供给用户登录或注册的可能性。我们可以很容易地使用绑定到用户属性的v-if指令来实现。如果用户已定义，让我们显示主内容组件；否则，让我们显示着陆页组件。多么简单？我们的App.vue组件的模板将如下所示：
+- en: '[PRE10]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'If you open the page now, you will see that the landing page is displayed:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您现在打开页面，您将看到显示着陆页：
+- en: '![Authenticating to the ProFitOro application](../images/00098.jpeg)'
+  id: totrans-72
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Authenticating to the ProFitOro application](../images/00098.jpeg)'
+- en: When the application is started, the landing page is displayed because the user
+    is not logged in
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当应用程序启动时，会显示登陆页面，因为用户没有登录
+- en: All the relevant code up to this part is in the `chapter6/1/profitoro` folder.
+    Pay special attention to the store's files (`index.js, actions.js, mutations.js,
+    state.js`) and to the `App.vue` component.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有相关的代码到这部分都在`chapter6/1/profitoro`文件夹中。特别注意商店的文件（`index.js, actions.js, mutations.js,
+    state.js`）和`App.vue`组件。
+- en: Now we are stuck on the landing page that just displays some placeholder text
+    and there is no way to proceed to the application because we cannot log in!
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们卡在了显示一些占位文本的登陆页面上，没有办法进入应用程序，因为我们无法登录！
+- en: 'Well, this is quite easy to solve: let''s create a simple form to sign up and
+    log in in the `Authentication.vue` component and connect it with our actions.'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好吧，这很容易解决：让我们在`Authentication.vue`组件中创建一个简单的注册和登录表单，并将其与我们的操作连接起来。
+- en: 'So I will add the component''s data that will hold the email for registering,
+    email for login, and the corresponding passwords:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以我将添加组件数据，用于保存注册的电子邮件、登录的电子邮件和相应的密码：
+- en: '[PRE11]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'I will also add a very simple markup that will display the inputs for the corresponding
+    data:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还将添加一个非常简单的标记，用于显示相应数据的输入：
+- en: '[PRE12]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Let''s now import the necessary actions (`authenticate` and `createUser`) and
+    create methods that will call these actions:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们导入必要的操作（`authenticate`和`createUser`）并创建将调用这些操作的方法：
+- en: '[PRE13]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Now we just have to attach the event binding the `v-on:click` directive to
+    the corresponding buttons:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们只需要将事件绑定到相应的按钮上，使用`v-on:click`指令：
+- en: '[PRE14]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Let''s also add a button to our `HeaderComponent.vue` component. This button
+    should allow the user to log out. This is very easy; we don''t even have to create
+    any method, we just have to bind the event to the actual action. So the whole
+    markup and the needed script will look as simple as this:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们还在`HeaderComponent.vue`组件中添加一个按钮。这个按钮应该允许用户注销。这很容易；我们甚至不需要创建任何方法，我们只需要将事件绑定到实际的操作。因此整个标记和所需的脚本看起来就像这样简单：
+- en: '[PRE15]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: And…that's it! Open the page and try to register in your application! It works!
+    Once you are logged in, not only you will see the Pomodoro timer but you will
+    also be able to see the logout button. Click on it and check that you are actually
+    thrown out of the application to the landing page. Try to log in again. Everything
+    works like a charm.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样！打开页面并尝试在你的应用程序中注册！它起作用了！一旦你登录，你不仅会看到番茄钟，还可以看到注销按钮。点击它，检查你是否真的被踢出应用程序到登陆页面。尝试重新登录。一切都像魅力一样运行。
+- en: 'Do not forget to open your Firebase console and check the **Authentication**
+    tab. You should see all your registered users there:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记打开你的Firebase控制台并检查**认证**选项卡。你应该在那里看到所有注册的用户：
+- en: '![Authenticating to the ProFitOro application](../images/00099.jpeg)'
+  id: totrans-89
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Authenticating to the ProFitOro application](../images/00099.jpeg)'
+- en: Monitor your registered users through the Firebase console's Authentication
+    tab
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过Firebase控制台的认证选项卡监视你的注册用户
+- en: Congratulations! You just used the Firebase authentication API to implement
+    a full authentication mechanism for your application. You can find the corresponding
+    code in the `chapter6/2/profitoro` folder. Pay special attention to the `Authentication.vue`
+    and `HeaderComponent.vue` components.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜！你刚刚使用Firebase认证API为你的应用程序实现了完整的认证机制。你可以在`chapter6/2/profitoro`文件夹中找到相应的代码。特别注意`Authentication.vue`和`HeaderComponent.vue`组件。
+- en: Making the authentication UI great again
+  id: totrans-92
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使认证界面再次变得伟大
+- en: We have just implemented the authentication mechanism for our ProFitOro application.
+    That's great, but the UI of our authentication page looks as if we've used a time
+    machine and gone back 20 years to the early days of the internet. Let's fix it
+    using our powerful friend – Bootstrap.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们刚刚为我们的ProFitOro应用程序实现了认证机制。这很棒，但是我们的认证页面的UI看起来好像我们使用了时光机，回到了互联网的早期。让我们使用我们强大的朋友-Bootstrap来解决这个问题。
+- en: First of all, I would like to make my landing page layout a two-column grid
+    layout, so the whole sign-in/login belongs to the left column and the button that
+    leads the user to the application without being registered stays on the right
+    side. However, I would like these two columns to be stacked on mobile devices.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我想将我的登陆页面布局为两列网格布局，因此整个登录属于左列，而将用户引导到应用程序而不注册的按钮位于右侧。但是，我希望这两列在移动设备上堆叠。
+- en: 'This is nothing new for you; I suppose that you remember how to use Bootstrap''s
+    grid layout in order to achieve this behavior: [https://v4-alpha.getbootstrap.com/layout/grid/](https://v4-alpha.getbootstrap.com/layout/grid/).
+    So, in our `LandingPage` component, I will just wrap the authentication and `go-to-app-link`
+    components into the `div` with the `row` class and add the corresponding `col-*`
+    classes to these components:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这对您来说并不新鲜；我想您应该还记得如何使用Bootstrap的网格布局来实现这种行为：[https://v4-alpha.getbootstrap.com/layout/grid/](https://v4-alpha.getbootstrap.com/layout/grid/)。因此，在我们的`LandingPage`组件中，我将把认证和`go-to-app-link`组件包装到带有`row`类的`div`中，并为这些组件添加相应的`col-*`类：
+- en: '[PRE16]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'That''s it! Now you have a nice two-column layout, which transforms into the
+    single-column layout on small-sized devices:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样！现在您有一个漂亮的两列布局，在小型设备上会转换为单列布局：
+- en: '![Making the authentication UI great again](../images/00100.jpeg)'
+  id: totrans-98
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使认证UI再次变得伟大](../images/00100.jpeg)'
+- en: This is how our layout looks on the desktop device
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们在桌面设备上的布局
+- en: 'As you can see, on the desktop device, we have a nice two-column layout. If
+    you resize your browser to the size of a mobile device, the right column jumps
+    behind the left column:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，在桌面设备上，我们有一个漂亮的两列布局。如果将浏览器调整到移动设备的大小，右列将跳到左列后面：
+- en: '![Making the authentication UI great again](../images/00101.jpeg)'
+  id: totrans-101
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使认证UI再次变得伟大](../images/00101.jpeg)'
+- en: This is how our layout looks on the mobile device
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们在移动设备上的布局
+- en: 'Now let''s have a look at our `Authentication.vue` component. In order to make
+    it nicer than a 20-year-old web page, let''s apply Bootstrap''s magic to it. To
+    do so, we will use the classes of Bootstrap''s forms: [https://v4-alpha.getbootstrap.com/components/forms/](https://v4-alpha.getbootstrap.com/components/forms/).'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们来看看我们的`Authentication.vue`组件。为了使其比20年前的网页更美观，让我们对其应用Bootstrap的魔法。为此，我们将使用Bootstrap表单的类：[https://v4-alpha.getbootstrap.com/components/forms/](https://v4-alpha.getbootstrap.com/components/forms/)。
+- en: 'We will wrap the whole form into the `<form>` tag and each of the inputs into
+    the `div` with the `form-group` class. We will also add the class `form-control`
+    to each of the inputs. So the input for email, for example, will look as follows:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将整个表单包装到`<form>`标签中，将每个输入都包装到带有`form-group`类的`div`中。我们还将为每个输入添加`form-control`类。因此，例如，电子邮件输入将如下所示：
+- en: '[PRE17]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'As a small exercise, do the following:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个小练习，做以下事情：
+- en: Make it only one form that has a button to switch between the login and sign-up
+    forms
+  id: totrans-107
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 只需创建一个表单，其中有一个按钮可以在登录和注册表单之间切换
+- en: Make it only one method that would call one of the actions depending on which
+    state the form is in at the moment
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 只需创建一个方法，根据表单当前的状态调用其中一个动作
+- en: 'Explore Bootstrap''s utilities classes to remove all the borders except the
+    bottom border and to remove the round corners from them: [https://v4-alpha.getbootstrap.com/utilities/borders/](https://v4-alpha.getbootstrap.com/utilities/borders/)'
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 探索Bootstrap的实用程序类，以除去所有边框，除了底部边框，并从中删除圆角：[https://v4-alpha.getbootstrap.com/utilities/borders/](https://v4-alpha.getbootstrap.com/utilities/borders/)
+- en: 'In the end, your form should look like the following:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，您的表单应该如下所示：
+- en: '![Making the authentication UI great again](../images/00102.jpeg)'
+  id: totrans-111
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使身份验证UI再次变得伟大](../images/00102.jpeg)'
+- en: This is how both forms should be looking at the end. They should be toggled
+    with a bottom button
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是最终两种形式应该看起来的样子。它们应该通过底部按钮进行切换
+- en: Try to achieve it by yourself. To check your work, have a look at the `chapter6/3/profitoro`
+    folder. In particular, check the code of the `Authentication.vue` component. It
+    is very different!
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试自己实现。要检查您的工作，请查看`chapter6/3/profitoro`文件夹。特别是，检查`Authentication.vue`组件的代码。它非常不同！
+- en: Managing the anonymous user
+  id: totrans-114
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 管理匿名用户
+- en: 'ProFitOro allows unregistered users to use the application as well. The only
+    difference is that these unregistered users are not allowed to configure their
+    settings as well, as they do not have access to their statistical data. They also
+    cannot manage workouts. So, this is where we meet the second A of the triple-A
+    definition – *authorization*. How can we manage these users? How can they actually
+    enter the application if we only allow our users to sign up and log in? Well,
+    for some reason, we have prepared the part that says **Go to App**. Let me remind
+    you how it looks in the mockups:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ProFitOro允许未注册用户使用该应用程序。唯一的区别是，这些未注册用户也不被允许配置他们的设置，因为他们无法访问他们的统计数据。他们也无法管理锻炼。这就是我们遇到三A定义的第二个A
+    - *授权*。我们如何管理这些用户？如果我们只允许我们的用户注册和登录，他们如何进入应用程序？好吧，出于某种原因，我们已经准备好了“转到应用程序”的部分。让我提醒您在模型中的外观：
+- en: '![Managing the anonymous user](../images/00103.jpeg)'
+  id: totrans-116
+  prefs: []
+  type: TYPE_IMG
+  zh: '![管理匿名用户](../images/00103.jpeg)'
+- en: Start without registration! button in the initial mockups
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在初始模型中的无需注册！按钮
+- en: 'Luckily for us, the Firebase authentication API provides a method to sign in
+    the anonymous user. The returned user object contains the `isAnonymous` attribute,
+    which will allow us to manage the resources that can or can''t be accessible to
+    this anonymous user. So let''s add the action called `authenticateAnonymous` and
+    call the corresponding Firebase `auth` method within it:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，Firebase身份验证API提供了一种方法来登录匿名用户。返回的用户对象包含`isAnonymous`属性，这将允许我们管理可以或不可以访问此匿名用户的资源。因此，让我们添加名为`authenticateAnonymous`的操作，并在其中调用相应的Firebase
+    `auth`方法：
+- en: '[PRE18]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Here we are! Now let''s just slightly modify a mutation that sets the user
+    and the **isAnonymous** state''s attribute to the corresponding one in the user
+    object:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是我们！现在让我们稍微修改一个设置用户和**isAnonymous**状态属性的变化，使其与用户对象中的相应属性相对应：
+- en: '[PRE19]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Let''s also modify the binding configuration and statistics actions and execute
+    the actual binding only if the user is set and only if the user is not anonymous:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们还修改绑定配置和统计操作，并仅在用户设置且用户不是匿名用户时执行实际绑定：
+- en: '[PRE20]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'We are done with the backend! Now let''s implement this button! There are only
+    three steps to achieve it. Open the `GoToAppLink.vue` component, import the `mapActions`
+    helper, add the button, and use the `v-on:click` directive to bind the event listener
+    to it that will call the corresponding action:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经完成了后端！现在让我们实现这个按钮！只需三个步骤即可实现。打开`GoToAppLink.vue`组件，导入`mapActions`助手，添加按钮，并使用`v-on:click`指令将事件侦听器绑定到它，该事件侦听器将调用相应的操作：
+- en: '[PRE21]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'How easy is that? Now, as a small exercise, with the help of Bootstrap, try
+    to make things look like the following:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这有多简单？现在，作为一个小练习，借助Bootstrap，尝试使事物看起来像下面这样：
+- en: '![Managing the anonymous user](../images/00104.jpeg)'
+  id: totrans-127
+  prefs: []
+  type: TYPE_IMG
+  zh: '![管理匿名用户](../images/00104.jpeg)'
+- en: Use the corresponding Bootstrap classes to make our buttons look like this and
+    to align the columns vertically
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用相应的Bootstrap类使我们的按钮看起来像这样，并垂直对齐列。
+- en: 'Check Bootstrap''s classes for alignment: [https://v4-alpha.getbootstrap.com/layout/grid/#alignment](https://v4-alpha.getbootstrap.com/layout/grid/#alignment).
+    Check as well the helper classes to get rid of rounded corners. Check yourself
+    by having a look at the code in the `chapter6/4/profitoro` folder. Pay special
+    attention to the `GoToAppLink.vue` component and to the store''s components, such
+    as `action.js` and `mutations.js`.'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查Bootstrap的对齐类：[https://v4-alpha.getbootstrap.com/layout/grid/#alignment](https://v4-alpha.getbootstrap.com/layout/grid/#alignment)。还要检查辅助类以去除圆角。通过查看`chapter6/4/profitoro`文件夹中的代码来检查自己。特别注意`GoToAppLink.vue`组件和存储组件，如`action.js`和`mutations.js`。
+- en: Personalizing the Pomodoro timer
+  id: totrans-130
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 个性化番茄钟
+- en: Well, now that we can already sign in new users and log in the existing ones,
+    probably we should think about taking advantage of our authentication mechanism
+    because right now we are actually not doing anything with it. We just sign up
+    and we just log in. Yes, we also can hide or show some content based on the user's
+    authentication, but this is not enough. The whole point of all this effort was
+    to be able to store and retrieve the user's custom configuration for the Pomodoro
+    timer and the user's statistical data.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经可以注册新用户并登录现有用户，可能我们应该考虑利用我们的身份验证机制，因为现在我们实际上没有利用它。我们只是注册和登录。是的，我们还可以根据用户的身份验证隐藏或显示一些内容，但这还不够。所有这一切努力的重点是能够存储和检索用户的自定义番茄钟配置和用户的统计数据。
+- en: 'Until now, we have been using a hardcoded database object with the key `test`
+    in order to access the user''s data, but now, since we already have our real users,
+    it''s time to populate the database with real users'' data and use it in our application.
+    Actually, the only thing we have to do is to replace this hardcoded value with
+    the actual user''s ID. So, for example, our code to bind the `config` reference
+    was looking like this:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们一直在使用硬编码的数据库对象，其中包含键`test`，以便访问用户的数据，但现在，由于我们已经有了真正的用户，是时候用真正的用户数据填充数据库并在我们的应用程序中使用它了。实际上，我们唯一需要做的就是用实际用户的ID替换这个硬编码的值。因此，例如，我们绑定`config`引用的代码看起来像这样：
+- en: '[PRE22]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Here, the reference `state.configRef` has been defined in the store''s entry
+    point `index.js`:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，引用`state.configRef`已经在存储的入口点`index.js`中定义：
+- en: '[PRE23]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Now, we cannot actually instantiate our database references within the store''s
+    entry point, because at this point (no pun intended), we still don''t know whether
+    or not our user is authenticated. So the best thing to do is to pass this code
+    to the actual `bindConfig` function and to replace this `test` with the real user''s
+    *uid*:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们实际上不能在存储的入口点实例化我们的数据库引用，因为在这一点上（无意冒犯），我们仍然不知道我们的用户是否已经通过身份验证。因此，最好的做法是将此代码传递给实际的`bindConfig`函数，并用真实用户的*uid*替换这个`test`：
+- en: '[PRE24]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Now, my dear attentive user, I know that you are exclaiming "but how the hell
+    is the configuration with the user''s *uid* stored?" Very well noticed: it''s
+    not. We still have to store it on our user''s first sign-up. We actually have
+    to store both configuration and statistics.'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我亲爱的细心用户，我知道你在惊叹“但是用户的*uid*配置是如何存储的？”非常注意到：它没有。我们仍然需要在用户首次注册时将其存储。实际上，我们需要存储配置和统计数据。
+- en: 'The Firebase database provides a method to write new data to the database that
+    is called `set`. So you basically obtain the reference (just like in the case
+    of reading data) and set the data you need to write:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Firebase数据库提供了一种写入新数据到数据库的方法，称为`set`。因此，您基本上获取引用（就像读取数据的情况一样）并设置您需要写入的数据：
+- en: '[PRE25]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'This will create a new entry with a given user ID in our configuration table
+    and set the default state''s `config` data. So we will have to call this method
+    on the new user creation. We will still have to bind the database references to
+    our state objects. In order to reduce the amount of code, I created a method,
+    `bindFirebaseReference`, that receives the reference and the string that represents
+    the key of the state to which it should be bound. This method will analyze whether
+    or not the entry for the given reference already exists in the database and will
+    create it if needed. For that, Firebase provides a nice method that can be applied
+    to nearly everything – this method is called `once` and it receives a callback
+    with a snapshot to whatever it has been applied to. So, inside this callback,
+    we can analyze whether or not this snapshot has a child with a given name, or
+    even if it has a value or it''s `null`. If the value is already set, we will bind
+    our state to it. If not, we will create a new entry. Check out the official Firebase
+    documentation in this regard: [https://firebase.google.com/docs/database/web/read-and-write](https://firebase.google.com/docs/database/web/read-and-write).
+    This is what the `once` method and its callback looks like:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在我们的配置表中为给定的用户ID创建一个新条目，并设置默认状态的`config`数据。因此，我们将不得不在新用户创建时调用此方法。我们仍然需要将数据库引用绑定到我们的状态对象。为了减少代码量，我创建了一个方法`bindFirebaseReference`，它接收引用和表示应将其绑定到的状态键的字符串。该方法将分析数据库中是否已存在给定引用的条目，并在需要时创建它。为此，Firebase提供了一个几乎可以应用于任何东西的好方法
+    - 这个方法称为`once`，它接收一个回调和一个快照。因此，在此回调中，我们可以分析此快照是否具有给定名称的子项，甚至是否具有值或为`null`。如果值已设置，我们将将我们的状态绑定到它。如果没有，我们将创建一个新条目。在这方面查看官方Firebase文档：[https://firebase.google.com/docs/database/web/read-and-write](https://firebase.google.com/docs/database/web/read-and-write)。这就是`once`方法及其回调的外观：
+- en: '![Personalizing the Pomodoro timer](../images/00105.jpeg)'
+  id: totrans-142
+  prefs: []
+  type: TYPE_IMG
+  zh: '![个性化番茄钟](../images/00105.jpeg)'
+- en: How to use the once method to check whether the data exists in the database
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如何使用`once`方法检查数据库中是否存在数据
+- en: 'Disregarding the existence or not of data, our binding reference method should
+    call the Firebase bindings. So it will look as the following:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不考虑数据的存在与否，我们的绑定引用方法应调用Firebase绑定。因此，它将如下所示：
+- en: '[PRE26]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'I also replaced both methods that were binding `config` and `statistics` by
+    only one:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还用一个方法替换了绑定`config`和`statistics`的两种方法：
+- en: '[PRE27]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: This method is being called from the `bindAuth` method. So now we can remove
+    the calls to the actions to bind `config` and `statistics` from the `created`
+    method of our `App.vue`. We also don't need the instantiation of references in
+    the `store/index.js` since both references are instantiated within this new method.
+    And we have to add two mutations that will set the references to the state so
+    we don't need to change our Pomodoro configuration settings actions since they
+    are using both references to update the data.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个方法是从`bindAuth`方法中调用的。因此，现在我们可以从`App.vue`的`created`方法中删除绑定`config`和`statistics`的调用。我们还不需要在`store/index.js`中实例化引用，因为这两个引用都是在这个新方法中实例化的。我们还必须添加两个将引用设置为状态的mutations，这样我们就不需要更改我们的Pomodoro配置设置actions，因为它们正在使用这两个引用来更新数据。
+- en: Check what the code looks like in the `chapter6/5/profitoro` folder. Check out
+    the slight changes in the `App.vue` component, and check what the store's files
+    are looking like now (`index.js`, `mutations.js`, `state.js`, and especially `actions.js`).
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查`chapter6/5/profitoro`文件夹中代码的外观。查看`App.vue`组件中的轻微更改，并查看存储文件现在的外观（`index.js`，`mutations.js`，`state.js`，特别是`actions.js`）。
+- en: 'Play with your application. Sign up, log in, change the Pomodoro timer configuration,
+    log out, and check that it works. Check your Firebase console – the **Realtime
+    Database** tab and **Authentication** tab. Check that whatever you change, you
+    have your data consistent everywhere – in your database, in your **Authentication**
+    tab, and, most importantly, in your application (because the application is what
+    your users are going to see, right?):'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 玩一下你的应用程序。注册、登录、更改番茄钟定时器配置、退出登录，然后检查它是否有效。检查你的Firebase控制台 - **实时数据库**选项卡和**身份验证**选项卡。检查无论你改变什么，你的数据都是一致的
+    - 在你的数据库中，在你的**身份验证**选项卡中，最重要的是在你的应用程序中（因为应用程序是你的用户将要看到的，对吧？）：
+- en: '![Personalizing the Pomodoro timer](../images/00106.jpeg)'
+  id: totrans-151
+  prefs: []
+  type: TYPE_IMG
+  zh: '![个性化番茄钟定时器](../images/00106.jpeg)'
+- en: Check that the data is consistent everywhere
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查数据在各处是否一致
+- en: So now we can sign up a new user, log in as an existing user, and log in as
+    an anonymous user. We provide a nice value to the authenticated users – to be
+    able to configure their Pomodoro timer and to check their statistical data. Of
+    course, our application is still far from being perfect – we don't validate the
+    input, we accept any values in the Pomodoro configuration area, which is not right,
+    and we don't display the possibility of changing passwords on the startup page.
+    BUT we have our solid skeleton, which enables us to build a solid and nice application
+    on its base. So let us move on!
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以注册新用户，以现有用户身份登录，以匿名用户身份登录。我们为经过身份验证的用户提供了一个不错的价值 - 能够配置他们的番茄钟定时器并检查他们的统计数据。当然，我们的应用程序还远远不完美
+    - 我们没有验证输入，接受番茄钟配置区域中的任何值，这是不对的，而且我们也没有在启动页面上显示更改密码的可能性。但是我们有一个坚实的框架，它使我们能够在其基础上构建一个坚实而不错的应用程序。所以让我们继续前进！
+- en: Updating a user's profile
+  id: totrans-154
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更新用户的个人资料
+- en: 'Wouldn''t it be funny if we could welcome our user by displaying a welcome
+    message saying something like **Welcome Olga**? But our users do not have names;
+    they only have emails and passwords – two essential authentication components
+    that are passed during the sign-up process. So, how can we do that? Well, if you
+    have read with some attention the Firebase documentation regarding authentication
+    ([https://firebase.google.com/docs/auth/web/manage-users](https://firebase.google.com/docs/auth/web/manage-users)),
+    you might have spotted these nice methods:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们能够通过显示欢迎消息来欢迎我们的用户，比如**欢迎Olga**，那不是很有趣吗？但是我们的用户没有名字；他们只有电子邮件和密码 - 这两个在注册过程中传递的基本认证组件。那么，我们该怎么做呢？如果你仔细阅读了Firebase关于身份验证的文档（[https://firebase.google.com/docs/auth/web/manage-users](https://firebase.google.com/docs/auth/web/manage-users)），你可能会发现这些不错的方法：
+- en: '![Updating a user''s profile](../images/00107.jpeg)'
+  id: totrans-156
+  prefs: []
+  type: TYPE_IMG
+  zh: '![更新用户个人资料](../images/00107.jpeg)'
+- en: Firebase methods for updating a user's profile and email address
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用于更新用户个人资料和电子邮件地址的Firebase方法
+- en: Let's use these methods to update our user's profile and user's profile picture!
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们使用这些方法来更新我们用户的个人资料和用户的个人资料图片！
+- en: We will define three new actions – one that will update the user's display name
+    by calling the Firebase `updateProfile` method, one that will update the user's
+    profile picture's URL by calling the same method, and another one that will call
+    the `updateEmail` method. Then we will create the necessary markup in the `Settings.vue`
+    component that will bind those actions on the corresponding input's update. Sounds
+    easy, right? Believe me, it's as easy to implement as it actually sounds.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将定义三个新的操作 - 一个将通过调用Firebase的`updateProfile`方法来更新用户的显示名称，另一个将通过调用相同的方法来更新用户的个人资料图片URL，还有一个将调用`updateEmail`方法。然后我们将在`Settings.vue`组件中创建必要的标记，将这些操作绑定到相应输入的更新上。听起来很容易，对吧？相信我，实际实现起来就像听起来的那么容易。
+- en: 'So, let''s define our actions. They will look like the following:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，让我们定义我们的操作。它们将如下所示：
+- en: '[PRE28]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Great! Now let''s switch to our `Settings.vue` component, which will be responsible
+    for rendering the needed data to change the account settings and for updating
+    this data by calling the needed actions when needed. So first of all, I will add
+    three entries to the data function that will be set to the current user object''s
+    corresponding attributes once the component is `created`:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！现在让我们切换到我们的`Settings.vue`组件，它将负责渲染所需的数据以更改帐户设置，并在需要时调用所需的操作来更新这些数据。所以首先，我将向数据函数添加三个条目，这些条目将在组件被`created`时设置为当前用户对象的相应属性：
+- en: '[PRE29]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Now this data can be used within the corresponding actions. So, let''s import
+    the needed actions and create the corresponding methods:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在这些数据可以在相应的操作中使用。所以，让我们导入所需的操作并创建相应的方法：
+- en: '[PRE30]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Now we can add the needed markup full of the inputs to which we will bind the
+    data using the `v-model` data binding directive! We will also call the corresponding
+    methods on each input''s update:'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以添加所需的标记，其中包含了我们将使用`v-model`数据绑定指令绑定数据的输入框！我们还将在每个输入框的更新上调用相应的方法：
+- en: '[PRE31]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: And…we are done!
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后...我们完成了！
+- en: 'As a small exercise, do the following: add a figure caption behind our image
+    that says **Change profile picture**. The input element for the new picture URL
+    should only be visible when the user clicks on this figure caption. Once the URL''s
+    updating is done, the input should become invisible again.'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个小练习，做以下操作：在我们的图像后面添加一个标题，说**更改个人资料图片**。新图片URL的输入框应该只在用户点击这个标题时可见。一旦URL更新完成，输入框应该再次变得不可见。
+- en: 'The result should look like the following:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果应该如下所示：
+- en: '![Updating a user''s profile](../images/00108.jpeg)'
+  id: totrans-171
+  prefs: []
+  type: TYPE_IMG
+  zh: '![更新用户资料](../images/00108.jpeg)'
+- en: This is how it looks before the user clicks the Change profile picture caption
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户点击更改个人资料图片标题之前的外观如下
+- en: Initially, it contains the default user picture.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最初，它包含默认用户图片。
+- en: 'After the user clicks on the caption, the input for changing the picture''s
+    URL appears:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户点击标题后，更改图片URL的输入框出现：
+- en: '![Updating a user''s profile](../images/00109.jpeg)'
+  id: totrans-175
+  prefs: []
+  type: TYPE_IMG
+  zh: '![更新用户资料](../images/00109.jpeg)'
+- en: After the user clicks on the figure caption, the input appears
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户点击标题后，输入框出现
+- en: 'After the user changes the profile picture URL, the input is hidden again:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户更改个人资料图片URL后，输入框再次隐藏：
+- en: '![Updating a user''s profile](../images/00110.jpeg)'
+  id: totrans-178
+  prefs: []
+  type: TYPE_IMG
+  zh: '![更新用户资料](../images/00110.jpeg)'
+- en: After the user changes the URL for the profile picture, the input disappears
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户更改个人资料图片的URL后，输入框消失了
+- en: 'My advice: add an additional property to the `Settings.vue` component''s data,
+    set it to `true` when the user clicks on the caption, and reset it to `false`
+    when the value inside the input is changed.'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我的建议：向`Settings.vue`组件的数据添加一个额外的属性，当用户点击标题时将其设置为`true`，并在输入框内的值改变时将其重置为`false`。
+- en: 'Also, don''t forget about our initial aim for this section – add a welcoming
+    message inside the `Header.vue` component. This welcoming message should contain
+    the user''s display name. It should look something like this:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有，不要忘记我们这一部分的初始目标 - 在`Header.vue`组件内添加一个欢迎消息。这个欢迎消息应该包含用户的显示名称。它应该看起来像这样：
+- en: '![Updating a user''s profile](../images/00111.jpeg)'
+  id: totrans-182
+  prefs: []
+  type: TYPE_IMG
+  zh: '![更新用户资料](../images/00111.jpeg)'
+- en: Welcoming message mentioning the user's name
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 欢迎消息提到用户的名字
+- en: Note that if you decide to change your email, you will have to log out and log
+    in again; otherwise, you will get some Firebase security errors in your console.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，如果您决定更改您的电子邮件，您将不得不注销并再次登录；否则，您将在控制台中收到一些Firebase安全错误。
+- en: The final code for this chapter can be found in the `chapter6/6/profitoro` folder.
+    Note that I split both the account settings and the Pomodoro settings with two
+    individual components (`AccountSettings.vue` and `PomodoroTimerSettings.vue`).
+    It makes things easier to maintain. Pay attention to the store's components as
+    well. Check the `Header.vue` component and how it actually displays the welcoming
+    message.
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的最终代码可以在`chapter6/6/profitoro`文件夹中找到。请注意，我将帐户设置和番茄钟设置分成了两个单独的组件（`AccountSettings.vue`和`PomodoroTimerSettings.vue`）。这样做可以更容易地进行维护。也要注意存储组件。查看`Header.vue`组件以及它如何显示欢迎消息。
+- en: Summary
+  id: totrans-186
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we have learned how to combine the Firebase real-time database
+    and authentication API to update a user's settings. We have built a user interface
+    that allows a user to update their profile settings. In just a few minutes, we
+    have built the full authentication and authorization part of our application.
+    I don't know about you, but I feel totally amazed about it.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们学习了如何结合Firebase实时数据库和认证API来更新用户的设置。我们已经构建了一个用户界面，允许用户更新其个人资料设置。在短短几分钟内，我们就完成了应用程序的完整认证和授权部分。我不知道你们，但我对此感到非常惊讶。
+- en: In the next chapter, we will finally get rid of this huge page that contains
+    all the parts of our application – the Pomodoro timer itself, statistics data,
+    and the settings configuration view. We will explore one really nice and important
+    feature of Vue – `vue-router`. We will combine it with Bootstrap's navigation
+    system in order to achieve a nice and smooth navigation. We will also explore
+    such a hot topic as code splitting in order to achieve lazy loading for our application.
+    So, let's go!
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将最终摆脱包含应用程序所有部分的庞大页面 - 番茄钟计时器本身、统计数据和设置配置视图。我们将探索Vue的一个非常好的重要功能 - `vue-router`。我们将把它与Bootstrap的导航系统结合起来，以实现流畅的导航。我们还将探讨代码拆分这样一个热门话题，以实现应用程序的延迟加载。所以，让我们开始吧！

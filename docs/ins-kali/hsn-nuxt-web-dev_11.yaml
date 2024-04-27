@@ -1,0 +1,1613 @@
+- en: Adding a Server-Side Framework
+  id: totrans-0
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 添加服务器端框架
+- en: In this chapter, you will learn how to configure Nuxt with a server-side framework,
+    and how to use the `asyncData` method to fetch the data from the server-side framework,
+    such as Koa or Express. Setting up a server-side framework with Nuxt is fairly
+    easy. We only need to pick a framework as the first-class citizen and use Nuxt
+    as the middleware. We can use `npx create-nuxt-app <project-name>` to set that
+    up for us, but we will walk you through how to do that manually so that you have
+    a better understanding of how these two apps work together. Additionally, in this
+    chapter, we will use **Backpack** as the build system for our app.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您将学习如何配置Nuxt与服务器端框架，以及如何使用`asyncData`方法从服务器端框架（如Koa或Express）获取数据。使用Nuxt设置服务器端框架相当容易。我们只需要选择一个框架作为一等公民，并将Nuxt用作中间件。我们可以使用`npx
+    create-nuxt-app <project-name>`来为我们设置，但我们将手把手地教您如何手动操作，以便更好地理解这两个应用是如何协同工作的。此外，在本章中，我们将使用**Backpack**作为我们应用的构建系统。
+- en: 'The topics we will cover in this chapter are as follows:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章我们将涵盖以下主题：
+- en: Introducing Backpack
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 介绍背包
+- en: Introducing Koa
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 介绍Koa
+- en: Integrating Koa with Nuxt
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将Koa与Nuxt集成
+- en: Understanding async data
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解异步数据
+- en: Accessing context in asyncData
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在asyncData中访问上下文
+- en: Fetching async data with Axios
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Axios获取异步数据
+- en: Introducing Backpack
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍背包
+- en: Backpack is a build system for building modern Node.js apps with zero or minimal
+    configuration. It supports the latest JavaScript and handles the file watching,
+    live reloading, transpiling, and bundling that we have been doing with webpack
+    in the previous chapters. We can think of it as a **wrapper** of webpack, a simplified
+    version of the webpack configuration that we have been using in this book so far.
+    You can find out more info about Backpack at [https://github.com/jaredpalmer/backpack](https://github.com/jaredpalmer/backpack).
+    Now, let's find out how we can use it to speed up our app development in the coming
+    sections.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Backpack是一个用于构建现代Node.js应用的构建系统，零配置或最小配置。它支持最新的JavaScript，并处理文件监视、实时重新加载、转译和打包，这些都是我们在前几章中使用webpack进行的操作。我们可以将其视为webpack的**包装器**，是我们在本书中迄今为止一直在使用的webpack配置的简化版本。您可以在[https://github.com/jaredpalmer/backpack](https://github.com/jaredpalmer/backpack)找到有关Backpack的更多信息。现在，让我们看看如何在接下来的章节中使用它来加快我们的应用开发。
+- en: Installing and configuring Backpack
+  id: totrans-11
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装和配置Backpack
+- en: 'Creating a modern Node.js app with Backpack can be as easy as implementing
+    the following steps:'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Backpack创建现代Node.js应用可以像实现以下步骤一样简单：
+- en: 'Install Backpack via npm:'
+  id: totrans-13
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装Backpack：
+- en: '[PRE0]'
+  id: totrans-14
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Create a `/src/` directory and a `package.json` file in the project root with
+    `backpack` in the `dev` script as follows:'
+  id: totrans-15
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在项目根目录中创建一个`/src/`目录和一个`package.json`文件，并在`dev`脚本中添加`backpack`，如下所示：
+- en: '[PRE1]'
+  id: totrans-16
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Note that you must provide the `/src/` as the **default entry directory** of
+    your app.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，您必须将`/src/`作为应用的**默认入口目录**。
+- en: 'Create a Backpack config file in your project root with a function to configure
+    webpack as follows:'
+  id: totrans-18
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在项目根目录创建一个Backpack配置文件，并配置webpack的函数如下：
+- en: '[PRE2]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'This step is optional, but it is useful if you want to change the default entry
+    directory (which is the `/src/` directory that you created in *step 2*) of your
+    app to a different one, for example, a `/server/` directory, this can be done
+    as follows:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一步是可选的，但如果您想要将应用的默认入口目录（即您在*步骤2*中创建的`/src/`目录）更改为其他目录，例如`/server/`目录，可以按以下方式进行：
+- en: '[PRE3]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Start your app in development mode with the following command:'
+  id: totrans-22
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令以开发模式启动您的应用：
+- en: '[PRE4]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Then you can develop the source code of your app in the `/server/` directory
+    and browse to the app on the browser at whatever port you have set it to. Let's
+    create a simple Express app with Backpack in the next section.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后你可以在`/server/`目录中开发你的应用程序的源代码，并在浏览器上浏览到你设置的任何端口的应用程序。让我们在下一节中使用Backpack创建一个简单的Express应用程序。
+- en: Creating a simple app using Backpack
+  id: totrans-25
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Backpack创建一个简单的应用程序
+- en: 'Creating an Express app with Backpack can be as easy as implementing the following
+    steps:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Backpack创建一个Express应用程序可以像实现以下步骤一样简单：
+- en: 'Install Express via npm:'
+  id: totrans-27
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装Express：
+- en: '[PRE5]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Add `build` and `start` scripts after the `dev` script in the `package.json`
+    file:'
+  id: totrans-29
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`package.json`文件的`dev`脚本之后添加`build`和`start`脚本：
+- en: '[PRE6]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Create the Backpack config file and use `/server/` as the entry folder of your
+    app, just as we have walked you through in the previous section:'
+  id: totrans-31
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建Backpack配置文件，并将`/server/`作为应用程序的入口文件夹，就像我们在上一节中向你展示的那样：
+- en: '[PRE7]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Create a simple route with a `''Hello World''` message:'
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个带有`'Hello World'`消息的简单路由：
+- en: '[PRE8]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Run your app in development mode:'
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在开发模式下运行你的应用程序：
+- en: '[PRE9]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: You can now browse to your app on a browser at `127.0.0.1:3000`. You should
+    see Hello World on the screen. You can find this example in `/chapter-8/backpack/`
+    in our GitHub repository. Next, let's use Koa as the server-side framework that
+    allows us to write ES2015 code and async functions in fewer lines than Express
+    in the next section.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以在浏览器上浏览`127.0.0.1:3000`上的应用程序。你应该在屏幕上看到Hello World。你可以在我们的GitHub存储库的`/chapter-8/backpack/`中找到这个例子。接下来，让我们在下一节中使用Koa作为服务器端框架，允许我们以比Express更少的行数编写ES2015代码和异步函数。
+- en: Introducing Koa
+  id: totrans-38
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍Koa
+- en: Koa is a Node.js web framework designed by the same team that brought you Express.
+    The main goal of this framework is to be a smaller and more expressive foundation
+    for web apps and APIs. If you have ever worked on Express and have gotten tired
+    of callback hell when the app gets larger, Koa allows you to ditch the callbacks
+    and greatly increase error handling by leveraging async functions. Another cool
+    thing in Koa is **cascading** – the middleware you add will be running "downstream,"
+    and then flowing back "upstream," which gives you more predictable controls. We
+    will demonstrate this later in this chapter.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Koa是由带给你Express的同一个团队设计的Node.js web框架。该框架的主要目标是成为Web应用程序和API的更小、更具表现力的基础。如果你曾经在Express上工作过，并且在应用程序变得更大时厌倦了回调地狱，Koa允许你摆脱回调，并通过利用异步函数大大增加错误处理。Koa中另一个很酷的东西是**级联**
+    - 你添加的中间件将会“下游”运行，然后再“上游”流动，这给你更可预测的控制。我们稍后将在本章中演示这一点。
+- en: If you want to find out more info about Koa, please visit [https://koajs.com/](https://koajs.com/).
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想了解更多关于Koa的信息，请访问[https://koajs.com/](https://koajs.com/)。
+- en: Installing and configuring Koa
+  id: totrans-41
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装和配置Koa
+- en: 'Now, let''s create a Koa app with the Backpack default configuration (without
+    creating the Backpack config file) as follows:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们创建一个Koa应用程序，使用Backpack的默认配置（不创建Backpack配置文件），如下所示：
+- en: 'Install Koa via npm:'
+  id: totrans-43
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装Koa：
+- en: '[PRE10]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Use `/src/` as the Backpack default entry directory and create an entry file
+    in this directory with minimal code in Koa style as follows:'
+  id: totrans-45
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`/src/`作为Backpack的默认入口目录，并在该目录中创建一个以Koa风格的最小代码的入口文件，如下所示：
+- en: '[PRE11]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Run the Koa app in development mode:'
+  id: totrans-47
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在开发模式下运行Koa应用程序：
+- en: '[PRE12]'
+  id: totrans-48
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: You should see Hello World on the screen when browsing the app on a browser
+    at `127.0.0.1:3000`. If you have been using Express to create your Node.js apps,
+    you can see that Koa is an alternative that can be used to do the same thing with
+    neater code. Next, let's learn what a Koa context is and how cascading works in
+    Koa in the following sections.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当在浏览器上浏览`127.0.0.1:3000`时，你应该在屏幕上看到Hello World。如果你一直在使用Express来创建你的Node.js应用程序，你会发现Koa是一个可以用来以更整洁的代码做同样事情的替代方案。接下来，让我们在接下来的章节中学习Koa上下文是什么，以及Koa中级联是如何工作的。
+- en: What is ctx?
+  id: totrans-50
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: ctx是什么？
+- en: 'You may have wondered what that `ctx` is in the minimal code we created in
+    the previous section and where the `req` and `res` objects are, because they are
+    there in the Express app. They are not gone in Koa. They are just encapsulated
+    in a single object in Koa, which is the Koa context, referred to as `ctx`. We
+    can access the `request` and `response` objects as follows:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能想知道在我们在上一节中创建的最小代码中，`ctx`是什么，以及`req`和`res`对象在哪里，因为它们在 Express 应用程序中存在。它们在
+    Koa 中并没有消失。它们只是封装在 Koa 中的一个单一对象中，这就是 Koa 上下文，称为`ctx`。我们可以按如下方式访问`request`和`response`对象：
+- en: '[PRE13]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: So, you can see that we can easily use `ctx.request` to access the Node.js `request`
+    object and `ctx.response` for the Node.js `response` object. These two important
+    HTTP objects are not gone in Koa! They are just tucked away in the Koa context
+    – `ctx`. Next, let's find out how cascading works in Koa in the next section.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，您可以看到我们可以轻松使用`ctx.request`来访问 Node.js 的`request`对象，以及`ctx.response`来访问 Node.js
+    的`response`对象。这两个重要的 HTTP 对象在 Koa 中并没有消失！它们只是隐藏在 Koa 上下文 - `ctx`中。接下来，让我们在下一节中了解
+    Koa 中级联的工作原理。
+- en: Understanding how Koa cascading works
+  id: totrans-54
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 了解 Koa 中级联的工作原理
+- en: 'In a nutshell, the cascading in Koa works by invoking middleware downstream sequentially and
+    then controlling them to flow back upstream sequentially. It is best to create
+    a simple Koa app to demonstrate this great feature in Koa:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，Koa 中的级联工作是通过按顺序调用下游中间件，然后控制它们按顺序向上游流动。最好创建一个简单的 Koa 应用程序来演示 Koa 中的这一重要特性：
+- en: 'Create an `index.js` file in the `/src/` directory, just like we did in the
+    previous section:'
+  id: totrans-56
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/src/`目录中创建一个`index.js`文件，就像我们在上一节中所做的那样：
+- en: '[PRE14]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Create three pieces of middleware just before the `Hello World` middleware
+    as follows, so that we can run them first:'
+  id: totrans-58
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`Hello World`中间件之前创建三个中间件，以便我们可以先运行它们：
+- en: '[PRE15]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Run the app in development mode and you should get the following output on
+    the terminal:'
+  id: totrans-60
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在开发模式下运行应用程序，您应该在终端上获得以下输出：
+- en: '[PRE16]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'In this demonstration, the request flows through `Time started at:` to `I am
+    the first`, `I am the second`, and reaching `Hello World`. When there is no more
+    middleware to be executed downward (downstream), each middleware will be unwound
+    and resumed upward (upstream) in the following sequence: `I am the third`, `I
+    am the last`.'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个演示中，请求通过`Time started at:`流向`I am the first`，`I am the second`，并到达`Hello
+    World`。当没有更多的中间件需要向下执行（下游）时，每个中间件将按以下顺序向上解开并恢复（上游）：`I am the third`，`I am the
+    last`。
+- en: You can find this example in `/chapter-8/koa/cascading/` in our GitHub repository.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的 GitHub 存储库的`/chapter-8/koa/cascading/`中找到这个示例。
+- en: Next, we will walk you through some dependencies that you should install for
+    developing a full stack Koa app so that it works just like Express apps.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将为您介绍一些依赖项，您应该安装这些依赖项来开发一个全栈 Koa 应用程序，使其可以像 Express 应用程序一样工作。
+- en: Installing dependencies for Koa apps
+  id: totrans-65
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装 Koa 应用程序的依赖项
+- en: 'Koa is minimalistic. It is barebones by nature. Hence, it does not have any
+    middleware within its core. Express comes with a router, which, by default, Koa does
+    not have. This can be a challenge when writing an app in Koa as you need to choose
+    a third-party package or pick one of the packages listed on their GitHub main
+    page at [https://github.com/koajs](https://github.com/koajs). You may test out
+    a few and find out they don''t work as you want. There are a few Koa packages
+    that can be used for routing; `koa-router` is mostly used in this book, alongside
+    other essential dependencies for developing our API with Koa. Let''s discover
+    what they are and what they do by installing them and creating a skeleton app, as
+    follows:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Koa是极简的。它本质上是一个基本框架。因此，它的核心中没有任何中间件。Express自带路由器，默认情况下，Koa没有。这在使用Koa编写应用程序时可能会有挑战，因为你需要选择一个第三方包或从它们的GitHub主页上列出的包中选择一个。你可能会尝试一些包，发现它们不符合你的要求。有一些Koa包可用于路由；`koa-router`在本书中被广泛使用，以及其他用于使用Koa开发API的基本依赖项。让我们通过安装它们并创建一个骨架应用程序来发现它们是什么以及它们的作用，如下所示：
+- en: 'Install the `koa-router` module and use it as follows:'
+  id: totrans-67
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装`koa-router`模块并使用如下：
+- en: '[PRE17]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Import `koa-router` in the entry file with a home route, `/`, as follows:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在入口文件中导入`koa-router`，并创建一个主页路由`/`，如下所示：
+- en: '[PRE18]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: You can find more information about this middleware at [https://github.com/koajs/koa-router](https://github.com/koajs/koa-router)
+    from Koa's GitHub repository. This module is forked from `ZijianHe/koa-router`
+    ([https://github.com/ZijianHe/koa-router](https://github.com/ZijianHe/koa-router)).
+    It is the most widely used router module in the Koa community. It provides Express-style
+    routing using `app.get`, `app.put`, `app.post`, and so on. It also supports other
+    important features, such as multiple route middleware and multiple and nestable
+    routers.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以在Koa的GitHub存储库中找到有关此中间件的更多信息。此模块是从`ZijianHe/koa-router`（https://github.com/ZijianHe/koa-router）分叉而来。它是Koa社区中最广泛使用的路由器模块。它提供了使用`app.get`、`app.put`、`app.post`等的Express风格路由。它还支持其他重要功能，如多个路由中间件和多个可嵌套的路由器。
+- en: 'Install the `koa-bodyparser` module and use it as follows:'
+  id: totrans-72
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装`koa-bodyparser`模块并使用如下：
+- en: '[PRE19]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Import `koa-bodyparser` in the entry file, register it, and create a home route, `/post`,
+    as follows:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在入口文件中导入`koa-bodyparser`，注册它，并创建一个主页路由`/post`，如下所示：
+- en: '[PRE20]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'You can find more information about this middleware at [https://github.com/koajs/bodyparser](https://github.com/koajs/bodyparser)
+    from Koa''s GitHub repository. You may wonder: what is a body parse anyway? When
+    we are dealing with HTML forms, we use `application/x-www-form-urlencoding` or
+    `multipart/form-data` to transact data between the client and server sides, for
+    example:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以在Koa的GitHub存储库中找到有关此中间件的更多信息。也许你会想：什么是body parser？当我们处理HTML表单时，我们使用`application/x-www-form-urlencoding`或`multipart/form-data`在客户端和服务器端之间传输数据，例如：
+- en: '[PRE21]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'The default type for HTML forms is `application/x-www-urlencoded`, and if we
+    want to read the data of HTTP `POST`, `PATCH`, and `PUT`, we use a body parser,
+    which is a middleware that parses the incoming request, assembles the **chunks**
+    containing the form data, and then creates a body object filled with the form
+    data so that we can access them from the request object in the `ctx` object as
+    follows:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HTML表单的默认类型是`application/x-www-urlencoded`，如果我们想要读取HTTP `POST`、`PATCH`和`PUT`的数据，我们使用一个body
+    parser，它是一个解析传入请求的中间件，组装包含表单数据的**块**，然后创建一个填充有表单数据的body对象，以便我们可以从请求对象中的`ctx`对象中访问它们，如下所示：
+- en: '[PRE22]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Install the `koa-favicon` module and use it as follows:'
+  id: totrans-80
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装`koa-favicon`模块并使用如下：
+- en: '[PRE23]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Import `koa-favicon` in the entry file and register it with a path to `favicon`
+    as follows:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在入口文件中导入`koa-favicon`并注册它，路径为`favicon`，如下所示：
+- en: '[PRE24]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: You can find more information about this middleware at [https://github.com/koajs/favicon](https://github.com/koajs/favicon)
+    from Koa's GitHub repository. It is a middleware that serves a `favicon`, so let's
+    create a `favicon.ico` file and keep it in the `/public` folder in the project
+    root. You should see the `favicon` on your browser tab when you refresh the home
+    page.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在Koa的GitHub存储库中的[https://github.com/koajs/favicon](https://github.com/koajs/favicon)找到有关此中间件的更多信息。这是一个提供`favicon`的中间件，因此让我们创建一个`favicon.ico`文件并将其保存在项目根目录中的`/public`文件夹中。当您刷新主页时，您应该在浏览器标签上看到`favicon`。
+- en: 'Install the `koa-static` module and use it as follows:'
+  id: totrans-85
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装`koa-static`模块并按以下方式使用它：
+- en: '[PRE25]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'Import `koa-static` in the entry file and register it with the following paths
+    as follows:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在入口文件中导入`koa-static`并按照以下路径进行注册：
+- en: '[PRE26]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'You can find more information about this middleware at [https://github.com/koajs/static](https://github.com/koajs/static)
+    from Koa''s GitHub repository. Koa, by default, doesn''t allow you to serve static
+    files. So this middleware will allow you to serve static files from your API.
+    For example, the paths we just set will let us access the following files from
+    the `/static` folder in the project root:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在Koa的GitHub存储库中的[https://github.com/koajs/static](https://github.com/koajs/static)找到有关此中间件的更多信息。默认情况下，Koa不允许您提供静态文件。因此，此中间件将允许您从API中提供静态文件。例如，我们刚刚设置的路径将允许我们从项目根目录中的`/static`文件夹访问以下文件：
+- en: GET `/package.json` at `127.0.0.1:3000/package.json`.
+  id: totrans-90
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在`127.0.0.1:3000/package.json`处获取`/package.json`。
+- en: GET `/hello.txt` at `127.0.0.1:3000/hello.txt`.
+  id: totrans-91
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在`127.0.0.1:3000/hello.txt`处获取`/hello.txt`。
+- en: We will use this skeleton in future chapters when creating APIs with Koa. Now,
+    let's discover how we can integrate Koa with Nuxt in the next section.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在未来的章节中，我们将在创建Koa API时使用这个框架。现在，让我们在下一节中发现如何将Koa与Nuxt集成。
+- en: You can find this skeleton app at `/chapter-8/koa/skeleton/` in our GitHub repository.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库的`/chapter-8/koa/skeleton/`中找到此框架应用。
+- en: Integrating Koa with Nuxt
+  id: totrans-94
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将Koa与Nuxt集成
+- en: 'Integrating Koa and Nuxt can be done on a single port for single-domain apps,
+    or on separate ports for cross-domain apps. In this chapter, we will do the single-domain
+    integration and then we will guide you through the cross-domain integration in
+    [Chapter 12](8e574c51-68dc-45e2-8a1d-4c04d9c38df5.xhtml), *Creating User Logins
+    and API Authentication*. We will use the Koa skeleton that we have developed in
+    the previous section for these two types of integration. The single-domain integration
+    requires some configurations in the following steps. Let''s get started:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将Koa和Nuxt集成可以在单域应用程序的单个端口上完成，也可以在跨域应用程序的不同端口上完成。在本章中，我们将进行单域集成，然后我们将指导您完成[第12章](8e574c51-68dc-45e2-8a1d-4c04d9c38df5.xhtml)中的跨域集成，*创建用户登录和API身份验证*。我们将使用在上一节中开发的Koa框架来进行这两种类型的集成。单域集成需要在以下步骤中进行一些配置。让我们开始吧：
+- en: 'Create a `/server/` directory in the Nuxt project''s root and structure the
+    server-side directory as follows after creating the project with the `create-nuxt-app` scaffolding
+    tool:'
+  id: totrans-96
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Nuxt项目的根目录中创建一个`/server/`目录，并在使用`create-nuxt-app`脚手架工具创建项目后，按以下方式构建服务器端目录：
+- en: '[PRE27]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Modify the default scripts to use Backpack in the default `package.json` file
+    that comes with the scaffolding tool as follows:'
+  id: totrans-98
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 修改默认的`package.json`文件中的默认脚本以使用默认的`Backpack`，该文件与脚手架工具一起提供。
+- en: '[PRE28]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Create a Backpack config file in the root directory (where we have the Nuxt
+    config file) for changing the Backpack default entry directory to the `/server/`
+    directory we just created:'
+  id: totrans-100
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在根目录中创建一个Backpack配置文件（我们在其中有Nuxt配置文件），将Backpack默认的入口目录更改为我们刚刚创建的`/server/`目录：
+- en: '[PRE29]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Create an `index.js` file in the `/server/` directory to import Koa (make sure
+    you have Koa installed already) as the main app and Nuxt as middleware in Koa
+    as follows:'
+  id: totrans-102
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/server/`目录中创建一个`index.js`文件，以以下方式将Koa（确保您已经安装了Koa）作为主应用程序导入，并将Nuxt作为Koa中的中间件：
+- en: '[PRE30]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: Notice that we create an async function to use Nuxt as middleware so that we
+    can use the `await` statement in the next step for running the Nuxt build process.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们创建了一个异步函数来使用Nuxt作为中间件，以便在下一步中可以使用`await`语句来运行Nuxt构建过程。
+- en: Note that Consola is a console logger and you must install it via npm before
+    using it. For more information about this package, please visit [https://github.com/nuxt-contrib/consola](https://github.com/nuxt-contrib/consola).
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，Consola是一个控制台记录器，您必须在使用之前通过npm安装它。有关此软件包的更多信息，请访问[https://github.com/nuxt-contrib/consola](https://github.com/nuxt-contrib/consola)。
+- en: 'Before registering Nuxt as the middleware, import the Nuxt configuration for
+    the build process in development mode:'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在将Nuxt注册为中间件之前，在开发模式下导入Nuxt构建过程的配置：
+- en: '[PRE31]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Run the app by listening to its port and host and log the server status with
+    Consola as follows:'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过监听其端口和主机来运行应用程序，并使用Consola记录服务器状态如下：
+- en: '[PRE32]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Launch the app in development mode:'
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在开发模式下启动应用程序：
+- en: '[PRE33]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: Our Nuxt and Koa apps are now running as a single app. You probably have realized
+    that Nuxt is now running under Koa as a middleware. All our Nuxt pages are still
+    running the same as before at `localhost:3000`, but we will configure `localhost:3000/api`
+    as the API main endpoint in the coming section.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的Nuxt和Koa应用现在作为一个单一应用程序运行。您可能已经意识到，Nuxt现在作为中间件在Koa下运行。我们所有的Nuxt页面仍然像以前一样在`localhost:3000`上运行，但是我们将在接下来的部分中将`localhost:3000/api`配置为API的主要端点。
+- en: Adding routes and other essential middleware
+  id: totrans-113
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 添加路由和其他必要的中间件
+- en: 'We established the integration and structured the server-side directory in
+    the previous section. Now let''s refine some API routes and other middleware on
+    our API in the following steps:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节中，我们建立了集成并构建了服务器端目录结构。现在让我们在接下来的步骤中完善一些API路由和其他中间件：
+- en: 'Install the Koa Router and Koa Static packages via npm:'
+  id: totrans-115
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装Koa Router和Koa Static包：
+- en: '[PRE34]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Create a server-side config file:'
+  id: totrans-117
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个服务器端配置文件：
+- en: '[PRE35]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Create a `routes.js` file in the `/server/` directory for defining routes that
+    we will expose to the public with some dummy user data:'
+  id: totrans-119
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/server/`目录中创建一个`routes.js`文件，用于定义我们将向公众公开的路由，并附带一些虚拟用户数据：
+- en: '[PRE36]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Import other middleware in a separate `middlewares.js` file and import the
+    routes and config files from *steps 1* and *2*:'
+  id: totrans-121
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在单独的`middlewares.js`文件中导入其他中间件，并从*步骤1*和*2*中导入路由和配置文件：
+- en: '[PRE37]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: We will not use `koa-favicon` in the API because we are exporting our data in
+    JSON format and the image of `favicon.ico` will not be shown on the browser tab.
+    Besides, Nuxt has already handled `favicon.ico` for us in the Nuxt config file,
+    so we can remove the `koa-favicon` middleware from our skeleton. Instead, we will
+    create a middleware to decorate our JSON data into these two final JSON outputs
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不会在API中使用`koa-favicon`，因为我们以JSON格式导出数据，而`favicon.ico`的图像不会显示在浏览器标签上。此外，Nuxt已经在Nuxt配置文件中为我们处理了`favicon.ico`，因此我们可以从骨架中删除`koa-favicon`中间件。相反，我们将创建一个中间件来将我们的JSON数据装饰成这两个最终的JSON输出
+- en: 'The format for 200 output:'
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 200输出的格式：
+- en: '[PRE38]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'The format for all error outputs (for example, 400, 500):'
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 所有错误输出的格式（例如400，500）：
+- en: '[PRE39]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Add the following code just before the `app.use(serve(config.static_dir.root))`
+    line to create the preceding formats:'
+  id: totrans-128
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`app.use(serve(config.static_dir.root))`行之前添加以下代码以创建前述格式：
+- en: '[PRE40]'
+  id: totrans-129
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'So now, with this middleware, instead of getting an output such as `{"message":"Hello
+    World!"}`, we will get the decorated output as follows:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，现在有了这个中间件，我们将不再获得诸如`{"message":"Hello World!"}`的输出，而是会得到以下装饰过的输出：
+- en: '[PRE41]'
+  id: totrans-131
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'Import this `middlewares.js` file in the main `index.js` file before registering
+    Nuxt:'
+  id: totrans-132
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在注册Nuxt之前，在主`index.js`文件中导入`middlewares.js`文件：
+- en: '[PRE42]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'Rerun the app in development mode:'
+  id: totrans-134
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 以开发模式重新运行应用程序：
+- en: '[PRE43]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'Then, if you visit the app at `localhost:3000/api`, you will get the following
+    output on the screen:'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，如果您访问`localhost:3000/api`上的应用程序，您将在屏幕上获得以下输出：
+- en: '[PRE44]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'If you visit the user index page at `localhost:3000/api/users`, you will get
+    the following output on the screen:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您访问`localhost:3000/api/users`上的用户索引页面，您将在屏幕上获得以下输出：
+- en: '[PRE45]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'You also can use `localhost:3000/api/users/<id>` to get a specific user. For
+    example, if you use `/api/users/1`, you will get the following output on the screen:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以使用`localhost:3000/api/users/<id>`来获取特定用户。例如，如果您使用`/api/users/1`，您将在屏幕上获得以下输出：
+- en: '[PRE46]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: You can find this integrated example app in `/chapter-8/nuxt-universal/skeletons/koa/`
+    in our GitHub repository.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库的`/chapter-8/nuxt-universal/skeletons/koa/`中找到这个集成示例应用程序。
+- en: Next, we will look at how we can request the preceding API data with the `asyncData`
+    method on the client side from the Nuxt pages in the coming section.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将看看如何在接下来的部分从Nuxt页面上的客户端使用`asyncData`方法请求前面的API数据。
+- en: Understanding async data
+  id: totrans-144
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解异步数据
+- en: 'The `asyncData` method allows us to fetch data asynchronously and render it
+    on the server side before the component is initiated. It is an additional method
+    that''s only available in Nuxt. That means you can''t use it in Vue because Vue
+    does not have this default method. Nuxt always executes this method before rendering
+    the page component. It is executed once on the server side on the page that uses
+    this method and then will be executed on the client side when revisiting that
+    page through the routes generated with the `<nuxt-link>` component. Nuxt will
+    merge the returned data from the `asyncData` method with the component data from
+    the `data` method or the `data` property. This method receives the `context` object
+    as the first argument, as follows:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`asyncData`方法允许我们在组件初始化之前异步获取数据并在服务器端渲染它。这是一个额外的方法，只在Nuxt中可用。这意味着您不能在Vue中使用它，因为Vue没有这个默认方法。Nuxt总是在渲染页面组件之前执行这个方法。当通过`<nuxt-link>`组件生成的路由重新访问该页面时，该方法将在服务器端的页面上执行一次，然后在客户端上执行。Nuxt将从`asyncData`方法中返回的数据与`data`方法或`data`属性中的组件数据合并。该方法将`context`对象作为第一个参数，如下所示：'
+- en: '[PRE47]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: Bear in mind that this method is always executed before the page component is
+    initiated, so we have no access to the component instance through the `this` keyword
+    inside this method. There are two different ways of using it; let's explore them
+    in the upcoming sections.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，这个方法总是在页面组件初始化之前执行，所以我们无法通过`this`关键字在这个方法内访问组件实例。有两种不同的使用方法；让我们在接下来的部分中探讨它们。
+- en: Returning a promise
+  id: totrans-148
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 返回一个承诺
+- en: 'We can use the `Promise` object in the `asyncData` method by returning `Promise`,
+    for example:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过返回`Promise`在`asyncData`方法中使用`Promise`对象，例如：
+- en: '[PRE48]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: In the preceding code, Nuxt will wait for 1 second for the promise to be resolved
+    before rendering the page component with `'Hello World by returning a Promise'`.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码中，Nuxt将等待1秒钟，直到承诺被解决，然后再使用'通过返回Promise来打招呼的Hello World'渲染页面组件。
+- en: Using async/await
+  id: totrans-152
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用async/await
+- en: 'We also can use an `async`/`await` statement with the `asyncData` method, for
+    example:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以在`asyncData`方法中使用`async`/`await`语句，例如：
+- en: '[PRE49]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: In the preceding code, Nuxt will wait for 2 seconds for the promise to be resolved
+    before rendering the page component with the `'Hello World by using async/await'` message.
+    Using the `async`/`await` statement is a new way of writing asynchronous JavaScript code.
+    It is built on top of the `Promise` object and makes our asynchronous code more
+    readable. We will use this statement often throughout the book.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，Nuxt将等待2秒钟，直到承诺被解决，然后使用`'Hello World by using async/await'`消息呈现页面组件。使用`async`/`await`语句是编写异步JavaScript代码的新方法。它建立在`Promise`对象之上，并使我们的异步代码更易读。我们将在整本书中经常使用这个语句。
+- en: Merging the data
+  id: totrans-156
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 合并数据
+- en: 'As we mentioned before, the asynchronous data from the `asyncData` method will
+    be merged with the component data from the `data` method or the `data` property.
+    That means that if you have set some default data in your component data with
+    the same object keys in the `asyncData` method, they will be overwritten by the
+    `asyncData` method as a result. Here''s an example:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前提到的，`asyncData`方法中的异步数据将与`data`方法或`data`属性中的组件数据合并。这意味着如果您在组件数据中使用了与`asyncData`方法中相同对象键的一些默认数据，它们将被`asyncData`方法覆盖。以下是一个例子：
+- en: '[PRE50]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'In the preceding code, Nuxt will merge the two sets of data and you will get
+    the following result on your screen:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，Nuxt将合并两组数据，并在屏幕上得到以下结果：
+- en: '[PRE51]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: You can find the examples in `/chapter-8/nuxt-universal/koa-nuxt/understanding-asyncdata/`
+    in our GitHub repository.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库的`/chapter-8/nuxt-universal/koa-nuxt/understanding-asyncdata/`中找到这些示例。
+- en: Next, we will look at how we can make use of the `context` object that we can
+    access from the `asyncData` method in the coming section.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将看看如何在接下来的部分中从`asyncData`方法中访问`context`对象。
+- en: Accessing context in asyncData
+  id: totrans-163
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在asyncData中访问上下文
+- en: 'We can access a bunch of useful stuff from the Nuxt context for fetching data.
+    They stored inside the context object as the following keys:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以从Nuxt上下文中访问大量有用的数据。它们存储在上下文对象中，作为以下键：
+- en: '|'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '|'
+- en: app
+  id: totrans-166
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用
+- en: route
+  id: totrans-167
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 路由
+- en: store
+  id: totrans-168
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 存储
+- en: params
+  id: totrans-169
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 参数
+- en: query
+  id: totrans-170
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 查询
+- en: '|'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '|'
+- en: req
+  id: totrans-172
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 请求
+- en: res
+  id: totrans-173
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: res
+- en: redirect
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 重定向
+- en: error
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 错误
+- en: env
+  id: totrans-176
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: env
+- en: '|'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '|'
+- en: isDev
+  id: totrans-178
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: isDev
+- en: isHMR
+  id: totrans-179
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: isHMR
+- en: beforeNuxtRender(fn)
+  id: totrans-180
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: beforeNuxtRender(fn)
+- en: from
+  id: totrans-181
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 来自
+- en: nuxtState
+  id: totrans-182
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: nuxtState
+- en: '|'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '|'
+- en: They are provided additionally and especially in Nuxt only, so we won't find
+    them in Vue. We can access them either with `context.<key>` or `{ <key> }`. So
+    let's explore some of these keys and see how we can leverage them in the following
+    sections.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它们是额外提供的，特别是在Nuxt中，因此我们在Vue中找不到它们。我们可以使用`context.<key>`或`{ <key> }`来访问它们。让我们探索一些这些键，并看看我们如何在接下来的部分中利用它们。
+- en: For more information about the Nuxt context, please visit [https://nuxtjs.org/api/context](https://nuxtjs.org/api/context).
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关Nuxt上下文的更多信息，请访问[https://nuxtjs.org/api/context](https://nuxtjs.org/api/context)。
+- en: Accessing the req/res objects
+  id: totrans-186
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 访问req/res对象
+- en: 'We can access the `req` and `res` objects when the `asyncData` method is executed
+    on the server side. They contain useful information of the HTTP request sent from
+    the user. But we should always check with an `if` condition before accessing them:'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当在服务器端执行`asyncData`方法时，我们可以访问`req`和`res`对象。它们包含用户发送的HTTP请求的有用信息。但在访问它们之前，我们应该始终检查`if`条件：
+- en: '[PRE52]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: In the preceding code, we use the `if` condition to make sure that the `asyncData`
+    method is called on the server side before obtaining the information of the request
+    headers. These two objects are unavailable on the client side, so you will get
+    `undefined` when accessing them on the client side. So the result we will get
+    from the preceding code is `localhost:3000` when the page is loaded on the browser
+    for the first time, but you will not see that piece of information again when
+    revisiting this page by the route generated from the `<nuxt-link>` component unless
+    you refresh that page.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，我们使用`if`条件来确保在获取请求头信息之前在服务器端调用`asyncData`方法。这两个对象在客户端不可用，因此在客户端访问它们时会得到`undefined`。因此，当页面在浏览器上首次加载时，我们将得到上述代码的结果`localhost:3000`，但是除非刷新该页面，否则当通过`<nuxt-link>`组件生成的路由重新访问此页面时，您将不会再看到该信息。
+- en: Accessing the dynamic route data
+  id: totrans-190
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 访问动态路由数据
+- en: 'We can access the dynamic route data through the `params` key when we have
+    dynamic routes in our app. For example, if we have an `_id.vue` file in the `/pages/`
+    directory, then we can access the value of the route parameter via `context.params.id`
+    as follows:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们的应用程序中有动态路由时，我们可以通过`params`键访问动态路由数据。例如，如果我们在`/pages/`目录中有一个`_id.vue`文件，那么我们可以通过`context.params.id`来访问路由参数的值。
+- en: '[PRE53]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: In the preceding code, you will get `1` for the `id` when calling `users/1`
+    on the browser.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，当在浏览器上调用`users/1`时，`id`将得到`1`。
+- en: Listening to the query changes
+  id: totrans-194
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 监听查询变化
+- en: 'By default, the `asyncData` method is not executed over changes on the query
+    string. For example, if you are using queries such as `/users?id=<id>` on your
+    route with the `<nuxt-link>` component, `asyncData` will not be called when changing
+    from one query to another through the `<nuxt-link>` component routes. This is
+    because watching the query changes is disabled by default in Nuxt to improve performance.
+    If you want to override this default behavior, you can use the `watchQuery` property
+    to listen to the specific parameters:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，`asyncData`方法不会在查询字符串更改时执行。例如，如果您在使用`<nuxt-link>`组件的路由上使用诸如`/users?id=<id>`的查询，那么当通过`<nuxt-link>`组件路由从一个查询更改到另一个查询时，`asyncData`将不会被调用。这是因为Nuxt默认禁用了查询更改的监听以提高性能。如果您想覆盖此默认行为，可以使用`watchQuery`属性来监听特定参数：
+- en: '[PRE54]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: In the preceding code, we are listening to the `id` parameter, so you will get
+    `1` for navigating to `/users?id=1` and `2` for `/users?id=2`. If you want to
+    set up a watcher for all query strings, just simply set `watchQuery` to `true`.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，我们正在监听`id`参数，因此当导航到`/users?id=1`时，您将得到`1`，而当导航到`/users?id=2`时，您将得到`2`。如果您想为所有查询字符串设置一个观察器，只需将`watchQuery`设置为`true`。
+- en: Handling errors
+  id: totrans-198
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 处理错误
+- en: 'We can use the `error` method from the `context` object to call the Nuxt default
+    error page and display the error. You can pass the error code and message through
+    the default `params.statusCode` and `params.message` properties:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`context`对象中的`error`方法来调用Nuxt默认的错误页面并显示错误。您可以通过默认的`params.statusCode`和`params.message`属性传递错误代码和消息：
+- en: '[PRE55]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'If you want to change the default properties that you pass to the `error` method,
+    you can create a custom error page, which you learned about in [Chapter 4](aa55a711-4ba3-45e1-bad6-96067701bba7.xhtml),
+    *Adding Views, Routes, and Transitions*. Let''s create these custom error properties
+    and layout in the following steps:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想要更改传递给`error`方法的默认属性，您可以创建一个自定义错误页面，您在[第4章](aa55a711-4ba3-45e1-bad6-96067701bba7.xhtml)中学到了如何创建自定义错误属性和布局。让我们按照以下步骤创建这些自定义错误属性和布局：
+- en: 'Create a page that you want to throw the custom properties to:'
+  id: totrans-202
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个要抛出自定义属性的页面：
+- en: '[PRE56]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Create a custom error page in the `/layouts/` directory:'
+  id: totrans-204
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/layouts/`目录中创建一个自定义错误页面：
+- en: '[PRE57]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'Create a custom layout page for this error page:'
+  id: totrans-206
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为这个错误页面创建一个自定义布局页面：
+- en: '[PRE58]'
+  id: totrans-207
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: You should see the custom properties and layout when visiting `/users/error-custom`.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当访问`/users/error-custom`时，您应该看到自定义属性和布局。
+- en: You can see all the examples in `/chapter-8/nuxt-universal/koa-nuxt/accessing-context/`
+    in our GitHub repository.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库的`/chapter-8/nuxt-universal/koa-nuxt/accessing-context/`中看到所有示例。
+- en: Next, we will look at how we can use Axios, an HTTP client, with the `asyncData`
+    method for requesting API data in the coming section.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将看看如何在接下来的部分中使用Axios，一个HTTP客户端，与`asyncData`方法一起请求API数据。
+- en: Fetching async data with Axios
+  id: totrans-211
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Axios获取异步数据
+- en: We have created a simple API with Koa and exposed some public routes for its
+    data being accessed, such as `/api/users` and `/api/users/1`. We also have integrated
+    this API with Nuxt into a single app in which Nuxt performs as middleware. You
+    have also learned how the `asyncData` method works and how we can make use of the
+    Nuxt context. Now, let's bring all these three parts together in the final step
+    by using Axios with the `asyncData` method for requesting the API data.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建了一个简单的API，使用Koa暴露了一些公共路由，用于访问其数据，比如`/api/users`和`/api/users/1`。我们还将这个API与Nuxt集成到一个单一的应用程序中，其中Nuxt充当中间件。您还学会了`asyncData`方法的工作原理以及如何利用Nuxt上下文。现在，让我们通过在请求API数据时使用Axios和`asyncData`方法将这三个部分整合在一起。
+- en: Installing and configuring Axios
+  id: totrans-213
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装和配置Axios
+- en: 'Axios is a promised-based HTTP client for Node.js apps. We worked with vanilla
+    promises with the `asyncData` method in the previous section. We can simplify
+    our code further and save some lines with Axios, which is powered by asynchronous
+    JavaScript and XML (AJAX) to make asynchronous HTTP requests. Let''s get it started
+    in the following steps:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Axios是一个基于Promise的Node.js应用程序的HTTP客户端。在上一节中，我们使用了`asyncData`方法与原始的Promise一起工作。我们可以使用Axios进一步简化我们的代码，并节省一些行数，它是由异步JavaScript和XML（AJAX）支持的，用于进行异步HTTP请求。让我们在接下来的步骤中开始吧：
+- en: 'Install Axios via npm:'
+  id: totrans-215
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装Axios：
+- en: '[PRE59]'
+  id: totrans-216
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: 'We should always use a full path when making HTTP requests with Axios:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用Axios进行HTTP请求时，我们应该始终使用完整路径。
+- en: '[PRE60]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'But it can be repetitive to include `https://jsonplaceholder.typicode.com/`
+    in the path for every request. Besides, this base URL can change over time. So
+    we should abstract it and simplify the request:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是在每个请求的路径中包含`https://jsonplaceholder.typicode.com/`可能会重复。此外，这个基本URL可能会随时间改变。因此，我们应该将其抽象出来并简化请求：
+- en: '[PRE61]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'Create an Axios instance in the `/plugins/` directory:'
+  id: totrans-221
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/plugins/`目录中创建一个Axios实例：
+- en: '[PRE62]'
+  id: totrans-222
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'Import this plugin whenever we need it on the component:'
+  id: totrans-223
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在组件中需要时导入这个插件：
+- en: '[PRE63]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: After this installation and configuration, we are ready to fetch the async data
+    in the next section.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装和配置完成后，我们准备在下一节中获取异步数据。
+- en: Fetching data with Axios and asyncData
+  id: totrans-226
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Axios和asyncData获取数据
+- en: 'Let''s create the pages that need to have the data rendered in the following
+    steps:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在接下来的步骤中创建需要呈现数据的页面：
+- en: 'Create an index user page to list all users:'
+  id: totrans-228
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个用于列出所有用户的索引用户页面：
+- en: '[PRE64]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: 'On this page, we use the `get` method from Axios to call the API endpoint of
+    `/api/users`, which will be transformed to `localhost:3000/api/users`, where the
+    list of users can be output as follows:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个页面上，我们使用Axios的`get`方法来调用`/api/users`的API端点，它将被转换为`localhost:3000/api/users`，用户列表可以如下输出：
+- en: '[PRE65]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: We then unpack the `data` key in the output by using JavaScript's destructuring
+    assignment with `{ data }`. It is a good practice to wrap your code in `try`/`catch` blocks
+    when using the `async`/`await` statements. Next, we will need to request a single
+    user's data.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们使用JavaScript的解构赋值`{ data }`来解开输出中的`data`键。在使用`async`/`await`语句时，将代码放在`try`/`catch`块中是一个好习惯。接下来，我们需要请求单个用户的数据。
+- en: 'Create a single user page for rendering individual user data:'
+  id: totrans-233
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个用于呈现单个用户数据的单个用户页面：
+- en: '[PRE66]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'On this page, again, we use the `get` method from Axios to call the API endpoint
+    of `/api/users/<id>`, which will be transformed to `localhost:3000/api/users/<id>`,
+    to fetch the data of a single user:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个页面上，我们再次使用Axios的`get`方法来调用`/api/users/<id>`的API端点，这将被转换为`localhost:3000/api/users/<id>`，以获取单个用户的数据：
+- en: '[PRE67]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: And again, we unpack the `data` key in the output by using JavaScript's destructuring
+    assignment with `{ data }` and wrap the `async`/`await` code in `try`/`catch` blocks.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次使用JavaScript的解构赋值`{ data }`来解包输出中的`data`键，并将`async`/`await`代码包装在`try`/`catch`块中。
+- en: In the next section, we want to achieve the same result as in this section,
+    that is, to fetch a list of users and the data of a specific user. But we will
+    do it on a single page with the `watchQuery` property, which you learned about
+    in the previous section.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们希望实现与本节相同的结果，即获取用户列表和特定用户的数据。但是我们将在单个页面上使用`watchQuery`属性，这是您在上一节中学到的。
+- en: Listening on the query change
+  id: totrans-239
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 监听查询变化
+- en: 'In this section, we will create a page for listening to the change in the query
+    string and fetching the single-user data. To do this, we only require a `.vue`
+    page to list all users and watch the query, and if there is any change in the
+    query, we will get the `id` from the query and fetch the user with that `id` using
+    Axios in the `asyncData` method. Let''s get started:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将创建一个页面来监听查询字符串的变化并获取单个用户的数据。为此，我们只需要一个`.vue`页面来列出所有用户并监视查询，如果查询有任何变化，我们将从查询中获取`id`并使用`asyncData`方法中的Axios获取具有该`id`的用户。让我们开始吧：
+- en: 'Create a `users-query.vue` page in the `/pages/` directory and add the following
+    template to the `<template>` block:'
+  id: totrans-241
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/pages/`目录中创建一个`users-query.vue`页面，并将以下模板添加到`<template>`块中：
+- en: '[PRE68]'
+  id: totrans-242
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: In this template, we use the `v-for` directive to loop through each `user in
+    users` and add the query of each user to the `<nuxt-link>` component. The data
+    of an individual user will be rendered inside the `<p>` tag after the `<ul>` tag.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个模板中，我们使用`v-for`指令来循环遍历每个`users`中的`user`，并将每个用户的查询添加到`<nuxt-link>`组件中。单个用户的数据将在`<ul>`标签之后的`<p>`标签内呈现。
+- en: 'Add the following code to the `<script>` block:'
+  id: totrans-244
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将以下代码添加到`<script>`块中：
+- en: '[PRE69]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'This piece of code is the same as `/pages/users/index.vue`; we only add a `query` object
+    to `asyncData` and fetch the user data based on the information in the query.
+    And, of course, we add `watchQuery: true` or `watchQuery: [''id'']` to watch the
+    change in the query. So, in the browser, when you click a user from the list,
+    such as `users-query?id=1`, the data of that user will be rendered inside the
+    `<p>` tag as follows:'
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '这段代码与`/pages/users/index.vue`相同；我们只是在`asyncData`中添加了一个`query`对象，并根据查询中的信息获取用户数据。当然，我们还添加了`watchQuery:
+    true`或`watchQuery: [''id'']`来监视查询的变化。因此，在浏览器中，当您从列表中点击一个用户，比如`users-query?id=1`，该用户的数据将呈现在`<p>`标签内，如下所示：'
+- en: '[PRE70]'
+  id: totrans-247
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'Well done! You have reached the end of this chapter. We hope that it was a
+    simple and easy chapter for you to follow. Besides using Axios to make HTTP requests
+    to the API backend, we can use one of these Nuxt modules: Axios and HTTP. We focus
+    on vanilla Axios and the Axios module in this book. Do you remember that we covered
+    the Axios module in [Chapter 6](2102475f-1a6b-42c0-abaa-ec018f8fa25a.xhtml), *Writing
+    Plugins and Modules*? We will use this module often in the coming chapters. Now,
+    let''s summarize what you have learned in this chapter.'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 干得好！您已经到达了本章的结尾。我们希望这对您来说是一个简单而容易的章节。除了使用Axios向API后端发出HTTP请求，我们还可以使用这些Nuxt模块之一：Axios和HTTP。在本书中，我们专注于原始的Axios和Axios模块。您还记得我们在[第6章](2102475f-1a6b-42c0-abaa-ec018f8fa25a.xhtml)中介绍过Axios模块吗，*编写插件和模块*？我们将在接下来的章节中经常使用这个模块。现在，让我们总结一下您在本章学到的内容。
+- en: You can find the preceding code in `/chapter-8/nuxt-universal/koa-nuxt/using-axios/axios-vanilla/`
+    in our GitHub repository. If you want to find out more about the Nuxt HTTP module,
+    please visit [https://http.nuxtjs.org/](https://http.nuxtjs.org/).
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以在我们的GitHub存储库中的`/chapter-8/nuxt-universal/koa-nuxt/using-axios/axios-vanilla/`找到上述代码。如果您想了解更多关于Nuxt
+    HTTP模块的信息，请访问[https://http.nuxtjs.org/](https://http.nuxtjs.org/)。
+- en: Summary
+  id: totrans-250
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, you have learned how to configure Nuxt with a server-side framework,
+    which is Koa in this book. You have installed Koa with the dependencies that we
+    need to create an API. And then you used `asyncData` and Axios to query and fetch
+    the data from the API. Also, you learned about the properties in the Nuxt context
+    that you can destructure and access from the `asyncData` method, such as `params`,
+    `query`, `req`, `res`, and `error`. Last but not least, you started using Backpack
+    as a minimalist build tool in your apps.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您已经学会了如何配置Nuxt与服务器端框架，本书中使用的是Koa。您已经安装了Koa及其依赖项，以便创建API。然后，您使用`asyncData`和Axios从API查询和获取数据。此外，您还了解了Nuxt上下文中的属性，可以从`asyncData`方法中解构和访问，例如`params`，`query`，`req`，`res`和`error`。最后，您开始在应用程序中使用Backpack作为一个极简的构建工具。
+- en: In the next chapter, you will learn how to set up MongoDB and write some basic
+    MongoDB queries, how to add data to a MongoDB database, how to integrate it with
+    the server-side framework, Koa, which you have just learned about in this chapter,
+    and then, finally, how to integrate it with Nuxt pages. We will guide you through
+    everything that you will have to learn in order to make a more complete API. So,
+    stayed tuned.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，您将学习如何设置MongoDB并编写一些基本的MongoDB查询，如何向MongoDB数据库添加数据，如何将其与刚刚在本章中学习的服务器端框架Koa集成，最后，如何将其与Nuxt页面集成。我们将指导您学习一切，以便创建一个更完整的API。所以，请继续关注。

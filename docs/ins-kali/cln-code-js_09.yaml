@@ -1,0 +1,1806 @@
+- en: Dynamic Typing
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 动态类型化
+- en: 'In the previous chapter, we explored JavaScript''s built-in values and types
+    and covered some of the challenges involved when using them. The next natural
+    step is for us to explore how JavaScript''s dynamic system plays out in the real
+    world. Since JavaScript is a dynamically typed language, the variables in your
+    code are not constrained in terms of the type of values they refer to. This introduces
+    a huge challenge for the clean coder. Without certainty regarding our types, our
+    code can break in unexpected ways and can become incredibly fragile. This fragility
+    can be explained quite simply by imagining a numeric value embedded within a string:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们探讨了JavaScript的内置值和类型，并涉及了在使用它们时涉及的一些挑战。接下来自然的步骤是探索JavaScript的动态系统在现实世界中是如何发挥作用的。由于JavaScript是一种动态类型的语言，代码中的变量在所引用的值的类型方面没有限制。这给清洁的编码者带来了巨大的挑战。由于我们的类型不确定，我们的代码可能以意想不到的方式中断，并且可能变得非常脆弱。这种脆弱性可以很简单地解释为想象一个嵌入在字符串中的数值：
+- en: '[PRE0]'
+  id: totrans-2
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Here, we can see that the value is numeric but that it has been wrapped in
+    a string literal and so, as far as JavaScript is concerned, is just a regular
+    string. But because JavaScript is dynamic, we can freely pass this value around
+    to any function—even a function that is expecting a number:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到该值是数值，但它已被包装在一个字符串文字中，因此在JavaScript看来，它只是一个普通的字符串。但由于JavaScript是动态的，我们可以自由地将这个值传递给任何函数，甚至是一个期望一个数字的函数：
+- en: '[PRE1]'
+  id: totrans-4
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: The function adds a margin value to the number via the `+=` operator. This operator,
+    as we will learn later in this chapter, is an alias for the operation `a = a +
+    b`, and the `+` operator here will, in the case of either operand being a `String`
+    type, simply concatenate the two strings together. What's funny is that this simple
+    and innocent-looking implementation detail is the crux of millions of exhausting
+    debugging sessions that have occurred around the world at various times. Thankfully,
+    knowing about this operator and its exact behavior will save you countless hours
+    of pain and exhaustion, and will cement in your mind the importance of writing
+    code that avoids the very trap we've fallen into with our `possiblyNumeric` value.
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该函数通过`+=`运算符向数字添加了一个边距值。正如我们将在本章后面学到的那样，这个运算符是操作`a = a + b`的别名，而这里的`+`运算符，在任一操作数为`String`类型的情况下，将简单地将这两个字符串连接在一起。有趣的是，这个简单而无辜的实现细节是世界各地在不同时间发生的数百万次令人筋疲力尽的调试会话的关键。幸运的是，了解这个运算符及其确切的行为将为你节省无数个小时的痛苦和筋疲力尽，并且会牢固地铭记在你的脑海中，即避免我们已经陷入的`possiblyNumeric`值的陷阱的代码的重要性。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Detection
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检测
+- en: Conversion, coercion, and casting
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 转换、强制转换和转型
+- en: The first crucial step in being able to wrangle our types with more ease is
+    to learn about detection, which is the skill of being able to discern what type
+    or types you're dealing with in the least complex way.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 能够更轻松地处理我们的类型的第一个关键步骤是学习检测，即能够以最简单的方式辨别你正在处理的类型或类型的技能。
+- en: Detection
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测
+- en: Detection refers to the practice of determining a value's type. Usually, this
+    will be done with the intention of using that determined type to carry out specific
+    behavior such as falling back to a default value or throwing an error in the case
+    of misuse.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检测是指确定值的类型的实践。通常，这将是为了使用确定的类型来执行特定的行为，比如回退到默认值或在误用的情况下抛出错误。
+- en: Due to JavaScript's dynamic nature, detecting types is an important practice
+    that can often be a great aid to other programmers. If you can usefully throw
+    errors or warnings when someone is using an interface incorrectly, it can mean
+    a much more fluid and speedy flow of development for them. And if you can helpfully
+    populate `undefined`, `null`, or empty values with smart defaults, then it'll
+    allow you to provide a more seamless and intuitive interface.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于JavaScript的动态特性，检测类型是一种重要的实践，通常可以帮助其他程序员。如果你可以在某人错误地使用接口时有用地抛出错误或警告，那么对于他们来说，这意味着开发流程更加流畅和迅速。如果你可以有用地用智能默认值填充`undefined`、`null`或空值，那么它将允许你提供一个更无缝和直观的接口。
+- en: 'Unfortunately, due to legacies within JavaScript, and some choices made in
+    its design, detecting types can be challenging. A number of different approaches
+    are used, some of which are not considered best practice. We will be going over
+    all of these practices within this section. First, however, it''s worth discussing
+    one fundamental question regarding detection: **what exactly are you trying to
+    detect**?'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，由于JavaScript中的遗留问题和设计中的一些选择，检测类型可能是具有挑战性的。使用了许多不被认为是最佳实践的不同方法。我们将在本节中讨论所有这些实践。然而，首先值得讨论一个关于检测的基本问题：**你究竟想要检测什么**？
+- en: We often think we require a specific type in order to carry out certain actions,
+    but due to JavaScript's dynamic nature, we may not need to do so. In fact, doing
+    so can lead us to create needlessly restrictive or rigid code.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们经常认为我们需要特定的类型才能执行某些操作，但由于JavaScript的动态特性，我们可能并不需要这样做。事实上，这样做可能导致我们创建不必要的限制性或僵化的代码。
+- en: 'Consider a function that accepts an array of `people` objects, like so:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑一个接受`people`对象数组的函数，如下所示：
+- en: '[PRE2]'
+  id: totrans-16
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'In our `registerPeopleForMarathon`, we may be tempted to implement some kind
+    of check to ensure that the passed argument is of the expected type and structure:'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的`registerPeopleForMarathon`中，我们可能会想要实现某种检查，以确保传递的参数是预期的类型和结构：
+- en: '[PRE3]'
+  id: totrans-18
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Are these checks necessary? You may be inclined to say yes as they're ensuring
+    our code is resilient (or defensive) toward potential error cases and is thus
+    more reliable. But if we think about it, none of these checks are necessary to
+    ensure the kind of reliability we're seeking. The intention of our checks, presumably,
+    is to prevent downstream errors in the case that the wrong types or structures
+    are passed to our function, but if we look closely at the preceding code, there
+    are no risks of downstream errors of the types we're worried about.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些检查有必要吗？你可能倾向于说有，因为它们确保我们的代码对潜在的错误情况具有弹性（或防御性），因此更可靠。但是如果我们仔细考虑一下，我们的这些检查都不是必要的，以确保我们寻求的可靠性。我们检查的意图，大概是为了防止错误类型或结构传递给我们的函数时产生下游错误，但是如果我们仔细观察前面的代码，我们担心的类型并没有下游错误的风险。
+- en: 'The first check we conduct is `Array.isArray(people)` to determine whether
+    the `people` value is indeed an array. We are doing this, ostensibly, so that
+    we can safely loop through the array. But, as we discovered in the previous chapter,
+    the `for...of` iteration style is not dependent on its `of {...}` value being
+    an array. All it cares about is that the value is iterable. An example of this
+    is as follows:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们进行的第一个检查是`Array.isArray(people)`，以确定`people`值是否确实是一个数组。我们这样做，表面上是为了安全地遍历数组。但是，正如我们在前一章中发现的那样，`for...of`迭代风格并不依赖于`of
+    {...}`值是一个数组。它只关心值是否可迭代。一个例子如下：
+- en: '[PRE4]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Here, we''ve used a generator as our iterable. This will work just an array
+    would when being iterated over in `for...of`, so, technically, we could argue
+    that our `registerPeopleForMarathon` function should accept such values:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们使用生成器作为我们的可迭代对象。这将像数组一样在`for...of`中被迭代，因此，从技术上讲，我们可以说我们的`registerPeopleForMarathon`函数应该接受这样的值：
+- en: '[PRE5]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'The checks we''ve made thus far would reject this value as it is not an array.
+    Is there any sense in that? Do you remember the principle of abstraction and how
+    we should be concerned with interface, not implementation? Seen this way, arguably,
+    our `registerPeopleForMarathon` function does not need to know about the implementation
+    detail of the passed value''s type. It only cares that the value performs according
+    to its needs. In this case, it needs to loop through the value via `for...of`,
+    so any iterable is suitable. To check for an iterable, we might employ a helper
+    such as this:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们进行的检查会拒绝这个值，因为它不是一个数组。这有意义吗？你还记得抽象原则以及我们应该关注接口而不是实现吗？从这个角度来看，可以说我们的`registerPeopleForMarathon`函数不需要知道传递值的类型的实现细节。它只关心值是否按照它的需求执行。在这种情况下，它需要通过`for...of`循环遍历值，因此任何可迭代对象都是合适的。为了检查可迭代性，我们可以使用这样的辅助函数：
+- en: '[PRE6]'
+  id: totrans-25
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Also, consider that we are currently checking that all of our `person` values
+    are instances of the `Person` constructor:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另外，要考虑的是，我们目前正在检查所有`person`值是否是`Person`构造函数的实例：
+- en: '[PRE7]'
+  id: totrans-27
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Is it necessary for us to explicitly check the instance in this way? Could
+    we, instead, simply check for the properties that we wish to access? Perhaps all
+    we need to assert is that the properties are non-falsy (empty strings, null, undefined,
+    zero, and so on):'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们是否有必要以这种方式明确检查实例？相反，我们是否可以简单地检查我们希望访问的属性？也许我们需要断言的是属性不是假值（空字符串、null、undefined、零等）：
+- en: '[PRE8]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: This check is arguably more specific to our true needs. Checks like these are
+    often called **duck-typing**, that is, *If it walks like a duck and it quacks
+    like a duck, then it must be a duck*. We don't always need to check for specific
+    types; we can check for the properties, methods, and characteristics that we're
+    truly dependent on. By doing so, we are creating code that is more flexible.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个检查可能更符合我们真正的需求。这样的检查通常被称为**鸭子类型**，即*如果它走起来像鸭子，叫起来像鸭子，那么它一定是鸭子*。我们并不总是需要检查特定类型；我们可以检查我们真正依赖的属性、方法和特征。通过这样做，我们创建的代码更加灵活。
+- en: 'Our new checks, when integrated into our function, would look something like
+    this:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的新检查，当集成到我们的函数中时，会看起来像这样：
+- en: '[PRE9]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'By using a more flexible `isIterable` check and employing *duck-typing* on
+    our `person` objects, our `registerPeopleForMarathon` function can now be passed;
+    for example, here, we have a generator that yields plain objects:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过使用更灵活的`isIterable`检查，并在我们的`person`对象上使用*鸭子类型*，我们的`registerPeopleForMarathon`函数现在可以被传递；例如，在这里，我们有一个生成器产生普通对象：
+- en: '[PRE10]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: This level of flexibility wouldn't have been possible if we had kept our strict
+    type-checking in place. Stricter checks usually create more rigid code and needlessly
+    limit flexibility. There is a balance to strike here, however. We cannot be endlessly
+    flexible. It may even be the case that the rigidity and certainty provided by
+    stricter type-checks enable us to ensure cleaner code in the long run. But the
+    opposite may also be true. The balancing act of flexibility versus rigidity is
+    one you should be constantly considering.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们一直坚持严格的类型检查，这种灵活性是不可能的。更严格的检查通常会创建更严格的代码，并且不必要地限制灵活性。然而，这里需要取得平衡。我们不能无限制地灵活。甚至可能严格的类型检查提供的严谨性和确定性能够确保长期更清晰的代码。但相反的情况也可能成立。灵活性与严谨性的平衡是你应该不断考虑的。
+- en: Generally, an interface's expectations should attempt to be as close as possible
+    to the demands of the implementation. That is, we should not be performing detection
+    or other checks unless the checks genuinely prevent errors within our implementation.
+    Over-zealous checking may seem safer but may only mean that future requirements
+    and use cases are more awkward to accommodate.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一般来说，接口的期望应该尽可能接近实现的需求。也就是说，除非检查确实能够防止我们的实现中出现错误，否则我们不应该执行检测或其他检查。过度检查可能看起来更安全，但可能只意味着未来的需求和用例更难以适应。
+- en: Now that we've covered the question of why we detect things and exposed some
+    use cases, we can begin to cover the techniques of detection that JavaScript provides
+    us with. We'll begin with the `typeof` operator.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经解决了为什么我们要检测事物并且暴露了一些用例的问题，我们可以开始学习JavaScript提供给我们的检测技术。我们将从`typeof`运算符开始。
+- en: The typeof operator
+  id: totrans-38
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: typeof运算符
+- en: 'The first thing you''ll often be exposed to when you first try to detect a
+    type in JavaScript is the `typeof` operator:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你第一次尝试在JavaScript中检测类型时，你通常会接触到的第一件事是`typeof`运算符：
+- en: '[PRE11]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'The `typeof` operator accepts a single operand, to its right-hand-side, and
+    will evaluate to one of eight possible string values, depending on the value that''s
+    passed:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`typeof`运算符接受一个操作数，位于其右侧，并将根据传递的值之一求值为八种可能的字符串值之一：'
+- en: '[PRE12]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'If your operand is an identifier without a binding, that is, an undeclared
+    variable, then `typeof` will usefully return `"undefined"` instead of throwing
+    a `ReferenceError` like any other reference to that variable would do:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你的操作数是一个没有绑定的标识符，也就是一个未声明的变量，那么`typeof`将有用地返回`"undefined"`，而不是像对该变量的任何其他引用一样抛出`ReferenceError`：
+- en: '[PRE13]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: '`typeof` is the only operator in the JavaScript language that does this. Every
+    other operator and every other way of referencing a value will throw an error
+    if that value is not yet declared.'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`typeof`是JavaScript语言中唯一执行此操作的运算符。如果尚未声明该值，那么任何其他运算符和引用值的方式都会抛出错误。'
+- en: 'Outside of detecting undeclared variables, `typeof` is really only useful when
+    determining primitive types—and even that''s too generous since not all primitive
+    types are detectable. A `null` value, for example, when passed to `typeof`, will
+    evaluate to a rather useless `"object"`:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了检测未声明的变量外，`typeof`在确定原始类型时真的只有用处——即使这太宽泛了，因为并非所有原始类型都是可检测的。例如，当传递给`typeof`时，`null`值将求值为一个相当无用的`"object"`：
+- en: '[PRE14]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'This is an unfortunate and unfixable legacy of the JavaScript language. It
+    will likely never be fixed. To check for `null`, it is preferred to explicitly
+    check for the value itself:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是JavaScript语言的一个不幸且无法修复的遗留问题。它可能永远不会被修复。要检查`null`，最好明确检查值本身：
+- en: '[PRE15]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'The `typeof` operator does not differentiate between different types of objects,
+    except for functions. All non-function objects in JavaScript will return, plainly,
+    `"object"`:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`typeof`运算符在不是函数的不同类型的对象之间没有区别，除了函数。JavaScript中的所有非函数对象都会返回简单的`"object"`：'
+- en: '[PRE16]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'All functions, whether declared via class definitions, method definitions,
+    or plain function expressions, will evaluate to `"function"`:'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有函数，无论是通过类定义、方法定义还是普通函数表达式声明的，都将求值为`"function"`：
+- en: '[PRE17]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: If `typeof class {}` evaluating to `"function"` is confusing, consider that,
+    as we've learned, all classes are just constructor functions with a prepared prototype
+    (which will later determine the `[[Prototype]]` of any produced instances). There's
+    nothing special about them. Classes are not a unique type or entity within JavaScript.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果`typeof class {}`求值为`"function"`让你感到困惑，那么请考虑我们所学到的，所有类都只是具有准备好的原型的构造函数（这将稍后确定任何生成实例的`[[Prototype]]`）。它们没有什么特别之处。类不是JavaScript中的独特类型或实体。
+- en: 'When it comes to comparing the result of `typeof` to a given string, we can
+    use either the strict equality (`===`) or abstract equality (`==`) operator. Since
+    `typeof` always returns a string, we don''t have to worry about any discrepancies
+    here, so whether you adopt a strict versus abstract equality check is up to you.
+    These would both be fine, technically:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在比较`typeof`的结果与给定字符串时，我们可以使用严格相等(`===`)或抽象相等(`==`)运算符。由于`typeof`始终返回一个字符串，我们不必担心任何差异，所以你可以选择使用严格相等还是抽象相等检查。从技术上讲，这两种方法都可以：
+- en: '[PRE18]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: The strict and abstract equality operators (double-equals and triple-equals)
+    behave slightly differently, although when the values on both sides of the operator
+    are of the same type, they act identically. Skip ahead to the *Operator* section
+    to get the lowdown on how they differ. In general, it's best to prefer `===` over
+    `==`.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 严格相等和抽象相等运算符（双等号和三等号）的行为略有不同，尽管当运算符两侧的值是相同类型时，它们的行为是相同的。请跳转到*运算符*部分，了解它们的区别。一般来说，最好优先使用`===`而不是`==`。
+- en: In conclusion, the `typeof` operator is only a fair-weather friend. We cannot
+    rely on it in all circumstances. Sometimes, we'll need to use other type detection
+    techniques.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总之，`typeof`运算符只是一个晴天朋友。我们不能在所有情况下依赖它。有时，我们需要使用其他类型检测技术。
+- en: Type-detecting techniques
+  id: totrans-59
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 类型检测技术
+- en: Given the unsuitability of the `typeof` operator for detecting a number of types,
+    especially objects, we have to rely on a number of different approaches, depending
+    on the exact thing we want to check. Sometimes, we may want to detect a characteristic
+    instead of a type, for example, whether an object is an instance of a constructor
+    or whether it's just a plain object. In this section, we'll be exploring a number
+    of common detection needs and their solutions.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到`typeof`运算符对于检测多种类型的不适用性，特别是对象，我们必须依赖于许多不同的方法，具体取决于我们想要检查的确切内容。有时，我们可能想要检测特征而不是类型，例如，一个对象是否是构造函数的实例，或者它只是一个普通对象。在本节中，我们将探讨一些常见的检测需求及其解决方案。
+- en: Detecting Booleans
+  id: totrans-61
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测布尔值
+- en: 'Booleans are thankfully very simple to check. The `typeof` operator correctly
+    evaluates to `"boolean"` for values of `true` and `false`:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 布尔值检测起来非常简单。`typeof`运算符对`true`和`false`的值正确地求值为`"boolean"`：
+- en: '[PRE19]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: It's rare that we'll want to do this, though. Usually, when you are receiving
+    a `Boolean` value, you are most interested in checking its truthiness rather than
+    its type.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不过，我们很少会想要这样做。通常，当你接收到一个`Boolean`值时，你最感兴趣的是检查它的真实性而不是它的类型。
+- en: 'When placing a Boolean value in a Boolean context, such as a conditional statement,
+    we are implicitly relying on its truthiness or falsiness. For example, take the
+    following check:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当将布尔值放置在布尔上下文中时，比如条件语句，我们隐含地依赖于它的真实性或虚假性。例如，看下面的检查：
+- en: '[PRE20]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'This check does not determine whether the `isEnabled` value is truly Boolean.
+    It just checks that it evaluates to something truthy. What are all the possible
+    values that `isEnabled` could be? Is there a list of all these truthy values?
+    These values are virtually infinite, so there is no list. All we can say about
+    truthy values is that they are not falsy. And as we know, there are only seven
+    falsy values. If we wish to observe the truthiness or falsiness of specific values,
+    we can always cast to a `Boolean` via the `Boolean` constructor invoked as a function:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个检查并不能确定`isEnabled`值是否真正是布尔值。它只是检查它是否评估为真值。`isEnabled`可能的所有可能值是什么？是否有所有这些真值的列表？这些值几乎是无限的，所以没有列表。我们只能说关于真值的是它们不是假值。而且我们知道，只有七个假值。如果我们希望观察特定值的真假，我们总是可以通过将`Boolean`构造函数作为函数调用来转换为`Boolean`：
+- en: '[PRE21]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'In most situations, the implicit coercion to a `Boolean` is sufficient and
+    won''t end up biting us, but if we ever wish to absolutely determine that a value
+    is both `Boolean` and specifically `true` or `false`, we can use the strict equality
+    operator to compare them, like so:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大多数情况下，对`Boolean`的隐式强制转换是足够的，不会对我们造成影响，但是如果我们希望绝对确定一个值既是`Boolean`又是特定的`true`或`false`，我们可以使用严格相等运算符进行比较，如下所示：
+- en: '[PRE22]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Due to the dynamic nature of JavaScript, some people prefer this level of certainty
+    but usually, it isn't necessary. If the value we are checking is obviously intended
+    as a `Boolean` value, then we can use it as so. Checking for its type via `typeof`
+    or strict equality is usually unnecessary unless there is a possibility that the
+    value may be non-`Boolean`.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于JavaScript的动态特性，一些人更喜欢这种确定性，但通常并不是必要的。如果我们要检查的值显然是一个`Boolean`值，那么我们可以直接使用它。通常情况下，通过`typeof`或严格相等来检查它的类型是不必要的，除非有可能该值不是`Boolean`。
+- en: Detecting numbers
+  id: totrans-72
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测数字
+- en: 'In the case of a `Number`, we can rely on the `typeof` operator to correctly
+    evaluate to `"number"`:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`Number`的情况下，我们可以依赖`typeof`运算符正确地评估为`"number"`：
+- en: '[PRE23]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'However, it will also evaluate to `"number"` in the case of `NaN`, `Infinity`,
+    and `-Infinity`:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，在`NaN`、`Infinity`和`-Infinity`的情况下，它也会评估为`"number"`：
+- en: '[PRE24]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Because of this, we may wish to carry out additional checks to determine whether
+    a number is not any of those values. Thankfully, JavaScript provides native helpers
+    for just this scenario:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们可能希望进行额外的检查，以确定一个数字不是这些值中的任何一个。幸运的是，JavaScript为这种情况提供了本地辅助工具：
+- en: '`isFinite(n)`: Returns `true` if `Number(n)` is not `Infinity`, `-Infinity`,
+    or `NaN`'
+  id: totrans-78
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`isFinite(n)`: 如果`Number(n)`不是`Infinity`、`-Infinity`或`NaN`，则返回`true`'
+- en: '`isNaN(n)`: Returns `true` if `Number(n)` is not `NaN`'
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`isNaN(n)`: 如果`Number(n)`不是`NaN`，则返回`true`'
+- en: '`Number.isNaN(n)`: Returns `true` if `n` is not `NaN`'
+  id: totrans-80
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`Number.isNaN(n)`: 如果`n`不是`NaN`，则返回`true`'
+- en: '`Number.isFinite(n)`: Returns `true` if `n` is not `Infinity`, `-Infinity`,
+    or `NaN`'
+  id: totrans-81
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`Number.isFinite(n)`: 如果`n`不是`Infinity`、`-Infinity`或`NaN`，则返回`true`'
+- en: Both of the global variants are older parts of the language and, as you can
+    see, are slightly different than their `Number.*` equivalents. Global `isFinite`
+    and `isNaN` cast their values to a number via `Number(n)`, while the equivalent
+    `Number.*` methods do not do this. The reason for this difference is mostly one
+    of legacy.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 全局变量的两个变体是语言的较早部分，正如您所看到的，它们与它们的`Number.*`等效部分略有不同。全局的`isFinite`和`isNaN`通过`Number(n)`将它们的值转换为数字，而等效的`Number.*`方法则不这样做。这种差异的原因主要是遗留问题。
+- en: 'The more recently added `Number.isNaN` and `Number.isFinite` were introduced
+    to enable more explicit checks without relying on casting:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最近添加的`Number.isNaN`和`Number.isFinite`是为了实现更明确的检查而引入的，而不依赖于转换：
+- en: '[PRE25]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'As you can see, `Number.isNaN` is more restrictive as it won''t cast the value
+    to a `Number` before checking for `NaN`. With the `''foo''` string, we would need
+    to cast it to `Number` (and thus evaluate to `NaN`) before we passed it:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，`Number.isNaN`更为严格，因为它在检查`NaN`之前不会将值转换为`Number`。对于字符串`'foo'`，我们需要将其转换为`Number`（因此评估为`NaN`）才能通过：
+- en: '[PRE26]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'The global `isFinite` function works in the same way, that is, it casts its
+    value to a number before checking for finiteness, while the `Number.isFinite`
+    method will do no casting whatsoever:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 全局的`isFinite`函数的工作方式也是一样的，即在检查有限性之前将其值转换为数字，而`Number.isFinite`方法则不进行任何转换：
+- en: '[PRE27]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: If you are confident that your value is already a number, then you may as well
+    use the more succinct `isNaN` and `isFinite` as their implicit casting will have
+    no effect on you. And if you'd like for JavaScript to attempt to cast your non-`Number`
+    value to `Number`, then you should, once again, use `isNaN` and `isFinite`. If,
+    however, you require an explicit check for whatever reason, then you should use
+    `Number.isNaN` and `Number.isFinite`.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您确信您的值已经是一个数字，那么您可以使用更简洁的`isNaN`和`isFinite`，因为它们的隐式转换对您没有影响。如果您希望JavaScript尝试将您的非`Number`值转换为`Number`，那么您应该再次使用`isNaN`和`isFinite`。然而，如果出于某种原因您需要明确检查，那么您应该使用`Number.isNaN`和`Number.isFinite`。
+- en: 'Combining all of these discussed checks, we are able to confidently detect
+    a number that is neither `NaN` nor `Infinity` by using `typeof` in combination
+    with the global `isFinite`. As we mentioned previously, `isFinite` will check
+    for `NaN` itself, so we needn''t bother with an additional `isNaN` check:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结合所有这些讨论过的检查，我们能够通过使用`typeof`结合全局的`isFinite`来自信地检测一个既不是`NaN`也不是`Infinity`的数字。正如我们之前提到的，`isFinite`将检查`NaN`本身，所以我们不需要额外的`isNaN`检查：
+- en: '[PRE28]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: When it comes to detection, your needs should be driven by the context of your
+    code. For example, it may not be necessary to check for finite numbers if you're
+    embedded in a piece of code where you can safely assume the number is finite.
+    But if you're building a more public API, then you may want to conduct such checks
+    before sending those values down into your internal interfaces, both to reduce
+    the possibilities of bugs and to provide your users with helpful and sensible
+    errors or warnings.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在检测方面，你的需求应该由你的代码上下文驱动。例如，如果你嵌入在一个可以安全假定数字是有限的代码片段中，那么可能不需要检查有限数字。但如果你正在构建一个更公共的API，那么在将这些值发送到你的内部接口之前，你可能希望进行这样的检查，以减少错误的可能性，并为你的用户提供有用和明智的错误或警告。
+- en: Detecting strings
+  id: totrans-93
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测字符串
+- en: 'Detecting strings is pleasantly simple. The `typeof` operator is all we need:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检测字符串是愉快的简单。我们只需要`typeof`运算符：
+- en: '[PRE29]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'In order to check for the length of a given `String`, we can simply use the
+    `length` property:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了检查给定`String`的长度，我们可以简单地使用`length`属性：
+- en: '[PRE30]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'If we need to check whether a `String` has a length greater than 0, we can
+    either explicitly do so via `length` or rely on the falsiness of a 0 length, or
+    even rely on the falsiness of the empty `string` itself:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们需要检查一个`String`的长度是否大于0，我们可以通过`length`显式地这样做，或者依赖于长度为0的假值，甚至依赖于空`string`本身的假值：
+- en: '[PRE31]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'If we''re only checking for the truthiness of a value, then we are also potentially
+    detecting all potential truthy values, including non-zero numbers and objects.
+    To be completely sure that you have a `String` and that it is not empty, the most
+    succinct technique is as follows:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们只是检查一个值的真实性，那么我们也可能检测到所有潜在的真值，包括非零数字和对象。要完全确定你有一个`String`并且它不是空的，最简洁的技术如下：
+- en: '[PRE32]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Emptiness by itself, however, may not be all we''re interested in. We may wish
+    to detect whether a string has actual content in it. In most cases, *actual content*
+    starts at the beginning of the `String` and ends at the end of the `String`, but
+    in some cases, it may be embedded within whitespace on either side. To account
+    for this, we can trim the `String` and then confirm its emptiness:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，仅仅空白可能并不是我们感兴趣的全部。我们可能希望检测一个字符串是否包含实际内容。在大多数情况下，*实际内容*从`String`的开头开始，直到`String`的结尾结束，但在某些情况下，它可能嵌入在两侧的空白中。为了解决这个问题，我们可以修剪`String`，然后确认它是否为空：
+- en: '[PRE33]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: Notice that our function, `isNonEmptyString`, is using a `length > 0` check
+    on the trimmed string instead of just relying on its falsiness as an empty string.
+    This is so that we can safely and confidently know that our `isNonEmptyString`
+    function will always return a Boolean value. Even though, 99% of the time, it
+    will be used in a Boolean context such as `if (isNonEmptyString(...))`, we should
+    still ensure that our function has an intuitive and consistent contract.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们的函数`isNonEmptyString`是在修剪后的字符串上使用`length > 0`检查，而不仅仅依赖于它作为空字符串的假值。这样我们就可以安全而自信地知道我们的`isNonEmptyString`函数将始终返回一个布尔值。即使在99%的情况下，它将被用在布尔上下文中，比如`if
+    (isNonEmptyString(...))`，我们仍然应该确保我们的函数具有直观和一致的约定。
+- en: The logical `AND` operator (`a && b`) will, if its left-hand side is truthy,
+    return its right-hand side. Therefore, expressions such as `typeof str === "string"
+    && str` are not always guaranteed to return a `Boolean`. Go to the *Operator –
+    Logical Operators – Logical AND Operator* section of [Chapter 8](d8c326c9-db6f-4562-b92d-975dd0159182.xhtml),
+    *Operators* for more information.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 逻辑`AND`运算符（`a && b`）将在其左侧为真时返回其右侧。因此，诸如`typeof str === "string" && str`的表达式并不总是保证返回一个布尔值。有关更多信息，请参阅[第8章](d8c326c9-db6f-4562-b92d-975dd0159182.xhtml)的*运算符-逻辑运算符-逻辑AND运算符*部分。
+- en: Strings are simple to detect, but as we mentioned in the previous chapter, working
+    with them can be a challenge due to Unicode. Therefore, it's vital to remember
+    that while the detection of a string may provide us some certainty, it does not
+    tell us what is inside the string and whether it is the value we're expecting.
+    If your detections have the intention of providing a guide or warning to those
+    who are using your interface, you might be better served by explicitly checking
+    the contents of the value.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检测字符串是简单的，但正如我们在上一章中提到的，由于Unicode，与它们一起工作可能是一个挑战。因此，要记住，虽然检测字符串可能会给我们一些确定性，但它并不告诉我们字符串内部的内容以及它是否是我们期望的值。如果你的检测意图是为那些使用你的接口的人提供指南或警告，你可能最好通过明确检查值的内容来服务。
+- en: Detecting undefined
+  id: totrans-107
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测undefined
+- en: 'The `undefined` type can be checked directly by referring to its globally available
+    value via the strict equality operator:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`undefined`类型可以通过引用其全局可用值直接使用严格相等运算符进行检查：'
+- en: '[PRE34]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Unfortunately, however, since undefined can be overridden within non-global
+    scopes (depending on your precise setup and environment), this approach can be
+    troublesome. Historically, `undefined` could be overridden globally. This meant
+    that things like this were possible:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，不幸的是，由于`undefined`可以在非全局范围内被覆盖（取决于你的精确设置和环境），这种方法可能会有问题。从历史上看，`undefined`可以在全局范围内被覆盖。这意味着这样的事情是可能的：
+- en: '[PRE35]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'The `void` operator, as we will explore later, takes one operand to its right-hand
+    side (`void foo`) and will always evaluate to `undefined`. As such, `void 0` has
+    become a synonym for `undefined` and is useful as a substitute. So, if you have
+    low confidence in the `undefined` value, then you can simply check for `void 0`
+    like so:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`void`运算符，正如我们将在后面探讨的那样，将一个操作数取到其右侧（`void foo`），并且将始终计算为`undefined`。因此，`void
+    0`已经成为`undefined`的同义词，并且作为替代是有用的。因此，如果你对`undefined`值没有信心，那么你可以简单地检查`void 0`，就像这样：'
+- en: '[PRE36]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Various other approaches emerged to ensure a reliable `undefined` value. One,
+    for example, would simply declare an unassigned variable (which will always default
+    to `undefined`) and then use that within the scope:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 出现了各种其他方法来确保可靠的`undefined`值。例如，一个方法是简单地声明一个未赋值的变量（它将始终默认为`undefined`），然后在范围内使用它：
+- en: '[PRE37]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: Over time, the mutability of the `undefined` value has been locked down. *ECMAScript
+    2015* forbade global modification, but curiously still allowed local modification.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着时间的推移，`undefined`值的可变性已经被锁定。*ECMAScript 2015*禁止了全局修改，但奇怪的是仍然允许本地修改。
+- en: 'Thankfully, it has always remained possible to check for `undefined` via the
+    simple `typeof` operator:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 值得庆幸的是，始终可以通过简单的`typeof`运算符来检查`undefined`：
+- en: '[PRE38]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Using `typeof` in this way is far less risky than relying on `undefined` as
+    a literal value, though with the advent of linting tools, it is generally safe
+    to directly check for `undefined`.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`typeof`这种方式比依赖`undefined`作为字面值要少风险得多，尽管随着linting工具的出现，直接检查`undefined`通常是安全的。
+- en: We'll explore ESLint, a popular JavaScript linting tool, in [Chapter 15](be9ab437-faeb-4a14-8a5f-663ddba470fd.xhtml),
+    *Tools For Cleaner Code*. In the case of overwriting `undefined` in a local scope,
+    which is unquestionably a bad thing to do, it'll helpfully give us a warning.
+    Such warnings can provide us with a level of confidence, allowing us to safely
+    use previously risky aspects of the language.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在[第15章](be9ab437-faeb-4a14-8a5f-663ddba470fd.xhtml)中探讨ESLint，这是一个流行的JavaScript
+    linting工具，*更干净代码的工具*。在本地范围覆盖`undefined`的情况下，这绝对是一件坏事，它会友好地给我们一个警告。这样的警告可以让我们更有信心，可以安全地使用语言中以前风险较高的方面。
+- en: Detecting null
+  id: totrans-121
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测null
+- en: 'As we''ve seen, `typeof null` evaluates to `"object"`. This is an odd legacy
+    of the language. Unfortunately, it means that we cannot rely on `typeof` for the
+    detection of `null`. Instead, we must compare to the literal `null` value directly
+    using a strict quality operator, as shown here:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所见，`typeof null`评估为`"object"`。这是语言的一个奇怪的遗留。不幸的是，这意味着我们不能依赖`typeof`来检测`null`。相反，我们必须直接比较字面值`null`，使用严格的相等运算符，如下所示：
+- en: '[PRE39]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Unlike `undefined`, `null` cannot be overwritten in any version of the language,
+    nor in any environment, and so it doesn't come with any headaches around its usage.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与`undefined`不同，`null`在语言的任何版本和任何环境中都不能被覆盖，因此在使用上不会带来任何麻烦。
+- en: Detecting null or undefined
+  id: totrans-125
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测null或undefined
+- en: 'So far, we''ve covered how to independently check for both `undefined` and
+    `null`, but we may want to check for both at the same time. It''s quite common,
+    for example, to have a function signature that has an optional argument. And if
+    that argument is not passed or is explicitly set to `null`, it''s normal to fall
+    back to some default value. This can be achieved by explicitly checking for both
+    `null` and `undefined`, like so:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经介绍了如何独立检查`undefined`和`null`，但我们可能希望同时检查两者。例如，一个函数签名通常有一个可选参数。如果未传递该参数或明确设置为`null`，通常会返回到一些默认值。可以通过明确检查`null`和`undefined`来实现这一点，如下所示：
+- en: '[PRE40]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Often, since both `null` and `undefined` are falsy values, it is quite normal
+    to imply their presence by checking the falsiness of a given value:'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，由于`null`和`undefined`都是假值，通过检查给定值的假值来暗示它们的存在是非常正常的：
+- en: '[PRE41]'
+  id: totrans-129
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'This, however, will also check whether the value is any of the other falsy
+    values (including, `false`, `NaN`, 0, and so on). So, if we want to confirm that
+    a value is specifically `null` or `undefined`, and no other falsy value, then
+    we should stick to the explicit variation:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，这也将检查值是否为其他假值之一（包括`false`，`NaN`，0等）。因此，如果我们想确认一个值是否特别是`null`或`undefined`，而不是其他假值，那么我们应该坚持使用明确的变体：
+- en: '[PRE42]'
+  id: totrans-131
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'Even more succinctly, however, we can adopt the abstract (non-strict) equality
+    operator to check for either `null` or `undefined` since it considers these values
+    to be equal:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更简洁的是，我们可以采用抽象（非严格）相等运算符来检查`null`或`undefined`，因为它认为这些值是相等的：
+- en: '[PRE43]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Although this utilizes the generally frowned-upon abstract equality operator
+    (which we'll explore later in this chapter), it is still a popular way to check
+    for both `undefined` and `null`. This is due to its succinct nature. However,
+    adopting this more succinct check makes the code less obvious. It may even leave
+    the impression that the author meant to check solely for `null`. This ambiguity
+    of intent should leave us doubting its cleanliness. Therefore, in most situations,
+    we should opt for the more explicit and strict check.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管这利用了通常被指责的抽象相等运算符（我们将在本章后面探讨），但这仍然是检查`undefined`和`null`的一种流行方式。这是因为它的简洁性。然而，采用这种更简洁的检查会使代码不太明显。甚至可能给人留下作者只是想检查`null`的印象。这种意图的模糊性应该让我们对其干净度产生怀疑。因此，在大多数情况下，我们应该选择更明确和严格的检查。
+- en: Detecting arrays
+  id: totrans-135
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测数组
+- en: 'Detecting arrays in JavaScript is thankfully very straightforward due to the
+    `Array.isArray` method:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在JavaScript中检测数组非常简单，因为有`Array.isArray`方法：
+- en: '[PRE44]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: What this method tells us is that the passed value was constructed via the array
+    constructor or an array literal. However, it does not check the `[[Prototype]]`
+    of the value, so it is entirely possible (although unlikely) that the value, although
+    appearing like an array, may not have the characteristics you desire.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法告诉我们，传递的值是通过数组构造函数或数组文字构造的。但它不检查值的`[[Prototype]]`，因此完全有可能（尽管不太可能）该值，尽管看起来像一个数组，但可能没有您所期望的特征。
+- en: 'When we believe that we need to check whether a value is an array, it''s important
+    to ask ourselves what we''re really trying to detect. It may be the case that
+    we can check for the characteristics we desire instead of the type itself. It''s
+    crucial to consider what we will be doing with the value. If we are intending
+    to loop over it via `for...of`, then it may be more suitable for us to check for
+    its iterable-ness instead of its array-ness. As we mentioned earlier, we can employ
+    a helper like this to do so:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们认为需要检查一个值是否是数组时，重要的是问问自己我们真正想要检测什么。也许我们可以检查我们所期望的特征，而不是类型本身。考虑我们将如何处理这个值是至关重要的。如果我们打算通过`for...of`循环遍历它，那么检查其可迭代性可能更适合我们，而不是检查其数组性。正如我们之前提到的，我们可以使用这样的辅助程序来做到这一点：
+- en: '[PRE45]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'If, alternatively, we are looking to use specific array methods such as `forEach`
+    or `map`, then it''s best to check via `isArray` as this will give us as a reasonable
+    level of confidence that these methods exist:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另外，如果我们想使用特定的数组方法，比如`forEach`或`map`，那么最好通过`isArray`进行检查，因为这将给我们一个合理的信心，这些方法存在：
+- en: '[PRE46]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'If we were inclined to be really thorough, we could also individually check
+    for specific methods, or we could even force the value into an array of our own
+    so that we could operate on it freely while knowing that the value is truly an
+    array:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们倾向于非常彻底，我们还可以逐个检查特定方法，或者甚至强制将值转换为我们自己的数组，以便我们可以自由地对其进行操作，同时知道该值确实是一个数组：
+- en: '[PRE47]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Note that copying an array-like value via the spread syntax (`[...value]`)
+    will only work if the value is iterable. An example of when using `[...value]`
+    is appropriate is when operating on `NodeLists` that have been returned from the
+    DOM API:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，通过扩展语法（`[...value]`）复制类似数组的值只有在该值可迭代时才有效。使用`[...value]`的一个适当的例子是在操作从DOM
+    API返回的`NodeLists`时：
+- en: '[PRE48]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: A `NodeList` is not a true `Array`, so it does not give us access to native
+    array methods. Due to this, it is useful to create and use a copy of it that is
+    a true `Array`.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`NodeList` 不是真正的`Array`，因此它不提供对原生数组方法的访问。因此，创建并使用一个真正的`Array`的副本是有用的。'
+- en: On the whole, it is safe to adopt and rely on `Array.isArray`, but it's important
+    to consider whether you even need to check for `Array`, whether it's more appropriate
+    to check for whether the value is iterable, or even whether it has a specific
+    method or property. As with all other checks, we should seek to make it obvious
+    what our intent is. If we're employing checks that are more obscure than `Array.isArray`,
+    then it may be prudent to add a comment or abstract the operation away with a
+    descriptively named function.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总的来说，采用和依赖`Array.isArray`是安全的，但重要的是要考虑是否需要检查`Array`，是否更适合检查值是否可迭代，甚至是否具有特定的方法或属性。与所有其他检查一样，我们应该努力使我们的意图明显。如果我们使用的检查比`Array.isArray`更隐晦，那么最好添加注释或使用一个描述性命名的函数来抽象操作。
+- en: Detecting instances
+  id: totrans-149
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测实例
+- en: 'To detect whether an object is an instance of a constructor, we can simply
+    use the `instanceof` operator:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要检测一个对象是否是构造函数的实例，我们可以简单地使用`instanceof`运算符：
+- en: '[PRE49]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: The `instanceof` operator will be covered in more detail in [Chapter 8](d8c326c9-db6f-4562-b92d-975dd0159182.xhtml)*,
+    Operators*.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`instanceof` 运算符将在[第8章](d8c326c9-db6f-4562-b92d-975dd0159182.xhtml)*，运算符*中更详细地介绍。'
+- en: Detecting plain objects
+  id: totrans-153
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测普通对象
+- en: 'When we say *plain* objects, we are typically referring to those that are constructed
+    as either `Object` literals or via the `Object` constructor:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们说“普通”对象时，我们通常指的是通过`Object`字面量或通过`Object`构造函数构造的对象：
+- en: '[PRE50]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'This is in contrast to other objects, such as those provided natively by the
+    language (for example, arrays) and those that we construct ourselves via instantiating
+    constructors (for example, `new Pokemon()`):'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这与其他对象形成对比，比如语言本身提供的对象（例如数组）和我们通过实例化构造函数自己构造的对象（例如`new Pokemon()`）：
+- en: '[PRE51]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'The simplest way to detect a plain object is to inquire as to its `[[Prototype]]`.
+    If it has a `[[Prototype]]` equal to `Object.prototype`, then we can say it is
+    plain:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检测普通对象的最简单方法是询问它的`[[Prototype]]`。如果它的`[[Prototype]]`等于`Object.prototype`，那么我们可以说它是普通的：
+- en: '[PRE52]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: Why would we need to know whether a value is a plain object? It may, for example,
+    be useful to discern plain from non-plain objects when creating an interface or
+    function that accepts configuration objects in addition to more complex object
+    types.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们为什么需要知道一个值是否是一个普通对象？例如，当创建一个接受配置对象以及更复杂的对象类型的接口或函数时，区分普通对象和非普通对象可能是有用的。
+- en: In most situations, we will need to detect a plain object explicitly. Instead,
+    we should rely only on the interface or data that it provides us. If a user of
+    our abstraction wishes to pass us a non-plain object but it still has the properties
+    that we require, then who are we to complain?
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大多数情况下，我们需要明确检测普通对象。相反，我们应该只依赖它提供给我们的接口或数据。如果我们的抽象的用户希望向我们传递一个非普通对象，但它仍然具有我们需要的属性，那么我们又有什么好抱怨的呢？
+- en: Conversion, coercion, and casting
+  id: totrans-162
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 转换、强制转换和类型转换
+- en: 'So far, we have learned how to tell the difference between various types and
+    characteristics within JavaScript using detection. As we have seen, detection
+    is useful when needing to provide alternative values or warnings in the case of
+    unexpected or incompatible values. There is an additional mechanism for dealing
+    with such values, however: we can convert them from the values we don''t desire
+    into the values we do desire.'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经学会了如何使用检测来区分JavaScript中的各种类型和特征。正如我们所见，当需要在出现意外或不兼容的值时提供替代值或警告时，检测是有用的。然而，处理这些值的另一个机制是：我们可以将它们从我们不希望的值转换为我们希望的值。
+- en: 'In order to convert a value, we use a mechanism known as **casting**. Casting
+    is the intentional and explicit derivation of one type from another type. In contrast
+    to casting, there is also **coercion**. Coercion is the implicit and internal
+    process of conversion employed by JavaScript when we use operators or language
+    constructs that require specific types. An example of this would be when passing
+    `String` values to a multiplication operator. The operator will naturally coerce
+    its `String` operands to numbers so that it can attempt to multiply them:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了转换一个值，我们使用一种称为**类型转换**的机制。类型转换是有意和明确地从一种类型派生另一种类型。与类型转换相反，还有**强制转换**。强制转换是JavaScript在使用需要特定类型的运算符或语言结构时隐式和内部进行的转换过程。一个例子是将`String`值传递给乘法运算符。运算符将自然地将其`String`操作数强制转换为数字，以便它可以尝试将它们相乘：
+- en: '[PRE53]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: The underlying mechanisms in both *casting* and *coercion* are identical. They
+    are both mechanisms of conversion. But how we access these low-level behaviors
+    is key. If we do so explicitly, clearly communicating our intent, then the readers
+    of our code will have a far nicer time.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*强制转换*和*隐式转换*的基本机制是相同的。它们都是转换的机制。但是我们如何访问这些底层行为是关键的。如果我们明确地这样做，清晰地传达我们的意图，那么我们的代码读者将会有更好的体验。'
+- en: 'Consider the following code, which contains two different mechanisms for converting
+    a `String` into a `Number`:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑以下代码，其中包含将`String`转换为`Number`的两种不同机制：
+- en: '[PRE54]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'Here, we are using two different techniques to force the conversion of a value
+    from a `String` into a `Number`. The `Number()` constructor, when called as a
+    function, will internally convert the passed value into a `Number` primitive.
+    The unary `+` operator will do the same, although it is arguably less clear. Coercion
+    is even less clear as it often appears to occur as a side effect of some other
+    operation. Here are some examples of this:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们使用了两种不同的技术来强制将值从`String`转换为`Number`。当作为函数调用时，`Number()`构造函数将内部将传递的值转换为`Number`原始值。一元`+`运算符也会做同样的事情，尽管它可能不够清晰。强制转换甚至不够清晰，因为它经常似乎是作为某些其他操作的副作用而发生的。以下是一些此类的例子：
+- en: '[PRE55]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: The `+` operator, when either operand is a string, will coerce the opposite
+    operand to a string and then concatenate them both together. The `*` operator,
+    when given arrays, will call `toString()` on them and then coerce the resulting
+    `String` into `Number`, effectively meaning that `[2] * [3]` is equal to `2 *
+    3`. Also, the division operator will coerce its operands to numbers before operating
+    on them. All of these coercive behaviors are happening implicitly.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当操作数中的一个是字符串时，`+`运算符将强制转换另一个操作数为字符串，然后将它们连接在一起。当给定数组时，`*`运算符将在它们上调用`toString()`，然后将结果的`String`强制转换为`Number`，这意味着`[2]
+    * [3]`等于`2 * 3`。此外，除法运算符在对它们进行操作之前会将它们强制转换为数字。所有这些强制行为都是隐式发生的。
+- en: The line between *coercion* and *casting* is not set in stone. It is possible,
+    for example, to explicitly and intentionally convert a type via a coercive side
+    effect. Consider the expression `someString * 1`, which could be used to *cast*
+    a string to a number, using coercion to do so. In our conversions, what's crucial
+    is that we **clearly communicate our intent**.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*强制转换*和*显式转换*之间的界限并不是一成不变的。例如，可以通过强制性的副作用明确和有意地转换类型。考虑表达式`someString * 1`，它可以用来将字符串*强制转换*为数字，使用强制转换来实现。在我们的转换中，至关重要的是我们**清楚地传达我们的意图**。'
+- en: Coercion, since it happens implicitly, can be the cause of many bugs and unexpected
+    behaviors. To avoid this trap, we should always have a strong level of confidence
+    in the types of our operands. Casting, however, is entirely intentional and can
+    help create a more reliable code base. It's common, on the more public or exposed
+    sides of your interfaces, to preemptively cast to the types you desire, just in
+    case the types you've received are not correct.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于强制转换是隐式发生的，它可能是许多错误和意外行为的原因。为了避免这种陷阱，我们应该始终对操作数的类型有很强的信心。然而，强制转换是完全有意的，可以帮助创建更可靠的代码库。在接口的更公共或暴露的一侧，通常会预先将类型转换为所需的类型，以防接收到的类型不正确。
+- en: 'Observe here how we are explicitly casting both `haystack` and `needle` values
+    to the `String` type:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里观察一下，我们如何明确地将`haystack`和`needle`的值都转换为`String`类型：
+- en: '[PRE56]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: Since we're relying on the `indexOf()` method on the `haystack` string, it makes
+    sense, depending on our desired level of defensiveness, to cast the `haystack`
+    to a string so that we can ensure it has the method available. Casting `needle`
+    to a string also encodes a higher level of certainty so that we, and fellow programmers,
+    can feel at ease.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们依赖于`haystack`字符串上的`indexOf()`方法，根据我们所期望的防御级别，将`haystack`转换为字符串是有意义的，这样我们就可以确保它具有可用的方法。将`needle`转换为字符串也会编码更高级别的确定性，这样我们和其他程序员就可以感到放心。
+- en: The defensive approach of preemptively casting values to protect against undesirable
+    types is best when we're crafting reusable utilities, public-facing APIs, or any
+    interfaces that'll be consumed in a way that reduces your confidence in the types
+    you'll be receiving.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们正在创建可重用的实用程序、面向公众的API或以降低对接收到的类型的信心的方式消耗的任何接口时，预先将值转换为布尔值以防止不良类型的防御性方法是最佳的。
+- en: Dynamically typed languages such as JavaScript are seen by many as an invitation
+    to chaos. Such people may be used to the comfort and certainty provided by strictly
+    typed languages. In truth, if wielded fully and carefully, a dynamic language
+    can allow our code to be more thoughtfully composed and more resilient to the
+    changing needs of users. In the remainder of this section, we'll be discussing
+    the conversion to individual types, including the explicit casting mechanisms
+    we can utilize and the various coercive behaviors the language adopts internally.
+    We'll begin by looking at Boolean conversion.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像JavaScript这样的动态类型语言被许多人视为混乱的邀请。这些人可能习惯于严格类型的语言提供的舒适和确定性。事实上，如果充分并谨慎地使用，动态语言可以使我们的代码更加深思熟虑，并且更能适应用户不断变化的需求。在本节的其余部分，我们将讨论转换为各种类型，包括我们可以利用的显式转换机制以及语言内部采用的各种强制行为。我们将首先看一下布尔转换。
+- en: Converting into a Boolean
+  id: totrans-179
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 转换为布尔值
+- en: All values in JavaScript when converted into a Boolean will return `true` unless
+    they are one of the seven falsy primitives (`false`, `null`, `undefined`, `0n`,
+    `0`, `""`, and `NaN`), in which case they will return `false`.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JavaScript中的所有值在转换为布尔值时，除非它们是七个假值原始值（`false`、`null`、`undefined`、`0n`、`0`、`""`和`NaN`），否则都将返回`true`。
+- en: 'To cast a value to a Boolean, we can simply pass the value to the Boolean constructor,
+    invoking it as a function:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要将值转换为布尔值，我们可以简单地将该值传递给布尔构造函数，将其作为函数调用：
+- en: '[PRE57]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'The language will coerce values to Booleans when the values exist in a Boolean
+    context. Here are some examples of such contexts (each marked with `HERE`):'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当值存在于布尔上下文中时，语言会将值强制转换为布尔值。以下是一些此类上下文的示例（每个都标有`HERE`）：
+- en: '`if ( HERE ) {...}`'
+  id: totrans-184
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`if ( HERE ) {...}`'
+- en: '`do {...} while (HERE)`'
+  id: totrans-185
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`do {...} while (HERE)`'
+- en: '`while (HERE) {...}`'
+  id: totrans-186
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`while (HERE) {...}`'
+- en: '`for (...; HERE; ...) {...}`'
+  id: totrans-187
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`for (...; HERE; ...) {...}`'
+- en: '`[...].filter(function() { return HERE })`'
+  id: totrans-188
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[...].filter(function() { return HERE })`'
+- en: '`[...].some(function() { return HERE })`'
+  id: totrans-189
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[...].some(function() { return HERE })`'
+- en: This list is not exhaustive. There are quite a few other situations in which
+    our values will be coerced to Booleans. It's usually quite easy to tell. If a
+    language construct or natively-provided function or method allows you to specify
+    one of two possible pathways (that is, *if X then do THIS otherwise do THAT*),
+    then you can bet that it will be internally coercing whatever value you've expressed
+    to a Boolean.
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个列表并不详尽。我们的值将被强制转换为布尔值的情况还有很多。通常很容易判断。如果一个语言结构或本地提供的函数或方法允许您指定两种可能的路径（也就是*如果X那么做这个，否则做那个*），那么它将在内部强制转换您表达的任何值为布尔值。
+- en: 'A common idiom for casting to a Boolean, in addition to the more explicit call
+    to `Boolean()`, is the *double-bang*, that is, the unary logical `NOT` operator
+    (`!`) repeated twice:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将值转换为布尔值的常见习语，除了更明确地调用`Boolean()`之外，还有*双感叹号*，即一元逻辑`NOT`运算符（`!`）重复两次：
+- en: '[PRE58]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'Repeating the logical `NOT` operator twice will invert the Boolean representation
+    of the value twice. It''s easier to understand the semantics of the *double-bang*
+    by seeing it parenthesized:'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 两次重复逻辑`NOT`运算符将两次反转值的布尔表示。通过将其括起来，更容易理解*双感叹号*的语义：
+- en: '[PRE59]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: 'This is effectively doing four things:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这实际上做了四件事：
+- en: Casting the value to a Boolean (`Boolean(value)`).
+  id: totrans-196
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将值转换为布尔值（`Boolean(value)`）。
+- en: If the value is `true`, then make it `false`. If the value is `false`, then
+    return `true`.
+  id: totrans-197
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果值为`true`，则将其变为`false`。如果值为`false`，则返回`true`。
+- en: Cast the resulting value to a Boolean (`Boolean(value)`).
+  id: totrans-198
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将结果值转换为布尔值（`Boolean(value)`）。
+- en: If the value is `true`, then make it `false`. If the value is false, then return
+    `true`.
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果值为`true`，则将其变为`false`。如果值为`false`，则返回`true`。
+- en: 'In other words: this does one logical NOT, followed by another, resulting in
+    the Boolean representation of the original value itself.'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 换句话说：这做了一个逻辑非，然后又做了一个，结果是原始值本身的布尔表示。
+- en: 'Explicitly casting values to Booleans is especially useful when you''re creating
+    a function or method that must return a Boolean value but deals with values that
+    are not Boolean. For example, I may wish to create an `isNamePopulated` function
+    that returns `false` if the name variable is not a populated string or is `null`
+    or `undefined`:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您创建一个必须返回布尔值的函数或方法，但处理的值不是布尔值时，显式地将值转换为布尔值是特别有用的。例如，我可能希望创建一个`isNamePopulated`函数，如果名称变量不是一个填充的字符串或是`null`或`undefined`，则返回`false`：
+- en: '[PRE60]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'This will helpfully return `false` if `name` is an empty `String`, `null`,
+    or `undefined`:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果`name`是一个空的`String`、`null`或`undefined`，这将有助于返回`false`：
+- en: '[PRE61]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'It will incidentally also return `false` if `name` were any other falsy value
+    (such as 0) and it would return `true` if `name` were any truthy value:'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果`name`是任何其他假值（例如0），它也会偶然返回`false`，如果`name`是任何真值，它会返回`true`：
+- en: '[PRE62]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: This may seem entirely undesirable but, in this context, it may be okay since
+    we're already operating under the assumption that `name` is a `String`, `null`,
+    or `undefined`, and so we only care about the function's fulfillment of its contract
+    in regards to those values. How comfortable you are with this would depend entirely
+    on your specific implementation and the interface it provides.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可能看起来完全不可取，但在这种情况下，这可能是可以接受的，因为我们已经假设`name`是一个`String`、`null`或`undefined`，所以我们只关心函数在这些值方面是否履行了它的合同。您对此的舒适程度完全取决于您具体的实现和它提供的接口。
+- en: Converting into a String
+  id: totrans-208
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 转换为字符串
+- en: 'Casting a value to a `String` can be achieved by invoking the `String` constructor
+    as a regular function (that is, not as a constructor):'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过调用`String`构造函数作为常规函数（即不作为构造函数）来实现将值转换为`String`：
+- en: '[PRE63]'
+  id: totrans-210
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'Calling `String()` with your value is the most explicit and clear way of casting
+    to a `String`, although there are more succinct patterns that are sometimes used:'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用您的值调用`String()`是将值转换为`String`的最明确和清晰的方法，尽管有时会使用更简洁的模式：
+- en: '[PRE64]'
+  id: totrans-212
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: 'These two expressions may appear equivalent, and for many values, they are.
+    But, internally, they work differently. As we''ll see later, the `+` operator
+    will discern whether a given operand is a `String` by calling its internal `ToPrimitive`
+    mechanism in such a way that the operand''s `valueOf` (if it has one) will be
+    queried before its `toString` implementation. However, when using template literals
+    (such as ``${value}``), any interpolated values will be converted directly to
+    strings (without going via `ToPrimitive`). There is always the possibility that
+    a value''s `valueOf` and `toString` methods will provide different values. Take
+    a look at the following example, which shows how we can manipulate the return
+    values of the two seemingly equivalent expressions by defining our own `toString`
+    and `valueOf` implementations:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这两个表达式可能看起来是等价的，对于许多值来说确实如此。但是，在内部，它们的工作方式是不同的。正如我们将在后面看到的，`+`运算符将通过调用其内部的`ToPrimitive`机制来区分给定操作数是否为`String`，这样操作数的`valueOf`（如果有）将在其`toString`实现之前被查询。然而，当使用模板文字（例如``${value}``）时，任何插入的值都将直接转换为字符串（而不经过`ToPrimitive`）。值的`valueOf`和`toString`方法提供不同的值的可能性总是存在的。看看下面的例子，它展示了如何通过定义我们自己的`toString`和`valueOf`实现来操纵两个看似等价表达式的返回值：
+- en: '[PRE65]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: This would be a rare situation to encounter but is still worth thinking about.
+    Often, we presume that we can reliably cast *any* value to a string quite easily,
+    but that may not always be the case.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可能是一个罕见的情况，但仍然值得考虑。通常，我们假设我们可以轻松地将*任何*值可靠地转换为字符串，但情况并非总是如此。
+- en: 'Traditionally, it''s quite common to rely on a value''s `toString()` method
+    and call it directly:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 传统上，很常见依赖于值的`toString()`方法并直接调用它：
+- en: '[PRE66]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'However, if the value is `null` or `undefined`, then you''ll receive a `TypeError`:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果值为`null`或`undefined`，那么您将收到一个`TypeError`：
+- en: '[PRE67]'
+  id: totrans-219
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Additionally, the `toString` method is not guaranteed to return `string`. Observe
+    here how we can implement our own `toString` method that returns `Array`:'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，`toString`方法不能保证返回`string`。请注意，我们可以实现自己的`toString`方法，返回`Array`：
+- en: '[PRE68]'
+  id: totrans-221
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: Therefore, it is always advisable to cast to a `string` via the very explicit
+    and clear `String(...)`. Using indirect forms of coercion, side effects, or blindly
+    relying on `toString` can create unexpected results. Remember that even if you
+    have a good knowledge of these mechanisms and feel comfortable using them, it
+    doesn't mean other programmers will.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，最好总是通过非常明确和清晰的`String(...)`进行`string`转换。使用间接的强制形式、副作用或盲目依赖`toString`可能会产生意想不到的结果。请记住，即使您对这些机制有很好的了解并且感到舒适使用它们，也不意味着其他程序员会这样做。
+- en: Converting into a Number
+  id: totrans-223
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 转换为数字
+- en: 'Casting a value to a `Number` can be achieved by invoking the `Number` constructor
+    as a regular function:'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过调用`Number`构造函数作为常规函数，可以将值转换为`Number`：
+- en: '[PRE69]'
+  id: totrans-225
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'Additionally, there is the unary plus `+` operator, which does essentially
+    the same thing:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，还有一元加号`+`运算符，它基本上做了相同的事情：
+- en: '[PRE70]'
+  id: totrans-227
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'These are the only two approaches available for casting a non-`Number` to a
+    `Number` type, but JavaScript also provides other techniques for extracting numerical
+    values from strings. One such technique is `parseInt`, a globally available native
+    function that accepts both a `String` and an optional `radix` argument (which
+    defaults to *base 10*, that is, decimal). It will, naturally, coerce its first
+    argument to a `String` if it is not already a `String` and then attempt to extract
+    the first integer of the specified `radix` from the `String`. By doing this, you
+    can achieve the following outcomes:'
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是将非`Number`转换为`Number`类型的唯一两种方法，但JavaScript还提供了其他从字符串中提取数值的技术。其中一种技术是`parseInt`，它是一个全局可用的原生函数，接受一个`String`和一个可选的`radix`参数（默认为*base
+    10*，即十进制）。如果第一个参数不是`String`，它将自然地将其转换为`String`，然后尝试从`String`中提取指定`radix`的第一个整数。通过这样做，您可以实现以下结果：
+- en: '[PRE71]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: 'If the string has a prefix of `0x` or `0X`, then `parseInt` will assume the
+    `radix` to be `16` (*hexadecimal*):'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果字符串以`0x`或`0X`为前缀，则`parseInt`将假定`radix`为`16`（*十六进制*）：
+- en: '[PRE72]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'Some browsers and other environments may also treat a prefix of `0` as an indicator
+    of an octal `radix`:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些浏览器和其他环境也可能将`0`的前缀视为八进制`radix`的指示符。
+- en: '[PRE73]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: '`parseInt()` will also effectively trim the `String`, ignoring any initial
+    whitespace, and will ignore all the content of the `String` beyond the first found
+    integer:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`parseInt()`还将有效地修剪`String`，忽略任何初始空格，并忽略`String`中第一个找到的整数之后的所有内容：'
+- en: '[PRE74]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: '`parseInt` is usually frowned upon due to its obscure mechanism of extracting
+    an integer from `String` and the fact that it may dynamically pick its own `radix`
+    if none is provided. If you must use `parseInt`, use it with caution and full
+    awareness of how it operates. And always provide a `radix` argument.'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`parseInt`通常不受欢迎，因为它从`String`中提取整数的机制是晦涩的，并且如果没有提供`radix`，它可能会动态选择自己的`radix`。如果必须使用`parseInt`，请谨慎使用，并充分了解其操作方式。并始终提供`radix`参数。'
+- en: 'In a similar spirit to `parseInt` there is also a native `parseFloat` function,
+    which will attempt to extract a *float* (that is*, a floating-point number*) from
+    a given `String`:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与`parseInt`类似，还有一个原生的`parseFloat`函数，它将尝试从给定的`String`中提取*float*（即*浮点数*）：
+- en: '[PRE75]'
+  id: totrans-238
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: '`parseFloat` will trim the string and then look for the longest set of characters
+    from the *0^(th)* character that can be naturally parsed by the language in the
+    same way a numeric literal may be parsed. As such, it works fine with Strings
+    that include non-numeric characters beyond a parseable numeric sequence:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`parseFloat`将修剪字符串，然后查找从*0^(th)*字符开始的可以被语言自然解析的最长字符集，就像可以解析数字文字一样。因此，它可以很好地处理包含可解析数字序列之外的非数字字符的字符串：'
+- en: '[PRE76]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: Such a string would cause `NaN` to be evaluated if we passed it to `Number(...)`.
+    So, in some rare cases, `parseFloat` may be more useful to you.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们将这样的字符串传递给`Number(...)`，将导致`NaN`被评估。因此，在一些罕见的情况下，`parseFloat`可能对您更有用。
+- en: 'Both `parseFloat` and `parseInt` will convert their initial argument into a
+    `String` before attempting extraction. As such, if your first argument is an object,
+    you should be wary of how it may naturally coerce to a string. If your object
+    implements distinct `toString` and `valueOf` methods, then you should expect `parseInt`
+    and `parseFloat` to only use `toString` (unless `[Symbol.toPrimitive]()` is also
+    implemented). This is in contrast to `Number(...)`, which will attempt to convert
+    its argument into a `Number` directly (without first converting it into a `String`)
+    and will thus prioritize `valueOf` over `toString`:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`parseFloat`和`parseInt`都会在尝试提取之前将其初始参数转换为`String`。因此，如果您的第一个参数是对象，则应该注意它可能如何自然地强制转换为字符串。如果您的对象实现了不同的`toString`和`valueOf`方法，则应该期望`parseInt`和`parseFloat`只使用`toString`（除非还实现了`[Symbol.toPrimitive]()`）。这与`Number(...)`相反，后者将尝试直接将其参数转换为`Number`（而不是首先将其转换为`String`），因此将优先考虑`valueOf`而不是`toString`：'
+- en: '[PRE77]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: In most situations, converting any value into a `Number` should be attempted
+    via `Number` or the unary plus `+` operator. You should only use `parseFloat`
+    or `parseInt` if you have a specific need for their numerical extraction algorithms.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大多数情况下，将任何值转换为`Number`应该通过`Number`或一元加号`+`运算符尝试。只有在需要使用它们的数值提取算法时，才应该使用`parseFloat`或`parseInt`。
+- en: Converting into a primitive
+  id: totrans-245
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 转换为原始类型
+- en: 'Converting a value into its primitive representation is not something we can
+    do directly, but is done implicitly (that is, *coercively*) by the language in
+    a number of different situations, such as when you try to use the abstract equality
+    operator, `==`, to compare a `String`, `Number`, or `Symbol` to a value that is
+    an `Object`. The `Object`, in that scenario, will be converted into its primitive
+    representation via an internal procedure called `ToPrimitive`, which in summary
+    does the following:'
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将值转换为其原始表示形式并不是我们可以直接做的事情，但是在许多不同的情况下，语言会隐式地（即*强制性地）进行转换，比如当您尝试使用抽象相等运算符`==`来比较`String`，`Number`或`Symbol`与`Object`的值时。在这种情况下，`Object`将通过一个名为`ToPrimitive`的内部过程转换为其原始表示形式，该过程总结如下：
+- en: If `object[Symbol.toPrimitive]` exists, and when called it returns a primitive
+    value, use that
+  id: totrans-247
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果`object[Symbol.toPrimitive]`存在，并且在调用时返回一个原始值，则使用它
+- en: If `object.valueOf` exists, and it returns a primitive (non-`Object`), use its
+    return value
+  id: totrans-248
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果`object.valueOf`存在，并且返回一个原始值（非`Object`），则使用它的返回值
+- en: If `object.toString` exists, use its return value
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果`object.toString`存在，则使用它的返回值
+- en: 'We can see `ToPrimitive` in action if we attempt a comparison with `==`:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们尝试使用`==`进行比较，我们可以看到`ToPrimitive`的作用：
+- en: '[PRE78]'
+  id: totrans-251
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: As you can see, if an object has all three methods (`[Symbol.toPrimitive]`,
+    `valueOf`, and `toString`), then `[Symbol.toPrimitive]` will be used. If it has
+    just `valueOf` and `toString`, then `valueOf` will be used. And, of course, if
+    there is only `toString`, then it will be used.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，如果一个对象有所有三种方法（`[Symbol.toPrimitive]`，`valueOf`和`toString`），那么将使用`[Symbol.toPrimitive]`。如果只有`valueOf`和`toString`，那么将使用`valueOf`。当然，如果只有`toString`，那么将使用它。
+- en: 'There is the possibility that `*2*` and `*3*` in that procedure will swap if
+    `ToPrimitive` is called with a hint of `String` (meaning that it has been instructed
+    to attempt to coerce to a `String` instead of any primitive). An example of such
+    a case would be when you use a computed member access operator (`object[something]`),
+    where if `something` is an object, it would be converted into a `String` via `ToPrimitive`
+    with a hint of `String`, meaning `toString()` will be attempted before `valueOf()`.
+    We can see this in action here:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果使用`String`的提示调用`ToPrimitive`（这意味着它已被指示尝试强制转换为`String`而不是任何原始类型），则该过程中的`*2*`和`*3*`可能会交换。这种情况的一个例子是当您使用计算成员访问运算符（`object[something]`）时，如果`something`是一个对象，则它将通过`ToPrimitive`使用`String`的提示转换为`String`，这意味着在`valueOf()`之前将尝试`toString()`。我们可以在这里看到这一点：
+- en: '[PRE79]'
+  id: totrans-254
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: We have both `toString` and `valueOf` defined on `something`, but only `toString`
+    is used to determine which property to access on `object`.
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`something`上定义了`toString`和`valueOf`，但只使用`toString`来确定在`object`上访问哪个属性。
+- en: 'If we do not define our own methods, such as `valueOf` and `toString`, then
+    the default methods available on the `[[Prototype]]` of whatever object we''re
+    using will be used instead. The primitive representation of an array, for example,
+    is defined by `Array.prototype.toString`, which will simply join its elements
+    together with a comma as a separator:'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们没有定义自己的方法，比如`valueOf`和`toString`，那么将使用我们使用的任何对象的`[[Prototype]]`上可用的默认方法。例如，数组的原始表示形式是由`Array.prototype.toString`定义的，它将简单地使用逗号作为分隔符将其元素连接在一起：
+- en: '[PRE80]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'All types have their own natively provided `valueOf` and `toString` methods,
+    so if we wish to force the `ToPrimitive` internal procedure to use our own methods,
+    then we''ll need to override the native ones by supplying our object with its
+    own methods directly or by inheriting from the `[[Prototype]]`. For example, if
+    you wished to provide a custom array abstraction that had its own primitive conversion
+    behavior, then you could implement it by extending the `Array` constructor:'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有类型都有自己本地提供的`valueOf`和`toString`方法，因此，如果我们希望强制`ToPrimitive`内部过程使用我们自己的方法，那么我们将需要通过直接提供我们的对象的方法或从`[[Prototype]]`继承来覆盖本地方法。例如，如果您希望提供一个具有自己的原始转换行为的自定义数组抽象，那么您可以通过扩展`Array`构造函数来实现：
+- en: '[PRE81]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: 'Then, you''d be able to rely on your `CustomArray` instances being handled
+    in their own unique way by the `ToPrimitive` procedure:'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您可以依赖于`CustomArray`实例以其自己独特的方式被`ToPrimitive`过程处理：
+- en: '[PRE82]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: The coercive behaviors of all operators and native language constructs will
+    vary. Any time you pass a value to a language construct or operator that is expecting
+    a primitive (typically either a string or a number), it will likely be passed
+    through `ToPrimitive`. As such, it's useful to know about this internal procedure.
+    We'll refer to this section as well as we start to explore all of JavaScript's
+    operators in detail.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有运算符和本地语言结构的强制行为都会有所不同。每当您将一个值传递给期望原始类型（通常是字符串或数字）的语言结构或运算符时，它可能会通过`ToPrimitive`。因此，了解这个内部过程是很有用的。当我们开始详细探索JavaScript的所有运算符时，我们也会参考这一部分。
+- en: Summary
+  id: totrans-263
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we have continued to explore the innards of JavaScript, covering
+    the dynamic nature of the language. We've seen how we can go about detecting various
+    types and the nuanced intricacies of coercion and casting. These topics are difficult
+    to pick up, but they will be useful. Many anti-patterns that appear in JavaScript
+    code come down to fundamental misunderstandings of language constructs and mechanisms,
+    so having a deep understanding of these topics will aid our ambition of writing
+    clean code tremendously.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们继续探索JavaScript的内部机制，涵盖了语言的动态特性。我们已经看到了如何检测各种类型以及强制和转换的微妙复杂性。这些主题很难掌握，但它们将是有用的。JavaScript代码中出现的许多反模式都归结于对语言结构和机制的基本误解，因此对这些主题有深入的了解将极大地帮助我们写出干净的代码。
+- en: In the next chapter, we will continue our exploration of types by exploring
+    JavaScript's operators. It's likely that you will already have a very good knowledge
+    of many of these, but thanks to JavaScript's dynamic nature, their usage can sometimes
+    yield unexpected results. For this reason, the next chapter dedicates itself fully
+    to the careful exploration of the language's operators.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将继续探讨类型，通过探索JavaScript的运算符。你可能已经对其中许多内容有很好的了解，但由于JavaScript的动态特性，它们的使用有时会产生意想不到的结果。因此，下一章将全力以赴地仔细探索语言的运算符。

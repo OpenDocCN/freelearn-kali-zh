@@ -1,0 +1,719 @@
+- en: State Management with Vuex
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Vuex进行状态管理
+- en: In this chapter, we'll be looking at State Management Patterns with `Vuex`.
+    `Vuex` may not be needed for every application created, but it is extremely important
+    that you have an understanding of what it is when it becomes appropriate to use
+    it, and how to implement it.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将研究使用`Vuex`的状态管理模式。`Vuex`可能并非每个应用程序都需要，但当适合使用它时，了解它的重要性以及如何实现它是非常重要的。
+- en: 'By the end of this chapter, you will have done the following:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章结束时，您将完成以下工作：
+- en: Understood what `Vuex` is and why you should use it
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 了解了`Vuex`是什么以及为什么应该使用它
+- en: Created your first Vuex store
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建您的第一个Vuex存储
+- en: Investigated actions, mutations, getters, and modules
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 调查了actions、mutations、getters和modules
+- en: Used the Vue devtools to step through `Vuex` mutations as they happen
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Vue devtools逐步执行`Vuex`变化
+- en: What is Vuex?
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 什么是Vuex？
+- en: State management is an important part of modern-day web applications, and managing
+    this state as the application grows is a problem every project faces. `Vuex` looks
+    to help us achieve better state management by enforcing a centralized store, essentially
+    a single source of truth within our application. It follows design principles
+    similar to that of Flux and Redux and also integrates with the official Vue devtools
+    for a great development experience.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 状态管理是现代Web应用程序的重要组成部分，随着应用程序的增长，管理这些状态是每个项目都面临的问题。`Vuex`旨在通过强制使用集中式存储来帮助我们实现更好的状态管理，本质上是应用程序内的单一真相来源。它遵循类似于Flux和Redux的设计原则，并且还与官方Vue
+    devtools集成，为出色的开发体验。
+- en: So far, I've spoken about *state* and *managing state*, but you may still be
+    confused as to what this really means for your application. Let's define these
+    terms in a little more depth.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我已经谈到了*状态*和*状态管理*，但您可能仍然对这对于您的应用程序意味着什么感到困惑。让我们更深入地定义这些术语。
+- en: State Management Pattern (SMP)
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 状态管理模式（SMP）
+- en: We can define a state as the current value(s) of a variable/object within our
+    component or application. If we think about our functions as simple `INPUT ->
+    OUTPUT` machines, the values stored outside of these functions make up the current
+    condition (state) of our application.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将状态定义为组件或应用程序中变量/对象的当前值。如果我们将我们的函数视为简单的`输入->输出`机器，那么这些函数外部存储的值构成了我们应用程序的当前状态。
+- en: Note how I've made a distinction between **component level** and **application
+    level** state. The component level state can be defined as state confined to one
+    component (that is, the data function within our component). Application level
+    state is similar but is often used across multiple components or services.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意我已经区分了**组件级**和**应用级**状态。组件级状态可以定义为限定在一个组件内的状态（即我们组件内的数据函数）。应用级状态类似，但通常用于多个组件或服务之间。
+- en: As our application continues to grow, passing state across multiple components
+    gets more difficult. We saw earlier in the book that we can use an Event bus (that
+    is, a global Vue instance) to pass data around, and while this works, it's much
+    better to define our state as part of a singular centralized store. This allows
+    us to reason about the data in our application much easier, as we can start defining
+    **actions** and **mutations** that always generate a new version of state, and
+    managing state become much more systemized.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着我们的应用程序不断增长，跨多个组件传递状态变得更加困难。我们在本书的前面看到，我们可以使用事件总线（即全局Vue实例）来传递数据，虽然这样可以实现，但最好将我们的状态定义为一个统一的集中存储的一部分。这使我们能够更容易地思考应用程序中的数据，因为我们可以开始定义**actions**和**mutations**，这些总是生成状态的新版本，并且管理状态变得更加系统化。
+- en: Event bus is a simple approach to state management relying on a singular view
+    instance and may be beneficial in small Vuex projects, but in the majority of
+    cases, Vuex should be used. As our application becomes larger, clearly defining
+    our actions and intended side effects with Vuex allows us to better manage and
+    scale the project.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事件总线是一种简单的状态管理方法，依赖于单一视图实例，在小型Vuex项目中可能有益，但在大多数情况下，应该使用Vuex。随着我们的应用变得更大，使用Vuex清晰地定义我们的操作和预期的副作用，使我们能够更好地管理和扩展项目。
+- en: 'A great example of how all this fits together can be seen in the following
+    screenshot ([https://vuex.vuejs.org/en/intro.html](https://vuex.vuejs.org/en/intro.html)):'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些是如何结合在一起的一个很好的例子可以在以下截图中看到（[https://vuex.vuejs.org/en/intro.html](https://vuex.vuejs.org/en/intro.html)）：
+- en: '![](assets/cda49897-a62e-4bc1-8d9d-a3ae96d0005d.png)Vuex state flow'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vuex状态流
+- en: 'Let''s break down this example into a step-by-step process:'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们将这个例子分解成一个逐步的过程：
+- en: Initial **State** is rendered inside of a Vue component.
+  id: totrans-18
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 初始**状态**在Vue组件内呈现。
+- en: A Vue component dispatches an **Action** to get some data from a **Backend API**.
+  id: totrans-19
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Vue组件分派一个**Action**来从**后端API**获取一些数据。
+- en: This then fires a **Commit** event that is handled by a **Mutation**. This **Mutation**
+    returns a new version of the state containing the data from the **Backend API**.
+  id: totrans-20
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后触发一个**Commit**事件，由**Mutation**处理。这个**Mutation**返回一个包含来自**后端API**的数据的新版本的状态。
+- en: The process can then be seen in the Vue **Devtools**, and you have the ability
+    to "time travel" between different versions of the previous state that takes place
+    within the application.
+  id: totrans-21
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后可以在Vue **Devtools**中看到这个过程，并且您有能力在应用程序中发生的先前状态的不同版本之间“时间旅行”。
+- en: The new **State** is then rendered inside of the **Vue Components**.
+  id: totrans-22
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后在Vue组件内呈现新的**状态**。
+- en: The main component of our Vuex application(s) is, therefore, the store, our
+    single source of truth across all component(s). The store can be read but not
+    directly altered; it must have mutation functions to carry out any changes. Although
+    this pattern may seem strange at first, if you've never used a state container
+    before, this design allows us to add new features to our application in a consistent
+    manner.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们Vuex应用程序的主要组件是存储，它是我们所有组件的单一真相来源。存储可以被读取但不能直接改变；它必须有变异函数来进行任何更改。虽然这种模式一开始可能看起来很奇怪，如果您以前从未使用过状态容器，但这种设计允许我们以一致的方式向我们的应用程序添加新功能。
+- en: As Vuex is natively designed to work with Vue, the store is reactive by default.
+    This means any changes that happen from within the store can be seen in real time
+    without the need for any hacks.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于Vuex是原生设计用于与Vue一起工作，因此存储默认是响应式的。这意味着从存储内部发生的任何更改都可以实时看到，无需任何黑客技巧。
+- en: Thinking about state
+  id: totrans-25
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 思考状态
+- en: As a thought exercise, let's start off by defining the goals for our application
+    as well as any state, actions, and potential mutations. You don't have to add
+    the following code to your application just yet, so feel free to read on, and
+    we'll bring it all together at the end.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个思考练习，让我们首先定义我们应用程序的目标以及任何状态、操作和潜在的变化。您现在不必将以下代码添加到您的应用程序中，所以请随意继续阅读，我们将在最后把它全部整合在一起。
+- en: 'Let''s start off by considering the state as a collection of key/value pairs:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先将状态视为键/值对的集合：
+- en: '[PRE0]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: For our counter application, we just need one element of state—the current count.
+    This will likely have a default value of `0` and will be of type number. As this
+    is likely the only state inside of our application, you can consider this state
+    to be application level at this point.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的计数器应用程序，我们只需要一个状态元素——当前计数。这可能有一个默认值为`0`，类型为数字。因为这很可能是我们应用程序内唯一的状态，所以您可以考虑这个状态在这一点上是应用程序级别的。
+- en: Next, let's think about any action types that the user may want to take our
+    counter application.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们考虑用户可能想要在我们的计数器应用程序中执行的任何动作类型。
+- en: 'These three action types can then be dispatched to the store and thus we can
+    perform the following mutations, returning a new version of state each time:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，这三种动作类型可以被分派到store，因此我们可以执行以下变化，每次返回一个新的状态版本：
+- en: '**Increment**: Add one to the current count (0 -> 1)'
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**增加**：将当前计数加一（0 -> 1）'
+- en: '**Decrement**: Remove one from the current count (1 -> 0)'
+  id: totrans-33
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**减少**：将当前计数减一（1 -> 0）'
+- en: '**Reset**: Set the current count back to zero (n -> 0)'
+  id: totrans-34
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**重置**：将当前计数重置为零（n -> 0）'
+- en: We can imagine that at this point, our user interface will be updated with the
+    correct bound version of our count. Let's implement this and make it a reality.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以想象，此时我们的用户界面将使用正确的绑定版本更新我们的计数。让我们实现这一点，使其成为现实。
+- en: Using Vuex
+  id: totrans-36
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Vuex
+- en: Now that we've had a detailed look at what makes up an application driven by
+    `Vuex`, let's make a playground project to take advantage of these features!
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经详细了解了由`Vuex`驱动的应用程序的组成部分，让我们创建一个游乐项目，以利用这些功能！
+- en: 'Run the following in your Terminal:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在终端中运行以下命令：
+- en: '[PRE1]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Creating a new store
+  id: totrans-40
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建一个新的store
+- en: Let's start off by creating a file named `index.js` inside `src/store`. This
+    is the file we'll use to create our new store and bring together the various components.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先创建一个名为`index.js`的文件，放在`src/store`内。这是我们将用来创建新store并整合各种组件的文件。
+- en: 'We can start by importing both `Vue` and `Vuex` as well as telling Vue that
+    we''d like to use the `Vuex` plugin:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以先导入`Vue`和`Vuex`，并告诉Vue我们想要使用`Vuex`插件：
+- en: '[PRE2]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'We can then export a new `Vuex.Store` with a state object that contains all
+    of our application states. We''re exporting this so that we can import the state
+    in other components when necessary:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以导出一个包含所有应用程序状态的状态对象的新`Vuex.Store`。我们导出这个对象，以便在必要时在其他组件中导入状态：
+- en: '[PRE3]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Defining action types
+  id: totrans-46
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 定义动作类型
+- en: 'We can then create a file inside `src/store` named `mutation-types.js`, which
+    contains the various actions that the user may take within our application:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以在`src/store`内创建一个名为`mutation-types.js`的文件，其中包含用户可能在我们应用程序中执行的各种操作：
+- en: '[PRE4]'
+  id: totrans-48
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Although we don't have to explicitly define our actions like this, it's a good
+    idea to use constants where possible. This allows us to take better advantage
+    of tooling and linting techniques, as well as allowing us to infer the actions
+    within our entire application at a glance.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然我们不必像这样明确地定义我们的动作，但尽可能使用常量是一个好主意。这使我们能够更好地利用工具和linting技术，并且能够一目了然地推断整个应用程序中的动作。
+- en: Actions
+  id: totrans-50
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 动作
+- en: 'We can use these action types to commit a new action to be subsequently handled
+    by our mutations. Create a file inside `src/store` named `actions.js`:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用这些动作类型来提交一个新的动作，随后由我们的mutations处理。在`src/store`内创建一个名为`actions.js`的文件：
+- en: '[PRE5]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Inside each method, we''re destructuring the returned `store` object to only
+    take the `commit` function. If we didn''t do this, we''d have to call the `commit`
+    function like this:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在每个方法内部，我们正在解构返回的`store`对象，只取`commit`函数。如果我们不这样做，我们将不得不像这样调用`commit`函数：
+- en: '[PRE6]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: If we revisit our state diagram, we can see that after committing an action,
+    the action is picked up by the mutator.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们重新查看我们的状态图，我们可以看到在提交一个动作后，该动作会被变化器捕捉到。
+- en: Mutations
+  id: totrans-56
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 变化
+- en: 'A mutation is the only method in which the state of the store can be changed;
+    this is done by committing/dispatching an action, as seen earlier. Let''s create
+    a new file inside `src/store` named `mutations.js` and add the following:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 变化是存储状态可以改变的唯一方法；这是通过提交/分派一个动作来完成的，就像之前看到的那样。让我们在`src/store`内创建一个名为`mutations.js`的新文件，并添加以下内容：
+- en: '[PRE7]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: You'll note that once again, we're using our action types to define the method
+    names; this is possible with a new feature from ES2015+ named computed property
+    names. Now, any time that an action is committed/dispatched, the mutator will
+    know how to handle this and return a new state.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您会注意到，我们再次使用我们的动作类型来定义方法名；这是可能的，因为 ES2015+ 中有一个名为计算属性名的新功能。现在，每当一个动作被提交/分发时，改变器将知道如何处理这个动作并返回一个新的状态。
+- en: Getters
+  id: totrans-60
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取器
+- en: 'We can now commit actions and have these actions return a new version of the
+    state. The next step is to create getters so that we can return sliced parts of
+    our state across our application. Let''s create a new file inside `src/store`
+    named `getters.js` and add the following:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以提交动作，并让这些动作返回状态的新版本。下一步是创建获取器，以便我们可以在整个应用程序中返回状态的切片部分。让我们在 `src/store`
+    中创建一个名为 `getters.js` 的新文件，并添加以下内容：
+- en: '[PRE8]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'As we have a minuscule example, the use of a getter for this property isn''t
+    entirely necessary, but as we scale our application(s), we''ll need to use getters
+    to filter state. Think of these as computed properties for values in the state,
+    so if we wanted to return a modified version of this property for the view-layer,
+    we could as follows:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们有一个微不足道的例子，为这个属性使用获取器并不是完全必要的，但是当我们扩展我们的应用程序时，我们将需要使用获取器来过滤状态。把它们想象成状态中的值的计算属性，所以如果我们想要返回这个属性的修改版本给视图层，我们可以这样做：
+- en: '[PRE9]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Combining elements
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 组合元素
+- en: 'In order to pull this all together, we have to revisit our `store/index.js`
+    file and add the appropriate `state`, `actions`, `getters`, and `mutations`:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了将所有这些整合在一起，我们必须重新访问我们的 `store/index.js` 文件，并添加适当的 `state`、`actions`、`getters`
+    和 `mutations`：
+- en: '[PRE10]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'In our `App.vue`, we can create a `template` that will give us the current
+    count as well as some buttons to `increment`, `decrement`, and `reset` state:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的 `App.vue` 中，我们可以创建一个 `template`，它将给我们当前的计数以及一些按钮来 `增加`、`减少` 和 `重置` 状态：
+- en: '[PRE11]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Whenever the user clicks on a button, an action is dispatched from within one
+    of the following methods:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每当用户点击按钮时，一个动作将从以下方法中分发：
+- en: '[PRE12]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Once again, we''re using constants to make for a better development experience.
+    Next, in order to take advantage of the getter we created earlier, let''s define
+    a `computed` property:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们再次使用常量来提供更好的开发体验。接下来，为了利用我们之前创建的获取器，让我们定义一个 `computed` 属性：
+- en: '[PRE13]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'We then have an application that displays the current count and can be incremented,
+    decremented, or reset:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们就有了一个显示当前计数并可以增加、减少或重置的应用程序。
+- en: '![](assets/89a16d62-66d5-4e32-90f7-7d8d8e0c604b.png)'
+  id: totrans-75
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/89a16d62-66d5-4e32-90f7-7d8d8e0c604b.png)'
+- en: Payloads
+  id: totrans-76
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 负载
+- en: What if we wanted to let the user decide how much they wanted to increment the
+    count? Let's say we had a textbox that we could add a number and increment the
+    count by that much. If the textbox was set to `0` or was empty, we'd increment
+    the count by `1`.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们想让用户决定要增加计数的数量怎么办？假设我们有一个文本框，我们可以在其中添加一个数字，并按照这个数字增加计数。如果文本框设置为 `0` 或为空，我们将增加计数
+    `1`。
+- en: 'Our template would, therefore, look like this:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们的模板将如下所示：
+- en: '[PRE14]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'We''d place the amount value on our local component state, as this doesn''t
+    necessarily need to be part of the main Vuex Store. This is an important realization
+    to make, as it means we can still have local data/computed values if necessary.
+    We can also update our methods to pass the amount through to our actions/mutations:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将金额值放在我们的本地组件状态上，因为这不一定需要成为主要的 Vuex 存储的一部分。这是一个重要的认识，因为这意味着如果有必要，我们仍然可以拥有本地数据/计算值。我们还可以更新我们的方法，将金额传递给我们的动作/改变器：
+- en: '[PRE15]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'We then have to update `actions.js` as this now receives both the `state` object
+    and our `amount` as an argument. When we use `commit`, let''s also pass the `amount`
+    through to the mutation:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们需要更新`actions.js`，因为现在它接收`state`对象和我们的`amount`作为参数。当我们使用`commit`时，让我们也将`amount`传递给mutation：
+- en: '[PRE16]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Therefore, our mutations look similar to before, but this time we increment/decrement
+    based on the amount:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们的mutation看起来与以前类似，但这次我们根据数量增加/减少：
+- en: '[PRE17]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Ta-da! We can now increment the count based on a text value:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哒哒！现在我们可以根据文本值增加计数：
+- en: '![](assets/4061a26c-2e6b-4d07-bbd9-2a3648259a74.png)'
+  id: totrans-87
+  prefs: []
+  type: TYPE_IMG
+  zh: ！[](assets/4061a26c-2e6b-4d07-bbd9-2a3648259a74.png)
+- en: Vuex and Vue devtools
+  id: totrans-88
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vuex和Vue devtools
+- en: Now that we have a consistent way of interacting with our store via actions,
+    we can take advantage of the Vue devtools to see our state over time. If you haven't
+    installed the Vue devtools already, visit [Chapter 2](238a1f48-501e-4512-8331-1dbe6d7bc0fa.xhtml),
+    *Proper Creation of Vue Projects*, to find more information regarding this.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一种一致的通过动作与存储进行交互的方式，我们可以利用Vue devtools来查看我们的状态随时间的变化。如果您还没有安装Vue devtools，请访问[第2章](238a1f48-501e-4512-8331-1dbe6d7bc0fa.xhtml)，*Vue项目的正确创建*，以获取更多关于此的信息。
+- en: 'We''ll be using the counter application as an example, to ensure that you have
+    this project running, and right click on Inspect Element from within Chrome (or
+    your browser''s equivalent). If we head over to the Vue tab and select Vuex, we
+    can see that the counter has been loaded with the initial application state:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用计数器应用程序作为示例，以确保您已经运行了此项目，并在Chrome（或您的浏览器的等效物）中右键单击检查元素。如果我们转到Vue选项卡并选择Vuex，我们可以看到计数器已加载初始应用程序状态：
+- en: '![](assets/ca392021-f7a8-4315-aa1b-cf5cf83597a1.png)'
+  id: totrans-91
+  prefs: []
+  type: TYPE_IMG
+  zh: ！[](assets/ca392021-f7a8-4315-aa1b-cf5cf83597a1.png)
+- en: 'From the preceding screenshot, you can see the count state member as well as
+    the value of any getters. Let''s click on the increment button a few times and
+    see what happens:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从上面的截图中，您可以看到计数状态成员以及任何getter的值。让我们点击几次增量按钮，看看会发生什么：
+- en: '![](assets/156c812f-8a82-40c6-92c6-4f76d75b84d2.png)'
+  id: totrans-93
+  prefs: []
+  type: TYPE_IMG
+  zh: ！[](assets/156c812f-8a82-40c6-92c6-4f76d75b84d2.png)
+- en: 'Awesome! We can see the INCREMENT action as well as a subsequent change to
+    the state and getters, and more information about the mutation itself. Let''s
+    see how we can time travel throughout our state:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！我们可以看到INCREMENT动作以及状态和getter的后续更改，以及有关mutation本身的更多信息。让我们看看如何在我们的状态中进行时间旅行：
+- en: '![](assets/6af553b2-d7ed-4625-bfa0-e254c368672a.png)'
+  id: totrans-95
+  prefs: []
+  type: TYPE_IMG
+  zh: ！[](assets/6af553b2-d7ed-4625-bfa0-e254c368672a.png)
+- en: 'In the preceding screenshot, I''ve selected the time travel button on the first
+    action. You can then see that our state is reverted to count: 1, and this is reflected
+    in the rest of the metadata. The application is then updated to reflect this change
+    in state, so we can literally step through each action and see the results on
+    screen. Not only does this help with debugging, but any new state that we add
+    to our application will follow the same process and be visible in this manner.'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上面的截图中，我选择了第一个动作的时间旅行按钮。然后您可以看到我们的状态恢复到计数：1，这也反映在其余的元数据中。然后应用程序会更新以反映状态的更改，因此我们可以逐个步骤地查看每个动作在屏幕上的结果。这不仅有助于调试，而且我们向应用程序添加的任何新状态都将遵循相同的过程，并以这种方式可见。
+- en: 'Let''s hit the commit button on an action:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们点击一个动作的提交按钮：
+- en: '![](assets/e644b281-6abc-4363-bd02-da43536bdea9.png)'
+  id: totrans-98
+  prefs: []
+  type: TYPE_IMG
+  zh: ！[](assets/e644b281-6abc-4363-bd02-da43536bdea9.png)
+- en: As you can see, this merges all of our actions up to when we hit commit to then
+    be part of our Base State. As a result, the count property is then equal to the
+    action you committed to Base State.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，这将合并我们点击提交时的所有动作，然后成为我们的基本状态的一部分。因此，计数属性等于您提交到基本状态的动作。
+- en: Modules and scalability
+  id: totrans-100
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 模块和可扩展性
+- en: At the moment, we have everything in root state. As our application gets larger,
+    it would be a good idea to take advantage of modules so that we can appropriately
+    split our container into different chunks. Let's turn our counter state into its
+    own module by creating a new folder inside `store` named `modules/count`.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，我们的一切都在根状态下。随着我们的应用程序变得更大，利用模块的好处将是一个不错的主意，这样我们就可以适当地将容器分割成不同的部分。让我们通过在`store`文件夹内创建一个名为`modules/count`的新文件夹，将我们的计数器状态转换为自己的模块。
+- en: 'We can then move the `actions.js`, `getters.js`, `mutations.js`, and `mutation-types.js`
+    files into the count module folder. After doing so, we can create an `index.js`
+    file inside the folder that exports the `state`, `actions`, `getters`, and `mutations`
+    for this module only:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以将`actions.js`、`getters.js`、`mutations.js`和`mutation-types.js`文件移动到计数模块文件夹中。这样做后，我们可以在文件夹内创建一个`index.js`文件，该文件仅导出此模块的`state`、`actions`、`getters`和`mutations`：
+- en: '[PRE18]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'I''ve also elected to export the mutation types from the `index.js` file, so
+    we can use these within our components on a per-module basis by importing from
+    `store/modules/count` only. As we''re importing more than one thing within this
+    file, I gave the store the name of `countStore`. Let''s define the new module
+    inside `store/index.js`:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还选择从`index.js`文件中导出mutation类型，这样我们就可以在组件内按模块使用这些类型，只需从`store/modules/count`导入。由于在此文件中导入了多个内容，我给store命名为`countStore`。让我们在`store/index.js`中定义新模块：
+- en: '[PRE19]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Our `App.vue` then changes slightly; instead of referencing the types object,
+    we reference the types specifically from this module:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的`App.vue`稍作修改；我们不再引用types对象，而是专门从这个模块引用types：
+- en: '[PRE20]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: We can then add more modules to our application by having the same files/structure
+    as our count example. This allows us to scale as our application continues to
+    grow.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以通过使用与我们的计数示例相同的文件/结构来向我们的应用程序添加更多的模块。这使我们能够在应用程序不断增长时进行扩展。
+- en: Summary
+  id: totrans-109
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, we took advantage of the `Vuex` library for consistent state
+    management within Vue. We defined what state is as well as component state and
+    application-level state. We learned how to appropriately split our actions, getters,
+    mutations, and store between different files for scalability as well as how to
+    call these items within our components.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们利用了`Vuex`库来实现Vue中的一致状态管理。我们定义了什么是状态，以及组件状态和应用程序级状态。我们学会了如何适当地将我们的actions、getters、mutations和store分割成不同的文件以实现可扩展性，以及如何在组件内调用这些项目。
+- en: We also looked at using the Vue devtools with `Vuex` to step through mutations
+    as they happened within our application. This gives us the ability to better debug/reason
+    about the decisions we make when developing applications.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还研究了如何使用`Vuex`与Vue devtools来逐步执行应用程序中发生的mutations。这使我们能够更好地调试/推理我们在开发应用程序时所做的决定。
+- en: In the next chapter, we'll look at testing our Vue applications and how to let
+    our tests drive our component design.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习如何测试我们的Vue应用程序以及如何让我们的测试驱动我们的组件设计。

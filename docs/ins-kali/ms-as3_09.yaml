@@ -1,0 +1,854 @@
+- en: Packaging and Distribution
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 打包和分发
+- en: Compiling and building APKs is something we do many times during the course
+    of an application's development, and other than including various dependencies,
+    we have taken our build automation system, Gradle, pretty much for granted. Despite
+    this, it will not have escaped the reader's attention that what Gradle actually
+    does is really quite sophisticated and complex.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在应用程序开发过程中，编译和构建APK文件是我们做的很多次的事情，除了包含各种依赖项之外，我们基本上认为我们的构建自动化系统Gradle是理所当然的。尽管如此，读者不会忽视Gradle实际上所做的事情是非常复杂和复杂的。
+- en: One of the reasons that we can take Gradle for granted is the way that it configures
+    each build using a process known as **convention over configuration**. This ensures
+    that, in nearly all cases, Gradle selects the most sensible configuration options
+    for each project. It is when we override these settings that Gradle becomes interesting
+    and useful. For example, we can use it to build mobile and tablet versions of
+    an app from the same Studio project.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以认为Gradle是理所当然的原因之一是它使用一种称为**约定优于配置**的过程来配置每个构建。这确保在几乎所有情况下，Gradle会为每个项目选择最明智的配置选项。只有当我们覆盖这些设置时，Gradle才变得有趣和有用。例如，我们可以使用它从同一个Studio项目构建应用程序的移动和平板版本。
+- en: Producing a compiled APK file is by no means the final step in our journey,
+    as there is still plenty of testing and analysis that we can do. These processes
+    are assisted greatly by the presence of Android Studio's APK Analyzer.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 生成编译后的APK文件绝不是我们旅程的最后一步，因为我们仍然可以进行大量的测试和分析。Android Studio的APK分析器极大地帮助了这些过程。
+- en: Once our testing is complete and we are satisfied with our product, we will
+    enter the final stage of the journey by generating signed APK files, ready for
+    release. This step is not an involved process and Android Studio helps the developer
+    every step of the way.
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们的测试完成并且对我们的产品满意，我们将通过生成签名的APK文件进入旅程的最后阶段，准备发布。这一步并不是一个复杂的过程，Android Studio会在每一步中帮助开发人员。
+- en: 'In this chapter, you will learn about:'
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您将了解以下内容：
+- en: Understanding the build process
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 了解构建过程
+- en: Creating product flavors
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建产品风味
+- en: Importing Gradle builds from Eclipse
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从Eclipse导入Gradle构建
+- en: Analyzing APK files
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 分析APK文件
+- en: Cleaning projects
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 清理项目
+- en: Generating a signed APK
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成签名的APK
+- en: Enrolling for Google Play app signing
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 注册Google Play应用签名
+- en: Configuring automatic signing
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 配置自动签名
+- en: Gradle build configurations
+  id: totrans-14
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Gradle构建配置
+- en: 'As the reader will have seen, Gradle scripts generally have a single project
+    (or root) file and one or more module level files:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如读者所见，Gradle脚本通常有一个项目（或根）文件和一个或多个模块级别文件：
+- en: '![](img/ad24eb58-9eea-491f-b91c-c805c56bdaa7.png)'
+  id: totrans-16
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/ad24eb58-9eea-491f-b91c-c805c56bdaa7.png)'
+- en: Gradle scripts
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Gradle脚本
+- en: We are told not to edit this file in comments in the root script; unless we
+    have configuration options common to all modules, this is best left as-is.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们被告知不要在根脚本的注释中编辑此文件；除非我们有所有模块通用的配置选项，否则最好保持不变。
+- en: Module-level scripts are of far more interest to us and the following is a breakdown
+    of a typical one.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模块级别的脚本对我们来说更有趣，以下是典型脚本的分解。
+- en: 'The first line simply declares the use of the Gradle plugin:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一行只是声明了使用Gradle插件：
+- en: '[PRE0]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Next, Android-targeted API level and build tools versions are declared:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，声明了面向Android的API级别和构建工具版本：
+- en: '[PRE1]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'The default configuration settings define elements of the Android manifest
+    file, and editing them here will be automatically reflected in the manifest after
+    the next build or sync, as follows:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认配置设置定义了Android清单文件的元素，并在此处编辑它们将在下一次构建或同步后自动反映在清单中，如下所示：
+- en: '[PRE2]'
+  id: totrans-25
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: The build types section configures **ProGuard**, which is a tool used to minimize
+    and obfuscate our code.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 构建类型部分配置了**ProGuard**，这是一个用于最小化和混淆我们代码的工具。
+- en: The difference Proguard makes to the size of your APK can often be minimal,
+    but the effects of obfuscation cannot be underestimated and ProGuard can make
+    it as good as impossible for our APKs to be reverse-engineered.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Proguard对APK大小的影响通常可以忽略不计，但混淆的影响不容小觑，ProGuard可以使我们的APK几乎不可能被反向工程。
+- en: 'The `buildTypes` section contains instructions on whether and how to run ProGuard
+    on the APK file when a release version of the application is built:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`buildTypes`部分包含了在构建应用程序的发布版本时是否以及如何在APK文件上运行ProGuard的说明：'
+- en: '[PRE3]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: ProGuard rules can be edited from the `proguard.rules.pro` file, which overrides
+    the default rules and can be found in `sdk\tools\proguard`.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以从`proguard.rules.pro`文件中编辑ProGuard规则，该文件覆盖默认规则，可以在`sdk\tools\proguard`中找到。
+- en: Note that `minifyEnabled` is set by default to `false`. This is an extremely
+    useful set of functions that strips our code of redundancies, often resulting
+    in far smaller APK files, and should generally be set to `true`.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，默认情况下`minifyEnabled`设置为`false`。这是一组非常有用的函数，可以剥离我们的代码中的冗余部分，通常会导致更小的APK文件，通常应该设置为`true`。
+- en: It is also a good idea to add shrinkResources `true`, which performs a similar
+    action on our resource files.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另外，添加`shrinkResources true`也是一个好主意，它对我们的资源文件执行类似的操作。
+- en: 'Finally, we will focus on the dependencies section, with which we are already
+    quite familiar. Here, any `.jar` files in the module''s `lib` directory are included:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们将专注于依赖项部分，我们已经非常熟悉。在这里，模块的`lib`目录中的任何`.jar`文件都包括在内：
+- en: '[PRE4]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Command-line options
+  id: totrans-35
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 命令行选项
+- en: Many readers who have migrated from other IDEs may well have run Gradle scripts
+    from the command line, and this, of course, is possible with Android Studio, although
+    Studio incorporates this nicely within the workspace so that it is not necessary
+    to exit the IDE to execute commands this way.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多从其他IDE迁移的读者可能已经从命令行运行Gradle脚本，当然，在Android Studio中也可以这样做，尽管Studio将其很好地整合到工作区中，因此不需要退出IDE以这种方式执行命令。
+- en: There are two handy tool windows to assist us in this task, the Gradle tool
+    window and the Gradle console,and both are available from the View | Tool Windows
+    menu.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有两个方便的工具窗口可以帮助我们完成这项任务，Gradle工具窗口和Gradle控制台，两者都可以从“查看|工具窗口”菜单中找到。
+- en: '![](img/f5177500-9e53-4d8c-9dad-cec003e87ea2.png)'
+  id: totrans-38
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f5177500-9e53-4d8c-9dad-cec003e87ea2.png)'
+- en: The Gradle tool window
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Gradle工具窗口
+- en: The breakdown in the preceding screenshot provides a nice overview of the role
+    Gradle plays, but to really get to grips with it we will need to work through
+    a simple example, and the following section demonstrates how to configure Gradle
+    to produce different product flavors from a single project.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面截图中的分解提供了Gradle扮演的角色的概览，但要真正掌握它，我们需要通过一个简单的示例来工作，下一节将演示如何配置Gradle以从单个项目中生成不同的产品口味。
+- en: Product flavors
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 产品口味
+- en: 'Generally speaking, there are two reasons for wanting to create customized
+    versions, or flavors, of our applications:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一般来说，想要创建自定义版本或口味的应用有两个原因：
+- en: When we are creating versions for different form factors, such as a mobile phone
+    and a tablet
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当我们为不同的形态版本创建版本，比如手机和平板电脑时
+- en: When we want two different versions of our app to be available in the Play store,
+    such as paid and free versions
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当我们希望在Play商店中有两个不同版本的应用可用时，比如付费版和免费版
+- en: 'Both of these situations can be catered for by configuring our build files,
+    and this can be done for both `debug` and `release` APKs. New flavors and build
+    types can both be configured using their respective dialogs, which can be found
+    under the Build menu:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这两种情况都可以通过配置我们的构建文件来解决，这可以针对`debug`和`release` APKs都可以做。新的口味和构建类型都可以使用它们各自的对话框进行配置，这些对话框可以在Build菜单下找到：
+- en: '![](img/a41167aa-8237-4da8-8838-8a7968ea8d07.png)'
+  id: totrans-46
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a41167aa-8237-4da8-8838-8a7968ea8d07.png)'
+- en: Build options
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 构建选项
+- en: 'As always, it is best to see how these processes operate at first hand. In
+    the following example, we will create two product flavors to represent a free
+    and a paid version of an app. The steps to be followed are:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一如既往，最好亲自看看这些过程是如何运作的。在下面的示例中，我们将创建两个产品口味，代表应用的免费版和付费版。要遵循的步骤如下：
+- en: Start a new project in Android Studio with just a single module.
+  id: totrans-49
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Android Studio中启动一个只有一个模块的新项目。
+- en: Create two New | Directories in your `values` folder, called `paid` and `free`.
+  id: totrans-50
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在您的`values`文件夹中创建两个新目录，分别命名为`paid`和`free`。
+- en: These will not be visible in the Explorer under the Android label, but can be
+    found by switching to the Project view.
+  id: totrans-51
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 这些不会在Android标签下的资源管理器中可见，但可以通过切换到项目视图来找到。
+- en: A shortcut to this can be achieved by selecting `values` in the navigation toolbar
+    and selecting `paid` or `free` from the drop-down. This will automatically open
+    the project view and expand it to display our new folders.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过在导航工具栏中选择`values`并从下拉菜单中选择`paid`或`free`，可以快速实现这一快捷方式。这将自动打开项目视图并展开以显示我们的新文件夹。
+- en: 'Create two appropriate `strings.xml` files along these lines:'
+  id: totrans-53
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 按照以下方式创建两个合适的`strings.xml`文件：
+- en: '[PRE5]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Open the `build.gradle` file, and complete it like so:'
+  id: totrans-55
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开`build.gradle`文件，并像这样完成它：
+- en: '[PRE6]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Now use the Build Variants tool window to select which of the two flavors is
+    subsequently built.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在使用Build Variants工具窗口来选择随后构建的两种口味中的哪一种。
+- en: 'Many reader will have migrated from the Eclipse IDE to Android Studio. Importing
+    the Eclipse project is relatively straightforward, but importing Gradle build
+    files is less so. This can be achieved with the following `build.gradle` root
+    file:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多读者可能已经从Eclipse IDE迁移到Android Studio。导入Eclipse项目相对简单，但导入Gradle构建文件则不那么简单。可以通过以下`build.gradle`根文件实现：
+- en: '[PRE7]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Being able to create distinct versions of an APK without having to create separate
+    projects is a great time-saver, and Gradle makes this remarkably simple. Nevertheless,
+    for most of the time, we can just let Gradle get on with its work.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 能够创建不同版本的APK而无需创建单独的项目是一个很大的时间节省，Gradle使这变得非常简单。然而，大多数情况下，我们可以让Gradle自行处理其工作。
+- en: It would be tempting to think that the testing process will be complete with
+    the production of an APK. However, Android Studio provides a marvelous tool that
+    allows us to analyze completed APKs.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 诱人的想法是测试过程将随着APK的生成而完成。然而，Android Studio提供了一个神奇的工具，允许我们分析已完成的APK。
+- en: An APK analysis
+  id: totrans-62
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: APK分析
+- en: APK Analyzer is one of the handiest features of Android Studio; as its name
+    suggests, it allows us to analyze APK files themselves, even performing a certain
+    amount of reverse engineering by extracting resources and XML and allowing us
+    to compare different versions.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: APK分析器是Android Studio最方便的功能之一；正如其名称所示，它允许我们分析APK文件本身，甚至通过提取资源和XML执行一定程度的逆向工程，并允许我们比较不同版本。
+- en: The APK Analyzer can also be found in the Build menu, under Analyze APK....
+    Every time we run a project on a device or emulator, a debug APK is generated.
+    This can be found in your project directories under; `\SomeProject\App\build\outputs\apk\debug`.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: APK分析器也可以在Build菜单下的Analyze APK...中找到。每次在设备或模拟器上运行项目时，都会生成一个调试APK。这可以在项目目录下找到；`\SomeProject\App\build\outputs\apk\debug`。
+- en: 'The Analyzer displays its output, as follows:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 分析器显示其输出如下：
+- en: '![](img/ebd85fd2-29a0-43b2-bbd8-54962bea71ea.png)'
+  id: totrans-66
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/ebd85fd2-29a0-43b2-bbd8-54962bea71ea.png)'
+- en: APK analysis
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: APK分析
+- en: The Analyzer's output contains a wealth of information, beginning with its size
+    and its compressed Play store size. It is possible to see at a glance which resources
+    take up the most room and rectify this where possible, for example by using vectors
+    instead of bitmaps.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 分析器的输出包含大量信息，从其大小和压缩的Play商店大小开始。可以一目了然地看到哪些资源占用了最多的空间，并在可能的情况下进行修正，例如使用矢量图而不是位图。
+- en: The `classes.dex` file allows us to explore the memory consumed by our classes
+    and imported libraries.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`classes.dex`文件允许我们探索我们的类和导入库所消耗的内存。'
+- en: '![](img/5a049f36-fdaf-4a1a-af39-148408a5eca1.png)'
+  id: totrans-70
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/5a049f36-fdaf-4a1a-af39-148408a5eca1.png)'
+- en: APK class analysis.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: APK类分析。
+- en: One of the most useful features of the Analyzer is the ability to compare two
+    APKs side by side, which can be achieved using the button in the top-right corner
+    of the window.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 分析器最有用的功能之一是能够比较两个APK并排放在一起，可以使用窗口右上角的按钮实现这一点。
+- en: If the APK Analyzer is not enough, then there is the Profile or Debug APK...
+    entry in the main File menu. This opens up a new project and disassembles the
+    APK so that it can be fully explored and even debugged.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果APK分析器不够用，那么主文件菜单中还有Profile或Debug APK...的选项。这将打开一个新项目并解开APK，以便完全探索甚至调试。
+- en: Besides MakeBuild and Analyze, the Build menu has other useful entries, for
+    example, the Clean Project item removes build artifacts from the build directory
+    if we want to share them with colleagues and collaborators across the internet.
+    For a deeper clean, open the command prompt in your project folder using your
+    native file explorer or select Terminal from the File | Tools Window menu.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了MakeBuild和Analyze之外，构建菜单还有其他有用的条目，例如，Clean Project项目可以从构建目录中删除构建工件，如果我们想要与同事和合作者在互联网上共享。要进行更彻底的清理，可以使用本机文件浏览器在项目文件夹中打开命令提示符，或者从文件|工具窗口菜单中选择终端。
+- en: '![](img/1d4b4bf5-230e-4394-89d6-8db4bebe41c6.png)'
+  id: totrans-75
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/1d4b4bf5-230e-4394-89d6-8db4bebe41c6.png)'
+- en: 'The following command will clean your project:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下命令将清理您的项目：
+- en: '[PRE8]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: The amount of space this operation can save is often very impressive. Of course,
+    the next time you build the project, it will take as long as it did the first
+    time.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个操作可以节省的空间通常是非常令人印象深刻的。当然，下次构建项目时，它将花费与第一次一样长的时间。
+- en: For the vast majority of the development cycle, we are only concerned with debug
+    versions of our APKs, but sooner or later we will need to produce an APK fit for
+    release.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开发周期的绝大部分时间里，我们只关心APK的调试版本，但迟早我们需要制作一个适合发布的APK。
+- en: Publishing applications
+  id: totrans-80
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 发布应用程序
+- en: Developing a mobile application, even a relatively simple one, is a lengthy
+    process, and once we have tested all our code, ironed out any bumps, and polished
+    our UI, we want to be able to get our product on the shelf as quickly and simply
+    as possible. Android Studio has all these processes incorporated into the workspace.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 开发移动应用，即使是相对简单的应用，也是一个漫长的过程，一旦我们测试了所有的代码，消除了任何问题，并完善了我们的用户界面，我们希望能够尽快简单地将我们的产品上架。Android
+    Studio将所有这些过程都纳入了工作空间。
+- en: As the reader will know, the first step toward publication is generating a signed
+    APK.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如读者所知，向发布迈出的第一步是生成已签名的APK。
+- en: Generating a signed APK
+  id: totrans-83
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 生成已签名的APK
+- en: All Android applications require a digital certificate before they can be installed
+    on a user's device. These certificates follow the usual pattern of including a
+    public key with every download that corresponds with our own private key. This
+    process guarantees authenticity for the user and prevents anyone else producing
+    updates of other developers' work.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有Android应用程序在安装到用户设备上之前都需要数字证书。这些证书遵循通常的模式，即在每次下载时都包含一个与我们自己的私钥对应的公钥。这个过程保证了用户的真实性，并防止其他人制作其他开发者作品的更新。
+- en: During development, the IDE automatically generates a debug certificate for
+    us, for use only during development. These certificates can be found in: `\SomeApp\build\outputs\apk\debug`
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开发过程中，IDE会自动生成一个调试证书供我们使用，仅在开发过程中使用。这些证书可以在：`\SomeApp\build\outputs\apk\debug`中找到。
+- en: 'There are two ways to create these identity certificates: we can manage our
+    own keystore, or we can use Google Play App Signing. We will take a look at both
+    of these techniques now, beginning with self-management.'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有两种方法可以创建这些身份证书：我们可以管理自己的密钥库，或者我们可以使用Google Play应用签名。我们现在将看看这两种技术，首先是自我管理。
+- en: Managing keystores
+  id: totrans-87
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 管理密钥库
+- en: 'Whether we are managing our own keystore or Google does it for us, the process
+    begins in the same way, as the following steps demonstrate:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论是我们自己管理密钥库还是由Google代表我们管理，流程都是一样的，如下面的步骤所示：
+- en: Click on the Generate Signed APK... entry in the Build menu.
+  id: totrans-89
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击构建菜单中的Generate Signed APK...条目。
+- en: Complete the following dialog, using very strong passwords.
+  id: totrans-90
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成以下对话，使用非常强大的密码。
+- en: '![](img/48d19670-92ad-4dc8-93ff-2bc41ac1add9.png)'
+  id: totrans-91
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/48d19670-92ad-4dc8-93ff-2bc41ac1add9.png)'
+- en: The Generate Signed APK dialog
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 生成已签名的APK对话框
+- en: 'If you are creating a new keystore, you will be presented with the New Key
+    Store dialog, which must be completed along these lines:'
+  id: totrans-93
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您正在创建新的密钥库，将会出现新密钥库对话框，必须按照以下方式完成：
+- en: '![](img/cfc6f841-3586-4a48-9908-582af45e26d4.png)'
+  id: totrans-94
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/cfc6f841-3586-4a48-9908-582af45e26d4.png)'
+- en: The New Key Store dialog
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 新密钥库对话框
+- en: The final dialog allows you to select Build Type and APK Destination Folder,
+    as well as any flavors you may have created. Ensure that you select the V2 (Full
+    APK Signature) box.
+  id: totrans-96
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最终对话框允许您选择构建类型和APK目标文件夹，以及您可能创建的任何版本。确保选择V2（完整APK签名）框。
+- en: '![](img/a32fca8c-4899-4a10-91c8-93d8da0c3be3.png)'
+  id: totrans-97
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a32fca8c-4899-4a10-91c8-93d8da0c3be3.png)'
+- en: Final APK configurations
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终APK配置
+- en: The final APK(s) will be stored in, `...\app\release\app-release.apk`.
+  id: totrans-99
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最终的APK将存储在`...\app\release\app-release.apk`中。
+- en: The selection of the V2 signature version is an important inclusion. Introduced
+    in API level 24 (Android 7.0), the Signature Theme v2 provides faster installation
+    and protects against hackers reverse-engineering our APKs. Unfortunately, it doesn't
+    work for all builds but is well worth applying when it does.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: V2签名版本的选择是一个重要的包含。在API级别24（Android 7.0）中引入的Signature Theme v2提供更快的安装速度，并保护免受黑客逆向工程我们的APK的影响。不幸的是，它并不适用于所有版本，但是在适用时非常值得应用。
+- en: Managing our own key stores is how it has generally always been done, and provided
+    we keep our keys secure, it is a perfectly acceptable way to manage our certificates.
+    Nevertheless, App signing using Google Play offers some distinct advantages and
+    is well worth considering.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 管理我们自己的密钥库通常是一直以来的做法，只要我们保持密钥的安全，这是一种完全可以接受的管理证书的方式。然而，使用Google Play进行应用签名提供了一些明显的优势，是值得考虑的。
+- en: Google Play app signing
+  id: totrans-102
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Google Play应用签名
+- en: The main advantage of using Google Play to sign our apps is that Google maintain
+    key information and if, by some misfortune, we lose ours, this can be retrieved.
+    One very important thing to note about this system is that, once adopted, there
+    is **no opt-out option**. This is because this would itself represent a possible
+    security breach.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Google Play签署我们的应用程序的主要优势是，Google会维护关键信息，如果不幸丢失，可以检索。关于这个系统非常重要的一点是，一旦采用，就**没有退出选项**。这是因为这本身可能代表着可能的安全漏洞。
+- en: To enable Google Play app signing, prepare your signed APK as described in the
+    preceding steps, and then open the Google developer console. Google Play app signing
+    is available from the Release management menu.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要启用Google Play应用签名，请按照前面的步骤准备您的签名APK，然后打开Google开发者控制台。从“发布管理”菜单中可以找到Google Play应用签名。
+- en: '![](img/b02ce0eb-3fc3-441f-9693-c1677224d947.png)'
+  id: totrans-105
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/b02ce0eb-3fc3-441f-9693-c1677224d947.png)'
+- en: Google Play App Signing
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Google Play应用签名
+- en: This will then open the Terms of Service dialog.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后将打开服务条款对话框。
+- en: '![](img/8b567758-f2e9-4433-abc8-2c4d3244b5b3.png)'
+  id: totrans-108
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/8b567758-f2e9-4433-abc8-2c4d3244b5b3.png)'
+- en: Google Play App Signing Terms of Service
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Google Play应用签名服务条款
+- en: 'To enroll with Google Play App Signing Terms of Service, you will need to follow
+    the steps outlined here:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要注册Google Play应用签名服务条款，您需要按照这里概述的步骤进行操作：
+- en: First, encrypt your signing key, using the **Play Encrypt Private Key** (PEPK)
+    tool, which can be downloaded from the console in the left-hand navigation bar.
+  id: totrans-111
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，使用**Play加密私钥**（PEPK）工具对您的签名密钥进行加密，该工具可以从左侧导航栏中的控制台下载。
+- en: Create a second upload key and register it with Google.
+  id: totrans-112
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建第二个上传密钥并将其注册到Google。
+- en: Use this key to sign your app for publication and upload it to Google Play.
+  id: totrans-113
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用此密钥对应用进行签名以发布并上传到Google Play。
+- en: Google then uses this to authenticate you and then sign the app with the encrypted
+    key.
+  id: totrans-114
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，Google使用此密钥对您进行身份验证，然后使用加密密钥对应用进行签名。
+- en: More information on the process can be found by clicking on LEARN MORE on the
+    Terms of Service dialog.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关该过程的更多信息，请单击服务条款对话框上的“了解更多”。
+- en: Providing that we are happy to commit ourselves, enrolling with the app signing
+    service provides a more secure system than the traditional approach. However,
+    when we decide to sign our apps, it is always good to have more control over the
+    process, for example by configuring Gradle.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只要我们愿意承诺自己，注册应用签名服务提供了比传统方法更安全的系统。然而，当我们决定签署我们的应用程序时，始终可以通过配置Gradle等方式更好地控制该过程。
+- en: Automatic signing
+  id: totrans-117
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 自动签名
+- en: Signing configurations are created automatically for us each time we sign an
+    app or flavor. Fortunately, these configurations can be custom built to suit our
+    specific purposes. For example, one might want to automatically sign an app on
+    each build. Android Studio makes this possible through Project Structure..., which
+    can be found in the main File menu.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每次我们签署应用程序或变体时，都会为我们自动创建签名配置。幸运的是，这些配置可以根据我们的具体目的进行定制。例如，我们可能希望在每次构建时自动签署应用程序。Android
+    Studio通过“项目结构...”使这成为可能，该选项可以在主文件菜单中找到。
+- en: 'The following exercise demonstrates how to automatically sign a release version
+    of an application:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下练习演示了如何自动签署应用程序的发布版本：
+- en: Open the Project Structure dialog, as explained previously or by selecting Open
+    Module Settings from your module's drop-down menu in the Project Explorer, or
+    by selecting the module and pressing *F4*.
+  id: totrans-120
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开项目结构对话框，如前所述，或者通过在项目资源管理器中选择模块的下拉菜单中的“打开模块设置”，或者选择模块并按*F4*。
+- en: Select the Signing tab, click on the + icon, and fill in the appropriate fields.
+  id: totrans-121
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择“签名”选项卡，单击“+”图标，并填写相应字段。
+- en: '![](img/ec8ec989-9da2-4158-a044-bdd17be9fe52.png)'
+  id: totrans-122
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/ec8ec989-9da2-4158-a044-bdd17be9fe52.png)'
+- en: A signing configuration
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 签名配置
+- en: Next, open the Build Types tab and select the debug or release type, enter the
+    Signing Config field, as shown in the following screenshot, and any other settings,
+    such as enabling Minify.
+  id: totrans-124
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，打开“构建类型”选项卡，选择调试或发布类型，输入“签名配置”字段，如下图所示，并进行其他设置，例如启用缩小。
+- en: '![](img/8686cf0b-0bf0-4982-aea9-6c4565c58794.png)'
+  id: totrans-125
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/8686cf0b-0bf0-4982-aea9-6c4565c58794.png)'
+- en: Selecting Build Type and Signing Config
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 选择构建类型和签名配置
+- en: There are a few other preparations to make before publication. A few more tests
+    must be performed on the release APK, and various promotional resources and materials
+    need to be gathered, but from an Android Studio point of view, the signed, released
+    APK is pretty much the finished product.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在发布之前还有一些其他准备工作要做。必须对发布APK进行更多测试，并收集各种促销资源和材料，但从Android Studio的角度来看，签名的发布APK几乎就是最终产品了。
+- en: Summary
+  id: totrans-128
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: The production of a signed APK is the final step in what will have been a long
+    journey. Beginning with nothing more than an idea, each application will have
+    grown through countless cycles of design, development, and testing before finally
+    being placed on a shelf in a store such as Android Play Store.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 签名APK的生成是一个漫长的过程的最后一步。每个应用程序从一个想法开始，经历了无数次的设计、开发和测试，最终被放置在Android Play Store等商店的货架上。
+- en: Android Studio has been designed to assist developers on every step of this
+    journey, and one of the reasons that Google has put so much into the product;
+    is because, by investing in the developers of the future and making it easier
+    for them to put ideas into practice, the Android platform can only become better.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Android Studio旨在在这一过程的每一步上帮助开发人员，而Google投入如此多的产品的原因之一是，通过投资未来的开发人员并使他们更容易将想法付诸实践，Android平台只会变得更好。
+- en: In this book we have explored the only IDE created specifically for Android
+    development, and we have seen how this specialized approach provides many benefits
+    to the developer. The visual and intuitive nature of the Layout Editor and the
+    way that Constraint Layouts can be designed with little more than a click or two
+    of the mouse, will leave most of us feeling quite sorry for those developers still
+    using other IDEs.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这本书中，我们探讨了专门为Android开发创建的唯一集成开发环境，并且我们看到了这种专业化的方法为开发者带来了许多好处。布局编辑器的视觉直观特性以及约束布局可以只需点击鼠标一两下就设计完成，这将让大多数开发者对仍在使用其他集成开发环境的人感到遗憾。
+- en: Coding too becomes far less of a chore with Android Studio's simple code completion
+    and refactoring features. Add this to the incorporation of Kotlin as an official
+    development language, and choosing Android Studio will seem to many mobile developers
+    to be the only choice. Even compiling and testing apps can be quicker and easier
+    with Android Studio and of course developing for new and exciting form factors,
+    such as wearables and IoT, is made easier with the tools provided by the IDE.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Android Studio中，编码也变得不那么繁琐，它具有简单的代码补全和重构功能。再加上Kotlin作为官方开发语言的整合，选择Android Studio对许多移动开发者来说似乎是唯一的选择。甚至使用Android
+    Studio编译和测试应用程序也可以更快更容易，当然，使用该集成开发环境为可穿戴设备和物联网等新颖形态进行开发也变得更加容易。
+- en: Throughout this book we have explored the advantages of choosing Android Studio
+    3\. The IDE is of course a work in progress and no doubt, as a project that Google
+    appears to be seriously invested in, it will continue to grow and improve for
+    many years to come. In many ways Android Studio 3 is only the beginning and it
+    is hoped that this book will help the reader master one small step of that journey.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在整本书中，我们探讨了选择Android Studio 3的优势。这个集成开发环境当然还在不断发展，毫无疑问，作为谷歌认真投入的项目，它将在未来多年持续增长和改进。在许多方面，Android
+    Studio 3只是一个开始，希望这本书能帮助读者掌握这段旅程中的一小步。

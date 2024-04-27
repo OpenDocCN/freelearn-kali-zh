@@ -1,0 +1,902 @@
+- en: As a Service Integration
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 作为服务集成
+- en: This chapter discusses various types of **Anything as a Service** (**XaaS**),
+    which includes **Infrastructure as a Service** (**IaaS**), **Platform as a Service**
+    (**PaaS**), **Integration Platform as a Service** (**iPaaS**), and **Database
+    as a service** (**DBaaS**), and everything you need to factor in when exposing
+    infrastructure or platform elements as services. In cloud-native mode, your application
+    might be integrating with social media APIs or PaaS APIs, or you could be hosting
+    services that will be used by other applications. This chapter covers the concerns
+    you need to deal with when building your own XaaS model.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章讨论了各种XaaS类型，包括基础设施即服务（IaaS）、平台即服务（PaaS）、集成平台即服务（iPaaS）和数据库即服务（DBaaS），以及在将基础设施或平台元素公开为服务时需要考虑的一切。在云原生模式下，您的应用程序可能正在集成社交媒体API或PaaS
+    API，或者您可能正在托管其他应用程序将使用的服务。本章涵盖了构建自己的XaaS模型时需要处理的问题。
+- en: 'This chapter will cover the following topics:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下主题：
+- en: Architecture and design concerns when building your own XaaS
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 构建自己的XaaS时的架构和设计问题
+- en: Architecture and design concerns when building your mobile application
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 构建移动应用程序时的架构和设计问题
+- en: Various backend as a service providers—database, authorization, cloud storage,
+    analytics, and so on
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 各种后端作为服务提供商——数据库、授权、云存储、分析等
+- en: XaaS
+  id: totrans-6
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: XaaS
+- en: Cloud computing has pioneered the distribution model for elastic, pay-as-you-go,
+    on-demand IT hosted services. Any part of the IT delivered as a service is loosely
+    covered under the broad theme of cloud computing.
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 云计算开创了弹性、按需、IT托管服务的分发模式。任何作为服务交付的IT部分都宽泛地归入云计算的范畴。
+- en: Within the cloud computing theme, depending on the type of IT service, there
+    are various terms for specific services of the cloud. Most of the terms are different
+    variations of the term XaaS, where X is a placeholder that can be changed to represent
+    multiple things.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在云计算主题中，根据IT服务的类型，云的特定服务有各种术语。大多数术语是XaaS的不同变体，其中X是一个占位符，可以更改以代表多种事物。
+- en: 'Let''s see the most common delivery models for cloud computing:'
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看云计算的最常见交付模式：
+- en: '**IaaS**: When the computing resources (compute, network, and storage) are
+    provided as a service to deploy and run operating systems and applications, it
+    is termed as IaaS. If the organization does not want to invest in building data
+    centers and buying servers and storage, this is a right choice of service to take
+    advantage of. **Amazon Web Services** (**AWS**), Azure, and **Google Cloud Platform**
+    (**GCP**) are leading examples of IaaS providers. In this model, you are responsible
+    for the following:'
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: IaaS：当计算资源（计算、网络和存储）作为服务提供以部署和运行操作系统和应用程序时，被称为IaaS。如果组织不想投资于建立数据中心和购买服务器和存储，这是一种正确的选择。亚马逊网络服务（AWS）、Azure和谷歌云平台（GCP）是IaaS提供商的主要例子。在这种模式下，您负责以下事项：
+- en: Managing, patching, and upgrading all operating systems, applications, and related
+    tools, database systems, and so on.
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 管理、打补丁和升级所有操作系统、应用程序和相关工具、数据库系统等。
+- en: From a cost optimization perspective, you will be responsible for the bringing
+    the environment up and down.
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从成本优化的角度来看，您将负责启动和关闭环境。
+- en: Provisioning of compute resources is almost instantaneous. The elasticity of
+    the compute resources is one of the biggest selling factors for IaaS vendors.
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 计算资源的供应几乎是即时的。计算资源的弹性是IaaS供应商的最大卖点之一。
+- en: Typically, the server images can be backed up by the cloud provider, so backup
+    and restore is easily managed when using a cloud provider.
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通常，服务器镜像可以由云提供商备份，因此在使用云提供商时备份和恢复很容易管理。
+- en: '**PaaS**: Once the compute, network, and storage have been sorted out, next
+    comes the requirement for a development platform and related environment to build
+    applications. A PaaS platform provides services across the **software development
+    life cycle** (**SDLC**). Services such as runtime (such as Java and .NET), database
+    (MySQL and Oracle), and web servers (such as Tomcat and Apache web server) are
+    considered to be PaaS services. The notion is that the cloud computing vendor
+    will still manage the underlying operational aspects of runtime, middleware, OS,
+    virtualization, servers, storage, and networking. In this model, you will be responsible
+    for the following:'
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: PaaS：一旦计算、网络和存储问题解决，接下来就需要开发平台和相关环境来构建应用程序。PaaS平台提供了整个软件开发生命周期（SDLC）的服务。运行时（如Java和.NET）、数据库（MySQL和Oracle）和Web服务器（如Tomcat和Apache
+    Web服务器）等服务被视为PaaS服务。云计算供应商仍将管理运行时、中间件、操作系统、虚拟化、服务器、存储和网络的基础运营方面。在这种模式下，您将负责以下事项：
+- en: The developer's concern will be limited to managing applications and the associated
+    data. Any change/updates to the application need to be managed by you.
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开发人员的关注将局限于管理应用程序和相关数据。应用程序的任何更改/更新都需要由您管理。
+- en: Abstraction of the PaaS is at a high level (messaging, Lambda, container, and
+    so on), allowing the team to focus on the core competency of working for customer
+    needs.
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: PaaS的抽象层级较高（消息传递、Lambda、容器等），使团队能够专注于核心能力，满足客户需求。
+- en: '**SaaS**: Next comes the model where you rent the entire application. You are
+    not required to build, deploy, or maintain anything. You subscribe to the application,
+    and the provider will provide an instance of the application for you or your organization
+    for use. You can access the application over the browser or can integrate with
+    the public APIs provided by the provider. Services such as Gmail, Office 365,
+    and Salesforce are examples of SaaS services. In this model, the provider provides
+    a standard version of the feature/functionality for all the tenants with very
+    limited customization capabilities. The SaaS vendor might provide a security model
+    where you can integrate your **Lightweight Directory Access Protocol** (**LDAP**)
+    repository with the vendor using **Security Assertion Markup Language** (**SAML**)
+    or OAuth models. This model works very well for standard software where the need
+    for customization is low. Office365 and Salesforce are some of the biggest poster
+    children of SaaS vendors:'
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**SaaS**：接下来是您租用整个应用程序的模式。您不需要构建、部署或维护任何东西。您订阅应用程序，提供商将为您或您的组织提供一个应用程序实例供您使用。您可以通过浏览器访问应用程序，或者可以集成提供商提供的公共API。Gmail、Office
+    365和Salesforce等服务就是SaaS服务的例子。在这种模式下，提供商为所有租户提供标准版本的功能/功能，定制能力非常有限。SaaS供应商可能提供一个安全模型，您可以使用**轻量级目录访问协议**（**LDAP**）存储库与供应商集成，使用**安全断言标记语言**（**SAML**）或OAuth模型。这种模式非常适用于定制需求较低的标准软件。Office365和Salesforce是SaaS供应商的典范：'
+- en: '![](img/c2e2b5bf-878a-4c64-995b-c57c9611f9b7.jpg)'
+  id: totrans-19
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/c2e2b5bf-878a-4c64-995b-c57c9611f9b7.jpg)'
+- en: When you are building your organization and its application portfolio, you might
+    subscribe to different vendors for various types of services. Now, if you are
+    trying to build the next Facebook or Instagram or Uber, you will need to address
+    specific architecture concerns to tackle the varied needs of the billions of users
+    out there.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在构建您的组织及其应用程序组合时，您可能会订阅不同供应商提供的各种类型的服务。现在，如果您试图构建下一个Facebook或Instagram或Uber，您将需要解决特定的架构问题，以满足全球数十亿用户的各种需求。
+- en: Key design concerns when building XaaS
+  id: totrans-21
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建XaaS时的关键设计问题
+- en: 'Let''s review the key design concerns that need to be addressed when building
+    XaaS and providing those services for consumption:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们回顾一下在构建XaaS并为其提供消费服务时需要解决的关键设计问题：
+- en: '**Multi-tenancy**: When you start designing your service for public consumption,
+    one of the first requirements is the ability to support multiple tenants or customers.
+    As people start signing up to use your service, the service needs to support be
+    able to provide a secure boundary for customer data. Typically, SaaS is a good
+    candidate for the multi-tenancy design concerns. For every tenant, the data and
+    application workload might need to be partitioned. Tenant requests are within
+    the confines of the tenant data. To design multi-tenancy within your application,
+    you will need to look at the following:'
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**多租户**：当您开始为公众使用设计您的服务时，首要要求之一是能够支持多个租户或客户。随着人们开始注册使用您的服务，服务需要能够为客户数据提供安全边界。通常，SaaS是多租户设计问题的一个很好的候选者。对于每个租户，数据和应用程序工作负载可能需要进行分区。租户请求在租户数据的范围内。要在应用程序中设计多租户，您需要查看以下内容：'
+- en: '**Isolation**: Data should be isolated between the tenants. One tenant should
+    not be able to access any other tenant''s data. This isolation is not only restricted
+    to the data, but can be extended to underlying resources (including compute, storage,
+    network, and so on) and operational processes (backup, restore, DevOps, admin
+    functionality, application properties, and so on) marked for each tenant.'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**隔离**：数据应该在租户之间隔离。一个租户不应该能够访问任何其他租户的数据。这种隔离不仅限于数据，还可以扩展到底层资源（包括计算、存储、网络等）和为每个租户标记的操作过程（备份、恢复、DevOps、管理员功能、应用程序属性等）。'
+- en: '**Cost optimization**: The next big concern is how to optimize the design to
+    lower the overall cost of the cloud resources and still address all kinds of customers.
+    You can look at multiple techniques to manage your costs. For example, for free-tier
+    customers, you can have a tenancy model based on the tenant ID. This model allows
+    you to optimize the database licenses, overall compute and storage costs, DevOps
+    processes, and so on. Similarly, for large customers, you can even look at dedicated
+    infrastructure to provide a guaranteed **service-level agreement** (**SLA**).
+    There are a number of small companies that do millions worth of business from
+    a handful of large customers. On the other hand, you have large companies that
+    cater to millions of small customers.'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**成本优化**：下一个重要问题是如何优化设计以降低云资源的总体成本，同时仍然满足各种客户的需求。您可以考虑多种技术来管理成本。例如，对于免费层客户，您可以基于租户ID的租赁模型。这种模型允许您优化数据库许可证、整体计算和存储成本、DevOps流程等。同样，对于大客户，甚至可以考虑专用基础设施以提供保证的**服务级别协议**（**SLA**）。有许多小公司从少数大客户那里获得数百万美元的业务。另一方面，有大公司为数百万小客户提供服务。'
+- en: '**DevOps pipeline**: If you end up building multiple instances of the same
+    service for customers, you will encounter problems when customers demand specific
+    features for them. This soon leads to code fragmentation and becomes an unmanageable code
+    problem. The question becomes how to balance the ability to roll out new features/functionality
+    for all customers and still able to provide the level of customization or individuality
+    required by each of them. The DevOps process needs to support multi-tenancy isolation
+    and maintain/monitor each tenant process and database schema to roll out the changes
+    across all the service instances. Unless DevOps is streamlined, rolling out changes
+    across the service can become very complex and daunting. This all leads to increased
+    cost and lower customer satisfaction.'
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**DevOps流水线**：如果您最终为客户构建同一服务的多个实例，当客户要求为他们提供特定功能时，您将遇到问题。这很快会导致代码碎片化，并成为一个难以管理的代码问题。问题在于如何平衡为所有客户推出新功能/功能的能力，同时仍能够提供每个客户所需的定制或个性化水平。DevOps流程需要支持多租户隔离，并维护/监视每个租户的流程和数据库架构，以在所有服务实例中推出更改。除非DevOps得到简化，否则在整个服务中推出更改可能会变得非常复杂和令人望而却步。所有这些都会导致成本增加和客户满意度降低。'
+- en: '**Scalability**: One of the basic requirements is to be able to sign up new
+    customers and scale up the services. As the scale of customers grows, the expectation
+    is cost/service or overall service cost should fall. Unless our service is built
+    keeping in mind the preceding three types of tenants, the service will not be
+    able to scale and provide an artificial moat around your business model.'
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**可扩展性**：其中一个基本要求是能够注册新客户并扩展服务。随着客户规模的增长，预期成本/服务或整体服务成本应该下降。除非我们的服务考虑到前面三种租户类型，否则服务将无法扩展并在您的业务模型周围提供人为的壕沟。'
+- en: 'Next, when you get down to the task of designing your multi-tenancy service,
+    you have the following design options:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，当您开始设计多租户服务时，您有以下设计选项：
+- en: '**Database per tenant**: Every tenant has its own database. This model provides
+    complete isolation to tenant data.'
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**每个租户一个数据库**：每个租户都有自己的数据库。这种模型为租户数据提供了完全隔离。'
+- en: '**Shared database (single)**: All tenants are hosted within a single database
+    and identified by a tenant ID.'
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**共享数据库（单一）**：所有租户都托管在单个数据库中，并由租户ID标识。'
+- en: '**Shared database (sharded)**: In this model, a single database is sharded
+    into multiple databases. Typically, the shard key is derived from hash, range,
+    or list partitioning. The tenants are spread across the shard and are accessible
+    by a combination of tenant ID and shard:'
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**共享数据库（分片）**：在这种模型中，单个数据库被分片成多个数据库。通常，分片键是从哈希、范围或列表分区派生的。租户分布在分片中，并且可以通过租户ID和分片的组合访问：'
+- en: '![](img/0cdc78ca-0629-4b6a-a86f-80d7ba247228.png)'
+  id: totrans-32
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/0cdc78ca-0629-4b6a-a86f-80d7ba247228.png)'
+- en: '**Faster provisioning**: When building an XaaS model, another key concern is
+    the ability to provision new customers, meaning customer onboarding should be
+    self-service. Upon signing up, the customer should be immediately able to start
+    making use of the service. All this requires a model where a new tenant can be
+    provisioned effortlessly and very quickly. The ability to provide the underlying
+    compute resources, any database schema creation, and/or specific DevOps pipelines
+    should be very efficient and fully automated. From a customer experience point
+    of view also, the ability to provide a running version of the application to the
+    user helps. For any service that is aiming to be mass market, faster provisioning
+    is given. But if you are providing a very specific service and that requires integration
+    with enterprise customer on-premises data centers, then it may not be possible
+    to provide split-second provisioning. In that case, we should build tools/scripts
+    that can address some of the common integration scenarios to onboard the customer
+    as soon as possible.'
+  id: totrans-33
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**更快的配置**：在构建XaaS模型时，另一个关键问题是能够为新客户提供配置的能力，这意味着客户的入职应该是自助的。注册后，客户应立即能够开始使用服务。所有这些都需要一个模型，其中新租户可以轻松快速地配置。提供基础计算资源、任何数据库架构创建和/或特定的DevOps流水线的能力应该非常高效和完全自动化。从客户体验的角度来看，能够为用户提供正在运行的应用程序版本也是有帮助的。对于任何旨在成为大众市场的服务，更快的配置都是必须的。但是，如果您提供的是非常特定的服务，并且需要与企业客户的本地数据中心集成，那么可能无法提供分秒级的配置。在这种情况下，我们应该构建可以尽快解决一些常见集成场景的工具/脚本，以尽快为客户提供服务。'
+- en: '**Auditing**: Another key concern around security is the ability to audit for
+    the access and changes to the service and underlying data store. All of the audit
+    trail needs to be stored for any breaches or security issues or compliance purposes.
+    There will be the requirement for a centralized audit repository that keeps track
+    of the events being generated across the system. You should be able to run analysis
+    on top of the audit repository to flag up any abnormal behavior and take preventive
+    or corrective actions:'
+  id: totrans-34
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**审计**：安全性周围的另一个关键问题是审计对服务和基础数据存储的访问和更改的能力。所有审计跟踪都需要存储，以用于任何违规行为、安全问题或合规目的。将需要一个集中的审计存储库，用于跟踪系统中生成的事件。您应该能够在审计存储库之上运行分析，以标记任何异常行为并采取预防或纠正措施：'
+- en: '![](img/368b83b4-4d0c-4cf3-8615-ca7ed56c3c74.jpg)'
+  id: totrans-35
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/368b83b4-4d0c-4cf3-8615-ca7ed56c3c74.jpg)'
+- en: You can make use of Lamda architecture that uses both real-time streaming coupled
+    with models generated from historical data to flag abnormal behavior. Some of
+    the public cloud providers provide this as a service.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以利用Lambda架构，它同时使用实时流和从历史数据生成的模型来标记异常行为。一些公共云提供商提供此服务。
+- en: '**Security**: Depending on the nature of the service, the tenants need to have
+    secure access to their data. The service needs to incorporate the basic requirement
+    of authentication and authorization. All the customers have a secure key and passphrase
+    to connect and access their information. There might be requirements for enterprise
+    access and multiple users. In that case, you might have to build a delegated administration
+    model for enterprise(s). You can also use a security mechanism such as OAuth (through
+    Google, Facebook, and so on) to enable access to the service.'
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**安全性**: 根据服务的性质，租户需要安全访问其数据。服务需要包含身份验证和授权的基本要求。所有客户都有安全密钥和密码短语来连接和访问其信息。可能需要企业访问和多个用户。在这种情况下，您可能需要为企业构建委托管理模型。您还可以使用OAuth等安全机制（通过Google、Facebook等）来启用对服务的访问。'
+- en: '**Data storage**: Your service might require storage of different types of
+    data; depending on the type of the data, the storage requirements will be different.
+    The storage requirement typically falls into the following areas:'
+  id: totrans-38
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**数据存储**: 您的服务可能需要存储不同类型的数据；根据数据类型，存储需求将不同。存储需求通常分为以下几个领域：'
+- en: '**Relational data storage**: Tenant data might be relational and we talked
+    of the various multi-tenant strategies to store that data. Tenant-specific application
+    configuration data might need to be stored in a relational model.'
+  id: totrans-39
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**关系数据存储**: 租户数据可能是关系型的，我们谈到了各种多租户策略来存储这些数据。租户特定的应用程序配置数据可能需要存储在关系模型中。'
+- en: '**NoSQL storage**: Tenant data might not be relational all the time; it might
+    be a columnar, key value, graph, or document-oriented model. In that case, appropriate
+    data storage needs to be designed and then constructed.'
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**NoSQL存储**: 租户数据可能并非始终是关系型的；它可能是列式的、键值对的、图形的或面向文档的模型。在这种情况下，需要设计并构建适当的数据存储。'
+- en: '**Blob storage**: If your service requires Blob storage or storage of binary
+    data, then you will require access to object file storage. You can make use of
+    Blob storage from the likes of AWS or Azure to store your binary files:'
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Blob存储**: 如果您的服务需要Blob存储或二进制数据存储，那么您将需要访问对象文件存储。您可以利用AWS或Azure等提供的Blob存储来存储您的二进制文件。'
+- en: '![](img/9f6701a3-550b-4ae4-922d-9815cbeeb589.jpg)'
+  id: totrans-42
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/9f6701a3-550b-4ae4-922d-9815cbeeb589.jpg)'
+- en: '**Monitoring**: The entire application stack needs to be monitored. You might
+    sign up customers and guarantee them stringent SLAs. In that scenario, monitoring
+    is not just about service or system availability but also about any cost penalty
+    and loss of reputation. At times, individual components might have redundancy
+    and high availability but at a stack level, all the failure rates can be compounded
+    to reduce the overall availability of the stack. Monitoring resources across the
+    stack becomes important and key to managing the availability and defined SLAs.
+    Monitoring encompasses both hardware and software. There is a need to detect any
+    abnormal behavior and automate the corrective response. Typically, the ability
+    to monitor and automate the healing takes multiple iterations to mature.'
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**监控**: 需要监控整个应用程序堆栈。您可能会为客户签署严格的SLA。在这种情况下，监控不仅仅是关于服务或系统的可用性，还涉及任何成本惩罚和声誉损失。有时，个别组件可能具有冗余和高可用性，但在堆栈级别，所有故障率可能会相互叠加，从而降低堆栈的整体可用性。跨堆栈监控资源变得重要，并且是管理可用性和定义的SLA的关键。监控涵盖硬件和软件。需要检测任何异常行为并自动执行纠正响应。通常，监控和自动修复需要多次迭代才能成熟。'
+- en: '**Error handling**: One of the key aspects of the service will be the ability
+    to handle failures and how to respond to the service consumer. Failures can occur
+    at multiple levels; a data store not being available, tables getting locked, queries
+    getting timed out, service instances going down, session data being lost, and
+    so on are some of the issues you will encounter. Your service needs to be robust
+    to handle all these and then some more failure scenarios. Patterns such as CQRS,
+    circuit breaker, bulkheading, reactive, and so on will need to be incorporated
+    into your service design.'
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**错误处理**: 服务的关键方面之一将是处理故障的能力以及如何响应服务消费者。故障可能发生在多个级别；数据存储不可用、表被锁定、查询超时、服务实例宕机、会话数据丢失等都是您将遇到的一些问题。您的服务需要强大到能够处理所有这些以及更多的故障场景。诸如CQRS、断路器、隔离、响应式等模式需要纳入到您的服务设计中。'
+- en: '**Automated build/deployment**: As the number of service consumers goes up,
+    the ability to roll out new features and fix bugs will require an automated build
+    and deployment models. This is akin to changing the tires of a car while it is
+    moving. The ability to upgrade the software and release patches / security fixes
+    without any impact on the calls from the consumer is a delicate art and takes
+    time to master. Earlier, we could look for some system downtime during the night
+    when the traffic comes down, but with customers from around the world, there is
+    no longer such a time. Blue-green deployment is a technique that can help in releasing
+    new changes with minimum impact to the customers and reduction of overall risk:'
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**自动化构建/部署**: 随着服务消费者数量的增加，推出新功能和修复错误将需要自动化的构建和部署模型。这类似于在汽车行驶时更换轮胎。升级软件并发布补丁/安全修复，而不会对消费者的调用产生任何影响，这是一门微妙的艺术，需要时间来掌握。以前，我们可以在夜间系统流量减少时寻找一些系统停机时间，但是随着来自世界各地的客户，再也没有这样的时间了。蓝绿部署是一种技术，可以帮助在对客户造成最小影响的情况下发布新变更，并降低整体风险：'
+- en: '![](img/11b5d90d-def5-4d0b-a9bb-186ed8175b75.jpg)'
+  id: totrans-46
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/11b5d90d-def5-4d0b-a9bb-186ed8175b75.jpg)'
+- en: '**Customer tiers**: Another key concern is how to build and price your service
+    for different sets of customers. Companies have been creating multiple tiers to
+    address the needs of myriad customers. These needs help the companies decide the
+    customer tier and then start pricing the service cost. These factors are as follows:'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**客户层**：另一个关键问题是如何为不同的客户群建立和定价您的服务。公司一直在创建多个层次来满足众多客户的需求。这些需求帮助公司确定客户层，然后开始定价服务成本。这些因素如下：'
+- en: '**Compute**: Limiting the number of calls made by hour/day/month. This allows
+    you to predict the capacity required by the tenant along with the networking bandwidth
+    requirements.'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**计算**：限制每小时/每天/每月的调用次数。这使您能够预测租户所需的容量以及网络带宽要求。'
+- en: '**Storage**: Another parameter is the storage required for the underlying data
+    store. This allows you to balance database shards appropriately.'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**存储**：另一个参数是底层数据存储所需的存储空间。这使您可以适当平衡数据库分片。'
+- en: '**Security**: For enterprise customers, there might be separate requirements
+    for integration with enterprise security models using SAML. This might require
+    additional hardware and support.'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**安全性**：对于企业客户，可能存在与SAML使用企业安全模型集成的单独要求。这可能需要额外的硬件和支持。'
+- en: '**SLAs/support model**: This is another area which needs to be accounted for
+    when deciding the customer tiers. Support models—community, on-call, dedicated,
+    and so on—come with different cost structures. Depending on the target market—consumer
+    or enterprise—you can evaluate which of the support models will work best for
+    your service.'
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**SLA/支持模型**：这是另一个需要考虑的领域，当决定客户层时需要考虑。支持模型——社区、值班、专用等——具有不同的成本结构。根据目标市场——消费者或企业——您可以评估哪种支持模型最适合您的服务。'
+- en: '**Feature flags**: When building an XaaS model, one of the key questions is
+    how to deal with code changes, feature releases, and so on for multiple tenants.
+    Should I have multiple code branches for each customer or should I use one code
+    base across all the customers? If I use one code base, how do I release features/functionality
+    that are specific to one tenant? If your target market is 8-10 customers, then
+    having specific code branches for each customer is a potential viable option.
+    But if the target market is hundreds of customers, then code branching is a bad
+    option. Code branching is usually a bad idea. To handle differences in features/functionality
+    for different customers or manage new upcoming features not ready for release,
+    a feature flag is a great way to handle such requirements:'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**功能标志**：在构建XaaS模型时，一个关键问题是如何处理多个租户的代码更改、功能发布等。我应该为每个客户拥有多个代码分支，还是应该在所有客户之间使用一个代码库？如果我使用一个代码库，如何发布特定于一个租户的功能/功能？如果您的目标市场是8-10个客户，那么为每个客户拥有特定的代码分支是一个潜在的可行选项。但如果目标市场是数百个客户，那么代码分支是一个糟糕的选择。代码分支通常是一个糟糕的主意。为了处理不同客户的功能/功能差异或管理尚未准备发布的新功能，功能标志是处理此类要求的一个很好的方法。'
+- en: '![](img/3f68ffe8-fb34-4ffb-a032-d4fc1fc5141b.jpg)'
+  id: totrans-53
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/3f68ffe8-fb34-4ffb-a032-d4fc1fc5141b.jpg)'
+- en: Feature flags allow you to release code in production without immediately releasing
+    the feature for the users. You can use feature flags to provide/restrict certain
+    functionalities of your application to different customers based on what level
+    of services they have bought. You can also use feature flags in conjunction with
+    A/B testing to release new features/functionality to a part of user to check their
+    response and functional correctness before rolling out to the wider audience.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 功能标志允许您在生产中发布代码，而不立即为用户发布功能。您可以使用功能标志根据客户购买的服务级别为应用程序的不同客户提供/限制某些功能。您还可以与A/B测试结合使用功能标志，向部分用户发布新功能/功能，以检查其响应和功能正确性，然后再向更广泛的受众发布。
+- en: '**Self-service portal**: A key aspect of your service will be a self-service
+    portal where the users can sign up, provision the service, and manage all aspects
+    of the application data and service. The portal allows users to manage enterprise
+    aspects such as authentication/authorization (using a delegated admin model),
+    monitor the provisioned service for availability, set up custom alarms/alerts
+    on the key metrics of the service, and decipher any issues that might be cropping
+    on the server side. A well-crafted portal helps increase overall customer confidence
+    in the service performance. You can also build advanced monitoring and analytics
+    services for your paid customers based on the customer tiers. Remember, anybody
+    can copy the features/functionality your service provides, but building additional
+    value-added features around your service becomes a distinct differentiator for
+    your service.'
+  id: totrans-55
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自助服务门户：您的服务的一个关键方面将是一个自助服务门户，用户可以在那里注册、提供服务，并管理应用程序数据和服务的所有方面。该门户允许用户管理企业方面，如身份验证/授权（使用委托管理员模型）、监视已提供的服务的可用性，在服务的关键指标上设置自定义警报/警报，并解决可能在服务器端出现的任何问题。精心设计的门户有助于增加用户对服务性能的整体信心。您还可以为付费客户构建基于客户层的高级监控和分析服务。请记住，任何人都可以复制您的服务提供的功能/功能，但围绕您的服务构建附加值功能成为您服务的独特差异化因素。
+- en: '**Software development kits** (**SDKs**): As one of the key measures of enabling
+    user adoptability of your service, you might want to build and provide SDKs for
+    your consumers. This is not a must-have, but a desirable feature, especially when
+    a customer integrates with your service at an application code level on their
+    side. In this case, SDKs should provide support for multiple languages and come
+    with good examples and documentation to help onboard the developers on the customer
+    side. If your application or service is complex, having an SDK that explains how
+    to invoke your services or integrate within existing services (such as SAML, OAuth,
+    and so on) becomes key to faster adoptability of your service.'
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 软件开发工具包（SDKs）：作为启用用户采纳性的关键措施之一，您可能希望为您的消费者构建并提供SDK。这不是必须的，但是是一个可取的特性，特别是当客户在应用程序代码级别与您的服务集成时。在这种情况下，SDK应该支持多种语言，并提供良好的示例和文档，以帮助客户端的开发人员上手。如果您的应用程序或服务很复杂，那么拥有一个解释如何调用您的服务或与现有服务集成（如SAML、OAuth等）的SDK对于更快地采用您的服务至关重要。
+- en: '**Documentation and community support**: One more aspect of service adoptability
+    is the level of documentation available along with community support for the product/service.
+    Documentation should minimally cover the following points:'
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文档和社区支持：服务可采纳性的另一个方面是产品/服务的文档水平以及社区对其的支持。文档应该至少涵盖以下几点：
+- en: How to sign up for the service
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何注册该服务
+- en: How to invoke and use the service
+  id: totrans-59
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何调用和使用服务
+- en: How to integrate the service within the customer landscape and the SDKs available
+    for integration
+  id: totrans-60
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何将服务整合到客户的景观中以及可用于集成的SDK
+- en: How to bulk import or bulk export your data
+  id: totrans-61
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何批量导入或批量导出您的数据
+- en: How to securely integrate for authentication/authorization with enterprise LDAP
+    / **Active Directory** (**AD**) servers
+  id: totrans-62
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何与企业LDAP/Active Directory（AD）服务器进行安全整合进行身份验证/授权
+- en: The next thing you need to think of is building an active community support.
+    You need to provide appropriate forums for people to interact. You need to have
+    active **subject matter expert** (**SME**) to answer questions from people across
+    forums (internal and external). The likes of Stack Overflow get lots of questions;
+    you should set up alerts, monitor threads, and help answer questions/queries from
+    users. An active community is a sign of interest in your product. Lots of organizations
+    also use this forum to identify early adopters and seek their feedback in the
+    product roadmap.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来你需要考虑的是建立一个积极的社区支持。你需要为人们互动提供适当的论坛。你需要有积极的专业主题专家来回答来自各个论坛（内部和外部）的问题。像Stack
+    Overflow这样的网站会收到很多问题；你应该设置警报，监控帖子，并帮助回答用户的问题/查询。一个积极的社区是对你的产品感兴趣的一个迹象。许多组织也利用这个论坛来识别早期采用者，并在产品路线图中寻求他们的反馈。
+- en: '**Product roadmap**: A good product might start with a **minimum viable product**
+    (**MVP**) but it usually backed a solid vision and product roadmap. As you receive
+    feedback from the customer, you can keep on updating the product roadmap and reprioritizing
+    the backlog items. A good roadmap indicates the strength of the product vision.
+    When you meet external stakeholders—customers, partners, **venture capitalists**
+    (**VCs**), and so on—the first thing they ask for is a product roadmap.'
+  id: totrans-64
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 产品路线图：一个好的产品可能从一个最小可行产品（MVP）开始，但通常都有一个坚实的愿景和产品路线图作为支持。当你从客户那里收到反馈时，你可以不断更新产品路线图并重新排列优先级。一个好的路线图表明了产品愿景的力量。当你遇到外部利益相关者——客户、合作伙伴、风险投资者等等——他们首先要求的是一个产品路线图。
+- en: 'A roadmap typically consists of strategic priorities and planned releases along
+    with high-level features and plans for maintenance/bug-fixing releases, among
+    others:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 路线图通常包括战略重点和计划发布，以及高层功能和维护/错误修复发布的计划，等等：
+- en: '![](img/2bb52c14-3aa7-4d57-b65a-fc95e8abc652.jpg)'
+  id: totrans-66
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/2bb52c14-3aa7-4d57-b65a-fc95e8abc652.jpg)'
+- en: We have covered some of the design concerns that need to accounted for when
+    trying to build your XaaS model. We have covered the basics for each of the concerns.
+    Each of the concerns warrants a minimum of one chapter of its own. Hopefully,
+    it gives you a view into various other non-service aspects that need to be accounted
+    for when you are trying to build your business model around XaaS. The actual design
+    and development of the service is based on the concerns we have covered from [Chapter
+    2](8a0a7cae-4aaa-460d-a760-59d0ffde9b48.xhtml), *Writing Your First Cloud-Native
+    Application*, onward.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经涵盖了一些在尝试构建您的XaaS模型时需要考虑的设计问题。我们已经涵盖了每个问题的基础知识。每个问题都需要至少一个章节。希望这能让您了解在尝试围绕XaaS构建业务模型时需要考虑的其他非服务方面。服务的实际设计和开发是基于我们从[第2章](8a0a7cae-4aaa-460d-a760-59d0ffde9b48.xhtml)开始涵盖的问题。
+- en: Integration with third-party APIs
+  id: totrans-68
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 与第三方API的集成
+- en: In the previous section, we saw the design concerns when building your own service
+    provider. In this section, we will see how, if you are trying to build a consumer
+    application, to take advantage of the REST services provided by third-party companies.
+    For example, you are trying a build a beautiful mobile application, your core
+    competency is building visual design and creating mobile applications. You do
+    not want to get burdened with managing all the complexities that go with hosting/managing
+    the application data. The application will require services that include storage,
+    notifications, location, social integration, user management, chat functions,
+    and analytics, among others. All these providers are bunched together under the
+    umbrella of **Backend as a Service** (**BaaS**) providers. There is no need to
+    sign up with a single vendor for these services; you can pick and choose which
+    providers fit your business needs and budgets. Each of the providers typically
+    runs a freemium model, that provides a certain number of API calls free per month,
+    and a commercial model, where you are charged. This also falls under the umbrella
+    of building serverless applications, where you, as a developer, do not maintain
+    any servers running any software.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前一节中，我们看到了构建自己的服务提供商时的设计问题。在本节中，我们将看到，如果您正在尝试构建一个消费者应用程序，如何利用第三方公司提供的REST服务。例如，您正在尝试构建一个漂亮的移动应用程序，您的核心竞争力是构建视觉设计和创建移动应用程序。您不想被管理托管/管理应用程序数据的所有复杂性所拖累。该应用程序将需要包括存储、通知、位置、社交集成、用户管理、聊天功能和分析等服务。所有这些提供商都被归类为**后端即服务**（**BaaS**）提供商。没有必要为这些服务注册单一供应商；您可以挑选符合您业务需求和预算的提供商。每个提供商通常都采用免费模式，每月提供一定数量的免费API调用，以及商业模式，您需要付费。这也属于构建无服务器应用程序的范畴，作为开发人员，您不需要维护任何运行软件的服务器。
+- en: 'In this regard, we will look at the third-party services that will be required
+    to build a full-fledged serverless application:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这方面，我们将看看构建一个完整的无服务器应用程序所需的第三方服务：
+- en: '**Authentication services**: One of the first things any application requires
+    is the ability to sign up or register users. A registered user allows the opportunity
+    for application developer to provide personalized services and know his likes/dislikes.
+    This data allows him to optimize the user experience and provide the necessary
+    support to get maximum value out of the application.'
+  id: totrans-71
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**身份验证服务**：任何应用程序需要的第一件事情之一是能够注册用户。注册用户为应用程序开发人员提供了提供个性化服务并了解他的喜好/不喜欢的机会。这些数据使他能够优化用户体验并提供必要的支持，以从应用程序中获得最大价值。'
+- en: 'Authentication as a service focuses on the encapsulation of business functionality
+    around user authentication. Authentication requires an identity provider. This
+    provider can be mapped to your application or enterprise or you can use some of
+    the consumer companies such as Google, Facebook, Twitter, and so on. There are
+    multiple authentication service providers available, such as Auth0, Back&, AuthRocket,
+    and so on. These providers should provide, as a minimum, the following features:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 身份验证作为服务专注于围绕用户身份验证的业务功能的封装。身份验证需要一个身份提供者。这个提供者可以映射到您的应用程序或企业，或者您可以使用一些消费者公司，如谷歌、Facebook、Twitter等。有多个可用的身份验证服务提供商，如Auth0、Back&、AuthRocket等。这些提供商应该提供至少以下功能：
+- en: '**Multi-factor authentication** (**MFA**) (including support for social identity
+    providers): One of the primary requirements, the provider should provide identity
+    provider instance where the application can manage the users. The functionality
+    includes user registration, two-factor authentication either by SMS or by email,
+    and integration with social identity providers. Most of the providers make use
+    of OAuth2/OpenID model.'
+  id: totrans-73
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**多因素身份验证**（**MFA**）（包括对社交身份提供者的支持）：作为主要要求之一，提供商应该提供身份提供者实例，应用程序可以在其中管理用户。功能包括用户注册，通过短信或电子邮件进行两因素身份验证，以及与社交身份提供者的集成。大多数提供商使用OAuth2/OpenID模型。'
+- en: '**User management**: Along with the MFA, the authentication provider should
+    provide user interface that allows for user management that has signed up for
+    the application. You should be able to extract the emails and phone numbers for
+    sending push notifications to the customers. You should be able to reset the user
+    credentials and protect resources either by using security realms or adding users
+    to certain predefined roles based on the needs of the application.'
+  id: totrans-74
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**用户管理**：除了MFA，身份验证提供商应该提供用户界面，允许对已注册应用程序的用户进行管理。您应该能够提取电子邮件和电话号码，以向客户发送推送通知。您应该能够重置用户凭据并通过使用安全领域或根据应用程序的需求将用户添加到某些预定义角色来保护资源。'
+- en: '**Plugins/widgets**: Last but not least, the provider should provide widgets/plugins
+    that can be embedded in the application code to provide user authentication as
+    a seamless service:'
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**插件/小部件**：最后但并非最不重要的是，提供商应该提供可以嵌入应用程序代码中以提供用户身份验证的小部件/插件作为无缝服务：'
+- en: '![](img/12f53ae6-2636-4c9d-a7cd-b48af79c4772.jpg)'
+  id: totrans-76
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/12f53ae6-2636-4c9d-a7cd-b48af79c4772.jpg)'
+- en: '**Serverless services**: Gone are the days when you needed to manage application
+    servers and the underlying VM to deploy your code. The level of abstraction has
+    moved to what is called the business function. You write a function that takes
+    as input a request, processes the same, and outputs the response. There is no
+    runtime, no application server, no web server, nothing. Just a function! The provider
+    will automatically provision the runtime to run that function, along with the
+    server. You, as developer, need not worry about anything. You are charged on a
+    combination of the number of calls to the function and how long the functions
+    ran, meaning, during lean times, you are incurring zero cost.'
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**无服务器服务**：过去，您需要管理应用程序服务器和底层VM来部署代码。抽象级别已经转移到所谓的业务功能。您编写一个接受请求、处理请求并输出响应的函数。没有运行时，没有应用程序服务器，没有Web服务器，什么都没有。只有一个函数！提供商将自动提供运行时来运行该函数，以及服务器。作为开发人员，您不需要担心任何事情。您根据对函数的调用次数和函数运行时间的组合收费，这意味着在低谷时期，您不会产生任何费用。'
+- en: From the function, you can access the data store and manage user- and application-specific
+    data. Two functions can talk to each other using a queue model. Functions can
+    be exposed as APIs using the API gateway of the provider.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过函数，您可以访问数据存储并管理用户和应用程序特定数据。两个函数可以使用队列模型相互通信。函数可以通过提供商的API网关公开为API。
+- en: 'All the public cloud vendors have a version of the serverless model—AWS has
+    Lamda, Azure has Azure Functions, Google has Cloud Functions, Bluemix has Openwhisk,
+    and so on:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有公共云供应商都有一个无服务器模型的版本——AWS有Lamda，Azure有Azure Functions，Google有Cloud Functions，Bluemix有Openwhisk等：
+- en: '![](img/b0c0629b-0fbf-47fd-914b-abd93b959c75.jpg)'
+  id: totrans-80
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/b0c0629b-0fbf-47fd-914b-abd93b959c75.jpg)'
+- en: '**Database/storage services**: An application typically requires storage to
+    manage the customer data. This can be as simple as user profile information (such
+    as photo, name, email ID, password, and application preferences) or user-specific
+    data (such as messages, emails, and application data). Depending on the type of
+    data and the format in which it is stored, an appropriate database/storage service
+    can be chosen. For binary storage, we have services such as AWS S3 and Azure Blob
+    Storage for all kind of binary files. For storing data in JSON format directly
+    from the mobile application, you have cloud providers such as Google Firebase,
+    or you can use MongoDB as a service ([www.mlab.com](https://mlab.com/)). Multiple
+    database models are provided by AWS, Azure, and GCP that can be used to manage
+    all kinds of different storage needs. You might need to use AWS Lambda or Google
+    Cloud Functions to be able to access the store the data. For example, if the application
+    request needs to do some validation or processing before storing the data, you
+    can write a Lambda function, that can be exposed as an API. The mobile application
+    accesses the API that invokes the Lambda function, where, after request processing,
+    data gets stored in the data store.'
+  id: totrans-81
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**数据库/存储服务**：应用程序通常需要存储空间来管理客户数据。这可以是简单的用户配置文件信息（例如照片、姓名、电子邮件ID、密码和应用程序首选项）或用户特定数据（例如消息、电子邮件和应用程序数据）。根据数据的类型和存储格式，可以选择适当的数据库/存储服务。对于二进制存储，我们有AWS
+    S3和Azure Blob Storage等服务，适用于各种二进制文件。要直接从移动应用程序中以JSON格式存储数据，您可以使用Google Firebase等云提供商，或者您可以使用MongoDB作为服务（[www.mlab.com](https://mlab.com/)）。AWS、Azure和GCP提供了多种数据库模型，可用于管理各种不同的存储需求。您可能需要使用AWS
+    Lambda或Google Cloud Functions来访问存储数据。例如，如果应用程序请求在存储数据之前需要进行一些验证或处理，您可以编写一个Lambda函数，该函数可以公开为API。移动应用程序访问调用Lambda函数的API，在请求处理后，数据存储在数据存储中。'
+- en: '**Notification services**: An application typically registers the user and
+    device to be able to send notifications to the device. AWS provides a service
+    called Amazon **Simple Notification Service** (**SNS**) that can be used to register
+    and send notifications from your mobile application. AWS service supports push
+    notifications to iOS, Android, Fire OS, Windows, and Baidu-based devices. You
+    can also send push notifications to macOS desktops and **voice over IP** (**VoIP**)
+    applications on iOS devices, emails, and SMS messages to users across over 200
+    countries.'
+  id: totrans-82
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**通知服务**：应用程序通常会注册用户和设备，以便能够向设备发送通知。AWS提供了一项名为Amazon **Simple Notification
+    Service** (**SNS**)的服务，可用于从您的移动应用程序注册和发送通知。AWS服务支持向iOS、Android、Fire OS、Windows和基于百度的设备发送推送通知。您还可以向macOS桌面和iOS设备上的**VoIP**应用程序发送推送通知，向超过200个国家/地区的用户发送电子邮件和短信。'
+- en: '**Analytics services**: Once customers start adopting the application, you
+    will want to know what features of the application are being used, where the users
+    are facing issues or challenges and where are the users dropping off. To understand
+    all this, you will need to subscribe to an analytics service that allows you to
+    track the user actions which are then collated to a central server. You can go
+    to that central repository and get an insight into the user activities. You can
+    use this insight into customer behavior to improve the overall customer experience.
+    Google Analytics is a popular service in this area. You track users'' overall
+    multiple parameters including location, browser used, device used, time, session
+    details, and so on. You can also enhance it by adding custom parameters. The tools
+    typically provide a certain amount of canned reports. You can also add/design
+    your own reporting templates.'
+  id: totrans-83
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**分析服务**：一旦客户开始采用该应用程序，您将想要了解应用程序的哪些功能正在使用，用户在哪些地方遇到问题或挑战，以及用户在哪些地方退出。为了了解所有这些，您需要订阅一个分析服务，该服务允许您跟踪用户的操作，然后将其汇总到一个中央服务器。您可以访问该中央存储库并深入了解用户的活动。您可以利用这些对客户行为的洞察来改善整体客户体验。Google
+    Analytics是这一领域中的一项热门服务。您可以跟踪用户的多个整体参数，包括位置、使用的浏览器、使用的设备、时间、会话详细信息等。您还可以通过添加自定义参数来增强它。这些工具通常提供一定数量的预定义报告。您还可以添加/设计自己的报告模板。'
+- en: '**Location services**: Another service used by applications is the location
+    service. Your application might require features that require the functionality
+    to be curated for a given context (in this case, location can be one of the context
+    attributes). Context-aware functionality allows you to personalize the features/services
+    to the needs of the end customer and help to improve the overall customer experience.
+    The Google Play service location API provides such a functionality. There is a
+    complete set of services/applications around the location services. For example,
+    companies such as Uber, Lyft, and Ola (India) are great examples of business cases
+    that are built around location services. Most logistics businesses (especially
+    the last mile ) make use of location services for route optimization and delivery,
+    among other things.'
+  id: totrans-84
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 位置服务：应用程序使用的另一个服务是位置服务。你的应用程序可能需要功能，需要根据给定的上下文进行策划（在这种情况下，位置可以是上下文属性之一）。上下文感知功能允许你个性化地将功能/服务适应最终客户的需求，并有助于改善整体客户体验。Google
+    Play服务位置API提供了这样的功能。围绕位置服务有一整套服务/应用程序。例如，像Uber、Lyft和Ola（印度）这样的公司是围绕位置服务构建的商业案例的很好的例子。大多数物流企业（特别是最后一英里）都利用位置服务进行路线优化和交付等工作。
+- en: '**Social integration services**: Your application might warrant social integration
+    with popular social networks (Facebook, Twitter, Instagram, and so on). You will
+    need to be able to access the social feeds of the logged-in user, post on their
+    behalf, and/or get access to their social network. There are multiple ways to
+    access these social networks. Most of these networks provide access for other
+    applications and expose a set of APIs to connect to them. Then there are aggregators
+    that will allow you to provide integration with a set of social networks out of
+    the box.'
+  id: totrans-85
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 社交整合服务：你的应用程序可能需要与流行的社交网络（Facebook、Twitter、Instagram等）进行社交整合。你需要能够访问已登录用户的社交动态，代表他们发布内容，和/或访问他们的社交网络。有多种方式可以访问这些社交网络。大多数这些网络为其他应用程序提供访问，并公开一组API来连接它们。然后还有聚合器，允许你提供与一组社交网络的整合。
+- en: '**Advertisement services**: Another key service used by applications, especially
+    mobile applications, is to serve advertisements to the user. Based on the application
+    model (free/paid), you need to decide the model for monetization of your application.
+    To serve advertisements (called in-app advertising) to your users, you will need
+    to sign up with the advertising network providers and invoke their API service.
+    Google''s AdMob service is one of the pioneers in this area.'
+  id: totrans-86
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 广告服务：应用程序使用的另一个关键服务，特别是移动应用程序，是向用户提供广告。根据应用程序模型（免费/付费），你需要决定应用程序的货币化模式。为了向用户提供广告（称为应用内广告），你需要注册广告网络提供商并调用他们的API服务。谷歌的AdMob服务是这一领域的先驱之一。
+- en: There are numerous other service providers you may want to look at when building
+    your application. We have covered the key prominent categories. Based on the needs
+    of your application, you may want to search for providers in that particular area
+    of requirement. I am sure there will be someone already providing the service.
+    There are some comprehensive providers called BaaS. These BaaS providers typically
+    provide multiple services for usage and reduce the overall integration effort
+    from the application side. You do not have to deal with multiple providers; instead,
+    you work with one. This one provider takes care of your multiple needs.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在构建应用程序时，可能还有其他许多服务提供商值得关注。我们已经涵盖了主要突出的类别。根据你的应用程序需求，你可能想在特定需求领域搜索提供者。我相信已经有人在提供这项服务。还有一些综合性的提供商被称为BaaS。这些BaaS提供商通常提供多种服务供使用，并减少了应用程序端的整体集成工作。你不必与多个提供者打交道；相反，你只需与一个提供者合作。这个提供者会满足你的多种需求。
+- en: 'BaaS as a market segment is highly competitive. With multiple providers competing,
+    you will find lots of mergers and acquisitions also in this segment. In recent
+    times, the following have occurred:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: BaaS作为一个市场细分是非常竞争的。由于多个提供者的竞争，你会发现在这个领域也有很多的并购。最近发生了以下情况：
+- en: '**Parse**: Acquired by Facebook. Parse provides a backend to store your data,
+    the ability to push notifications to multiple devices, and a social layer to integrate
+    your application.'
+  id: totrans-89
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Parse：被Facebook收购。Parse提供了一个后端来存储你的数据，推送通知到多个设备的能力，以及整合你的应用程序的社交层。
+- en: '**GoInstant**: Acquired by Salesforce. GoInstant provides a JavaScript API
+    for integrating real-time, multi-user experiences into any web or mobile application.
+    It''s easy to use and provides the full stack needed, from client-side widgets
+    to publish/subscribe messaging to a real-time data store.'
+  id: totrans-90
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: GoInstant：被Salesforce收购。GoInstant提供了一个JavaScript API，用于将实时的多用户体验集成到任何Web或移动应用程序中。它易于使用，并提供了所需的完整堆栈，从客户端小部件到发布/订阅消息到实时数据存储。
+- en: There are both vertical and horizontal BaaS providers that provide services
+    or APIs around a specific domain. There are providers in the e-commerce area,
+    gaming domain, analytics domain, and so on.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有提供特定领域服务或API的垂直和水平BaaS提供商。在电子商务领域、游戏领域、分析领域等都有提供者。
+- en: Remember to check the credibility of the provider before you sign up. Remember,
+    if the provider folds, your application will also be in trouble. Make sure you
+    understand their business model, their product roadmap, their funding model (especially
+    for start-ups), and how much they listen to the customers. You want to hitch a
+    ride with partners who will take you all the way.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在注册之前记得检查提供者的可信度。记住，如果提供者倒闭，你的应用程序也会陷入困境。确保你了解他们的商业模式，产品路线图，资金模式（特别是对于初创公司），以及他们对客户的倾听程度。你希望与愿意全程帮助你的合作伙伴合作。
+- en: Summary
+  id: totrans-93
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we covered some of the key concerns when trying to build your
+    XaaS provider. We also covered the other side of the spectrum, where we saw the
+    typical services that are available to build an application.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们涵盖了在尝试构建您的XaaS提供商时的一些关键问题。我们还涵盖了光谱的另一面，我们看到了可用于构建应用程序的典型服务。
+- en: In the next chapter, we will cover API best practices, where we will see how
+    to design consumer-centric APIs that are granular and functionality-oriented.
+    We will also discuss the best practices in API design concerns, such as how to
+    identify the resources that will be used to form the API, how to categorize the
+    APIs, API error handling, API versioning, and so on.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将涵盖API最佳实践，我们将看到如何设计以消费者为中心的API，这些API是细粒度和功能导向的。我们还将讨论API设计方面的最佳实践，例如如何识别将用于形成API的资源，如何对API进行分类，API错误处理，API版本控制等等。

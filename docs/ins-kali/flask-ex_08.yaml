@@ -1,0 +1,854 @@
+- en: Chapter 8. Validating User Input in Our Crime Map Project
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第8章。在我们的犯罪地图项目中验证用户输入
+- en: Users will always use your application in ways you didn't intend or expect,
+    either out of ignorance or malicious intent. Every bit of input that the user
+    has any control over should be validated to make sure it conforms to what is expected.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户总是以你意想不到或意料之外的方式使用你的应用程序，无论是出于无知还是恶意意图。用户有任何控制权的输入都应该经过验证，以确保其符合预期。
+- en: We'll polish off our second project by making sure that users can't break it
+    accidentally or through maliciously crafted input.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过确保用户无法意外或通过恶意输入破坏我们的第二个项目。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Choosing where to validate
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 选择在哪里进行验证
+- en: Trying out an XSS example
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 尝试XSS示例
+- en: Validating and sanitizing
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 验证和清理
+- en: Choosing where to validate
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 选择在哪里进行验证
+- en: 'There are a few choices to make when it comes to validating user input and
+    displaying feedback that helps them fix any mistakes they make. The major choice
+    is *where* to do the validation: in the browser, on the server, or both.'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在验证用户输入和提供帮助他们纠正任何错误的反馈时，有一些选择要做。主要选择是在*哪里*进行验证：在浏览器中，在服务器上，或两者兼顾。
+- en: We could do it in JavaScript in the user's browser. The advantages of this approach
+    are that the users will get faster feedback (they don't have to wait to send data
+    to our server, have it validated, and have a response sent back), and it also
+    lightens the load on our server; if we don't use CPU cycles and network bandwidth
+    to validate user data, it means we have lower costs associated with running our
+    server. The disadvantage of this approach is that we have no assurance that the
+    user will not bypass these checks; if the checks are run in the user's browser,
+    then the user has full control over them. This means that data that is validated
+    by client-side checks is still not guaranteed to be what we expect.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以在用户的浏览器中使用JavaScript进行验证。这种方法的优点是用户会得到更快的反馈（他们不必等待将数据发送到我们的服务器，进行验证，然后再发送响应），而且还减轻了我们服务器的负担；如果我们不使用CPU周期和网络带宽来验证用户数据，这意味着我们在运行服务器时有更低的成本。这种方法的缺点是我们无法保证用户不会绕过这些检查；如果检查在用户的浏览器中运行，那么用户就完全控制它们。这意味着经过客户端检查验证的数据仍然不能保证是我们期望的。
+- en: We could do it on the server after the user submits the data. The advantages
+    and disadvantages of this approach are the opposite of those described earlier.
+    We use more processing time that we're paying for, but we get extra assurance
+    about the integrity of our checks. On the other hand, the user normally has to
+    wait longer to get feedback about legitimate (not malicious) errors.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以在用户提交数据后在服务器上进行验证。这种方法的优缺点与前面描述的相反。我们使用了更多的处理时间，但我们对检查的完整性有额外的保证。另一方面，用户通常需要等待更长时间才能得到有关合法（而非恶意）错误的反馈。
+- en: The final option is to do both. This gives us the best of all worlds; we can
+    give fast feedback to the user in JavaScript, but then recheck the results on
+    the server side to make sure that nothing got past our client-side checks. The
+    flipside of this is that we end up wasting time on CPU cycles checking legitimate
+    data twice, and we also have to put more effort into development as we have to
+    write validation checks in JavaScript and in Python.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后的选择是两者兼顾。这样可以让我们兼顾各方面的利益；我们可以在JavaScript中快速向用户提供反馈，然后在服务器端重新检查结果，以确保没有绕过客户端检查。另一方面，这样做的缺点是我们最终会浪费CPU周期来检查合法数据两次，而且我们还需要在开发中付出更多的努力，因为我们需要在JavaScript和Python中编写验证检查。
+- en: In this project, as we will implement our form management from scratch, we'll
+    just do some very basic checks on the server side and no checking on the client
+    side. In our next project, when we use frameworks to handle user input, we'll
+    discuss how to easily use some more sophisticated validation methods.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个项目中，由于我们将从头开始实现表单管理，我们只会在服务器端进行一些非常基本的检查，而不会在客户端进行检查。在我们下一个项目中，当我们使用框架来处理用户输入时，我们将讨论如何轻松使用一些更复杂的验证方法。
+- en: Identifying inputs that require validation
+  id: totrans-13
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 识别需要验证的输入
+- en: We have already noted that not all browsers support the HTML5 `"date"` type
+    input. This means that, as our site stands, some users will possibly type the
+    date of the crime in manually, and this means that we need to be able to deal
+    with the user inputting dates in various formats. Our database expects yyyy-mm-dd
+    (for example, 2015-10-10 for October 10, 2015), but our users will not necessarily
+    conform to this format even if we tell them to. The **Date** field, then, is one
+    of the inputs we would want to validate.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经注意到，并非所有浏览器都支持HTML5的“date”类型输入。这意味着，就我们的网站而言，一些用户可能会手动输入犯罪日期，这意味着我们需要能够处理用户以各种格式输入日期。我们的数据库期望yyyy-mm-dd（例如，2015-10-10代表2015年10月10日），但我们的用户不一定会遵守这个格式，即使我们告诉他们。因此，“日期”字段是我们希望验证的输入之一。
+- en: Our **Latitude** and **Longitude** fields are also editable by the user, and
+    therefore the user could enter text or other invalid coordinates in them. We could
+    add validation checks for these, but, as the user should never actually need to
+    edit these values, we'll instead consider how to make them *read only*. We'll
+    add a validation check to make sure that the user has not left them blank, though.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的“纬度”和“经度”字段也可以由用户编辑，因此用户可能会在其中输入文本或其他无效的坐标。我们可以为这些字段添加验证检查，但是，由于用户实际上不应该需要编辑这些值，我们将考虑如何将它们设置为*只读*。我们将添加验证检查，以确保用户没有将它们留空。
+- en: The **Description** is the most obviously dangerous field. The user can freely
+    input text here, and this means that the user has opportunities to *inject* code
+    into our app. This means that instead of filling in a text description, as we'd
+    probably expect, the user can input JavaScript or HTML code here that interferes
+    with the code that we expect to run. Doing so would be an example of a so-called
+    XSS or cross-site scripting attack, and we'll look at some malicious inputs that
+    a user might use here.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**描述**是最明显危险的字段。用户可以在这里自由输入文本，这意味着用户有机会*注入*代码到我们的应用中。这意味着用户可以在这里输入干扰我们期望运行的代码的JavaScript或HTML代码，而不是填写文本描述，正如我们可能期望的那样。这样做将是所谓的XSS或跨站点脚本攻击的一个例子，我们将看一些用户可能在这里使用的恶意输入。'
+- en: Our last input is the **Category**. This might seem perfectly safe as the user
+    has to select it from a drop-down list. However, it's important that the drop-down
+    is merely a convenience, and, actually, a user with some very basic knowledge
+    can use free-form text here as well. This is because the browser uses the information
+    from the form to create a `POST` request, which it sends to our server. As a `POST`
+    request is just text that is structured in a certain way and sent over HTTP; there
+    is nothing stopping our tech-savvy users from constructing the `POST` request
+    without using a web browser (they could use Python or another programming language
+    instead or even some more specialized, but freely available software, such as
+    BURP Suite).
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的最后一个输入是**类别**。这可能看起来非常安全，因为用户必须从下拉列表中进行选择。然而，重要的是下拉列表只是一种便利，实际上，具有一些基本知识的用户也可以在这里使用自由格式的文本。这是因为浏览器使用表单中的信息创建`POST`请求，然后将其发送到我们的服务器。由于`POST`请求只是以某种方式结构化并通过HTTP发送的文本，所以我们的技术娴熟的用户可以构造`POST`请求而不使用Web浏览器（他们可以使用Python或其他编程语言，甚至一些更专门的，但免费提供的软件，如BURP
+    Suite）。
+- en: As we can see, all of our inputs need validation in some form or another. Before
+    we take a look at exactly how to go about validating input, let's take a brief
+    look at what a malicious user might do if we decided not to implement validation.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，我们所有的输入都需要以某种形式进行验证。在我们看一下如何验证输入之前，让我们简要看一下如果我们决定不实施验证，恶意用户可能会做些什么。
+- en: Trying out an XSS example
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 尝试XSS示例
+- en: One of the most sought-after attacks by malicious users is a so-called *persistent*
+    XSS attack. This means that the attacker not only manages to inject code into
+    your web app but this injected code also remains for an extended period of time.
+    Most often, this is achieved by tricking the app into storing the malicious, injected
+    code in a database and then running the code on a page on subsequent visits.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恶意用户最渴望的攻击之一是所谓的*持久性* XSS 攻击。这意味着攻击者不仅成功地将代码注入到您的Web应用程序中，而且这些注入的代码还会在较长时间内保留。通常情况下，这是通过欺骗应用程序将恶意注入的代码存储在数据库中，然后在后续访问页面时运行代码来实现的。
+- en: Note
+  id: totrans-21
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: In the following examples, we will *break* our application, specific inputs
+    to our form. You will need to log in to the database on VPS afterwards to manually
+    clear these inputs that leave our app in a broken state.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的示例中，我们将*破坏*我们的应用程序，特定输入到我们的表单。然后，您需要登录到VPS上的数据库，手动清除这些使我们的应用程序处于破碎状态的输入。
+- en: 'As our app currently stands, an attacker could carry out a persistent XSS attack
+    by filing out the **Category**, **Date**, **Latitude**, and **Longitude** fields
+    as usual, and using the following for the **Description** field:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就我们目前的应用而言，攻击者可以通过填写**类别**、**日期**、**纬度**和**经度**字段，然后在**描述**字段中使用以下内容来进行持久性XSS攻击：
+- en: '[PRE0]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'This might look a bit strange, but give it a go. You should see the following:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可能看起来有点奇怪，但试一试。你应该会看到以下内容：
+- en: '![Trying out an XSS example](img/B04312_08_01.jpg)'
+  id: totrans-26
+  prefs: []
+  type: TYPE_IMG
+  zh: '![尝试XSS示例](img/B04312_08_01.jpg)'
+- en: 'And after you click **OK** on the popup, you''ll probably notice a strange
+    excerpt from JavaScript at the top of our page (your value for `longitude` will
+    be different, depending on where you placed the marker):'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在你点击弹出窗口上的**确定**后，你可能会注意到页面顶部的JavaScript代码片段（你的`longitude`值将不同，取决于你放置标记的位置）。
+- en: '[PRE1]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Let's look at what happened here. If we look at the full source code of our
+    page, as it got interpreted by our browser, things will make more sense. Right-click
+    on the page and click on **View Page Source** or an equivalent.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看这里发生了什么。如果我们查看页面的完整源代码，就会更清楚地理解。右键单击页面，然后单击**查看页面源代码**或等效选项。
+- en: 'The `placecrimes()` call in the `initialize` function of our JavaScript code
+    can be seen to now read as follows:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的JavaScript代码中`initialize`函数中的`placecrimes()`调用现在看起来如下：
+- en: '[PRE2]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'If your browser uses any form of code highlighting, it''ll be easier to see
+    what''s happening. The opening `<script>` tag near the beginning of our page is
+    now closed by the description of our first crime, as our browser knows to interpret
+    anything that comes between `<script>` and `</script>` as JavaScript code. As
+    we have `</script>` at the beginning of our `"description"`, the browser closes
+    this section of JavaScript. Immediately after this, a new JavaScript section is
+    opened by `<script>`, which is the next part of our description. Following this,
+    we have `alert(1);`, which simply creates the pop-up box with **1** in it that
+    we noted earlier. This script section is closed again, and the rest of our page
+    is now interpreted as a mess by our browser. We can see the rest of our JSON (`"longitude":
+    …` ) until halfway through our `for` loop is displayed to the user, and the "`<`"
+    symbol from `i<crimes.length` is now interpreted by the browser as another opening
+    tag so that the JavaScript that follows this is hidden again.'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '如果您的浏览器使用任何形式的代码高亮，那么更容易看到发生了什么。在我们页面开头附近的开放`<script>`标签现在被我们第一个犯罪的描述所关闭，因为我们的浏览器知道要解释`<script>`和`</script>`之间的任何内容为JavaScript代码。由于我们在`"description"`的开头有`</script>`，浏览器关闭了这部分JavaScript。紧接着，新的JavaScript部分由`<script>`打开，这是我们描述的下一部分。接着，我们有`alert(1);`，它只是创建了我们之前注意到的带有**1**的弹出框。这个脚本部分再次关闭，我们页面的其余部分现在被我们的浏览器解释为一团糟。我们可以看到我们JSON的其余部分(`"longitude":
+    …` )直到我们`for`循环的一半被显示给用户，而`i<crimes.length`中的"`<`"符号现在被浏览器解释为另一个开放标签，因此随后的JavaScript再次被隐藏。'
+- en: 'To fix our app, wipe all the crime data from your database with the following
+    commands (which you should run on VPS):'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了修复我们的应用程序，请使用以下命令从数据库中删除所有犯罪数据（您应该在VPS上运行这些命令）：
+- en: '[PRE3]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'You should see a message about how many crime records were deleted from the
+    `crimes` table, similar to that seen in the following screenshot:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该看到有关从`crimes`表中删除了多少犯罪记录的消息，类似于以下截图中看到的消息：
+- en: '![Trying out an XSS example](img/B04312_08_02.jpg)'
+  id: totrans-36
+  prefs: []
+  type: TYPE_IMG
+  zh: '![尝试XSS示例](img/B04312_08_02.jpg)'
+- en: The potential of persistent XSS
+  id: totrans-37
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 持久性XSS的潜力
+- en: It may seem pretty bad that our web application is broken. Worse still, reloading
+    the page is not a solution. As the malicious description is stored in our database,
+    the same issue will appear no matter how many times we reload the page. Even worse,
+    the "`alert(1);`" example is just this—an example to show that the attacker has
+    the freedom to run any code he or she desires. Often, an attacker uses this to
+    trick the user into visiting another (malicious) page, banking on the fact that
+    the user trusts the original page and will, therefore, be more likely trust the
+    content on it. The possibilities are really only limited by our attacker's imagination.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的网络应用程序出现故障似乎很糟糕。更糟糕的是，重新加载页面并不是一个解决方案。由于恶意描述存储在我们的数据库中，无论我们多少次重新加载页面，都会出现相同的问题。更糟糕的是，"`alert(1);`"示例就是这样一个示例，用来显示攻击者有权利运行任何他或她想要的代码。通常，攻击者利用这一点来诱使用户访问另一个（恶意）页面，因为用户相信原始页面，因此更有可能相信其中的内容。可能性实际上只受到我们攻击者想象力的限制。
+- en: Validating and sanitizing
+  id: totrans-39
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 验证和清理
+- en: To prevent the preceding, we've already chosen to inspect the data on the server
+    side and make sure it conforms to our expectation. We still have a few more choices
+    to make, though.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了防止上述情况发生，我们已经选择在服务器端检查数据，并确保其符合我们的期望。不过，我们还有一些选择要做。
+- en: White and blacklisting
+  id: totrans-41
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 白名单和黑名单
+- en: We need to create some rules to choose between acceptable inputs and unacceptable
+    inputs, and there are two main ways of doing this. One way is to *blacklist* inputs
+    that look malicious. Using this method, we would create a list of characters that
+    might be used maliciously, such as "`<`" and "`>`", and we will reject inputs
+    that contain these characters. The alternative is to use a *whitelist* approach.
+    This is the opposite of blacklisting, in that, instead of choosing which characters
+    we won't allow, we can choose a list of characters that we *will* allow.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要创建一些规则来选择可接受的输入和不可接受的输入，有两种主要方法可以做到这一点。一种方法是*黑名单*输入看起来恶意。使用这种方法，我们将创建一个可能被恶意使用的字符列表，比如"`<`"和"`>`"，并且我们将拒绝包含这些字符的输入。另一种方法是使用*白名单*方法。这与黑名单相反，我们可以选择一个我们*允许*的字符列表，而不是选择我们不允许的字符。
+- en: It may seem like a nit-picky distinction, but it is important nonetheless. If
+    we go with a blacklist approach, we are more likely to be outsmarted by malicious
+    users who manage to inject code using only characters that we haven't added to
+    our ban list.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这似乎是一个微不足道的区别，但它仍然很重要。如果我们选择黑名单方法，我们更有可能被恶意用户智能地使用我们没有添加到禁止列表的字符来注入代码。
+- en: On the other hand, using a whitelist approach, we are more likely to frustrate
+    users who want to use characters which we haven't thought to add to the whitelist.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，使用白名单方法，我们更有可能让想要使用我们没有考虑添加到白名单的字符的用户感到沮丧。
+- en: As our app only requires a `"description"` input to be free-text and because
+    our app is localized (in the examples we used, the app is specific to Grahamstown,
+    South Africa, and therefore we will expect our users to only need normal Latin
+    characters and not, for example, Chinese characters), we should be able to employ
+    whitelisting without getting in the way of our users.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们的应用程序只需要一个`"description"`输入来进行自由文本，并且因为我们的应用程序是本地化的（在我们使用的示例中，该应用程序是特定于南非格雷厄姆斯敦，因此我们预计我们的用户只需要普通的拉丁字符，而不是例如中文字符），我们应该能够在不妨碍用户的情况下使用白名单。
+- en: Validating versus sanitizing
+  id: totrans-46
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 验证与清理
+- en: Next, we have to decide what to do with invalid input. Do we reject it completely
+    and ask the user to try again, or do we just strip away the invalid parts of the
+    user input and keep the rest? Removing or modifying user input (for example, by
+    adding escape characters) is referred to as *sanitizing* the input. The advantage
+    of this approach is that the user is often oblivious to it; if he or she inadvertently
+    includes a special character in the description of the crime and we remove it,
+    it's unlikely to make the rest of the description incomprehensible or worthless.
+    The disadvantage is that if the user does end up relying on too many characters
+    that we have blacklisted, it can corrupt the information to the point of being
+    unusable or even misconstruing what the user intended.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们必须决定如何处理无效输入。我们是完全拒绝它并要求用户重试，还是只剥离用户输入的无效部分并保留其余部分？删除或修改用户输入（例如添加转义字符）被称为*净化*输入。这种方法的优势是用户通常对此毫不知情；如果他或她在犯罪描述中无意中包含特殊字符，而我们将其删除，这不太可能使描述的其余部分变得难以理解或毫无价值。缺点是，如果用户最终依赖我们列入黑名单的太多字符，它可能会使信息损坏到无法使用甚至误解用户的本意。
+- en: Implementing validation
+  id: totrans-48
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 实施验证
+- en: 'With all of the preceding in mind, we want to:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到所有前述内容，我们希望：
+- en: Check the category that the user submits and make sure it is in the list of
+    categories that we expect
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查用户提交的类别，并确保它在我们期望的类别列表中
+- en: Check the date that the user submits and make sure that we can properly understand
+    it as a date
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查用户提交的日期，并确保我们可以正确理解它作为日期。
+- en: Check the latitude and longitude that the user submits and make sure that these
+    are parsable as floating point numbers
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查用户提交的纬度和经度，并确保这些可以解析为浮点数
+- en: Check the description that the user submits and strip out all characters except
+    for those that are alphanumeric or part of a preselected list of basic punctuation
+    characters
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查用户提交的描述，并剥离除了字母数字字符或基本标点字符预选列表之外的所有字符
+- en: Although we'll silently edit the `description` to remove non-whitelisted characters,
+    we want to reject the entire submission and make the user start again if the other
+    fields aren't as we expect. We, therefore, also want to add a way of displaying
+    custom error messages to the user after he or she submits the form. Let's add
+    a few Python functions to help us with all of this. We'll also restructure some
+    of our code to conform to the *Don't repeat yourself(DRY)* principle.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管我们会悄悄编辑“描述”以删除非白名单字符，但如果其他字段不符合我们的预期，我们希望拒绝整个提交并让用户重新开始。因此，我们还希望在用户提交表单后添加一种显示自定义错误消息的方法。让我们添加一些Python函数来帮助我们完成所有这些。我们还将重构一些代码以符合*不要重复自己（DRY）*原则。
+- en: Validating the category
+  id: totrans-55
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 验证类别
+- en: Previously, when we created the drop-down list for `categories`, we hardcoded
+    the two `categories` we wanted into our template. This is already not ideal as
+    it means that we have to write our more boilerplate code (such as HTML tags) if
+    we ever want to add or edit the `categories`. Now that we also want access the
+    list of `categories` in Python, so that we can validate that the user hasn't sneakily
+    used a category that isn't in our list, it makes sense to restructure it a bit
+    so that we only define our list of `categories` once.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以前，当我们为“类别”创建下拉列表时，我们在模板中硬编码了我们想要的两个“类别”。这已经不理想，因为这意味着如果我们想要添加或编辑“类别”，我们必须编写更多样板代码（如HTML标记）。现在我们还想在Python中访问“类别”列表，以便我们可以验证用户是否偷偷使用了不在我们列表中的类别，因此重构一下是有道理的，这样我们只定义一次我们的“类别”列表。
+- en: 'We''ll define the list in our Python code and then we can pass it to our template
+    to construct the drop-down list and use the same list for validation when the
+    user submits the form. At the top of `crimemap.py`, along with our other globals,
+    add the following:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在Python代码中定义列表，然后我们可以将其传递给模板以构建下拉列表，并在用户提交表单时使用相同的列表进行验证。在`crimemap.py`的顶部，与其他全局变量一起，添加以下内容：
+- en: '[PRE4]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'In the `return` statement of the `home()` function, pass in this list as a
+    named argument. The line should now look similar to this:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`home()`函数的`return`语句中，将此列表作为命名参数传递。该行现在应该类似于这样：
+- en: '[PRE5]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'In `home.html`, change the `<select>` block to use a Jinja `for` loop, as follows:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`home.html`中，更改`<select>`块以使用Jinja的`for`循环，如下所示：
+- en: '[PRE6]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: With these small modifications, we have a much easier way to maintain our list
+    of `categories`. We can now also use the new list to validate. As the category
+    is provided by a drop-down list, the average user does not enter an invalid value
+    here, so we don't have to worry too much about providing polite feedback. In this
+    case, we'll just ignore the submission and return to the home page again.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这些小修改，我们有了一种更容易维护我们的“类别”列表的方法。我们现在还可以使用新列表进行验证。由于类别是由下拉列表提供的，普通用户在这里不会输入无效值，因此我们不必太担心提供礼貌的反馈。在这种情况下，我们将忽略提交并再次返回主页。
+- en: 'Add the following `if` statement directly below where we loaded the category
+    data into a variable in the `submitcrime()` function:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`submitcrime()`函数中加载类别数据到变量中的位置下方直接添加以下`if`语句：
+- en: '[PRE7]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: If triggered, this `return` would happen before we add anything to the database,
+    and our user's attempted input would be discarded.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果触发了这个“返回”，它会在我们向数据库添加任何内容之前发生，并且我们用户尝试的输入将被丢弃。
+- en: Validating the location
+  id: totrans-67
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 验证位置
+- en: 'As our location data should be populated automatically by the marker that the
+    user places on the map, we want to make these fields `readonly`. This means that
+    our JavaScript will still be able to modify the values as the marker gets used,
+    but the fields will reject input or modification from the user''s keyboard. To
+    do this, simply add the `readonly` attribute where we define the form in our `home.html`
+    template. The updated `input` definitions should look as follows:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们的位置数据应该由用户在地图上放置的标记自动填充，我们希望将这些字段设置为`readonly`。这意味着我们的JavaScript仍然可以修改值，因为标记被使用，但字段将拒绝用户键盘的输入或修改。要做到这一点，只需在`home.html`模板中定义表单的地方添加`readonly`属性。更新后的`input`定义应如下所示：
+- en: '[PRE8]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: As with the drop-down list, though, the `readonly` property is only enforced
+    at a browser level and is easily bypassed. We, therefore, want to add a server-side
+    check as well. To do this, we'll use the Python philosophy of "it is better to
+    ask for forgiveness than permission", or, in other words, assume everything will
+    be OK and deal with the other cases in an `except` block instead of using too
+    many `if` statements.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与下拉列表一样，`readonly`属性仅在浏览器级别执行，并且很容易被绕过。因此，我们还希望添加服务器端检查。为此，我们将使用Python的哲学“宁可请求原谅，而不是征得许可”，换句话说，假设一切都会没问题，并在`except`块中处理其他情况，而不是使用太多的`if`语句。
+- en: 'If we can parse the user''s location data into floating point numbers, it''s
+    almost definitely safe as it''s pretty difficult to do things such as modifying
+    HTML, JavaScript, or SQL code using only numbers. Add the following code around
+    the section of the `submitcrime()` function where we parse the location inputs:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们可以将用户的位置数据解析为浮点数，那几乎肯定是安全的，因为只用数字很难做一些事情，比如修改HTML、JavaScript或SQL代码。在我们解析位置输入的`submitcrime()`函数部分周围添加以下代码：
+- en: '[PRE9]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: If there's any unexpected text in the `latitude` or `longitude` inputs, `ValueError`
+    will be thrown when we attempt to cast to the float type, and, again, we'll return
+    to the home page before putting any of the potentially dangerous data into our
+    database.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果`latitude`或`longitude`输入中有任何意外的文本，在我们尝试转换为浮点类型时，将抛出`ValueError`，然后我们将返回到主页，而不会将任何潜在危险的数据放入我们的数据库。
+- en: Validating the date
+  id: totrans-74
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 验证日期
+- en: For the `date` input, we could take the same approach as we did for the `category`.
+    Most of the time, the user will select the date from a calendar picker and, therefore,
+    will be unable to input an invalid date. However, as not all browsers support
+    the `date` input type, sometimes, normal users will type out the dates manually,
+    and this may lead to accidental error.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于`date`输入，我们可以采取与`category`相同的方法。大多数情况下，用户将从日历选择器中选择日期，因此将无法输入无效日期。但是，由于并非所有浏览器都支持`date`输入类型，有时普通用户会手动输入日期，这可能会导致意外错误。
+- en: Therefore, in this case, we don't only want to reject invalid input. We want
+    to, as far as possible, work out what the user intended, and if we cannot, we
+    want to display a message to the user to indicate what needs to be fixed.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在这种情况下，我们不仅要拒绝无效的输入。我们希望尽可能弄清楚用户的意图，如果我们不能，我们希望向用户显示一条消息，指出需要修复的地方。
+- en: 'To allow for a more flexible input, we''ll use a Python module called `dateparser`.
+    This module allows us to take even inconsistently formatted dates and convert
+    them into accurate Python `datetime` objects. The first thing we need to do is
+    install it through `pip`. Run the following command locally *and* on VPS:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了允许更灵活的输入，我们将使用一个名为`dateparser`的Python模块。该模块允许我们将格式不一致的日期转换为准确的Python `datetime`对象。我们需要做的第一件事是通过`pip`安装它。在本地和VPS上运行以下命令：
+- en: '[PRE10]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'If you haven''t used it before, you might like to play around a bit with the
+    possibilities. The following standalone script demonstrates some of the magic
+    that `dateparser` provides:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您以前没有使用过它，您可能会喜欢尝试一下它的可能性。以下独立脚本演示了`dateparser`提供的一些魔力：
+- en: '[PRE11]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: All the preceding strings are correctly parsed into `datetime` objects, except,
+    arguably, the last one, as `dateparser` uses the American format and interprets
+    it to be March 4, 2015, instead of April 3, 2015.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有前面的字符串都被正确解析为`datetime`对象，最后一个可能是例外，因为`dateparser`使用美国格式，并将其解释为2015年3月4日，而不是2015年4月3日。
+- en: Some more examples as well as other information about the `dateparser` module
+    can be found on PyPI at [https://pypi.python.org/pypi/dateparser](https://pypi.python.org/pypi/dateparser).
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还可以在PyPI上找到更多示例以及关于`dateparser`模块的其他信息[https://pypi.python.org/pypi/dateparser](https://pypi.python.org/pypi/dateparser)。
+- en: Just using this package will solve a lot of our problems as we can now transform
+    invalid inputs into valid ones without any help from the user at all. The slight
+    inconvenience is that we have already set up our database to accept dates to be
+    inserted as strings in the "*yyyy-mm-dd*" format; however, to take advantage of
+    our new `dateparser` module, we'll want to convert the user's input to a `datetime`
+    object. The slightly counterintuitive workaround is to convert the string input
+    we receive from the user to a `datetime` object and then back to a string (which
+    will always be in the correct format) before passing it into our database code
+    to store in MySQL.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仅使用此软件包将解决我们很多问题，因为我们现在可以将无效输入转换为有效输入，而无需用户的任何帮助。稍微不方便的是，我们已经设置了数据库接受以"*yyyy-mm-dd*"格式插入的日期；但是，为了利用我们的新`dateparser`模块，我们将希望将用户的输入转换为`datetime`对象。稍微反直觉的解决方法是将我们从用户那里收到的字符串输入转换为`datetime`对象，然后再转换为字符串（始终以正确的格式），然后将其传递到我们的数据库代码中存储在MySQL中。
+- en: 'First off, add the following helper function to your `crimemap.py` file:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在您的`crimemap.py`文件中添加以下辅助函数：
+- en: '[PRE12]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Also, add the imports for the `datetime` and `dateparser` modules to the top
+    of `crimemap.py`, as follows:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，将`crimemap.py`的顶部添加`datetime`和`dateparser`模块的导入，如下所示：
+- en: '[PRE13]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: We'll pass the `date` as input by our user (`userdate`) into this function and
+    parse this using our `dateparser` module. If the date is completely unparsable
+    (for example, "`aaaaa`"), the `dateparser.parse` function will just return nothing
+    instead of throwing an error. Therefore, we will put the call to `strftime`, which
+    will format the date as a string in the correct format into a `try except` block;
+    if our `date` variable is empty, we'll get a `TypeError`, in which case our helper
+    function will also return `None`.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过用户输入的`date`（`userdate`）传递给这个函数，并使用我们的`dateparser`模块进行解析。如果日期完全无法解析（例如，“`aaaaa`”），`dateparser.parse`函数将返回空而不是抛出错误。因此，我们将调用`strftime`，它将以正确的格式将日期格式化为字符串，放入`try
+    except`块中；如果我们的`date`变量为空，我们将得到`TypeError`，在这种情况下，我们的辅助函数也将返回`None`。
+- en: 'Now, we need to decide what to do in case we cannot parse the date. Unlike
+    the other validation cases we looked at, in this case, we want to prompt the user
+    with a message saying that we were unable to understand his or her input. To achieve
+    this, we''ll add an error message parameter to the `home()` function and pass
+    in a relevant error message from the `submitcrime()` function. Modify the `home()`
+    function to add the parameter and to pass the parameter into our template, as
+    follows:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要决定如果无法解析日期该怎么办。与我们之前看到的其他验证情况不同，在这种情况下，我们希望向用户提示一条消息，说明我们无法理解他或她的输入。为了实现这一点，我们将在`home()`函数中添加一个错误消息参数，并从`submitcrime()`函数中传递相关的错误消息。修改`home()`函数以添加参数，并将参数传递到我们的模板中，如下所示：
+- en: '[PRE14]'
+  id: totrans-90
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Then, modify the `submitcrime()` function to add some logic to parsing the
+    date input by our user and to pass an error message to our `home()` function if
+    we fail to parse the `date`, as follows:'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，修改`submitcrime()`函数，添加一些逻辑来解析用户输入的日期，并在无法解析`date`时向我们的`home()`函数传递错误消息，如下所示：
+- en: '[PRE15]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'We also need to add a section to our template file to display the error message
+    if it exists. We''ll add it to the top of the form where it should catch the user''s
+    attention via the following code:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还需要在模板文件中添加一个部分来显示错误消息（如果存在的话）。我们将把它添加到表单的顶部，通过以下代码引起用户的注意：
+- en: '[PRE16]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'We will add the preceding `if` statement as we''ll otherwise see the word "`None`"
+    appear above our form when the `error_message` variable has its default value
+    of `None`. Also, note that the message itself appears in a `<div>` tag with an
+    ID of error. This allows us to add some CSS to make the error message appear in
+    red. Add the following block to your `style.css` file in your static directory:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将添加前面的`if`语句，否则当`error_message`变量具有默认值`None`时，我们将在表单上方看到单词“`None`”。另外，请注意，消息本身出现在具有ID为error的`<div>`标签中。这允许我们添加一些CSS使错误消息以红色显示。在您的静态目录中的`style.css`文件中添加以下块：
+- en: '[PRE17]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'That''s it for validating our date. If you have a browser that does not support
+    the `date` input, try creating a new crime and inputting a string that even `dateparser`
+    cannot interpret as a legitimate date to make sure you see the error as expected.
+    It should look something similar to the following image:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是我们验证日期的方法。如果您的浏览器不支持`date`输入，请尝试创建一个新的犯罪，并输入一个连`dateparser`也无法解释为合法日期的字符串，以确保您看到预期的错误。它应该看起来类似于以下图片：
+- en: '![Validating the date](img/B04312_08_03.jpg)'
+  id: totrans-98
+  prefs: []
+  type: TYPE_IMG
+  zh: '![验证日期](img/B04312_08_03.jpg)'
+- en: Note
+  id: totrans-99
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Flask provides some pretty nifty functionality for message *flashing*—that is,
+    to display optional text to the user at a specific position on the page. This
+    has some more powerful and flexible functionality than the basic example we discussed,
+    and should certainly be considered for similar cases. Information about message
+    flashing in Flask can be found at [http://flask.pocoo.org/docs/0.10/patterns/flashing/](http://flask.pocoo.org/docs/0.10/patterns/flashing/).
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Flask提供了一些非常方便的消息*闪烁*功能，即在页面的特定位置显示可选文本。这比我们讨论的基本示例具有更强大和灵活的功能，并且应该在类似的情况下予以考虑。有关Flask中消息闪烁的信息可以在[http://flask.pocoo.org/docs/0.10/patterns/flashing/](http://flask.pocoo.org/docs/0.10/patterns/flashing/)找到。
+- en: Validating the description
+  id: totrans-101
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 验证描述
+- en: 'We can assume that a user will be able to convey basic information about a
+    crime using only numbers, letters (capital and lowercase), and some basic punctuation
+    marks, so let''s create a simple Python function that filters out all characters
+    from a string except the ones we have identified as safe. Add the following `sanitize()`
+    function to your `crimemap.py` file:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以假设用户只能使用数字、字母（大写和小写）和一些基本的标点符号来传达有关犯罪的基本信息，因此让我们创建一个简单的Python函数，过滤掉除了我们已确定为安全的字符之外的所有字符。在您的`crimemap.py`文件中添加以下`sanitize()`函数：
+- en: '[PRE18]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Then, add the import for string to the imports section of `crimemap.py`, as
+    follows:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，在`crimemap.py`的导入部分添加字符串的导入，如下所示：
+- en: '[PRE19]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Our `sanitize_string()` function is quite concise, and uses some of Python's
+    functional programming potential. The `filter` function applies another function
+    repeatedly for each element in a list and builds a new list based on the ones
+    that "pass." In this case, the function that we will pass into `filter()` is a
+    simple `lambda` function that checks whether or not a letter belongs to our `whitelist`.
+    The result of our function is a string similar to the input one, but with all
+    the characters that aren't part of our whitelist removed.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的`sanitize_string()`函数非常简洁，并使用了Python的一些函数式编程潜力。`filter`函数对列表中的每个元素重复应用另一个函数，并基于“通过”的元素构建一个新列表。在这种情况下，我们将传递给`filter()`的函数是一个简单的`lambda`函数，用于检查字母是否属于我们的白名单。我们函数的结果是一个类似于输入的字符串，但删除了不属于我们白名单的所有字符。
+- en: Our whitelist is built from all the letters (uppercase and lowercase), the digits
+    one to nine, and some basic punctuation marks that people may use while typing
+    informal descriptions of events.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的白名单是由所有字母（大写和小写）、数字一到九以及一些基本的标点符号构建而成，人们在输入事件的非正式描述时可能会使用这些标点符号。
+- en: 'To use our new function, simply change the line near the end of the `submitcrime()`
+    function in `crimemap.py` from the following to the subsequent:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使用我们的新函数，只需将`crimemap.py`中`submitcrime()`函数末尾的行从以下内容更改为以下内容：
+- en: '[PRE20]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: Note that, as our SQL driver mitigates against SQL injection and our `json.dumps()`
+    function escapes double quotation marks, we should be largely safe just by blacklisting
+    characters such as angle brackets, which we used to demonstrate an XSS attack.
+    This would allow more flexibility for our users, but malicious users can be determined
+    and creative in crafting input that will bypass the filters we set up. Refer to
+    [https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet](https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet)
+    for some examples. Give the validation changes a go locally first and then, if
+    everything looks good by committing to `git`, push the repo to the remote, and
+    pull it onto VPS. Restart Apache and visit your IP address. Try submitting a crime
+    using `</script>` in the `description`, and you'll notice when you hover the cursor
+    over the marker for this crime that all we've stored is "`script`". We will strip
+    the slash and the angle brackets, thus ensuring protection against XSS.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，由于我们的SQL驱动程序可以减轻SQL注入，而我们的`json.dumps()`函数可以转义双引号，因此我们只需在黑名单中列出一些字符，比如尖括号，我们就可以基本上安全了，我们用它来演示XSS攻击。这将为我们的用户提供更多的灵活性，但是恶意用户可能会决心并且有创造力地制作输入，以绕过我们设置的过滤器。参考[https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet](https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet)获取一些例子。首先在本地尝试验证更改，然后，如果一切看起来都很好，就提交到`git`，将存储库推送到远程，并将其拉到VPS上。重新启动Apache并访问您的IP地址。尝试在`description`中提交一个使用`</script>`的犯罪，当您将光标悬停在这个犯罪的标记上时，您会注意到我们存储的只是"`script`"。我们将删除斜杠和尖括号，从而确保防止XSS攻击。
+- en: 'We already discussed the pros and cons of blacklisting and whitelisting, but,
+    to emphasise that whitelisting is not a perfect approach, take a look at the post
+    here about mistakes developers often make when whitelisting an input for users''
+    names: [http://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/](http://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/)'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经讨论了黑名单和白名单的利弊，但是为了强调白名单并不是一个完美的方法，看一下这里关于开发人员在为用户的名称设置白名单时经常犯的错误的帖子：[http://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/](http://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/)
+- en: The last change we can make to our `dbhelper.py`, `mockdbhelper.py`, and `crimemap.py`
+    files is to remove the functions we no longer need. When we had a basic database
+    application that was not specific to crimes, we had the `get_all_inputs()`, `add_input()`,
+    and `clear_all()` functions in our `DBHelper` classes and the `add()` and `clear()`
+    functions in our `crimemap.py` file. All of these can be removed.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以对我们的`dbhelper.py`、`mockdbhelper.py`和`crimemap.py`文件进行的最后一个更改是删除我们不再需要的函数。当我们有一个不特定于犯罪的基本数据库应用程序时，我们在我们的`DBHelper`类中有`get_all_inputs()`、`add_input()`和`clear_all()`函数，在我们的`crimemap.py`文件中有`add()`和`clear()`函数。所有这些都可以被移除。
+- en: Summary
+  id: totrans-113
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: We have spent a whole chapter looking at validation, but if you look at the
+    major companies that have faced information security breaches over the last few
+    years, you'll agree that security is worth spending some time on. We looked specifically
+    at cross-site scripting or XSS attacks, but we also discussed some more general
+    points of input validation. This takes us to the end of our second project.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经花了一整章的时间来研究验证，但是如果你看一下过去几年面临信息安全漏洞的主要公司，你会同意安全是值得花一些时间的。我们特别关注了跨站脚本攻击或XSS攻击，但我们也讨论了一些更一般的输入验证要点。这让我们来到了我们第二个项目的结束。
+- en: One thing that is notably missing is to work out who added which crimes. If
+    one malicious user adds a bunch of bogus crimes to our database, they could potentially
+    mess up our entire dataset!
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个明显缺失的事情是弄清楚是谁添加了哪些犯罪。如果一个恶意用户向我们的数据库添加了一堆虚假的犯罪，他们可能会搞乱我们整个数据集！
+- en: In our next project, we'll look at authenticating users through a User Account
+    Control system, which will give us more control over who we let on our site and
+    what they can do.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的下一个项目中，我们将研究通过用户帐户控制系统对用户进行身份验证，这将使我们对我们允许在我们的网站上的用户以及他们可以做什么有更多的控制。

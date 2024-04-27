@@ -1,0 +1,2077 @@
+- en: Adding a Vuex Store
+  id: totrans-0
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 添加Vuex存储
+- en: Having a database system such as MongoDB to manage our data is great, as we
+    can use it to remotely request data for our routes whenever required. However,
+    occasionally, we need to share some data across pages or components, and we don't
+    want to make additional and unnecessary HTTP requests for this kind of data. Ideally,
+    we would like to have a central place in our local app where we can store this
+    "omnipresent" and centralized data. Fortunately, we have a system called Vuex
+    to store this kind of data for us, and that is what you will explore in this chapter.
+    So, in this chapter, you will learn how to use Vuex for state management (centralized
+    data management) in your apps. You will learn about the Vuex architecture, its
+    core concepts, and the suggested directory structure for managing modular Vuex
+    stores. Lastly, you will learn how to activate and use a Vuex store in Nuxt apps.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 拥有像MongoDB这样的数据库系统来管理我们的数据是很棒的，因为我们可以使用它在需要时远程请求我们路由的数据。然而，偶尔我们需要在页面或组件之间共享一些数据，并且我们不希望为这种数据进行额外和不必要的HTTP请求。理想情况下，我们希望在本地应用程序中有一个中心位置来存储这种“无处不在”的和集中的数据。幸运的是，我们有一个名为Vuex的系统来为我们存储这种数据，这就是你将在本章中探索的内容。因此，在本章中，您将学习如何在应用程序中使用Vuex进行状态管理（集中式数据管理）。您将了解Vuex的架构、其核心概念以及管理模块化Vuex存储的建议目录结构。最后，您将学习如何在Nuxt应用程序中激活和使用Vuex存储。
+- en: 'The topics we will cover in this chapter are as follows:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章我们将涵盖的主题如下：
+- en: Understanding the Vuex architecture
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解Vuex的架构
+- en: Getting started with Vuex
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开始使用Vuex
+- en: Understanding Vuex core concepts
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解Vuex的核心概念
+- en: Structuring Vuex store modules
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 构建Vuex存储模块
+- en: Handling forms in a Vuex store
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Vuex存储中处理表单
+- en: Using a Vuex store in Nuxt
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Nuxt中使用Vuex存储
+- en: Understanding the Vuex architecture
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解Vuex架构
+- en: Before learning how to use a Vuex store in Nuxt apps, we should understand how
+    it works in standard Vue apps. But what is Vuex? Let's find out in the upcoming
+    section.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在学习如何在Nuxt应用程序中使用Vuex存储之前，我们应该了解它在标准Vue应用程序中的工作原理。但是什么是Vuex？让我们在接下来的部分中找出来。
+- en: What is Vuex?
+  id: totrans-11
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 什么是Vuex？
+- en: In a nutshell, Vuex is a centralized data (also referred as state) management
+    system with some rules (which we will look into later) to ensure that the state
+    can only be mutated predictably from multiple (distant) components that need to
+    access the common data. This idea of information centralization is common with
+    tools such as Redux in React. They all share a similar state management pattern
+    with Vuex. Let's take a look at what this pattern is in the next section.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，Vuex是一个集中式数据（也称为状态）管理系统，具有一些规则（我们稍后会详细了解），以确保状态只能可预测地从需要访问共同数据的多个（远程）组件中进行变异。这种信息集中的想法在Redux等工具中很常见。它们都与Vuex共享类似的状态管理模式。让我们在下一节看看这种模式是什么。
+- en: State management pattern
+  id: totrans-13
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 状态管理模式
+- en: 'To understand the state management pattern in Vuex, let''s take a look at a
+    simple Vue app that we are already familiar with:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了理解Vuex中的状态管理模式，让我们看一个我们已经熟悉的简单Vue应用程序：
+- en: '[PRE0]'
+  id: totrans-15
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'This simple app has the following parts:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个简单的应用程序有以下部分：
+- en: '`state`, which holds the source of the app'
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: “state”，保存应用程序的源
+- en: '`view`, which maps the state'
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: “view”，映射状态
+- en: '`actions`, which can be used to mutate the state from the view'
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: “actions”，可以用于从视图中变异状态
+- en: They work perfectly and are easy to manage in a small app like this, but this
+    simplicity becomes unsustainable and problematic when we have two or more components sharing
+    the same state, or when we want to mutate the state with actions from different
+    views.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它们在这样一个小应用程序中运行得很好，并且很容易管理，但是当我们有两个或更多组件共享相同状态时，或者当我们想要使用来自不同视图的操作来变异状态时，这种简单性就变得不可持续和有问题了。
+- en: Passing props can be the solution that pops into your mind, but this is tedious
+    for deeply nested components. That's where Vuex comes in, extracting the common
+    state and managing it globally in a specific location, called a store, so that
+    any component can access it from anywhere, regardless of how deep it is nested.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 传递 props 可能是你脑海中浮现的解决方案，但对于嵌套组件来说这很繁琐。这就是 Vuex 的作用，将通用状态提取出来并在一个特定位置全局管理，称为*store*，以便任何组件都可以从任何地方访问它，无论嵌套多深。
+- en: 'Thus, separation using state management with some enforced rules can maintain
+    the independence of the views and the state. Using this, we can make our code
+    more structured and maintainable. Let''s take a look at the architecture of Vuex
+    in the following diagram:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，使用状态管理进行分离并强制执行一些规则可以保持视图和状态的独立性。使用这种方法，我们可以使我们的代码更加结构化和可维护。让我们来看一下 Vuex
+    的架构，如下图所示：
+- en: '![](assets/4d4c9ca1-b841-4800-ace4-f04e8959c25a.png)'
+  id: totrans-23
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/4d4c9ca1-b841-4800-ace4-f04e8959c25a.png)'
+- en: 'Reference Source: [https://vuex.vuejs.org/](https://vuex.vuejs.org/)'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 参考来源：[https://vuex.vuejs.org/](https://vuex.vuejs.org/)
+- en: In a nutshell, Vuex consists of actions, mutations, and the state. The state
+    is always mutated through mutations, while mutations are always committed through
+    the actions in the Vuex lifecycle. The mutated state is then rendered to the components
+    and, at the same time, the actions are (usually) dispatched from the components.
+    Communication with the backend API usually occurs in the actions. Let's get started
+    with Vuex in the next section and dive into its constitutions.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，Vuex 由 actions、mutations 和 state 组成。状态始终通过 mutations 进行变化，而 mutations 则始终通过
+    Vuex 生命周期中的 actions 进行提交。变化后的状态然后被渲染到组件中，同时，actions 通常会从组件中派发。与后端 API 的通信通常发生在
+    actions 中。让我们在下一节开始使用 Vuex，并深入了解其构成。
+- en: Getting started with Vuex
+  id: totrans-26
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 开始使用 Vuex
+- en: As we mentioned in the previous section, all Vuex activities happen in a store,
+    which can be created simply in your project root. However, while it seems simple,
+    a Vuex store is different from a plain JavaScript object because a Vuex store
+    is reactive, just like the two-way binding on an `<input>` element with the `v-model`
+    directive. So, any state data you access in Vue components is *reactively *updated
+    when it is changed in the store. The data in the store's state must be *explicitly *committed
+    through mutations, just like we explained in the diagram in the previous section.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在前一节中提到的，所有 Vuex 活动都发生在一个 store 中，这个 store 可以简单地在项目根目录中创建。然而，虽然看起来很简单，但
+    Vuex store 与普通的 JavaScript 对象不同，因为 Vuex store 是响应式的，就像使用 `v-model` 指令在 `<input>`
+    元素上进行的双向绑定一样。因此，当你在 Vue 组件中访问任何状态数据时，当它在 store 中发生变化时，它会被*响应式地*更新。在 store 的状态中的数据必须通过
+    mutations *显式地*提交，就像我们在前一节的图表中解释的那样。
+- en: For this exercise, we will use a single-file component skeleton to build some
+    simple Vue apps with Vuex. We will put all our sample code in `/chapter-10/vue/vuex-sfc/`
+    in our GitHub repository. Let's get started.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个练习中，我们将使用单文件组件骨架来构建一些简单的带有 Vuex 的 Vue 应用程序。我们将把所有示例代码放在我们的 GitHub 仓库的 `/chapter-10/vue/vuex-sfc/`
+    中。让我们开始吧。
+- en: Installing Vuex
+  id: totrans-29
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装 Vuex
+- en: 'Before we can create a Vuex store, we must install Vuex and import it using
+    the following steps:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们创建 Vuex store 之前，我们必须通过以下步骤安装 Vuex 并导入它：
+- en: 'Install Vuex by using npm:'
+  id: totrans-31
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用 npm 安装 Vuex：
+- en: '[PRE1]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Import and register it by using the `Vue.use()` method:'
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用 `Vue.use()` 方法导入并注册它：
+- en: '[PRE2]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Remember that the preceding installation steps are meant to use Vuex with a
+    module system, which is what we are going for in this chapter. But before jumping
+    into a module system app, we should take a look at how we can create the Vuex
+    app by using CDN or a direct download in the next section.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，前面的安装步骤是为了在模块系统中使用 Vuex，这也是我们在本章中要做的。但在跳入模块系统应用程序之前，我们应该看一下如何通过 CDN 或直接下载来创建
+    Vuex 应用程序。
+- en: Note that Vuex requires Promise support. If your browser does not support Promise,
+    please check out how you can install a polyfill library for your apps at [https://vuex.vuejs.org/installation.html#promise](https://vuex.vuejs.org/installation.html#promise).
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，Vuex需要Promise支持。如果您的浏览器不支持Promise，请查看如何为您的应用安装polyfill库的方法，网址为[https://vuex.vuejs.org/installation.html#promise](https://vuex.vuejs.org/installation.html#promise)。
+- en: Creating a simple store
+  id: totrans-37
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建一个简单的store
+- en: 'We can start with a simple store by using CDN or direct download with the following
+    steps:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过以下步骤使用CDN或直接下载开始一个简单的store：
+- en: 'Install Vue and Vuex with the HTML `<script>` blocks:'
+  id: totrans-39
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用HTML的`<script>`块安装Vue和Vuex：
+- en: '[PRE3]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Activate the Vuex store in the HTML `<body>` block:'
+  id: totrans-41
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在HTML的`<body>`块中激活Vuex store：
+- en: '[PRE4]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'You can see from this code that you just need to create the Vuex state in a
+    JavaScript object, a mutation method, and then you can access the state object
+    with the store''s `state` key and trigger the change in the state with the store''s `commit`
+    method, as follows:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从这段代码中可以看出，你只需要在一个JavaScript对象中创建Vuex状态，一个mutation方法，然后你可以通过store的`state`键访问状态对象，并使用store的`commit`方法触发状态的改变，如下所示：
+- en: '[PRE5]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: In this simple example, we have complied with one of the enforced rules in Vuex,
+    which is changing the state data by committing the mutation instead of changing
+    it directly. Let's dive into the core concepts of Vuex and other rules by creating
+    module system apps in the next section.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个简单的例子中，我们遵守了Vuex中的一个强制规则，即通过提交mutation来改变状态数据，而不是直接改变它。让我们在下一节通过创建模块系统应用来深入了解Vuex的核心概念和其他规则。
+- en: Understanding Vuex core concepts
+  id: totrans-46
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解Vuex的核心概念
+- en: There are five core concepts in Vuex that we will guide you through in this
+    section. They are state, getters, mutations, actions, and modules. We will start
+    by looking into the state concept first in the following section.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将指导您了解Vuex中的五个核心概念。它们是state、getters、mutations、actions和modules。我们将从下一节开始首先研究state的概念。
+- en: The state
+  id: totrans-48
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 状态
+- en: The state is the heart of a Vuex store. It is the source of the "global" data
+    that we can manage and maintain in a structured and predictable way in Vuex. A
+    state in Vuex is a single state tree–a single JavaScript object that contains
+    all the app state data. So, you will usually have one store per app. Let's take
+    a look at how we can get the state into components in the following sections.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 状态是Vuex存储的核心。它是我们可以以结构化和可预测的方式管理和维护的“全局”数据的来源。在Vuex中，状态是一个单一的状态树——一个包含所有应用状态数据的单一JavaScript对象。因此，通常每个应用程序只有一个store。让我们看看如何在下面的部分中将状态传递给组件。
+- en: Accessing the state
+  id: totrans-50
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 访问状态
+- en: 'As we mentioned in the previous section, Vuex stores are reactive, but if we
+    want to access the reactive value in the view, we should use the `computed` property
+    instead of the `data` method, as follows:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在上一节中提到的，Vuex存储是响应式的，但如果我们想在视图中访问响应式值，我们应该使用`computed`属性而不是`data`方法，如下所示：
+- en: '[PRE6]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'So now, the `number` field in the `<template>` block is reactive and the `computed`
+    property will re-evaluate and update the DOM whenever `store.state.number` changes.
+    But this pattern causes a coupling issue and is against the extracting idea of
+    Vuex. So, let''s refactor the preceding code with the following steps:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在`<template>`块中的`number`字段是响应式的，`computed`属性将重新评估并更新DOM，每当`store.state.number`发生变化时。但是这种模式会导致耦合问题，并违背了Vuex的抽取理念。因此，让我们通过以下步骤重构前面的代码：
+- en: 'Extract the store to the root component:'
+  id: totrans-54
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将store提取到根组件中：
+- en: '[PRE7]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Remove the store from the child component but keep the `computed` property
+    as it is:'
+  id: totrans-56
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从子组件中移除store，但保持`computed`属性不变：
+- en: '[PRE8]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: In the updated code, the store is now injected into the child component and
+    you can access it by using `this.$store` from the component. However, this pattern
+    can get repetitive and verbose when you have lots of store state properties that
+    you need to compute with the `computed` property. In this case, we can use the
+    `mapState` helper to lift the burden. Let's take a look at how we can use it in
+    the next section.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在更新的代码中，存储现在被注入到子组件中，您可以通过从组件中使用`this.$store`来访问它。但是，当您需要使用`computed`属性计算许多存储状态属性时，这种模式可能会变得重复和冗长。在这种情况下，我们可以使用`mapState`助手来减轻负担。让我们在下一节中看看如何使用它。
+- en: The mapState helper
+  id: totrans-59
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: mapState助手
+- en: 'We can use the `mapState` helper to help us generate the computed state functions
+    to save some lines and keystrokes with the following steps:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`mapState`助手来帮助我们生成计算状态函数，以节省一些代码行和按键次数，具体步骤如下：
+- en: 'Create a store with multiple state properties:'
+  id: totrans-61
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个具有多个状态属性的存储：
+- en: '[PRE9]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Import the `mapState` helper from Vuex and pass the state properties as an
+    array to the `mapState` method:'
+  id: totrans-63
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从Vuex中导入`mapState`助手，并将状态属性作为数组传递给`mapState`方法：
+- en: '[PRE10]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'This works perfectly as long as the name of a mapped computed property is the
+    same as a state property name. However, it is better to use it with the object
+    spread operator so that we can mix multiple `mapState` helpers in the `computed`
+    property:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只要映射的计算属性的名称与状态属性名称相同，这就可以完美地工作。但是，最好使用对象扩展运算符，以便我们可以在`computed`属性中混合多个`mapState`助手：
+- en: '[PRE11]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'For example, you may want to compute the state data with the data in the child
+    component, as follows:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，您可能希望根据子组件中的数据计算状态数据，如下所示：
+- en: '[PRE12]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'You also can pass a string value to make an alias for the `experience` state
+    property, as follows:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以传递一个字符串值来为`experience`状态属性创建一个别名，如下所示：
+- en: '[PRE13]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Add the computed state properties to `<template>`, as follows:'
+  id: totrans-71
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将计算状态属性添加到`<template>`中，如下所示：
+- en: '[PRE14]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'You should get the following result on your browser:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该在浏览器上获得以下结果：
+- en: '[PRE15]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: You may be wondering that since we can compute the state data in the child component,
+    can we compute the state data in the store itself? The answer is yes, we can do
+    so with getters, which we will cover in the next section. Let's get to it.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会想知道，既然我们可以在子组件中计算状态数据，那么我们是否可以在存储本身中计算状态数据？答案是肯定的，我们可以通过getter来实现，我们将在下一节中介绍。让我们开始吧。
+- en: Getters
+  id: totrans-76
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: getter
+- en: 'You can define getter methods in the `getters` property in the store to compute
+    the state before it is used in the view by the child components. Just like the
+    `computed` property, the computed result in a getter is reactive, but it is cached
+    and will be updated whenever its dependencies are changed. A getter takes the
+    state as its first argument and `getters` as the second argument. Let''s create
+    some getters and use them in the child component with the following steps:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在存储的`getters`属性中定义getter方法，以在子组件中使用视图之前计算状态。就像`computed`属性一样，getter中的计算结果是响应式的，但它是被缓存的，并且会在其依赖项发生更改时更新。getter以状态作为第一个参数，以`getters`作为第二个参数。让我们创建一些getter并在子组件中使用它们，以下是具体步骤：
+- en: 'Create a store with a `state` property with a list of items and some getters
+    for accessing these items:'
+  id: totrans-78
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个具有项目列表的`state`属性的存储，并为访问这些项目创建一些getter：
+- en: '[PRE16]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: In this store, we created the `getCitrus` method to get all the items with a
+    type of `citrus` and the `countCitrus` method to depend on the result in the `getCitrus`
+    method. The third method, `getFruitByName`, is used to get a specific item in
+    the list by citrus name.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此存储中，我们创建了`getCitrus`方法来获取所有类型为`citrus`的项目，并且`countCitrus`方法依赖于`getCitrus`方法的结果。第三个方法`getFruitByName`用于通过柑橘名称获取列表中的特定项目。
+- en: 'Create some methods in the `computed` property to execute the getters in the
+    store, as follows:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`computed`属性中创建一些方法来执行存储中的getter，如下所示：
+- en: '[PRE17]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Add the computed state properties to `<template>`, as follows:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将计算状态属性添加到`<template>`中，如下所示：
+- en: '[PRE18]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'You should get the following result in your browser:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该在浏览器中获得以下结果：
+- en: '[PRE19]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: The same as the `mapState` helper, we can use the `mapGetters` helper in the
+    `computed` properties, which saves us some lines and keystrokes. Let's get to
+    it in the next section.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与`mapState`助手一样，我们可以在`computed`属性中使用`mapGetters`助手，这样可以节省一些行和按键。让我们在下一节中进行。
+- en: The mapGetters helper
+  id: totrans-88
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: mapGetters助手
+- en: 'Just like the `mapState` helper, we can use the `mapGetters` helper to map
+    the store getters in the `computed` properties. Let''s see how we can use it with
+    the following steps:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像`mapState`助手一样，我们可以使用`mapGetters`助手将存储获取器映射到`computed`属性中。让我们看看如何在以下步骤中使用它：
+- en: 'Import the `mapGetters` helper from Vuex and pass the getters as an array to
+    the `mapGetters` method with the object spread operator so that we can mix multiple
+    `mapGetters` helpers in the `computed` property:'
+  id: totrans-90
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从Vuex中导入`mapGetters`助手，并将获取器作为数组传递给`mapGetters`方法，使用对象扩展运算符，以便我们可以在`computed`属性中混合多个`mapGetters`助手：
+- en: '[PRE20]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'In the preceding code, we created an alias for the `countCitrus` getter by
+    passing the string value to the `totalCitrus` key. Note that with the object spread
+    operator, we also can mix other vanilla methods in the `computed` property. So,
+    let''s add a vanilla `getOrange` getter method to the `computed` option on top
+    of these `mapGetters` helpers, as follows:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，我们通过将字符串值传递给`totalCitrus`键为`countCitrus`获取器创建了别名。请注意，使用对象扩展运算符，我们还可以在`computed`属性中混合其他原始方法。因此，让我们在这些`mapGetters`助手之上的`computed`选项中添加一个原始的`getOrange`获取器方法，如下所示：
+- en: '[PRE21]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Add the computed state properties to `<template>`, as follows:'
+  id: totrans-94
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将计算状态属性添加到`<template>`中，如下所示：
+- en: '[PRE22]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'You should get the following result in your browser:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该在浏览器中获得以下结果：
+- en: '[PRE23]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: So far, you have learned how to access the state in the store by using the computed
+    methods and getters. What about changing the state? Let's get to it in the next
+    section.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，您已经学会了如何通过使用计算方法和获取器来访问存储中的状态。那么改变状态呢？让我们在下一节中进行。
+- en: Mutations
+  id: totrans-99
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 变异
+- en: 'Just as we mentioned in the previous sections, the store state must be explicitly
+    committed through mutations. A mutation is simply a function just like any other
+    function you have learned about in the store properties, but it must be defined
+    in the `mutations` property in the store. It always takes the state as the first
+    argument. Let''s create some mutations and use them in the child component with
+    the following steps:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像我们在前面的部分中提到的一样，存储状态必须通过变异显式提交。变异就像存储属性中学到的任何其他函数一样，它必须在存储的`mutations`属性中定义，它总是以状态作为第一个参数。让我们创建一些变异并在子组件中使用它们，如下所示：
+- en: 'Create a store with a `state` property and some mutation methods that we can
+    use to mutate the state, as follows:'
+  id: totrans-101
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个带有`state`属性和一些变异方法的存储，我们可以使用这些方法来改变状态，如下所示：
+- en: '[PRE24]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Create the following methods in the component to add a call to commit the mutation
+    by using `this.$store.commit`:'
+  id: totrans-103
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在组件中创建以下方法，通过使用`this.$store.commit`来调用提交变异：
+- en: '[PRE25]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Like getter methods, you also can use the `mapMutations` helper on mutation
+    methods, so let's get to it in the next section.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像获取方法一样，您还可以在变异方法上使用`mapMutations`助手，所以让我们在下一节中进行。
+- en: The mapMutations helper
+  id: totrans-106
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: mapMutations助手
+- en: 'We can use the `mapMutations` helper to map the component methods to the mutation
+    methods with object spread operators so that we can mix multiple `mapMutations` helpers
+    in the `method` property. Let''s see how we can do it with the following steps:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`mapMutations`助手将组件方法映射到变异方法，以便我们可以在`method`属性中混合多个`mapMutations`助手。让我们看看如何在以下步骤中做到这一点：
+- en: 'Import the `mapMutations` helper from Vuex and pass the mutations as an array
+    to the `mapMutations` method with object spread operators, as follows:'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从Vuex中导入`mapMutations`辅助程序，并使用对象扩展运算符将变异作为数组传递给`mapMutations`方法，如下所示：
+- en: '[PRE26]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Add the computed state property and the methods to `<template>`, as follows:'
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将计算状态属性和方法添加到`<template>`中，如下所示：
+- en: '[PRE27]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: You should see that the `number` state is reactively being multiplied or divided
+    on your browser when you click on the preceding buttons. In this example, we have
+    managed to change the state value through mutations, which is one of the rules
+    in Vuex. Another rule is that we *must not* make asynchronous calls in mutations.
+    In other words, *mutations must be synchronous* so that every mutation can be
+    logged by the DevTool for debugging. If you want to make asynchronous calls, use
+    actions, which we will walk you through in the next section. Let's get to it.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您单击上述按钮时，您应该看到`number`状态在浏览器中被动态地乘以或除以。在这个例子中，我们已经通过变异来改变状态值，这是Vuex中的规则之一。另一个规则是*不要*在变异中进行异步调用。换句话说，*变异必须是同步的*，以便可以通过DevTool进行调试。如果要进行异步调用，请使用操作，我们将在下一节中为您介绍。让我们开始吧。
+- en: Actions
+  id: totrans-113
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 操作
+- en: 'Actions are functions just like mutations, except they are not used for mutating
+    the state but committing the mutations. Unlike mutations, actions *can be asynchronous*.
+    We create action methods in the `actions` property in the store. An action method
+    takes the context object as its first argument, your custom parameters as the
+    second argument, and so forth. You can use `context.commit` to commit a mutation,
+    `context.state` to access the state, and `context.getters` to access the getters.
+    Let''s add some action methods with the following steps:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 操作和变异一样，都是函数，不同的是它们不用于改变状态，而是用于提交变异。与变异不同，操作*可以是异步的*。我们在存储的`actions`属性中创建操作方法。操作方法以上下文对象作为第一个参数，您的自定义参数作为第二个参数等等。您可以使用`context.commit`来提交一个变异，`context.state`来访问状态，以及`context.getters`来访问获取器。让我们通过以下步骤添加一些操作方法：
+- en: 'Create a store with a `state` property and the action methods, as follows:'
+  id: totrans-115
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个带有`state`属性和操作方法的存储，如下所示：
+- en: '[PRE28]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: In this example, we used the same mutations from the previous section and created
+    the action methods, one of them making an asynchronous action method to demonstrate
+    why we need actions for asynchronous calls, even though they seem tedious at first.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们使用了上一节中的相同变异，并创建了操作方法，其中一个创建了一个异步操作方法，以演示为什么我们需要操作来进行异步调用，尽管它们一开始看起来有点麻烦。
+- en: 'Note that if you prefer, you can destructure `context` with an ES6 JavaScript
+    destructuring assignment and import the `commit` property directly, as follows:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，如果您愿意，您可以使用ES6 JavaScript解构赋值来解构`context`并直接导入`commit`属性，如下所示：
+- en: '[PRE29]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Create a component and dispatch the preceding actions with `this.$store.commit`,
+    as follows:'
+  id: totrans-120
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个组件，并使用`this.$store.commit`分派前面的操作，如下所示：
+- en: '[PRE30]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: Like mutation and getter methods, you also can use the `mapActions` helper on
+    action methods, so let's get to it in the next section.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与变异和获取器方法一样，您还可以在操作方法上使用`mapActions`辅助程序，因此让我们在下一节中进行操作。
+- en: The mapActions helper
+  id: totrans-123
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: mapActions辅助程序
+- en: 'We can use the `mapActions` helper to map the component methods to the action
+    methods with object spread operators so that we can mix multiple `mapActions` helpers
+    in the `method` property. Let''s see how we can do so with the following steps:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`mapActions`辅助程序将组件方法映射到操作方法，使用对象扩展运算符，以便我们可以在`method`属性中混合多个`mapActions`辅助程序。让我们看看如何通过以下步骤来实现这一点：
+- en: 'Import the `mapActions` helper from Vuex and pass the mutations as an array
+    to the `mapActions` method with object spread operators, as follows:'
+  id: totrans-125
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从Vuex中导入`mapActions`辅助程序，并使用对象扩展运算符将变异作为数组传递给`mapActions`方法，如下所示：
+- en: '[PRE31]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Add the computed state property and bind the methods to `<template>`, as follows:'
+  id: totrans-127
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加计算状态属性并将方法绑定到`<template>`，如下所示：
+- en: '[PRE32]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: You should see that the `number` state is reactively being multiplied or divided
+    on your browser when you click on the preceding buttons. In this example, again,
+    we have managed to change the state value by committing mutations through actions
+    that can only be dispatched by using the store `dispatch` method. These are the
+    enforced rules that we must comply with when applying a store to our app.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您点击前面的按钮时，您应该看到“number”状态在浏览器上被动地进行乘法或除法运算。在这个例子中，我们再次通过提交mutations来改变状态值，而这些mutations只能通过使用store的dispatch方法来分发。这些是我们在应用store时必须遵守的强制规则。
+- en: However, when the store and the app grow, we might want to separate the state,
+    mutations, and actions into groups. In this case, we will need the last concept
+    in Vuex–modules–which is covered in the next section we will walk you through.
+    Let's get to it.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，当store和应用程序增长时，我们可能希望将状态、mutations和actions分成组。在这种情况下，我们将需要Vuex中的最后一个概念-模块-这将在下一节中介绍。让我们开始吧。
+- en: Modules
+  id: totrans-131
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 模块
+- en: 'We can divide our store into modules to scale the app. Each module can have
+    a state, mutations, actions, and getters, as follows:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将我们的store分成模块以扩展应用程序。每个模块可以有状态、mutations、actions和getters，如下所示：
+- en: '[PRE33]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'You can then access each module''s state or other properties, as follows:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您可以访问每个模块的状态或其他属性，如下所示：
+- en: '[PRE34]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: When writing modules for your store, you should understand the local state,
+    the root state, and the namespacing in the store's modules. Let's look at them
+    in the following sections.
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在为您的store编写模块时，您应该理解本地状态、根状态和store模块中的命名空间。让我们在接下来的章节中看一下它们。
+- en: Understanding the local state and root state
+  id: totrans-137
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 理解本地状态和根状态
+- en: 'The mutations and getters in each module will receive the module''s local state
+    as their first argument, as follows:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个模块中的mutations和getters将接收模块的本地状态作为它们的第一个参数，如下所示：
+- en: '[PRE35]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'In this code, the state in the mutation and getter methods is the local module
+    state, so you will get `1` for `console.log(state.number)`, while in each module''s
+    actions, you will get the context as the first argument, which you can use to
+    access the local state and root state as `context.state` and `context.rootState`,
+    as follows:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这段代码中，mutation和getter方法中的状态是本地模块状态，因此您将得到`1`作为`console.log(state.number)`的输出，而在每个模块的actions中，您将得到上下文作为第一个参数，您可以使用它来访问本地状态和根状态，如`context.state`和`context.rootState`，如下所示：
+- en: '[PRE36]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'The root state is also available in each module''s getters as the third argument,
+    as follows:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根状态也可以作为每个模块的getters的第三个参数使用，如下所示：
+- en: '[PRE37]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: The local state from the modules and the root state from the store root can
+    get mixed up and become confusing when we have multiple modules. This brings us
+    to namespacing, which can make our modules more self-contained and less likely
+    to conflict with each other. Let's get to it in the next section.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们有多个模块时，来自模块的本地状态和来自store根的根状态可能会混淆和变得令人困惑。这就引出了命名空间，它可以使我们的模块更加自包含，减少与其他模块冲突的可能性。让我们在下一节中讨论它。
+- en: Understanding namespacing
+  id: totrans-145
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 理解命名空间
+- en: 'By default, the `actions`, `mutations`, and `getters` properties in each module
+    are registered under the global namespace, so the key or method name in each of
+    these properties must be unique. In other words, a method name cannot be repeated
+    in two different modules, as follows:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，每个模块中的`actions`、`mutations`和`getters`属性都在全局命名空间下注册，因此这些属性中的键或方法名必须是唯一的。换句话说，一个方法名不能在两个不同的模块中重复，如下所示：
+- en: '[PRE38]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'For the preceding example, you will see the following error due to using the
+    same method name in the getters:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于上面的例子，由于在getters中使用了相同的方法名，您将看到以下错误：
+- en: '[PRE39]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'So, to avoid duplication, the method name must be explicitly named for each
+    module, as follows:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，为了避免重复，必须为每个模块显式命名方法名称，如下所示：
+- en: '[PRE40]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Then, you can access these methods in the child component and map them, as
+    follows:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您可以在子组件中访问这些方法并进行映射，如下所示：
+- en: '[PRE41]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'These methods also can be written as follows if you don''t want to use `mapGetters` as
+    in the preceding code:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您不想像前面的代码中那样使用`mapGetters`，这些方法也可以写成如下形式：
+- en: '[PRE42]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'However, this pattern may look verbose as we have to write `this.$store.getters`
+    or `this.$store.actions` repetitively for every method we create in the store.
+    It is the same for accessing the state of each module, as follows:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，这种模式可能看起来很冗长，因为我们必须为存储中创建的每个方法重复编写`this.$store.getters`或`this.$store.actions`。访问每个模块的状态也是如此，如下所示：
+- en: '[PRE43]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'So, the solution for a situation like this is to use namespacing for each module
+    by setting the `namespaced` key in each module to `true`, as follows:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，解决这种情况的方法是通过在每个模块中设置`namespaced`键为`true`来为每个模块使用命名空间，如下所示：
+- en: '[PRE44]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'When the module is registered, all of its getters, actions, and mutations will
+    be automatically namespaced based on the path the module is registered at. Take
+    the following example:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当模块注册时，其所有getter、action和mutation将根据模块注册的路径自动命名空间化。接下来是一个示例：
+- en: '[PRE45]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'Now, you can access the state of each module with less code that is more easily
+    readable, as follows:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以更轻松地访问每个模块的状态，而代码量更少，如下所示：
+- en: '[PRE46]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'For the preceding example code, you will get `1` for `numberModule1` and `2`
+    for `numberModule2`. Besides, you can also eliminate the error of "duplicate getter
+    keys" by using namespacing. So now, you can have more "abstract" names for methods,
+    as follows:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于上述示例代码，您将获得`numberModule1`的`1`和`numberModule2`的`2`。此外，您还可以通过使用命名空间来消除“重复的getter键”错误。因此，现在，您可以为方法使用更“抽象”的名称，如下所示：
+- en: '[PRE47]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Now, you can call and map these methods precisely with the namespaces that
+    they are registered under, as follows:'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以精确地调用和映射这些方法，并使用它们注册的命名空间，如下所示：
+- en: '[PRE48]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: We have been writing the store in the root file, `entry.js`. Whether you are
+    writing to a modular store or not, this root file will get bloated when the state
+    properties and the methods in mutations, getters, and actions grow over time.
+    So, this brings us to the next section, where you will learn how to separate and
+    structure these methods and state properties in single files of their own. Let's
+    get to it.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们一直在根文件`entry.js`中编写存储。无论您是写入模块化存储还是不写入，当随着时间的推移状态属性和mutations、getters和actions中的方法增长时，这个根文件将变得臃肿。因此，这将引导我们进入下一节，在那里您将学习如何将这些方法和状态属性分离和结构化到它们自己的单独文件中。让我们开始吧。
+- en: Structuring Vuex store modules
+  id: totrans-169
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 结构化Vuex存储模块
+- en: In a Vue app, as long as you comply with the enforced rules we went through
+    in the previous sections, there are no strict restrictions on how you should structure
+    your store. Depending on how complex your store is, there are two recommended
+    structures in this book that you can use in the following sections. Let's get
+    started.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Vue应用程序中，只要您遵守我们在前几节中介绍的强制规则，对于如何构建您的存储结构，没有严格的限制。根据您的存储结构的复杂程度，本书中有两种推荐的结构，您可以在接下来的章节中使用。让我们开始吧。
+- en: Creating a simple store module structure
+  id: totrans-171
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建一个简单的存储模块结构
+- en: 'In this simple module structure, you can have a `/store/` directory that contains
+    a `/modules/` directory that keeps all the modules in this folder. Here are the
+    steps to create this simple project structure:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种简单的模块结构中，您可以有一个包含此文件夹中所有模块的`/store/`目录，其中包含一个`/modules/`目录。以下是创建此简单项目结构的步骤：
+- en: 'Create a `/store/` directory with a `/modules/` directory in it with the store
+    modules, as follows:'
+  id: totrans-173
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个包含存储模块的`/store/`目录，并在其中包含一个`/modules/`目录，如下所示：
+- en: '[PRE49]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'In this simple structure, `/store/index.js` is where we assemble modules from
+    the `/modules/` directory and export the store, along with the root''s state,
+    actions, getters, and mutations, as follows:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个简单的结构中，`/store/index.js` 是我们从 `/modules/` 目录中组装模块并导出 store，以及根状态、actions、getters
+    和 mutations 的地方，如下所示：
+- en: '[PRE50]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Split the root''s actions, mutations, and getters into separate files and assemble
+    them in the root index file, as follows:'
+  id: totrans-177
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将根的 actions、mutations 和 getters 拆分为单独的文件，并在根索引文件中组装它们，如下所示：
+- en: '[PRE51]'
+  id: totrans-178
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Create modules in `.js` files with their states, actions, mutations, and getters
+    just like you have learned in the previous sections, as follows:'
+  id: totrans-179
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建 `.js` 文件的模块，其中包含它们的状态、actions、mutations 和 getters，就像你在前面的部分中学到的那样，如下所示：
+- en: '[PRE52]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: If a module file gets too big, we can split the module's state, actions, mutations,
+    and getters into separate files. This brings us to an advanced store module structure,
+    which we will look at in the next section. Let's have a look.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果一个模块文件变得太大，我们可以将模块的状态、actions、mutations 和 getters 拆分为单独的文件。这将带我们进入一个高级的 store
+    模块结构，我们将在下一节中进行讨论。让我们来看看。
+- en: Creating an advanced store module structure
+  id: totrans-182
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建一个高级的 store 模块结构
+- en: 'In this advanced module structure, you can have a `/store/` directory that
+    contains a `/modules/` directory that keeps all modules in subfolders of this
+    folder. We can split a module''s state, actions, mutations, and getters into separate
+    files and then keep them in the module folder with the following steps:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个高级模块结构中，你可以有一个包含 `/modules/` 目录的 `/store/` 目录，该目录的子文件夹中包含所有模块。我们可以将模块的状态、actions、mutations
+    和 getters 拆分为单独的文件，然后将它们保存在模块文件夹中，具体步骤如下：
+- en: 'Create a `/store/` directory that contains a `/modules/` directory for the
+    store modules, as follows:'
+  id: totrans-184
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个包含 `/modules/` 目录的 `/store/` 目录，用于存放 store 模块，如下所示：
+- en: '[PRE53]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'In this more complex project structure, `/store/module1/index.js` is where
+    we assemble `module1`, while `/store/module2/index.js` is where we assemble `module2`,
+    as follows:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个更复杂的项目结构中，`/store/module1/index.js` 是我们组装 `module1` 的地方，而 `/store/module2/index.js`
+    是我们组装 `module2` 的地方，如下所示：
+- en: '[PRE54]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'We also can split a module state into a single file, as follows:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以将一个模块的状态拆分为单独的文件，如下所示：
+- en: '[PRE55]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'Split the module''s actions, mutations, and getters into separate files to
+    assemble them in the preceding module index file, as follows:'
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将模块的 actions、mutations 和 getters 拆分为单独的文件，然后在前面的模块索引文件中组装它们，如下所示：
+- en: '[PRE56]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Import the module index files to the store root where we assemble modules and
+    export the store, as follows:'
+  id: totrans-192
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将模块索引文件导入到 store 根目录，我们在那里组装模块并导出 store，如下所示：
+- en: '[PRE57]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'Switch on strict mode to ensure that the store state is only mutated in the
+    `mutations` property, as follows:'
+  id: totrans-194
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开严格模式以确保 store 状态只在 `mutations` 属性中被改变，如下所示：
+- en: '[PRE58]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'Using strict mode is good practice to remind us to mutate any state inside
+    the `mutations` property. So, an error will be thrown during development whenever
+    the store state is mutated outside of the `mutations` property. However, we should
+    disable it for production because it can impair performance when there are a large
+    number of state mutations in the store. So, we can dynamically turn it off with
+    the build tools, as follows:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用严格模式是一个好习惯，提醒我们只在 `mutations` 属性内改变任何状态。因此，在开发过程中，如果在 `mutations` 属性之外改变 store
+    状态，将会抛出错误。然而，我们应该在生产环境中禁用它，因为当 store 中有大量状态变化时，它可能会影响性能。因此，我们可以使用构建工具动态关闭它，具体步骤如下：
+- en: '[PRE59]'
+  id: totrans-197
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: However, there is a caveat to using strict mode for handling forms in the store, which we
+    will cover in the next section.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，在处理 store 中的表单时，使用严格模式有一个注意事项，我们将在下一节中介绍。
+- en: Handling forms in a Vuex store
+  id: totrans-199
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在 Vuex store 中处理表单
+- en: 'When we use two-way data binding with a `v-model` in a Vue app, the data in
+    the Vue instance is synchronized with the v-model input field. So, when you type
+    anything into the input field, the data will be updated immediately. However,
+    this will create a problem in a Vuex store because we *must not* mutate the store
+    state (data) outside the `mutations` property. Let''s take a look at a simple
+    two-way data binding in a Vuex store:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们在Vue应用中使用`v-model`进行双向数据绑定时，Vue实例中的数据将与v-model输入字段同步。因此，当你在输入字段中输入任何内容时，数据将立即更新。然而，在Vuex存储中，这将会创建问题，因为我们*绝对不能*在`mutations`属性之外改变存储状态（数据）。让我们看一个在Vuex存储中的简单双向数据绑定：
+- en: '[PRE60]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'For this example, you will see the following error message in your browser''s
+    debug tool when typing a message in the input field:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，当你在输入字段中输入消息时，你会在浏览器的调试工具中看到以下错误消息：
+- en: '[PRE61]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: This is because the `v-model` attempts to mutate `message` in the store state
+    directly when you type, so it results in an error in the strict mode. Let's see
+    what options we have to resolve this in the following sections.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是因为当你输入时，`v-model`试图直接改变存储状态中的`message`，所以在严格模式下会导致错误。让我们在接下来的部分看看我们有哪些选项来解决这个问题。
+- en: Using v-bind and v-on directives
+  id: totrans-205
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用v-bind和v-on指令
+- en: 'In most cases, two-way binding is not always suitable. It makes more sense
+    to use one-way binding and explicit data updates in Vuex by binding `<input>`
+    with the `value` attribute on the `input` or `change` events. You can get this
+    working easily with the following steps:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大多数情况下，双向绑定并不总是合适的。在Vuex中，更合理的做法是使用单向绑定和显式数据更新，通过将`<input>`与`input`或`change`事件上的`value`属性进行绑定。你可以通过以下步骤轻松实现这一点：
+- en: 'Create a method for mutating the state in the `mutations` property just as
+    you learned in the previous sections:'
+  id: totrans-207
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个用于改变`mutations`属性中状态的方法，就像你在之前的部分学到的那样：
+- en: '[PRE62]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'Bind the `<input>` element with the `value` attribute and the `input` event
+    with the methods, as follows:'
+  id: totrans-209
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`<input>`元素与`value`属性和`input`事件与方法进行绑定，如下所示：
+- en: '[PRE63]'
+  id: totrans-210
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: In this solution, we use the `updateMessage` method in the child component to
+    commit the mutation method, `updateMessage`, in the store and pass the value from
+    the input event. By only committing the mutation *explicitly* like this, we are
+    not going against the enforced rule in Vuex that we must comply with. So, adopting
+    this solution means you cannot use the v-model to handle forms for the Vuex store.
+    However, you can still use it if you are using the computed getter and setter
+    from Vue itself. Let's look at this in the next section.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个解决方案中，我们在子组件中使用`updateMessage`方法来提交存储中的`updateMessage`变异方法，并传递输入事件的值。通过像这样*显式*地提交变异，我们不违反Vuex中必须遵守的强制规则。因此，采用这个解决方案意味着你不能使用v-model来处理Vuex存储的表单。然而，如果你使用Vue本身的计算getter和setter，你仍然可以使用它。让我们在下一节中看看这个。
+- en: Using a two-way computed property
+  id: totrans-212
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用双向计算属性
+- en: 'We can use Vue''s built-in, two-way computed property with a setter for handling
+    forms with a v-model with the help of the following steps:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用Vue内置的双向计算属性和setter来处理带有v-model的表单，以下是帮助的步骤：
+- en: Create a method for mutating the state in the `mutations` property, just as
+    in the previous section.
+  id: totrans-214
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个用于改变`mutations`属性中状态的方法，就像在前一节中一样。
+- en: 'Apply the `get` and `set` methods to the `message` key, as follows:'
+  id: totrans-215
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`get`和`set`方法应用于`message`键，如下所示：
+- en: '[PRE64]'
+  id: totrans-216
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: However, this probably works well for simple computed properties. If you have
+    a deep level object with more than 10 keys to update, you will need 10 sets of
+    two-way computed properties (the getter and setter). The code will eventually
+    get more repetitive and verbose than the event-based solution.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，这对于简单的计算属性可能效果很好。如果你有一个深层级对象，需要更新超过10个键，你将需要10组双向计算属性（getter和setter）。代码最终会比基于事件的解决方案更加重复和冗长。
+- en: Well done! You have managed to get through the foundation and concept of a Vuex
+    store. You have learned how to use a store in a Vue app. Now, it is time to move
+    on to applying a store in Nuxt. So, let's get to it in the next section.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 干得好！您已经成功掌握了Vuex存储的基础和概念。您已经学会了如何在Vue应用程序中使用存储。现在，是时候继续在Nuxt中应用存储了。因此，让我们在下一节中开始吧。
+- en: If you want to find out more information about Vuex, please visit [https://vuex.vuejs.org/](https://vuex.vuejs.org/).
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想了解更多关于Vuex的信息，请访问[https://vuex.vuejs.org/](https://vuex.vuejs.org/)。
+- en: Using a Vuex store in Nuxt
+  id: totrans-220
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Nuxt中使用Vuex存储
+- en: 'In Nuxt, Vuex is already installed for you. You only need to be sure that the
+    `/store/` directory is present in the project root. If you are installing your
+    Nuxt project using `create-nuxt-app`, this directory is autogenerated for you
+    during project installation. In Nuxt, you can create your store in two different
+    modes:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Nuxt中，Vuex已经为您安装好了。您只需要确保项目根目录中存在`/store/`目录。如果您使用`create-nuxt-app`安装Nuxt项目，此目录将在项目安装期间为您自动生成。在Nuxt中，您可以以两种不同的模式创建您的存储：
+- en: Module
+  id: totrans-222
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 模块
+- en: Classic (deprecated)
+  id: totrans-223
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 经典模式（已弃用）
+- en: Since the classic mode is deprecated, we will only focus on the module mode
+    in this book. So, let's get started in the following section.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于经典模式已经弃用，本书将只关注模块模式。因此，让我们在下一节中开始吧。
+- en: You can find the source code for all of the following Nuxt examples in `/chapter-10/nuxt-universal/`
+    in our GitHub repository.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库的`/chapter-10/nuxt-universal/`中找到所有以下Nuxt示例的源代码。
+- en: Using module mode
+  id: totrans-226
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用模块模式
+- en: 'Unlike Vue apps, in Nuxt, the `namespaced` key is set to `true` by default
+    for each module, as well as the root module. Also, in Nuxt, you do not need to
+    assemble modules in the store root; you just need to export the state *as a function*,
+    and the mutations, getters, and actions *as objects* in the root and module files.
+    Let''s get things going with the following steps:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不同于Vue应用，在Nuxt中，默认情况下，每个模块的`namespaced`键都设置为`true`，以及根模块。此外，在Nuxt中，您不需要在存储根中组装模块；您只需要将状态*作为函数*导出，并将变化、获取器和操作*作为对象*在根和模块文件中。让我们按照以下步骤开始：
+- en: 'Create a store root, as follows:'
+  id: totrans-228
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个存储根，如下所示：
+- en: '[PRE65]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'In Nuxt, Vuex''s strict mode is set to `true` by default during development and
+    turned off automatically in production mode, but you can disable that during development,
+    as follows:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Nuxt中，默认情况下，Vuex的`strict`模式在开发过程中设置为`true`，并在生产模式下自动关闭，但您可以在开发过程中禁用它，如下所示：
+- en: '[PRE66]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'Create a module, as follows:'
+  id: totrans-232
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个模块，如下所示：
+- en: '[PRE67]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Then, just as we did it *manually* in a Vue app in the previous section, the
+    store will be autogenerated, as follows:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，就像我们在上一节中在Vue应用程序中*手动*做的那样，存储将被自动生成，如下所示：
+- en: '[PRE68]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'Map all the store states, getters, mutations, and actions in the `<script>`
+    block of any page, as follows:'
+  id: totrans-236
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在任何页面的`<script>`块中映射所有存储状态、获取器、变化和操作，如下所示：
+- en: '[PRE69]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'Display the computed properties with methods to commit mutations in the `<template>`
+    block, as follows:'
+  id: totrans-238
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`<template>`块中显示计算属性和方法以提交变化，如下所示：
+- en: '[PRE70]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'You should see the following initial results on your screen, and they will
+    be mutated when you click on the preceding buttons that are displayed on the screen
+    from the template:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该在屏幕上看到以下初始结果，并且当您点击屏幕上显示的前面按钮时，它们将被改变：
+- en: '[PRE71]'
+  id: totrans-241
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: 'As we mentioned earlier, you do not need to assemble modules in the store root
+    in Nuxt because they are "assembled" for you by Nuxt, only if you use the following
+    structure:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前提到的，您不需要在Nuxt的存储根中组装模块，因为它们会被Nuxt“自动组装”给您，只要您使用以下结构：
+- en: '[PRE72]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'But if you were to use the structure that we used to assemble modules manually
+    in the store root as we did for a Vue app, as follows:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果您要像我们为Vue应用程序手动组装模块一样，在存储根中使用以下结构：
+- en: '[PRE73]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'You will get the following errors in the Nuxt app:'
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将在Nuxt应用程序中看到以下错误：
+- en: '[PRE74]'
+  id: totrans-247
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: 'To fix these errors, you need to tell Nuxt *explicitly* where these modules
+    are kept:'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要修复这些错误，您需要明确告诉Nuxt这些模块存放在哪里。
+- en: '[PRE75]'
+  id: totrans-249
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: Just as with Vuex in Vue apps, we can split the state, actions, mutations, and
+    getters into separate files in a Nuxt app, too. Let's see how we can do that and
+    what the differences with Nuxt are in the next section.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像在Vue应用程序中的Vuex一样，我们也可以在Nuxt应用程序中将状态、操作、突变和获取器拆分为单独的文件。让我们看看我们如何做到这一点，以及Nuxt的区别在下一节中。
+- en: Using module files
+  id: totrans-251
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用模块文件
+- en: 'We can split big files in our modules into separate files – `state.js`, `actions.js`,
+    `mutations.js`, and `getters.js` – for the store root and each module. So, let''s
+    do so with the following steps:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将模块中的大文件拆分为单独的文件 - `state.js`、`actions.js`、`mutations.js`和`getters.js` -
+    用于商店根目录和每个模块。因此，让我们按照以下步骤进行：
+- en: 'Create separate files of the state, actions, mutations, and getters for the store
+    root, as follows:'
+  id: totrans-253
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为商店根目录创建状态、操作、突变和获取器的单独文件，如下所示：
+- en: '[PRE76]'
+  id: totrans-254
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: 'Create separate files of the state, actions, mutations, and getters for the module,
+    as follows:'
+  id: totrans-255
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为模块创建状态、操作、突变和获取器的单独文件，如下所示：
+- en: '[PRE77]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'Again, in Nuxt, we do not need to assemble these separate files with `index.js`
+    as we do in a Vue app. Nuxt will do this for us as long as we use the following
+    structure:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，在Nuxt中，我们不需要像在Vue应用程序中那样使用`index.js`来组装这些单独的文件。只要我们使用以下结构，Nuxt就会为我们完成这些工作：
+- en: '[PRE78]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: 'We can compare this to the following structure that we used for the Vue app,
+    where we needed an `index.js` file for the store root and each module to assemble
+    the state, actions, mutations, and getters from the separate files:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将这与我们为Vue应用程序使用的以下结构进行比较，其中我们需要一个`index.js`文件用于商店根目录和每个模块，以从单独的文件中组装状态、操作、突变和获取器：
+- en: '[PRE79]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: So, the store comes out of the box in Nuxt and it saves you some lines of code
+    for assembling files and registering modules. Sweet, isn't it? Now, let's venture
+    a bit further to see how we can *fill the store state dynamically* in Nuxt with
+    the `fetch` method in the next section.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，商店在Nuxt中是开箱即用的，它为您节省了一些代码行来组装文件和注册模块。很棒，不是吗？现在，让我们再进一步，看看我们如何在Nuxt中使用`fetch`方法*动态填充商店状态*。
+- en: Using the fetch method
+  id: totrans-262
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用`fetch`方法
+- en: 'We can use the `fetch` method to fill the store state before a page is rendered.
+    It works the same as the `asyncData` method, which we have already covered – it
+    is called each time before a component is loaded. It is called on the server side
+    once and then on the client side when navigating to other routes. Just like `asyncData`,
+    we can use `async/await` with the `fetch` method for asynchronous data. It is
+    called after the component is created, so we can access the component instance
+    through `this` in the `fetch` method. So, we can access the store through `this.$nuxt.context.store`.
+    Let''s create a simple Nuxt app using this method with the following steps:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`fetch`方法在页面呈现之前填充商店状态。它的工作方式与我们已经介绍过的`asyncData`方法相同 - 在加载组件之前每次都会被调用。它在服务器端调用一次，然后在客户端导航到其他路由时再次调用。就像`asyncData`一样，我们可以在`fetch`方法中使用`async/await`来处理异步数据。它在组件创建后被调用，因此我们可以通过`this`在`fetch`方法中访问组件实例。因此，我们可以通过`this.$nuxt.context.store`访问商店。让我们使用以下步骤使用这种方法创建一个简单的Nuxt应用程序：
+- en: 'Request the list of users from a remote API asynchronously with the `fetch`
+    method in any page, as follows:'
+  id: totrans-264
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`fetch`方法在任何页面异步请求远程API的用户列表，如下所示：
+- en: '[PRE80]'
+  id: totrans-265
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'Create a `user` module with the state, mutations, and actions, as follows:'
+  id: totrans-266
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个带有状态、突变和操作的`user`模块，如下所示：
+- en: '[PRE81]'
+  id: totrans-267
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: The `setUsers` methods in the mutations and actions are used to set the list
+    of users to the state, while the `removeUser` methods are used to remove users
+    from the state one at a time.
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在突变和操作中使用`setUsers`方法将用户列表设置到状态中，而`removeUser`方法用于逐个从状态中移除用户。
+- en: 'Map the methods from the state and actions to the page, as follows:'
+  id: totrans-269
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将状态和动作从页面映射到方法，如下所示：
+- en: '[PRE82]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: 'Loop and display the list of users in the `<template>` block, as follows:'
+  id: totrans-271
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`<template>`块中循环并显示用户列表，如下所示：
+- en: '[PRE83]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: 'You should see the list of users on the screen when you load the app in a browser,
+    and you can click to remove a user with the Remove button. We can also use `async/await`
+    in the actions to fetch the remote data, as follows:'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您在浏览器中加载应用程序时，您应该在屏幕上看到用户列表，并且可以单击“删除”按钮来删除用户。我们还可以在动作中使用`async/await`来获取远程数据，如下所示：
+- en: '[PRE84]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: 'Then, we can just dispatch the `getUsers` action, as follows:'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以像下面这样调度`getUsers`动作：
+- en: '[PRE85]'
+  id: totrans-276
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: Besides fetching and populating the state with the `fetch` method in Nuxt, we
+    also can use the `nuxtServerInit` action, which is only available in Nuxt. Let's
+    move on to look at it in the next section.
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了在Nuxt中使用`fetch`方法获取和填充状态之外，我们还可以使用`nuxtServerInit`动作，这只在Nuxt中可用。让我们继续在下一节中看一下它。
+- en: Using the nuxtServerInit action
+  id: totrans-278
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用`nuxtServerInit`动作
+- en: 'Unlike the `asyncData` method, which is only available in page-level components,
+    and the `fetch` method, which is available in all Vue components (including page-level
+    components), the `nuxtServerInit` action is a reserved store action method available
+    only in the Nuxt store if it is defined. It only can be defined in the `index.js`
+    file in the store root and will be called on the server side only, before the
+    Nuxt app is initiated. Unlike the `asyncData` and `fetch` methods, which are called
+    on the server side and then the client side on the subsequent routes, the `nuxtServerInit` action
+    method is only called on the server side *once, *unless you refresh *any page* of
+    the app in the browser. Also, unlike the `asyncData` method, which gets the Nuxt
+    context object as its first argument, the `nuxtServerInit` action method gets
+    it as its second argument. The first argument it receives is the store context
+    object. Let''s put these context objects into the following table:'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与`asyncData`方法不同，它仅在页面级组件中可用，以及`fetch`方法可用于所有Vue组件（包括页面级组件），`nuxtServerInit`动作是一个保留的存储动作方法，仅在Nuxt存储中定义时可用。它只能在存储根目录的`index.js`文件中定义，并且仅在Nuxt应用程序初始化之前在服务器端调用。与在服务器端调用然后在后续路由上的客户端端调用的`asyncData`和`fetch`方法不同，`nuxtServerInit`动作方法仅在服务器端调用*一次*，除非您在浏览器中刷新*任何页面*。此外，与`asyncData`方法不同，它将Nuxt上下文对象作为其第一个参数，`nuxtServerInit`动作方法将其作为其第二个参数。它接收的第一个参数是存储上下文对象。让我们将这些上下文对象放入以下表格中：
+- en: '| **First argument** | **Second argument** |'
+  id: totrans-280
+  prefs: []
+  type: TYPE_TB
+  zh: '| **第一个参数** | **第二个参数** |'
+- en: '|'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '|'
+- en: '`dispatch`'
+  id: totrans-282
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`dispatch`'
+- en: '`commit`'
+  id: totrans-283
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`commit`'
+- en: '`getters`'
+  id: totrans-284
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`getters`'
+- en: '`state`'
+  id: totrans-285
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`state`'
+- en: '`rootGetters`'
+  id: totrans-286
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`rootGetters`'
+- en: '`rootState`'
+  id: totrans-287
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`rootState`'
+- en: '|'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '|'
+- en: '`isStatic`'
+  id: totrans-289
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`isStatic`'
+- en: '`isDev`'
+  id: totrans-290
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`isDev`'
+- en: '`isHMR`'
+  id: totrans-291
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`isHMR`'
+- en: '`app`'
+  id: totrans-292
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用
+- en: '`req`'
+  id: totrans-293
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`req`'
+- en: '`res`'
+  id: totrans-294
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`res`'
+- en: '`...`'
+  id: totrans-295
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`...`'
+- en: '|'
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '|'
+- en: So, the `nuxtServerInit` action method is very useful when we want to get the
+    data from the server side from any page in our app and then populate the store
+    state with the server data–for example, the authenticated user data that we store
+    in the session on the server side when a user has logged into our app. This session
+    data can be stored as `req.session.authUser` in Express or `ctx.session.authUser`
+    in Koa. Then, we can pass `ctx.session` to `nuxtServerInit` through the `req`
+    object.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，当我们想要从应用程序的任何页面从服务器端获取数据，然后使用服务器数据填充存储状态时，`nuxtServerInit`动作方法非常有用，例如，我们在用户登录到我们的应用程序时在服务器端存储在会话中的经过身份验证的用户数据。这个会话数据可以存储为Express中的`req.session.authUser`或Koa中的`ctx.session.authUser`。然后，我们可以通过`req`对象将`ctx.session`传递给`nuxtServerInit`。
+- en: 'Let''s create a simple user login app with this method action and use Koa as
+    the server-side API, which you learned about in [Chapter 8](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml),
+    *Adding a Server-Side Framework*. We just need a bit of modification on the server
+    side before we can inject any data into the session and create a store with the
+    `nuxtServerIni` action method, which we can do with the following steps:'
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们使用这种方法动作创建一个简单的用户登录应用，并使用Koa作为服务器端API，你在[第8章](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml)中学到了关于Koa的内容，*添加服务器端框架*。在我们可以将任何数据注入会话并使用`nuxtServerIni`动作方法创建存储之前，我们只需要对服务器端进行一点修改，以下是具体步骤：
+- en: 'Install the session package, `koa-session`, using npm:'
+  id: totrans-299
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装会话包`koa-session`，使用npm：
+- en: '[PRE86]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'Import and register the session package as a middleware, as follows:'
+  id: totrans-301
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导入并注册会话包作为中间件，如下所示：
+- en: '[PRE87]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'Create two routes on the server side, as follows:'
+  id: totrans-303
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在服务器端创建两个路由，如下所示：
+- en: '[PRE88]'
+  id: totrans-304
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: In the preceding code, we use the `/login` route to inject the authenticated
+    user data, `authUser`, into the Koa context, `ctx`, with the session, while `/logout` is
+    used to unset the authenticated data.
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码中，我们使用`/login`路由将经过认证的用户数据`authUser`注入到Koa上下文`ctx`中，同时`/logout`用于取消认证数据。
+- en: 'Create the store state with an `authUser` key to hold the authenticated data:'
+  id: totrans-306
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建存储状态，包含一个`authUser`键来保存认证数据：
+- en: '[PRE89]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: 'Create a mutation method to set the data to the `authUser` key in the preceding
+    state:'
+  id: totrans-308
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个变异方法，在前述状态中设置数据到`authUser`键：
+- en: '[PRE90]'
+  id: totrans-309
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: 'Create an `index.js` file in the store root with the following actions:'
+  id: totrans-310
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在存储根目录创建一个`index.js`文件，包含以下动作：
+- en: '[PRE91]'
+  id: totrans-311
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: 'In the preceding code, the `nuxtServerInit` action method is used to access
+    the session data from the server and populate the store state by committing the
+    `setUser` mutation method. The `login` and `logout` action methods are used to
+    authenticate the user login credentials and unset them. Note that the session
+    data is stored inside `req.ctx` as this book is using Koa as the server API. If
+    you are using Express, use the following code:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码中，`nuxtServerInit`动作方法用于从服务器访问会话数据，并通过提交`setUser`变异方法来填充存储状态。`login`和`logout`动作方法用于验证用户登录凭据并取消认证。请注意，会话数据存储在`req.ctx`中，因为本书使用Koa作为服务器API。如果你使用Express，请使用以下代码：
+- en: '[PRE92]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: 'Just like the `asyncData` and `fetch` methods, the `nuxtServerInit` action
+    method can be asynchronous, too. You just have to return a Promise, or use an
+    `async/await` statement for the Nuxt server to wait for the action to be completed
+    asynchronously, as follows:'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像`asyncData`和`fetch`方法一样，`nuxtServerInit`动作方法也可以是异步的。你只需要返回一个Promise，或者使用`async/await`语句，让Nuxt服务器等待动作异步完成，如下所示：
+- en: '[PRE93]'
+  id: totrans-315
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: 'Create a form to use the store''s action methods, as follows:'
+  id: totrans-316
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个表单来使用存储的动作方法，如下所示：
+- en: '[PRE94]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: We have simplified the preceding code and the code in *step 6* to fit this page,
+    but you can find the complete versions for them from our GitHub repository in
+    `/chapter-10/nuxt-universal/nuxtServerInit/`.
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经简化了前面的代码和*步骤6*的代码以适应这个页面，但你可以在我们的GitHub存储库的`/chapter-10/nuxt-universal/nuxtServerInit/`中找到它们的完整版本。
+- en: Well done! You have finally made it through one of the exciting features of
+    Nuxt and Vue–Vuex stores. This was a long chapter, but it is a very important
+    one as we will need to come back to Vuex and use it often in the upcoming chapters.
+    Now, let's summarize what you have learned in this chapter.
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 干得好！你终于通过了Nuxt和Vue的一个激动人心的特性-Vuex存储。这是一个很长的章节，但它是非常重要的，因为我们将需要在接下来的章节中经常回到Vuex并经常使用它。现在，让我们总结一下你在这一章学到了什么。
+- en: Summary
+  id: totrans-320
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: We have come a long way. In this chapter, you learned about the architecture,
+    core concepts, module structures, and form handling in Vuex stores. At this point,
+    you should know that a Vuex store simply relates to state (or data) centralization
+    and management with some enforced rules that you must comply with. So, for any
+    state property that you may have in your store, the correct way of accessing it
+    is by computing it in the `computed` property in your components. If you want
+    to change the value of the state property, you must mutate it through mutations,
+    which must be synchronous. If you want to make asynchronous calls to mutate the
+    state, then you must use actions to commit the mutations by dispatching the actions
+    in your components.
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经走了很长的路。在本章中，您了解了Vuex存储中的架构、核心概念、模块结构和表单处理。在这一点上，您应该知道Vuex存储只是与状态（或数据）集中化和管理有关，并且有一些必须遵守的强制规则。因此，对于您可能在存储中拥有的任何状态属性，正确的访问方式是通过在组件的`computed`属性中计算它。如果您想要更改状态属性的值，必须通过mutations对其进行变化，这必须是同步的。如果您想要进行异步调用以改变状态，则必须使用actions在组件中分发操作以提交mutations。
+- en: You have also learned that creating a store in Nuxt apps is easier and simpler
+    than in Vue apps because Vuex is preinstalled on Nuxt by default. Also, in Nuxt,
+    you do not need to assemble modules and all their methods manually because they
+    are done for you by default. Additionally, in Nuxt, you can use the `fetch` and
+    `nuxtServerInit` methods to populate the store state with a server-side API before
+    rendering the page components and initiating your Nuxt app. Lastly, you have managed
+    to create a simple user login app using a Vuex store with the `nuxtServerInit`
+    action method, and this has paved the way for creating user logins and API authentication
+    in the upcoming chapters.
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还学会了在Nuxt应用程序中创建存储比在Vue应用程序中更容易和简单，因为Vuex默认预安装在Nuxt上。此外，在Nuxt中，您无需手动组装模块及其所有方法，因为它们默认为您完成。此外，在Nuxt中，您可以使用`fetch`和`nuxtServerInit`方法在呈现页面组件和启动Nuxt应用程序之前使用服务器端API填充存储状态。最后，您已经成功使用`nuxtServerInit`操作方法创建了一个简单的用户登录应用程序，并为在即将到来的章节中创建用户登录和API身份验证铺平了道路。
+- en: In the next chapter, we will look at middleware in Nuxt – specifically, route
+    middleware and server middleware. You will learn to differentiate between these
+    two types of Nuxt middleware. You will create some route middleware with navigation
+    guards in Vue apps, before making middleware in Nuxt apps. Then, you will write
+    some Nuxt server middleware in the `serverMiddleware` configuration option as
+    an alternative server API to the server-side API that you learned to create in
+    [Chapter 8](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml), *Adding a Server-Side
+    Framework*. Last but not least, you will learn how to use Vue CLI to create Vue
+    apps as opposed to the Vue apps we have been making with the custom webpack configuration.
+    So, let's get to it.
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将研究Nuxt中的中间件 - 具体来说，路由中间件和服务器中间件。您将学会区分这两种类型的Nuxt中间件。您将在Vue应用程序中使用导航守卫创建一些路由中间件，然后在Nuxt应用程序中创建中间件。然后，您将在`serverMiddleware`配置选项中编写一些Nuxt服务器中间件，作为您在[第8章](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml)中学习创建的服务器端API的替代服务器API。最后但并非最不重要的是，您将学习如何使用Vue
+    CLI创建Vue应用程序，而不是使用自定义webpack配置创建的Vue应用程序。所以，让我们开始吧。

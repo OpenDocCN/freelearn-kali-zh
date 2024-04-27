@@ -1,0 +1,669 @@
+- en: Using Vuex
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Vuex
+- en: In this chapter, we'll learn how to manage complex state in Vue by using Vuex.
+    Vuex helps deal with the issue of managing state and deeply nested components
+    in Vue apps.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习如何通过使用Vuex在Vue中管理复杂状态。Vuex有助于处理Vue应用程序中状态管理和深度嵌套组件的问题。
+- en: At the end of this chapter, you will understand what problems Vuex solves and
+    how it solves them, and you should understand where all the moving parts fit in.
+    You will also know how to build a simple Vuex app and the approach to take when
+    thinking about extending it.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章结束时，您将了解Vuex解决了什么问题以及它是如何解决这些问题的，您应该了解所有移动部分的适用位置。您还将了解如何构建一个简单的Vuex应用程序以及在考虑扩展它时应采取的方法。
+- en: 'Specifically, we will go over these topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 具体来说，我们将讨论以下主题：
+- en: Understanding state
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解状态
+- en: State management, data stores, and one-way data flows
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 状态管理、数据存储和单向数据流
+- en: Hot reloading
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 热重载
+- en: Building a very simple Vuex app
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 构建一个非常简单的Vuex应用程序
+- en: How to update state from Vue DevTools' Vuex tab
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何从Vue DevTools的Vuex选项卡更新状态
+- en: Building a more complex Vuex app
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 构建一个更复杂的Vuex应用程序
+- en: Let's begin by understanding exactly what state is.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先了解状态到底是什么。
+- en: What is state?
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 什么是状态？
+- en: 'An application''s state is all its data at a point in time. Since we are usually
+    concerned with the current app''s state, we could rephrase this to the following:
+    the state is an app''s data as it is right now, resulting from the previous steps
+    that our app took and based on functions inside the app responding to the user
+    interacting with it.'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用程序的状态是其在某一时间点的所有数据。由于我们通常关注当前应用程序的状态，我们可以将其重新表述为以下内容：状态是应用程序当前的数据，是由应用程序采取的先前步骤和应用程序内部的函数对用户交互做出响应而产生的。
+- en: So, what is it in our app that changes its state? Functions, of course. The
+    user interacts with our app, which triggers functions to change the current state
+    to some other state.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，在我们的应用程序中是什么改变了它的状态呢？当然是函数。用户与我们的应用程序交互，触发函数来将当前状态更改为其他状态。
+- en: However, as our apps grow, it is not uncommon to have components nesting several
+    levels deep. If we say that state is the **source of truth** for how our app should
+    display on the screen at any given time, then it would be beneficial to us to
+    make that source of truth as easy to reason about and as simple to work with as
+    possible.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，随着我们的应用程序增长，组件嵌套几层是很常见的。如果我们说状态是应用程序在任何给定时间应该显示在屏幕上的“真相之源”，那么让我们尽可能地使这个真相之源易于理解和简单易用对我们来说是有益的。
+- en: 'Unfortunately, in complex apps, this is not so easy. Any part of our app, any
+    component inside our app might affect any other part of our app. Managing state
+    in our apps becomes a bit like playing a game of whack-a-mole: an interaction
+    in one section of our app will result in something else *popping* out of place
+    in some other part of our app.'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很不幸，在复杂的应用程序中，这并不容易。我们应用的任何部分，应用内的任何组件都可能影响应用的任何其他部分。在我们的应用程序中管理状态有点像玩打地鼠游戏：应用程序中的一个部分的交互会导致应用程序的其他部分出现问题。
+- en: Reasoning about best practice for how to manage complex state in frontend apps
+    has led to concepts such as the **data store** and **one-way data flows**.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于如何在前端应用程序中管理复杂状态的最佳实践的思考导致了诸如“数据存储”和“单向数据流”等概念。
+- en: State management, data stores, and one-way data flows
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 状态管理、数据存储和单向数据流
+- en: 'A common solution to the problem of managing complex state is the idea of a
+    store: a single source of truth that keeps all of the data of our app''s state.
+    Once we have that central location—**the store**—we can reason about state a lot
+    easier, because now it is only a matter of sending the state data to those components
+    that need to have it at any time in the app''s life cycle.'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 管理复杂状态问题的常见解决方案是存储的概念：一个保持应用程序状态所有数据的唯一真相源。一旦我们有了这个中心位置—**存储**—我们就可以更容易地理解状态，因为现在只需要将状态数据发送到那些在应用程序生命周期中任何时候都需要它的组件。
+- en: To make the state updates simpler, we need to limit the ways in which these
+    updates can be made. This is where one-way data flows come in. With one-way data
+    flows, we specify rules on exactly how data can flow inside our app, which means
+    that there are now only so many expected ways in which data (state) can flow through
+    our apps, making it easier to reason about state and debug state when needed.
+    This approach is also a great time saver, since now we as developers know what
+    to expect; that is, to look for spots where we know state is **mutable**.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使状态更新更简单，我们需要限制这些更新的方式。这就是单向数据流的作用。通过单向数据流，我们规定了数据在应用程序内部流动的规则，这意味着数据（状态）只能以有限的方式流动，使得在需要时更容易理解状态和调试状态。这种方法也是一个很好的时间节省者，因为现在作为开发者，我们知道可以期待什么；也就是说，要寻找我们知道状态是**可变**的地方。
+- en: The Vuex state management pattern
+  id: totrans-20
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vuex状态管理模式
+- en: Vuex is a plugin of Vue, developed by Vue's core team. The setup is quite easy.
+    If you need a quick prototype, you can simply add the Vuex library from the settings
+    inside CodePen online editor, as explained in [Chapter 1](5fdb984c-98f5-4703-96ce-7bd3150fbe2f.xhtml),
+    *Introducing Vue*.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vuex是Vue的一个插件，由Vue的核心团队开发。设置非常简单。如果您需要一个快速的原型，您可以简单地从CodePen在线编辑器的设置中添加Vuex库，如[第1章](5fdb984c-98f5-4703-96ce-7bd3150fbe2f.xhtml)中所述，*介绍Vue*。
+- en: 'You can also install it via npm, with this command:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以通过npm安装它，使用以下命令：
+- en: '[PRE0]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'When trying to understand how Vuex works, you''ll usually find references online
+    that describe Vuex as a state management pattern that is heavily influenced by
+    Flux. This is true in part, but it is interesting to note that Flux itself was
+    inspired by the Elm architecture. Be that as it may, in Vuex, the data flows as
+    follows:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当试图理解Vuex的工作原理时，通常会在网上找到描述Vuex作为受Flux强烈影响的状态管理模式的参考资料。这在一定程度上是正确的，但有趣的是Flux本身受到了Elm架构的启发。不管怎样，在Vuex中，数据流如下：
+- en: '**Vue components** to actions'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Vue组件**到动作'
+- en: '**Actions** to mutations'
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**动作**到变化'
+- en: '**Mutations** to state'
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**变化**到状态'
+- en: '**State** to Vue components'
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**状态**到Vue组件'
+- en: 'The data always flows in one way, ending up where it began, with updates made
+    to components, which then *dispatch actions*, which then *commit mutations*, which
+    then *mutate state*, which then *renders components*, and the cycle repeats. So,
+    looking at the one-way data flow from a slightly different angle, we could rephrase
+    it, focusing on the verbs to describe what happens to the data in the store:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据总是以一种方式流动，最终回到起点，更新组件，然后*分发动作*，然后*提交变化*，然后*改变状态*，然后*渲染组件*，循环重复。因此，从略微不同的角度看单向数据流，我们可以重新表述它，专注于动词来描述存储中数据发生的情况：
+- en: Actions are *dispatched*
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 动作被*分发*
+- en: Mutations are *committed*
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 变化被*提交*
+- en: State is *mutated*
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 状态被*改变*
+- en: Components are *rendered*
+  id: totrans-33
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 组件被*渲染*
+- en: 'Looking at the one-way data flow again, we can now describe the data flow using
+    these nouns: *components*, *actions*, *mutations*, and *state*. Describing the
+    data flow using verbs, we can view this progression as follows: *dispatch*, *commit*,
+    *mutate and* *render*.'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次看一下这种单向数据流，我们现在可以用这些名词来描述数据流：*组件*、*动作*、*突变*和*状态*。用动词描述数据流，我们可以将这个过程视为：*分发*、*提交*、*突变*和*渲染*。
+- en: Both of these ways of viewing the flow of data in Vuex are two sides of the
+    same coin, the same cycle of state updates, and so thus it would not hurt to commit
+    both of these short lists to memory, as it will help speed up the understanding
+    of basic Vuex concepts.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Vuex中查看数据流的这两种方式是同一个硬币的两面，是状态更新的同一个循环，因此将这两个简短的列表都记住并不会有害，因为它将有助于加快对基本Vuex概念的理解。
+- en: To visually reinforce these explanations, a diagram of this one-way data flow
+    is available in the official Vuex docs, at this URL: [https://vuex.vuejs.org/vuex.png](https://vuex.vuejs.org/vuex.png).
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了在视觉上加强这些解释，可以在官方的Vuex文档中找到这种单向数据流的图表，网址是：[https://vuex.vuejs.org/vuex.png](https://vuex.vuejs.org/vuex.png)。
+- en: 'You might ask, why this indirect approach? Why can''t components directly mutate
+    state? There are two main reasons for this: first, since asynchronous code is
+    simply a matter of fact in the JavaScript world, a choice was made to separate
+    asynchronous and synchronous operations in Vuex. Hence, actions were set to be
+    asynchronous, so they can, for example, fetch some data from the server, and only
+    when this asynchronous data fetching is complete can they then *com**mit* *mutations*;
+    since mutations are strictly synchronous, it wouldn''t make sense to call them
+    before the call to server has been completed. Second, this way of separating concerns
+    enables easier tracking of state changes, which even includes time travel debugging:
+    rerunning mutations chronologically to track changes to state and hunt down bugs.'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能会问，为什么要采取这种间接的方式？为什么组件不能直接改变状态？这样做有两个主要原因：首先，在JavaScript世界中，异步代码只是一个事实，因此选择在Vuex中分离异步和同步操作。因此，动作被设置为异步的，所以它们可以，例如，从服务器获取一些数据，只有在这个异步数据获取完成后才能*提交*
+    *突变*；由于突变是严格同步的，在服务器调用完成之前调用它们是没有意义的。其次，这种分离关注点的方式使得更容易跟踪状态变化，甚至包括时间旅行调试：按时间顺序重新运行突变以跟踪状态的变化并追踪错误。
+- en: In the Vuex state management pattern, components can never directly mutate global
+    state. Mutations do that.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Vuex状态管理模式中，组件永远不能直接改变全局状态。突变会这样做。
+- en: In the next section, we'll look at each of these building blocks.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的部分，我们将看看这些构建块中的每一个。
+- en: The store
+  id: totrans-40
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: store
+- en: 'The **store** needs to be added to the Vue instance root, so that all components
+    can share this centralized, global state. Usually, we declare the store as `const`,
+    and then later on in the code, we add it inside the object literal that we pass
+    as the argument to the Vue constructor, like this:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**store**需要添加到Vue实例的根部，以便所有组件都可以共享这个集中的全局状态。通常，我们将store声明为`const`，然后在代码中稍后将其添加到作为参数传递给Vue构造函数的对象文字中，就像这样：'
+- en: '[PRE1]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Next, we'll learn about getters.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将学习有关获取器的知识。
+- en: Getters in the Vuex store
+  id: totrans-44
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vuex store中的获取器
+- en: Our store can also have getters. Getters allow us to return values from the
+    state in templates. They are a bit like computed values. They are read-only, meaning
+    they cannot change the state. Their responsibility is only to read it and make
+    some non-destructive manipulations of it. However, the underlying data is not
+    mutated.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的store也可以有获取器。获取器允许我们在模板中从状态中返回值。它们有点像计算值。它们是只读的，意味着它们不能改变状态。它们的责任只是读取它并对其进行一些非破坏性的操作。然而，底层数据没有被突变。
+- en: So, we use getters in the store to perform some non-destructive work on the
+    global state. What do we then do with them? How do we use them? We use them on
+    the other side of our app – inside a component—where we use `computed` and return
+    the value of getters from the store.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们在存储中使用`getters`对全局状态执行一些非破坏性工作。那么我们接下来该怎么做呢？我们如何使用它们？我们在应用程序的另一侧使用它们——在组件内部——我们使用`computed`并从存储中返回`getters`的值。
+- en: Vuex store mutations
+  id: totrans-47
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vuex存储变化
+- en: 'Mutations, as the name implies, mutate the state, and are synchronous. Functions
+    that mutate state receive arguments: the existing state and the payload. The payload
+    argument is optional. They are responsible for directly updating the state in
+    Vuex. You can execute a mutation from an action with this syntax: `state.commit`.'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 变化，顾名思义，改变状态，并且是同步的。改变状态的函数接收参数：现有状态和有效负载。有效负载参数是可选的。它们负责直接更新Vuex中的状态。您可以使用以下语法从操作中执行变化：`state.commit`。
+- en: Actions in Vuex store
+  id: totrans-49
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vuex存储中的操作
+- en: 'Actions update the state asynchronously and indirectly, by calling one or more
+    mutations we defined in the store. So, actions call as many mutations as needed.
+    On the other side, inside components, to execute an action we use the store''s
+    dispatch values, using this syntax: `store.dispatch`.'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 操作以异步和间接的方式更新状态，通过调用我们在存储中定义的一个或多个变化。因此，操作调用所需的变化。另一方面，在组件内部，要执行一个操作，我们使用存储的分派值，使用以下语法：`store.dispatch`。
+- en: 'Let''s now extend our boilerplate code to include what we just discussed:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们扩展我们的样板代码，包括我们刚刚讨论的内容：
+- en: '[PRE2]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'As we can see in the Vue constructor, with ES6 syntax, it is possible to simplify
+    the `store: store` key-value pair inside the constructor''s object literal argument
+    and just use `store`.'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '在Vue构造函数中，我们可以看到，使用ES6语法，可以简化构造函数对象字面参数中的`store: store`键值对，只需使用`store`。'
+- en: Hot reloading
+  id: totrans-54
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 热重载
+- en: Another popular concept that was brought about by the rise of Webpack is hot
+    reloading. When your app is running, upon updating a file—for example, adding
+    some changes to scoped styles in one of your components—Webpack will hot-reload
+    the updated file without using state in your app. In other words, it will not
+    reload the entire page, but rather only the part of your app that was affected
+    by the change. The reason why this is useful is because, with hot module replacement
+    the state will be kept, which would not be possible if the page was refreshed.
+    This comes with the added benefit of faster development time and seamless experience
+    of updates in the browser.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个由Webpack的兴起带来的流行概念是热重载。当您的应用程序正在运行时，更新文件时，例如，在组件的一个文件中添加一些变化的作用域样式，Webpack将热重载更新的文件，而不使用您应用程序中的状态。换句话说，它不会重新加载整个页面，而只会重新加载受更改影响的应用程序部分。这是有用的原因是，使用热模块替换，状态将被保留，如果刷新页面是不可能的。这带来了更快的开发时间和浏览器中更新的无缝体验的额外好处。
+- en: Building a fruit counter app with Vuex
+  id: totrans-56
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Vuex构建水果计数器应用程序
+- en: The app that we will build is just a simple fruit counter app. The goal is to
+    help the user make sure to eat five pieces of fruit daily, and we will set up
+    a simple app that will start with five pieces of fruit to eat and, each time we
+    click the button, it will decrement the number by `1`. That way, we can keep track
+    of our healthy eating goals.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将构建的应用程序只是一个简单的水果计数器应用程序。目标是帮助用户确保每天吃五份水果，我们将设置一个简单的应用程序，开始时有五份水果可供食用，每次点击按钮时，它将减少`1`的数量。这样，我们可以跟踪我们的健康饮食目标。
+- en: 'We will begin our app by setting the initial state, with only one key-value
+    pair in it:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过设置初始状态来开始我们的应用程序，其中只有一个键值对：
+- en: '[PRE3]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Next, we will set up `getters`. As we learned already, `getters` only return
+    state:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将设置`getters`。正如我们已经学过的，`getters`只返回状态：
+- en: '[PRE4]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Next, we will add two mutations: the first mutation, `decrementCounter`, will
+    operate on the counter by decrementing it by the value stored in the payload argument.
+    We will decrement the value of state.count until it reaches `0`. To make sure
+    the value of `state.count` cannot be less then `0`, we''ll check it with the ternary
+    statement and set its value accordingly.'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将添加两个mutations：第一个mutation，`decrementCounter`，将通过减去payload参数中存储的值来操作计数器。我们将递减state.count的值，直到达到`0`。为了确保`state.count`的值不能小于`0`，我们将使用三元语句进行检查，并相应地设置其值。
+- en: 'The second mutation, `resetCounter`, will reset the value of the counter to
+    the initial state:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个mutation，`resetCounter`，将重置计数器的值为初始状态：
+- en: '[PRE5]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Next, we are setting up two actions, `decrement` and `reset`:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将设置两个操作，`decrement` 和 `reset`：
+- en: '[PRE6]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Finally, we''re setting up our app, and specifying the `el`, `store`, `computed`,
+    and `methods` options inside its Vue constructor:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们正在设置我们的应用，并在其Vue构造函数中指定`el`、`store`、`computed`和`methods`选项。
+- en: '[PRE7]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Next, in our HTML, we set up the structure of our simple app:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，在我们的HTML中，我们设置了我们简单应用的结构：
+- en: '[PRE8]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'The working example can be found at the following URL: [https://codepen.io/AjdinImsirovic/pen/aRmENx](https://codepen.io/AjdinImsirovic/pen/aRmENx).'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以在以下网址找到工作示例：[https://codepen.io/AjdinImsirovic/pen/aRmENx](https://codepen.io/AjdinImsirovic/pen/aRmENx)。
+- en: Using the Vue DevTools plugin to track our Vuex state
+  id: totrans-72
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Vue DevTools插件跟踪我们的Vuex状态
+- en: If you type `vuejs devtools` into the search field of the Chrome extensions
+    web store, you'll get a few results. The first result is the stable version of
+    the official plugin. The second result is the Vue DevTools extension's beta version.
+    To see all of the options that are being developed and see where this plugin is
+    going, it's good to install the beta version. Interestingly, both versions display
+    the same information once open in Chrome DevTools. Currently, the message reads `Ready.
+    Detected Vue 2.5.17-beta.0`.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你在Chrome扩展程序网上商店的搜索栏中输入`vuejs devtools`，你会得到一些结果。第一个结果是官方插件的稳定版本。第二个结果是Vue
+    DevTools扩展的beta版本。要查看正在开发的所有选项，并了解这个插件的发展方向，最好安装beta版本。有趣的是，一旦在Chrome DevTools中打开，两个版本显示相同的信息。目前，消息显示为`Ready.
+    Detected Vue 2.5.17-beta.0`。
+- en: When compared with the regular version, the experimental version comes with
+    a few more tabs, namely `routing` and `p``erformance`. However, even the existing
+    tabs have some very useful improvements. For example, the Vuex tab comes with
+    the ability to directly update the state from inside DevTools. To access that
+    functionality, simply open Chrome DevTools by pressing the *F12* key. The best
+    way to position the DevTools to use the Vue extension is by setting it to the `Dock
+    to bottom` option. This option is accessible by pressing the three vertical dots
+    icon (the *Customize and control DevTools* icon), which can be found right next
+    to the DevTools close icon in the very top-right corner of the DevTools pane.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与常规版本相比，实验版本多了一些标签，即`routing`和`performance`。然而，即使是现有的标签也有一些非常有用的改进。例如，Vuex标签具有直接从DevTools内部更新状态的功能。要访问该功能，只需按下*F12*键打开Chrome
+    DevTools。将DevTools定位到使用Vue扩展的最佳方法是将其设置为`Dock to bottom`选项。这个选项可以通过按下位于DevTools窗格右上角的DevTools关闭图标旁边的三个垂直点图标（*自定义和控制DevTools*图标）来访问。
+- en: Once you have Dock to bottom enabled, the Vue tab open, and inside it, the Vuex
+    tab active, you will see two panes. Initially, the left pane lists Base State.
+    This is the pane that lists all of the mutations and allows us to run time travel
+    debugging. The right pane lists the actual payload, state, and mutations, so it
+    gives us a more fine-grained view of what is happening in any given mutation.
+    To time travel to any specific mutation, just hover over it and click the *Time
+    Travel* icon. You also have the option of running `Commit` or `Revert` on any
+    of the mutations listed. As you might guess, while the `Commit` command will perform
+    a commit on the currently hovered mutation, the `Revert` command will undo the
+    specific mutation's commit.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启用底部停靠后，打开Vue标签，然后在其中激活Vuex标签，您将看到两个窗格。最初，左窗格列出了基本状态。这个窗格列出了所有的变化，并允许我们进行时间旅行调试。右窗格列出了实际的负载、状态和变化，因此它给了我们更细粒度的视图，让我们了解在任何给定的变化中发生了什么。要进行任何特定变化的时间旅行，只需将鼠标悬停在其上，然后单击“时间旅行”图标。您还可以选择在列出的任何变化上运行“提交”或“还原”。正如您可能猜到的那样，当执行“提交”命令时，将对当前悬停的变化执行提交，而“还原”命令将撤消特定变化的提交。
+- en: 'Another useful and interesting feature is the ability to update the state right
+    from the Vuex tab. For example, let''s say that we click the `Eat fruit!` button
+    a few times. Now, we can click on any given `decrementCounter` mutation in the
+    mutations pane, and we''ll get the following information in the right pane:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个有用且有趣的功能是能够直接从Vuex标签更新状态。例如，假设我们点击了“吃水果！”按钮几次。现在，我们可以点击变化窗格中的任何给定的“减少计数”变化，然后在右窗格中得到以下信息：
+- en: '[PRE9]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'It is very simple to use this pane. If we need to updated our state, hovering
+    over `count: 1` inside the `state` entry will trigger four icons to appear: the *Edit
+    value* icon, the minus icon, the plus icon, and the *Copy value* icon, shown as
+    three vertical dots. Here, we can also see the proof of `getters` being read-only.
+    Hovering over the `getters` entry will not show any editing icons. Contrary to
+    that, the `state` and `mutation` entries can both be edited from this pane.'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用这个窗格非常简单。如果我们需要更新我们的状态，在“状态”条目内悬停在“计数：1”上将触发四个图标的出现：编辑值图标、减号图标、加号图标和“复制值”图标，显示为三个垂直点。在这里，我们还可以看到“getter”是只读的证据。悬停在“getter”条目上不会显示任何编辑图标。与此相反，“状态”和“变化”条目都可以从这个窗格中进行编辑。
+- en: Improving our fruit counter app
+  id: totrans-79
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 改进我们的水果计数应用程序
+- en: In this section, we will make some improvements to our fruit counter app. The
+    goal is to see how we can go about extending our apps using Vuex.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将对我们的水果计数应用程序进行一些改进。目标是看看我们如何使用Vuex来扩展我们的应用程序。
+- en: 'We will update our app by adding additional functionality. Namely, we''ll add
+    buttons for different fruits: apples and pears. The number of fruits to eat and
+    the number and kind of fruits eaten will appear in our app too.'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过添加额外的功能来更新我们的应用程序。即，我们将为不同的水果添加按钮：苹果和梨。要吃的水果数量以及吃的水果的数量和种类也将出现在我们的应用程序中。
+- en: 'Here is the updated JS code. We begin with defining the state in the store:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是更新后的JS代码。我们首先定义存储中的状态：
+- en: '[PRE10]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Next, we set up the getters:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们设置getter：
+- en: '[PRE11]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'When defining mutations, we need `decrementWithApplesCounter` and `decrementWithPearsCounter`,
+    and the `resetCounter` functionality:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在定义变化时，我们需要“decrementWithApplesCounter”和“decrementWithPearsCounter”，以及“resetCounter”功能：
+- en: '[PRE12]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Next, we''ll list our actions, `decrementWithApples`, `decrementWithPears`,
+    and `reset`:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将列出我们的动作，“decrementWithApples”，“decrementWithPears”和“重置”：
+- en: '[PRE13]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'We''ll wrap it up by adding the Vue constructor:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过添加Vue构造函数来结束它：
+- en: '[PRE14]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: As we see in this code, we can update more than one variable value in a JS ternary.
+    We are also ''imitating'' a call to the server with the `setTimeout()` function
+    call; this is unnecessary, but used as an example of a more complex asynchronous
+    operation.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在这段代码中看到的，我们可以在JS三元运算符中更新多个变量的值。我们还使用`setTimeout()`函数调用来“模拟”对服务器的调用；这是不必要的，但用作更复杂的异步操作的示例。
+- en: 'The updated HTML code will look like this:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更新后的HTML代码将如下所示：
+- en: '[PRE15]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: The updated example app can be found here: [https://codepen.io/AjdinImsirovic/pen/EdNaaO](https://codepen.io/AjdinImsirovic/pen/EdNaaO).
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更新后的示例应用程序可以在这里找到：[https://codepen.io/AjdinImsirovic/pen/EdNaaO](https://codepen.io/AjdinImsirovic/pen/EdNaaO)。
+- en: Summary
+  id: totrans-96
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we got acquainted with Vuex, a powerful Vue plugin that helps
+    us manage state from a centralized, global store. We learned about what state
+    is and why we need to centralize data stores in more complex apps. We discussed
+    unidirectional data flow and its implementation in Vuex, through the use of getters,
+    store mutations, and store actions. We moved from theory to practice by first
+    building a simple app, then learning how to make our development process easier
+    with the help of the Vue Devtools extension.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们了解了Vuex，这是一个强大的Vue插件，可以帮助我们从集中式全局存储管理状态。我们了解了什么是状态，以及为什么需要在更复杂的应用程序中集中数据存储。我们讨论了单向数据流及其在Vuex中的实现，通过使用getter、store
+    mutation和store action。我们从理论转向实践，首先构建了一个简单的应用程序，然后学习如何借助Vue Devtools扩展来简化我们的开发过程。
+- en: In the next section, we will work with routing using Vue-router and we'll look
+    at server-side rendering with Nuxt.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将使用Vue-router进行路由处理，并学习使用Nuxt进行服务器端渲染。

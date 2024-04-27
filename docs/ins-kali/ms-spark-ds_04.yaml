@@ -1,0 +1,2434 @@
+- en: Chapter 4. Exploratory Data Analysis
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第4章 探索性数据分析
+- en: '**Exploratory Data Analysis** (**EDA**) performed in commercial settings is
+    generally commissioned as part of a larger piece of work that is organized and
+    executed along the lines of a feasibility assessment. The aim of this feasibility
+    assessment, and thus the focus of what we can term an *extended EDA*, is to answer
+    a broad set of questions about whether the data examined is fit for purpose and
+    thus worthy of further investment.'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在商业环境中进行的**探索性数据分析**（EDA）通常作为更大的工作的一部分委托，这个工作是按照可行性评估的线索组织和执行的。这种可行性评估的目的，因此也是我们可以称之为*扩展EDA*的焦点，是回答关于所检查的数据是否合适并且值得进一步投资的一系列广泛问题。
+- en: Under this general remit, the data investigations are expected to cover several
+    aspects of feasibility that include the practical aspects of using the data in
+    production, such as its timeliness, quality, complexity, and coverage, as well
+    as being appropriate for the intended hypothesis to be tested. While some of these
+    aspects are potentially less fun from a data science perspective, these data quality
+    led investigations are no less important than purely statistical insights. This
+    is especially true when the datasets in question are very large and complex and
+    when the investment needed to prepare the data for the data science might be significant.
+    To illustrate this point, and to bring the topic to life, we present methods for
+    doing an EDA of the vast and complex **Global Knowledge Graph** (**GKG**) data
+    feeds, made available by the **Global Database of Events, Language and Tone**
+    (**GDELT**) project.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个一般性的任务下，数据调查预计将涵盖可行性的几个方面，包括在生产中使用数据的实际方面，如及时性、质量、复杂性和覆盖范围，以及适合于测试的预期假设。虽然其中一些方面从数据科学的角度来看可能不那么有趣，但这些以数据质量为主导的调查与纯粹的统计洞察力一样重要。特别是当涉及的数据集非常庞大和复杂，以及为数据科学准备数据所需的投资可能是巨大的时候。为了阐明这一点，并使主题更加生动，我们提出了对全球事件、语言和语调全球数据库（GDELT）项目提供的大规模和复杂的全球知识图（GKG）数据源进行探索的方法。
+- en: 'In this chapter, we will create and interpret an EDA while covering the following
+    topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将创建和解释一个EDA，同时涵盖以下主题：
+- en: Understanding the problems and design goals for planning and structuring an
+    Extended Exploratory Data Analysis
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解规划和构建扩展探索性数据分析的问题和设计目标
+- en: What data profiling is, with examples, and how a general framework for data
+    quality can be formed around the technique for continuous data quality monitoring
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据概要分析是什么，举例说明，并且如何围绕连续数据质量监控的技术形成一个通用框架
+- en: How to construct a general *mask-based* data profiler around the method
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何构建一个围绕该方法的通用*基于掩码的*数据概要分析器
+- en: How to store the exploratory metrics to a standard schema, to facilitate the
+    study of data drift in the metrics over time, with examples
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何将探索性指标存储到标准模式中，以便随时间研究指标的数据漂移，附有示例
+- en: How to use Apache Zeppelin notebooks for quick EDA work, and for plotting charts
+    and graphs
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何使用Apache Zeppelin笔记本进行快速探索性数据分析工作，以及绘制图表和图形
+- en: How to extract and study the GCAM sentiments in GDELT, both as time series and
+    as spatio-temporal datasets
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何提取和研究GDELT中的GCAM情感，包括时间序列和时空数据集
+- en: How to extend Apache Zeppelin to generate custom charts using the `plot.ly`
+    library
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何扩展Apache Zeppelin以使用`plot.ly`库生成自定义图表
+- en: The problem, principles and planning
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题、原则和规划
+- en: In this section, we will explore why an EDA might be required and discuss the
+    important considerations for creating one.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将探讨为什么可能需要进行探索性数据分析，并讨论创建探索性数据分析时的重要考虑因素。
+- en: Understanding the EDA problem
+  id: totrans-13
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 理解探索性数据分析问题
+- en: A difficult question that precedes an EDA project is: *Can you give me an estimate
+    and breakdown of your proposed EDA costs, please?*
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在进行EDA项目之前的一个困难问题是：*你能给我一个关于你提议的EDA成本的估算和分解吗？*
+- en: 'How we answer this question ultimately shapes our EDA strategy and tactics.
+    In days gone by, the answer to this question typically started like this: *Basically
+    you pay by the column....* This rule of thumb is based on the premise that there
+    is *an iterable unit of data exploration work*, and these units of work drive
+    the estimate of effort and thus the rough price of performing the EDA.'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们如何回答这个问题最终塑造了我们的探索性数据分析策略和战术。过去，对这个问题的回答通常是这样开始的：*基本上你按列付费……*这个经验法则是基于这样的前提：*数据探索工作的可迭代单元*，这些工作单元驱动了工作量的估算，从而决定了进行探索性数据分析的大致价格。
+- en: What's interesting about this idea is that the units of work are quoted in terms
+    of the *data structures to investigate* rather than *functions that need writing*.
+    The reason for this is simple. Data processing pipelines of functions are assumed
+    to exist already, rather than being new work, and so the quotation offered is
+    actually the implied cost of configuring the new inputs' data structures to our
+    standard data processing pipelines for exploring data.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个想法有趣的地方在于，工作单元的报价是以*需要调查的数据结构*而不是*需要编写的函数*来报价的。其原因很简单。假定数据处理管道的函数已经存在，而不是新的工作，因此所提供的报价实际上是配置新输入数据结构到我们标准的数据处理管道以探索数据的隐含成本。
+- en: This thinking brings us to the main EDA problem, that *exploring* seems hard
+    to pin down in terms of planning tasks and estimating timings. The recommended
+    approach is to consider explorations as configuration driven tasks. This helps
+    us to structure and estimate the work more effectively, as well as helping to
+    shape the thinking around the effort so that configuration is the central challenge,
+    rather than the writing of a lot of ad hoc throw-away code.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种思维方式使我们面临的主要探索性数据分析问题是，*探索*在规划任务和估算时间方面似乎很难确定。建议的方法是将探索视为配置驱动的任务。这有助于我们更有效地组织和估算工作，同时有助于塑造围绕配置的思维，而不是编写大量临时代码。
+- en: The process of configuring data exploration also drives us to consider the processing
+    templates we might need. We would need to configure these based on the form of
+    the data we explore. For instance, we would need a standard exploration pipeline
+    for structured data, for text data, for graph shaped data, for image data, for
+    sound data, for time series data, and for spatial data. Once we have these templates,
+    we need to simply map our input data to them and configure our ingestion filters
+    to deliver a focused lens over the data.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置数据探索的过程也促使我们考虑可能需要的处理模板。我们需要根据我们探索的数据形式进行配置。例如，我们需要为结构化数据、文本数据、图形数据、图像数据、声音数据、时间序列数据和空间数据配置标准的探索流程。一旦我们有了这些模板，我们只需要将输入数据映射到它们，并配置摄入过滤器，以便对数据进行聚焦。
+- en: Design principles
+  id: totrans-19
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设计原则
+- en: 'Modernizing these ideas for Apache Spark based EDA processing means that we
+    need to design our configurable EDA functions and code with some general principles
+    in mind:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为基于Apache Spark的EDA处理现代化这些想法意味着我们需要设计具有一些通用原则的可配置EDA函数和代码：
+- en: '**Easily reusable functions/features***:* We need to define our functions to
+    work on general data structures in general ways so they produce good exploratory
+    features and deliver them in ways that minimize the effort needed to configure
+    them for new datasets'
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**易重用的函数/特性***：我们需要定义我们的函数以一般方式处理一般数据结构，以便它们产生良好的探索特性，并以最小的配置工作量将它们交付给新数据集'
+- en: '**Minimize intermediate data structures***:* We need to avoid proliferating
+    intermediate schemas, helping to minimize intermediate configurations, and where
+    possible create reusable data structures'
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**最小化中间数据结构***：我们需要避免大量中间模式，帮助最小化中间配置，并在可能的情况下创建可重复使用的数据结构'
+- en: '**Data driven configuration***:* Where possible, we need to have configurations
+    that can be generated from metadata to reduce the manual boilerplate work'
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**数据驱动配置***：在可能的情况下，我们需要生成可以从元数据中生成的配置，以减少手动样板工作'
+- en: '**Templated visualizations**: General reusable visualizations driven from common
+    input schemas and metadata'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**模板化可视化***：从常见输入模式和元数据驱动的通用可重复使用的可视化'
+- en: Lastly, although it is not a strict principle per se, we need to construct exploratory
+    tools that are flexible enough to discover data structures rather than depend
+    on rigid pre-defined configurations. This helps when things go wrong, by helping
+    us to reverse engineer the file content, the encodings, or the potential errors
+    in the file definitions when we come across them.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，虽然这不是一个严格的原则，但我们需要构建灵活的探索工具，以便发现数据结构，而不是依赖于严格预定义的配置。当出现问题时，这有助于我们通过帮助我们反向工程文件内容、编码或文件定义中的潜在错误来解决问题。
+- en: General plan of exploration
+  id: totrans-26
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 探索的一般计划
+- en: The early stages of all EDA work are invariably based on the simple goal of
+    establishing whether the data is of good quality. If we focus here, to create
+    a general *getting started* plan that is widely applicable, then we can lay down
+    a general set of tasks.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有EDA工作的早期阶段都不可避免地基于建立数据质量的简单目标。如果我们在这里集中精力，创建一个广泛适用的通用*入门*计划，那么我们可以制定一般的任务集。
+- en: 'These tasks create the general shape of a proposed EDA project plan, which
+    is as follows:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些任务构成了拟议的EDA项目计划的一般形状，如下所示：
+- en: Prepare source tools, source our input datasets, review the documentation, and
+    so on. Review security of data where necessary.
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 准备源工具，获取我们的输入数据集，审查文档等。必要时审查数据的安全性。
+- en: Obtain, decrypt, and stage the data in HDFS; collect **non-functional requirements**
+    (**NFRs**) for planning.
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 获取、解密并在HDFS中分阶段存储数据；收集用于规划的非功能性需求（NFRs）。
+- en: Run code point level frequency reports on the file content.
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在文件内容上运行代码点级别的频率报告。
+- en: Run a population check on the amount of missing data in the files' fields.
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在文件字段中运行缺失数据量的人口统计检查。
+- en: Run a low grain format profiler to check on the high cardinality fields in the
+    files.
+  id: totrans-33
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 运行低粒度格式分析器，检查文件中基数较高的字段。
+- en: Run a high grain format profiler check on format-controlled fields in the files.
+  id: totrans-34
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在文件中对受格式控制字段运行高粒度格式分析器检查。
+- en: Run referential integrity checks, where appropriate.
+  id: totrans-35
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 运行参照完整性检查，必要时。
+- en: Run in-dictionary checks, to verify external dimensions.
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 运行字典检查，验证外部维度。
+- en: Run basic numeric and statistical explorations of numeric data.
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对数值数据进行基本的数字和统计探索。
+- en: Run more visualization-based explorations of key data of interest.
+  id: totrans-38
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对感兴趣的关键数据进行更多基于可视化的探索。
+- en: Note
+  id: totrans-39
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: In character encoding terminology, a code point or code position is any of the
+    numerical values that make up the code space. Many code points represent single
+    characters, but they can also have other meanings, such as for formatting.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在字符编码术语中，代码点或代码位置是构成代码空间的任何数字值。许多代码点代表单个字符，但它们也可以具有其他含义，例如用于格式化。
+- en: Preparation
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: Now that we have a general plan of action, before exploring our data, we must
+    first invest in building the reusable tools for conducting the early mundane parts
+    of the exploration pipeline that help us validate data; then as a second step
+    investigate GDELT's content.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一个行动的一般计划，在探索数据之前，我们必须首先投资于构建可重复使用的工具，用于进行探索流程的早期单调部分，帮助我们验证数据；然后作为第二步调查GDELT的内容。
+- en: Introducing mask based data profiling
+  id: totrans-43
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 引入基于掩码的数据分析
+- en: A simple but effective method for quickly exploring new types of data is to
+    make use of mask based data profiling. A *mask* in this context is a transformation
+    function for a string that generalizes a data item into a feature, that, as a
+    collection of masks, will have a lower cardinality than the original values in
+    the field of study.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 快速探索新类型数据的一种简单而有效的方法是利用基于掩码的数据分析。在这种情况下，*掩码*是将数据项泛化为特征的字符串转换函数，作为掩码集合，其基数将低于研究领域中原始值的基数。
+- en: 'When a column of data is summarized into mask frequency counts, a process commonly
+    called *data profiling*, it can offer rapid insights into the common structures
+    and content of the strings, and hence reveal how the raw data was encoded. Consider
+    the following mask for exploring data:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当数据列被总结为掩码频率计数时，通常称为*数据概要*，它可以快速洞察字符串的常见结构和内容，从而揭示原始数据的编码方式。考虑以下用于探索数据的掩码：
+- en: Translate uppercase letters to *A*
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将大写字母翻译为*A*
+- en: Translate lowercase letters to *a*
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将小写字母翻译为*a*
+- en: Translate numbers, 0 through 9, to *9*
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将数字0到9翻译为*9*
+- en: It seems like a very simple transformation at first glance. As an example, let's
+    apply this mask to a high cardinality field of data, such as the GDELT GKG file's
+    *V2.1 Source Common Name* field. The documentation suggests it records the common
+    name of the source of the news article being studied, which typically is the name
+    of the website the news article was scraped from. Our expectation is that it contains
+    domain names, such as [nytimes.com](https://www.nytimes.com/).
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 乍一看，这似乎是一个非常简单的转换。例如，让我们将此掩码应用于数据的高基数字段，例如GDELT GKG文件的*V2.1 Source Common Name*字段。文档建议它记录了正在研究的新闻文章的来源的常见名称，通常是新闻文章被抓取的网站的名称，我们期望它包含域名，例如[nytimes.com](https://www.nytimes.com/)。
+- en: 'Before implementing the production solution in Spark, let''s prototype a profiler
+    on the Unix command line to provide an example that we can run anywhere:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Spark中实施生产解决方案之前，让我们在Unix命令行上原型化一个概要工具，以提供一个我们可以在任何地方运行的示例：
+- en: '[PRE0]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: The output is a sorted count of records found in the Source Common Name column
+    alongside the mask generated by the regular expression (regex). It should be very
+    clear looking at the results of this *profiled data* that the field contains domain
+    names - or does it? As we have only looked at the most common masks (the top 20
+    in this case) perhaps the long tail of masks at the other end of the sorted list
+    holds potential data quality issues at a lower frequency.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出是在Source Common Name列中找到的记录的排序计数，以及正则表达式（regex）生成的掩码。通过查看这个*概要数据*的结果，应该很清楚该字段包含域名-或者是吗？因为我们只看了最常见的掩码（在这种情况下是前20个），也许在排序列表的另一端的长尾部分可能存在潜在的数据质量问题。
+- en: 'Rather than looking at just the top 20 masks, or even the bottom 20, we can
+    introduce a subtle change to improve the generalization ability of our mask function.
+    By making the regex collapse multiple adjacent occurrences of lower case letters
+    into a single `a` character, the mask''s cardinality can be reduced without really
+    diminishing our ability to interpret the results. We can prototype this improvement
+    with just a small change to our regex and hopefully view all the masks in one
+    page of output:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以引入一个微妙的改变来提高我们的掩码函数的泛化能力，而不是只看前20个掩码，甚至是后20个。通过使正则表达式将小写字母的多个相邻出现折叠成一个`a`字符，掩码的基数可以减少，而不会真正减少我们解释结果的能力。我们可以通过对我们的正则表达式进行微小的改进来原型化这个改进，并希望在一个输出页面上查看所有的掩码：
+- en: '[PRE1]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Very quickly, we have prototyped a mask that reduces the three thousand or so
+    raw values down to a very short list of 22 values that are easily inspected by
+    eye. As the long tail is now a much shorter tail, we can easily spot any possible
+    outliers in this data field that could represent quality issues or special cases.
+    This type of inspection, although manual, can be very powerful.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常快地，我们原型化了一个掩码，将三千多个原始值缩减为一个非常短的列表，可以轻松地通过眼睛检查。由于长尾现在变得更短了，我们可以很容易地发现这个数据字段中可能的异常值，这些异常值可能代表质量问题或特殊情况。尽管是手动的，但这种类型的检查可能非常有力。
+- en: Notice, for instance, there is a particular mask in the output, `AAA Aa`, which
+    doesn't have a *dot* within it, as we would expect in a domain name. We interpret
+    this finding to mean we've spotted two rows of raw data that are not valid domain
+    names, but perhaps general descriptors. Perhaps this is an error, or an example
+    of what is known as, *illogical field use*, meaning there could be other values
+    slipping into this column that perhaps should logically go elsewhere.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，例如输出中有一个特定的掩码，`AAA Aa`，其中没有*点*，这与我们在域名中所期望的不符。我们解释这一发现意味着我们发现了两行不是有效域名的原始数据，而可能是一般描述符。也许这是一个错误，或者是所谓的*不合逻辑的字段使用*的例子，这意味着可能有其他值滑入了这一列，也许应该逻辑上属于其他地方。
+- en: This is worth investigating, and it is easy to inspect those exact two records.
+    We do so by generating the masks alongside the original data, then filtering on
+    the offending mask to locate the original strings for manual inspection.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这值得调查，而且很容易检查这两条记录。我们可以通过在原始数据旁边生成掩码，然后过滤掉有问题的掩码来定位原始字符串，以进行手动检查。
+- en: 'Rather than code a very long one liner on the command line, we can inspect
+    these records using a legacy data profiler called `bytefreq` (short for *byte
+    frequencies*) written in awk. It has switches to generate formatted reports, database
+    ready metrics, and also a switch to output masks and data side by side. We have
+    open-sourced `bytefreq` specifically for readers of this book, and suggest you
+    play with it to really understand how useful this technique can be: [https://bitbucket.org/bytesumo/bytefreq](https://bitbucket.org/bytesumo/bytefreq).'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用一个名为`bytefreq`（*字节频率*的缩写）的传统数据概要工具来检查这些记录，而不是在命令行上编写一个非常长的一行代码。它有开关来生成格式化报告、数据库准备的指标，还有一个开关来输出掩码和数据并排。我们已经为本书的读者开源了`bytefreq`，建议您尝试一下，以真正理解这种技术有多有用：[https://bitbucket.org/bytesumo/bytefreq](https://bitbucket.org/bytesumo/bytefreq)。
+- en: '[PRE2]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: When we inspect the odd mask, `A Aa`, we can see the offending text found is
+    `BBC Monitoring`, and in re-reading the GDELT documentation we will see that this
+    is not an error, but a known special case. It means when using this field, we
+    must remember to handle this special case. One way to handle it could be by including
+    a correction rule to swap this string value for a value that works better, for
+    example, the valid domain name [www.monitor.bbc.co.uk](http://www.monitor.bbc.co.uk),
+    which is the data source to which the text string refers.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们检查奇怪的掩码“A Aa”时，我们可以看到找到的有问题的文本是“BBC Monitoring”，在重新阅读GDELT文档时，我们会发现这不是一个错误，而是一个已知的特殊情况。这意味着在使用这个字段时，我们必须记住处理这个特殊情况。处理它的一种方法可能是包括一个更正规则，将这个字符串值替换为一个更好的值，例如有效的域名[www.monitor.bbc.co.uk](http://www.monitor.bbc.co.uk)，这是文本字符串所指的数据源。
+- en: 'The idea we are introducing here is that a mask can be used as a *key* to retrieve
+    offending records in particular fields. This logic leads us to the next major
+    benefit of mask based profiling: the output masks are a form of *Data Quality
+    Error Code*. These error codes can fall into two categories: a whitelist of *good* masks,
+    and a blacklist of *bad* masks that are used to find poor quality data. Thought
+    of this way, masks then form the basis for searching and retrieving data cleansing
+    methods, or perhaps for throwing an alarm or rejecting a record.'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里介绍的想法是，掩码可以用作检索特定字段中有问题记录的*关键*。这种逻辑引导我们到基于掩码的分析的下一个主要好处：输出的掩码是一种*数据质量错误代码*。这些错误代码可以分为两类：*好*掩码的白名单，和用于查找低质量数据的*坏*掩码的黑名单。这样考虑，掩码就成为搜索和检索数据清理方法的基础，或者用于发出警报或拒绝记录。
+- en: 'The lesson is that we can create *Treatment functions* to remediate raw strings
+    that are found using a particular mask calculated over data in a particular field.
+    This thinking leads to the following conclusion: we can create a general framework
+    around mask based profiling for doing data quality control and remediation *as
+    we read data within our data reading pipeline*. This has some really advantageous
+    solution properties:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个教训是，我们可以创建*处理函数*来纠正使用特定掩码计算在特定字段数据上找到的原始字符串。这种思路导致了以下结论：我们可以创建一个围绕基于掩码的分析框架，用于在数据读取管道中进行数据质量控制和纠正。这具有一些非常有利的解决方案特性：
+- en: Generating data quality masks is an *on read* process; we can accept new raw
+    data and write it to disk then, on read, we can generate masks only when needed
+    at query time - so data cleansing can be a dynamic process.
+  id: totrans-63
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成数据质量掩码是一个*读取*过程；我们可以接受新的原始数据并将其写入磁盘，然后在读取时，我们只在查询时需要时生成掩码 - 因此数据清理可以是一个动态过程。
+- en: Treatment functions can then be dynamically applied to targeting remediation
+    efforts that help to cleanse our data at the time of read.
+  id: totrans-64
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理函数可以动态应用于目标纠正工作，帮助在读取数据时清理我们的数据。
+- en: Because previously unseen strings are generalized into masks, new strings can
+    be flagged as having quality issues even if that exact string has never been seen
+    before. This generality helps us to reduce complexity, simplify our processes,
+    and create reusable smart solutions - even across subject areas.
+  id: totrans-65
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 因为以前未见过的字符串被概括为掩码，即使从未见过这个确切的字符串，新字符串也可以被标记为存在质量问题。这种普遍性帮助我们减少复杂性，简化我们的流程，并创建可重用的智能解决方案
+    - 即使跨学科领域也是如此。
+- en: Data items that create masks that do not fall either into mask white-lists,
+    fix-lists, or blacklists can potentially be quarantined for attention; human analysts
+    can inspect the records and hopefully whitelist them, or perhaps create new Treatments
+    Functions that help to get the data out of quarantine and back into production.
+  id: totrans-66
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建掩码的数据项如果不属于掩码白名单、修复列表或黑名单，可能会被隔离以供关注；人类分析师可以检查记录，并希望将它们列入白名单，或者创建新的处理函数，帮助将数据从隔离状态中取出并重新投入生产。
+- en: Data quarantines can be implemented simply as an on-read filter, and when new
+    remediation functions are created to cleanse or fix data, the dynamic treatments
+    applied at read time will automatically *release* the corrected data to users
+    without long delays.
+  id: totrans-67
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据隔离可以简单地作为一个读取过滤器实施，当新的纠正函数被创建来清理或修复数据时，读取时自动应用的动态处理将自动将更正后的数据释放给用户，而不会有长时间的延迟。
+- en: Eventually a data quality Treatment library will be created that stabilizes
+    over time. New work is mainly done by mapping and applying the existing treatments
+    to new data. A phone number reformatting Treatment function, for example, can
+    be widely reused over many datasets and projects.
+  id: totrans-68
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最终将创建一个随时间稳定的数据质量处理库。新的工作主要是通过将现有处理映射并应用到新数据上来完成的。例如，电话号码重新格式化处理函数可以在许多数据集和项目中广泛重复使用。
+- en: 'With the method and architectural benefits now explained, the requirements
+    for building a generalized mask based profiler should be clearer. Note that the
+    mask generation process is a classic Hadoop MapReduce process: map input''s data
+    out to masks, and reduce those masks back down to summarized frequency counts.
+    Note also how, even in this short example, we have already used two types of masks
+    and each is made up of a pipeline of underlying transformations. It suggests we
+    need a tool that supports a library of predefined masks as well as allowing for
+    user defined masks that can be created quickly and on demand. It also suggests
+    there should be ways to *stack* the masks to build them up into complex pipelines.'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在解释了方法和架构的好处，构建一个通用的基于掩码的分析器的要求应该更清晰了。请注意，掩码生成过程是一个经典的Hadoop MapReduce过程：将输入数据映射到掩码，然后将这些掩码减少到总结的频率计数。还要注意的是，即使在这个简短的例子中，我们已经使用了两种类型的掩码，每种掩码都由一系列基础转换组成。这表明我们需要一个支持预定义掩码库的工具，同时也允许用户定义的掩码可以快速创建和按需使用。它还表明应该有方法来*堆叠*这些掩码，将它们组合成复杂的管道。
+- en: What may not be so obvious yet is that all data profiling done in this way can
+    write profiler metrics to *a common output format.* This helps to improve reusability
+    of our code through simplifying the logging, storing, retrieval, and consumption
+    of the profiling data.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也许还不那么明显的是，以这种方式进行的所有数据概要都可以将概要度量写入*一个通用输出格式*。这有助于通过简化概要数据的记录、存储、检索和使用来提高我们代码的可重用性。
+- en: 'As an example we should be able to report all mask based profiler metrics using
+    the following schema:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们应该能够使用以下模式报告所有基于掩码的概要度量：
+- en: '[PRE3]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Once our metrics are captured in this single schema format, we can then build
+    secondary reports using a user interface, such as Zeppelin notebook.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们的度量被捕获在这个单一的模式格式中，我们就可以使用用户界面（如Zeppelin笔记本）构建辅助报告。
+- en: Before we walk through implementing these functions, an introduction to the
+    character class masks is needed as these differ slightly from the normal profiling
+    masks.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们逐步实现这些函数之前，需要介绍一下字符类掩码，因为这些与普通的概要掩码略有不同。
+- en: Introducing character class masks
+  id: totrans-75
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 引入字符类掩码
+- en: There is another simple type of data profiling that we can also apply that helps with
+    file inspection. It involves profiling the actual bytes that make up a whole file.
+    It is an old method, one that originally comes from cryptography where frequency
+    analysis of letters in texts was used to gain an edge on deciphering substitution
+    codes.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有一种简单的数据概要类型，我们也可以应用它来帮助文件检查。它涉及对构成整个文件的实际字节进行概要。这是一种古老的方法，最初来自密码学，其中对文本中字母的频率进行分析用于在解密替换代码时获得优势。
+- en: 'While not a common technique in data science circles today, byte level analysis
+    is surprisingly useful when it''s needed. In the past, data encodings were a massive
+    problem. Files were encoded in a range of code pages, across ASCII and EBCDIC
+    standards. Byte frequency reporting was often critical to discover the actual
+    encoding, delimiters, and line endings used in the files. Back, then the number
+    of people who could create files, but not technically describe them, waqs surprising.
+    Today, as the world moves increasingly to Unicode-based character encodings, these
+    old methods need updating. In Unicode, the concept of a byte is modernized to
+    multi-byte *code points*, which can be revealed in Scala using the following function:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然在今天的数据科学圈中并不常见，但在需要时，字节级分析是令人惊讶地有用。过去，数据编码是一个巨大的问题。文件以一系列代码页编码，跨ASCII和EBCDIC标准。字节频率报告通常是发现实际编码、分隔符和文件中使用的行结束的关键。那时，能够创建文件但在技术上无法描述它们的人数是令人惊讶的。如今，随着世界越来越多地转向基于Unicode的字符编码，这些古老的方法需要更新。在Unicode中，字节的概念被现代化为多字节*代码点*，可以使用以下函数在Scala中揭示。
+- en: '[PRE4]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Using this function, we can begin to profile any international character level
+    data we receive in our GDELT dataset and start to understand the complexities
+    we might face in exploiting the data. But, unlike the other masks, to create interpretable
+    results from code points, we require a dictionary that we can use to look up meaningful
+    contextual information, such as unicode category and the unicode character names.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 利用这个函数，我们可以开始对我们在GDELT数据集中收到的任何国际字符级数据进行分析，并开始了解我们在利用数据时可能面临的复杂性。但是，与其他掩码不同，为了从代码点创建可解释的结果，我们需要一个字典，我们可以用它来查找有意义的上下文信息，比如Unicode类别和Unicode字符名称。
+- en: 'To generate a contextual lookup, we can use this quick command line hack to
+    generate a reduced dictionary from the main one found at [unicode.org](http://unicode.org),
+    which should help us to better report on our findings:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了生成一个上下文查找，我们可以使用这个快速的命令行技巧从主要的[unicode.org](http://unicode.org)找到的字典中生成一个缩小的字典，这应该有助于我们更好地报告我们的发现：
+- en: '[PRE5]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'We will use this dictionary, joined to our discovered code points, to report
+    on the character class frequencies of each byte in the file. While it seems like
+    a simple form of analysis, the results can often be surprising and offer a forensic
+    level of understanding of the data we are handling, its source, and the types
+    of algorithms and methods we can apply successfully to it. We will also look up
+    the general Unicode Category to simplify our reports using the following lookup
+    table:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用这个字典，与我们发现的代码点结合起来，报告文件中每个字节的字符类频率。虽然这似乎是一种简单的分析形式，但结果往往会令人惊讶，并提供对我们处理的数据、其来源以及我们可以成功应用的算法和方法类型的法医级别的理解。我们还将查找一般的Unicode类别，以简化我们的报告，使用以下查找表：
+- en: '[PRE6]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Building a mask based profiler
+  id: totrans-84
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 构建基于掩码的概要度量
+- en: 'Let''s walk through creating a notebook-based toolkit for profiling data in
+    Spark. The mask functions we will implement are set out over several grains of
+    detail, moving from file level to row level, and then to field level:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过创建一个基于笔记本的工具包来逐步分析Spark中的数据。我们将实现的掩码函数在几个细节粒度上设置，从文件级别到行级别，然后到字段级别：
+- en: 'Character level masks applied across whole files are:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 应用于整个文件的字符级掩码是：
+- en: Unicode Frequency, UTF-16 multi-byte representation (aka Code Points), at file
+    level
+  id: totrans-87
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Unicode频率，UTF-16多字节表示（也称为代码点），在文件级别
+- en: UTF Character Class Frequency, at file level
+  id: totrans-88
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: UTF字符类频率，文件级别
+- en: Delimiter Frequency, at row level
+  id: totrans-89
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 分隔符频率，行级别
+- en: 'String level masks applied to fields within files are:'
+  id: totrans-90
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 应用于文件中字段的字符串级掩码是：
+- en: ASCII low grain profile, per field
+  id: totrans-91
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ASCII低粒度概要，每个字段
+- en: ASCII high grain profile, per field
+  id: totrans-92
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ASCII高粒度概要，每个字段
+- en: Population checks, per field
+  id: totrans-93
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 人口检查，每个字段
+- en: Setting up Apache Zeppelin
+  id: totrans-94
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 设置Apache Zeppelin
+- en: As we are going to be exploring our data visually, a product that could be very
+    useful for mixing and matching technologies with relative ease is Apache Zeppelin.
+    Apache Zeppelin is an Apache Incubator product that enables us to create a notebook,
+    or worksheet, containing a mix of a number of different languages including Python,
+    Scala, SQL, and Bash, which makes it ideal for working with Spark for running
+    exploratory data analysis.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们将要通过可视化方式探索我们的数据，一个非常有用的产品是Apache Zeppelin，它可以非常方便地混合和匹配技术。Apache Zeppelin是Apache孵化器产品，使我们能够创建一个包含多种不同语言的笔记本或工作表，包括Python、Scala、SQL和Bash，这使其非常适合使用Spark进行探索性数据分析。
+- en: Code is written in a notebook style using *paragraphs* (or cells) where each
+    cell can be independently executed making it easy to work on a small piece of
+    code without having to repeatedly compile and run entire programs. It also serves
+    as a record of the code used to produce any given output, and helps us to integrate
+    visualizations.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码以笔记本风格编写，使用*段落*（或单元格），其中每个单元格可以独立执行，这样可以轻松地处理小段代码，而无需反复编译和运行整个程序。它还作为生成任何给定输出所使用的代码的记录，并帮助我们集成可视化。
+- en: 'Zeppelin can be installed and run very quickly, a minimal installation process
+    is explained as follows:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zeppelin可以快速安装和运行，最小安装过程如下所述：
+- en: 'Download and extract Zeppelin from here: [https://zeppelin.incubator.apache.org/download.html](https://zeppelin.incubator.apache.org/download.html)'
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从这里下载并提取Zeppelin：[https://zeppelin.incubator.apache.org/download.html](https://zeppelin.incubator.apache.org/download.html)
+- en: Find the conf directory and make a copy of `zeppelin-env.sh.template` named
+    `zeppelin-env.sh`.
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 找到conf目录并复制`zeppelin-env.sh.template`，命名为`zeppelin-env.sh`。
+- en: Alter the `zeppelin-env.sh` file, uncomment and set the `JAVA_HOME` and `SPARK_HOME`
+    entries to the relevant locations on your machine.
+  id: totrans-100
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 修改`zeppelin-env.sh`文件，取消注释并设置`JAVA_HOME`和`SPARK_HOME`条目为您机器上的相关位置。
+- en: Should you want Zeppelin to use HDFS in Spark, set the `HADOOP_CONF_DIR` entry
+    to the location of your Hadoop files; `hdfs-site.xml`, `core-site.xml`, and so
+    on.
+  id: totrans-101
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果您希望Zeppelin在Spark中使用HDFS，请将`HADOOP_CONF_DIR`条目设置为您的Hadoop文件的位置；`hdfs-site.xml`，`core-site.xml`等。
+- en: 'Start the Zeppelin service: `bin/zeppelin-daemon.sh start`. This will automatically
+    pick up the changes made in `conf/zeppelin-env.sh`.'
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 启动Zeppelin服务：`bin/zeppelin-daemon.sh start`。这将自动获取`conf/zeppelin-env.sh`中所做的更改。
+- en: On our test cluster, we are using Hortonworks HDP 2.6, and Zeppelin comes as
+    part of the installation.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的测试集群上，我们使用的是Hortonworks HDP 2.6，Zeppelin作为安装的一部分。
+- en: 'One thing to note when using Zeppelin is that the first paragraph should always
+    be a declaration of external packages. Any Spark dependencies can be added in
+    this way using the `ZeppelinContext`, to be run right after each restart of the
+    interpreter in Zeppelin; for example:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用Zeppelin时需要注意的一点是，第一段应始终声明外部包。任何Spark依赖项都可以使用`ZeppelinContext`以这种方式添加，以便在Zeppelin中的每次解释器重新启动后立即运行；例如：
+- en: '[PRE7]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: After this we can write code in any of the available languages. We are going
+    to use a mix of Scala, SQL, and Bash across the notebook by declaring each cell
+    using a type of interpreter, that is, `%spark`, `%sql`, and `%shell`. Zeppelin
+    defaults to Scala Spark if no interpreter is given `(%spark`).
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，我们可以在任何可用的语言中编写代码。我们将通过声明每个单元格的解释器类型（`%spark`，`%sql`和`%shell`）在笔记本中使用Scala，SQL和Bash的混合。如果没有给出解释器，Zeppelin默认为Scala
+    Spark（`%spark`）。
+- en: You can find the Zeppelin notebooks to accompany this chapter, as well as others
+    in our code repository.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的代码库中找到与本章配套的Zeppelin笔记本，以及其他笔记本。
+- en: Constructing a reusable notebook
+  id: totrans-108
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 构建可重用的笔记本
+- en: 'In our code repository we have created a simple, extensible, open source data
+    profiler library that can also be found here: [https://bytesumo@bitbucket.org/gzet_io/profilers.git](https://bytesumo@bitbucket.org/gzet_io/profilers.git)'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的代码库中，我们创建了一个简单、可扩展、开源的数据分析库，也可以在这里找到：[https://bytesumo@bitbucket.org/gzet_io/profilers.git](https://bytesumo@bitbucket.org/gzet_io/profilers.git)
+- en: The library takes care of the framework needed to apply masks to data frames,
+    including the special case where raw lines of a file are cast to a data frame
+    of just one column. We won't go through all the details of that framework line
+    by line, but the class of most interest is found in the file `MaskBasedProfiler.scala`,
+    which also contains the definitions of each of the available mask functions.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该库负责应用掩码到数据框架所需的框架，包括将文件的原始行转换为仅有一列的数据框架的特殊情况。我们不会逐行介绍该框架的所有细节，但最感兴趣的类在文件`MaskBasedProfiler.scala`中找到，该文件还包含每个可用掩码函数的定义。
+- en: A great way to use this library is by constructing a user-friendly notebook
+    application that allows for visual exploration of data. We have prepared just
+    such a notebook for our profiling using Apache Zeppelin. Next, we will walk through
+    how to build our own notebook using the preceding section as a starting point.
+    The data in our examples is the GDELT `event` files, which have a simple tab delimited
+    format.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用此库的一个很好的方法是构建一个用户友好的笔记本应用程序，允许对数据进行可视化探索。我们已经为使用Apache Zeppelin进行分析准备了这样的笔记本。接下来，我们将演示如何使用前面的部分构建我们自己的笔记本。我们示例中的数据是GDELT
+    `event`文件，格式为简单的制表符分隔。
+- en: 'The first step to building up a notebook (or even just to play with our readymade
+    one), is to copy the `profilers-1.0.0.jar` file from our library into a local
+    directory that the Zeppelin user on our cluster can access, which on a Hortonworks
+    installation is the Zeppelin user''s home directory on the Namenode:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 构建笔记本的第一步（甚至只是玩弄我们准备好的笔记本）是将`profilers-1.0.0.jar`文件从我们的库复制到集群上Zeppelin用户可以访问的本地目录中，对于Hortonworks安装来说，这是Namenode上Zeppelin用户的主目录。
+- en: '[PRE8]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Then we can visit `http://{main.install.hostname}:9995` to access the Apache
+    Zeppelin homepage. From that page, we can upload our notebook and follow along,
+    or we can create a new one and build our own by clicking **Create new note**.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以访问`http://{main.install.hostname}:9995`来访问Apache Zeppelin主页。从该页面，我们可以上传我们的笔记本并跟随，或者我们可以创建一个新的笔记本，并通过单击**创建新笔记**来构建我们自己的笔记本。
+- en: 'In Zeppelin, the first paragraph of a notebook is where we execute our Spark
+    code dependencies. We''ll import the profiler jars that we''ll need later:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Zeppelin中，笔记本的第一段是我们执行Spark代码依赖关系的地方。我们将导入稍后需要的分析器jar包：
+- en: '[PRE9]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'In paragraph two, we include a small shell script to inspect the file(s) we
+    want to profile to verify that we''re picking up the right ones. Note the use
+    of `column` and `colrm`, both very handy Unix commands for inspecting columnar
+    table data on the command line:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第二段中，我们包括一个小的shell脚本来检查我们想要分析的文件，以验证我们是否选择了正确的文件。请注意`column`和`colrm`的使用，它们都是非常方便的Unix命令，用于在命令行上检查列式表数据：
+- en: '[PRE10]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'In paragraph 3, 4, 5, and 6, we use Zeppelin''s facility for user input boxes
+    to allow the user to configure the EDA notebook like it''s a proper web-based
+    application. This allows users to configure four variables that can be reused
+    in the notebook to drive further investigations: **YourMask**, **YourDelimiter**,
+    **YourFilePath**, and **YourHeaders**. These look great when we hide the editors
+    and adjust the alignment and size of the windows:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第3、4、5和6段中，我们使用Zeppelin的用户输入框功能，允许用户配置EDA笔记本，就像它是一个真正的基于Web的应用程序一样。这允许用户配置四个变量，可以在笔记本中重复使用，以驱动进一步的调查：**YourMask**，**YourDelimiter**，**YourFilePath**和**YourHeaders**。当我们隐藏编辑器并调整窗口的对齐和大小时，这看起来很棒：
+- en: '![Constructing a reusable notebook](img/image_04_001.jpg)'
+  id: totrans-120
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_001.jpg)'
+- en: 'If we open the prepared notebook and click on **show editor** on any of these
+    input paragraphs, we''ll see how we set those up to provide drop-down boxes in
+    Zeppelin, for example:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们打开准备好的笔记本并点击任何这些输入段落上的**显示编辑器**，我们将看到我们如何设置它们以在Zeppelin中提供下拉框，例如：
+- en: '[PRE11]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Next, we have a paragraph that is used to import the functions we need:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们有一个用于导入我们需要的函数的段落：
+- en: '[PRE12]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Then we move on to a new paragraph that configures and ingests the data we
+    read in:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们继续到一个新的段落，配置和导入我们读取的数据：
+- en: '[PRE13]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Now that we''ve done the configuration steps, we can start to examine our tabular
+    data and discover if our reported column names match our input data. In a new
+    paragraph window, we use the SQL context to simplify calling SparkSQL and running
+    a query:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经完成了配置步骤，我们可以开始检查我们的表格数据，并发现我们报告的列名是否与我们的输入数据匹配。在一个新的段落窗口中，我们使用SQL上下文来简化调用SparkSQL并运行查询：
+- en: '[PRE14]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'The great thing about Zeppelin is that the output is formatted into a proper
+    HTML table, which we can easily use to inspect wide files having many columns
+    (for example, GDELT Event files):'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zeppelin的一个很棒的地方是，输出被格式化为一个合适的HTML表，我们可以轻松地用它来检查具有许多列的宽文件（例如GDELT事件文件）：
+- en: '![Constructing a reusable notebook](img/image_04_002.jpg)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_002.jpg)'
+- en: We can see from this displayed data that our columns match the input data; therefore
+    we can proceed with our analysis.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以从显示的数据中看到，我们的列与输入数据匹配；因此我们可以继续进行分析。
+- en: Note
+  id: totrans-132
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: If you wish to read the GDELT event files, you can find the header file in our
+    code repository.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您希望读取GDELT事件文件，您可以在我们的代码存储库中找到头文件。
+- en: If there are errors in the data alignment between columns and content at this
+    point, it is also possible to select the first 10 rows of the RawLines Dataframe,
+    configured earlier, which will display just the first 10 rows of the raw string
+    based data inputs. If the data happens to be tab delimited, we'll see immediately
+    a further benefit that the Zeppelin formatted output will align the columns for
+    us on the raw strings automatically, much like the way that we did earlier using
+    the bash command *column.*
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果此时列与内容之间的数据对齐存在错误，还可以选择之前配置的RawLines Dataframe的前10行，它将仅显示原始字符串数据输入的前10行。如果数据恰好是制表符分隔的，我们将立即看到另一个好处，即Zeppelin格式化输出将自动对齐原始字符串的列，就像我们之前使用bash命令*column*那样。
+- en: 'Now we will move on to study the file''s bytes, to discover details about the
+    encodings within it. To do so we load our lookup tables, and then join them to
+    the output of our profiler functions, which we registered earlier as a table.
+    Notice how the output of the profiler can be treated directly as an SQL callable
+    table:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将继续研究文件的字节，以发现其中的编码细节。为此，我们加载我们的查找表，然后将它们与我们之前注册为表的分析器函数的输出进行连接。请注意，分析器的输出可以直接作为可调用的SQL表处理：
+- en: '[PRE15]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: In a new paragraph, we can use the SQLContext to visualize the output. To help
+    view the values that are skewed, we can use the SQL statement to calculate the
+    log of the counts. This produces a graphic, which we could include in a final
+    report, where we can toggle between raw frequencies and log frequencies.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在新的段落中，我们可以使用SQLContext来可视化输出。为了帮助查看偏斜的值，我们可以使用SQL语句来计算计数的对数。这将产生一个图形，我们可以在最终报告中包含，我们可以在原始频率和对数频率之间切换。
+- en: '![Constructing a reusable notebook](img/image_04_003.jpg)'
+  id: totrans-138
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_003.jpg)'
+- en: 'Because we have loaded the category of character classes, we can also adjust
+    the visualization to further simplify the chart:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因为我们已经加载了字符类别，我们还可以调整可视化以进一步简化图表：
+- en: '![Constructing a reusable notebook](img/image_04_004.jpg)'
+  id: totrans-140
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_004.jpg)'
+- en: 'A basic check we must always run when doing an EDA is population checks, which
+    we calculate using POPCHECKS. POPCHECKS is a special mask we defined in our Scala
+    code that returns a `1` if a field is populated, or a `0` if it is not. When we
+    inspect the result, we notice we''ll need to do some final report writing to present
+    the numbers in a more directly interpretable way:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在进行EDA时，我们必须始终运行的基本检查是人口普查，我们使用POPCHECKS进行计算。 POPCHECKS是我们在Scala代码中定义的特殊掩码，如果字段有值则返回`1`，如果没有则返回`0`。当我们检查结果时，我们注意到我们需要进行一些最终报告写作，以更直接地解释数字：
+- en: '[PRE16]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: '![Constructing a reusable notebook](img/image_04_005.jpg)'
+  id: totrans-143
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_005.jpg)'
+- en: We can do that in two steps. Firstly, we can use an SQL case expression to convert
+    the data into values of *populated* or *missing,* which should help. Then we can
+    pivot this aggregate dataset by performing a `groupby` on the filename, `metricDescriptor`,
+    and `fieldname` while performing a sum over the populated and the missing values.
+    When we do this we can also include default values of zero where the profiler
+    did not find any cases of data either being populated or missing. It's important
+    to do this when we calculate percentages, to ensure that we never have null numerators
+    or denominators. While this code is not as short as it could be, it illustrates
+    a number of techniques for manipulating data in `SparkSQL`.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以分两步来做。首先，我们可以使用SQL case表达式将数据转换为*populated*或*missing*的值，这应该有所帮助。然后，我们可以通过对文件名、`metricDescriptor`和`fieldname`进行`groupby`并对已填充和缺失的值进行求和来旋转这个聚合数据集。当我们这样做时，我们还可以在分析器没有找到任何数据被填充或缺失的情况下包括默认值为零。在计算百分比时，这一点很重要，以确保我们从不会有空的分子或分母。虽然这段代码可能不像它本来可以那样简短，但它演示了在`SparkSQL`中操作数据的一些技术。
+- en: 'Notice also that in `SparkSQL` we can use the SQL `coalesce` statement, which
+    is not to be confused with Spark native `coalesce` functionality, for manipulating
+    RDDs. In the SQL sense this function converts nulls into default values, and it
+    is often used gratuitously to trap special cases in production grade code where
+    data is not particularly trusted. Notable also is that sub-selects are well supported
+    in `SparkSQL`. You can even make heavy use of these and Spark will not complain.
+    This is particularly useful as they are the most natural way to program for many
+    traditional database engineers as well as people with experience of databases
+    of all kinds:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要注意，在`SparkSQL`中，我们可以使用SQL `coalesce`语句，这与Spark本机的`coalesce`功能不同，用于操作RDD。在SQL中，此函数将null转换为默认值，并且通常被滥用以捕获生产级代码中数据不太可信的特殊情况。还值得注意的是，在`SparkSQL`中很好地支持子选择。您甚至可以大量使用这些，Spark不会抱怨。这特别有用，因为它们是许多传统数据库工程师以及有各种数据库经验的人编程的最自然方式：
+- en: '[PRE17]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'The output of the preceding code is a clean reporting table about field level
+    population counts in our data:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述代码的输出是关于数据的字段级填充计数的干净报告表：
+- en: '![Constructing a reusable notebook](img/image_04_006.jpg)'
+  id: totrans-148
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_006.jpg)'
+- en: 'When graphically displayed in our Zeppelin notebook using the `stacked` bar
+    chart functionality, the data produces excellent visualizations that instantly
+    tell us about the levels of data population in our files:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当在我们的Zeppelin笔记本中以`stacked`条形图功能进行图形显示时，数据产生了出色的可视化效果，立即告诉我们文件中数据填充的水平：
+- en: '![Constructing a reusable notebook](img/image_04_007.jpg)'
+  id: totrans-150
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_007.jpg)'
+- en: As Zeppelin's bar charts support tooltips, we can use the pointer to observe
+    the full names of the columns, even if they display poorly in the default view.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于Zeppelin的条形图支持工具提示，我们可以使用指针来观察列的全名，即使它们在默认视图中显示不佳。
+- en: 'Lastly, we can also include further paragraphs in our notebook to reveal the
+    results of the `ASCII_HighGrain` and `ASCII_LowGrain` masks, explained earlier.
+    This can be done by simply viewing the profiler outputs as a table, or using more
+    advanced functionality in Zeppelin. As a table, we can try the following:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们还可以在我们的笔记本中包含进一步的段落，以显示先前解释的`ASCII_HighGrain`和`ASCII_LowGrain`掩码的结果。这可以通过简单地将分析器输出作为表格查看，也可以使用Zeppelin中的更高级功能来完成。作为表格，我们可以尝试以下操作：
+- en: '[PRE18]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: '![Constructing a reusable notebook](img/image_04_008.jpg)'
+  id: totrans-154
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_008.jpg)'
+- en: To build an interactive viewer, which is useful when we look at ASCII_HighGrain
+    masks that may have very high cardinalities, we can set up an SQL statement that
+    accepts the value of a Zeppelin user input box, where users can type in the column
+    number or the field name to retrieve just the relevant section of the metrics
+    we collected.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了构建一个交互式查看器，当我们查看可能具有非常高基数的ASCII_HighGrain掩码时，我们可以设置一个SQL语句，接受Zeppelin用户输入框的值，用户可以在其中键入列号或字段名，以检索我们收集的指标的相关部分。
+- en: 'We do that in a new SQL paragraph like this, with the SQL predicate being `x.fieldName
+    like ''%${ColumnName}%''`:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以在新的SQL段落中这样做，SQL谓词为`x.fieldName like '%${ColumnName}%'`：
+- en: '[PRE19]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'This creates an interactive user window that refreshes on user input, creating
+    a dynamic profiling report having several output configurations. Here we show
+    the output not as a table, but as a chart of the log of the frequency counts for
+    a field that should have low cardinality, the longitude of *Action* identified
+    in the event file:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这创建了一个交互式用户窗口，根据用户输入刷新，生成具有多个输出配置的动态分析报告。在这里，我们展示的输出不是表格，而是一个图表，显示了应该具有低基数的字段*Action*在事件文件中的频率计数的对数：
+- en: '![Constructing a reusable notebook](img/image_04_009.jpg)'
+  id: totrans-159
+  prefs: []
+  type: TYPE_IMG
+  zh: '![构建可重用的笔记本](img/image_04_009.jpg)'
+- en: The result shows us that even a simple field like Longitude has a large spread
+    of formats in the data.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果显示，即使像经度这样简单的字段在数据中也有很大的格式分布。
+- en: The techniques reviewed so far should help create a very reusable notebook for
+    performing exploratory data profiling on all our input data, both quickly and
+    efficiently, producing graphical outputs that we can use to produce great reports
+    and documentation about input file quality.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止审查的技术应该有助于创建一个非常可重用的笔记本，用于快速高效地对所有输入数据进行探索性数据分析，生成我们可以用来生成关于输入文件质量的出色报告和文档的图形输出。
+- en: Exploring GDELT
+  id: totrans-162
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 探索GDELT
+- en: A large part of the EDA journey is obtaining and documenting the sources of
+    data, and GDELT content is no exception. After researching the GKG datasets, we
+    discovered that it was challenging just to document the actual sources of data
+    we should be using. In the following sections, we provide a comprehensive listing
+    of the resources we located for use, which will need to be run in the examples.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 探索EDA的一个重要部分是获取和记录数据源，GDELT内容也不例外。在研究GKG数据集后，我们发现仅仅记录我们应该使用的实际数据源就是具有挑战性的。在接下来的几节中，我们提供了我们找到的用于使用的资源的全面列表，这些资源需要在示例中运行。
+- en: Note
+  id: totrans-164
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'A cautionary note on download times: using a typical 5 Mb home broadband, 2000
+    GKG files takes approximately 3.5 hours to download. Given that the GKG English
+    language files alone have over 40,000 files, this could take a while to download.'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于下载时间的警告：使用典型的5 Mb家庭宽带，下载2000个GKG文件大约需要3.5小时。考虑到仅英语语言的GKG文件就有超过40,000个，这可能需要一段时间来下载。
+- en: GDELT GKG datasets
+  id: totrans-166
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: GDELT GKG数据集
+- en: 'We should be using the latest GDELT data feed, version 2.1 as of December 2016\.
+    The main documentation for this data is here:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们应该使用最新的GDELT数据源，截至2016年12月的2.1版本。这些数据的主要文档在这里：
+- en: '[http://data.gdeltproject.org/documentation/GDELT-Global_Knowledge_Graph_Codebook-V2.1.pdf](http://data.gdeltproject.org/documentation/GDELT-Global_Knowledge_Graph_Codebook-V2.1.pdf)'
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/documentation/GDELT-Global_Knowledge_Graph_Codebook-V2.1.pdf](http://data.gdeltproject.org/documentation/GDELT-Global_Knowledge_Graph_Codebook-V2.1.pdf)'
+- en: In the following section, we have included the data and secondary references
+    to look up tables, and further documentation.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们已经包括了数据和次要参考查找表，以及进一步的文档。
+- en: The files
+  id: totrans-170
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 文件
+- en: GKG-English Language Global Knowledge Graph (v2.1)
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GKG-英语语言全球知识图谱（v2.1）
+- en: '[http://data.gdeltproject.org/gdeltv2/masterfilelist.txt](http://data.gdeltproject.org/gdeltv2/masterfilelist.txt)'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gdeltv2/masterfilelist.txt](http://data.gdeltproject.org/gdeltv2/masterfilelist.txt)'
+- en: '[http://data.gdeltproject.org/gdeltv2/lastupdate.txt](http://data.gdeltproject.org/gdeltv2/lastupdate.txt)'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gdeltv2/lastupdate.txt](http://data.gdeltproject.org/gdeltv2/lastupdate.txt)'
+- en: GKG-Translated - Non-English Global Knowledge Graph
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GKG-翻译-非英语全球知识图谱
+- en: '[http://data.gdeltproject.org/gdeltv2/lastupdate-translation.txt](http://data.gdeltproject.org/gdeltv2/lastupdate-translation.txt)'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gdeltv2/lastupdate-translation.txt](http://data.gdeltproject.org/gdeltv2/lastupdate-translation.txt)'
+- en: '[http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt](http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt)'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt](http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt)'
+- en: GKG-TV (Internet Archive - American Television Global Knowledge Graph)
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GKG-TV（互联网档案馆-美国电视全球知识图谱）
+- en: '[http://data.gdeltproject.org/gdeltv2_iatelevision/lastupdate.txt](http://data.gdeltproject.org/gdeltv2_iatelevision/lastupdate.txt)'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gdeltv2_iatelevision/lastupdate.txt](http://data.gdeltproject.org/gdeltv2_iatelevision/lastupdate.txt)'
+- en: '[http://data.gdeltproject.org/gdeltv2_iatelevision/masterfilelist.txt](http://data.gdeltproject.org/gdeltv2_iatelevision/masterfilelist.txt)'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gdeltv2_iatelevision/masterfilelist.txt](http://data.gdeltproject.org/gdeltv2_iatelevision/masterfilelist.txt)'
+- en: GKG-Visual - CloudVision
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GKG-Visual-CloudVision
+- en: '[http://data.gdeltproject.org/gdeltv2_cloudvision/lastupdate.txt](http://data.gdeltproject.org/gdeltv2_cloudvision/lastupdate.txt)'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gdeltv2_cloudvision/lastupdate.txt](http://data.gdeltproject.org/gdeltv2_cloudvision/lastupdate.txt)'
+- en: Special collections
+  id: totrans-182
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 特别收藏品
+- en: GKG-AME - Africa And Middle East Global Knowledge Graph
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GKG-AME-非洲和中东全球知识图谱
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CIA.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CIA.gkgv2.csv.zip)'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CIA.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CIA.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CORE.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CORE.gkgv2.csv.zip)'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CORE.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.CORE.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.DTIC.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.DTIC.gkgv2.csv.zip)'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.DTIC.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.DTIC.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IADISSERT.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IADISSERT.gkgv2.csv.zip)'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IADISSERT.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IADISSERT.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IANONDISSERT.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IANONDISSERT.gkgv2.csv.zip)'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IANONDISSERT.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.IANONDISSERT.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.JSTOR.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.JSTOR.gkgv2.csv.zip)'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.JSTOR.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/AME-GKG.JSTOR.gkgv2.csv.zip)'
+- en: GKG-HR (Human Rights Collection)
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GKG-HR（人权收藏）
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.AMNESTY.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.AMNESTY.gkgv2.csv.zip)'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.AMNESTY.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.AMNESTY.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.CRISISGROUP.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.CRISISGROUP.gkgv2.csv.zip)'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.CRISISGROUP.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.CRISISGROUP.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.FIDH.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.FIDH.gkgv2.csv.zip)'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.FIDH.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.FIDH.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.HRW.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.HRW.gkgv2.csv.zip)'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.HRW.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.HRW.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.ICC.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.ICC.gkgv2.csv.zip)'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.ICC.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.ICC.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.OHCHR.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.OHCHR.gkgv2.csv.zip)'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.OHCHR.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.OHCHR.gkgv2.csv.zip)'
+- en: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.USSTATE.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.USSTATE.gkgv2.csv.zip)'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.USSTATE.gkgv2.csv.zip](http://data.gdeltproject.org/gkgv2_specialcollections/HR-GKG.USSTATE.gkgv2.csv.zip)'
+- en: Reference data
+  id: totrans-198
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 参考数据
+- en: '[http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT](http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT)'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT](http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT)'
+- en: '[http://data.gdeltproject.org/supportingdatasets/GNS-GAUL-ADM2-CROSSWALK.TXT.zip](http://data.gdeltproject.org/supportingdatasets/GNS-GAUL-ADM2-CROSSWALK.TXT.zip)'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/supportingdatasets/GNS-GAUL-ADM2-CROSSWALK.TXT.zip](http://data.gdeltproject.org/supportingdatasets/GNS-GAUL-ADM2-CROSSWALK.TXT.zip)'
+- en: '[http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ENGLISH.TXT](http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ENGLISH.TXT)'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ENGLISH.TXT](http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ENGLISH.TXT)'
+- en: '[http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ALLLANGUAGES.TXT](http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ALLLANGUAGES.TXT)'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ALLLANGUAGES.TXT](http://data.gdeltproject.org/supportingdatasets/DOMAINSBYCOUNTRY-ALLLANGUAGES.TXT)'
+- en: '[http://www.unicode.org/Public/UNIDATA/UnicodeData.txt](http://www.unicode.org/Public/UNIDATA/UnicodeData.txt)'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://www.unicode.org/Public/UNIDATA/UnicodeData.txt](http://www.unicode.org/Public/UNIDATA/UnicodeData.txt)'
+- en: '[http://www.geonames.org/about.html](http://www.geonames.org/about.html)'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://www.geonames.org/about.html](http://www.geonames.org/about.html)'
+- en: Exploring the GKG v2.1
+  id: totrans-205
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 探索GKG v2.1
+- en: When we review existing articles that explore the GDELT data feeds, we find
+    many studies that focus on the people, themes, and tone of the articles, and some
+    that focus on the earlier event files. But there is not much published that explores
+    the **Global Content Analysis Measures** (**GCAM**) content that is now included
+    in the GKG files. When we try to use the data quality workbook we've built to
+    examine the GDELT data feed, we discover that the Global Knowledge Graph is hard
+    to work with, as the files are encoded using multiple nested delimiters. Working
+    with this nested format data quickly is the key challenge in working with the
+    GKG, and indeed the GCAM, and is the focus of the rest of this chapter.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们审查现有的探索GDELT数据源的文章时，我们发现许多研究都集中在文章的人物、主题和语调上，还有一些集中在早期事件文件上。但是，几乎没有发表过探索现在包含在GKG文件中的**全球内容分析指标**（**GCAM**）内容的研究。当我们尝试使用我们构建的数据质量工作簿来检查GDELT数据源时，我们发现全球知识图难以处理，因为文件使用了多个嵌套分隔符进行编码。快速处理这种嵌套格式数据是处理GKG和GCAM的关键挑战，也是本章其余部分的重点。
+- en: 'There are some obvious questions we need to answer as part of exploring the
+    GCAM data in the GKG files:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在探索GKG文件中的GCAM数据时，我们需要回答一些明显的问题：
+- en: What are the differences between the English language GKG files and the translated
+    *Translingual* international files? Are there differences in how the data is populated
+    between these feeds, given that some of the entity recognition algorithms might
+    not work well on translated files?
+  id: totrans-208
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 英语语言GKG文件和翻译后的*跨语言*国际文件之间有什么区别？在这些数据源之间，数据的填充方式是否有差异，考虑到一些实体识别算法可能在翻译文件上表现不佳？
+- en: If the translated data is well populated for the GCAM sentiment metrics dataset,
+    included in the GKG files, can it (or indeed the English versions) be trusted?
+    How can we access and normalize this data, and does it hold valuable signals rather
+    than noise?
+  id: totrans-209
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果翻译后的数据在包含在GKG文件中的GCAM情感指标数据集方面有很好的人口统计，那么它（或者英文版本）是否可信？我们如何访问和规范化这些数据，它是否包含有价值的信号而不是噪音？
+- en: If we can answer just these two questions alone, we will have established much
+    about the usefulness of GDELT as a source of signals from which to perform data
+    science. However, *how* we answer those questions is important, and we need to
+    try and template our code as we obtain those answers, to create reusable configuration
+    driven EDA components. If we can create re-purposable explorations in line with
+    our principles, we will drive out far more value than hardcoding our analysis.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们能够单独回答这两个问题，我们将对GDELT作为数据科学信号源的实用性有了很大的了解。然而，*如何*回答这些问题很重要，我们需要尝试并模板化我们的代码，以便在获得这些答案时创建可重用的配置驱动的EDA组件。如果我们能够按照我们的原则创建可重用的探索，我们将产生比硬编码分析更多的价值。
+- en: The Translingual files
+  id: totrans-211
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 跨语言文件
+- en: Let's reuse our earlier work to reveal some of the quality issues, then extend
+    our explorations to these more detailed and complex questions. By running some
+    of the population count (POPCHECK) metrics to a temporary file, for both the normal
+    GKG data and the translated files, we can import and union the results together.
+    This is a benefit of having a standardized metrics format that we reuse; we can
+    easily perform comparisons across datasets!
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们重复我们之前的工作，揭示一些质量问题，然后将我们的探索扩展到这些更详细和复杂的问题。通过对正常GKG数据和翻译文件运行一些人口统计（POPCHECK）指标到临时文件，我们可以导入并合并结果。这是我们重复使用标准化指标格式的好处；我们可以轻松地在数据集之间进行比较！
+- en: 'Rather than go through the code in detail, we''ll deliver some headline answers.
+    When we examine the population counts between the English and the translated GKG
+    files we do expose some differences in the content available:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与其详细查看代码，我们不如提供一些主要答案。当我们检查英语和翻译后的GKG文件之间的人口统计时，我们确实发现了内容可用性上的一些差异：
+- en: '![The Translingual files](img/image_04_010.jpg)'
+  id: totrans-214
+  prefs: []
+  type: TYPE_IMG
+  zh: '![跨语言文件](img/image_04_010.jpg)'
+- en: We see here that the translated GKG translingual files have no Quotations data
+    at all and that they are very under populated when identifying Persons versus
+    the population counts we are seeing in the general English language news feed.
+    So there are definitely some differences to be mindful of.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里看到，翻译后的GKG跨语言文件根本没有引用数据，并且在识别人员时非常低人口统计，与我们在一般英语新闻中看到的人口统计相比。因此，肯定有一些需要注意的差异。
+- en: As a consequence, we should examine carefully any content in the translingual
+    data feeds that we wish to rely on in production. Later we'll see how the translated
+    information in the GCAM sentiment content measures up against the native English
+    language sentiments.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们应该仔细检查我们希望在生产中依赖的跨语言数据源中的任何内容。稍后我们将看到GCAM情感内容中的翻译信息与母语英语情感相比如何。
+- en: A configurable GCAM time series EDA
+  id: totrans-217
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 可配置的GCAM时间序列EDA
+- en: The GCAM's content is primarily made up of *Word Counts*, created by filtering
+    news articles using dictionary filters and doing word counts on the synonyms that
+    characterize the theme of interest. The resulting count can be normalized through
+    dividing the count by the total words in the document. It also includes *Scored
+    Values* delivering sentiment scores that appear to be based on directly studying
+    the original language text.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GCAM的内容主要由*字数计数*组成，通过使用词典过滤器过滤新闻文章并对表征感兴趣主题的同义词进行字数计数而创建。通过将计数除以文档中的总字数，可以对结果进行规范化。它还包括*得分值*，提供似乎是基于直接研究原始语言文本的情感得分。
+- en: 'We can quickly summarize the range of sentiment variables to study and explore
+    in the GCAM in a couple of lines of code, the output of which is annotated with
+    the name of the language:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以快速总结要在GCAM中研究和探索的情感变量范围，只需几行代码，其输出附有语言的名称：
+- en: '[PRE20]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: The GCAM word count based time series seems to be most fully developed, especially
+    in the English language where there are 2441 sentiment measures! Working with
+    such a large number of measures seems hard, even to do simple analysis. We'll
+    need some tools to simplify things, and we'll need to focus our scope.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于字数计数的GCAM时间序列似乎是最完整的，特别是在英语中有2441个情感度量！处理如此多的度量似乎很困难，即使进行简单的分析也是如此。我们需要一些工具来简化事情，并且需要集中我们的范围。
+- en: To help, we've created a simple SparkSQL-based explorer to extract and visualize
+    time series data from the GCAM block of data, which specifically targets the word
+    count based sentiments. It's created by cloning and adjusting our original data
+    quality explorer in Zeppelin.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了帮助，我们创建了一个基于简单SparkSQL的探索者，从GCAM数据块中提取和可视化时间序列数据，专门针对基于字数计数的情感。它是通过克隆和调整我们在Zeppelin中的原始数据质量探索者创建的。
+- en: 'It works by adjusting it to read in the GKG file glob using a defined schema,
+    and previewing just the raw data we want to focus on:'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它通过调整以使用定义的模式读取GKG文件glob，并预览我们想要专注的原始数据：
+- en: '[PRE21]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'The results of the early column selections isolate our content on the areas
+    to explore; time (`V21Date`), sentiment(`V2GCAM`), and Source URL (`V2DocID`):'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 早期列选择的结果将我们的内容隔离到要探索的领域;时间（`V21Date`），情感（`V2GCAM`）和源URL（`V2DocID`）：
+- en: '[PRE22]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: In a new Zeppelin paragraph, we create an SQLContext and carefully unravel the
+    nested structure of the GCAM records. Notice the first of the inner comma delimited
+    rows in the V2GCAM field hold the `wc` dimension and a measure representing the
+    word count of the story for this GkgRecordID, then the other sentiment measures
+    are listed. We need to unfurl this data into actual rows, as well as divide all
+    word count based sentiments by the total word count for the article in `wc` to
+    normalize the scores.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在一个新的Zeppelin段落中，我们创建一个SQLContext，并仔细解开GCAM记录的嵌套结构。请注意，V2GCAM字段中逗号分隔的第一个内部行包含`wc`维度和代表该GkgRecordID故事的字数的度量，然后列出其他情感度量。我们需要将这些数据展开为实际行，以及将所有基于字数计数的情感除以`wc`文章的总字数以规范化分数。
+- en: In the following snippets, we have designed a `SparkSQL` statement to do this
+    in a typical *onion* fashion, using subselects. This is a coding style you may
+    wish to learn to read if you don't know it already. It works like this - create
+    the innermost selection/query and then run it to test it, then wrap it in brackets
+    and continue by selecting the data into the next query process, and so on. Then
+    the catalyst optimizer does its magic and optimizes the whole pipeline. It results
+    in an ETL process that is both declarative and readable, and which also offers
+    an ability to troubleshoot and isolate issues in any part of the pipeline, if
+    that's needed. If we want to understand how to handle the nested array process,
+    we can easily rebuild the following SQL, running the innermost fragment first,
+    then reviewing its outputs, then expanding on it to include the next query that
+    wraps it, and so on. Step by step we can then review the staged outputs to review
+    how the whole statement works together to deliver the final result.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在以下片段中，我们设计了一个`SparkSQL`语句，以典型的*洋葱*风格进行操作，使用子查询。这是一种编码风格，如果你还不了解，可能希望学会阅读。它的工作方式是
+    - 创建最内部的选择/查询，然后运行它进行测试，然后用括号包裹起来，继续通过选择数据进入下一个查询过程，依此类推。然后，催化剂优化器会进行优化整个流程。这导致了一个既声明性又可读的ETL过程，同时还提供了故障排除和隔离管道中任何部分问题的能力。如果我们想要了解如何处理嵌套数组过程，我们可以轻松重建以下SQL，首先运行最内部的片段，然后审查其输出，然后扩展它以包括包装它的下一个查询，依此类推。然后我们可以逐步审查分阶段的输出，以审查整个语句如何一起工作以提供最终结果。
+- en: The key trick in the following query is how to apply the word count denominator
+    to each of the other sentiment word counts, to normalize the values. This method
+    of normalization is actually suggested in the GKG documentation, although no implementation
+    hints are provided.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下查询中的关键技巧是如何将单词计数分母应用于其他情感单词计数，以规范化值。这种规范化方法实际上是GKG文档中建议的，尽管没有提供实现提示。
+- en: 'Also of note, is how the V21Date field is converted from an integer to a date,
+    which is needed to plot the time series effectively. The conversion requires that
+    we pre-import the following library in addition to the others imported in the
+    notebook:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 值得注意的是，V21Date字段是如何从整数转换为日期的，这对于有效绘制时间序列是必要的。转换需要我们预先导入以下库，除了笔记本中导入的其他库：
+- en: '[PRE23]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Using the `Unix_timestamp` functions, we convert the V21Date into a `Unix_timestamp`,
+    which is an integer, and then convert that integer again into a date field, all
+    using native Spark libraries to configure the formatting and temporal resolution.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`Unix_timestamp`函数，我们将V21Date转换为`Unix_timestamp`，这是一个整数，然后再次将该整数转换为日期字段，所有这些都使用本机Spark库来配置格式和时间分辨率。
+- en: 'The following SQL query achieves our desired investigation:'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下SQL查询实现了我们期望的调查：
+- en: '[PRE24]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'The results of the query are illustrated here using Zeppelin''s time series
+    viewer. It shows that the time series data is building up properly and that it
+    looks very credible, having a short-lived peak on November 8 2016: the day of
+    the US presidential election:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查询的结果在Zeppelin的时间序列查看器中显示。它显示时间序列数据正在正确积累，并且看起来非常可信，2016年11月8日有一个短暂的高峰：美国总统选举的那一天。
+- en: '![A configurable GCAM time series EDA](img/image_04_011.jpg)'
+  id: totrans-236
+  prefs: []
+  type: TYPE_IMG
+  zh: '![可配置的GCAM时间序列EDA](img/image_04_011.jpg)'
+- en: Now we have a working SQL statement to examine the GCAM sentiment scores, perhaps
+    we should double-check some other measures, for example on a different but related
+    topic, such as the Brexit vote in the UK.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有一个可以检查GCAM情绪分数的工作SQL语句，也许我们应该再检查一些其他指标，例如关于不同但相关主题的，比如英国的脱欧投票。
+- en: 'We''ve selected three GCAM sentiment measures that look interesting, in addition
+    to the *Election Fraud* measure, which hopefully will provide an interesting comparison
+    to the results we''ve seen for the US election. The measures we''ll look at are:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们选择了三个看起来有趣的GCAM情绪指标，除了*选举舞弊*指标，希望能够提供与我们在美国选举中看到的结果有趣的比较。我们将研究的指标是：
+- en: '''c18.101'' -- Immigration'
+  id: totrans-239
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '''c18.101'' -- 移民'
+- en: '''c18.100'' -- Democracy'
+  id: totrans-240
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '''c18.100'' -- 民主'
+- en: '''c18.140'' -- Election'
+  id: totrans-241
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '''c18.140'' -- 选举'
+- en: 'To include them, we need to extend our query to pick up multiple normalized
+    Series, and we may also need to be mindful that the results may not all fit into
+    Zeppelin''s viewer, which defaults to only taking in the first 1000 results, so
+    we may need to further summarize to hours or days. While not a large change, it
+    will be interesting to see how extensible our existing work is:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了包括它们，我们需要扩展我们的查询以获取多个归一化的Series，并且我们可能还需要注意结果可能不都适合Zeppelin的查看器，默认只接受前1000个结果，所以我们可能需要进一步总结到小时或天。虽然这不是一个很大的改变，但看到我们现有工作的可扩展性将是有趣的：
+- en: '[PRE25]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'In this second example, we further refine our base query, removing the unnecessary
+    GKGRecordIDs that we didn''t use. This query also demonstrates how to filter results
+    against many `Series` names using a simple set of predicates. Notice we have also
+    added in a pre-grouping step using the following:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个第二个例子中，我们进一步完善了我们的基本查询，删除了我们没有使用的不必要的GKGRecordIDs。这个查询还演示了如何使用一组简单的谓词来过滤对许多`Series`名称的结果。请注意，我们还添加了一个使用以下内容的预分组步骤：
+- en: '[PRE26]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: This random number is used to create a partition prefix key that we use in our
+    inner group by statement, before going on to group again without this prefix.
+    The query is written in this way as it helps to subdivide and pre-summarize *hotspotting* data
+    and smooth out any pipeline bottlenecks.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个随机数用于创建一个分区前缀键，我们在内部的group by语句中使用它，然后再次进行分组而不使用这个前缀。查询是以这种方式编写的，因为它有助于细分和预汇总*热点*数据，并消除任何管道瓶颈。
+- en: 'When we look at the results of this query in Zeppelin''s time series viewer
+    we have the chance to further summarize up to hourly counts, and to translate
+    the cryptic GCAM series codes into proper names using a case statement. We can
+    do this in a new query, helping to isolate *specific* reporting configurations
+    away from the general dataset construction query:'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们在Zeppelin的时间序列查看器中查看此查询的结果时，我们有机会进一步总结到小时计数，并使用case语句将神秘的GCAM系列代码翻译成适当的名称。我们可以在一个新的查询中执行此操作，帮助将*特定*的报告配置与一般的数据集构建查询隔离开来：
+- en: '[PRE27]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'This final query reduces the data to hourly values, which is less than the
+    default 1000 row maximum that Zeppelin handles by default, additionally it generates
+    a comparative time series chart:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个最终查询将数据减少到小时值，这比Zeppelin默认处理的1000行最大值要少，此外它生成了一个比较时间序列图表：
+- en: '![A configurable GCAM time series EDA](img/image_04_012.jpg)'
+  id: totrans-250
+  prefs: []
+  type: TYPE_IMG
+  zh: '![可配置的GCAM时间序列EDA](img/image_04_012.jpg)'
+- en: The resulting chart illustrates that there is almost no discussion at all about
+    *Election Fraud* preceding the Brexit vote, but there are however spikes on *Election,*
+    and that Immigration is a hotter theme than Democracy. Again, the GCAM English
+    language sentiment data seems to hold real signal.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果图表表明，在脱欧投票之前几乎没有关于*选举舞弊*的讨论，但是*选举*有高峰，而移民是一个比民主更热门的主题。再次，GCAM英语情绪数据似乎具有真实信号。
+- en: Now that we have shed some light on the English language records, we can extend
+    our work to explore them against the translated data in GCAM.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经为英语语言记录提供了一些信息，我们可以扩展我们的工作，探索它们与GCAM中的翻译数据的关系。
+- en: 'As a final way to complete the analysis in this notebook, we can comment out
+    the filters on the specific `Series` and write a timeseries database of all the
+    GCAM series data for Brexit to a parquet file in our HDFS filesystem. This allows
+    us to permanently store our GCAM data to disk and even to append new data to it
+    over time. The following is the code needed to either overwrite, or to append
+    to a parquet file:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为完成本笔记本中分析的最后一种方法，我们可以注释掉对特定`Series`的过滤器，并将所有脱欧的GCAM系列数据写入我们的HDFS文件系统中的parquet文件中。这样我们就可以永久存储我们的GCAM数据到磁盘，甚至随着时间的推移追加新数据。以下是要么覆盖，要么追加到parquet文件所需的代码：
+- en: '[PRE28]'
+  id: totrans-254
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: With the parquet files written to disk, we have now built a lightweight GCAM
+    time series data store that allows us to quickly retrieve a GCAM sentiment, for
+    exploration across language groups.
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过将parquet文件写入磁盘，我们现在建立了一个轻量级的GCAM时间序列数据存储，可以让我们快速检索GCAM情绪，以便在语言组之间进行探索。
+- en: Plot.ly charting on Apache Zeppelin
+  id: totrans-256
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: Apache Zeppelin上的Plot.ly图表
+- en: 'For our next exploration we will also extend our use of Apache Zeppelin notebooks
+    to include producing `%pyspark` charts using an external charting library called
+    plotly, open sourced by [https://plot.ly/](https://plot.ly/), which can be used
+    to create print quality visualizations. To use plotly in our notebook, we can
+    upgrade our Apache Zeppelin installation, using the code found at [https://github.com/beljun/zeppelin-plotly](https://github.com/beljun/zeppelin-plotly),
+    which provides the integration needed. On its GitHub page, there are detailed
+    installation instructions, and within their code base, they provide a very helpful
+    example notebook. Here are some tips for installing plotly for use on an HDP cluster
+    with Zeppelin:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们下一个的探索，我们还将扩展我们对Apache Zeppelin笔记本的使用，以包括使用一个名为plotly的外部图表库来生成`%pyspark`图表，该库是由[https://plot.ly/](https://plot.ly/)开源的，可以用来创建打印质量的可视化。要在我们的笔记本中使用plotly，我们可以升级我们的Apache
+    Zeppelin安装，使用在[https://github.com/beljun/zeppelin-plotly](https://github.com/beljun/zeppelin-plotly)中找到的代码，该代码提供了所需的集成。在它的GitHub页面上，有详细的安装说明，在他们的代码库中，他们提供了一个非常有帮助的示例笔记本。以下是一些在HDP集群上安装plotly以供Zeppelin使用的提示：
+- en: 'Log into the Namenode as the Zeppelin user and change the directory to the
+    Zeppelin home directory at `/home/zeppelin` where we will download the external
+    code:'
+  id: totrans-258
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 以Zeppelin用户身份登录Namenode，并更改目录到Zeppelin主目录`/home/zeppelin`，在那里我们将下载外部代码：
+- en: '[PRE29]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Change the directory to where the Zeppelin `*.war` file is kept. This location
+    is revealed in the Zeppelin **Configuration** tab. For example:'
+  id: totrans-260
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更改目录到保存Zeppelin `*.war`文件的位置。这个位置在Zeppelin**配置**标签中可以找到。例如：
+- en: '[PRE30]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Now, as per the instructions, we need to edit the index.html document found
+    in the Zeppelin `war` file:'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，按照说明，我们需要编辑在Zeppelin `war`文件中找到的index.html文档：
+- en: '[PRE31]'
+  id: totrans-263
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: Once the `index.html` page is extracted we can use an editor such as vim to
+    insert the `plotly-latest.min.js` script tag (as per the instructions), just before
+    the body tag, and save and execute the document.
+  id: totrans-264
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一旦提取了`index.html`页面，我们可以使用诸如vim之类的编辑器在body标签之前插入`plotly-latest.min.js`脚本标签（按照说明），然后保存并执行文档。
+- en: 'Put the edited `index.html` document back into the war file using:'
+  id: totrans-265
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将编辑后的`index.html`文档放回war文件中：
+- en: '[PRE32]'
+  id: totrans-266
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Finally, log into Ambari, and use it to restart the Zeppelin service.
+  id: totrans-267
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最后，登录Ambari，并使用它重新启动Zeppelin服务。
+- en: Follow the rest of the instructions to generate a test chart in Zeppelin.
+  id: totrans-268
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 按照其余的说明在Zeppelin中生成一个测试图表。
+- en: 'We may need to install or update old libraries if there are issues. Log into
+    the Namenode and use pip to install the packages:'
+  id: totrans-269
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果出现问题，我们可能需要安装或更新旧的库。登录Namenode并使用pip安装这些包：
+- en: '[PRE33]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: With the installation complete, we should now be able to create Zeppelin notebooks
+    that generate inline plot.ly charts from the `%pyspark` paragraphs, and these
+    will be created offline using the local libraries rather than the online service.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装完成后，我们现在应该能够创建Zeppelin笔记本，从`%pyspark`段落中生成内联plot.ly图表，并且这些图表将使用本地库离线创建，而不是使用在线服务。
+- en: Exploring translation sourced GCAM sentiment with plot.ly
+  id: totrans-272
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用plot.ly探索翻译源GCAM情绪
+- en: 'For this comparison, let''s focus on an interesting measure found in the GCAM
+    documentation: *c6.6*; *Financial Uncertainty*. This measure counts word-matches
+    made between a news story and a financially oriented *uncertainty dictionary*.
+    If we trace its provenance online, we can discover the academic paper and actual
+    dictionary driving the metric. However, will that dictionary based measure work
+    with translated news text? To investigate this, we can review how this financial
+    *Uncertainty* metric differs across six major European language groups: English,
+    French, German, Spanish, Italian, and Polish with respect to the subject of Brexit.'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个比较，让我们关注一下在GCAM文档中找到的一个有趣的度量：*c6.6*；*财务不确定性*。这个度量计算了新闻报道和一个财务导向的*不确定性词典*之间的词匹配次数。如果我们追溯它的来源，我们可以发现驱动这个度量的学术论文和实际词典。然而，这个基于词典的度量是否适用于翻译后的新闻文本？为了调查这个问题，我们可以查看这个财务*不确定性*度量在英语、法语、德语、西班牙语、意大利语和波兰语这六个主要欧洲语言群中的差异，关于英国脱欧的主题。
+- en: 'We create a new notebook, include a *pyspark* paragraph to load plot.ly libraries
+    and set them to run in offline mode:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建一个新的笔记本，包括一个*pyspark*段落来加载plot.ly库并将其设置为离线模式运行：
+- en: '[PRE34]'
+  id: totrans-275
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Then we create a paragraph to read in our cached data from parquet:'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们创建一个段落来从parquet中读取我们缓存的数据：
+- en: '[PRE35]'
+  id: totrans-277
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'We then can create an SQL query that reads and prepares it for plot, and registers
+    it for use:'
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以创建一个SQL查询来读取并准备数据进行绘图，并将其注册以供使用：
+- en: '[PRE36]'
+  id: totrans-279
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Now that we''ve defined an adaptor, we can create the query that summarizes
+    the data in our parquet file to something that will fit more easily into memory:'
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经定义了一个适配器，我们可以创建一个查询，总结我们parquet文件中的数据，使其更容易适应内存：
+- en: '[PRE37]'
+  id: totrans-281
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'This main payload query generates a set of data that we can load to a `pandas`
+    array in `pyspark`, and which has timestamps with a plot.ly ready format:'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个主要的负载查询生成了一组数据，我们可以将其加载到`pyspark`中的`pandas`数组中，并且具有一个plot.ly准备好的时间戳格式：
+- en: '[PRE38]'
+  id: totrans-283
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'To feed this data to plot.ly we must convert the Spark Dataframe that we generated
+    into a `pandas` one:'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要将这些数据提供给plot.ly，我们必须将我们生成的Spark数据框转换为一个`pandas`数据框：
+- en: '[PRE39]'
+  id: totrans-285
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'When we perform this step, we must remember to `collect()` the dataframe, as
+    well as reset the column names for `pandas` to pick up. With a `pandas` array
+    now in our Python environment, we can pivot the data easily into a form that will
+    facilitate time series plotting:'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们执行这一步时，我们必须记住要`collect()`数据框架，以及重置列名以供`pandas`使用。现在我们的Python环境中有了一个`pandas`数组，我们可以轻松地将数据透视成便于进行时间序列绘图的形式：
+- en: '[PRE40]'
+  id: totrans-287
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Lastly, we include a call to generate the chart:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们包括一个调用来生成图表：
+- en: '[PRE41]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: '![Exploring translation sourced GCAM sentiment with plot.ly](img/image_04_013.jpg)'
+  id: totrans-290
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用plot.ly探索翻译源GCAM情绪](img/image_04_013.jpg)'
+- en: 'Now that we have produced a working plot.ly chart of our data, we should create
+    a custom visualization, which was not possible with the standard Zeppelin notebook,
+    to illustrate the value that the plotly library brings to our exploration. A simple
+    example is to generate some *small multiples* like this:'
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经生成了一个工作的plot.ly数据图表，我们应该创建一个自定义的可视化，这是标准的Zeppelin笔记本无法实现的，以展示plotly库为我们的探索带来的价值。一个简单的例子是生成一些*小多图*，就像这样：
+- en: '[PRE42]'
+  id: totrans-292
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'Which generates the following chart:'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 生成以下图表：
+- en: '![Exploring translation sourced GCAM sentiment with plot.ly](img/image_04_014.jpg)'
+  id: totrans-294
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用plot.ly探索翻译来源的GCAM情感](img/image_04_014.jpg)'
+- en: This small multiple chart helps us to see that, in the Italian press, there
+    seems to have been a local spike in financial Uncertainty on June 15 2016; just
+    a week or so before the election. This is something we might wish to investigate
+    as it is also present, to a lesser degree, in Spanish language news too.
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个小多图表帮助我们看到，在意大利新闻中，2016年6月15日似乎出现了财务不确定性的局部激增；就在选举前一周左右。这是我们可能希望调查的事情，因为在西班牙语新闻中也以较小的程度存在。
+- en: Plotly also offers many other interesting visualizations. If you have been carefully
+    reading the code snippets, you may have noticed that the parquet file includes
+    the FIPS10-4 country code from the GKG files. We should be able to leverage these
+    location codes to plot a choropleth map of the Uncertainty metric, using Plotly,
+    and at the same time leverage our previous data processing.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Plotly还提供许多其他有趣的可视化方式。如果您仔细阅读了代码片段，您可能已经注意到parquet文件包括来自GKG文件的FIPS10-4国家代码。我们应该能够利用这些位置代码，使用Plotly绘制不确定性指标的区域地图，并同时利用我们先前的数据处理。
+- en: 'To create this geographical map, we reuse our parquet file reader query that
+    we registered earlier. Unfortunately, the GKG files use FIPS 10-4 two-character
+    country encoding, and Plotly uses ISO-3166 three-character country codes to automatically
+    geotag the user records it processes for plotting. We can address this by using
+    a case statement in our SQL to remap our codes, before summarizing them over the
+    whole period of enquiry:'
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了创建这个地理地图，我们重用了我们之前注册的parquet文件读取器查询。不幸的是，GKG文件使用FIPS 10-4两个字符的国家编码，而Plotly使用ISO-3166三个字符的国家代码来自动为绘图处理的用户记录进行地理标记。我们可以通过在我们的SQL中使用case语句来重新映射我们的代码，然后在整个调查期间对它们进行汇总来解决这个问题。
+- en: '[PRE43]'
+  id: totrans-298
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'With our data now prepared in a `pandas` dataframe, we can invoke the visualization
+    using the following line of Python:'
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的数据已经准备在`pandas`数据框中，我们可以使用以下一行Python代码调用可视化：
+- en: '[PRE44]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: The final result is an interactive, zoomable map of the world. We will leave
+    its political interpretation to the reader, but conclude technically that perhaps
+    this map shows an effect to do with news volume that we could later normalize
+    on; for instance by dividing our values by total stories per country.
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终结果是一个交互式、可缩放的世界地图。我们将其政治解释留给读者，但从技术上讲，也许这张地图显示了与新闻数量有关的效果，我们可以稍后对其进行归一化；例如通过将我们的值除以每个国家的总故事数。
+- en: '![Exploring translation sourced GCAM sentiment with plot.ly](img/image_04_015.jpg)'
+  id: totrans-302
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用plot.ly探索翻译来源的GCAM情感](img/image_04_015.jpg)'
+- en: Concluding remarks
+  id: totrans-303
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 结束语
+- en: 'It is worth pointing out that there are a number of parameters that drove our
+    EDA across all of our investigations, and we could consider how these might be
+    parameterized to build proper exploration products for monitoring GDELT. Parameters
+    for consideration are as follows:'
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 值得指出的是，有许多参数驱动了我们对所有调查的探索，我们可以考虑如何将这些参数化以构建适当的探索产品来监控GDELT。需要考虑的参数如下：
+- en: We can select a non-GCAM field to filter on. In the preceding examples, it is
+    configured to the V2DocID, which is the URL of the story. Finding words in the
+    URL such as BREXIT or TRUMP will help to scope our investigations to stories that
+    are relevant to particular subject areas. We could also reuse this technique to
+    filter on BBC or NYTIMES, for example. Alternatively, if we swapped this column
+    for another, such as Theme or Person, then these columns would offer new ways
+    to focus our study on particular subjects or people of interest.
+  id: totrans-305
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们可以选择一个非GCAM字段进行过滤。在前面的示例中，它配置为V2DocID，这是故事的URL。在URL中找到诸如BREXIT或TRUMP之类的词将有助于将我们的调查范围限定在特定主题领域的故事中。我们还可以重复此技术以过滤BBC或NYTIMES等内容。或者，如果我们将此列替换为另一个列，例如Theme或Person，那么这些列将提供新的方法来聚焦我们对特定主题或感兴趣的人的研究。
+- en: We have converted and generalized the granularity of the timestamp, V21Date,
+    to deliver hourly time series increments, but we could reconfigure this to create
+    our time series on a monthly, weekly, or daily basis - or indeed on any other
+    increment.
+  id: totrans-306
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们已经转换并概括了时间戳V21Date的粒度，以提供每小时的时间序列增量，但我们可以重新配置它以创建我们的时间序列，以月、周或日为基础 - 或者以任何其他增量为基础。
+- en: We first selected and scoped our investigation to one timeseries of interest,
+    *c18_134*, which is *Election Fraud*, but we can easily reconfigure this to look
+    at *Immigration* or *Hate Speech* or any of the other 2400+ sentiment scores that
+    are word count based.
+  id: totrans-307
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们首先选择并限定了我们对感兴趣的一个时间序列*c18_134*，即*选举舞弊*，但我们可以轻松地重新配置它以查看*移民*或*仇恨言论*或其他2400多个基于词频的情感分数。
+- en: We have introduced a file glob at the start of our notebook, which scopes the
+    amount of time that we include in the summary output. To keep costs low, we've
+    kept it small to start with, but we could refocus this time range on key events,
+    or even open it up to all of the available files, given enough processing budget
+    (time and money).
+  id: totrans-308
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们在笔记本的开头引入了一个文件glob，它限定了我们在摘要输出中包含的时间量。为了降低成本，我们一开始将其保持较小，但我们可以重新聚焦这个时间范围到关键事件，甚至在有足够的处理预算（时间和金钱）的情况下打开它到所有可用的文件。
+- en: We have now illustrated that our code can be easily adjusted to build a notebook-based
+    GCAM time-series explorer, from which we would be able to construct huge numbers
+    of focused investigations on demand; each exploring the content of the GCAM data
+    in a configurable way.
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在已经证明，我们的代码可以轻松调整，构建基于笔记本的GCAM时间序列探索器，从中我们将能够按需构建大量的专注调查；每个都以可配置的方式探索GCAM数据的内容。
+- en: 'If you have been carefully following the SQL code throughout the notebook,
+    and were wondering why it had not been written using the Python API, or perhaps
+    using idiomatic Scala, we will complete this section with one final observation:
+    it is precisely because it is constructed from SQL that it can be moved between
+    the Python, R, or Scala contexts with almost no cost in code refactoring. Should
+    a new charting facility in R become available, it can be ported easily over to
+    R, and then effort can be focused solely on the visualization. Indeed, with the
+    arrival of Spark 2.0+, it is perhaps the SQL code that requires the least review
+    when porting. The importance of code portability cannot be stressed enough. The
+    most valuable benefit of using SQL in the EDA context, however, is that it makes
+    generating parameter driven notebooks in Zeppelin so easy, as we have seen in
+    the earlier profiler section. Drop-down boxes, and other UI widgets, can all be
+    created in conjunction with string processing to customize the code before execution,
+    irrespective of backend language. This is an extremely fast way to build interactivity
+    and configuration into our analysis, without dipping into complex meta programming
+    methods. It also helps us to avoid solving those meta programming complexities
+    across the different language back ends available in Apache Zeppelin/Spark.'
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您一直在仔细跟随笔记本中的SQL代码，并且想知道为什么它没有使用Python API编写，或者使用惯用的Scala，我们将用最后一个观察来完成本节：正是因为它是由SQL构建的，所以它可以在Python、R或Scala上下文之间移动，几乎不需要重构代码。如果R中出现了新的图表功能，它可以轻松地移植到R中，然后可以将精力集中在可视化上。事实上，随着Spark
+    2.0+的到来，也许在移植时需要最少审查的是SQL代码。代码可移植性的重要性无法强调得足够。然而，在EDA环境中使用SQL的最大好处是，它使得在Zeppelin中生成基于参数的笔记本变得非常容易，正如我们在早期的分析器部分所看到的。下拉框和其他UI小部件都可以与字符串处理一起创建，以在执行之前自定义代码，而不受后端语言的限制。这是一种非常快速的方式，可以在我们的分析中构建交互性和配置，而不需要涉及复杂的元编程方法。它还帮助我们避免解决Apache
+    Zeppelin/Spark中可用的不同语言后端的元编程复杂性。
+- en: With respect to building broad data explorations, if we wished to use our cached
+    results in parquet more broadly, there is also an opportunity to remove the need
+    for "eyeballs looking at charts" altogether. See [Chapter 12](ch12.xhtml "Chapter 12. TrendCalculus"),
+    *TrendCalculus* to get an idea for how we could programmatically study trends
+    across all of the data in GKG programmatically.
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于构建广泛的数据探索，如果我们希望更广泛地使用我们在parquet中缓存的结果，也有机会完全消除“眼睛观看图表”的需求。参见[第12章](ch12.xhtml
+    "第12章。TrendCalculus")*TrendCalculus*，以了解我们如何可以以编程方式研究GKG中所有数据的趋势。
+- en: A final trick of note when using Zeppelin, to produce graphics for EDA reports,
+    is one that is purely practical. If we wish to extract our graphics to files,
+    to include them in our final report for example, rather than taking screenshots
+    of our notebook, we can directly extract the scalable vector graphics files (SVG)
+    from Zeppelin and download them to files using the *bookmarklet* found here [http://nytimes.github.io/svg-crowbar/](http://nytimes.github.io/svg-crowbar/).
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用Zeppelin时，一个需要注意的最后一个技巧是纯粹实用的。如果我们希望将图形提取到文件中，例如将它们包含在我们的最终报告中，而不是在笔记本中截图，我们可以直接从Zeppelin中提取可伸缩矢量图形文件（SVG），并使用此处找到的*bookmarklet*将它们下载到文件中[http://nytimes.github.io/svg-crowbar/](http://nytimes.github.io/svg-crowbar/)。
+- en: A configurable GCAM Spatio-Temporal EDA
+  id: totrans-313
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 可配置的GCAM时空EDA
+- en: Another question about the GCAM remains unanswered; how do we start to understand
+    how it subdivides spatially? Could a geospatial pivot of the GCAM expose how the
+    global news media presents its aggregate geopolitical views, as detailed geographies
+    that get beneath country level analysis?
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GCAM的另一个问题仍然没有答案；我们如何开始理解它在空间上的细分？GCAM的地理空间枢纽是否能够揭示全球新闻媒体如何呈现其聚合地缘政治观点，以详细的地理分析来深入国家级别的分析？
+- en: If we can construct such a dataset as part of our EDA, it would have many and
+    varied applications. At a city level for example, it would be a general geopolitical
+    signals library that could enrich a wide range of other data science projects.
+    Consider holiday travel booking patterns, shown against the backdrop of geopolitical
+    themes emerging in the news. Would we discover that global news signals at city
+    level predicts rising or falling tourism rates in places of media interest? The
+    possibilities for this type of data are nearly endless when we consider the resulting
+    information as a source of geopolitical situational awareness.
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们可以作为EDA的一部分构建这样的数据集，它将有许多不同的应用。例如，在城市层面上，它将是一个通用的地缘政治信号库，可以丰富各种其他数据科学项目。考虑假期旅行预订模式，与新闻中出现的地缘政治主题相结合。我们会发现全球新闻信号在城市层面上是否预测了媒体关注的地方的旅游率上升或下降？当我们将所得信息视为地缘政治态势感知的信息源时，这种数据的可能性几乎是无限的。
+- en: With such an opportunity in front of us, we need to consider carefully our investment
+    in this more complex EDA. It will need, as before, a common data structure from
+    which to start our explorations.
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 面对这样的机会，我们需要仔细考虑我们在这个更复杂的EDA中的投资。与以往一样，它将需要一个共同的数据结构，从而开始我们的探索。
+- en: 'As a target, we will aim to construct the following dataframe from which to
+    explore the geopolitical trends, which we will call "*GeoGcam*":'
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为目标，我们将致力于构建以下数据框架，以探索地缘政治趋势，我们将其称为“GeoGcam”。
+- en: '[PRE45]'
+  id: totrans-318
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: Introducing GeoGCAM
+  id: totrans-319
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 介绍GeoGCAM
+- en: GeoGcam is a global spatio-temporal signals dataset that is derived from the
+    raw GDELT Global Knowledge Graph (2.1). It enables the exploration of evolving
+    geopolitical trends in global news media sentiment quickly and easily. The data
+    itself is created using a transformation pipeline that casts the raw GKG files
+    into a standard, reusable, global time/space/sentiment signals format that allows
+    for direct downstream spatio-temporal analysis, cartographic visualization, and
+    further wide scale geopolitical trend analysis.
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GeoGcam是一个全球时空信号数据集，它源自原始的GDELT全球知识图（2.1）。它能够快速、轻松地探索全球新闻媒体情绪的演变地缘政治趋势。数据本身是使用一个转换管道创建的，该管道将原始的GKG文件转换为标准、可重复使用的全球时间/空间/情绪信号格式，这允许直接下游时空分析、地图可视化和进一步的广泛地缘政治趋势分析。
+- en: It can be used as a source of external covariates for predictive models, especially
+    ones that require improved geopolitical situational awareness.
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它可以用作预测模型的外部协变量的来源，特别是那些需要改进地缘政治情况意识的模型。
+- en: It is constructed by recasting the GKG's GCAM sentiment data into a spatially
+    oriented schema. This is performed by *placing* each news story's sentiments against
+    each of the fine-grained city/town level locations identified in its GKG record.
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它是通过将GKG的GCAM情绪数据重新构建为一个空间定向模式而构建的。这是通过*将*每个新闻故事的情绪放置在其GKG记录中识别的细粒度城市/城镇级别位置上来完成的。
+- en: The data is then aggregated by city, across all of the indexed stories in a
+    15 minute GKG time window. The result is a file that delivers an aggregate news
+    media *sentiment consensus* across all stories in that space and time window,
+    for that place. Although there will be noise, our hypothesis is that big broad
+    geopolitical themes will emerge.
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，数据按城市聚合，跨越15分钟的GKG时间窗口内的所有索引故事。结果是一个文件，它提供了在该空间和时间窗口内所有故事的聚合新闻媒体情绪共识，针对那个地方。尽管会有噪音，但我们的假设是，大而广泛的地缘政治主题将会出现。
+- en: 'A sample of the dataset (which matches the target schema) is:'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据集的样本（与目标模式匹配）如下：
+- en: '[PRE46]'
+  id: totrans-325
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Technical notes on the dataset:'
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于数据集的技术说明：
+- en: Only news articles tagged with specific city locations are included, meaning
+    only those tagged by GKG as having a location type code of 3=USCITY or 4=WORLDCITY.
+  id: totrans-327
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 只有标记有特定城市位置的新闻文章才会被包括在内，这意味着只有那些被GKG标记为具有位置类型代码3=USCITY或4=WORLDCITY的文章才会被包括在内。
+- en: We have calculated and included the full GeoHash for each city (see [Chapter
+    5](ch05.xhtml "Chapter 5. Spark for Geographic Analysis")*, Spark for Geographic
+    Analysis* for more information), simplifying how the data can be indexed and summarized
+    for larger geographic regions.
+  id: totrans-328
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们已经计算并包括了每个城市的完整GeoHash（有关更多信息，请参见[第5章](ch05.xhtml "第5章。地理分析的Spark")*，地理分析的Spark*），简化了数据的索引和总结，以供更大范围的地理区域使用。
+- en: 'The granularity of the file is based on the aggregation key used to produce
+    the dataset, which is: `V21Date`, `LocCountryCode`, `Lat`, `Long`, `GeoHash`,
+    `Language`, `Series.`'
+  id: totrans-329
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文件的粒度是基于用于生成数据集的聚合键，即：`V21Date`、`LocCountryCode`、`Lat`、`Long`、`GeoHash`、`Language`、`Series`。
+- en: We have carried forward the primary location country code field, identified
+    in the GKG feed, into the city level aggregation function; this allows us to quickly
+    examine the data by countries without having to perform complex lookups.
+  id: totrans-330
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们已经将GKG源中识别的主要位置国家代码字段传递到城市级别的聚合函数中；这使我们能够快速地按国家检查数据，而无需进行复杂的查找。
+- en: The provided data is un-normalized. We should later normalize it via the total
+    article word count for the location, which is available in the series called `wc`.
+    But this should only be done for word count based sentiment measures. We also
+    carry a count of the articles so we can test different types of normalization.
+  id: totrans-331
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 提供的数据是未归一化的。我们应该稍后通过位置的总文章字数来对其进行归一化，这在名为`wc`的系列中是可用的。但这只适用于基于字数的情绪测量。我们还携带了文章的计数，以便测试不同类型的归一化。
+- en: The feed is built from the English language GKG records, but we plan to include
+    the international *Translingual* feeds in the same data format. In readiness,
+    we've included a field denoting the original news story language.
+  id: totrans-332
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 该数据源自英语GKG记录，但我们计划在相同的数据格式中包括国际*跨语言*源。为了做好准备，我们已经包括了一个字段，用于表示原始新闻故事的语言。
+- en: We have an ingestion routine for this dataset to GeoMesa, a scalable data store
+    that allows us to geographically explore the resulting data; this is available
+    in our code repository. For an in-depth exploration of GeoMesa, see [Chapter 5](ch05.xhtml
+    "Chapter 5. Spark for Geographic Analysis"), *Spark for Geographic Analysis*.
+  id: totrans-333
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们为这个数据集设计了一个摄入例程，用于GeoMesa，这是一个可扩展的数据存储，允许我们地理上探索生成的数据；这在我们的代码库中是可用的。有关GeoMesa的深入探讨，请参见[第5章](ch05.xhtml
+    "第5章。地理分析的Spark")*，地理分析的Spark*。
+- en: 'The following is a pipeline to build up the GeoGCAM files:'
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是构建GeoGCAM文件的流水线：
+- en: '[PRE47]'
+  id: totrans-335
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'This query essentially does the following: It builds a Cartesian join between
+    all the GCAM sentiments and the granular locations identified in the records (cities
+    / places), and then proceeds to *place* the Tone and sentiment values on those
+    locations for all news stories in a 15 minute window. The output is a spatio-temporal
+    dataset that allows us to geographically map the GCAM sentiments. For instance,
+    it is possible to quickly export and plot this data in QGIS, which is an open
+    source mapping tool.'
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个查询基本上做了以下几件事：它在GCAM情绪和记录中识别的细粒度位置（城市/地点）之间建立了一个笛卡尔连接，并继续*将*15分钟窗口内所有新闻故事的Tone和情绪值放置在这些位置上。输出是一个时空数据集，允许我们在地图上地理化地映射GCAM情绪。例如，可以快速将这些数据导出并在QGIS中绘制，这是一个开源的地图工具。
+- en: Does our spatial pivot work?
+  id: totrans-337
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 我们的空间中心点是否有效？
+- en: 'When the preceding GeoGCAM dataset is filtered to look at the GCAM *immigration* sentiment
+    as a theme over the first two weeks of GKG data in February 2015, we can generate
+    the following map:'
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当前面的GeoGCAM数据集被过滤以查看GCAM *移民*情绪作为2015年2月GKG数据的头两周的主题时，我们可以生成以下地图：
+- en: '![Does our spatial pivot work?](img/image_04_016.jpg)'
+  id: totrans-339
+  prefs: []
+  type: TYPE_IMG
+  zh: '![我们的空间中心点是否有效？](img/image_04_016.jpg)'
+- en: This illustrates the tone of global English language news media, using light (positive
+    average tone) and dark (negative average tone), which is found in the GKG files
+    over that period, and explores how that tone maps over each geographic tile on
+    the map (the pixel size calculated mirrors fairly accurately the size of the truncated
+    GeoHash that is grouped on) with respect to the sentiment for immigration as a
+    theme.
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这说明了全球英语新闻媒体的语调，使用了轻（积极平均语调）和暗（消极平均语调），这些都可以在GKG文件中找到，并探讨了该语调如何在地图上的每个地理瓦片上映射（像素大小的计算相当准确地反映了分组的截断GeoHash的大小），并且与移民作为主题的情绪相关。
+- en: We can see very clearly on this map that immigration is not only a hot topic
+    associated with places in the UK, but also has strong spatial concentrations in
+    other places too. For instance, we can see the strong negative tone associated
+    with parts of the Middle East that clearly stands out in a concentrated dark block.
+    We also see details that we perhaps would have missed before. For example, there
+    is a concentrated negative tone on immigration around Dublin, which is not immediately
+    explainable, and something seems to be happening in the north east of Nigeria
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以在这张地图上清楚地看到，移民不仅是与英国地区相关的热门话题，而且在其他地方也有强烈的空间集中。例如，我们可以看到与中东部分明显突出的浓厚负面语调。我们还看到了以前可能会错过的细节。例如，都柏林周围有关移民的浓厚负面语调，这并不是立即可以解释的，尼日利亚东北部似乎也发生了一些事情。
+- en: The map shows that there may also be an English language bias to watch out for,
+    as there is little discussion in non-English speaking places, which seems odd,
+    until we realize we've not yet included the Translingual GKG feed. This suggests
+    that we should extend our processing to include the translingual data source,
+    in order to obtain a more rounded and full set of signals including non-English
+    news media.
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 地图显示，我们也可能需要注意英语语言的偏见，因为非英语国家的讨论很少，这似乎有点奇怪，直到我们意识到我们还没有包括跨语言的GKG源。这表明我们应该扩展我们的处理，以包括跨语言数据源，以获得更全面和完整的信号，包括非英语新闻媒体。
+- en: 'The full list of the GCAM time series available is listed in the GCAM master
+    codebook found here: [http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT](http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT).'
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GCAM时间序列的完整列表在此处列出：[http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT](http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT)。
+- en: For the moment, the English language news data examined in the GeoGCAM format
+    provides a fascinating view of the world, and we discover that GDELT does offer
+    real signals we can leverage. Using the GeoGCAM formatted data developed in this
+    chapter, you should now be able to construct your own specific geopolitical explorations
+    easily and quickly, even integrating this content with your own datasets.
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，在GeoGCAM格式中检查的英语新闻数据提供了对世界的迷人视角，我们发现GDELT确实提供了我们可以利用的真实信号。使用本章中开发的GeoGCAM格式化数据，您现在应该能够轻松快速地构建自己特定的地缘政治探索，甚至将此内容与您自己的数据集集成。
+- en: Summary
+  id: totrans-345
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we've reviewed many ideas for exploring data quality and data
+    content. We have also introduced the reader to tools and techniques for working
+    with GDELT, which are aimed at encouraging the reader to expand their own investigations.
+    We have demonstrated rapid development in Zeppelin, and written much of our code
+    in SparkSQL to demonstrate the excellent portability of this method. As the GKG
+    files are so complex in terms of content, much of the rest of this book is dedicated
+    to in-depth analyses that move beyond exploration, and we step away from SparkSQL
+    as we dig deeper into the Spark codebase.
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一章中，我们回顾了许多探索数据质量和数据内容的想法。我们还向读者介绍了与GDELT合作的工具和技术，旨在鼓励读者扩展自己的调查。我们展示了Zeppelin的快速发展，并且大部分代码都是用SparkSQL编写的，以展示这种方法的出色可移植性。由于GKG文件在内容上非常复杂，本书的其余部分大部分致力于深入分析，超越了探索，我们在深入研究Spark代码库时也远离了SparkSQL。
+- en: In the next chapter,that is, [Chapter 5](ch05.xhtml "Chapter 5. Spark for Geographic
+    Analysis"), *Spark for Geographic Analysis*, we will explore GeoMesa; an ideal
+    tool for managing and exploring the GeoGCAM dataset created in this chapter, as
+    well as GeoServer and the GeoTools toolsets to further expand our knowledge of
+    spatio-temporal exploration and visualization.
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章，也就是[第5章](ch05.xhtml "第5章。地理分析的Spark")，“地理分析的Spark”，我们将探索GeoMesa；这是一个管理和探索本章中创建的GeoGCAM数据集的理想工具，以及GeoServer和GeoTools工具集，以进一步扩展我们对时空探索和可视化的知识。

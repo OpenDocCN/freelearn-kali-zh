@@ -1,0 +1,875 @@
+- en: Creating Schema-Driven Forms
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建模式驱动的表单
+- en: Forms come in different shapes, sizes, and levels of complexity. It is relatively
+    simple to quickly scaffold a login form or a contact form with a few fields, but
+    what happens when you have to take it to the next level and create a completely
+    dynamic form that is driven by an API or schema?
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表单有不同的形状、大小和复杂程度。快速搭建一个登录表单或联系表单只需要几个字段，但是当你需要将其提升到下一个级别，并创建一个完全由API或模式驱动的动态表单时会发生什么？
+- en: Up until now, we have worked with a relatively simple form that only asks the
+    user for some basic data but everything is hardcoded as a static form. If our
+    mock website wanted to add or remove some fields from the form, we would have
+    to manually make the changes, deploy them to our server, and possibly even adjust
+    the backend to handle the different fields. But what if we wanted to automate
+    this whole process?
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经使用了一个相对简单的表单，只要求用户提供一些基本数据，但是一切都是硬编码的静态表单。如果我们的模拟网站想要添加或删除表单中的一些字段，我们将不得不手动进行更改，部署到我们的服务器上，甚至可能还要调整后端来处理不同的字段。但是如果我们想要自动化整个过程呢？
+- en: In this chapter, we will build an example dynamic form that will be completely
+    powered by an API endpoint. Schema-driven forms are very powerful, as they can
+    be controlled and modified directly by your application's API. That means when
+    something changes in your backend, your form will automatically adjust itself
+    not only on the frontend but also into a self-aware understanding of how to send
+    the dynamic data back to the API.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将构建一个完全由API端点驱动的示例动态表单。模式驱动的表单非常强大，因为它们可以直接由应用程序的API控制和修改。这意味着当后端发生变化时，你的表单将自动调整自己，不仅在前端，还会自我意识地理解如何将动态数据发送回API。
+- en: 'This chapter will cover the following topics:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下主题：
+- en: Exploring the starter kit
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 探索起始套件
+- en: Preparing the schema
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 准备模式
+- en: Loading the schema and creating a `Renderer` component
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 加载模式并创建`Renderer`组件
+- en: Dynamically binding user data
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 动态绑定用户数据
+- en: Creating a mock API
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建模拟API
+- en: Loading the new API into the app
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将新的API加载到应用程序中
+- en: Translating the API into a working schema
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将API转换为可用模式
+- en: Technical requirements
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: I will assume that you have either read or understand the concepts viewed in
+    the previous chapters, such as using Axios for HTTP calls and component creation,
+    and have installed on your system as a mock API provider. You can refer to this
+    link for more information: [https://mockoon.com/](https://mockoon.com/).
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我假设你已经阅读或理解了前几章中介绍的概念，比如使用Axios进行HTTP调用和组件创建，并且在你的系统上安装了一个模拟API提供程序。你可以参考这个链接获取更多信息：[https://mockoon.com/](https://mockoon.com/)。
+- en: 'To expedite the scaffolding of our app, I have set us up with a starter Vue
+    CLI-3-powered repository with a couple of custom components and a sample static
+    form. You can clone or download it from the following link:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了加快我们应用程序的搭建过程，我已经为我们设置了一个由Vue CLI-3驱动的起始存储库，其中包含一些自定义组件和一个示例静态表单。你可以从以下链接克隆或下载它：
+- en: '[https://github.com/PacktPublishing/Building-Forms-with-Vue.js/tree/master/Chapter07](https://github.com/PacktPublishing/Building-Forms-with-Vue.js/tree/master/Chapter07).'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://github.com/PacktPublishing/Building-Forms-with-Vue.js/tree/master/Chapter07](https://github.com/PacktPublishing/Building-Forms-with-Vue.js/tree/master/Chapter07)。'
+- en: 'Check out the following video to see the code in action:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看以下视频，了解代码的运行情况：
+- en: '[http://bit.ly/2VMe3eU](http://bit.ly/2VMe3eU)'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://bit.ly/2VMe3eU](http://bit.ly/2VMe3eU)'
+- en: Exploring the starter kit
+  id: totrans-18
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 探索起始套件
+- en: After you clone or download the starter repository, you will find yourself with
+    a Vue CLI 3 project. The first thing to do is to take a look at what we are going
+    to be working with! The repository contains a very simple form with some input
+    fields and a select box. You can find the structure for the form in `App.vue`.
+    As you can see, we are using two different custom components, `BaseInput` and
+    `BaseSelect`. Both of these can be found inside the `src/components` folder. They
+    both wrap an `input` and `select` tag, respectively, and expose some properties
+    that we can use to inject the necessary data into each of them, such as `labels`
+    and `options`.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 克隆或下载起始存储库后，您将发现自己拥有一个Vue CLI 3项目。首先要做的是看一下我们将要使用的内容！存储库中包含一个非常简单的表单，其中包含一些输入字段和一个选择框。您可以在`App.vue`中找到表单的结构。正如您所看到的，我们使用了两个不同的自定义组件，`BaseInput`和`BaseSelect`。这两个组件都可以在`src/components`文件夹中找到。它们分别包装了`input`和`select`标签，并公开了一些属性，我们可以使用这些属性将必要的数据注入到每个组件中，例如`labels`和`options`。
+- en: I have taken the liberty of already adding Axios to the project dependencies;
+    you can check out `package.json` to corroborate. Bootstrap's CSS file for some
+    base classes has been imported inside `main.js`.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我已经在项目依赖项中添加了Axios；您可以查看`package.json`来证实。Bootstrap的CSS文件用于一些基本类已经在`main.js`中导入。
+- en: 'Now that we have a good overview of the project structure, let''s go ahead
+    and install the dependencies and run them on our browser. Follow these steps:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经对项目结构有了一个很好的概述，让我们继续安装依赖项并在浏览器上运行它们。按照以下步骤进行：
+- en: 'Go into the Terminal and run the following commands:'
+  id: totrans-22
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 进入终端并运行以下命令：
+- en: '[PRE0]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: After doing this, check out the form on your browser and play around with the
+    fields. There's nothing fancy going on except for the fields being `v-model` bound
+    to the local state in `App.vue`.
+  id: totrans-24
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 完成后，检查浏览器上的表单并尝试操作字段。除了字段被`v-model`绑定到`App.vue`中的本地状态之外，没有任何花哨的东西。
+- en: The Submit button will only log a message to the console—if you want a refresher
+    on how to send form data to your server, check out [Chapter 2](2f5516c2-6f66-4945-b340-645775373cea.xhtml), *A
+    Form in its Simplest Form*, of this book.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提交按钮只会将消息记录到控制台-如果您想了解如何将表单数据发送到服务器，请查看本书的[第2章](2f5516c2-6f66-4945-b340-645775373cea.xhtml)，“最简单的表单”，进行复习。
+- en: Now that you have an understanding of the starting point of our application,
+    we are going to prepare the demo schema in the next section.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您已经了解了我们应用程序的起点，我们将在下一节中准备演示模式。
+- en: Preparing the schema
+  id: totrans-27
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备模式
+- en: Currently, our form (as previously stated) is hardcoded. The first step that
+    is required to start making it a dynamic form is to remove the need to add `BaseInput`
+    or `BaseSelect` directly to our `App.vue` file every time we need to add a new
+    field. This implies that we are going to need to have some sort of organized structure,
+    or schema, to represent what we are trying to accomplish for our form. Since we
+    are using JavaScript, the most logical way to do this is with a JSON object format.
+    This will make it easier later on when we want to take it a step further and have
+    our mock API feed the information directly to our form.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，我们的表单（如前所述）是硬编码的。开始使其成为动态表单所需的第一步是消除每次需要添加新字段时直接向我们的`App.vue`文件添加`BaseInput`或`BaseSelect`的需要。这意味着我们需要有一种有组织的结构或模式来表示我们为表单所要实现的内容。由于我们使用JavaScript，以JSON对象格式来做这件事是最合乎逻辑的方式。这将使我们在以后想要更进一步并让我们的模拟API直接向我们的表单提供信息时更容易。
+- en: For now, we will use a static schema. Let's create a data folder inside `src`,
+    and inside of it, make a new `schema.json` file. We are going to populate our
+    JSON file with some dummy data. I have chosen, for the sake of an example, to
+    make the top element an object, and each property inside of it will represent
+    one of the fields in our form. Each element will consist of at least a `component`
+    property and a `label` property. In the case of drop-down menus, however, we will
+    also include `options` to populate it.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将使用一个静态模式。让我们在 `src` 内创建一个 data 文件夹，并在其中创建一个新的 `schema.json` 文件。我们将用一些虚拟数据填充我们的
+    JSON 文件。为了举例说明，我选择将顶层元素设置为一个对象，其中每个属性代表表单中的一个字段。每个元素至少包括一个 `component` 属性和一个 `label`
+    属性。然而，在下拉菜单的情况下，我们还将包括 `options` 来填充它。
+- en: 'To create the demo schema, add the following data to `schema.json`:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要创建演示模式，请将以下数据添加到 `schema.json` 中：
+- en: '[PRE1]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Now that we have a structured schema as a demo of what we want our dynamic form
+    to understand, we can proceed to the next section—where we will load this schema
+    into our application with the help of a `Renderer` component.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一个结构化的模式作为我们动态表单理解的演示，我们可以继续到下一节——在那里我们将使用 `Renderer` 组件将这个模式加载到我们的应用程序中。
+- en: Loading the schema and creating a Renderer component
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 加载模式和创建 Renderer 组件
+- en: Now that we have a basic schema set up to work with, let's go ahead and load
+    into the application so that we can use it. Later on in this chapter, we are going
+    to create a dummy API that will feed us the data in a slightly different way,
+    and we will transform it on our end to fit our app's requirements.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经设置了一个基本的模式来使用，让我们继续加载到应用程序中以便我们可以使用它。在本章的后面，我们将创建一个虚拟的 API，以稍微不同的方式提供数据，并且我们将在我们的应用程序中对其进行转换以符合我们的应用程序的要求。
+- en: 'For now, let''s go to `App.vue` and import the JSON. We will start by adding
+    the following `import` statement to the top near the other import statements:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们去 `App.vue` 并导入 JSON。我们将首先在顶部附近的其他导入语句中添加以下 `import` 语句：
+- en: '[PRE2]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Now that we have our data available to our application, we need some components
+    to be able to parse this information into the `BaseInput` and `BaseSelect` components.
+    Let''s go ahead and create a new file inside the `components` folder, and name
+    it `Renderer.vue`. This component will have a single purpose: to understand our
+    schema and render the correct component to the screen. It will currently have
+    a single property, `element`, which represents each of the elements in our schema.
+    To do so, add the following code to `Renderer.vue`:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序可以使用这些数据，我们需要一些组件来将这些信息解析成 `BaseInput` 和 `BaseSelect` 组件。让我们继续在 `components`
+    文件夹内创建一个新文件，并将其命名为 `Renderer.vue`。这个组件将有一个单一的目的：理解我们的模式并将正确的组件呈现到屏幕上。它目前将具有一个属性
+    `element`，代表我们模式中的每个元素。为此，请将以下代码添加到 `Renderer.vue` 中：
+- en: '[PRE3]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'There''s a couple of important things to note in this component. They are as
+    follows:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个组件中有几个重要的事情需要注意。它们如下：
+- en: The `element` prop is an object and will be required. This component will not
+    work at all without it. We have two computed properties. The first component takes
+    care of dynamically loading whichever element we need. First, we create a `componentName`
+    constant and assign it to the value of `element.component`, which is where the
+    string name of our component is stored in the schema.
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`element` 属性是一个对象，是必需的。没有它，这个组件根本无法工作。我们有两个计算属性。第一个组件负责动态加载我们需要的任何元素。首先，我们创建一个
+    `componentName` 常量，并将其赋值为 `element.component` 的值，这是我们组件的字符串名称存储在模式中的地方。'
+- en: It's important to mention that we are not just adding this `const` for clarity
+    purposes. The way that computed properties work regarding caching *requires* that
+    this `const` exists here since we are returning a function, which will not be
+    inspected for dependencies.
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 重要的是要提到，我们不只是为了清晰起见而添加这个`const`。关于缓存，计算属性的工作方式要求这个`const`存在，因为我们返回一个函数，这个函数不会被检查其依赖关系。
+- en: 'When this computed property is called by the `<component>` tag for the `:`
+    is an attribute—it will load the component and pass it over. Note that this will
+    only work if the component is globally registered; in any other case, a computed
+    property that requires the correct component would be needed. For further information
+    on dynamic components, check out the official documentation: [https://vuejs.org/v2/guide/components-dynamic-async.html](https://vuejs.org/v2/guide/components-dynamic-async.html).'
+  id: totrans-42
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当`<component>`标签调用这个计算属性时，`:`是一个属性 - 它将加载组件并传递过去。请注意，这仅在组件全局注册的情况下才有效；在任何其他情况下，将需要一个需要正确组件的计算属性。有关动态组件的更多信息，请查看官方文档：[https://vuejs.org/v2/guide/components-dynamic-async.html](https://vuejs.org/v2/guide/components-dynamic-async.html)。
+- en: The second computed property, `props`, will simply pass down the whole element
+    with its properties as `props` to whatever component we are loading using the
+    `v-on` binding. For example, on the `BaseSelect` component, it will pass down
+    the `options` property in our schema to the component so that it can render the
+    correct options. If you are wondering why we are using a computed property instead
+    of just passing the element directly to the `v-on` directive, you are on the right
+    track. Right now, it is definitely not needed, but having it set up in this way
+    to begin with allows us to, later on, add another level of logic or parsing that
+    could be needed for a particular component.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个计算属性`props`将简单地将整个元素及其属性作为`props`传递给我们使用`v-on`绑定加载的任何组件。例如，在`BaseSelect`组件上，它将将我们模式中的`options`属性传递给组件，以便它可以呈现正确的选项。如果你想知道为什么我们使用计算属性而不是直接将元素传递给`v-on`指令，你是对的。现在，绝对不需要，但是以这种方式设置它，可以让我们以后添加另一层逻辑或解析，这可能是特定组件所需的。
+- en: Let's head back to `App.vue`.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们回到`App.vue`。
+- en: 'We need to import our `Renderer` component and add it to the `template`. We
+    also need to clean up a bit; we no longer need to manually import `BaseInput`
+    or `BaseSelect`, and our form local state will be soon dynamic—so, there''s no
+    need to declare it statically, as shown in the following code snippet:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要导入我们的`Renderer`组件并将其添加到`template`中。我们还需要进行一些清理；我们不再需要手动导入`BaseInput`或`BaseSelect`，我们的表单本地状态很快将是动态的
+    - 因此，没有必要像下面的代码片段中静态声明它：
+- en: '[PRE4]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Go ahead and run it in the browser and you should see the three inputs that
+    the schema declared in `schema.json`, and the `<select>` should have our three
+    options inside of it. You are going to get a couple of console errors at this
+    point because we haven't worked on our two-way value bindings for our components,
+    and they're set as required. But don't worry, we'll get back to that soon!
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续在浏览器中运行它，你应该会看到模式在`schema.json`中声明的三个输入，`<select>`中应该有我们的三个选项。此时你会得到一些控制台错误，因为我们还没有为组件的双向值绑定工作，并且它们被设置为必需。但不用担心，我们很快就会解决这个问题！
+- en: Dynamically binding the user's data
+  id: totrans-48
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 动态绑定用户的数据
+- en: What good is any form if we can't use the data that the user inputs? As cool
+    as it is that we can generate these forms dynamically based entirely on a schema,
+    we still need to be able to store these values somehow so that we can later process
+    them as we need. The first step for our form to be able to create two-way bindings
+    is to tell `Renderer.vue` how to handle input events from the dynamic components.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们无法使用用户输入的数据，那么任何表单有什么用呢？尽管我们可以根据模式完全动态地生成这些表单，这很酷，但我们仍然需要能够以某种方式存储这些值，以便以后根据需要对它们进行处理。我们的表单能够创建双向绑定的第一步是告诉`Renderer.vue`如何处理来自动态组件的输入事件。
+- en: 'Follow these steps:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤进行：
+- en: 'Let''s go into `Renderer.vue` and add a `:value` binding, as well as an `@input`
+    listener to the `<component>`:'
+  id: totrans-51
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们进入`Renderer.vue`，为`<component>`添加`:value`绑定，以及一个`@input`监听器：
+- en: '[PRE5]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Remember that, in order to `v-model` or two-way bind into a custom component,
+    we usually need to pass in a value and listen to input events. In this case, we
+    are going to explicitly listen to input events since our custom components all
+    fire this type of event for two-way bindings.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记住，为了`v-model`或双向绑定到自定义组件，通常我们需要传入一个值并监听输入事件。在这种情况下，我们将明确监听输入事件，因为我们的自定义组件都会触发这种类型的事件以进行双向绑定。
+- en: 'Go ahead and add the new `value` prop to our `Renderer` component:'
+  id: totrans-54
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 继续为我们的`Renderer`组件添加新的`value`属性：
+- en: '[PRE6]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Finally, we need to implement the `handleComponentInput` method. Keep in mind
+    that I have chosen to make it a method instead of just firing the `$emit` directly
+    into the `template` for two reasons. The first one is that I have found it to
+    be a nice practice to more easily write unit tests later on, and second, it allows
+    for more flexibility if we need to write an `if` statement or conditional for
+    a particular component that has specific requirements.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们需要实现`handleComponentInput`方法。请记住，我选择将其作为一个方法而不是直接在`template`中触发`$emit`的原因有两个。第一个是我发现这样做更容易编写单元测试，第二，如果我们需要为具有特定要求的特定组件编写`if`语句或条件，它可以提供更大的灵活性。
+- en: 'Add the new `handleComponentInput` method:'
+  id: totrans-57
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加新的`handleComponentInput`方法：
+- en: '[PRE7]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Now that the renderer is ready to two-way bind with `v-model`, let's go back
+    to `App.vue`, where we are implementing it and add the actual binding. We are
+    going to add the `v-model` attribute to `<Renderer>`, and the trick here is that
+    we are going to bind it to `form[name]`. Remember that our schema has a structure
+    where the name of the property is the unique identifier for that field. Open `schema.json`
+    to check it out.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在渲染器已经准备好与`v-model`进行双向绑定了，让我们回到`App.vue`，在那里我们正在实现它并添加实际的绑定。我们将在`<Renderer>`中添加`v-model`属性，这里的诀窍是我们将它绑定到`form[name]`。记住，我们的模式具有一个结构，其中属性的名称是该字段的唯一标识符。打开`schema.json`来查看它。
+- en: For example, in the first field, `firstName` is the name of the property that
+    holds the first space in the schema object. This property is what we are going
+    to use to bind to so that we can, later on, know which field it represents in
+    our data.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，在第一个字段中，`firstName`是保存模式对象中第一个空格的属性的名称。这个属性是我们将要绑定的，这样我们以后就可以知道它在我们的数据中代表哪个字段。
+- en: 'Let''s add our `v-model` to `<Renderer>` in `App.vue`:'
+  id: totrans-61
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`App.vue`中的`<Renderer>`中添加我们的`v-model`：
+- en: '[PRE8]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Open up your browser and check out your form; if you start filling out the fields
+    and look at your `Vue` development tools, you will see that the bindings are all
+    working correctly. What renderer is doing through the dynamic `v-model` is tying
+    each one of the properties to a property on the form of local data.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开浏览器，查看你的表单；如果你开始填写字段并查看你的`Vue`开发工具，你会看到绑定都正常工作。渲染器通过动态的`v-model`所做的是将每个属性都绑定到本地数据表单的一个属性上。
+- en: 'If you want a quicker way to see this in action without resorting to using
+    the `dev` tools, add this following bit of code to your `<Renderer>` component
+    in `App.vue`:'
+  id: totrans-64
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您想以更快的方式看到这个示例，而不必使用`dev`工具，可以将以下代码添加到`<Renderer>`组件中的`App.vue`中：
+- en: '[PRE9]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: We are simply going to dump the form into the screen, and use the HTML `<pre>`
+    tag to get some easy formatting. Try going into `schema.json` and adding some
+    new fields. You will see the results on your browser immediately, as renderer
+    will pick up on the changes of the schema and the page will reload by itself (hot
+    reload). With the new schema in place, you will see all of your new fields in
+    place.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们只是简单地将表单放到屏幕上，并使用HTML的`<pre>`标签进行简单格式化。尝试进入`schema.json`并添加一些新字段。您将立即在浏览器上看到结果，因为渲染器将会注意到模式的更改，并且页面将自动重新加载（热重载）。有了新的模式，您将看到所有新字段都已就位。
+- en: We're getting places and fast! In the following section, we're going to prepare
+    yet again for a demo API. In a real application, you are not going to be serving
+    the schema from a file—but probably from a server. Fire up Mockoon, and let's
+    do this!
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们正在快速取得进展！在接下来的部分，我们将再次准备演示API。在实际应用中，您不会从文件中提供模式，而是从服务器中提供。启动Mockoon，让我们开始吧！
+- en: Creating a mock API
+  id: totrans-68
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建模拟API
+- en: The next step in our demo is to create an actual mock API, which we will then
+    translate into a structure that our renderer understands. Why are we approaching
+    the problem this way? In real work scenarios, it is not uncommon that the backend
+    will not match completely the necessities of the frontend. Perhaps the API was
+    built first, or was made with an earlier version of the frontend in mind that
+    worked in a wildly different way; there are many possibilities, and in this case,
+    we will adjust to an incompatible API to learn how to guard against this.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们演示的下一步是创建一个实际的模拟API，然后将其转换为我们的渲染器理解的结构。为什么我们要这样解决这个问题呢？在实际工作场景中，后端通常不会完全匹配前端的需求。也许API是首先构建的，或者是根据早期版本的前端设计的，工作方式完全不同；有很多可能性，在这种情况下，我们将调整不兼容的API，以学习如何防范这种情况。
+- en: This approach also ensures that we have a middleman that is going to *translate* and
+    understand the API for our app. If the API were to change for whatever reason,
+    we could safely just change this middleman to adjust for the changes and, in most
+    cases, not even have to touch any of the internal components of the app.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法还确保我们有一个中间人，将*翻译*并理解我们应用的API。如果由于任何原因API发生变化，我们可以安全地只需更改这个中间人来调整变化，并且在大多数情况下甚至不必触及应用的任何内部组件。
+- en: 'Follow these steps:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照这些步骤：
+- en: Start up Mockoon, the app we've been using throughout this book for our dummy
+    API calls. If you haven't yet installed it, you can find the download link here: [https://mockoon.com/](https://mockoon.com/).
+  id: totrans-72
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 启动Mockoon，这是我们在整本书中用于虚拟API调用的应用程序。如果您还没有安装它，可以在这里找到下载链接：[https://mockoon.com/](https://mockoon.com/)。
+- en: Make sure the environment is running by clicking on the green play button, and
+    click on the Add route button on the top of the second column. On the right-hand
+    screen, we will add some data. Let's start with the path.
+  id: totrans-73
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 确保环境正在运行，点击绿色播放按钮，并在第二列顶部点击“添加路由”按钮。在右侧屏幕上，我们将添加一些数据。让我们从路径开始。
+- en: Under Route settings, leave GET as the default verb for the route, and go ahead
+    and name the path `/schema`.
+  id: totrans-74
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在路由设置下，将GET保留为路由的默认动词，并继续命名路径为`/schema`。
+- en: 'Go ahead and navigate to the second tab, Headers, and set a single header to
+    Content-Type: `application-json`. On the plus side, this will give us some nice
+    color coding on the next part.'
+  id: totrans-75
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 继续导航到第二个选项卡，标头，并将单个标头设置为Content-Type：`application-json`。另一方面，这将为我们的下一部分提供一些漂亮的颜色编码。
+- en: Go back to the first tab, Response & Body.
+  id: totrans-76
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 返回第一个选项卡，响应和正文。
+- en: 'Inside the Body section, go ahead and copy the following structure. Note that
+    it is not what we had before in our `schema.json` file, but a similar structure
+    that we are going to have to interpret later on. We will even ignore some of the
+    data in there since it won''t be of use for our current form—it is not uncommon
+    for APIs to sometimes return data that we don''t really use:'
+  id: totrans-77
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Body部分，继续复制以下结构。请注意，这不是我们以前在`schema.json`文件中的内容，而是一个类似的结构，我们以后需要解释。我们甚至会忽略其中的一些数据，因为它对我们当前的表单没有用处——有时API返回的数据我们并不真的用到是很常见的：
+- en: '[PRE10]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Take a good look at the structure of the JSON that is being returned by the
+    API in this case. You will start to see some similarities in how the backend is
+    trying to describe what it needs, and what the renderer on the frontend is expecting
+    to get.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仔细观察这种情况下API返回的JSON的结构。您将开始看到后端试图描述它需要什么，以及前端渲染器期望得到什么的一些相似之处。
+- en: 'If you are faced with this type of choice in your day-to-day life, you will
+    realize there are two ways we can go about it:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您在日常生活中面临这种选择，您会意识到我们可以采取两种方式：
+- en: We can either change the frontend implementation on a component level to adjust
+    to the new API, which in some instances could be what we want.
+  id: totrans-81
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们可以在组件级别上改变前端实现以适应新的API，这在某些情况下可能是我们想要的。
+- en: Or, we can make a small library or file that will interpret the API for our
+    backend. We are going for this choice for the reasons I have described earlier.
+  id: totrans-82
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 或者，我们可以制作一个小型库或文件，用于解释我们后端的API。出于我之前描述的原因，我们选择这个选择。
+- en: Now that we have our dummy API, we can teach our application how to *translate* this
+    new API format into something that it understands. This part of the process is
+    very important, as you don't want to have to modify your whole application every
+    time there's a change in the backend.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了虚拟API，我们可以教会我们的应用程序如何*翻译*这种新的API格式为它所理解的内容。这个过程的这一部分非常重要，因为您不希望在后端发生变化时每次都要修改整个应用程序。
+- en: Loading the new API into the app
+  id: totrans-84
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将新的API加载到应用程序中
+- en: 'Right now, if you head into `App.vue`, you will notice we are loading the static
+    schema through an `import` statement, as shown here:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您进入`App.vue`，您会注意到我们通过`import`语句加载静态模式，如下所示：
+- en: '[PRE11]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'This worked very well for us before, as it was a static file, but this time
+    around, we need to make a call to our API endpoint to get the schema for our form.
+    Let''s start by removing the import statement; we don''t need it anymore and can
+    safely delete it. You can also go into the `data()` properties and set `schema`
+    to a default, which will be an empty object:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这在以前对我们非常有效，因为它是一个静态文件，但这一次，我们需要调用我们的API端点来获取我们表单的模式。让我们首先删除导入语句；我们不再需要它，可以安全地删除它。您还可以进入`data()`属性并将`schema`设置为默认值，即一个空对象：
+- en: '[PRE12]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: I think that a good place to load our form's schema will be on the created hook
+    for our `App.vue` file. We want to get this done as soon as possible, and we don't
+    really need to manipulate any DOM when it loads, just set the result of the call
+    to the schema's internal property.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我认为一个很好的加载表单模式的地方将是在我们的`App.vue`文件的created hook上。我们希望尽快完成这项工作，当加载时我们并不真的需要操作任何DOM，只需设置对模式的内部属性的调用结果。
+- en: 'Follow these steps:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤：
+- en: 'Let''s import Axios to the top of our `App.vue` file, near the `Renderer` import,
+    since we are going to use it shortly:'
+  id: totrans-91
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`App.vue`文件的顶部导入Axios，靠近`Renderer`导入，因为我们很快就要用到它：
+- en: '[PRE13]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Go ahead and add a newly created hook to our `App.vue` component; inside of
+    it, we will make a simple Axios call to our mock API endpoint. Remember to check
+    on Mockoon to see that it is running:'
+  id: totrans-93
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 继续向我们的`App.vue`组件添加一个新创建的hook；在其中，我们将对我们的模拟API端点进行简单的Axios调用。记得检查Mockoon是否正在运行：
+- en: '[PRE14]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: We are making a call to our new endpoint, `http://localhost:3000/schema`, with
+    the Axios `GET` method. Make sure you check that Mockoon is using the port `3000`
+    for your mock API, or feel free to adjust the URL as needed. Axios calls return
+    a promise—if it fails, we are going to log the error. If the call is successful
+    however, we want to make sure that we capture the whole response and pass down
+    the `data` property of this response to the schema's internal data. It's important
+    to keep in mind that, in this particular case, the response the API is giving
+    us should be the direct JSON schema object. If your API returns a different structure,
+    such as a nested object or array, you will have to adjust accordingly.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们正在调用我们的新端点`http://localhost:3000/schema`，使用Axios的`GET`方法。确保检查Mockoon是否使用端口`3000`作为你的模拟API，或者随时根据需要调整URL。Axios调用返回一个promise——如果失败，我们将记录错误。然而，如果调用成功，我们要确保捕获整个响应，并将这个响应的`data`属性传递给模式的内部数据。重要的是要记住，在这种特殊情况下，API返回给我们的响应应该是直接的JSON模式对象。如果你的API返回不同的结构，比如嵌套对象或数组，你将需要相应地进行调整。
+- en: Open up your browser and reload the page if needed. It looks like we managed
+    to break the application completely, as was expected. When we assigned the new
+    APIs response to our schema's `data` property, the application tried to load each
+    of the items into the renderer, but it is not prepared to understand this new
+    format of schema that our backend is serving us.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果需要，打开浏览器并重新加载页面。看起来我们完全搞砸了应用程序，这是预料之中的。当我们将新的API响应分配给我们模式的`data`属性时，应用程序试图将每个项目加载到渲染器中，但它并没有准备好理解我们后端提供的这种新模式格式。
+- en: In the next section, we will take a look at how to build a very lean utility
+    library that will allow us to parse this new structure into what the renderer
+    can understand.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将看看如何构建一个非常简洁的实用程序库，让我们能够将这个新结构解析成渲染器能够理解的内容。
+- en: Translating the API into a working schema
+  id: totrans-98
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将API翻译成可工作的模式
+- en: 'Now that we have our mock API running, the next step is to create a way for
+    our application to parse or translate this API structure into the schema structure
+    that we had before, and that it understands. If you are curious enough to try
+    to run the application at this point, you will encounter a ton of console errors
+    that yell at you about prop: type check failed and `v-model` failing to bind.
+    This is expected at this point.'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的模拟API正在运行，下一步是创建一种方法，让我们的应用程序解析或翻译这个API结构成为我们以前理解的模式结构。如果你此时好奇地尝试运行应用程序，你会遇到大量的控制台错误，指责你的属性类型检查失败和`v-model`绑定失败。这在此时是预料之中的。
+- en: Go ahead and create a new folder inside `src`; we are going to call it `libraries`.
+    This is not a strict naming convention, so feel free to name it whatever makes
+    more sense to you or your team. Inside this folder, we are going to make a new
+    file called `Api.js`. Our goal for this file is to put all of the code that handles
+    the parsing of the API schema into the app's schema here. This way, we can import
+    whatever we need into our components, and we have a single source of truth regarding
+    the translation of API to schema—if either of these ends change for any reason,
+    we only have to update it here.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续，在`src`文件夹内创建一个新文件夹；我们将称之为`libraries`。这不是一个严格的命名约定，所以随意根据你或你的团队的需要进行命名。在这个文件夹内，我们将创建一个名为`Api.js`的新文件。我们的目标是将处理API模式解析的所有代码放在这里。这样，我们可以在组件中导入我们需要的内容，并且在API到模式的翻译方面有一个统一的真相来源——如果其中任何一端因任何原因发生变化，我们只需要在这里更新它。
+- en: 'Follow these steps:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤操作：
+- en: 'Let''s start by adding an entry point; it will be a function called `parse`
+    and will take a single argument: the response from the APIs `schema` endpoint:'
+  id: totrans-102
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们从添加一个入口点开始；它将是一个名为`parse`的函数，并将接受一个参数：来自API的`schema`端点的响应：
+- en: '[PRE15]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Right now, we are just going to return the `schema` as is, so we can start with
+    small steps.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们只是将`schema`原样返回，所以我们可以从小的步骤开始。
+- en: 'Go ahead and import this function into `App.vue` at the top:'
+  id: totrans-105
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 继续并将此函数导入到`App.vue`的顶部：
+- en: '[PRE16]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Then, inside the created hook, update the `then` block to use the function
+    before we assign it to the state:'
+  id: totrans-107
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，在创建的钩子内部，更新`then`块以在分配给状态之前使用该函数：
+- en: '[PRE17]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: We can go back to `Api.js` now, and we're going to do a basic implementation
+    of this parser. In reality, the complexity of the code here will depend on how
+    much disparity there is between your app's requirements and the APIs structure.
+    Thankfully for us, it only implies a few lines of code.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以回到`Api.js`，并且我们将对此解析器进行基本实现。实际上，这里的代码复杂性将取决于您的应用程序要求与API结构之间的差异有多大。对我们来说，幸运的是，这只意味着几行代码。
+- en: 'Add the following code to `Api.js`:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将以下代码添加到`Api.js`：
+- en: '[PRE18]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Let''s break down what is happening here into small chunks:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们将这里发生的事情分解成小块：
+- en: First, we create a constant field, which will just extract the `fields` property
+    out of our API data since it is nested there—we don't really care about the other
+    data it sends.
+  id: totrans-113
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们创建一个常量字段，它将从我们的API数据中提取`fields`属性，因为它是嵌套在那里的，我们并不真正关心它发送的其他数据。
+- en: We create a new object, `parsedSchema`, where we will add a property for each
+    of the fields of our form.
+  id: totrans-114
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们创建一个新对象`parsedSchema`，在其中为表单的每个字段添加一个属性。
+- en: We loop through each of the items inside of `fields` and create a property for
+    it. In our API schema, the `id` property holds the unique name of the field, so
+    we are going to use that for our property name, `parsedSchema[field.id]`.
+  id: totrans-115
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们循环遍历`fields`中的每个项目并为其创建一个属性。在我们的API模式中，`id`属性保存字段的唯一名称，因此我们将使用它作为我们的属性名`parsedSchema[field.id]`。
+- en: We assign an inside object to the component property, which is the result of
+    our new `componentForField` function, in which we figure out which component we
+    have to use for each case.
+  id: totrans-116
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们为组件属性分配一个内部对象，这是我们新的`componentForField`函数的结果，在其中我们找出每种情况下我们必须使用哪个组件。
+- en: For the `options` property, we check whether the `opts` property exists in the
+    API schema or set it as null. It is important to keep in mind that, even if the
+    `BaseInput` component isn't expecting this property, for example, it will not
+    care whether it is there and set to null or undefined.
+  id: totrans-117
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对于`options`属性，我们检查API模式中是否存在`opts`属性，如果存在则将其设置为null。重要的是要记住，即使`BaseInput`组件不期望这个属性，例如，它也不会在乎它是否存在并设置为null或未定义。
+- en: Finally, we return the parsed version of the schema, which our app can use to
+    render the form into its working state.
+  id: totrans-118
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们返回模式的解析版本，这样我们的应用程序就可以将表单呈现为其工作状态。
+- en: Go ahead and run it in your browser and behold your schema-driven, API-driven
+    dynamic form!
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在浏览器中运行它，看到你的基于模式、基于API的动态表单！
+- en: Summary
+  id: totrans-120
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: Take a moment to give yourself a huge pat on the back. You've made it not only
+    to the end of this chapter but to the end of this book! In this chapter, you have
+    acquired the knowledge and skills to understand the use cases of schema-driven
+    forms, and the ability to create a `Renderer` component to accommodate these cases.
+    You know how to create a library to parse the output from the backend into your
+    own form and how to feed back the form data to the API when needed.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 花点时间给自己一个巨大的鼓励。你不仅完成了本章，还完成了整本书！在本章中，您已经掌握了理解基于模式的表单的用例的知识和技能，以及创建`Renderer`组件来适应这些情况的能力。您知道如何创建一个库来解析后端输出到您自己的表单，并在需要时将表单数据反馈给API。
+- en: Now, go out, make some dynamic forms, and eat lots of avocados!
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，出去，制作一些动态的形式，然后多吃一些鳄梨！

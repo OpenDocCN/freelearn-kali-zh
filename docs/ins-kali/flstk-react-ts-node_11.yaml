@@ -1,0 +1,1898 @@
+- en: '*Chapter 8*: Learning Server-Side Development with Node.js and Express'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '*第8章*：学习使用Node.js和Express进行服务器端开发'
+- en: In this chapter, we'll learn about Node and Express. We'll understand how Node
+    can help us create performant web services. We'll also understand what the relationship
+    between Node and Express is and how we can use them together to build our web
+    API.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习有关Node和Express的知识。我们将了解Node如何帮助我们创建高性能的Web服务。我们还将了解Node和Express之间的关系以及如何将它们一起使用来构建我们的Web
+    API。
+- en: 'In this chapter, we''re going to cover the following main topics:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主要主题：
+- en: Understanding how Node works
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解Node的工作原理
+- en: Learning Node's capabilities
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 学习Node的能力
+- en: Understanding how Express improves Node development
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解Express如何改进Node开发
+- en: Learning Express's capabilities
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 学习Express的能力
+- en: Creating a web API with Express
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Express创建Web API
+- en: Technical requirements
+  id: totrans-8
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: You should have a basic understanding of web development with JavaScript. We
+    will once again be using Node and **Visual Studio Code** (**VSC**).
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该对使用JavaScript进行Web开发有基本的了解。我们将再次使用Node和**Visual Studio Code**（**VSC**）。
+- en: The GitHub repository is again at [https://github.com/PacktPublishing/Full-Stack-React-TypeScript-and-Node](https://github.com/PacktPublishing/Full-Stack-React-TypeScript-and-Node).
+    Use the code in the `Chap8` folder.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GitHub存储库再次位于[https://github.com/PacktPublishing/Full-Stack-React-TypeScript-and-Node](https://github.com/PacktPublishing/Full-Stack-React-TypeScript-and-Node)。使用`Chap8`文件夹中的代码。
+- en: To set up this chapter's code folder, go to your local `HandsOnTypescript` folder
+    and create a new folder called `Chap8`.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要设置本章的代码文件夹，请转到本地的`HandsOnTypescript`文件夹并创建一个名为`Chap8`的新文件夹。
+- en: Understanding how Node works
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解Node的工作原理
+- en: Node is one of the world's most popular JavaScript frameworks. It is used as
+    the core technology for millions of websites. The reasons for this are many. It
+    is relatively easy to code for. It is also very fast, and when used with things
+    such as clustering and worker threads, it is very scalable. Also, since it uses
+    JavaScript, it allows creating a full-stack application, front to back, using
+    only a single language. All of these characteristics make Node a terrific choice
+    if you are targeting the web. In this section, we will explore Node's architecture
+    and how it achieves its strong performance.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Node是世界上最流行的JavaScript框架之一。它被用作数百万网站的核心技术。其原因有很多。它相对容易编码。它也非常快，当与诸如集群和工作线程之类的东西一起使用时，它非常可扩展。此外，由于它使用JavaScript，它允许仅使用一种语言创建全栈应用程序，从前端到后端。所有这些特征使Node成为如果你的目标是网络的话一个绝佳选择。在本节中，我们将探讨Node的架构以及它如何实现强大的性能。
+- en: To start, it is important to realize that Node is not a server-specific framework.
+    It is actually a general-use runtime environment, and not just a web server. Node
+    provides JavaScript with capabilities it normally does not have, such as the ability
+    to access the filesystem and accept incoming network connections.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，重要的是要意识到Node不是一个特定于服务器的框架。它实际上是一个通用的运行时环境，而不仅仅是一个Web服务器。Node为JavaScript提供了通常不具备的功能，例如访问文件系统和接受传入的网络连接。
+- en: To explain how Node works, let's use the web browser as an analogy. The browser
+    is also a runtime environment for our JavaScript code (as well as HTML and CSS).
+    The browser works by having a core JavaScript engine that provides base-level
+    JavaScript language features. This includes a language interpreter that reads
+    our code for valid JavaScript and a virtual machine that runs our code across
+    differing devices.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了解释Node的工作原理，让我们以Web浏览器作为类比。浏览器也是我们的JavaScript代码（以及HTML和CSS）的运行时环境。浏览器通过具有核心JavaScript引擎来工作，该引擎提供基本级别的JavaScript语言功能。这包括一个语言解释器，用于读取我们的代码以获取有效的JavaScript，以及一个在不同设备上运行我们的代码的虚拟机。
+- en: 'Above this core, the browser provides a secure memory container for apps to
+    run on, the sandbox. But it also provides additional JavaScript capabilities generally
+    known as the web API (not the server-side kind but at the browser level). The
+    web API augments the base JavaScript engine, providing things such as **Document
+    Object Model** (**DOM**) access so that JavaScript code can access the HTML document
+    and manipulate it. It provides calls such as fetch that allow asynchronous network
+    calls to other machines, as well as WebGL for graphics and many more. You can
+    see a complete list here: [https://developer.mozilla.org/en-US/docs/Web/API](https://developer.mozilla.org/en-US/docs/Web/API).'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个核心之上，浏览器提供了一个安全的内存容器来运行应用程序，即沙盒。但它还提供了额外的JavaScript功能，通常称为Web API（不是服务器端的，而是在浏览器级别）。Web
+    API增强了基本的JavaScript引擎，提供诸如**文档对象模型**（**DOM**）访问，以便JavaScript代码可以访问HTML文档并对其进行操作。它提供了诸如fetch之类的调用，允许异步网络调用到其他机器，以及用于图形的WebGL等等。您可以在这里看到完整的列表：[https://developer.mozilla.org/en-US/docs/Web/API](https://developer.mozilla.org/en-US/docs/Web/API)。
+- en: These features are provided as extras, above and beyond what JavaScript comes
+    with "out of the box," which, if you think about it, does make sense since, at
+    its core, JavaScript is just a language and therefore not specific to any particular
+    platform, even the web.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些功能作为额外功能提供，超出了JavaScript“开箱即用”的功能，如果你考虑一下，这是有道理的，因为在其核心，JavaScript只是一种语言，因此不特定于任何特定平台，甚至是网络。
+- en: Node follows a similar model to the browser as it also uses a core JavaScript
+    engine (the V8 engine from Google Chrome) and provides a runtime container for
+    our code to run in. However, since it is not a browser, it provides different
+    additional capabilities that are not so focused on a graphical display.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Node遵循与浏览器类似的模型，因为它也使用核心JavaScript引擎（来自谷歌Chrome的V8引擎），并为我们的代码提供运行时容器。然而，由于它不是浏览器，它提供了不太专注于图形显示的不同附加功能。
+- en: So then, what is Node? Node is a general-use runtime environment that is focused
+    on high performance and scalability. You can build many types of applications
+    with Node, including computer management scripts and terminal programs. But Node's
+    scaling capabilities make it well suited as a web server as well.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，Node是什么？Node是一个专注于高性能和可扩展性的通用运行时环境。您可以使用Node构建许多类型的应用程序，包括计算机管理脚本和终端程序。但是Node的扩展能力也使其非常适合作为Web服务器。
+- en: Node has many features that make it very capable as a programming runtime, but
+    at its heart is **libuv**. Libuv is a Node service written in C that interfaces
+    with the operating system kernel and provides asynchronous input/output facilities.
+    In order to make timely access to these services, libuv uses something called
+    an event loop, which we'll explain shortly, to process these tasks. On top of
+    libuv, Node has an add-ons system, which is analogous to Chrome's extensions.
+    It allows developers to extend Node using C++ and add high-performance features
+    that do not exist by default. Also, in order to allow developers to keep using
+    JavaScript to call into C++, a JavaScript-to-C++ binding system is available called
+    Addons. Let's explore libuv and the event loop a bit more.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Node具有许多功能，使其作为编程运行时非常有能力，但其核心是**libuv**。Libuv是一个用C编写的Node服务，它与操作系统内核进行接口，并提供异步输入/输出功能。为了及时访问这些服务，libuv使用称为事件循环的东西，我们将很快解释，以处理这些任务。在libuv之上，Node有一个类似于Chrome扩展的插件系统。它允许开发人员使用C++扩展Node，并添加默认情况下不存在的高性能功能。此外，为了允许开发人员继续使用JavaScript调用C++，提供了一个称为Addons的JavaScript到C++绑定系统。让我们更深入地探讨libuv和事件循环。
+- en: Event loop
+  id: totrans-21
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 事件循环
+- en: At the heart of Node are libuv and the event loop. This is the main feature
+    of Node that makes it scale. Libuv's primary job is to provide access to asynchronous
+    **input/output** (**I/O**) capabilities of the underlying operating system (Node
+    supports Linux, macOS, and Windows). However, this is not always possible, so
+    it also possesses a thread pool that can be used to make synchronous tasks effectively
+    asynchronous by running them inside a thread. However, the core driver of Node
+    scalability is asynchronous I/O, not threads. The ability to run timers, allow
+    network connections, use operating system sockets, and access the filesystem comes
+    from libuv.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Node的核心是libuv和事件循环。这是使其扩展的主要功能。Libuv的主要工作是提供对底层操作系统的异步**输入/输出**（I/O）功能的访问（Node支持Linux、macOS和Windows）。但是，这并不总是可能的，因此它还拥有一个线程池，可以通过在线程内运行它们来有效地使同步任务异步化。但是，Node可扩展性的核心驱动程序是异步I/O，而不是线程。运行计时器、允许网络连接、使用操作系统套接字和访问文件系统都来自libuv。
+- en: So then, what is the event loop? The event loop is a task runner in libuv, similar
+    to the Chrome event loop, that runs asynchronous callback tasks iteratively. At
+    a high level, here's how it works.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，事件循环是什么？事件循环是libuv中的任务运行程序，类似于Chrome事件循环，以迭代方式运行异步回调任务。在高层次上，它是这样工作的。
+- en: 'When certain asynchronous tasks are triggered, they get executed by the event
+    loop. The event loop does processing in phases or sets. As shown in the following
+    diagram, it first runs **timers**, and if any timer callbacks are already queued,
+    it executes them in sequence (if not, it comes back later, and if timers have
+    completed, it queues their callbacks). Then, it handles any **pending callbacks**
+    (callbacks set by the operating system – for example, TCP errors), and so on,
+    down the line of phases. Note that tasks are asynchronous in nature if they are
+    being executed by libuv, but the callbacks themselves may not be. Therefore, it
+    is possible to block the event loop as it will not trigger the next callback in
+    the queue until the present one returns. Here''s a diagram showing roughly how
+    this works:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当触发某些异步任务时，它们将由事件循环执行。事件循环以阶段或集合的形式进行处理。如下图所示，它首先运行**计时器**，如果已经排队了任何计时器回调，则按顺序执行它们（如果没有，它稍后返回，如果计时器已完成，则排队它们的回调）。然后，它处理任何**挂起的回调**（操作系统设置的回调-例如TCP错误），以此类推，依次进行阶段处理。请注意，如果由libuv执行，任务本质上是异步的，但回调本身可能不是。因此，可能会阻塞事件循环，因为它不会触发队列中的下一个回调，直到当前回调返回。以下是大致显示其工作原理的图表：
+- en: '![Figure 8.1 – Node event loop from the Node documentation'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.1-来自Node文档的节点事件循环'
+- en: '](img/Figure_8.01_B15508.jpg)'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.01_B15508.jpg)'
+- en: Figure 8.1 – Node event loop from the Node documentation
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.1-来自Node文档的节点事件循环
+- en: You can also consider phases as categories of asynchronous tasks and their callbacks.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以将阶段视为异步任务及其回调的类别。
+- en: All frameworks have their strengths and weaknesses. Node's main strength lies
+    in asynchronous I/O-bound scalability. Therefore, Node is best used for highly
+    concurrent workloads that require many simultaneous connections. In later versions
+    of Node, starting at 10.5, the Node team did introduce worker threads to add multithreading
+    capability for running CPU-bound tasks, which are tasks that are mostly about
+    performing long-running computations. However, this is not Node's main strength.
+    For computation-heavy workloads, there are probably better options. But since
+    our priority with Node is to create a highly scalable API for our React frontend,
+    Node works nicely for our needs.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有框架都有其优势和劣势。Node的主要优势在于异步I/O绑定的可扩展性。因此，Node最适用于需要许多同时连接的高并发工作负载。在Node的后续版本中，从10.5开始，Node团队确实引入了工作线程，以增加运行CPU绑定任务的多线程能力，这些任务主要是执行长时间运算。但是，这不是Node的主要优势。对于计算密集型工作负载，可能有更好的选择。但由于我们在Node的优先级是为我们的React前端创建一个高度可扩展的API，Node对我们的需求非常适用。
+- en: In the next section, we'll start digging deeper into Node by writing code in
+    Node without using any wrapper libraries, such as Express or Koa. This will not
+    only give us a clearer understanding of how the Node core works, but it will also
+    help us to better understand the differences between Node and Express.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将开始深入挖掘Node，编写Node代码，而不使用任何包装库，如Express或Koa。这不仅会让我们更清楚地了解Node核心的工作原理，还将帮助我们更好地理解Node和Express之间的区别。
+- en: Learning Node's capabilities
+  id: totrans-31
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 学习Node的能力
+- en: In the previous section, we gave a high-level conceptual overview of what Node
+    is and why it scales so well. In this section, we will begin making use of this
+    scalability by writing code with Node. We'll install Node, set up a project, and
+    start exploring the Node API.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节中，我们对Node是什么以及为什么它如此强大进行了高层次的概念性概述。在本节中，我们将开始利用这种可伸缩性，通过Node编写代码。我们将安装Node，设置一个项目，并开始探索Node
+    API。
+- en: Installing Node
+  id: totrans-33
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装Node
+- en: 'Before we can write code with Node, we need to install it. To follow along,
+    in the previous chapters, you may have already done this, but let''s refresh our
+    memory of how to install it again as Node gets updated quite frequently:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们可以使用Node编写代码之前，我们需要安装它。在前几章中，您可能已经这样做了，但让我们再次回顾如何安装它，因为Node经常更新：
+- en: Go to [https://nodejs.org](https://nodejs.org). The following screenshot shows
+    this page as of the time of writing this book:![Figure 8.2 – Node website
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 前往[https://nodejs.org](https://nodejs.org)。以下截图显示了本书撰写时的页面：![图8.2 – Node网站
+- en: '](img/Figure_8.02_B15508.jpg)'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.02_B15508.jpg)'
+- en: Figure 8.2 – Node website
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.2 – Node网站
+- en: For production use, you may want to go down the more conservative route and
+    use the `npm` package manager.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于生产使用，您可能希望选择更保守的路线，并使用`npm`包管理器。
+- en: 'Once you click on your selected version, you will be asked to save an install
+    package that matches your operating system. Save the package and then start it.
+    You should then see a screen like the following:'
+  id: totrans-39
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 一旦您点击您选择的版本，您将被要求保存一个与您的操作系统匹配的安装包。保存该包，然后启动它。然后您应该会看到以下屏幕：
+- en: '![Figure 8.3 – Node setup'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.3 – Node设置'
+- en: '](img/Figure_8.03_B15508.jpg)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.03_B15508.jpg)'
+- en: Figure 8.3 – Node setup
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.3 – Node设置
+- en: Complete the installation as guided by the setup window.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照设置窗口的指导完成安装。
+- en: 'Great, now we have installed or updated our Node runtime and `npm` package
+    manager. As mentioned previously, Node is not just a server framework but also
+    a complete runtime environment that allows you to write a great variety of different
+    applications. For example, Node has a command-line interface called REPL. If you
+    open your command line or terminal and type `node`, you will see that it converts
+    to accept JavaScript commands, like this:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很好，现在我们已经安装或更新了我们的Node运行时和`npm`包管理器。如前所述，Node不仅是一个服务器框架，还是一个完整的运行时环境，允许您编写各种不同的应用程序。例如，Node有一个名为REPL的命令行界面。如果您打开命令行或终端并输入`node`，您将看到它转换为接受JavaScript命令，就像这样：
+- en: '![Figure 8.4 – Node REPL'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.4 – Node REPL'
+- en: '](img/Figure_8.04_B15508.jpg)'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.04_B15508.jpg)'
+- en: Figure 8.4 – Node REPL
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.4 – Node REPL
+- en: We will not be using REPL in this book, but I included it here so that you are
+    aware that it exists and may be of use for your future projects. You can learn
+    more about REPL in the official documentation, [https://nodejs.org/api/repl.html#repl_design_and_features](https://nodejs.org/api/repl.html#repl_design_and_features).
+    Also, in case you're curious, `undefined` is returned because each command has
+    not returned anything and in JavaScript, that is always `undefined`.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '在本书中，我们将不使用REPL，但我在这里包含它，以便您知道它的存在，并且可能对您未来的项目有用。您可以在官方文档中了解更多关于REPL的信息，[https://nodejs.org/api/repl.html#repl_design_and_features](https://nodejs.org/api/repl.html#repl_design_and_features)。此外，如果您好奇，`undefined`是因为每个命令都没有返回任何内容，在JavaScript中，这总是`undefined`。 '
+- en: 'Okay, so now, let''s create our first Node application and explore some more
+    of Node''s features:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，现在，让我们创建我们的第一个Node应用程序，并探索一些Node的更多特性：
+- en: Open VSCode, and then open the terminal to the `Chap8` folder.
+  id: totrans-50
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开VSCode，然后打开到`Chap8`文件夹的终端。
+- en: Then, create a new folder called `try-node` in the `Chap8` folder.
+  id: totrans-51
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，在`Chap8`文件夹中创建一个名为`try-node`的新文件夹。
+- en: Now, create a file called `app.js`. Let's avoid TypeScript for now so that we
+    can keep things simple.
+  id: totrans-52
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，创建一个名为`app.js`的文件。现在让我们暂时不使用TypeScript，以便我们可以保持简单。
+- en: 'Add a simple console message to `app.js`, like so:'
+  id: totrans-53
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，在`app.js`中添加一个简单的控制台消息，如下所示：
+- en: '[PRE0]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Then, run it:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后运行它：
+- en: '[PRE1]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'You should see the following output:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该会看到以下输出：
+- en: '![Figure 8.5 – Run app.js'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.5 – 运行app.js'
+- en: '](img/Figure_8.05_B15508.jpg)'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.05_B15508.jpg)'
+- en: Figure 8.5 – Run app.js
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.5 – 运行app.js
+- en: 'Not a particularly useful application, but nevertheless, as you can see, Node
+    is running standard JavaScript code. Now, let''s do something more useful. Let''s
+    access the filesystem using the following steps:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不是一个特别有用的应用程序，但是正如您所看到的，Node正在运行标准的JavaScript代码。现在，让我们做一些更有用的事情。让我们使用以下步骤访问文件系统：
+- en: 'In the same `app.js` file, delete the console message and enter the following
+    code:'
+  id: totrans-62
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在同一个`app.js`文件中，删除控制台消息并输入以下代码：
+- en: '[PRE2]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: You may be confused by this code since it's not the current style of doing imports.
+    But I wanted to include it here since a great deal of older Node code still uses
+    this CommonJS-style syntax for importing dependencies. So, you should be aware
+    of it.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会对这段代码感到困惑，因为它不是当前的导入风格。但我想在这里包含它，因为很多旧的Node代码仍然使用这种CommonJS风格的语法来导入依赖项。因此，您应该对此有所了解。
+- en: 'Next, write the following code to create a file and then read its contents:'
+  id: totrans-65
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，编写以下代码来创建一个文件，然后读取其内容：
+- en: '[PRE3]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'If you run this code, you will see the following output and a file called `test.txt`
+    created in your `try-node` folder:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您运行此代码，您将看到以下输出，并在您的`try-node`文件夹中创建一个名为`test.txt`的文件：
+- en: '![Figure 8.6 – app.js output'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.6 – app.js输出'
+- en: '](img/Figure_8.06_B15508.jpg)'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.06_B15508.jpg)'
+- en: '[PRE4]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Notice we are using an IIFE to allow us to make a top-level await call.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们正在使用IIFE来允许我们进行顶层等待调用。
+- en: If you are on an older version of Node, `fs`/Promises became stable after version
+    11, so you can use a tool called `promisify` to wrap callback-style calls to get
+    them to work in an `async await` style.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您使用的是较旧版本的Node，`fs`/Promises在11版本之后变得稳定，因此您可以使用一个名为`promisify`的工具来包装回调式调用，以使它们在`async
+    await`风格中工作。
+- en: Nevertheless, it is important that you are aware of the older callback-style
+    calls since this is historically how Node code was written and there is probably
+    a great deal of Node code that remains in this style today.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管如此，重要的是您要了解旧的回调式调用，因为这是历史上编写Node代码的方式，今天可能仍然有大量的Node代码保持这种风格。
+- en: 'We saw, at the top of our code, that we used `require` to do our `fs` import.
+    Let''s switch to the newer import syntax. We''ll need to do two things: change
+    the file extension from `.js` to `.mjs` and update the `require` statement like
+    this:'
+  id: totrans-74
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们在代码的顶部看到，我们使用`require`来进行我们的`fs`导入。让我们切换到更新的导入语法。我们需要做两件事：将文件扩展名从`.js`改为`.mjs`，并更新`require`语句如下：
+- en: '[PRE5]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'If you run `app.mjs` again, you will see that it still works. We could set
+    the configuration flag inside of `package.json` "type" : "module" instead, but
+    for this example app, we did not use `npm`. Additionally, if we set this flag
+    globally, we can no longer use `require`. This can be an issue as some older `npm`
+    dependencies still use `require` for importing.'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果再次运行`app.mjs`，您会发现它仍然有效。我们可以在`package.json`中设置配置标志"type"："module"，但是对于这个示例应用程序，我们没有使用`npm`。另外，如果我们全局设置此标志，我们将无法再使用`require`。这可能是一个问题，因为一些较旧的`npm`依赖项仍然使用`require`进行导入。
+- en: Note
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: There is an older command-line flag called `--experimental-modules` that allows
+    the use of `import`, but it is now deprecated and should be avoided for newer
+    versions of Node.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一个名为`--experimental-modules`的旧命令行标志，允许使用`import`，但现在已经不推荐使用，应该避免在新版本的Node中使用。
+- en: Creating a simple Node server
+  id: totrans-79
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建一个简单的Node服务器
+- en: We learned that Node is based on some older JavaScript technologies, such as
+    callbacks and CommonJS. Node was created before JavaScript Promises and the newer
+    versions of JavaScript, such as ES6 and beyond. Nevertheless, Node still works
+    well, continues to be updated, and later, when we add additional libraries, we'll
+    be able to use `async await` and Promises in most cases.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们了解到Node是基于一些较旧的JavaScript技术构建的，如回调和CommonJS。Node是在JavaScript Promise和ES6等更新版本的JavaScript之前创建的。尽管如此，Node仍然运行良好，持续更新，以后，当我们添加额外的库时，我们将能够在大多数情况下使用`async
+    await`和Promise。
+- en: 'Now, let''s work on a more realistic Node server example. We''ll create a new
+    project with `npm`:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们来看一个更现实的Node服务器示例。我们将使用`npm`创建一个新项目：
+- en: On the root of `Chap8`, create a new folder called `node-server`.
+  id: totrans-82
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`Chap8`的根目录下，创建一个名为`node-server`的新文件夹。
+- en: 'Cd into the `node-server` folder and initialize `npm` with the following command:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 进入`node-server`文件夹，并使用以下命令初始化`npm`：
+- en: '[PRE6]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Let's call our package name `node-server` and accept defaults for the other
+    `package.json` attributes.
+  id: totrans-85
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们将我们的包名称命名为`node-server`，并接受其他`package.json`属性的默认值。
+- en: 'Create a new file on the root called `server.mjs` and add the following code:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在根目录下创建一个名为`server.mjs`的新文件，并添加以下代码：
+- en: '[PRE7]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Don't worry, we'll start using TypeScript soon. Right now, let's keep things
+    simple so that we can focus on learning Node.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 别担心，我们很快就会开始使用TypeScript。现在，让我们保持简单，这样我们就可以专注于学习Node。
+- en: We have imported the `http` library from the Node core. We then use `createServer`
+    in order to create a server object. Notice that our `createServer` function takes
+    a function as an argument with two parameters. The parameters, `req` and `res`,
+    are of the `Request` and `Response` type, respectively. A `Request` object will
+    have all the members relevant to the request that was made by our users and the
+    response allows us to modify our response before sending it back out.
+  id: totrans-89
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们从Node核心导入了`http`库。然后我们使用`createServer`来创建一个服务器对象。请注意，我们的`createServer`函数接受一个函数作为参数，带有两个参数。参数`req`和`res`分别是`Request`和`Response`类型。`Request`对象将具有与我们的用户所做的请求相关的所有成员，而响应允许我们在发送回去之前修改我们的响应。
+- en: 'At the end of our `createServer` handler function, we are explicitly ending
+    our calls by using `res.end` and returning text. If we did not send `end`, our
+    response would never complete and nothing would appear on the browser:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的`createServer`处理程序函数的末尾，我们通过使用`res.end`显式结束我们的调用并返回文本。如果我们没有发送`end`，我们的响应将永远不会完成，浏览器上也不会出现任何内容：
+- en: '[PRE8]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Finally, we use our new server object to wait and listen for new requests using
+    the `listen` function with a port number and a callback function that prints that
+    the server has started:'
+  id: totrans-92
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们使用我们的新服务器对象来等待并监听新的请求，使用带有端口号和回调函数的`listen`函数打印服务器已启动：
+- en: '[PRE9]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Run this code by executing our `server.mjs` script (make sure to use the correct
+    extension of `.mjs`):'
+  id: totrans-94
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过执行我们的`server.mjs`脚本来运行此代码（确保使用正确的扩展名`.mjs`）：
+- en: '[PRE10]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Please remember, as we work, that there is no auto-reload function currently.
+    So, upon code changes, we will have to do a stop and restart manually. We'll add
+    this later as we continue adding more features to our projects.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，在我们工作时，当前没有自动重新加载功能。因此，在代码更改时，我们将不得不手动停止和重新启动。随着我们继续向我们的项目添加更多功能，我们将稍后添加这个功能。
+- en: 'If you open your browser to `http://localhost:8000`, you should see **hello
+    world** printed in your browser and the following in your console:'
+  id: totrans-97
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果你打开浏览器到`http://localhost:8000`，你应该在浏览器中看到**hello world**，并在控制台中看到以下内容：
+- en: '![](img/Figure_8.07_B15508.jpg)'
+  id: totrans-98
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/Figure_8.07_B15508.jpg)'
+- en: Figure 8.7 – First node server run
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.7 - 第一个node服务器运行
+- en: The terminal is showing the `req` object and its members. We'll of course go
+    over `Request` and `Response` in more detail soon.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 终端显示了`req`对象及其成员。当然，我们很快将更详细地介绍`Request`和`Response`。
+- en: Another interesting thing is that no matter what URL we give, it always returns
+    the same **hello world** text. This is because we have not implemented any route
+    handling. Handling routes is another item we must learn in order to use Node properly.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个有趣的事情是，无论我们给出什么URL，它总是返回相同的**hello world**文本。这是因为我们没有实现任何路由处理。处理路由是我们必须学习的另一项内容，以便正确使用Node。
+- en: You can keep refreshing your browser and the server will keep responding with
+    **hello world**. As you can see, the server remains up no matter how many requests
+    we send it, as opposed to returning and ending like a typical script program.
+    This is because the event loop, the core of Node, is a kind of infinite loop that
+    will keep waiting for new tasks and processing them dutifully.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以不断刷新浏览器，服务器将继续以**hello world**进行响应。正如您所看到的，服务器保持运行，无论我们发送多少请求，而不像典型的脚本程序一样返回并结束。这是因为事件循环，Node的核心，是一种无限循环，将继续等待新任务并忠实地处理它们。
+- en: Congratulations, you've now run your first Node server! Humble beginnings for
+    sure, but nevertheless, you can now make real browser calls and our server will
+    respond. So, you are well on your way.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜，您现在已经运行了您的第一个Node服务器！毫无疑问，这只是一个谦卑的开始，但是您现在可以进行真正的浏览器调用，我们的服务器将做出响应。所以，您已经走上了正道。
+- en: Request and Response
+  id: totrans-104
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 请求和响应
+- en: 'When a request from a browser gets to the server, all server frameworks will
+    generally have two objects: `Request` and `Response`. These two objects represent
+    the relevant data for the request that came from the browser and the response
+    that will be returned to it. Let''s take a look at these objects from the browser
+    to see what they''re made of. Reload your browser but this time with the Chrome
+    dev tools open on the `Network` tab:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当来自浏览器的请求到达服务器时，所有服务器框架通常都会有两个对象：`Request`和`Response`。这两个对象代表了来自浏览器的请求的相关数据，以及将返回给它的响应。让我们从浏览器的角度来看看这些对象是由什么组成的。重新加载您的浏览器，但这次在`Network`选项卡上打开Chrome开发工具：
+- en: '![Figure 8.8 – Chrome dev tools Network tab'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.8 – Chrome开发工具网络选项卡'
+- en: '](img/Figure_8.08_B15508.jpg)'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.08_B15508.jpg)'
+- en: Figure 8.8 – Chrome dev tools Network tab
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.8 – Chrome开发工具网络选项卡
+- en: This view is only from the browser's perspective and in Node, there's a lot
+    more information in these objects. However, we need to first understand what a
+    web request is made of before we can try and create any real web server. So, let's
+    list out some of the more important items and describe what they mean.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个视图只是从浏览器的角度来看的，在Node中，这些对象中有更多的信息。然而，我们需要首先了解一个网络请求由什么组成，然后才能尝试创建任何真正的网络服务器。因此，让我们列出一些更重要的项目，并描述它们的含义。
+- en: Request URL
+  id: totrans-110
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 请求URL
+- en: Obviously, this represents the complete URL path sent to the server. But the
+    reason the server needs to know the complete path is that a lot of additional
+    information can often be sent in the URL. For example, if our URL was `http://localhost:8000/home?userid=1`,
+    there's actually a fair amount of information here. First, we tell our server
+    that we're looking for either a web page or API data within the `home` subdirectory.
+    This allows the server to tailor its returned response with only an HTML page
+    or data specific to that URL. Additionally, we've passed a parameter called `userid`
+    (parameters start after the question mark and multiple parameters can be separated
+    by the `&` symbol), which can be used by the server to provide unique data in
+    the request.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，这代表了发送到服务器的完整URL路径。但服务器需要知道完整路径的原因是，URL中通常会发送大量附加信息。例如，如果我们的URL是`http://localhost:8000/home?userid=1`，实际上这里有相当多的信息。首先，我们告诉服务器我们要在`home`子目录中寻找网页或API数据。这使得服务器能够根据URL返回响应，只返回HTML页面或特定于该URL的数据。此外，我们传递了一个名为`userid`的参数（参数在问号后开始，多个参数可以用`&`符号分隔），服务器可以使用该参数在请求中提供唯一的数据。
+- en: Request method
+  id: totrans-112
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 请求方法
+- en: A request method represents what's called an HTTP verb. A verb is simply a description
+    that tells the server what action the client is intending to do. The default verb
+    is GET, which means, as the name indicates, the browser would like to read some
+    data. The other verbs are POST, which indicates creation or insertion, PUT, which
+    indicates updating, and then DELETE, indicating deletion. In [*Chapter 9*](B15508_09_Final_JC_ePub.xhtml#_idTextAnchor139),
+    *What Is GraphQL?*, we'll see that GraphQL only uses the POST method, but this
+    isn't actually an error as the verbs are not hard rules but more like guidelines.
+    One additional thing to note is that when using GET, any parameters needed will
+    be provided in the URL, as the request URL bullet item example showed. However,
+    for POST, the parameters are provided in the body of the request. We'll go over
+    these differences more in the *Learning Express capabilities* section.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请求方法表示所谓的HTTP动词。动词只是一个描述，告诉服务器客户端打算执行什么操作。默认动词是GET，这意味着，正如名称所示，浏览器想要读取一些数据。其他动词是POST，表示创建或插入，PUT表示更新，然后DELETE表示删除。在[*第9章*](B15508_09_Final_JC_ePub.xhtml#_idTextAnchor139)，*什么是GraphQL？*中，我们将看到GraphQL只使用POST方法，但这实际上不是错误，因为动词不是硬性规则，而更像是指导方针。还有一件事需要注意的是，当使用GET时，所需的任何参数将在URL中提供，就像请求URL的项目示例所示的那样。然而，对于POST，参数将在请求的正文中提供。我们将在*学习Express功能*部分更详细地讨论这些差异。
+- en: Status code
+  id: totrans-114
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 状态码
+- en: 'All web requests will return these codes to indicate the result of the request.
+    For example, a status of `200` indicates success. I won''t list all of them here,
+    but we should know some of the most common ones, as it can sometimes help in debugging:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有网络请求都将返回这些代码以指示请求的结果。例如，状态码`200`表示成功。我不会在这里列出所有的状态码，但我们应该了解一些最常见的状态码，因为有时这可能有助于调试：
+- en: '![Figure 8.9 – Error codes'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.9 – 错误代码'
+- en: '](img/Figure_8.09_B15508.jpg)'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.09_B15508.jpg)'
+- en: Figure 8.9 – Error codes
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.9 – 错误代码
+- en: Headers
+  id: totrans-119
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 标头
+- en: 'Headers provide additional information that acts as descriptions or metadata.
+    As shown, there are multiple types of headers: general, request, response, and
+    entity. Again, I won''t go over all of them, but there are a few we should be
+    familiar with. Here are the request headers:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 标头提供了额外的信息，充当描述或元数据。如图所示，有多种类型的标头：通用、请求、响应和实体。再次强调，我不会涵盖所有的标头，但有一些我们应该熟悉。以下是请求标头：
+- en: '![Figure 8.10 – Request headers'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.10 – 请求标头'
+- en: '](img/Figure_8.10_B15508.jpg)'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.10_B15508.jpg)'
+- en: Figure 8.10 – Request headers
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.10 – 请求标头
+- en: 'And here are the response headers:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是响应标头：
+- en: '![Figure 8.11 – Response headers'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.11 – 响应标头'
+- en: '](img/Figure_8.11_B15508.jpg)'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.11_B15508.jpg)'
+- en: Figure 8.11 – Response headers
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.11 – 响应标头
+- en: This is, of course, dry information. However, knowing what's involved in making
+    these requests and responses helps us better understand how the web works and
+    therefore write better web apps. Let's look more deeply now at routing.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，这只是干燥的信息。然而，了解制作这些请求和响应所涉及的内容有助于我们更好地理解网络的工作原理，因此编写更好的网络应用程序。现在让我们更深入地看一下路由。
+- en: Routing
+  id: totrans-129
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 路由
+- en: Routing is in some sense a lot like passing parameters to a server. When the
+    server sees a specific route, it will know that the response needs to be a certain
+    way. The response could be returning some specific data or writing data to a database,
+    but having routes helps us manage how our server should behave for each request.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在某种意义上，路由有点像向服务器传递参数。当服务器看到特定的路由时，它会知道响应需要以某种特定的方式进行。响应可以是返回一些特定的数据或将数据写入数据库，但有了路由，我们可以管理服务器对每个请求的行为方式。
+- en: 'Let''s do some route handling in Node:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在Node中进行一些路由处理：
+- en: 'Update the `server` object in the `server.mjs` file in the `node-server` project,
+    like this:'
+  id: totrans-132
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 像这样在`node-server`项目的`server.mjs`文件中更新`server`对象：
+- en: '[PRE11]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: As you can see, we take the `req.url` field and compare it to several URLs.
+    For each one that matches, we end our response with some unique text.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如你所见，我们获取`req.url`字段并将其与几个URL进行比较。对于每一个匹配的URL，我们用一些独特的文本结束我们的响应。
+- en: Run the server again and try each route. For example, if your route is `http://localhost:8000/a`,
+    then you should see this:![Figure 8.12 – Route /a
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 再次运行服务器并尝试每个路由。例如，如果你的路由是`http://localhost:8000/a`，那么你应该看到这个：![图8.12 - 路由/a
+- en: '](img/Figure_8.12_B15508.jpg)'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.12_B15508.jpg)'
+- en: Figure 8.12 – Route /a
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.12 - 路由/a
+- en: 'Okay, now let''s see what happens if we receive a POST request. Update your
+    `createServer` function like this:'
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 好的，现在让我们看看如果我们收到一个POST请求会发生什么。像这样更新你的`createServer`函数：
+- en: '[PRE12]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: As you can see, we added another `if else` statement with the `/c` route and
+    the `POST` method type. You may be surprised to see that in order to get the posted
+    data from our call, we need to handle the `data` event and then the `end` event
+    so that we can return the call.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，我们添加了另一个带有`/c`路由和`POST`方法类型的`if else`语句。你可能会惊讶地发现，为了从我们的调用中获取发布的数据，我们需要处理`data`事件，然后处理`end`事件，以便我们可以返回调用。
+- en: Let me explain what this is about. Node is very low level, meaning it does not
+    hide its intricate details to make things easier, in order to be more performant.
+    So, when a request is made and some information is being sent to the server, this
+    data will be sent as a stream. This simply means the data is not sent in one shot,
+    but in pieces. Node does not hide this fact from the developer and uses an event
+    system to receive the data in chunks, since it's not clear upfront how much data
+    is coming in. Then, once this data is finished being received, that's when the
+    `end` event triggers.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我解释一下这是怎么回事。Node是非常低级的，这意味着它不会隐藏其复杂的细节以使事情变得更容易，以便更高效。因此，当发出请求并向服务器发送一些信息时，这些数据将作为流发送。这只是意味着数据不是一次性发送的，而是分成片段发送的。Node不会向开发人员隐藏这一事实，并使用事件系统来接收数据的块，因为一开始不清楚有多少数据要进来。然后，一旦接收完这些数据，`end`事件就会触发。
+- en: In this sample, the `data` event is used to aggregate our data into an array.
+    Then, the `end` event is used to put that array into a memory buffer, from which
+    it can then be processed as a whole. In our case, it's just JSON, so we convert
+    to a string.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，`data`事件用于将我们的数据聚合到一个数组中。然后，`end`事件用于将该数组放入内存缓冲区，然后可以作为一个整体进行处理。在我们的情况下，它只是JSON，所以我们将其转换为字符串。
+- en: 'To test this, let''s submit a POST request using `curl`. `curl` is just a command-line
+    tool that allows us to make web server requests without using a browser. It''s
+    great for testing. Execute the following code in your terminal (if you''re on
+    Windows, you may need to install `curl` first; on macOS, it should already be
+    there):'
+  id: totrans-143
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了测试这个，让我们使用`curl`提交一个POST请求。`curl`只是一个命令行工具，允许我们在不使用浏览器的情况下进行web服务器请求。这对测试很有用。在你的终端中执行以下代码（如果你在Windows上，你可能需要先安装`curl`；在macOS上，它应该已经存在）：
+- en: '[PRE13]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'You should get the following back:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该得到以下返回：
+- en: '![Figure 8.13 – Result of curl POST'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.13 - curl POST的结果'
+- en: '](img/Figure_8.13_B15508.jpg)'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.13_B15508.jpg)'
+- en: Figure 8.13 – Result of curl POST
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.13 - curl POST的结果
+- en: Clearly, all of this works but is not ideal from a development productivity
+    perspective. We would not want 30 of these `if else` statements in a single `createServer`
+    function. It's difficult to read and maintain. We'll see how Express helps us
+    avoid these types of issues by providing extra wrappers on top of Node to make
+    development faster and more reliable. We'll see this in the *Understanding how
+    Express improves Node development* section. Let's learn about some tools to help
+    our Node coding first.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，所有这些都有效，但从开发生产力的角度来看并不理想。我们不希望在单个`createServer`函数中有30个这样的`if else`语句。这很难阅读和维护。我们将看到Express如何帮助我们避免这些问题，它提供了额外的封装来加快开发速度并提高可靠性。我们将在*了解Express如何改进Node开发*部分看到这一点。让我们先了解一些工具来帮助我们的Node编码。
+- en: Debugging
+  id: totrans-150
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 调试
+- en: 'As we saw with React, a debugger is a very important tool to help in troubleshooting
+    code. In the case of Node, we cannot use a browser tool, of course, but VSCode
+    does have a built-in debugger that will allow us to break on code and view values.
+    Let''s take a look at that as we''ll also use it with Express:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像我们在React中看到的那样，调试器是一个非常重要的工具，可以帮助我们排除代码中的问题。当然，在Node的情况下，我们不能使用浏览器工具，但VSCode确实有一个内置的调试器，可以让我们在代码上断点并查看值。让我们来看看这个，因为我们也将在Express中使用它：
+- en: Click on the debugger icon in VSCode and you'll see the following screen. In
+    the current version, as of the time of writing, it looks like this:![Figure 8.14
+    – The VSCode debugger menu
+  id: totrans-152
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 点击VSCode中的调试器图标，你会看到以下屏幕。在撰写本文时的当前版本中，它看起来是这样的：![图8.14 - VSCode调试器菜单
+- en: '](img/Figure_8.14_B15508.jpg)'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.14_B15508.jpg)'
+- en: Figure 8.14 – The VSCode debugger menu
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.14 - VSCode调试器菜单
+- en: The first button runs the debugger and the second shows the debugger version
+    of the terminal. When running the debugger, you generally want to be looking at
+    the debugger console as it can show errors that happen at runtime.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个按钮运行调试器，第二个显示终端的调试器版本。运行调试器时，通常希望查看调试器控制台，因为它可以显示运行时发生的错误。
+- en: When running the VSCode debugger, you want to click on the `npm start` command:![Figure
+    8.15 – Node.js debugger selection
+  id: totrans-156
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行VSCode调试器时，你需要点击`npm start`命令：![图8.15 - Node.js调试器选择
+- en: '](img/Figure_8.15_B15508.jpg)'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.15_B15508.jpg)'
+- en: Figure 8.15 – Node.js debugger selection
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.15 - Node.js调试器选择
+- en: Once you start your debugger, if you have set a breakpoint by clicking next
+    to any line number, you will be able to have the code pause there. Then, you can
+    view values that are relevant to that scope:![Figure 8.16 – Break on line view
+  id: totrans-159
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 一旦启动调试器，如果您通过单击任何行号旁边设置了断点，您将能够在那里使代码暂停。然后，您可以查看与该范围相关的值：![图8.16 – 行视图中断
+- en: '](img/Figure_8.16_B15508.jpg)'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.16_B15508.jpg)'
+- en: Figure 8.16 – Break on line view
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.16 – 行视图中断
+- en: As you can see, we have set a breakpoint on line 13 within the `data` event
+    and are able to view the current chunk. Hit the continue button or click *F5*
+    to continue running the program.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所见，我们已在`data`事件中的第13行设置了断点，并且能够查看当前块。点击继续按钮或点击*F5*继续运行程序。
+- en: 'Hovering over values while on a breakpoint is useful but not the only way to
+    help debug our app. We can also use the debugger screens to help us understand
+    what our values are at the moment we have stopped at a breakpoint. Take a look
+    at the following screenshot:'
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 悬停在断点上的值是有用的，但并不是帮助调试我们的应用程序的唯一方法。我们还可以使用调试器屏幕来帮助我们了解我们在断点停止时的值是什么。看一下下面的截图：
+- en: '![Figure 8.17 – Debug windows full view'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.17 – 调试窗口全景视图'
+- en: '](img/Figure_8.17_B15508.jpg)'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.17_B15508.jpg)'
+- en: Figure 8.17 – Debug windows full view
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.17 – 调试窗口全景视图
+- en: 'Look at our breakpoint, toward the middle of the screenshot. We can see that
+    we have broken inside of the `end` event handler scope. Let''s look at some of
+    the features listed:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看看我们的断点，截图中间。我们可以看到我们已经在`end`事件处理程序范围内中断。让我们看一下列出的一些功能：
+- en: Starting with the upper-left menu, called `params` and `this`. Again, we are
+    looking at the `end` event, and that's why we only have those two variables.
+  id: totrans-168
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从左上角菜单开始，称为`params`和`this`。同样，我们正在查看`end`事件，这就是为什么我们只有这两个变量。
+- en: Near the middle left, on the `params`, which I added. There is a plus sign in
+    this section that allows us to add variables that we are interested in and when
+    they come into scope, the current value will show there.
+  id: totrans-169
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在中间左侧，有`params`，我添加了。在这个部分中有一个加号，允许我们添加我们感兴趣的变量，当它们进入范围时，当前值将显示在那里。
+- en: Then, toward the bottom left, we see **CALL STACK**. The call stack is the list
+    of calls that our program is running. The list will show in reverse order, with
+    the last command on top. Often, many of these calls will be code from either Node
+    or some other framework we did not write ourselves.
+  id: totrans-170
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后，在左下角，我们看到**CALL STACK**。调用堆栈是我们程序正在运行的调用列表。列表将以相反的顺序显示，最后一个命令位于顶部。通常，这些调用中的许多将是来自Node或我们自己没有编写的其他框架的代码。
+- en: Then, at the bottom right, we have our `params` variable and its buffer was
+    displayed.
+  id: totrans-171
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后，在右下角，我们有我们的`params`变量和其缓冲区被显示。
+- en: Finally, at the upper right, we see the debug continuation buttons. The first
+    button on the left is the continue button, which continues running our app from
+    the last breakpoint. Next is the step over button, which will go to the immediate
+    next line and stop there. Next is the step into button, which will take you inside
+    the definition of a function or class as it runs. Then, there's the step out button,
+    which will bring you out and back into the parent caller. The last, square button
+    stops our app completely.
+  id: totrans-172
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最后，在右上角，我们看到了调试继续按钮。左侧的第一个按钮是继续按钮，它会从上一个断点继续运行我们的应用程序。接下来是步过按钮，它将转到下一个立即行并在那里停止。接下来是步入按钮，它将在函数或类的定义内部运行。然后是步出按钮，它将使您退出并返回到父调用者。最后，方形按钮完全停止我们的应用程序。
+- en: That was a quick introduction to the VSCode debugger. We will be using more
+    of it as we get into Express, and then later with GraphQL.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是对VSCode调试器的一个快速介绍。随着我们进入Express，然后稍后使用GraphQL，我们将会更多地使用它。
+- en: 'Now, as you''ve seen, having to manually restart the Node service every time
+    we make any changes is a bit of a pain and slows down development. So, let''s
+    use a tool called `nodemon`, which will automatically restart our Node server
+    whenever we save script changes:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，正如您所见，每次进行任何更改时都必须手动重新启动Node服务有点麻烦并且会减慢开发速度。因此，让我们使用一个名为`nodemon`的工具，它将在保存脚本更改时自动重新启动我们的Node服务器：
+- en: 'Install `nodemon` globally by running the following command:'
+  id: totrans-175
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过运行以下命令全局安装`nodemon`：
+- en: '[PRE14]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Now, we want to start it upon app start. Update the `package.json` file by
+    finding the `"scripts"` section and adding a sub-field called `"start"`, and then
+    add the following command to it:'
+  id: totrans-177
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们希望在应用程序启动时启动它。通过找到`"scripts"`部分并添加一个名为`"start"`的子字段，然后将以下命令添加到`package.json`文件中：
+- en: '[PRE15]'
+  id: totrans-178
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Now, run the new script using the following command:'
+  id: totrans-179
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，使用以下命令运行新脚本：
+- en: '[PRE16]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Now that the app is running, let's try changing and then saving the `server.mjs`
+    file. Change the string inside the `listen` function to be ``The server started
+    on port ${port}``. Once you save this change, you should see Node restart and
+    the new text showing on the terminal.
+  id: totrans-181
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在应用程序正在运行，让我们尝试更改并保存`server.mjs`文件。将`listen`函数中的字符串更改为``The server started
+    on port ${port}``。保存此更改后，您应该看到Node重新启动并在终端上显示新文本。
+- en: The settings within `package.json` do not affect our VSCode debugger. So, to
+    set auto-restart, we'll need to set that up as well. Go to your debugger menu
+    again and click the `configurations` field is an array, which means you can keep
+    adding configurations to this one file. But for our configuration, notice that
+    `type` is `node`, of course. We've also updated `name` to `"Launch node-server
+    Program"`. But also, notice that we switched `runtimeExecutable` to be `nodemon`
+    instead of `node`, and `console` is now the integrated terminal. In order to use
+    `nodemon` with the debugger, we must switch to the **TERMINAL** tab and *not*
+    the debugger console.
+  id: totrans-182
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`package.json` 中的设置不会影响我们的VSCode调试器。因此，为了设置自动重启，我们需要进行设置。再次转到调试器菜单，点击`configurations`字段是一个数组，这意味着您可以继续向这个文件添加配置。但是对于我们的配置，请注意`type`是`node`，当然。我们还将`name`更新为`"Launch
+    node-server Program"`。但是，请注意，我们将`runtimeExecutable`切换为`nodemon`而不是`node`，`console`现在是集成终端。为了在调试器中使用`nodemon`，我们必须切换到**TERMINAL**选项卡，而不是调试器控制台。'
+- en: Now that we have at least one `launch.json` configuration, our debug menu will
+    show the following view:![Figure 8.20 – Debugger from launch.json
+  id: totrans-183
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们至少有一个`launch.json`配置，我们的调试菜单将显示以下视图：![图8.20 - 从launch.json调试器
+- en: '](img/Figure_8.20_B15508.jpg)'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.20_B15508.jpg)'
+- en: Figure 8.20 – Debugger from launch.json
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.20 - 从launch.json调试器
+- en: If your dropdown does not show **Launch node-server Program**, select it and
+    then press the play button. Then, you should see the debugger launch again, only
+    this time it will auto-restart.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您的下拉菜单没有显示**启动node-server程序**，请选择它，然后按播放按钮。然后，您应该再次看到调试器启动，只是这次它将自动重新启动。
+- en: Now, try and make a small change and the debugger should auto-restart. I removed
+    the `T` from the `listen` function log message:![Figure 8.21 – Debugger auto-restarted
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，尝试进行小的更改，调试器应该会自动重新启动。我从`listen`函数的日志消息中删除了`T`：![图8.21 - 调试器自动重新启动
+- en: '](img/Figure_8.21_B15508.jpg)'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.21_B15508.jpg)'
+- en: Figure 8.21 – Debugger auto-restarted
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.21 - 调试器自动重新启动
+- en: Sweet, now we can easily break on and debug our Node code!
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 太好了，现在我们可以轻松地中断和调试我们的Node代码！
+- en: That was a fast introduction to some tools that will help with our development
+    and debugging.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一次快速介绍一些将有助于我们开发和调试的工具。
+- en: In this section, we learned about using Node directly to code our server. We
+    also learned about debugging and tooling to improve our development flow. Coding
+    with Node directly can be time-consuming and unintuitive. In the next sections,
+    we will learn about Express and how it helps make our Node development experience
+    better.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们学习了直接使用Node来编写我们的服务器。我们还学习了调试和工具，以改进我们的开发流程。直接使用Node进行编码可能会耗费时间，也不直观。在接下来的几节中，我们将学习Express以及它如何帮助我们改进Node开发体验。
+- en: Understanding how Express improves Node development
+  id: totrans-193
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 了解Express如何改进Node开发
+- en: As we have seen, coding with Node directly has an awkward and cumbersome sort
+    of feel. Having an easier-to-use API would make us more productive. This is what
+    the Express framework attempts to do. In this section, we will learn what Express
+    is and how it can help us write code more easily for our Node apps.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所见，直接使用Node进行编码具有一种笨拙和繁琐的感觉。拥有一个更易于使用的API将使我们更加高效。这就是Express框架尝试做的事情。在本节中，我们将学习Express是什么，以及它如何帮助我们更轻松地为我们的Node应用程序编写代码。
+- en: Express is not a standalone JavaScript server framework. It is a layer of code
+    that sits on top of Node, and therefore uses Node, to make developing JavaScript
+    servers with Node both easier and more capable. Just like Node, has its own core
+    capabilities and then some additional features via dependency packages. Express
+    also has its core abilities as well as a rich ecosystem of middleware that provides
+    extra capabilities.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Express不是一个独立的JavaScript服务器框架。它是一个代码层，位于Node之上，因此使用Node来使使用Node开发JavaScript服务器变得更加容易和更有能力。就像Node一样，它有自己的核心功能，然后通过依赖包提供一些额外的功能。Express也有其核心能力以及提供额外功能的丰富中间件生态系统。
+- en: 'So then, what is Express? According to the website, Express is just an application
+    that is a series of middleware calls. Let''s explain this by first looking at
+    a diagram:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，Express是什么？根据网站的说法，Express只是一系列中间件调用的应用程序。让我们首先通过查看图表来解释这一点：
+- en: '![Figure 8.22 – Express request response flow'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.22 - Express请求响应流程'
+- en: '](img/Figure_8.22_B15508.jpg)'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.22_B15508.jpg)'
+- en: Figure 8.22 – Express request response flow
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.22 - Express请求响应流程
+- en: Whenever a new server request comes in, it travels along a sequential path for
+    processing. Normally, you would just have a request, and then once the request
+    is understood and processed, you would then get some response. When using Express,
+    however, you can have multiple intermediate functions that inject themselves into
+    the process and do some unique work.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每当有新的服务器请求到来时，它都会沿着顺序路径进行处理。通常，您只会有一个请求，一旦请求被理解和处理，您就会得到一些响应。然而，当使用Express时，您可以有多个中间函数插入到过程中并进行一些独特的工作。
+- en: So, in the example shown in *Figure 8.22*, we see that first there is middleware
+    that adds CORS ability, which is a way to allow requests from different URL domains
+    than the one that the server resides on. Then, we have middleware that handles
+    sessions and cookies. Sessions are just unique data that gets collected about
+    the user's current usage of the website – for example, their login ID. Then, finally,
+    we see an on-error handler that will determine some unique message that will be
+    shown depending on the error that has occurred. Of course, you could add more
+    middleware as needed. The key point here is that Express enables this injection
+    of extra capabilities that Node normally does not have in a fairly straightforward
+    way.
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在*图8.22*中所示的示例中，我们首先看到添加了CORS功能的中间件，这是一种允许来自与服务器所在的URL域不同的URL域的请求的方式。然后，我们有处理会话和cookie的中间件。会话只是关于用户当前使用网站的唯一数据
+    - 例如，他们的登录ID。最后，我们看到一个处理错误的处理程序，它将根据发生的错误确定将显示的一些唯一消息。当然，您可以根据需要添加更多的中间件。这里的关键点是Express以相当简单的方式使Node通常不具备的额外功能注入成为可能。
+- en: On top of this middleware ability, Express adds additional features to the `Request`
+    and `Response` objects that further enhance the developer's productivity. We'll
+    take a look at those features and further explore Express in the next section.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了这个中间件的能力之外，Express还为`Request`和`Response`对象添加了额外的功能，进一步增强了开发人员的生产力。我们将在下一节中查看这些功能，并进一步探索Express。
+- en: Learning Express's capabilities
+  id: totrans-203
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 学习Express的能力
+- en: Express is basically a middleware runner for Node. But, like most things in
+    life, a simple explanation seldom provides the information necessary to make proper
+    use of it. So, in this section, we will explore Express and learn about its capabilities
+    with examples.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Express基本上是Node的中间件运行器。但是，就像生活中的大多数事情一样，简单的解释很少提供必要的信息来正确使用它。因此，在本节中，我们将探索Express，并通过示例了解其功能。
+- en: 'Let''s install Express onto our `node-server` project. Type the following command
+    into your terminal:'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们将Express安装到我们的`node-server`项目中。在终端中输入以下命令：
+- en: '[PRE17]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'This should give you an updated `package.json` file that has a new dependencies
+    section:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将给你一个更新后的`package.json`文件，其中有一个新的依赖项部分：
+- en: '![Figure 8.23 – Updated package.json'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.23 – 更新的package.json'
+- en: '](img/Figure_8.23_B15508.jpg)'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.23_B15508.jpg)'
+- en: Figure 8.23 – Updated package.json
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.23 – 更新的package.json
+- en: 'Now, before we start writing code, we need to understand a few things. Again,
+    as mentioned, Express is a wrapper around Node. This means that Express already
+    uses Node internally. So, when we write code with Express, we will not be directly
+    calling Node. Let''s see what this looks like:'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在我们开始编写代码之前，我们需要了解一些事情。再次提到，Express是Node的封装。这意味着Express已经在内部使用了Node。因此，当我们使用Express编写代码时，我们不会直接调用Node。让我们看看这是什么样子的：
+- en: 'Create a new server file called `expressapp.mjs` and add the following code
+    to it:'
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`expressapp.mjs`的新服务器文件，并将以下代码添加到其中：
+- en: '[PRE18]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'As you can see, we create an instance of `express` and then we call a function
+    called `listen` on it. Internally, the `express.listen` function calls Node''s
+    `createServer` and `listen` functions. If you run this file, you will see the
+    following log message:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，我们创建了一个`express`实例，然后在其上调用了一个名为`listen`的函数。在内部，`express.listen`函数调用了Node的`createServer`和`listen`函数。如果你运行这个文件，你将会看到以下日志消息：
+- en: '![Figure 8.24 – The expressapp.mjs file running'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.24 – 运行expressapp.mjs文件'
+- en: '](img/Figure_8.24_B15508.jpg)'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_8.24_B15508.jpg)'
+- en: Figure 8.24 – The expressapp.mjs file running
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.24 – 运行expressapp.mjs文件
+- en: So, now we have a running Express server. However, it does not do anything until
+    we add some middleware. Middleware for Express runs under several main umbrellas
+    or sections. There is middleware that runs for the entire application, there is
+    middleware that runs only during routing, and there is middleware that runs on
+    errors. There is also middleware that is core to Express that it uses internally.
+    And, of course, instead of implementing our own code to do the work of middleware,
+    we can also use `npm` packages that provide third-party middleware. We already
+    saw some of these in the previous section, *Understanding how Express improves
+    Node development*, in *Figure 8.22*.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，现在我们有一个正在运行的Express服务器。但是，在添加一些中间件之前，它什么也不做。Express的中间件运行在几个主要的伞形或部分下。有一些中间件是为整个应用程序运行的，有一些是仅在路由期间运行的，还有一些是在错误时运行的。Express还有一些内部使用的核心中间件。当然，我们可以使用`npm`包提供的第三方中间件，而不是实现我们自己的中间件代码。我们已经在前一节*理解Express如何改进Node开发*中的*图8.22*中看到了其中一些。
+- en: 'Let''s start by adding our own middleware. Update `expressapp.mjs` with the
+    following code:'
+  id: totrans-219
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们从添加我们自己的中间件开始。使用以下代码更新`expressapp.mjs`：
+- en: '[PRE19]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: So, for this first example, we have decided to use the app-level middleware
+    by using the `use` function on the `app` object. This means that any requests
+    for the entire application, regardless of route, will have to process these two
+    middleware.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，对于这个第一个例子，我们决定使用`app`对象上的应用级中间件，通过在`app`对象上使用`use`函数。这意味着无论路由如何，对于整个应用程序的任何请求，都必须处理这两个中间件。
+- en: Let's go through them. First, note that all middleware is processed in the order
+    that they are declared in code. Second, unless ending a call at the end of a middleware,
+    we must call the `next` function to go to the next middleware, or else the processing
+    will stop.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们逐个来。首先，注意所有中间件都是按照在代码中声明的顺序进行处理的。其次，除非在中间件的最后结束调用，否则我们必须调用`next`函数去到下一个中间件，否则处理将会停止。
+- en: The first middleware is just logging some text, but the second middleware will
+    write to the browser screen by using the Express `send` function. The `send` function
+    is a lot like the `end` function in Node, as it ends processing, but it also sends
+    back a content-type header of the `text/html` type. If we were using Node, we
+    would have to send headers explicitly ourselves.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个中间件只是记录一些文本，但第二个中间件将使用Express的`send`函数在浏览器屏幕上写入内容。`send`函数很像Node中的`end`函数，因为它结束了处理，但它还发送了一个`text/html`类型的内容类型头。如果我们使用Node，我们将不得不自己显式地发送头。
+- en: 'Now, let''s add middleware for routes. Note that technically, you can pass
+    routes – for example, the `/routea` route – to the `use` function. However, it
+    is better to use the `router` object and contain our routes under one container.
+    In Express, a router is also middleware. Let''s see an example:'
+  id: totrans-224
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们为路由添加中间件。请注意，从技术上讲，你可以将路由（例如`/routea`路由）传递给`use`函数。然而，最好使用`router`对象，并将我们的路由包含在一个容器下。在Express中，路由器也是中间件。让我们看一个例子：
+- en: '[PRE20]'
+  id: totrans-225
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'First, we have created our new `router` object from the `express.Router` type:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们从`express.Router`类型创建了我们的新`router`对象：
+- en: '[PRE21]'
+  id: totrans-227
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'So, we have the same set of middleware as before added to the `app` object,
+    which makes it run globally across all routes. But then, we have also added the
+    `router` object to our app as middleware. The router middleware, however, runs
+    only for the specific routes that are defined:'
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们像之前一样将相同的一组中间件添加到了`app`对象中，使其在所有路由上全局运行。但是，我们还将`router`对象作为中间件添加到了我们的应用中。然而，路由器中间件只对定义的特定路由运行：
+- en: '[PRE22]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'So again, we added two middleware to our `router` object: one for the `/a`
+    route, which uses the `get` method function and the other for the `/c` route,
+    which uses the `post` method function. Again, these functions represent the HTTP
+    verbs that are possible. The `listen` function call is identical to before:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们再次向我们的`router`对象添加了两个中间件：一个用于`/a`路由，使用`get`方法函数，另一个用于`/c`路由，使用`post`方法函数。同样，这些函数代表了可能的HTTP动词。`listen`函数调用与之前相同：
+- en: '[PRE23]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Now, a peculiar thing will happen if we run this code by going to the following
+    URL: `http://localhost:8000/a`. Instead of seeing the `res.send`, all calls will
+    end there and not go to the next middleware.'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果我们通过访问以下URL运行这段代码：`http://localhost:8000/a`，将会发生一个奇怪的事情。所有调用都将在那里结束，不会继续到下一个中间件。
+- en: 'Remove the second `app.use` call that sends the `Hello world…` message and
+    try going to `http://localhost:8000/a`. You should see the following message now:'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 删除发送`Hello world…`消息的第二个`app.use`调用，尝试访问`http://localhost:8000/a`。现在你应该看到以下消息：
+- en: '![Figure 8.25 – Middleware for route /a'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图8.25 – 路由/a的中间件'
+- en: '](img/Figure_8.25_B15508.jpg)'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ']（img/Figure_8.25_B15508.jpg）'
+- en: Figure 8.25 – Middleware for route /a
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.25-路由/ a的中间件
+- en: 'Great, that worked, but now try using your browser to go to `http://localhost:8000/c`.
+    Does that work? No, it does not, and you get the `/c` route is a POST-only route.
+    If you bring up your terminal and run the last POST `curl` command that we used
+    in the *Learning Node''s capabilities* section, you''ll see this:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很好，那起作用了，但现在尝试使用浏览器转到`http://localhost:8000/c`。那起作用吗？不，它不起作用，您会得到`/c`路由只能是POST路由。如果您打开终端并运行我们在*学习节点的功能*部分中使用的最后一个POST
+    `curl`命令，您会看到这个：
+- en: '![Figure 8.26 – Route /c'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ！[图8.26-路由/ c
+- en: '](img/Figure_8.26_B15508.jpg)'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ']（img/Figure_8.26_B15508.jpg）'
+- en: Figure 8.26 – Route /c
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.26-路由/ c
+- en: As you can see, we receive the appropriate text message.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，我们收到了适当的文本消息。
+- en: 'Now, let''s add third-party middleware. In the *Learning Node''s capabilities*
+    section, we saw how to parse POST data and how arduous that can be using Node.
+    For our example, let''s use the body parser middleware to make doing this easier.
+    Update the code like this:'
+  id: totrans-242
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们添加第三方中间件。在*学习节点的功能*部分，我们看到了如何解析POST数据以及使用Node可能会有多么艰难。对于我们的示例，让我们使用body
+    parser中间件来使这个过程更容易。更新代码如下：
+- en: '[PRE24]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: app.use((req, res, next) => {
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: app.use（（req，res，next）= > {
+- en: console.log("First middleware.");
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 控制台.log("第一个中间件。");
+- en: next();
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一个；
+- en: '});'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}）;'
+- en: app.use(router);
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: app.use（路由器）;
+- en: router.get("/a", (req, res, next) => {
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 路由器获取("/a"，（req，res，next）= > {
+- en: res.send("Hello this is route a");
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: res.send("您好，这是路由a");
+- en: '});'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}）;'
+- en: router.post("/c", (req, res, next) => {
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 路由器.post("/c"，（req，res，next）= > {
+- en: res.send(`Hello this is route c. Message is
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: res.send(`您好，这是路由c。消息是
+- en: ${data and end.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ${数据和结束。
+- en: '[PRE25]'
+  id: totrans-255
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'Now, finally, let''s do an on error middleware. Simply add the following code
+    to just below the `bodyParser.json()` middleware call:'
+  id: totrans-256
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，最后，让我们做一个错误中间件。只需在`bodyParser.json()`中间件调用下面添加以下代码：
+- en: '[PRE26]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Then, we throw an error from our first custom middleware:'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们从我们的第一个自定义中间件中抛出一个错误：
+- en: '[PRE27]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Now, we''ve added our error handler as the last middleware in our code. This
+    middleware will catch all errors that were not previously handled and send the
+    same status and message:'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经将我们的错误处理程序添加为代码中的最后一个中间件。此中间件将捕获以前未处理的所有错误并发送相同的状态和消息：
+- en: '[PRE28]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Go to `http://localhost:8000/a` and you should see the following message:'
+  id: totrans-262
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 转到`http://localhost:8000/a`，您应该看到以下消息：
+- en: '![Figure 8.27 – Error message'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ！[图8.27-错误消息
+- en: '](img/Figure_8.27_B15508.jpg)'
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ']（img/Figure_8.27_B15508.jpg）'
+- en: Figure 8.27 – Error message
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.27-错误消息
+- en: Since our top-level middleware is throwing an exception, all routes will throw
+    this exception and therefore will be caught by our error handler middleware.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们的顶级中间件抛出异常，所有路由都将抛出此异常，因此将被我们的错误处理程序中间件捕获。
+- en: This was an overview of the Express framework and its features. As you can see,
+    it can make developing with Node quite a bit simpler and clearer. In the next
+    section, we will take a look at using Express and Node to build a web API that
+    returns JSON, which is the default data schema of the web.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是Express框架及其功能的概述。正如您所看到的，它可以使使用Node变得更加简单和清晰。在下一节中，我们将看看如何使用Express和Node构建返回JSON的Web
+    API，这是Web的默认数据模式。
+- en: Creating a web API with Express
+  id: totrans-268
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Express创建Web API
+- en: In this section, we will learn about the web API. Currently, it is one of the
+    most popular ways of providing data across the web. In our final application,
+    we will not be using the web API since it is our intention to use GraphQL. However,
+    it is good to have some understanding of web API design since on the internet,
+    it is very commonly used and under the covers, GraphQL also works similarly.
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将学习有关Web API的知识。目前，它是提供Web上数据的最流行方式之一。在我们的最终应用程序中，我们将不使用Web API，因为我们打算使用GraphQL。但是，了解Web
+    API设计是很好的，因为在互联网上，它非常常用，并且在GraphQL的内部也类似地工作。
+- en: What is a web API? **API** stands for **application programming interface**.
+    This means that it's a way for one programming system to interact with another.
+    Therefore, a web API is an API that uses web technologies to provide programming
+    services to other systems. A web API sends and receives data as a string, as opposed
+    to binary data, and usually in JSON format.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 什么是Web API？ **API**代表**应用程序编程接口**。这意味着这是一个编程系统与另一个系统进行交互的方式。因此，Web API是使用Web技术向其他系统提供编程服务的API。Web
+    API以字符串形式发送和接收数据，而不是二进制数据，通常以JSON格式。
+- en: All web APIs will have an endpoint that is represented by a URI, basically the
+    same thing as a URL. This path must be static and not changing. If a change is
+    desired, then it is expected that the API vendor will do a version update, leaving
+    the old URI intact and creating a new URI delineated by a version upgrade. For
+    example, if a URI started as `/api/v1/users`, then the next iteration would be
+    `/api/v2/users`.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有Web API都将具有由URI表示的端点，基本上与URL相同。此路径必须是静态的，不得更改。如果需要更改，则预期API供应商将进行版本更新，保留旧的URI并创建由版本升级界定的新URI。例如，如果URI从`/api/v1/users`开始，那么下一个迭代将是`/api/v2/users`。
+- en: 'Let''s create a simple web API for demonstration purposes:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们为演示目的创建一个简单的Web API：
+- en: 'Let''s update our `expressapp.mjs` file with the following new routes:'
+  id: totrans-273
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们使用以下新路由更新我们的`expressapp.mjs`文件：
+- en: '[PRE29]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Next, for this middleware, we are doing something almost identical for groups.
+    Notice how the pathing is consistent between both resource paths. This is an important
+    feature for a web API. Again, we take a single item from an array, but in this
+    case, we are using a POST method, so the parameter is gotten from the body:'
+  id: totrans-275
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，对于此中间件，我们对组进行了几乎相同的操作。请注意资源路径之间的路径设置在两者之间是一致的。这是Web API的一个重要特性。同样，我们从数组中获取一个项目，但在这种情况下，我们使用了POST方法，因此参数是从正文中获取的：
+- en: '[PRE30]'
+  id: totrans-276
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'If you run the terminal command to this URI, you should see the following:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您运行终端命令到此URI，您应该会看到以下内容：
+- en: '![Figure 8.29 – Group POST request'
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ！[图8.29-组POST请求
+- en: '](img/Figure_8.29_B15508.jpg)'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ']（img/Figure_8.29_B15508.jpg）'
+- en: Figure 8.29 – Group POST request
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.29-组POST请求
+- en: 'As shown, our first group, `Admins`, is returned. The rest of the code is identical:'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如所示，我们返回了第一个组`Admins`。其余代码相同：
+- en: '[PRE31]'
+  id: totrans-282
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: Important Note
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要说明
+- en: 'Since the web API is specific to web technologies, it supports calls with all
+    the HTTP methods: GET, POST, PATCH, PUT, and DELETE.'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于Web API特定于Web技术，它支持使用所有的HTTP方法进行调用：GET、POST、PATCH、PUT和DELETE。
+- en: This was a quick introduction to building a web API using Express and Node.
+    We now have had a broad overview of Node and its most important framework, Express.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个关于使用Express和Node构建Web API的快速介绍。我们现在对Node及其最重要的框架Express有了一个广泛的概述。
+- en: Summary
+  id: totrans-286
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we learned about Node and Express. Node is the core server-side
+    technology that drives a huge percentage of servers on the web, and Express is
+    the most popular and often used Node-based framework for building web applications.
+    We now have a complete picture of how frontend and backend technologies work to
+    create websites.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们学习了Node和Express。Node是驱动网络服务器的核心服务器端技术，Express是构建Web应用程序的最流行和经常使用的基于Node的框架。我们现在对前端和后端技术如何共同创建网站有了完整的了解。
+- en: In the next chapter, we'll learn about GraphQL, an extremely popular and relatively
+    new standard for creating web-based API services. Once we've covered this, we
+    will have all the knowledge we need to start building our project.
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习GraphQL，这是一种非常流行且相对较新的标准，用于创建基于Web的API服务。一旦我们掌握了这个知识，我们就可以开始构建我们的项目了。

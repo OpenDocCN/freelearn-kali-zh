@@ -1,0 +1,2063 @@
+- en: Testing, Profiling, and Dealing with Exceptions
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试、性能分析和处理异常
+- en: '"Just as the wise accepts gold after testing it by heating, cutting and rubbing
+    it, so are my words to be accepted after examining them, but not out of respect
+    for me." – Buddha'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “就像智者在加热、切割和摩擦后接受黄金一样，我的话语在经过检验后才应该被接受，而不是因为尊重我。” - 佛陀
+- en: I love this quote by the Buddha. Within the software world, it translates perfectly
+    into the healthy habit of never trusting code just because someone smart wrote
+    it or because it's been working fine for a long a time. If it has not been tested,
+    code is not to be trusted.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我喜欢佛陀的这句话。在软件世界中，它完美地诠释了一个健康的习惯，即永远不要因为某个聪明人编写了代码或者它长期以来一直运行良好就信任代码。如果没有经过测试，代码就不值得信任。
+- en: Why are tests so important? Well, for one, they give you predictability. Or,
+    at least, they help you achieve high predictability. Unfortunately, there is always
+    some bug that sneaks into the code. But we definitely want our code to be as predictable
+    as possible. What we don't want is to have a surprise, in other words, our code
+    behaving in an unpredictable way. Would you be happy to know that the software
+    that checks on the sensors of the plane that is taking you on your holidays sometimes
+    goes crazy? No, probably not.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么测试如此重要？首先，它们给您可预测性。或者至少，它们帮助您实现高度可预测性。不幸的是，总会有一些错误潜入代码中。但我们绝对希望我们的代码尽可能可预测。我们不希望出现意外，换句话说，我们的代码表现出不可预测的方式。您会乐意知道负责检查飞机传感器的软件有时会出现故障吗？可能不会。
+- en: Therefore, we need to test our code; we need to check that its behavior is correct,
+    that it works as expected when it deals with edge cases, that it doesn't hang
+    when the components it's talking to are broken or unreachable, that the performances
+    are well within the acceptable range, and so on.
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们需要测试我们的代码；我们需要检查其行为是否正确，当处理边缘情况时是否按预期工作，当其所连接的组件出现故障或不可访问时是否不会挂起，性能是否在可接受范围内等等。
+- en: This chapter is all about that—making sure that your code is prepared to face
+    the scary outside world, that it's fast enough, and that it can deal with unexpected
+    or exceptional conditions.
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章就是关于这个的 - 确保您的代码准备好面对可怕的外部世界，它足够快，并且可以处理意外或异常情况。
+- en: 'In this chapter, we''re going to explore the following topics:'
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将探讨以下主题：
+- en: Testing (several aspects of it, including a brief introduction to test-driven
+    development)
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试（包括对测试驱动开发的简要介绍）。
+- en: Exception handling
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 异常处理
+- en: Profiling and performances
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 性能分析和表现
+- en: Let's start by understanding what testing is.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先了解测试是什么。
+- en: Testing your application
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试您的应用程序
+- en: There are many different kinds of tests, so many, in fact, that companies often
+    have a dedicated department, called **quality assurance** (**QA**), made up of
+    individuals who spend their day testing the software the company developers produce.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多不同类型的测试，实际上有很多，以至于公司通常会有一个专门的部门，称为**质量保证**（**QA**），由一些人组成，他们整天都在测试公司开发人员生产的软件。
+- en: 'To start making an initial classification, we can divide tests into two broad
+    categories: white-box and black-box tests.'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了开始进行初步分类，我们可以将测试分为两大类：白盒测试和黑盒测试。
+- en: '**White-box tests** are those that exercise the internals of the code; they
+    inspect it down to a very fine level of detail. On the other hand, **black-box
+    tests** are those that consider the software under test as if within a box, the
+    internals of which are ignored. Even the technology, or the language used inside
+    the box, is not important for black-box tests. What they do is plug input into
+    one end of the box and verify the output at the other end—that''s it.'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**白盒测试**是对代码内部进行测试的测试；它们详细检查代码的内部。另一方面，**黑盒测试**是将被测试的软件视为一个盒子，其中的内部被忽略。甚至盒子内部使用的技术或语言对于黑盒测试也不重要。它们所做的就是将输入插入盒子的一端，并验证另一端的输出，就是这样。'
+- en: There is also an in-between category, called **gray-box** testing, which involves
+    testing a system in the same way we do with the black-box approach, but having
+    some knowledge about the algorithms and data structures used to write the software
+    and only partial access to its source code.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有一个中间类别，称为**灰盒**测试，它涉及以与黑盒方法相同的方式测试系统，但对编写软件所使用的算法和数据结构有一定了解，并且只能部分访问其源代码。
+- en: 'There are many different kinds of tests in these categories, each of which
+    serves a different purpose. To give you an idea, here are a few:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这些类别中有许多不同类型的测试，每种测试都有不同的目的。举个例子，以下是其中一些：
+- en: '**Frontend tests**: Make sure that the client side of your application is exposing
+    the information that it should, all the links, the buttons, the advertising, everything
+    that needs to be shown to the client. It may also verify that it is possible to
+    walk a certain path through the user interface.'
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**前端测试**：确保应用程序的客户端展示应该展示的信息，所有链接、按钮、广告，所有需要展示给客户端的内容。它还可以验证通过用户界面走特定路径是否可能。'
+- en: '**Scenario tests**: Make use of stories (or scenarios) that help the tester
+    work through a complex problem or test a part of the system.'
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**场景测试**：利用故事（或场景）来帮助测试人员解决复杂问题或测试系统的一部分。'
+- en: '**Integration tests**: Verify the behavior of the various components of your
+    application when they are working together sending messages through interfaces.'
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**集成测试**：验证应用程序各个组件在一起工作并通过接口发送消息时的行为。'
+- en: '**Smoke tests**: Particularly useful when you deploy a new update on your application.
+    They check whether the most essential, vital parts of your application are still
+    working as they should and that they are not *on fire*. This term comes from when
+    engineers tested circuits by making sure nothing was smoking.'
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**冒烟测试**：在应用程序部署新更新时特别有用。它们检查应用程序最基本、最重要的部分是否仍然按照预期工作，并且它们没有着火。这个术语来源于工程师通过确保没有任何东西冒烟来测试电路的情况。'
+- en: '**Acceptance tests**, or **user acceptance testing** (**UAT**): What a developer
+    does with a product owner (for example, in a SCRUM environment) to determine whether
+    the work that was commissioned was carried out correctly.'
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 验收测试，或用户验收测试（UAT）：开发人员与产品所有者（例如，在SCRUM环境中）一起确定委托的工作是否正确完成。
+- en: '**Functional tests**: Verify the features or functionalities of your software.'
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 功能测试：验证软件的特性或功能。
+- en: '**Destructive tests**: Take down parts of your system, simulating a failure,
+    to establish how well the remaining parts of the system perform. These kinds of
+    tests are performed extensively by companies that need to provide an extremely
+    reliable service, such as Amazon and Netflix, for example.'
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 破坏性测试：摧毁系统的部分，模拟故障，以确定系统的其余部分的表现。这些类型的测试被需要提供极其可靠服务的公司广泛进行，例如亚马逊和Netflix。
+- en: '**Performance tests**: Aim to verify how well the system performs under a specific
+    load of data or traffic so that, for example, engineers can get a better understanding
+    of the bottlenecks in the system that could bring it to its knees in a heavy-load
+    situation, or those that prevent scalability.'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 性能测试：旨在验证系统在特定数据或流量负载下的性能，以便工程师可以更好地了解系统中可能导致其在高负载情况下崩溃的瓶颈，或者阻止可扩展性的瓶颈。
+- en: '**Usability tests**, and the closely related **user experience** (**UX**) tests:
+    Aim to check whether the user interface is simple and easy to understand and use.
+    They aim to provide input to the designers so that the user experience is improved.'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 可用性测试，以及与之密切相关的用户体验（UX）测试：旨在检查用户界面是否简单易懂、易于理解和使用。它们旨在为设计师提供输入，以改善用户体验。
+- en: '**Security and penetration tests**: Aim to verify how well the system is protected
+    against attacks and intrusions.'
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安全和渗透测试：旨在验证系统对攻击和入侵的保护程度。
+- en: '**Unit tests**: Help the developer to write the code in a robust and consistent
+    way, providing the first line of feedback and defense against coding mistakes,
+    refactoring mistakes, and so on.'
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 单元测试：帮助开发人员以健壮和一致的方式编写代码，提供第一条反馈线并防范编码错误、重构错误等。
+- en: '**Regression tests**: Provide the developer with useful information about a
+    feature being compromised in the system after an update. Some of the causes for
+    a system being said to have a regression are an old bug coming back to life, an
+    existing feature being compromised, or a new issue being introduced.'
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 回归测试：在更新后，为开发人员提供有关系统中功能受损的有用信息。系统被认为有回归的原因包括旧错误重新出现、现有功能受损或引入新问题。
+- en: Many books and articles have been written about testing, and I have to point
+    you to those resources if you're interested in finding out more about all the
+    different kinds of tests. In this chapter, we will concentrate on unit tests,
+    since they are the backbone of software-crafting and form the vast majority of
+    tests that are written by a developer.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于测试已经有许多书籍和文章，如果你对了解所有不同类型的测试感兴趣，我不得不指向这些资源。在本章中，我们将集中讨论单元测试，因为它们是软件开发的支柱，并且是开发人员编写的绝大多数测试。
+- en: Testing is an *art*, an art that you don't learn from books, I'm afraid. You
+    can learn all the definitions (and you should), and try to collect as much knowledge
+    about testing as you can, but you will likely be able to test your software properly
+    only when you have done it for long enough in the field.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试是一门艺术，一门你恐怕无法从书本中学到的艺术。你可以学习所有的定义（你应该这样做），并尝试收集尽可能多的关于测试的知识，但只有当你在领域中做了足够长时间的测试时，你才可能能够正确地测试你的软件。
+- en: When you are having trouble refactoring a bit of code, because every little
+    thing you touch makes a test blow up, you learn how to write less rigid and limiting
+    tests, which still verify the correctness of your code but, at the same time,
+    allow you the freedom and joy to play with it, to shape it as you want.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你试图重构一小段代码时遇到困难，因为你触及的每一个小细节都会导致测试失败，你会学会如何编写不那么严格和限制性的测试，这些测试仍然验证代码的正确性，但同时允许你自由地玩耍，按照自己的意愿塑造它。
+- en: When you are being called too often to fix unexpected bugs in your code, you
+    learn how to write tests more thoroughly, how to come up with a more comprehensive
+    list of edge cases, and strategies to cope with them before they turn into bugs.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你被频繁调用来修复代码中的意外错误时，你会学会如何更彻底地编写测试，如何列出更全面的边界情况列表，并学会在它们变成错误之前应对它们的策略。
+- en: When you are spending too much time reading tests and trying to refactor them
+    to change a small feature in the code, you learn to write simpler, shorter, and
+    better-focused tests.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你花费太多时间阅读测试并尝试重构它们以更改代码中的小功能时，你会学会编写更简单、更短、更专注的测试。
+- en: I could go on with this *when you... you learn...*, but I guess you get the
+    picture. You need to get your hands dirty and build experience. My suggestion?
+    Study the theory as much as you can, and then experiment using different approaches.
+    Also, try to learn from experienced coders; it's very effective.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我可以继续这个“当你...你会学会...”，但我想你已经明白了。你需要动手并积累经验。我的建议？尽可能多地学习理论，然后尝试使用不同的方法进行实验。此外，尝试向经验丰富的编程人员学习；这是非常有效的。
+- en: The anatomy of a test
+  id: totrans-35
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试的解剖
+- en: Before we concentrate on unit tests, let's see what a test is, and what its
+    purpose is.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们集中讨论单元测试之前，让我们看看测试是什么，它的目的是什么。
+- en: A **test** is a piece of code whose purpose is to verify something in our system.
+    It may be that we're calling a function passing two integers, that an object has
+    a property called `donald_duck`, or that when you place an order on some API,
+    after a minute you can see it dissected into its basic elements, in the database.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试是一个代码片段，其目的是验证系统中的某些内容。可能是我们调用一个函数传递两个整数，一个对象有一个名为`donald_duck`的属性，或者当你在某个API上下订单后，一分钟后你可以看到它被分解成其基本元素，存储在数据库中。
+- en: 'A test is typically composed of three sections:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试通常由三个部分组成：
+- en: '**Preparation**: This is where you set up the scene. You prepare all the data,
+    the objects, and the services you need in the places you need them so that they
+    are ready to be used.'
+  id: totrans-39
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**准备**：这是您设置场景的地方。您准备所有数据、对象和服务，以便它们准备好在需要它们的地方使用。'
+- en: '**Execution**: This is where you execute the bit of logic that you''re checking
+    against. You perform an action using the data and the interfaces you have set
+    up in the preparation phase.'
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**执行**：这是您执行要检查的逻辑的地方。您使用准备阶段设置的数据和接口执行一个操作。'
+- en: '**Verification**: This is where you verify the results and make sure they are
+    according to your expectations. You check the returned value of a function, or
+    that some data is in the database, some is not, some has changed, a request has
+    been made, something has happened, a method has been called, and so on.'
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**验证**：这是您验证结果并确保它们符合您的期望的地方。您检查函数的返回值，或者数据库中是否有一些数据，有一些没有，有一些已经改变，是否已经发出请求，是否发生了某些事情，是否已经调用了某个方法，等等。'
+- en: 'While tests usually follow this structure, in a test suite, you will typically
+    find some other constructs that take part in the testing game:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然测试通常遵循这种结构，在测试套件中，您通常会发现一些其他参与测试的构造：
+- en: '**Setup**: This is something quite commonly found in several different tests.
+    It''s logic that can be customized to run for every test, class, module, or even
+    for a whole session. In this phase usually developers set up connections to databases,
+    maybe populate them with data that will be needed there for the test to make sense,
+    and so on.'
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**设置**：这是在几种不同的测试中经常发现的东西。这是可以定制为每个测试、类、模块，甚至整个会话运行的逻辑。在这个阶段，通常开发人员建立与数据库的连接，也许用测试需要的数据填充数据库，等等。'
+- en: '**Teardown**: This is the opposite of the setup; the teardown phase takes place
+    when the tests have been run. Like the setup, it can be customized to run for
+    every test, class or module, or session. Typically in this phase, we destroy any
+    artefacts that were created for the test suite, and clean up after ourselves.'
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**拆卸**：这与设置相反；拆卸阶段发生在测试运行后。与设置一样，它可以定制为每个测试、类或模块，或会话。通常在这个阶段，我们销毁为测试套件创建的任何工件，并在测试后进行清理。'
+- en: '**Fixtures**: They are pieces of data used in the tests. By using a specific
+    set of fixture, outcomes are predictable and therefore tests can perform verifications
+    against them.'
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**固定装置**：它们是测试中使用的数据片段。通过使用特定的固定装置集，结果是可预测的，因此测试可以对其进行验证。'
+- en: In this chapter, we will use the `pytest` Python library. It is an incredibly
+    powerful tool that makes testing much easier and provides plenty of helpers so
+    that the test logic can focus more on the actual testing than the wiring around
+    it. You will see, when we get to the code, that one of the characteristics of
+    `pytest` is that fixtures, setup, and teardown often blend into one.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将使用Python库`pytest`。这是一个非常强大的工具，使测试变得更容易，并提供了大量的辅助功能，使测试逻辑可以更多地专注于实际测试而不是围绕它的连接。当我们开始编写代码时，您会看到`pytest`的一个特点是固定装置、设置和拆卸通常融为一体。
+- en: Testing guidelines
+  id: totrans-47
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试指南
+- en: 'Like software, tests can be good or bad, with a whole range of shades in the
+    middle. To write good tests, here are some guidelines:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像软件一样，测试可以是好的或坏的，在中间有各种不同的情况。要编写好的测试，以下是一些指南：
+- en: '**Keep them as simple as possible**. It''s okay to violate some good coding
+    rules, such as hardcoding values or duplicating code. Tests need, first and foremost,
+    to be as **readable** as possible and easy to understand. When tests are hard
+    to read or understand, you can never be confident they are actually making sure
+    your code is performing correctly.'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**尽可能保持简单**。违反一些良好的编码规则，如硬编码值或重复代码是可以的。测试首先需要尽可能**可读**和易于理解。当测试难以阅读或理解时，您永远无法确信它们实际上是否确保您的代码执行正确。'
+- en: '**Tests should verify one thing and one thing only**. It''s very important
+    that you keep them short and contained. It''s perfectly fine to write multiple
+    tests to exercise a single object or function. Just make sure that each test has
+    one and only one purpose.'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**测试应该验证一件事情，而且只有一件事情**。非常重要的是，您要保持测试简短和集中。编写多个测试来测试单个对象或函数是完全可以的。只需确保每个测试只有一个目的。'
+- en: '**Tests should not make any unnecessary assumption when verifying data**. This
+    is tricky to understand at first, but it is important. Verifying that the result
+    of a function call is `[1, 2, 3]` is not the same as saying the output is a list
+    that contains the numbers `1`, `2`, and `3`. In the former, we''re also assuming
+    the ordering; in the latter, we''re only assuming which items are in the list.
+    The differences sometimes are quite subtle, but they are still very important.'
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**测试在验证数据时不应做出任何不必要的假设**。这一点起初很难理解，但很重要。验证函数调用的结果是`[1, 2, 3]`并不等同于说输出是包含数字`1`、`2`和`3`的列表。在前者中，我们还假设了顺序；在后者中，我们只假设了列表中有哪些项。这些差异有时相当微妙，但仍然非常重要。'
+- en: '**Tests should exercise the what, rather than the how**. Tests should focus
+    on checking *what* a function is supposed to do, rather than *how* it is doing
+    it. For example, focus on the fact that it''s calculating the square root of a
+    number (the *what*), instead of on the fact that it is calling `math.sqrt` to
+    do it (the *how*). Unless you''re writing performance tests or you have a particular
+    need to verify how a certain action is performed, try to avoid this type of testing
+    and focus on the *what*. Testing the *how* leads to restrictive tests and makes
+    refactoring hard. Moreover, the type of test you have to write when you concentrate
+    on the *how* is more likely to degrade the quality of your testing code base when
+    you amend your software frequently.'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试应该关注的是“什么”，而不是“如何”。测试应该专注于检查函数应该做什么，而不是它是如何做的。例如，专注于它计算一个数字的平方根（“什么”），而不是它调用`math.sqrt`来做到这一点（“如何”）。除非你正在编写性能测试或者有特定需要验证某个操作是如何执行的，尽量避免这种类型的测试，专注于“什么”。测试“如何”会导致限制性测试，并使重构变得困难。此外，当您经常修改软件时，专注于“如何”时必须编写的测试类型更有可能降低测试代码库的质量。
+- en: '**Tests should use the minimal set of fixtures needed to do the job**. This
+    is another crucial point. Fixtures have a tendency to grow over time. They also
+    tend to change every now and then. If you use big amounts of fixtures and ignore
+    redundancies in your tests, refactoring will take longer. Spotting bugs will be
+    harder. Try to use a set of fixtures that is big enough for the test to perform
+    correctly, but not any bigger.'
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试应该使用最少量的固定装置来完成工作。这是另一个关键点。固定装置往往会随着时间的推移而增长。它们也往往会不时地发生变化。如果您使用大量的固定装置并忽略测试中的冗余，重构将需要更长的时间。发现错误将更加困难。尽量使用足够大的固定装置集来正确执行测试，但不要使用过多。
+- en: '**Tests should run as fast as possible**. A good test codebase could end up
+    being much longer than the code being tested itself. It varies according to the
+    situation and the developer, but, whatever the length, you''ll end up having hundreds,
+    if not thousands, of tests to run, which means the faster they run, the faster
+    you can get back to writing code. When using TDD, for example, you run tests very
+    often, so speed is essential.'
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试应该尽可能快地运行。一个良好的测试代码库最终可能比被测试的代码本身要长得多。根据情况和开发人员的不同，长度可能会有所不同，但无论长度如何，您最终会有数百甚至数千个测试需要运行，这意味着它们运行得越快，您就能越快地回到编写代码。例如，在使用TDD时，您经常运行测试，因此速度至关重要。
+- en: '**Tests should use up the least possible amount of resources**. The reason
+    for this is that every developer who checks out your code should be able to run
+    your tests, no matter how powerful their box is. It could be a skinny virtual
+    machine or a neglected Jenkins box, your tests should run without chewing up too
+    many resources.'
+  id: totrans-55
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试应该尽量使用最少的资源。原因是每个检出您代码的开发人员都应该能够运行您的测试，无论他们的计算机有多强大。它可能是一个瘦小的虚拟机或一个被忽视的Jenkins盒子，您的测试应该在不消耗太多资源的情况下运行。
+- en: A **Jenkins** box is a machine that runs Jenkins, software that is capable of,
+    among many other things, running your tests automatically. Jenkins is frequently
+    used in companies where developers use practices such as continuous integration
+    and extreme programming.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Jenkins**盒子是运行Jenkins软件的机器，该软件能够自动运行您的测试，除此之外还有许多其他功能。Jenkins经常用于那些开发人员使用持续集成和极限编程等实践的公司。'
+- en: Unit testing
+  id: totrans-57
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 单元测试
+- en: 'Now that you have an idea about what testing is and why we need it, let''s
+    introduce the developer''s best friend: the **unit test**.'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您已经了解了测试是什么以及为什么我们需要它，让我们介绍开发人员最好的朋友：**单元测试**。
+- en: 'Before we proceed with the examples, allow me to share some words of caution:
+    I''ll try to give you the fundamentals about unit testing, but I don''t follow
+    any particular school of thought or methodology to the letter. Over the years,
+    I have tried many different testing approaches, eventually coming up with my own
+    way of doing things, which is constantly evolving. To put it as Bruce Lee would
+    have:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们继续示例之前，让我分享一些警告：我会尝试向您介绍有关单元测试的基础知识，但我并没有完全遵循任何特定的思想或方法。多年来，我尝试了许多不同的测试方法，最终形成了自己的做事方式，这种方式不断发展。用李小龙的话来说：
+- en: '"Absorb what is useful, discard what is useless and add what is specifically
+    your own."'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “吸收有用的东西，抛弃无用的东西，添加特别属于你自己的东西。”
+- en: Writing a unit test
+  id: totrans-61
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 编写单元测试
+- en: 'Unit tests take their name after the fact that they are used to test small
+    units of code. To explain how to write a unit test, let''s take a look at a simple
+    snippet:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单元测试得名于它们用于测试代码的小单元。为了解释如何编写单元测试，让我们看一个简单的代码片段：
+- en: '[PRE0]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: The `get_clean_data` function is responsible for getting data from `source`,
+    cleaning it, and returning it to the caller. How do we test this function?
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`get_clean_data`函数负责从`source`获取数据，清理数据，并将其返回给调用者。我们如何测试这个函数呢？'
+- en: One way of doing this is to call it and then make sure that `load_data` was
+    called once with `source` as its only argument. Then we have to verify that `clean_data`
+    was called once, with the return value of `load_data`. And, finally, we would
+    need to make sure that the return value of `clean_data` is what is returned by
+    the `get_clean_data` function as well.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一种做法是调用它，然后确保`load_data`只调用了一次，参数是`source`。然后我们需要验证`clean_data`被调用了一次，参数是`load_data`的返回值。最后，我们需要确保`clean_data`的返回值也是`get_clean_data`函数返回的值。
+- en: To do this, we need to set up the source and run this code, and this may be
+    a problem. One of the golden rules of unit testing is that *anything that crosses
+    the boundaries of your application needs to be simulated*. We don't want to talk
+    to a real data source, and we don't want to actually run real functions if they
+    are communicating with anything that is not contained in our application. A few
+    examples would be a database, a search service, an external API, and a file in
+    the filesystem.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了做到这一点，我们需要设置源并运行此代码，这可能是一个问题。单元测试的黄金法则之一是*任何跨越应用程序边界的东西都需要被模拟*。我们不想与真实的数据源交谈，也不想实际运行真实的函数，如果它们与我们应用程序中不包含的任何东西进行通信。一些例子包括数据库、搜索服务、外部API和文件系统中的文件。
+- en: We need these restrictions to act as a shield, so that we can always run our
+    tests safely without the fear of destroying something in a real data source.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要这些限制来充当屏障，以便我们始终可以安全地运行我们的测试，而不必担心在真实数据源中破坏任何东西。
+- en: Another reason is that it may be quite difficult for a single developer to reproduce
+    the whole architecture on their box. It may require the setting up of databases,
+    APIs, services, files and folders, and so on and so forth, and this can be difficult,
+    time-consuming, or sometimes not even possible.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个原因是，对于单个开发人员来说，复制整个架构可能会非常困难。它可能需要设置数据库、API、服务、文件和文件夹等等，这可能很困难、耗时，有时甚至不可能。
+- en: Very simply put, an **application programming interface** (**API**) is a set
+    of tools for building software applications. An API expresses a software component
+    in terms of its operations, input and output, and underlying types. For example,
+    if you create a software that needs to interface with a data provider service,
+    it's very likely that you will have to go through their API in order to gain access
+    to the data.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常简单地说，**应用程序编程接口**（**API**）是一组用于构建软件应用程序的工具。API以其操作、输入和输出以及底层类型来表达软件组件。例如，如果您创建一个需要与数据提供者服务进行接口的软件，很可能您将不得不通过他们的API来访问数据。
+- en: Therefore, in our unit tests, we need to simulate all those things in some way.
+    Unit tests need to be run by any developer without the need for the whole system
+    to be set up on their box.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在我们的单元测试中，我们需要以某种方式模拟所有这些事物。单元测试需要由任何开发人员运行，而无需在他们的计算机上设置整个系统。
+- en: A different approach, which I always favor when it's possible to do so, is to
+    simulate entities without using fake objects, but using special-purpose test objects
+    instead. For example, if your code talks to a database, instead of faking all
+    the functions and methods that talk to the database and programming the fake objects
+    so that they return what the real ones would, I'd much rather spawn a test database,
+    set up the tables and data I need, and then patch the connection settings so that
+    my tests are running real code, against the test database, thereby doing no harm
+    at all. In-memory databases are excellent options for these cases.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一种方法，我总是在可能的情况下更喜欢的方法是，模拟实体而不使用伪造对象，而是使用专门的测试对象。例如，如果您的代码与数据库交互，我宁愿生成一个测试数据库，设置我需要的表和数据，然后修补连接设置，以便我的测试运行真正的代码，针对测试数据库，从而不会造成任何伤害。内存数据库是这些情况的绝佳选择。
+- en: One of the applications that allow you to spawn a database for testing is Django.
+    Within the `django.test` package, you can find several tools that help you write
+    your tests so that you won't have to simulate the dialog with a database. By writing
+    tests this way, you will also be able to check on transactions, encodings, and
+    all other database-related aspects of programming. Another advantage of this approach
+    consists in the ability of checking against things that can change from one database
+    to another.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 允许您为测试生成数据库的应用程序之一是Django。在`django.test`包中，您可以找到几个工具，这些工具可以帮助您编写测试，以便您无需模拟与数据库的对话。通过这种方式编写测试，您还可以检查事务、编码和编程的所有其他与数据库相关的方面。这种方法的另一个优势在于能够检查可能会从一个数据库更改到另一个数据库的事物。
+- en: Sometimes, though, it's still not possible, and we need to use fakes, so let's
+    talk about them.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有时候，这仍然是不可能的，我们需要使用伪造的东西，所以让我们来谈谈它们。
+- en: Mock objects and patching
+  id: totrans-74
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 模拟对象和修补
+- en: First of all, in Python, these fake objects are called **mocks**. Up to Version
+    3.3, the `mock` library was a third-party library that basically every project
+    would install via `pip` but, from Version 3.3, it has been included in the standard
+    library under the `unittest` module, and rightfully so, given its importance and
+    how widespread it is.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在Python中，这些伪造的对象被称为**mocks**。直到3.3版本，`mock`库是一个第三方库，基本上每个项目都会通过`pip`安装，但是从3.3版本开始，它已经包含在标准库中的`unittest`模块下，这是理所当然的，考虑到它的重要性和普及程度。
+- en: The act of replacing a real object or function (or in general, any piece of
+    data structure) with a mock, is called **patching**. The `mock` library provides
+    the `patch` tool, which can act as a function or class decorator, and even as
+    a context manager that you can use to mock things out. Once you have replaced
+    everything you don't need to run with suitable mocks, you can pass to the second
+    phase of the test and run the code you are exercising. After the execution, you
+    will be able to check those mocks to verify that your code has worked correctly.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用伪造对象替换真实对象或函数（或者一般来说，任何数据结构的一部分）的行为被称为**修补**。`mock`库提供了`patch`工具，它可以作为函数或类装饰器，甚至可以作为上下文管理器，您可以使用它来模拟事物。一旦您用合适的伪造对象替换了您不需要运行的一切，您可以进入测试的第二阶段并运行您正在测试的代码。执行后，您将能够检查这些伪造对象，以验证您的代码是否正确运行。
+- en: Assertions
+  id: totrans-77
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 断言
+- en: The verification phase is done through the use of assertions. An **assertion**
+    is a function (or method) that you can use to verify equality between objects,
+    as well as other conditions. When a condition is not met, the assertion will raise
+    an exception that will make your test fail. You can find a list of assertions
+    in the `unittest` module documentation; however, when using `pytest`, you will
+    typically use the generic `assert` statement, which makes things even simpler.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 验证阶段是通过断言来完成的。**断言**是一个函数（或方法），你可以用它来验证对象之间的相等性，以及其他条件。当条件不满足时，断言将引发一个异常，使你的测试失败。你可以在`unittest`模块文档中找到一系列的断言；然而，当使用`pytest`时，你通常会使用通用的`assert`语句，这样事情会更简单。
+- en: Testing a CSV generator
+  id: totrans-79
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试CSV生成器
+- en: Let's now adopt a practical approach. I will show you how to test a piece of
+    code, and we will touch on the rest of the important concepts around unit testing,
+    within the context of this example.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们采取一个实际的方法。我将向你展示如何测试一段代码，我们将涉及到关于单元测试的其他重要概念，以这个例子为背景。
+- en: 'We want to write an `export` function that does the following: it takes a list
+    of dictionaries, each of which represents a user. It creates a CSV file, puts
+    a header in it, and then proceeds to add all the users who are deemed valid according
+    to some rules. The `export` function takes also a filename, which will be the
+    name for the CSV in output. And, finally, it takes an indication on whether to
+    allow an existing file with the same name to be overwritten.'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们想要编写一个`export`函数，它执行以下操作：接受一个字典列表，每个字典代表一个用户。它创建一个CSV文件，在其中放入一个标题，然后继续添加所有根据某些规则被视为有效的用户。`export`函数还接受一个文件名，这将是输出的CSV的名称。最后，它接受一个指示，是否允许覆盖同名的现有文件。
+- en: 'As for the users, they must abide by the following: each user has at least
+    an email, a name, and an age. There can be a fourth field representing the role,
+    but it''s optional. The user''s email address needs to be valid, the name needs
+    to be non-empty, and the age must be an integer between 18 and 65.'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 至于用户，他们必须遵守以下规定：每个用户至少有一个电子邮件、一个名称和一个年龄。可以有第四个字段代表角色，但是它是可选的。用户的电子邮件地址需要是有效的，名称需要是非空的，年龄必须是18到65之间的整数。
+- en: This is our task, so now I'm going to show you the code, and then we're going
+    to analyze the tests I wrote for it. But, first things first, in the following
+    code snippets, I'll be using two third-party libraries: `marshmallow` and `pytest`.
+    They both are in the requirements of the book's source code, so make sure you
+    have installed them with `pip`.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们的任务，所以现在我要向你展示代码，然后我们将分析我为它编写的测试。但首先，在以下代码片段中，我将使用两个第三方库：`marshmallow`和`pytest`。它们都在本书源代码的要求中，所以确保你已经用`pip`安装了它们。
+- en: '`marshmallow` is a wonderful library that provides us with the ability to serialize
+    and deserialize objects and, most importantly, gives us the ability to define
+    a schema that we can use to validate a user dictionary. `pytest` is one of the
+    best pieces of software I have ever seen. It is used everywhere now, and has replaced
+    other tools such as `nose`, for example. It provides us with great tools to write
+    beautiful short tests.'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`marshmallow` 是一个很棒的库，它为我们提供了序列化和反序列化对象的能力，最重要的是，它让我们能够定义一个模式，我们可以用它来验证用户字典。`pytest`
+    是我见过的最好的软件之一。现在它随处可见，并且已经取代了其他工具，比如`nose`。它为我们提供了很好的工具来编写简洁的测试。'
+- en: 'But let''s get to the code. I called it `api.py` just because it exposes a
+    function that we can use to do things. I''ll show it to you in chunks:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但让我们来看看代码。我将它称为`api.py`，只是因为它公开了一个我们可以用来做事情的函数。我会把它分块展示给你：
+- en: '[PRE1]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: This first part is where we import all the modules we need (`os` and `csv`),
+    and some tools from `marshmallow`, and then we define the schema for the users.
+    As you can see, we inherit from `marshmallow.Schema`, and then we set four fields.
+    Notice we are using two `String` fields, `Email` and `Integer`. These will already
+    provide us with some validation from `marshmallow`. Notice there is no `required=True` in
+    the `role` field.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这第一部分是我们导入所需的所有模块（`os`和`csv`），以及从`marshmallow`中导入一些工具，然后我们为用户定义模式。正如你所看到的，我们继承自`marshmallow.Schema`，然后设置了四个字段。请注意，我们使用了两个`String`字段，`Email`和`Integer`。这些将已经为我们提供了一些来自`marshmallow`的验证。请注意，在`role`字段中没有`required=True`。
+- en: We need to add a couple of custom bits of code, though. We need to add `validate_age`
+    to make sure the value is within the range we want. We raise `ValidationError`
+    in case it's not. And `marshmallow` will kindly take care of raising an error
+    should we pass anything but an integer.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不过，我们需要添加一些自定义的代码。我们需要添加`validate_age`来确保值在我们想要的范围内。如果不是，我们会引发`ValidationError`。而且`marshmallow`会很好地处理除了整数之外的任何值。
+- en: Next, we add `validate_name`, because the fact that a `name` key in the dictionary
+    is there doesn't guarantee that the name is actually non-empty. So we take its
+    value, we strip all leading and trailing whitespace characters, and if the result
+    is empty, we raise `ValidationError` again. Notice we don't need to add a custom
+    validator for the `email` field. This is because `marshmallow` will validate it,
+    and a valid email cannot be empty.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们添加`validate_name`，因为字典中存在`name`键并不保证名称实际上是非空的。所以我们取它的值，去除所有前导和尾随的空白字符，如果结果为空，我们再次引发`ValidationError`。请注意，我们不需要为`email`字段添加自定义验证器。这是因为`marshmallow`会验证它，而有效的电子邮件不能为空。
+- en: 'We then instantiate `schema`, so that we can use it to validate data. So let''s
+    write the `export` function:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们实例化`schema`，这样我们就可以用它来验证数据。所以让我们编写`export`函数：
+- en: '[PRE2]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'As you see, its internals are quite straightforward. If `overwrite` is `False`
+    and the file already exists, we raise `IOError` with a message saying the file
+    already exists. Otherwise, if we can proceed, we simply get the list of valid
+    users and feed it to `write_csv`, which is responsible for actually doing the
+    job. Let''s see how all these functions are defined:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如你所见，它的内部非常简单。如果“overwrite”为“False”并且文件已经存在，我们会引发一个带有文件已经存在的消息的“IOError”。否则，如果我们可以继续，我们只需获取有效用户列表并将其提供给“write_csv”，后者负责实际完成工作。让我们看看这些函数是如何定义的：
+- en: '[PRE3]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Turns out I coded `get_valid_users` as a generator, as there is no need to make
+    a potentially big list in order to put it in a file. We can validate and save
+    them one by one. The heart of validation is simply a delegation to `schema.validate`,
+    which uses validation engine by `marshmallow`. The way this works is by returning
+    a dictionary, which is empty if validation succeeded, or else it will contain
+    error information. We don't really care about collecting the error information
+    for this task, so we simply ignore it, and within `is_valid` we basically return
+    `True` if the return value from `schema.validate` is empty, and `False` otherwise.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事实证明，我将“get_valid_users”编码为生成器，因为没有必要为了将其放入文件而制作一个潜在的大列表。我们可以逐个验证和保存它们。验证的核心是简单地委托给“schema.validate”，它使用“marshmallow”的验证引擎。这样的工作方式是返回一个字典，如果验证成功则为空，否则将包含错误信息。对于这个任务，我们并不真正关心收集错误信息，所以我们简单地忽略它，在“is_valid”中，如果“schema.validate”的返回值为空，我们基本上返回“True”，否则返回“False”。
+- en: 'One last piece is missing; here it is:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还缺少最后一部分；在这里：
+- en: '[PRE4]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Again, the logic is straightforward. We define the header in `fieldnames`, then
+    we open `filename` for writing, and we specify `newline=''`, which is recommended
+    in the documentation when dealing with CSV files. When the file has been created,
+    we get a `writer` object by using the `csv.DictWriter` class. The beauty of this
+    tool is that it is capable of mapping the user dictionaries to the field names,
+    so we don't need to take care of the ordering.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，逻辑很简单。我们在“fieldnames”中定义标题，然后打开“filename”进行写入，并指定“newline=''”，这在处理CSV文件时在文档中是推荐的。文件创建后，我们通过使用“csv.DictWriter”类来获取一个“writer”对象。这个工具的美妙之处在于它能够将用户字典映射到字段名，因此我们不需要关心排序。
+- en: We write the header first, and then we loop over the users and add them one
+    by one. Notice, this function assumes it is fed a list of valid users, and it
+    may break if that assumption is false (with the default values, it would break
+    if any user dictionary had extra fields).
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先写入标题，然后循环遍历用户并逐个添加它们。请注意，此函数假定它被提供一个有效用户列表，如果这个假设是错误的（使用默认值，如果任何用户字典有额外字段，它将会出错）。
+- en: That's the whole code you have to keep in mind. I suggest you spend a moment
+    to go through it again. There is no need to memorize it, and the fact that I have
+    used small helper functions with meaningful names will enable you to follow the
+    testing along more easily.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是你需要记住的全部代码。我建议你花一点时间再次阅读它。没有必要记住它，而且我使用有意义的名称编写了小的辅助函数，这将使你更容易跟随测试。
+- en: 'Let''s now get to the interesting part: testing our `export` function. Once
+    again, I''ll show you the code in chunks:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们来到有趣的部分：测试我们的“export”函数。再次，我将把代码分成几部分给你看：
+- en: '[PRE5]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Let''s start from the imports: we need `os`, temporary directories (which we
+    already saw in [Chapter 7](part0187.html#5IAP60-2ddb708647cc4530a187c2c6c0e9acfe), *Files
+    and Data Persistence*), then `pytest`, and, finally, we use a relative import
+    to fetch the three functions that we want to actually test: `is_valid`, `export`,
+    and `write_csv`.'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从导入开始：我们需要“os”、临时目录（我们在[第7章](part0187.html#5IAP60-2ddb708647cc4530a187c2c6c0e9acfe)中已经看到了，“文件和数据持久性”），然后是“pytest”，最后，我们使用相对导入来获取我们想要实际测试的三个函数：“is_valid”、“export”和“write_csv”。
+- en: 'Before we can write tests, though, we need to make a few fixtures. As you will
+    see, a `fixture` is a function that is decorated with the `pytest.fixture` decorator.
+    In most cases, we expect `fixture` to return something, so that we can use it
+    in a test. We have some requirements for a user dictionary, so let''s write a
+    couple of users: one with minimal requirements, and one with full requirements.
+    Both need to be valid. Here is the code:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，在我们可以编写测试之前，我们需要制作一些固定装置。正如你将看到的，一个“fixture”是一个被“pytest.fixture”装饰的函数。在大多数情况下，我们期望“fixture”返回一些东西，这样我们就可以在测试中使用它。我们对用户字典有一些要求，所以让我们写一些用户：一个具有最低要求的用户，一个具有完整要求的用户。两者都需要有效。以下是代码：
+- en: '[PRE6]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: In this example, the only difference is the presence of the `role` key, but
+    it's enough to show you the point I hope. Notice that instead of simply declaring
+    dictionaries at a module level, we actually have written two functions that return
+    a dictionary, and we have decorated them with the `pytest.fixture` decorator.
+    This is because when you declare a dictionary at module-level, which is supposed
+    to be used in your tests, you need to make sure you copy it at the beginning of
+    every test. If you don't, you may have a test that modifies it, and this will
+    affect all tests that follow it, compromising their integrity.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，唯一的区别是存在“role”键，但这足以向你展示我希望的观点。请注意，我们实际上编写了两个返回字典的函数，并且用“pytest.fixture”装饰了它们，而不是简单地在模块级别声明字典。这是因为当你在模块级别声明一个字典，它应该在你的测试中使用，你需要确保在每个测试的开始时复制它。如果不这样做，你可能会有一个修改它的测试，这将影响所有随后的测试，从而损害它们的完整性。
+- en: 'By using these fixtures, `pytest` will give us a new dictionary every test
+    run, so we don''t need to go through that pain ourselves. Notice that if a fixture
+    returns another type, instead of dict, then that is what you will get in the test.
+    Fixtures also are *composable*, which means they can be used in one another, which
+    is a very powerful feature of `pytest`. To show you this, let''s write a fixture
+    for a list of users, in which we put the two we already have, plus one that would
+    fail validation because it has no age. Let''s take a look at the following code:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过使用这些固定装置，`pytest`将在每次测试运行时为我们提供一个新的字典，因此我们不需要自己费心去做。请注意，如果一个固定装置返回另一种类型，而不是字典，那么你将在测试中得到这种类型。固定装置也是*可组合*的，这意味着它们可以相互使用，这是`pytest`的一个非常强大的特性。为了向你展示这一点，让我们为一个用户列表编写一个固定装置，其中我们放入了我们已经有的两个用户，再加上一个因为没有年龄而无法通过验证的用户。让我们看一下下面的代码：
+- en: '[PRE7]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Nice. So, now we have two users that we can use individually, but also we have
+    a list of three users. The first round of tests will be testing how we are validating
+    a user. We will group all the tests for this task within a class. This not only
+    helps giving related tests a namespace, a place to be, but, as we''ll see later
+    on, it allows us to declare class-level fixtures, which are defined just for the
+    tests belonging to the class. Take a look at this code:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不错。现在我们有两个可以单独使用的用户，但是我们也有一个包含三个用户的列表。第一轮测试将测试我们如何验证用户。我们将把这个任务的所有测试分组到一个类中。这不仅有助于给相关的测试提供一个命名空间，一个位置，而且，正如我们后面将看到的，它允许我们声明类级别的固定装置，这些装置仅为属于该类的测试定义。看一下这段代码：
+- en: '[PRE8]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'We start very simply by making sure our fixtures are actually passing validation.
+    This is very important, as those fixtures will be used everywhere, so we want
+    them to be perfect. Next, we test the age. Two things to notice here: I will not
+    repeat the class signature, so the code that follows is indented by four spaces
+    and it''s because these are all methods within the same class, okay? And, second,
+    we''re going to use parametrization quite heavily.'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从非常简单的开始，确保我们的固定装置实际上通过了验证。这非常重要，因为这些固定装置将被用在各个地方，所以我们希望它们是完美的。接下来，我们测试年龄。这里有两件事需要注意：我不会重复类签名，所以接下来的代码缩进了四个空格，因为这些都是同一个类中的方法，好吗？其次，我们将大量使用参数化。
+- en: 'Parametrization is a technique that enables us to run the same test multiple
+    times, but feeding different data to it. It is very useful, as it allows us to
+    write the test only once with no repetition, and the result will be very intelligently
+    handled by `pytest`, which will run all those tests as if they were actually separate,
+    thus providing us with clear error messages when they fail. If you parametrize
+    manually, you lose this feature, and believe me you won''t be happy. Let''s see
+    how we test the age:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 参数化是一种技术，它使我们能够多次运行相同的测试，但提供不同的数据。这是非常有用的，因为它允许我们只编写一次测试而没有重复，而`pytest`会非常智能地处理结果，当测试失败时会运行所有这些测试，从而为我们提供清晰的错误消息。如果你手动进行参数化，你将失去这个特性，相信我你不会高兴。让我们看看如何测试年龄：
+- en: '[PRE9]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Right, so we start by writing a test to check that validation fails when the
+    user is too young. According to our rule, a user is too young when they are younger
+    than 18\. We check for every age between 0 and 17, by using `range`.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，所以我们首先编写一个测试，检查当用户年龄太小时验证失败。根据我们的规定，当用户年龄小于18岁时，用户年龄太小。我们通过使用`range`检查0到17岁之间的每个年龄。
+- en: If you take a look at how the parametrization works, you'll see we declare the
+    name of an object, which we then pass to the signature of the method, and then
+    we specify which values this object will take. For each value, the test will be
+    run once. In the case of this first test, the object's name is `age`, and the
+    values are all those returned by `range(18)`, which means all integer numbers
+    from `0` to `17` are included. Notice how we feed `age` to the test method, right
+    after `self`, and then we do something else, which is also very interesting. We
+    pass this method a fixture: `min_user`. This has the effect of activating that
+    fixture for the test run, so that we can use it, and can refer to it from within
+    the test. In this case, we simply change the age within the `min_user` dictionary,
+    and then we verify that the result of `is_valid(min_user)` is `False`.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你看一下参数化是如何工作的，你会看到我们声明了一个对象的名称，然后将其传递给方法的签名，然后指定这个对象将采用哪些值。对于每个值，测试将运行一次。在这个第一个测试的情况下，对象的名称是`age`，值是由`range(18)`返回的所有整数，这意味着从`0`到`17`的所有整数都包括在内。请注意，我们在`self`之后将`age`传递给测试方法，然后我们还做了另一件有趣的事情。我们传递了一个固定装置给这个方法：`min_user`。这将激活该固定装置进行测试运行，以便我们可以使用它，并且可以在测试中引用它。在这种情况下，我们只是改变了`min_user`字典中的年龄，然后我们验证`is_valid(min_user)`的结果是否为`False`。
+- en: We do this last bit by asserting on the fact that `not False` is `True`. In `pytest`, this
+    is how you check for something. You simply assert that something is truthy. If
+    that is the case, the test has succeeded. Should it instead be the opposite, the
+    test would fail.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们通过断言`not False`是`True`来完成最后一部分。在`pytest`中，这是你检查某事的方式。你只需断言某事是真实的。如果是这样，测试就成功了。如果相反，测试将失败。
+- en: 'Let''s proceed and add all the tests needed to make validation fail on the
+    age:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续添加所有需要使年龄验证失败的测试：
+- en: '[PRE10]'
+  id: totrans-117
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: So, another two tests. One takes care of the other end of the spectrum, from
+    66 years of age to 99\. And the second one instead makes sure that age is invalid
+    when it's not an integer number, so we pass some values, such as a string, a float,
+    and `None`, just to make sure. Notice how the structure of the test is basically
+    always the same, but, thanks to the parametrization, we feed very different input
+    arguments to it.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来是另外两个测试。一个负责处理年龄范围的另一端，从66岁到99岁。另一个则确保当年龄不是整数时是无效的，因此我们传递一些值，比如字符串、浮点数和`None`，只是为了确保。请注意测试的结构基本上总是相同的，但是由于参数化的原因，我们向其提供了非常不同的输入参数。
+- en: 'Now that we have the age-failing all sorted out, let''s add a test that actually
+    checks the age is within the valid range:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经解决了年龄验证失败的问题，让我们添加一个实际检查年龄是否在有效范围内的测试：
+- en: '[PRE11]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: It's as easy as that. We pass the correct range, from `18` to `65`, and remove
+    the `not` in the assertion. Notice how all tests start with the `test_` prefix,
+    and have a different name.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这么简单。我们传递了正确的范围，从`18`到`65`，并在断言中去掉了`not`。请注意，所有测试都以`test_`前缀开头，并且具有不同的名称。
+- en: 'We can consider the age as being taken care of. Let''s move on to write tests
+    on mandatory fields:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以考虑年龄已经被照顾到了。让我们继续编写关于必填字段的测试：
+- en: '[PRE12]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: '[PRE13]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: The previous three tests still belong to the same class. The first one tests
+    whether a user is invalid when one of the mandatory fields is missing. Notice
+    that at every test run, the `min_user` fixture is restored, so we only have one
+    missing field per test run, which is the appropriate way to check for mandatory
+    fields. We simply pop the key out of the dictionary. This time the parametrization
+    object takes the name `field`, and, by looking at the first test, you see all
+    the mandatory fields in the parametrization decorator: `email`, `name`, and `age`.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的三个测试仍然属于同一个类。第一个测试检查当必填字段中有一个缺失时用户是否无效。请注意，在每次测试运行时，`min_user` fixture都会被恢复，因此每次测试运行只有一个缺失字段，这是检查必填字段的适当方式。我们只需从字典中弹出键。这次参数化对象采用了`field`名称，并且通过查看第一个测试，您可以看到参数化装饰器中的所有必填字段：`email`，`name`和`age`。
+- en: In the second one, things are a little different. Instead of popping keys out,
+    we simply set them (one at a time) to the empty string. Finally, in the third
+    one, we check for the name to be made of whitespace only.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第二个测试中，情况有些不同。我们不是弹出键，而是简单地将它们（一个接一个）设置为空字符串。最后，在第三个测试中，我们检查姓名是否只由空格组成。
+- en: 'The previous tests take care of mandatory fields being there and being non-empty,
+    and of the formatting around the `name` key of a user. Good. Let''s now write
+    the last two tests for this class. We want to check email validity, and type for
+    email, name, and the role:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的测试处理了必填字段的存在和非空，以及用户的`name`键周围的格式。很好。现在让我们为这个类编写最后两个测试。我们想要检查电子邮件的有效性，以及电子邮件，姓名和角色的类型：
+- en: '[PRE14]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: This time, the parametrization is slightly more complex. We define two objects
+    (`email` and `outcome`), and then we pass a list of tuples, instead of a simple
+    list, to the decorator. What happens is that each time the test is run, one of
+    those tuples will be unpacked so to fill the values of `email` and `outcome`,
+    respectively. This allows us to write one test for both valid and invalid email
+    addresses, instead of two separate ones. We define an email address, and we specify
+    the outcome we expect from validation. The first four are invalid email addresses,
+    but the last three are actually valid. I have used a couple of examples with Unicode,
+    just to make sure we're not forgetting to include our friends from all over the
+    world in the validation.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这次，参数化略微复杂。我们定义了两个对象（`email`和`outcome`），然后我们将一个元组的列表，而不是一个简单的列表，传递给装饰器。发生的情况是每次运行测试时，其中一个元组将被解包以填充`email`和`outcome`的值。这使我们能够为有效和无效的电子邮件地址编写一个测试，而不是两个单独的测试。我们定义了一个电子邮件地址，并指定了我们期望的验证结果。前四个是无效的电子邮件地址，但最后三个实际上是有效的。我使用了一些包含Unicode的例子，只是为了确保我们没有忘记在验证中包括来自世界各地的朋友。
+- en: Notice how the validation is done, asserting the result of the call needs to
+    match the outcome we have set.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意验证是如何进行的，断言调用的结果需要与我们设置的结果匹配。
+- en: 'Let''s now write a simple test to make sure validation fails when we feed the
+    wrong type to the fields (again, the age has been taken care of separately before):'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们编写一个简单的测试，以确保当我们向字段提供错误类型时验证失败（再次强调，年龄已经单独处理）：
+- en: '[PRE15]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: As we did before, just for fun, we pass three different values, none of which
+    is actually a string. This test could be expanded to include more values, but,
+    honestly, we shouldn't need to write tests such as this one. I have included it
+    here just to show you what's possible.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像以前一样，只是为了好玩，我们传递了三个不同的值，其中没有一个实际上是字符串。这个测试可以扩展到包括更多的值，但是，老实说，我们不应该需要编写这样的测试。我在这里包括它只是为了向您展示可能的情况。
+- en: Before we move to the next test class, let me talk about something we have seen
+    when we were checking the age.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们转到下一个测试类之前，让我谈谈我们在检查年龄时看到的一些东西。
+- en: Boundaries and granularity
+  id: totrans-135
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 边界和粒度
+- en: 'While checking for the age, we have written three tests to cover the three
+    ranges: 0-17 (fail), 18-65 (success), 66-99 (fail). Why did we do this? The answer
+    lies in the fact that we are dealing with two boundaries: 18 and 65\. So our testing
+    needs to focus on the three regions those two boundaries define: before `18`,
+    within `18` and `65`, and after `65`. How you do it is not crucial, as long as
+    you make sure you test the boundaries correctly. This means if someone changes
+    the validation in the schema from `18 <= value <= 65` to `18 <= value < 65` (notice
+    the missing `=`), there must be a test that fails on the `65`.'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在检查年龄时，我们编写了三个测试来覆盖三个范围：0-17（失败），18-65（成功），66-99（失败）。为什么我们要这样做呢？答案在于我们正在处理两个边界：18和65。因此，我们的测试需要集中在这两个边界定义的三个区域上：18之前，18和65之间，以及65之后。你如何做并不重要，只要确保正确测试边界。这意味着如果有人将模式中的验证从`18
+    <= value <= 65`更改为`18 <= value < 65`（注意缺少`=`），必须有一个测试在`65`处失败。
+- en: This concept is known as **boundary**, and it's very important that you recognize
+    them in your code so that you can test against them.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个概念被称为**边界**，非常重要的是你能够在代码中识别它们，以便你可以针对它们进行测试。
+- en: Another important thing is to understand is which zoom level we want to get
+    close to the boundaries. In other words, which unit should I use to move around
+    it? In the case of age, we're dealing with integers, so a unit of `1` will be
+    the perfect choice (which is why we used `16`, `17`, `18`, `19`, `20`, ...). But
+    what if you were testing for a timestamp? Well, in that case, the correct granularity
+    will likely be different. If the code has to act differently according to your
+    timestamp and that timestamp represent seconds, then the granularity of your tests
+    should zoom down to seconds. If the timestamp represents years, then years should
+    be the unit you use. I hope you get the picture. This concept is known as **granularity**,
+    and needs to be combined with that of boundaries, so that by going around the
+    boundaries with the correct granularity, you can make sure your tests are not
+    leaving anything to chance.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个重要的事情是要理解我们想要接近边界的缩放级别。换句话说，我应该使用哪个单位来在其周围移动？在年龄的情况下，我们处理整数，因此单位`1`将是完美的选择（这就是为什么我们使用`16`、`17`、`18`、`19`、`20`等）。但如果你要测试时间戳呢？嗯，在这种情况下，正确的粒度可能会有所不同。如果代码必须根据您的时间戳以不同方式运行，并且该时间戳代表秒，则您的测试的粒度应该缩小到秒。如果时间戳代表年份，则年份应该是您使用的单位。希望你明白了。这个概念被称为**粒度**，需要与边界的概念结合起来，这样通过以正确的粒度绕过边界，您可以确保您的测试不会留下任何机会。
+- en: Let's now continue with our example, and test the `export` function.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们继续我们的例子，并测试`export`函数。
+- en: Testing the export function
+  id: totrans-140
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试导出函数
+- en: 'In the same test module, I have defined another class that represents a test
+    suite for the `export` function. Here it is:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在同一个测试模块中，我定义了另一个类，代表了`export`函数的测试套件。在这里：
+- en: '[PRE16]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Let's start understanding the fixtures. We have defined them at class-level
+    this time, which means they will be alive only for as long as the tests in the
+    class are running. We don't need these fixtures outside of this class, so it doesn't
+    make sense to declare them at a module level like we've done with the user ones.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们开始理解装置。这次我们在类级别定义了它们，这意味着它们只在类中的测试运行时存在。我们在这个类之外不需要这些装置，所以在模块级别声明它们就没有意义，就像我们在用户装置中所做的那样。
+- en: So, we need two files. If you recall what I wrote at the beginning of this chapter,
+    when it comes to interaction with databases, disks, networks, and so on, we should
+    mock everything out. However, when possible, I prefer to use a different technique.
+    In this case, I will employ temporary folders, which will be born within the fixture,
+    and die within it, leaving no trace of their existence. I am much happier if I
+    can avoid mocking. Mocking is amazing, but it can be tricky, and a source of bugs,
+    unless it's done correctly.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们需要两个文件。如果您回忆一下我在本章开头写的内容，当涉及与数据库、磁盘、网络等的交互时，我们应该将所有东西都模拟出来。但是，如果可能的话，我更喜欢使用一种不同的技术。在这种情况下，我将使用临时文件夹，它们将在装置内诞生，并在其中死去，不留下任何痕迹。如果可以避免模拟，我会更加开心。模拟是很棒的，但除非做得正确，否则它可能会很棘手，并且是错误的源泉。
+- en: Now, the first fixture, `csv_file`, defines a managed context in which we obtain
+    a reference to a temporary folder. We can consider the logic up to and including
+    the `yield`, as the setup phase. The fixture itself, in terms of data, is represented
+    by the temporary filename. The file itself is not present yet. When a test runs,
+    the fixture is created, and at the end of the test, the rest of the fixture code
+    (the one after `yield`, if any) is executed. That part can be considered the teardown
+    phase. In this case, it consists of exiting the context manager, which means the
+    temporary folder is deleted (along with all its content). You can put much more
+    in each phase of any fixture, and with experience, I'm sure you'll master the
+    art of doing setup and teardown this way. It actually comes very naturally quite
+    quickly.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，第一个装置`csv_file`定义了一个受控上下文，在其中我们获得了对临时文件夹的引用。我们可以认为逻辑直到`yield`为止的部分是设置阶段。就数据而言，装置本身由临时文件名表示。文件本身尚不存在。当测试运行时，装置被创建，并且在测试结束时，装置代码的其余部分（如果有的话）被执行。这部分可以被认为是拆卸阶段。在这种情况下，它包括退出上下文管理器，这意味着临时文件夹被删除（以及其所有内容）。您可以在任何装置的每个阶段中放入更多内容，并且通过经验，我相信您很快就能掌握以这种方式进行设置和拆卸的艺术。这实际上非常自然地很快就会掌握。
+- en: The second fixture is very similar to the first one, but we'll use it to test
+    that we can prevent overwriting when we call `export` with `overwrite=False`.
+    So we create a file in the temporary folder, and we put some content into it,
+    just to have the means to verify it hasn't been touched.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个装置与第一个非常相似，但我们将用它来测试当我们使用`overwrite=False`调用`export`时是否可以防止覆盖。因此，我们在临时文件夹中创建一个文件，并将一些内容放入其中，以便验证它没有被修改。
+- en: 'Notice how both fixtures are returning the filename with the full path information,
+    to make sure we actually use the temporary folder in our code. Let''s now see
+    the tests:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，两个装置都返回了带有完整路径信息的文件名，以确保我们实际上在我们的代码中使用了临时文件夹。现在让我们看看测试：
+- en: '[PRE17]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: This test employs the `users` and `csv_file` fixtures, and immediately calls `export`
+    with them. We expect that a file has been created, and populated with the two
+    valid users we have (remember the list contains three users, but one is invalid).
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个测试使用了`users`和`csv_file`装置，并立即调用了`export`。我们期望已经创建了一个文件，并用我们拥有的两个有效用户填充了它（记住列表包含三个用户，但一个是无效的）。
+- en: To verify that, we open the temporary file, and collect all its lines into a
+    list. We then compare the content of the file with a list of the lines that we
+    expect to be in it. Notice we only put the header, and the two valid users, in
+    the correct order.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了验证这一点，我们打开临时文件，并将其所有行收集到一个列表中。然后，我们将文件的内容与我们期望在其中的行的列表进行比较。请注意，我们只按正确顺序放置了标题和两个有效用户。
+- en: 'Now we need another test, to make sure that if there is a comma in one of the
+    values, our CSV is still generated correctly. Being a **comma-separated values**
+    (**CSV**) file, we need to make sure that a comma in the data doesn''t break things
+    up:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要另一个测试，以确保如果一个值中有逗号，我们的CSV仍然可以正确生成。作为**逗号分隔值**（**CSV**）文件，我们需要确保数据中的逗号不会导致问题：
+- en: '[PRE18]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: This time, we don't need the whole users list, we just need one as we're testing
+    a specific thing, and we have the previous test to make sure we're generating
+    the file correctly with all the users. Remember, always try to minimize the work
+    you do within a test.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一次，我们不需要整个用户列表，我们只需要一个，因为我们正在测试一个特定的事情，并且我们有之前的测试来确保我们正确生成了包含所有用户的文件。记住，尽量在测试中最小化你的工作。
+- en: So, we use `min_user`, and put a nice comma in its name. We then repeat the
+    procedure, which is very similar to that of the previous test, and finally we
+    make sure that the name is put in the CSV file surrounded by double quotes. This
+    is enough for any good CSV parser to understand that they don't have to break
+    on the comma inside the double quotes.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们使用`min_user`，并在其名称中放一个漂亮的逗号。然后我们重复之前测试的过程，这与前一个测试非常相似，最后我们确保名称被放入由双引号括起来的CSV文件中。这对于任何良好的CSV解析器来说已经足够了，它们不会因为双引号内的逗号而出错。
+- en: 'Now I want one more test, which needs to check that whether the file exists
+    and we don''t want to override it, our code won''t touch it:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我想再做一个测试，需要检查文件是否存在，如果我们不想覆盖它，我们的代码就不会触及它：
+- en: '[PRE19]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: This is a beautiful test, because it allows me to show you how you can tell `pytest`
+    that you expect a function call to raise an exception. We do it in the context
+    manager given to us by `pytest.raises`, to which we feed the exception we expect
+    from the call we make inside the body of that context manager. If the exception
+    is not raised, the test will fail.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个很好的测试，因为它让我可以向你展示如何告诉`pytest`你期望一个函数调用引发一个异常。我们在`pytest.raises`给我们的上下文管理器中这样做，我们在这个上下文管理器的主体内部调用中提供我们期望的异常。如果异常没有被引发，测试将失败。
+- en: I like to be thorough in my test, so I don't want to stop there. I also assert
+    on the message, by using the convenient `err.match` helper (watch out, it takes
+    a regular expression, not a simple string–we'll see regular expressions in [Chapter
+    14](part0341.html#A56FQ0-2ddb708647cc4530a187c2c6c0e9acfe), *Web Development*).
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我喜欢在我的测试中做到彻底，所以我不想止步于此。我还通过使用方便的`err.match`助手来断言消息（注意，它接受正则表达式，而不是简单的字符串-我们将在[第14章](part0341.html#A56FQ0-2ddb708647cc4530a187c2c6c0e9acfe)中看到正则表达式，*Web
+    Development*）。
+- en: Finally, let's make sure that the file still contains its original content (which
+    is why I created the `existing_file` fixture) by opening it, and comparing all
+    of its content to the string it should be.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，让我们确保文件仍然包含其原始内容（这就是我创建`existing_file` fixture的原因），方法是打开它，并将其所有内容与应该是的字符串进行比较。
+- en: Final considerations
+  id: totrans-160
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 最后的考虑
+- en: Before we move on to the next topic, let me just wrap up with some considerations.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们继续下一个话题之前，让我用一些考虑来总结。
+- en: First, I hope you have noticed that I haven't tested all the functions I wrote.
+    Specifically, I didn't test `get_valid_users`, `validate`, and `write_csv`. The
+    reason is because these functions are implicitly tested by our test suite. We
+    have tested `is_valid` and `export`, which is more than enough to make sure our
+    schema is validating users correctly, and the `export` function is dealing with
+    filtering out invalid users correctly, respecting existing files when needed,
+    and writing a proper CSV. The functions we haven't tested are the internals, they
+    provide logic that participates to doing something that we have thoroughly tested
+    anyway. Would adding extra tests for those functions be good or bad? Think about
+    it for a moment.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我希望您已经注意到我没有测试我编写的所有函数。具体来说，我没有测试`get_valid_users`，`validate`和`write_csv`。原因是因为这些函数已经被我们的测试套件隐式测试过了。我们已经测试了`is_valid`和`export`，这已经足够确保我们的模式正确验证用户，并且`export`函数在需要时正确处理过滤无效用户，并正确地写入CSV。我们没有测试的函数是内部函数，它们提供的逻辑已经在我们彻底测试过的操作中发挥了作用。为这些函数添加额外的测试是好还是坏？请思考一下。
+- en: The answer is actually difficult. The more you test, the less you can refactor
+    that code. As it is now, I could easily decide to call `is_valid` with another
+    name, and I wouldn't have to change any of my tests. If you think about it, it
+    makes sense, because as long as `is_valid` provides correct validation to the `get_valid_users`
+    function, I don't really need to know about it. Does this make sense to you?
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 答案实际上很难。你测试得越多，你就越不能重构那段代码。就目前而言，我可以轻松地决定以另一个名称调用`is_valid`，而不必更改任何测试。如果你仔细想想，这是有道理的，因为只要`is_valid`正确验证`get_valid_users`函数，我就不需要知道它的具体情况。这对你有意义吗？
+- en: If instead I had tests for the `validate` function, then I would have to change
+    them, if I decided to call it differently (or to somehow change its signature).
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我要测试`validate`函数，那么如果我决定以不同的方式调用它（或者以某种方式更改其签名），我将不得不更改它们。
+- en: So, what is the right thing to do? Tests or no tests? It will be up to you.
+    You have to find the right balance. My personal take on this matter is that everything
+    needs to be thoroughly tested, either directly or indirectly. And I want the smallest
+    possible test suite that guarantees me that. This way, I will have a great test
+    suite in terms of coverage, but not any bigger than necessary. You need to maintain
+    those tests!
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，应该做什么？测试还是不测试？这取决于你。你必须找到合适的平衡。我个人对这个问题的看法是，一切都需要经过彻底的测试，无论是直接还是间接地。我希望测试套件尽可能小，但能够保证我有很好的覆盖率。这样，我将拥有一个很好的测试套件，但不会比必要的更大。你需要维护这些测试！
+- en: I hope this example made sense to you, I think it has allowed me to touch on
+    the important topics.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我希望这个例子对您有意义，我认为它让我触及了重要的话题。
+- en: If you check out the source code for the book, in the `test_api.py` module,
+    I have added a couple of extra test classes, which will show you how different
+    testing would have been had I decided to go all the way with the mocks. Make sure
+    you read that code and understand it well. It is quite straightforward and will
+    offer you a good comparison with my personal approach, which I have shown you
+    here.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你查看本书的源代码，在`test_api.py`模块中，我添加了几个额外的测试类，这将展示如果我决定完全使用模拟测试，不同的测试方式会是什么样子。确保你阅读并充分理解这段代码。它非常直接，将为你提供一个与我个人方法的良好比较。
+- en: 'Now, how about we run those tests? (The output is re-arranged to fit this book''s
+    format):'
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们来运行这些测试吧？（输出已重新排列以适应本书的格式）：
+- en: '[PRE20]'
+  id: totrans-169
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: Make sure you run `$ pytest test` from within the `ch8` folder (add the `-vv`
+    flag for a verbose output that will show you how parametrization modifies the
+    names of your tests). As you can see, `132` tests were run in less than half a
+    second, and they all succeeded. I strongly suggest you check out this code and
+    play with it. Change something in the code and see whether any test is breaking.
+    Understand why it is breaking. Is it something important that means the test isn't
+    good enough? Or is it something silly that shouldn't cause the test to break?
+    All these apparently innocuous questions will help you gain deep insight into
+    the art of testing.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保你在`ch8`文件夹中运行`$ pytest test`（添加`-vv`标志以获得详细输出，显示参数化如何修改测试名称）。正如你所看到的，少于半秒内运行了`132`个测试，它们全部都成功了。我强烈建议你查看这段代码并进行调试。更改代码中的某些内容，看看是否有任何测试失败。理解为什么会失败。这是因为测试不够好的重要原因吗？还是因为一些愚蠢的原因导致测试失败？所有这些看似无害的问题都将帮助你深入了解测试的艺术。
+- en: I also suggest you study the `unittest` module, and `pytest` too. These are
+    tools you will use all the time, so you need to be very familiar with them.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还建议你学习`unittest`模块和`pytest`。这些是你将经常使用的工具，所以你需要非常熟悉它们。
+- en: Let's now check out test-driven development!
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们来看看测试驱动开发！
+- en: Test-driven development
+  id: totrans-173
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试驱动开发
+- en: Let's talk briefly about **test-driven development** (**TDD**). It is a methodology
+    that was rediscovered by Kent Beck, who wrote *Test-Driven Development by Example*,
+    *Addison Wesley, 2002*, which I encourage you to check out if you want to learn
+    about the fundamentals of this subject.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们简要谈谈**测试驱动开发**（**TDD**）。这是一种方法论，由肯特·贝克重新发现，他写了《通过示例驱动开发》，*Addison Wesley,
+    2002*，我鼓励你查看一下，如果你想学习这个主题的基础知识。
+- en: TDD is a software development methodology that is based on the continuous repetition
+    of a very short development cycle.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: TDD是一种基于非常短的开发周期的持续重复的软件开发方法论。
+- en: First, the developer writes a test, and makes it run. The test is supposed to
+    check a feature that is not yet part of the code. Maybe it is a new feature to
+    be added, or something to be removed or amended. Running the test will make it
+    fail and, because of this, this phase is called **Red**.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，开发人员编写一个测试，并使其运行。测试应该检查代码中尚未存在的功能。也许是要添加的新功能，或者要删除或修改的内容。运行测试会使其失败，因此这个阶段被称为**红色**。
+- en: When the test has failed, the developer writes the minimal amount of code to
+    make it pass. When running the test succeeds, we have the so-called **Green**
+    phase. In this phase, it is okay to write code that cheats, just to make the test
+    pass. This technique is called *fake it 'till you make it*. In a second moment,
+    tests are enriched with different edge cases, and the cheating code then has to
+    be rewritten with proper logic. Adding other test cases is called **triangulation**.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当测试失败时，开发人员编写最少量的代码使其通过。当运行测试成功时，我们进入了所谓的**绿色**阶段。在这个阶段，编写欺骗性代码只是为了让测试通过是可以接受的。这种技术被称为*假装直到你成功为止*。在第二个阶段，测试用例会丰富起来，包括不同的边界情况，然后欺骗性代码必须用适当的逻辑进行重写。添加其他测试用例被称为**三角测量**。
+- en: The last piece of the cycle is where the developer takes care of both the code
+    and the tests (in separate times) and refactors them until they are in the desired
+    state. This last phase is called **Refactor**.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 循环的最后一部分是开发人员在不同的时间处理代码和测试，并对它们进行重构，直到它们达到期望的状态。这最后阶段被称为**重构**。
+- en: The **TDD** mantra therefore is **Red-Green-Refactor**.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，**TDD**的口头禅是**红-绿-重构**。
+- en: At first, it feels really weird to write tests before the code, and I must confess
+    it took me a while to get used to it. If you stick to it, though, and force yourself
+    to learn this slightly counter-intuitive way of working, at some point something
+    almost magical happens, and you will see the quality of your code increase in
+    a way that wouldn't be possible otherwise.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一开始，先编写代码然后再编写测试会感觉非常奇怪，我必须承认我花了一段时间才习惯。然而，如果你坚持下去，并强迫自己学习这种略微违反直觉的工作方式，某个时刻几乎会发生一些近乎神奇的事情，你会看到你的代码质量以一种其他方式不可能的方式提高。
+- en: When you write your code before the tests, you have to take care of *what* the
+    code has to do and *how* it has to do it, both at the same time. On the other
+    hand, when you write tests before the code, you can concentrate on the *what*
+    part alone, while you write them. When you write the code afterward, you will
+    mostly have to take care of *how* the code has to implement *what* is required
+    by the tests. This shift in focus allows your mind to concentrate on the *what*
+    and *how* parts in separate moments, yielding a brain power boost that will surprise
+    you.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你在编写代码之前编写测试时，你必须同时关注代码的*作用*和*如何*实现它。另一方面，当你在编写代码之前编写测试时，你可以在编写测试时只专注于*作用*部分。当你之后编写代码时，你将主要关注代码如何实现测试所需的*作用*。这种关注焦点的转变允许你的大脑在不同的时刻专注于*作用*和*如何*部分，从而提供了一种令人惊讶的大脑能量提升。
+- en: 'There are several other benefits that come from the adoption of this technique:'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 采用这种技术还有其他几个好处：
+- en: '**You will refactor with much more confidence**: Tests will break if you introduce
+    bugs. Moreover, the architectural refactor will also benefit from having tests
+    that act as guardians.'
+  id: totrans-183
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您将更有信心地进行重构：如果引入错误，测试将会失败。此外，架构重构也将受益于具有充当守护者的测试。
+- en: '**The code will be more readable**: This is crucial in our time, when coding
+    is a social activity and every professional developer spends much more time reading
+    code than writing it.'
+  id: totrans-184
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 代码将更易读：在我们这个时代，编码是一种社交活动，每个专业开发人员花在阅读代码上的时间远远超过编写代码的时间。
+- en: '**The code will be more loosely coupled and easier to test and maintain**: Writing
+    the tests first forces you to think more deeply about code structure.'
+  id: totrans-185
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 代码将更松散耦合且更易于测试和维护：首先编写测试会迫使您更深入地思考代码结构。
+- en: '**Writing tests first requires you to have a better understanding of the business
+    requirements**: If your understanding of the requirements is lacking information,
+    you''ll find writing a test extremely challenging and this situation acts as a
+    sentinel for you.'
+  id: totrans-186
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 首先编写测试要求您对业务需求有更好的理解：如果您对需求的理解缺乏信息，您会发现编写测试非常具有挑战性，这种情况对您来说是一个警示。
+- en: '**Having everything unit tested means the code will be easier to debug**: Moreover,
+    small tests are perfect for providing alternative documentation. English can be
+    misleading, but five lines of Python in a simple test are very hard to misunderstand.'
+  id: totrans-187
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 拥有完整的单元测试意味着代码将更容易调试：此外，小测试非常适合提供替代文档。英语可能会误导，但在简单测试中的五行Python很难误解。
+- en: '**Higher speed**: It''s faster to write tests and code than it is to write
+    the code first and then lose time debugging it. If you don''t write tests, you
+    will probably deliver the code sooner, but then you will have to track the bugs
+    down and solve them (and, rest assured, there will be bugs). The combined time
+    taken to write the code and then debug it is usually longer than the time taken
+    to develop the code with TDD, where having tests running before the code is written,
+    ensuring that the amount of bugs in it will be much lower than in the other case.'
+  id: totrans-188
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更高的速度：编写测试和代码比先编写代码然后花时间调试要快。如果您不编写测试，您可能会更快地交付代码，但然后您将不得不追踪错误并解决它们（可以肯定会有错误）。编写代码然后调试所花费的时间通常比使用TDD开发代码的时间长，因为在编写代码之前运行测试，确保其中的错误数量要比另一种情况下少得多。
+- en: 'On the other hand, the main shortcomings of this technique are the following
+    ones:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，这种技术的主要缺点如下：
+- en: '**The whole company needs to believe in it**: Otherwise, you will have to constantly
+    argue with your boss, who will not understand why it takes you so long to deliver.
+    The truth is, it may take you a bit longer to deliver in the short-term, but in
+    the long-term, you gain a lot with TDD. However, it is quite hard to see the long-term
+    because it''s not under our noses like the short-term is. I have fought battles
+    with stubborn bosses in my career, to be able to code using TDD. Sometimes it
+    has been painful, but always well worth it, and I have never regretted it because,
+    in the end, the quality of the result has always been appreciated.'
+  id: totrans-190
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 整个公司都需要相信它：否则，您将不得不不断地与老板争论，他不会理解为什么您花费这么长时间交付。事实是，短期内您可能需要更长时间才能交付，但从长远来看，您会因TDD获得很多。然而，很难看到长期效果，因为它不像短期效果那样显而易见。在我的职业生涯中，我与固执的老板进行了激烈的斗争，以便能够使用TDD进行编码。有时这是痛苦的，但总是值得的，我从未后悔，因为最终结果的质量总是受到赞赏。
+- en: '**If you fail to understand the business requirements, this will reflect in
+    the tests you write, and therefore it will reflect in the code too**: This kind
+    of problem is quite hard to spot until you do UAT, but one thing that you can
+    do to reduce the likelihood of it happening is to pair with another developer.
+    Pairing will inevitably require discussions about the business requirements, and
+    discussion will bring clarification, which will help writing correct tests.'
+  id: totrans-191
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果您未能理解业务需求，这将反映在您编写的测试中，因此也将反映在代码中：这种问题很难发现，直到进行用户验收测试，但您可以做的一件事是与另一位开发人员合作。合作将不可避免地需要讨论业务需求，讨论将带来澄清，这将有助于编写正确的测试。
+- en: '**Badly written tests are hard to maintain:** This is a fact. Tests with too
+    many mocks or with extra assumptions or badly-structured data will soon become
+    a burden. Don''t let this discourage you; just keep experimenting and change the
+    way you write them until you find a way that doesn''t require you a huge amount
+    of work every time you touch your code.'
+  id: totrans-192
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 糟糕编写的测试很难维护：这是事实。测试中有太多的模拟或额外的假设或结构不良的数据很快就会成为负担。不要让这使您灰心；继续尝试并改变编写测试的方式，直到找到一种不需要您每次触及代码时都需要大量工作的方式。
+- en: I'm quite passionate about TDD. When I interview for a job, I always ask whether
+    the company adopts it. I encourage you to check it out and use it. Use it until
+    you feel something clicking in your mind. You won't regret it, I promise.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我对TDD非常热衷。当我面试工作时，我总是问公司是否采用它。我鼓励你去了解并使用它。使用它直到你觉得有所领悟。我保证你不会后悔。
+- en: Exceptions
+  id: totrans-194
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 例外情况
+- en: Even though I haven't formally introduced them to you, by now I expect you to
+    at least have a vague idea of what an exception is. In the previous chapters,
+    we've seen that when an iterator is exhausted, calling `next` on it raises a `StopIteration`
+    exception. We met `IndexError` when we tried accessing a list at a position that
+    was outside the valid range. We also met `AttributeError` when we tried accessing
+    an attribute on an object that didn't have it, and `KeyError` when we did the
+    same with a key and a dictionary.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管我还没有正式向您介绍它们，但我现在希望您至少对异常有一个模糊的概念。在前几章中，我们已经看到当迭代器耗尽时，调用`next`会引发`StopIteration`异常。当我们尝试访问列表中超出有效范围的位置时，我们遇到了`IndexError`。当我们尝试访问对象上没有的属性时，我们也遇到了`AttributeError`，当我们尝试使用键和字典时，我们遇到了`KeyError`。
+- en: Now the time has come for us to talk about exceptions.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是时候谈论异常了。
+- en: Sometimes, even though an operation or a piece of code is correct, there are
+    conditions in which something may go wrong. For example, if we're converting user
+    input from `string` to `int`, the user could accidentally type a letter in place
+    of a digit, making it impossible for us to convert that value into a number. When
+    dividing numbers, we may not know in advance whether we're attempting a division
+    by zero. When opening a file, it could be missing or corrupted.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有时，即使操作或代码是正确的，也有可能出现某些条件会出错。例如，如果我们将用户输入从`string`转换为`int`，用户可能会意外地在数字的位置上输入字母，这样我们就无法将该值转换为数字。在进行数字除法时，我们可能事先不知道是否会尝试进行除以零的除法。在打开文件时，文件可能丢失或损坏。
+- en: 'When an error is detected during execution, it is called an **exception**.
+    Exceptions are not necessarily lethal; in fact, we''ve seen that `StopIteration`
+    is deeply integrated in the Python generator and iterator mechanisms. Normally,
+    though, if you don''t take the necessary precautions, an exception will cause
+    your application to break. Sometimes, this is the desired behavior, but in other
+    cases, we want to prevent and control problems such as these. For example, we
+    may alert the user that the file they''re trying to open is corrupted or that
+    it is missing so that they can either fix it or provide another file, without
+    the need for the application to die because of this issue. Let''s see an example
+    of a few exceptions:'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在执行过程中检测到错误时，称为**异常**。异常并不一定是致命的；事实上，我们已经看到`StopIteration`深度集成在Python生成器和迭代器机制中。不过，通常情况下，如果您不采取必要的预防措施，异常将导致应用程序中断。有时，这是期望的行为，但在其他情况下，我们希望预防和控制这样的问题。例如，我们可能会警告用户，他们试图打开的文件损坏或丢失，以便他们可以修复它或提供另一个文件，而无需因此问题而使应用程序中断。让我们看一些异常的例子：
+- en: '[PRE21]'
+  id: totrans-199
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: As you can see, the Python shell is quite forgiving. We can see `Traceback`,
+    so that we have information about the error, but the program doesn't die. This
+    is a special behavior, a regular program or a script would normally die if nothing
+    were done to handle exceptions.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，Python shell非常宽容。我们可以看到`Traceback`，这样我们就可以获得有关错误的信息，但程序不会中断。这是一种特殊的行为，通常情况下，如果没有处理异常，常规程序或脚本通常会中断。
+- en: To handle an exception, Python gives you the `try` statement. When you enter
+    the `try` clause, Python will watch out for one or more different types of exceptions
+    (according to how you instruct it), and if they are raised, it will allow you
+    to react. The `try` statement is composed of the `try` clause, which opens the
+    statement, one or more `except` clauses (all optional) that define what to do
+    when an exception is caught, an `else` clause (optional), which is executed when
+    the `try` clause is exited without any exception raised, and a `finally` clause
+    (optional), whose code is executed regardless of whatever happened in the other
+    clauses. The `finally` clause is typically used to clean up resources (we saw
+    this in [Chapter 7](part0187.html#5IAP60-2ddb708647cc4530a187c2c6c0e9acfe), *Files
+    and Data Persistence*, when we were opening files without using a context manager).
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要处理异常，Python为您提供了`try`语句。当进入`try`子句时，Python将监视一个或多个不同类型的异常（根据您的指示），如果它们被引发，它将允许您做出反应。`try`语句由`try`子句组成，它打开语句，一个或多个`except`子句（全部可选），定义了在捕获异常时要执行的操作，一个`else`子句（可选），当`try`子句在没有引发任何异常的情况下退出时执行，以及一个`finally`子句（可选），其代码无论其他子句中发生了什么都会执行。`finally`子句通常用于清理资源（我们在[第7章](part0187.html#5IAP60-2ddb708647cc4530a187c2c6c0e9acfe)中看到过，*文件和数据持久性*，当我们在没有使用上下文管理器的情况下打开文件时）。
+- en: 'Mind the order—it''s important. Also, `try` must be followed by at least one
+    `except` clause or a `finally` clause. Let''s see an example:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意顺序——这很重要。此外，`try`后面必须至少跟一个`except`子句或一个`finally`子句。让我们看一个例子：
+- en: '[PRE22]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: The preceding example defines a simple `try_syntax` function. We perform the
+    division of two numbers. We are prepared to catch a `ZeroDivisionError` exception
+    if we call the function with `denominator = 0`. Initially, the code enters the
+    `try` block. If `denominator` is not `0`, `result` is calculated and the execution,
+    after leaving the `try` block, resumes in the `else` block. We print `result`
+    and return it. Take a look at the output and you'll notice that just before returning
+    `result`, which is the exit point of the function, Python executes the `finally`
+    clause.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的例子定义了一个简单的`try_syntax`函数。我们执行两个数字的除法。如果我们用`denominator = 0`调用函数，我们准备捕获`ZeroDivisionError`异常。最初，代码进入`try`块。如果`denominator`不是`0`，则计算`result`并在离开`try`块后在`else`块中恢复执行。我们打印`result`并返回它。看一下输出，你会注意到在返回`result`之前，也就是函数的退出点，Python执行`finally`子句。
+- en: 'When `denominator` is `0`, things change. We enter the `except` block and print
+    `zde`. The `else` block isn''t executed because an exception was raised in the
+    `try` block. Before (implicitly) returning `None`, we still execute the `finally`
+    block. Take a look at the output and see whether it makes sense to you:'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当`denominator`为`0`时，情况就会改变。我们进入`except`块并打印`zde`。`else`块不会被执行，因为在`try`块中引发了异常。在（隐式）返回`None`之前，我们仍然执行`finally`块。看一下输出，看看它对您是否有意义：
+- en: '[PRE23]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'When you execute a `try` block, you may want to catch more than one exception.
+    For example, when trying to decode a JSON object, you may incur into `ValueError`
+    for malformed JSON, or `TypeError` if the type of the data you''re feeding to
+    `json.loads()` is not a string. In this case, you may structure your code like
+    this:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当执行`try`块时，您可能希望捕获多个异常。例如，当尝试解码JSON对象时，可能会遇到`ValueError`（JSON格式不正确）或`TypeError`（传递给`json.loads()`的数据类型不是字符串）。在这种情况下，您可以像这样构造代码：
+- en: '[PRE24]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: This code will catch both `ValueError` and `TypeError`. Try changing `json_data
+    = '{}'` to `json_data = 2` or `json_data = '{{'`, and you'll see the different
+    output.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码将捕获`ValueError`和`TypeError`。尝试将`json_data = '{}'`更改为`json_data = 2`或`json_data
+    = '{{'`，您将看到不同的输出。
+- en: 'If you want to handle multiple exceptions differently, you can just add more
+    `except` clauses, like this:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果要以不同方式处理多个异常，只需添加更多的`except`子句，就像这样：
+- en: '[PRE25]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Keep in mind that an exception is handled in the first block that defines that
+    exception class or any of its bases. Therefore, when you stack multiple `except`
+    clauses like we've just done, make sure that you put specific exceptions at the
+    top and generic ones at the bottom. In OOP terms, children on top, grandparents
+    at the bottom. Moreover, remember that only one `except` handler is executed when
+    an exception is raised.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，异常在首次定义该异常类或其任何基类的块中处理。因此，当您像我们刚刚做的那样堆叠多个`except`子句时，请确保将特定的异常放在顶部，将通用的异常放在底部。在面向对象编程术语中，子类在顶部，祖先类在底部。此外，请记住，当引发异常时，只有一个`except`处理程序被执行。
+- en: You can also write **custom exceptions**. To do that, you just have to inherit
+    from any other exception class. Python's built-in exceptions are too many to be
+    listed here, so I have to point you to the official documentation. One important
+    thing to know is that every Python exception derives from `BaseException`, but
+    your custom exceptions should never inherit directly from it. The reason is because
+    handling such an exception will also trap **system-exiting exceptions**, such
+    as `SystemExit` and `KeyboardInterrupt`, which derive from `BaseException`, and
+    this could lead to severe issues. In the case of disaster, you want to be able
+    to *Ctrl* + *C* your way out of an application.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以编写**自定义异常**。要做到这一点，您只需从任何其他异常类继承。Python内置的异常太多，无法在此列出，因此我必须指向官方文档。要知道的一件重要的事情是，每个Python异常都派生自`BaseException`，但您的自定义异常不应直接从它继承。原因是处理这样的异常也会捕获**系统退出异常**，例如`SystemExit`和`KeyboardInterrupt`，它们派生自`BaseException`，这可能会导致严重问题。在灾难发生时，您希望能够通过*Ctrl*
+    + *C*退出应用程序。
+- en: You can easily solve the problem by inheriting from `Exception`, which inherits
+    from `BaseException` but doesn't include any system-exiting exception in its children
+    because they are siblings in the built-in exceptions hierarchy (see [https://docs.python.org/3/library/exceptions.html#exception-hierarchy](https://docs.python.org/3/library/exceptions.html#exception-hierarchy)).
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过从`Exception`继承来轻松解决这个问题，它从`BaseException`继承，但在其子类中不包括任何系统退出异常，因为它们在内置异常层次结构中是同级的（参见[https://docs.python.org/3/library/exceptions.html#exception-hierarchy](https://docs.python.org/3/library/exceptions.html#exception-hierarchy)）。
+- en: 'Programming with exceptions can be very tricky. You could inadvertently silence
+    out errors, or trap exceptions that aren''t meant to be handled. Play it safe
+    by keeping in mind a few guidelines: always put in the `try` clause only the code
+    that may cause the exception(s) that you want to handle. When you write `except`
+    clauses, be as specific as you can, don''t just resort to `except Exception` because
+    it''s easy. Use tests to make sure your code handles edge cases in a way that
+    requires the least possible amount of exception handling. Writing an `except`
+    statement without specifying any exception would catch any exception, therefore
+    exposing your code to the same risks you incur when you derive your custom exceptions
+    from `BaseException`.'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用异常进行编程可能非常棘手。您可能会无意中消除错误，或者捕获不应该处理的异常。通过牢记一些准则来确保安全：只在`try`子句中放入可能引发您想要处理的异常的代码。当编写`except`子句时，尽可能具体，不要只是使用`except
+    Exception`，因为这样很容易。使用测试来确保您的代码以需要尽可能少的异常处理来处理边缘情况。编写`except`语句而不指定任何异常将捕获任何异常，因此使您的代码面临与将自定义异常从`BaseException`派生时一样的风险。
+- en: You will find information about exceptions almost everywhere on the web. Some
+    coders use them abundantly, others sparingly. Find your own way of dealing with
+    them by taking examples from other people's source code. There are plenty of interesting
+    open source projects on websites such as GitHub ([https://github.com](https://github.com))
+    and Bitbucket ([https://bitbucket.org/](https://bitbucket.org/)).
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您几乎可以在网上的任何地方找到有关异常的信息。一些程序员大量使用它们，而其他人则节俭使用。通过从其他人的源代码中获取示例，找到自己处理异常的方法。在GitHub（[https://github.com](https://github.com)）和Bitbucket（[https://bitbucket.org/](https://bitbucket.org/)）等网站上有许多有趣的开源项目。
+- en: 'Before we talk about profiling, let me show you an unconventional use of exceptions,
+    just to give you something to help you expand your views on them. They are not
+    just simply errors:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在谈论性能分析之前，让我向您展示异常的非常规用法，以便为您提供一些帮助，帮助您扩展对它们的看法。它们不仅仅是简单的错误：
+- en: '[PRE26]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'The preceding code is quite a common idiom if you deal with numbers. You have
+    to iterate over a few nested ranges and look for a particular combination of `a`,
+    `b`, and `c` that satisfies a condition. In the example, condition is a trivial
+    linear equation, but imagine something much cooler than that. What bugs me is
+    having to check whether the solution has been found at the beginning of each loop,
+    in order to break out of them as fast as we can when it is. The breakout logic
+    interferes with the rest of the code and I don''t like it, so I came up with a
+    different solution for this. Take a look at it, and see whether you can adapt
+    it to other cases too:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的代码是处理数字时的常见习语。您必须迭代几个嵌套范围，并寻找满足条件的特定`a`、`b`和`c`的组合。在示例中，条件是一个微不足道的线性方程，但想象一些比这更酷的东西。让我困扰的是每次循环开始时都要检查解决方案是否已找到，以便在找到解决方案时尽快跳出循环。跳出逻辑会干扰其他代码，我不喜欢这样，所以我想出了另一种解决方案。看看它，并看看你是否也可以将其适应到其他情况：
+- en: '[PRE27]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Can you see how much more elegant it is? Now the breakout logic is entirely
+    handled with a simple exception whose name even hints at its purpose. As soon
+    as the result is found, we raise it, and immediately the control is given to the
+    `except` clause that handles it. This is food for thought. This example indirectly
+    shows you how to raise your own exceptions. Read up on the official documentation
+    to dive into the beautiful details of this subject.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您能看到它有多么优雅吗？现在，跳出逻辑完全由一个简单的异常处理，甚至其名称都暗示了其目的。一旦找到结果，我们就会引发它，立即将控制权交给处理它的`except`子句。这是一个值得思考的问题。这个例子间接地向您展示了如何引发自己的异常。阅读官方文档，深入了解这个主题的美丽细节。
+- en: Moreover, if you are up for a challenge, you might want to try to make this
+    last example into a context manager for nested `for` loops. Good luck!
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，如果你想挑战一下，你可能想尝试将最后一个例子转换为嵌套`for`循环的上下文管理器。祝你好运！
+- en: Profiling Python
+  id: totrans-223
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Python分析
+- en: There are a few different ways to profile a Python application. Profiling means
+    having the application run while keeping track of several different parameters,
+    such as the number of times a function is called and the amount of time spent
+    inside it. Profiling can help us find the bottlenecks in our application, so that
+    we can improve only what is really slowing us down.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有几种不同的方法来分析Python应用程序。分析意味着在应用程序运行时跟踪几个不同的参数，例如函数被调用的次数和在其中花费的时间。分析可以帮助我们找到应用程序中的瓶颈，以便我们只改进真正拖慢我们的部分。
+- en: 'If you take a look at the profiling section in the standard library official
+    documentation, you will see that there are a couple of different implementations
+    of the same profiling interface—`profile` and `cProfile`:'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你查看标准库官方文档中的分析部分，你会看到同一分析接口的几种不同实现——`profile`和`cProfile`：
+- en: '`cProfile` is recommended for most users, it''s a C extension with reasonable
+    overhead that makes it suitable for profiling long-running programs'
+  id: totrans-226
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`cProfile`建议大多数用户使用，它是一个C扩展，具有合理的开销，适用于对长时间运行的程序进行分析'
+- en: '`profile` is a pure Python module whose interface is imitated by `cProfile`,
+    but which adds significant overhead to profiled programs'
+  id: totrans-227
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`profile`是一个纯Python模块，其接口被`cProfile`模仿，但对被分析的程序增加了显著的开销'
+- en: This interface does **determinist profiling**, which means that all function
+    calls, function returns, and exception events are monitored, and precise timings
+    are made for the intervals between these events. Another approach, called **statistical
+    profiling**, randomly samples the effective instruction pointer, and deduces where
+    time is being spent.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个接口进行**确定性分析**，这意味着所有函数调用、函数返回和异常事件都受到监视，并且对这些事件之间的时间间隔进行了精确的计时。另一种方法，称为**统计分析**，随机抽样有效指令指针，并推断时间花费在哪里。
+- en: The latter usually involves less overhead, but provides only approximate results.
+    Moreover, because of the way the Python interpreter runs the code, deterministic
+    profiling doesn't add as much overhead as one would think, so I'll show you a
+    simple example using `cProfile` from the command line.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 后者通常的开销较小，但提供的结果只是近似的。此外，由于Python解释器运行代码的方式，确定性分析并没有增加太多开销，所以我会向你展示一个简单的例子，使用命令行中的`cProfile`。
+- en: 'We''re going to calculate Pythagorean triples (I know, you''ve missed them...)
+    using the following code:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用以下代码计算勾股数（我知道，你们已经错过了它们...）：
+- en: '[PRE28]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'The script is extremely simple; we iterate over the interval [`1`, `mx`] with
+    `a` and `b` (avoiding repetition of pairs by setting `b >= a`) and we check whether
+    they belong to a right triangle. We use `calc_hypotenuse` to get `hypotenuse`
+    for `a` and `b`, and then, with `is_int`, we check whether it is an integer, which
+    means (*a*, *b*, *c*) is a Pythagorean triple. When we profile this script, we
+    get information in a tabular form. The columns are `ncalls`, `tottime`, `percall`,
+    `cumtime`, `percall`, and `filename:lineno(function)`. They represent the amount
+    of calls we made to a function, how much time we spent in it, and so on. I''ll
+    trim a couple of columns to save space, so if you run the profiling yourself—don''t
+    worry if you get a different result. Here is the code:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个脚本非常简单；我们用`a`和`b`（通过设置`b >= a`来避免对成对的重复）迭代区间[`1`, `mx`]，并检查它们是否属于直角三角形。我们使用`calc_hypotenuse`来获取`a`和`b`的`hypotenuse`，然后，用`is_int`，我们检查它是否是一个整数，这意味着(*a*,
+    *b*, *c*)是一个勾股数。当我们对这个脚本进行分析时，我们得到了表格形式的信息。列是`ncalls`、`tottime`、`percall`、`cumtime`、`percall`和`filename:lineno(function)`。它们代表我们对一个函数的调用次数，我们在其中花费的时间等等。我会删除一些列以节省空间，所以如果你自己运行分析——不要担心如果你得到不同的结果。这是代码：
+- en: '[PRE29]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Even with this limited amount of data, we can still infer some useful information
+    about this code. First, we can see that the time complexity of the algorithm we
+    have chosen grows with the square of the input size. The amount of times we get
+    inside the inner loop body is exactly *mx (mx + 1) / 2*. We run the script with
+    `mx = 1000`, which means we get `500500` times inside the inner `for` loop. Three
+    main things happen inside that loop: we call `calc_hypotenuse`, we call `is_int`,
+    and, if the condition is met, we append it to the `triples` list.'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 即使有限的数据，我们仍然可以推断出关于这段代码的一些有用信息。首先，我们可以看到我们选择的算法的时间复杂度随着输入规模的平方增长。我们进入内部循环体的次数恰好是*mx
+    (mx + 1) / 2*。我们使用`mx = 1000`运行脚本，这意味着我们在内部的`for`循环中进入了`500500`次。在循环内发生了三件主要的事情：我们调用`calc_hypotenuse`，我们调用`is_int`，并且如果条件满足，我们将其附加到`triples`列表中。
+- en: Taking a look at the profiling report, we notice that the algorithm has spent
+    `0.393` seconds inside `calc_hypotenuse`, which is way more than the `0.096` seconds
+    spent inside `is_int`, given that they were called the same number of times, so
+    let's see whether we can boost `calc_hypotenuse` a little.
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看分析报告，我们注意到算法在`calc_hypotenuse`内花费了`0.393`秒，这比在`is_int`内花费的`0.096`秒要多得多，考虑到它们被调用了相同的次数，所以让我们看看是否可以稍微提高`calc_hypotenuse`。
+- en: 'As it turns out, we can. As I mentioned earlier in this book, the `**` power
+    operator is quite expensive, and in `calc_hypotenuse`, we''re using it three times.
+    Fortunately, we can easily transform two of those into simple multiplications,
+    like this:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事实证明，我们可以。正如我在本书前面提到的，`**`幂运算符是非常昂贵的，在`calc_hypotenuse`中，我们使用了三次。幸运的是，我们可以很容易地将其中两个转换为简单的乘法，就像这样：
+- en: '[PRE30]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: This simple change should improve things. If we run the profiling again, we
+    see that `0.393` is now down to `0.137`. Not bad! This means now we're spending
+    only about 37% of the time inside `calc_hypotenuse` that we were before.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个简单的改变应该会改善事情。如果我们再次运行分析，我们会看到`0.393`现在降到了`0.137`。不错！这意味着现在我们只花费了大约37%的时间在`calc_hypotenuse`内，这比以前少了。
+- en: 'Let''s see whether we can improve `is_int` as well, by changing it, like this:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看是否我们也可以改进`is_int`，通过像这样改变它：
+- en: '[PRE31]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: This implementation is different, and the advantage is that it also works when
+    `n` is an integer. Alas, when we run the profiling against it, we see that the
+    time taken inside the `is_int` function has gone up to `0.135` seconds, so, in
+    this case, we need to revert to the previous implementation. You will find the
+    three versions in the source code for the book.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个实现是不同的，它的优势在于当`n`是整数时也能工作。然而，当我们对其进行性能分析时，我们发现`is_int`函数内部所花费的时间增加到了`0.135`秒，因此在这种情况下，我们需要恢复到先前的实现。你可以在本书的源代码中找到这三个版本。
+- en: This example was trivial, of course, but enough to show you how one could profile
+    an application. Having the amount of calls that are performed against a function
+    helps us better understand the time complexity of our algorithms. For example,
+    you wouldn't believe how many coders fail to see that those two `for` loops run
+    proportionally to the square of the input size.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，这个例子很琐碎，但足以向你展示如何对应用程序进行性能分析。了解针对函数执行的调用数量有助于我们更好地理解算法的时间复杂度。例如，你不会相信有多少程序员没有意识到这两个`for`循环与输入大小的平方成比例地运行。
+- en: 'One thing to mention: depending on what system you''re using, results may be
+    different. Therefore, it''s quite important to be able to profile software on
+    a system that is as close as possible to the one the software is deployed on,
+    if not actually on that one.'
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 需要提到的一点是：根据你使用的系统不同，结果可能会有所不同。因此，能够在尽可能接近软件部署的系统上进行软件性能分析非常重要，如果可能的话，甚至直接在部署的系统上进行。
+- en: When to profile?
+  id: totrans-244
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 何时进行性能分析？
+- en: Profiling is super cool, but we need to know when it is appropriate to do it,
+    and in what measure we need to address the results we get from it.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 性能分析非常酷，但我们需要知道何时适当进行性能分析，以及我们需要如何处理从中得到的结果。
+- en: Donald Knuth once said, <q class="calibre30">*"premature optimization is the
+    root of all evil"*,</q> and, although I wouldn't have put it down so drastically,
+    I do agree with him. After all, who am I to disagree with the man who gave us
+    *The Art of Computer Programming, TeX*, and some of the coolest algorithms I have
+    ever studied when I was a university student?
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 唐纳德·克努斯曾说过，<q class="calibre30">*"过早优化是万恶之源"*</q>，尽管我不会用这么激烈的措辞来表达，但我同意他的观点。毕竟，我有什么资格不同意那个给我们带来*计算机编程艺术*、*TeX*以及我在大学时期学习过的一些最酷的算法的人呢？
+- en: 'So, first and foremost: *correctness*. You want your code to deliver the correct
+    results, therefore write tests, find edge cases, and stress your code in every
+    way you think makes sense. Don''t be protective, don''t put things in the back
+    of your brain for later because you think they''re not likely to happen. Be thorough.'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，首要的是*正确性*。你希望你的代码能够提供正确的结果，因此编写测试，找到边缘情况，并以你认为有意义的每种方式来测试你的代码。不要保守，不要把事情放在脑后，因为你认为它们不太可能发生。要彻底。
+- en: 'Second, take care of coding *best practices*. Remember the following—readability,
+    extensibility, loose coupling, modularity, and design. Apply OOP principles: encapsulation,
+    abstraction, single responsibility, open/closed, and so on. Read up on these concepts.
+    They will open horizons for you, and they will expand the way you think about
+    code.'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二，要注意编码*最佳实践*。记住以下内容——可读性、可扩展性、松散耦合、模块化和设计。应用面向对象的原则：封装、抽象、单一责任、开闭原则等等。深入了解这些概念。它们将为你打开新的视野，扩展你对代码的思考方式。
+- en: 'Third, *refactor like a beast!* The Boy Scouts rule says:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第三，*像野兽一样重构！*童子军规则说：
+- en: '*"Always leave the campground cleaner than you found it*."'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*"永远把营地留得比你找到时更干净*。"'
+- en: Apply this rule to your code.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将这条规则应用到你的代码中。
+- en: And, finally, when all of this has been taken care of, then and only then, take
+    care of optimizing and profiling.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，当所有这些都已经处理好了，那么并且只有那时，才开始优化和性能分析。
+- en: Run your profiler and identify bottlenecks. When you have an idea of the bottlenecks
+    you need to address, start with the worst one first. Sometimes, fixing a bottleneck
+    causes a ripple effect that will expand and change the way the rest of the code
+    works. Sometimes this is only a little, sometimes a bit more, according to how
+    your code was designed and implemented. Therefore, start with the biggest issue
+    first.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行你的性能分析器并识别瓶颈。当你有了需要解决的瓶颈的想法时，首先从最严重的问题开始。有时，修复一个瓶颈会引起连锁反应，会扩展和改变代码的工作方式。有时这只是一点点，有时更多一些，这取决于你的代码是如何设计和实现的。因此，首先解决最大的问题。
+- en: One of the reasons Python is so popular is that it is possible to implement
+    it in many different ways. So, if you find yourself having trouble boosting up
+    some part of your code using sheer Python, nothing prevents you from rolling up
+    your sleeves, buying 200 liters of coffee, and rewriting the slow piece of code
+    in C—guaranteed to be fun!
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Python如此受欢迎的一个原因是可以用许多不同的方式来实现它。因此，如果你发现自己在纯粹使用Python时遇到了困难，没有什么能阻止你卷起袖子，买上200升咖啡，然后用C语言重写代码中的慢部分——保证会很有趣！
+- en: Summary
+  id: totrans-255
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we explored the world of testing, exceptions, and profiling.
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们探讨了测试、异常和性能分析的世界。
+- en: I tried to give you a fairly comprehensive overview of testing, especially unit
+    testing, which is the kind of testing that a developer mostly does. I hope I have
+    succeeded in channeling the message that testing is not something that is perfectly
+    defined that you can learn from a book. You need to experiment with it a lot before
+    you get comfortable. Of all the efforts a coder must make in terms of study and
+    experimentation, I'd say testing is the one that is the most important.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我试图为你提供一个相当全面的测试概述，特别是单元测试，这是开发人员主要进行的测试类型。我希望我已经成功地传达了测试不是一件可以从书本上完美定义并学习的事情。在你感到舒适之前，你需要大量地进行实验。在所有程序员必须进行的学习和实验中，我认为测试是最重要的。
+- en: We briefly saw how we can prevent our program from dying because of errors,
+    called exceptions, that happen at runtime. And, to steer away from the usual ground,
+    I have given you an example of a somewhat unconventional use of exceptions to
+    break out of nested `for` loops. That's not the only case, and I'm sure you'll
+    discover others as you grow as a coder.
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们简要地看到了如何防止我们的程序因为运行时发生的错误（称为异常）而死掉。为了远离通常的领域，我给了你一个有点不寻常的异常使用的例子，用来跳出嵌套的`for`循环。这并不是唯一的情况，我相信随着你作为编程人员的成长，你会发现其他情况。
+- en: At the end, we very briefly touched on profiling, with a simple example and
+    a few guidelines. I wanted to talk about profiling for the sake of completeness,
+    so at least you can play around with it.
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们简要地触及了性能分析，给出了一个简单的例子和一些指导方针。我想谈谈性能分析是为了完整起见，这样至少你可以尝试一下。
+- en: In the next chapter, we're going to explore the wonderful world of secrets,
+    hashing, and creating tokens.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将探索神奇的秘密世界，哈希和创建令牌。
+- en: I am aware that I gave you a lot of pointers in this chapter, with no links
+    or directions. I'm afraid this was by choice. As a coder, there won't be a single
+    day at work when you won't have to look something up in a documentation page,
+    in a manual, on a website, and so on. I think it's vital for a coder to be able
+    to search effectively for the information they need, so I hope you'll forgive
+    me for this extra training. After all, it's all for your benefit.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我知道在本章中我给了你很多指针，但没有链接或方向。我害怕这是有意为之的。作为一个编程人员，在工作中不会有一天你不需要在文档页面、手册、网站等上查找信息。我认为对于一个编程人员来说，能够有效地搜索他们需要的信息是至关重要的，所以希望你能原谅我这额外的训练。毕竟，这都是为了你的利益。

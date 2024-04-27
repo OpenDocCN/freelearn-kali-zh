@@ -1,0 +1,914 @@
+- en: Race Conditions
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 竞争条件
+- en: In this chapter, we will discuss the concept of race conditions and their potential
+    causes in the context of concurrency. The definition of critical section, which
+    is a concept highly relevant to race conditions and concurrent programming, will
+    also be covered. We will use some example code in Python to simulate race conditions
+    and the solutions commonly used to address them. Finally, real-life applications
+    that commonly deal with race conditions will be discussed.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将讨论竞争条件的概念及其在并发环境中的潜在原因。还将介绍关键部分的定义，这是与竞争条件和并发编程密切相关的概念。我们将使用Python中的一些示例代码来模拟竞争条件以及常用的解决方法。最后，将讨论通常处理竞争条件的现实应用程序。
+- en: 'The following topics will be covered in this chapter:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下主题：
+- en: The basic concept of a race condition, and how it occurs in concurrent applications,
+    along with the definition of critical sections
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 竞争条件的基本概念，以及它在并发应用程序中的发生方式，以及关键部分的定义
+- en: A simulation of a race condition in Python and how to implement race condition
+    solutions
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Python中竞争条件的模拟以及如何实现竞争条件解决方案
+- en: The real-life computer science concepts that commonly interact and work with
+    race conditions
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通常与竞争条件交互和处理的现实计算机科学概念
+- en: Technical requirements
+  id: totrans-6
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: 'Following is the list of prerequisites needed for this chapter:'
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是本章所需的先决条件列表：
+- en: Ensure that you have Python 3 installed on your computer
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 确保您的计算机上安装了Python 3
+- en: Download the GitHub repository at [https://github.com/PacktPublishing/Mastering-Concurrency-in-Python](https://github.com/PacktPublishing/Mastering-Concurrency-in-Python)
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在[https://github.com/PacktPublishing/Mastering-Concurrency-in-Python](https://github.com/PacktPublishing/Mastering-Concurrency-in-Python)下载GitHub存储库。
+- en: During this chapter, we will be working with the subfolder titled `Chapter14`
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将使用名为`Chapter14`的子文件夹进行工作
+- en: Check out the following video to see the Code in Action: [http://bit.ly/2AdYWRj](http://bit.ly/2AdYWRj)
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 查看以下视频以查看代码的实际操作：[http://bit.ly/2AdYWRj](http://bit.ly/2AdYWRj)
+- en: The concept of race conditions
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 竞争条件的概念
+- en: A race condition is typically defined as a phenomenon during which the output
+    of a system is indeterminate and dependent on the scheduling algorithm and the
+    order in which tasks are scheduled and executed. When the data becomes mishandled
+    and corrupted during this process, a race condition becomes a bug in the system.
+    Given the nature of this problem, it is quite common for a race condition to occur
+    in concurrent systems, which emphasize scheduling and coordinating independent
+    tasks.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 竞争条件通常被定义为系统输出不确定并且取决于调度算法和任务调度和执行顺序的现象。当数据在此过程中被错误处理和损坏时，竞争条件就成为系统中的一个错误。鉴于这个问题的性质，竞争条件在强调调度和协调独立任务的并发系统中很常见。
+- en: A race condition can occur in both an electronic hardware system and a software
+    application; in this chapter, we will only be discussing race conditions in the
+    context of software development—specifically, concurrent software applications.
+    This section will cover the theoretical foundations of race conditions and their
+    root causes and the concept of critical sections.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 竞争条件可能发生在电子硬件系统和软件应用程序中；在本章中，我们将只讨论软件开发环境中的竞争条件，具体来说是并发软件应用程序。本节将涵盖竞争条件的理论基础及其根本原因以及关键部分的概念。
+- en: Critical sections
+  id: totrans-15
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 关键部分
+- en: Critical sections indicate shared resources that are accessed by multiple processes
+    or threads in a concurrent application, which can lead to unexpected, and even
+    erroneous, behavior. We have seen that there are multiple methods to protect the
+    integrity of the data contained in these resources, and we call these protected
+    sections **critical sections**.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关键部分指示并发应用程序中由多个进程或线程访问的共享资源，这可能导致意外甚至错误的行为。我们已经看到有多种方法来保护这些资源中包含的数据的完整性，我们称这些受保护的部分为**关键部分**。
+- en: As you can imagine, the data in these critical sections, when interacted with
+    and altered concurrently or in parallel, can become mishandled or corrupted. This
+    is especially true when the threads and processes interacting with it are poorly
+    coordinated and scheduled. The logical conclusion, therefore, is to not allow
+    multiple agents to go into a critical section at the same time. We call this concept
+    **mutual exclusion**.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以想象，当这些关键部分中的数据在并发或并行交互和更改时，可能会被错误处理或损坏。当与之交互的线程和进程协调不当并且调度不当时，这一点尤其明显。因此，逻辑结论是不允许多个代理同时进入关键部分。我们称这个概念为**互斥**。
+- en: We will discuss the relationship between critical sections and the causes of
+    race conditions in the next subsection.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在下一小节中讨论关键部分与竞争条件的原因之间的关系。
+- en: How race conditions occur
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 竞争条件是如何发生的
+- en: Let's consider a simple concurrent program, in order to understand what can
+    give rise to a race condition. Suppose that the program has a shared resource
+    and two separate threads (thread 1 and thread 2) that will access and interact
+    with that resource. Specifically, the shared resource is a number and, as per
+    their respective execution instructions, each thread is to read in that number,
+    increment it by 1, and finally, update the value of the shared resource with the
+    incremented number.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们考虑一个简单的并发程序，以便了解什么会导致竞争条件。假设程序有一个共享资源和两个单独的线程（线程1和线程2），它们将访问并与该资源交互。具体而言，共享资源是一个数字，并且根据它们各自的执行指令，每个线程都要读取该数字，将其增加1，最后更新共享资源的值为增加后的数字。
+- en: Suppose that the shared number is originally 2, and then, thread 1 accesses
+    and interacts with the number; the shared resource then becomes 3\. After thread
+    1 successfully alters and exits the resource, thread 2 begins to execute its instructions,
+    and the shared resource that is a number is updated to 4\. Throughout this process,
+    the number was originally 2, was incremented twice (each time by a separate thread),
+    and held a value of 4 at the end. The shared number was not mishandled and corrupted
+    in this case.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设共享数字最初为2，然后线程1访问和交互该数字；共享资源随后变为3。在线程1成功更改并退出资源后，线程2开始执行其指令，并且共享资源即数字被更新为4。在整个过程中，数字最初为2，递增了两次（每次由一个单独的线程），并在结束时保持了一个值为4。在这种情况下，共享数字没有被错误处理和损坏。
+- en: Imagine, then, a scenario in which the shared number is still 2 at the beginning,
+    yet both of the threads access the number at the same time. Now, each of the threads
+    reads in the number 2 from the shared resource, each increments the number 2 to
+    3 individually, and then, each writes the number 3 back to the shared resource.
+    Even though the shared resource was accessed and interacted with by a thread twice,
+    it only held a value of 3 at the end of the process.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在想象一种情况，即在开始时共享数字仍为2，但两个线程同时访问该数字。现在，每个线程都从共享资源中读取数字2，分别将数字2递增为3，然后将数字3写回共享资源。尽管共享资源被线程访问和交互了两次，但在进程结束时它只保持了一个值为3。
+- en: 'This is an example of a race condition occurring in a concurrent program: since
+    the second thread to access a shared resource does it before the first thread
+    finishes its execution (in other words, writing the new value to the shared resource),
+    the second thread fails to take in the updated resource value. This leads to the
+    fact that, when the second thread writes to the resource, the value that is processed
+    and updated by the first thread is overwritten. At the end of the execution of
+    the two threads, the shared resource has technically only been updated by the
+    second thread.'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是并发程序中发生竞争条件的一个例子：因为第二个访问共享资源的线程在第一个线程完成执行之前（换句话说，在将新值写入共享资源之前）就已经这样做，第二个线程未能获取更新的资源值。这导致在第二个线程写入资源时，第一个线程处理和更新的值被覆盖。在两个线程执行结束时，共享资源实际上只被第二个线程更新了。
+- en: 'The following diagram further illustrates the contrast between a correct data
+    handling process and a situation with a race condition:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下面的图表进一步说明了正确数据处理过程和竞争条件情况之间的对比：
+- en: '![](assets/cba8d804-7fd7-4729-95db-a8ca8f5647e6.png)'
+  id: totrans-25
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/cba8d804-7fd7-4729-95db-a8ca8f5647e6.png)'
+- en: Mishandling shared data
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 处理共享数据不当
+- en: Intuitively, we can see that a race condition can result in the mishandling
+    and corruption of data. In the preceding example, we can see that a race condition
+    can occur with only two separate threads accessing a common resource, causing
+    the shared resource to be updated incorrectly and hold an incorrect value at the
+    end of the program. We know that most real-life concurrent applications contain
+    significantly more threads and processes and more shared resources, and the more
+    threads/processes that interact with the shared resource, the more likely it is
+    that a race condition will occur.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 直觉上，我们可以看到竞争条件可能导致数据的处理和损坏。在前面的例子中，我们可以看到只有两个单独的线程访问一个共同的资源就可能发生竞争条件，导致共享资源被错误地更新，并在程序结束时保持了一个错误的值。我们知道大多数现实生活中的并发应用程序包含了更多的线程和进程以及更多的共享资源，而与共享资源交互的线程/进程越多，竞争条件发生的可能性就越大。
+- en: Simulating race conditions in Python
+  id: totrans-28
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Python中模拟竞争条件
+- en: 'Before we discuss a solution that we can implement to solve the problem of
+    race conditions, let''s try to simulate the problem in Python. If you have already
+    downloaded the code for this book from the GitHub page, go ahead and navigate
+    to the `Chapter14` folder. Let''s take a look at the `Chapter14/example1.py` file—specifically,
+    the `update()` function, as follows:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在讨论我们可以实施的解决竞争条件问题的解决方案之前，让我们尝试在Python中模拟这个问题。如果您已经从GitHub页面下载了本书的代码，请继续导航到`Chapter14`文件夹。让我们看一下`Chapter14/example1.py`文件，特别是`update()`函数，如下所示：
+- en: '[PRE0]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: The goal of the preceding `update()` function is to increment a global variable
+    called `counter`, and it is to be called by a separate thread in our script. Inside
+    the function, we are interacting with a shared resource—in this case, `counter`.
+    We then assign the value of `counter` to another local variable, called `current_counter`
+    (this is to simulate the process of reading data from more complex data structures
+    for the shared resources).
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的`update()`函数的目标是递增一个名为`counter`的全局变量，并且它将被我们脚本中的一个单独的线程调用。在函数内部，我们正在与一个共享资源交互——在这种情况下是`counter`。然后我们将`counter`的值赋给另一个本地变量，称为`current_counter`（这是为了模拟从更复杂的数据结构中读取共享资源的过程）。
+- en: Next, we will pause the execution of the function by using the `time.sleep()`
+    method. The length of the period during which the program will pause is pseudo-randomly
+    chosen between `0` and `1`, generated by the function call, `random.randint(0,
+    1)`, so the program will either pause for one second or not at all. Finally, we
+    assign the newly computed value of `current_counter` (which is its one-increment)
+    to the original shared resource (the `counter` variable).
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将使用`time.sleep()`方法暂停函数的执行。程序暂停的时间长度是通过函数调用`random.randint(0, 1)`伪随机选择的，因此程序要么暂停一秒，要么根本不暂停。最后，我们将新计算出的`current_counter`值（即它的一次递增）赋给原始共享资源（`counter`变量）。
+- en: 'Now, we can move on to our main program:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以继续我们的主程序：
+- en: '[PRE1]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Here, we are initializing the `counter` global variable with a set of `threading.Thread`
+    objects, in order to execute the `update()` function concurrently; we are initializing
+    twenty thread objects, to increment our shared counter twenty times. After starting
+    and joining all of the threads that we have, we can finally print out the end
+    value of our shared `counter` variable.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们正在使用一组`threading.Thread`对象初始化`counter`全局变量，以便并发执行`update()`函数；我们初始化了二十个线程对象，以便共享计数器增加二十次。在启动和加入所有线程后，我们最终可以打印出我们共享的`counter`变量的最终值。
+- en: 'Theoretically, a well-designed concurrent program will successfully increment
+    the share counter twenty times in total, and, since its original value is `0`,
+    the end value of the counter should be `20` at the end of the program. However,
+    as you run this script, the `counter` variable that you obtain will most likely
+    not hold an end value of `20`. The following is my own output, obtained from running
+    the script:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 理论上，一个设计良好的并发程序将成功地总共增加共享计数器二十次，而且，由于其原始值为`0`，计数器的最终值应该在程序结束时为`20`。然而，当您运行此脚本时，您得到的`counter`变量很可能不会保持最终值为`20`。以下是我自己运行脚本后得到的输出：
+- en: '[PRE2]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: This output indicates that the counter was only successfully incremented nine
+    times. This is a direct result of a race condition that our concurrent program
+    has. This race condition occurs when a specific thread spends time reading in
+    and processing the data from the shared resource (specifically, for one second,
+    using the `time.sleep()` method), and another thread reads in the current value
+    of the `counter` variable, which, at this point, has not been updated by the first
+    thread, since it has not completed its execution.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个输出表明计数器只成功增加了九次。这是我们并发程序存在的竞争条件的直接结果。当一个特定的线程花时间从共享资源中读取和处理数据（具体来说，使用`time.sleep()`方法一秒钟），另一个线程读取`counter`变量的当前值，此时该值尚未被第一个线程更新，因为它尚未完成执行。
+- en: 'Interestingly, if a thread does not spend anytime processing the data (in other
+    words, when `0` is chosen by the pseudo-random `random.randint()` method), the
+    value of the shared resource can potentially be updated just in time for the next
+    thread to read and process it. This phenomenon is illustrated by the fact that
+    the end value of the counter varies within different runs of the program. For
+    example, the following is the output that I obtained after running the script
+    three times. The output from the first run is as follows:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是，如果一个线程不花时间处理数据（换句话说，当`random.randint()`方法选择`0`时），共享资源的值可能会及时更新，以便下一个线程读取和处理它。这种现象可以通过程序的不同运行中计数器的最终值的变化来说明。例如，以下是我在运行脚本三次后得到的输出。第一次运行的输出如下：
+- en: '[PRE3]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'The output from the second run is as follows:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二次运行的输出如下：
+- en: '[PRE4]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'The output from the third run is as follows:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第三次运行的输出如下：
+- en: '[PRE5]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Again, the final value of the counter is dependent on the number of threads
+    that spend one second pausing and the number of threads not pausing at all. Since
+    these two numbers are, in turn, dependent on the `random.randint()` method, the
+    final value of the counter changes between different runs of the program. We will
+    still have a race condition in our program, except for when we can ensure that
+    the final value of the counter is always `20` (the counter being successfully
+    incremented twenty times, in total).
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次，计数器的最终值取决于花一秒暂停的线程数和根本不暂停的线程数。由于这两个数字又取决于`random.randint()`方法，计数器的最终值在程序的不同运行之间会发生变化。我们的程序仍然存在竞争条件，除非我们可以确保计数器的最终值始终为`20`（计数器总共成功增加二十次）。
+- en: Locks as a solution to race conditions
+  id: totrans-46
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 锁作为解决竞争条件的解决方案
+- en: 'In this section, we will discuss the most common solution to race conditions:
+    locks. Intuitively, since the race conditions that we observed arose when multiple
+    threads or processes accessed and wrote to a shared resource simultaneously, the
+    key idea to solving race conditions is to isolate the executions of different
+    threads/processes, especially when interacting with a shared resource. Specifically,
+    we need to make sure that a thread/process can only access the shared resource
+    after any other threads/processes interacting with the resource have finished
+    their interactions with that resource.'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将讨论竞争条件最常见的解决方案：锁。直觉上，由于我们观察到的竞争条件是在多个线程或进程同时访问和写入共享资源时出现的，解决竞争条件的关键思想是隔离不同线程/进程的执行，特别是在与共享资源交互时。具体来说，我们需要确保一个线程/进程只能在任何其他与资源交互的线程/进程完成其与该资源的交互后才能访问共享资源。
+- en: The effectiveness of locks
+  id: totrans-48
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 锁的有效性
+- en: With locks, we can turn a shared resource in a concurrent program into a critical
+    section, whose integrity of data is guaranteed to be protected. A critical section
+    guarantees the mutual exclusion of a shared resource, and cannot be accessed concurrently
+    by multiple processes or threads; this will prevent any protected data from being
+    updated or altered with conflicting information, resulting from race conditions.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用锁，我们可以将并发程序中的共享资源转换为临界区，保证其数据的完整性得到保护。临界区保证了共享资源的互斥访问，并且不能被多个进程或线程同时访问；这将防止受保护的数据由于竞争条件而被更新或改变。
+- en: 'In the following diagram, **Thread B** is blocked from accessing the shared
+    resource—the critical section, named `var`—by a mutex (mutual exclusion) lock,
+    because **Thread A** is already accessing the resource:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下图中，**线程B**被互斥锁（mutex）阻止访问共享资源——名为`var`的临界区，因为**线程A**已经在访问资源：
+- en: '![](assets/d4e4feb0-9ba3-46f0-89c3-3b4125b58095.png)'
+  id: totrans-51
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/d4e4feb0-9ba3-46f0-89c3-3b4125b58095.png)'
+- en: Locks prevent simultaneous access to a critical section
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 锁防止对临界区的同时访问
+- en: 'Now, we will specify that, in order to gain access to a critical section in
+    a concurrent program, a thread or process needs to acquire a lock object that
+    is associated with the critical section; similarly, that thread or process also
+    needs to release that lock upon leaving the critical section. This setup will
+    effectively prevent multiple accesses to the critical section, and will therefore
+    prevent race conditions. The following diagram illustrates the execution flow
+    of multiple threads interacting with multiple critical sections, with the implementation
+    of locks in place:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将指定，在并发程序中，为了访问临界区，线程或进程需要获取与临界区相关联的锁对象；同样，该线程或进程在离开临界区时也需要释放该锁。这样的设置将有效地防止对临界区的多次访问，因此也将防止竞争条件。以下图表说明了多个线程与多个临界区交互的执行流程，并且实现了锁的设置：
+- en: '![](assets/5b3de2b6-dac3-43e0-a00f-4c30702a0763.png)'
+  id: totrans-54
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/5b3de2b6-dac3-43e0-a00f-4c30702a0763.png)'
+- en: Locks and critical sections in multiple threads
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 多线程中的锁和临界区
+- en: 'As you can see in the diagram, threads **T1** and **T2** both interact with
+    three critical sections in their respective execution instructions: **CS1**, **CS2**,
+    and **CS3**. Here, **T1** and **T2** attempt to access **CS1** at almost the same
+    time, and, since **CS1** is protected with lock **L1**, only **T1** is able to
+    acquire lock **L1**, and hence, access/interact with the critical section, while
+    **T2** has to spend time waiting for **T1** to exit out of the critical section
+    and release the lock before accessing the section itself. Similarly, for the critical
+    sections, **CS2** and **CS3**, although both threads require access to a critical
+    section at the same time, only one can process it, while the other has to wait
+    to acquire the lock associated with the critical section.'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如图表所示，线程**T1**和**T2**都与其各自的执行指令中的三个临界区**CS1**、**CS2**和**CS3**进行交互。在这里，**T1**和**T2**几乎同时尝试访问**CS1**，由于**CS1**受到锁**L1**的保护，因此只有**T1**能够获取锁**L1**，因此可以访问/与临界区交互，而**T2**必须等待**T1**退出临界区并释放锁后才能访问该区域。同样，对于临界区**CS2**和**CS3**，尽管两个线程同时需要访问临界区，但只有一个可以处理，而另一个必须等待获取与临界区相关联的锁。
+- en: Implementation in Python
+  id: totrans-57
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Python中的实现
+- en: 'Now, let''s implement the specification in the preceding example, in order
+    to solve the problem of race conditions. Navigate to the `Chapter14/example2.py`
+    file and consider our corrected `update()` function, as follows:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们实现前面示例中的规范，以解决竞争条件的问题。转到`Chapter14/example2.py`文件，并考虑我们已更正的`update()`函数，如下所示：
+- en: '[PRE6]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'You can see that all of the execution instructions of a thread specified in
+    the `update()` function are under the context manager of a lock object named `count_lock`.
+    So, every time a thread is called to run the function, it will have to first acquire
+    the lock object, before any instructions can be executed. In our main program,
+    we simply create the lock object in addition to what we already had, as follows:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到，线程在`update()`函数中指定的所有执行指令都在名为`count_lock`的锁对象的上下文管理器下。因此，每次调用线程运行该函数时，都必须首先获取锁对象，然后才能执行任何指令。在我们的主程序中，除了我们已经拥有的内容，我们只需创建锁对象，如下所示：
+- en: '[PRE7]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Run the program, and your output should look similar to the following:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行程序，您的输出应该类似于以下内容：
+- en: '[PRE8]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: You can see that the counter was successfully incremented twenty times and held
+    the correct value at the end of the program. Furthermore, no matter how many times
+    the script is executed, the final value of the counter will always be **20**.
+    This is the advantage of using locks to implement critical sections in your concurrent
+    programs.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到，计数器成功增加了二十次，并且在程序结束时保持了正确的值。此外，无论脚本执行多少次，计数器的最终值始终为**20**。这是在并发程序中使用锁来实现临界区的优势。
+- en: The downside of locks
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 锁的缺点
+- en: 'In [Chapter 12](43dfc569-005f-416d-8492-c0814e403b02.xhtml), *Deadlock*, we
+    covered an interesting phenomenon, in which the use of locks can lead to undesirable
+    results. Specifically, we found out that, with enough locks implemented in a concurrent
+    program, the whole program can become sequential. Let''s analyze this concept
+    with our current program. Consider the `Chapter14/example3.py` file, as follows:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第12章](43dfc569-005f-416d-8492-c0814e403b02.xhtml)中，*死锁*，我们介绍了一个有趣的现象，即使用锁可能会导致不良结果。具体来说，我们发现，在并发程序中实现了足够多的锁后，整个程序可能会变成顺序执行。让我们用当前的程序来分析这个概念。考虑`Chapter14/example3.py`文件，如下所示：
+- en: '[PRE9]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Turning a concurrent program sequential
+  id: totrans-68
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将并发程序变为顺序执行
+- en: 'The goal of this script is to compare the speed of our current concurrent program
+    with its sequential version. Here, we are still using the same `update()` function,
+    with locks, and we are running it twenty times, both sequentially and concurrently,
+    like we did earlier. We are also creating a list of determined periods of pausing,
+    so that these periods are consistent between when we simulate the sequential version
+    and when we simulate the concurrent version (for this reason, the `update()` function
+    now takes in a parameter that specifies the period of pausing each time it is
+    called):'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该脚本的目标是比较当前并发程序与其顺序版本的速度。在这里，我们仍然使用相同的带有锁的`update()`函数，并且我们将它连续运行二十次，既顺序执行又并发执行，就像我们之前做的那样。我们还创建了一个确定的暂停时间列表，以便这些时间段在模拟顺序版本和模拟并发版本时保持一致（因此，`update()`函数现在需要接受一个参数，指定每次调用时的暂停时间）：
+- en: '[PRE10]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'During the next step of the program, we simply call the `update()` function
+    inside a `for` loop, with twenty iterations, keeping track of the time it takes
+    for the loop to finish. Note that, even though this is to simulate the sequential
+    version of the program, the `update()` function still needs the lock object to
+    be created prior, so we are initializing it here:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在程序的下一步中，我们只需在`for`循环中调用`update()`函数，进行二十次迭代，并跟踪循环完成所需的时间。请注意，即使这是为了模拟程序的顺序版本，`update()`函数仍然需要在此之前创建锁对象，因此我们在这里进行初始化：
+- en: '[PRE11]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'The last step is to reset the counter and run the concurrent version of the
+    program that we already implemented. Again, we need to pass in the corresponding
+    pause period while initializing each of the threads that run the `update()` function.
+    We are also keeping track of the time it takes for this concurrent version of
+    the program to run:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后一步是重置计数器并运行我们已经实现的程序的并发版本。同样，我们需要在初始化运行`update()`函数的每个线程时传入相应的暂停时间。我们还要跟踪并发程序运行所需的时间：
+- en: '[PRE12]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now, after you have run the script, you will observe that both the sequential
+    version and the concurrent version of our program took the same amount of time
+    to run. Specifically, the following is the output that I obtained; in this case,
+    they both took approximately 12 seconds. The actual time that your program takes
+    might be different, but the speed of the two versions should still be equal:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在您运行脚本之后，您会观察到我们的程序的顺序版本和并发版本都花费了相同的时间来运行。具体来说，我得到的输出是：在这种情况下，它们都花费了大约12秒。您的程序实际花费的时间可能不同，但两个版本的速度应该是相等的。
+- en: '[PRE13]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'So, our concurrent program is taking just as much time as its sequential version,
+    which negates one of the biggest purposes of implementing concurrency in a program:
+    improving speed. But why would concurrent and traditional sequential applications with
+    the same sets of instructions and elements also have the same speed? Should the
+    concurrent program always produce a faster speed than the sequential one?'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们的并发程序所花费的时间与其顺序版本一样多，这否定了在程序中实现并发的最大目的之一：提高速度。但为什么具有相同指令和元素集的并发和传统顺序应用程序也具有相同的速度？并发程序是否总是比顺序程序产生更快的速度？
+- en: Recall that, in our program, the critical section is being protected by a lock
+    object, and no multiple threads can access it at the same time. Since all of the
+    execution of the program (incrementing the counter for twenty times) depends on
+    a thread accessing the critical section, the placement of the lock object on the
+    critical section means that only one thread can be executing at a given time.
+    With this specification, the executions of any two threads cannot overlap with
+    each other, and no additional speed can be gained from this implementation of
+    concurrency.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回想一下，在我们的程序中，临界区由一个锁对象保护，没有多个线程可以同时访问它。由于程序的所有执行（对计数器进行20次递增）都取决于一个线程访问临界区，因此在临界区放置锁对象意味着在给定时间内只有一个线程可以执行。根据这个规范，任何两个线程的执行都不会重叠，这种并发实现无法获得额外的速度。
+- en: 'This is the phenomenon that we encountered when analyzing the problem of deadlock:
+    if enough locks are placed in a concurrent program, that program will become entirely
+    sequential. This is a reason why locks are sometimes undesirable solutions to
+    problems in concurrent programming. However, this situation only happens if all
+    of the execution of the concurrent program is dependent upon interacting with
+    the critical section. Most of the time, reading and manipulating the data of a
+    shared resource is only a portion of the entire program and, therefore, concurrency
+    still provides the intended additional speed for our program.'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们在分析死锁问题时遇到的现象：如果在并发程序中放置了足够多的锁，那么该程序将变得完全顺序化。这就是为什么锁有时不是并发编程问题的理想解决方案的原因。然而，只有当并发程序的所有执行都依赖于与临界区交互时，才会出现这种情况。大多数情况下，读取和操作共享资源的数据只是整个程序的一部分，因此并发仍然可以为我们的程序提供预期的额外速度。
+- en: Locks do not lock anything
+  id: totrans-80
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 锁不会锁任何东西
+- en: An additional aspect of locks is the fact that they do not actually lock anything.
+    The only way that a lock object is utilized, with respect to a specific shared
+    resource, is for the threads and processes interacting with that resource to also
+    interact with the lock. In other words, if those threads and processes choose
+    to not check with the lock before accessing and altering the shared resource,
+    the lock object itself cannot stop them from doing so.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 锁的另一个方面是它们实际上并没有锁住任何东西。锁对象与特定共享资源的交互线程和进程也需要与锁进行交互。换句话说，如果这些线程和进程选择在访问和更改共享资源之前不检查锁，那么锁对象本身就无法阻止它们这样做。
+- en: In our examples, you have seen that, to implement the acquiring/releasing process
+    of a lock object, the instructions of a thread or process will be wrapped around
+    by a lock context manager; this specification is dependent on the implementation
+    of the thread/process execution logic and not the resource. That is because the
+    lock objects that we have seen are not connected to the resources that they are
+    supposed to protect in any way. So, if the thread/process execution logic does
+    not require any interaction with the lock object associated with the shared resource,
+    that thread or process can simply gain access to the resource without difficulty,
+    potentially resulting in the mismanipulation and corruption of data.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的示例中，您已经看到，为了实现锁对象的获取/释放过程，线程或进程的指令将被锁上下文管理器包裹；这个规范取决于线程/进程执行逻辑的实现，而不是资源。这是因为我们看到的锁对象与它们所应保护的资源没有任何连接。因此，如果线程/进程执行逻辑不需要与共享资源相关联的锁对象进行任何交互，那么该线程或进程可以简单地访问资源而无需困难，可能导致数据的错误操作和损坏。
+- en: This is not only true in the scope of having multiple threads and processes
+    in a single concurrent program. Suppose that we have a concurrent system consisting
+    of multiple components that all interact and manipulate the data of a resource
+    shared across the system, and this resource is associated with a lock object;
+    it follows that, if any of these components fail to interact with that lock, it
+    can simply bypass the protection implemented by the lock and access the shared
+    resource. More importantly, this characteristic of locks also has implications
+    regarding the security of a concurrent program. If an outside, malicious agent
+    is connected to the system (say, a malicious client interacting with a server)
+    and intends to corrupt the data shared across the system, that agent can be instructed
+    to simply ignore the lock object and access that data in an intrusive way.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不仅适用于在单个并发程序中拥有多个线程和进程的范围。假设我们有一个由多个组件组成的并发系统，所有这些组件都相互作用并操作跨系统共享的资源的数据，并且这个资源与一个锁对象相关联；由此可见，如果其中任何一个组件未能与该锁进行交互，它可以简单地绕过锁实施的保护并访问共享资源。更重要的是，锁的这种特性也对并发程序的安全性有着重要的影响。如果一个外部的恶意代理连接到系统（比如，一个恶意客户端与服务器进行交互）并且意图破坏跨系统共享的数据，那么该代理可以被指示简单地忽略锁对象并以侵入的方式访问数据。
+- en: The view that locks don't lock anything was popularized by Raymond Hettinger,
+    a Python core developer who worked on the implementation of various elements in
+    Python concurrent programming. It is argued that using lock objects alone does
+    not guarantee a secure implementation of concurrent data structures and systems.
+    Locks need to be concretely linked to the resources that they are to protect,
+    and nothing should be able to access a resource without first acquiring the lock
+    that is associated with it. Alternatively, other concurrent synchronization tools,
+    such as atomic message queues, can provide a solution to this problem.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 锁不锁任何东西的观点是由雷蒙德·赫廷格（Raymond Hettinger）提出的，他是Python核心开发人员，负责实现Python并发编程中的各种元素。有人认为仅使用锁对象并不能保证并发数据结构和系统的安全实现。锁需要与它们要保护的资源具体关联起来，没有任何东西应该能够在未先获取与之相关联的锁的情况下访问资源。或者，其他并发同步工具，比如原子消息队列，可以提供解决这个问题的方案。
+- en: Race conditions in real life
+  id: totrans-85
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 现实生活中的竞争条件
+- en: You have now learned about the concept of race conditions, how they are caused
+    in concurrent systems, and how to effectively prevent them. In this section, we
+    will provide an overarching view of how race conditions can occur in real-life
+    examples, within the various sub-fields of computer science. Specifically, we
+    will be discussing the topics of security, file management, and networking.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你已经了解了竞争条件的概念，它们在并发系统中是如何引起的，以及如何有效地防止它们。在本节中，我们将提供一个关于竞争条件如何在计算机科学的各个子领域中发生的总体观点。具体来说，我们将讨论安全、文件管理和网络的主题。
+- en: Security
+  id: totrans-87
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安全
+- en: Concurrent programming can have significant implications in terms of the security
+    of the system in question. Recall that a race condition arises between the process
+    of reading and altering the data of a resource; a race condition in an authenticating
+    system can cause the corruption of data between the **time of check** (when the
+    credentials of an agent are checked) and the **time of use** (when the agent can
+    utilize the resource). This problem is also known as a **Time-Of-Check-To-Time-Of-Use**
+    (**TOCTTOU**) bug, which is undoubtedly detrimental to security systems.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并发编程对系统安全性可能会产生重大影响。回想一下，读取和更改资源数据的过程之间会出现竞争条件；在认证系统中出现竞争条件可能会导致在检查代理的凭据和代理可以利用资源之间数据的损坏。这个问题也被称为**检查时间到使用时间**（TOCTTOU）漏洞，这无疑对安全系统有害。
+- en: Careless protection of shared resources when handling race conditions, as we
+    briefly touched upon during the last section, can provide external agents with access
+    to those supposedly protected resources. Those agents can then change the data
+    of the resources to create **privilege escalation** (in simple terms, to give
+    themselves more illegal access to more shared resources), or they can simply corrupt
+    the data, causing the whole system to malfunction.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在处理竞争条件时对共享资源的粗心保护可以为外部代理提供访问那些被认为受到保护的资源的机会。然后这些代理可以改变资源的数据以创建**权限提升**（简单来说，给自己更多非法访问更多共享资源的权限），或者他们可以简单地破坏数据，导致整个系统发生故障。
+- en: Interestingly, race conditions can also be used to implement computer security.
+    As race conditions result from the uncoordinated access of multiple threads/processes
+    to a shared resources, the specification in which a race condition occurs is significantly
+    random. For example, in our own Python example, you saw that, when simulating
+    a race condition, the final value of the counter varies between different executions
+    of the program; this is (partly) because of the unpredictable nature of the situation,
+    in which multiple threads are running and accessing the shared resources. (I say
+    partly, since the randomness also results from the random pausing periods that
+    we generate in each execution of the program.) So, race conditions are sometimes
+    intentionally provoked, and the information obtained when the race condition occurs
+    can be used to generate digital fingerprints for security processes—this information,
+    again, is significantly random, and is therefore valuable for security purposes.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是，竞争条件也可以用于实现计算机安全。由于竞争条件是由多个线程/进程对共享资源的不协调访问导致的，竞争条件发生的规范是相当随机的。例如，在我们自己的Python示例中，你看到在模拟竞争条件时，计数器的最终值在程序的不同执行之间变化；这部分是因为情况的不可预测性，其中多个线程正在运行并访问共享资源。（我说部分是因为随机性也是由我们在每次执行程序时生成的随机暂停期间导致的。）因此，有时会故意引发竞争条件，并且在竞争条件发生时获得的信息可以用于生成安全流程的数字指纹——这些信息同样是相当随机的，因此对安全目的而言具有价值。
+- en: Operating systems
+  id: totrans-91
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作系统
+- en: Race conditions can occur in the context of file and memory management in an
+    operating system, when two separate programs attempt to access the same resource,
+    such as memory space. Imagine a situation where two processes from different programs
+    have been running for a significant amount of time, and, even though they were
+    originally initialized apart from each other in terms of memory space, enough
+    data has been accumulated and the stack of execution of one process now collides
+    with that of the other process. This can lead to the two processes sharing the
+    same portion of memory space and can ultimately result in unpredictable consequences.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在操作系统中的文件和内存管理的背景下，竞争条件可能会发生，当两个单独的程序尝试访问相同的资源，如内存空间。想象一种情况，两个来自不同程序的进程已经运行了相当长的时间，尽管它们最初在内存空间方面是分开初始化的，但足够的数据已经积累，一个进程的执行堆栈现在与另一个进程的执行堆栈发生了冲突。这可能导致两个进程共享相同的内存空间部分，并最终导致不可预测的后果。
+- en: Another aspect of the complexity of race conditions is illustrated by the Unix
+    version 7 operating system—specifically, in the `mkdir` command. Typically, the
+    `mkdir` command is used to create a new directory in the Unix operating system;
+    this is done by calling the `mknod` command to create the actual directory and
+    the `chown` command to specify the owner of that directory. Because there are
+    two separate commands to be run and a definite gap exists between when the first
+    command is finished and the second is called, this can cause a race condition.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 竞争条件复杂性的另一个方面是由Unix版本7操作系统中的`mkdir`命令所说明的。通常，`mkdir`命令用于在Unix操作系统中创建新目录；这是通过调用`mknod`命令创建实际目录和`chown`命令指定该目录的所有者来完成的。因为有两个单独的命令需要运行，并且第一个命令完成和第二个命令调用之间存在明确的间隙，这可能导致竞争条件。
+- en: 'During the gap between the two commands, if someone can delete the new directory
+    created by the `mknod` command and link the reference to another file, when the
+    `chown` command is run, the ownership of that file will be changed. By exploiting
+    this vulnerability, someone can theoretically change the ownership of any file
+    in an operating system so that someone can create a new directory. The following
+    diagram further illustrates this exploitation:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在两个命令之间的间隙期间，如果有人可以删除`mknod`命令创建的新目录，并将引用链接到另一个文件，当运行`chown`命令时，该文件的所有权将被更改。通过利用这个漏洞，某人理论上可以更改操作系统中任何文件的所有权，以便某人可以创建一个新目录。以下图表进一步说明了这种利用：
+- en: '![](assets/66861344-20e7-4db5-9f43-57592c8b370b.png)'
+  id: totrans-95
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/66861344-20e7-4db5-9f43-57592c8b370b.png)'
+- en: Diagram of mkdir race condition
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`mkdir`竞争条件的图表'
+- en: Networking
+  id: totrans-97
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 网络
+- en: In networking, race conditions can take the form of giving multiple users unique
+    privileges in a network. Specifically, say a given server should only have exactly
+    one user with admin privileges. If two users, who are both eligible to become
+    the server admin, request access to those privileges at the same time, then it
+    is possible for both of them to gain that access. This is because, at the point
+    when both of the user requests are received by the server, neither of the users
+    have been granted admin privileges yet, and the server thinks that admin privileges
+    can still be given out.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在网络中，竞争条件可以以在网络中为多个用户提供独特特权的形式出现。具体来说，假设给定服务器应该只有一个用户具有管理员特权。如果两个用户，都有资格成为服务器管理员，同时请求访问这些特权，那么两者都有可能获得该访问权限。这是因为在服务器接收到两个用户请求时，两个用户都还没有被授予管理员特权，服务器认为管理员特权仍然可以分配。
+- en: This form of a race condition is quite common when a network is highly optimized
+    for parallel processing (for example, non-blocking sockets), without a careful
+    consideration of the resources shared across the network.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种形式的竞争条件在网络高度优化以进行并行处理时（例如，非阻塞套接字），而没有仔细考虑网络共享资源时是非常常见的。
+- en: Summary
+  id: totrans-100
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: A race condition is defined as a phenomenon during which the output of a system
+    is indeterminate and is dependent on the scheduling algorithm and the order in
+    which tasks are scheduled and executed. Critical sections indicate shared resources
+    that are accessed by multiple processes or threads in a concurrent application,
+    which can lead to unexpected, and even erroneous, behavior. A race condition occurs
+    when two or more threads/processes access and alter a shared resource simultaneously,
+    resulting in mishandled and corrupted data. Race conditions also have significant
+    implications in real-life applications, such as security, operating systems, and
+    networking.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 竞争条件被定义为系统输出不确定的现象，取决于调度算法和任务调度和执行的顺序。临界区指示并发应用程序中由多个进程或线程访问的共享资源，这可能导致意外甚至错误的行为。当两个或多个线程/进程同时访问和更改共享资源时，就会发生竞争条件，导致数据处理不当和损坏。竞争条件在现实生活应用中也有重要影响，如安全性、操作系统和网络。
+- en: Since the race conditions that we observed arose when multiple threads or processes
+    accessed and wrote to a shared resource simultaneously, the key idea for solving
+    race conditions is to isolate the execution of different threads/processes, especially
+    when interacting with a shared resource. With locks, we can turn a shared resource
+    in a concurrent program into a critical section, whose integrity of data is guaranteed
+    to be protected. However, there are a number of disadvantages to using locks: with
+    enough locks implemented in a concurrent program, the whole program might become
+    sequential; locks don't lock anything.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们观察到的竞争条件是在多个线程或进程同时访问和写入共享资源时出现的，解决竞争条件的关键思想是隔离不同线程/进程的执行，特别是在与共享资源交互时。使用锁，我们可以将并发程序中的共享资源转换为临界区，其数据的完整性得到保护。然而，使用锁也有许多缺点：在并发程序中实现了足够多的锁，整个程序可能变成顺序执行；锁并不真正锁定任何东西。
+- en: 'In the next chapter, we will consider one of the biggest problems in Python
+    concurrent programming: the infamous **Global Interpreter Lock (GIL)**. You will
+    learn about the basic idea behind the GIL, its purposes, and how to effectively
+    work with it in concurrent Python applications.'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将考虑Python并发编程中最大的问题之一：臭名昭著的**全局解释器锁（GIL）**。您将了解GIL背后的基本思想，它的目的，以及如何在并发Python应用程序中有效地使用它。
+- en: Questions
+  id: totrans-104
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题
+- en: What is a critical section?
+  id: totrans-105
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 什么是临界区？
+- en: What is a race condition and why is it undesirable in a concurrent program?
+  id: totrans-106
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 什么是竞争条件，为什么在并发程序中是不可取的？
+- en: What is the underlying cause of race conditions?
+  id: totrans-107
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 竞争条件的根本原因是什么？
+- en: How can locks solve the problem of race conditions?
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 锁如何解决竞争条件的问题？
+- en: Why are locks sometimes undesirable in a concurrent program?
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为什么锁有时在并发程序中是不可取的？
+- en: What is the significance of race conditions in real-life systems and applications?
+  id: totrans-110
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在现实生活系统和应用中，竞争条件的重要性是什么？
+- en: Further reading
+  id: totrans-111
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 进一步阅读
+- en: 'For more information, you can refer to the following links:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 欲了解更多信息，您可以参考以下链接：
+- en: '*Parallel Programming with Python*, by Jan Palach, Packt Publishing Ltd, 2014'
+  id: totrans-113
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用Python进行并行编程*，作者Jan Palach，Packt Publishing Ltd，2014'
+- en: '*Python Parallel Programming Cookbook*, by Giancarlo Zaccone, Packt Publishing
+    Ltd, 2015'
+  id: totrans-114
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Python并行编程食谱*，作者Giancarlo Zaccone，Packt Publishing Ltd，2015'
+- en: '*Race Conditions and Critical Sections* ([tutorials.jenkov.com/java-concurrency/race-conditions-and-critical-sections](http://tutorials.jenkov.com/java-concurrency/race-conditions-and-critical-sections.html)),
+    by Jakob Jenkov'
+  id: totrans-115
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*竞争条件和临界区*（[tutorials.jenkov.com/java-concurrency/race-conditions-and-critical-sections](http://tutorials.jenkov.com/java-concurrency/race-conditions-and-critical-sections.html)），作者Jakob
+    Jenkov'
+- en: '*Race conditions, files, and security flaws; or the tortoise and the hare redux*,
+    by Matt Bishop, Technical Report CSE-95-98(1995)'
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*竞争条件、文件和安全漏洞；或乌龟和野兔的重现*，作者Matt Bishop，技术报告CSE-95-98（1995）'
+- en: '*Computer and Information Security, Chapter 11, Software Flaws and Malware
+    1 Illustration* ([slideplayer.com/slide/10319860/](https://slideplayer.com/slide/10319860/))'
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*计算机和信息安全，第11章，软件缺陷和恶意软件1插图*（[slideplayer.com/slide/10319860/](https://slideplayer.com/slide/10319860/)）'

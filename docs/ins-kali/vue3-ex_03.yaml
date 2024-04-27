@@ -1,0 +1,1400 @@
+- en: '*Chapter 3*: Building a Slider Puzzle Game with Tests'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '*第3章*：使用测试构建滑块拼图游戏'
+- en: In the previous chapter, we created a simple GitHub app with Vue that had some
+    components added to it. In this chapter, we will build a simple slider puzzle
+    game. The game's goal is to rearrange parts of a picture till it looks like what
+    we expect. It will have a timer to calculate the elapsed time and will display
+    it on the screen. Once we rearrange the image's parts correctly, we will see a
+    **'You Win'** message, and the elapsed time will be recorded in local storage
+    if it is in the top 10 fastest times. We have multiple puzzles that we can choose
+    from so that we can have more variety in our game. This makes it more interesting
+    than just having one puzzle.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们使用Vue创建了一个简单的GitHub应用，并添加了一些组件。在本章中，我们将构建一个简单的滑块拼图游戏。游戏的目标是重新排列图片的部分，直到它看起来像我们期望的样子。它将有一个计时器来计算经过的时间，并在屏幕上显示出来。一旦我们正确地重新排列了图像的部分，我们将看到一个“你赢了”的消息，并且如果它是前10名最快的时间，经过的时间将被记录在本地存储中。我们有多个拼图可以选择，这样我们的游戏就会更加有趣。这比只有一个拼图更有趣。
+- en: To build the apps, we will build components with computed properties and timers
+    to calculate the elapsed time. Also, some components will get and set data from
+    local storage. Whenever we get data from local storage, the results will be displayed.
+    We will use local storage to store the fastest times. Local storage can only store
+    strings, so we will convert the result into a string and store it.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了构建应用程序，我们将构建具有计算属性和计时器的组件来计算经过的时间。此外，一些组件将从本地存储中获取和设置数据。每当我们从本地存储中获取数据时，结果将被显示出来。我们将使用本地存储来存储最快的时间。本地存储只能存储字符串，因此我们将把结果转换为字符串并存储起来。
+- en: We will use a timer to time when the player wins the game, and we will use computed
+    properties to determine when the player wins the game. Also, to make sure that
+    our game works like it should, we will add unit tests for each part to test each
+    component automatically.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用计时器来计时玩家赢得游戏的时间，并使用计算属性来确定玩家赢得游戏的时间。此外，为了确保我们的游戏能够正常运行，我们将为每个部分添加单元测试，以自动测试每个组件。
+- en: 'In this chapter, we will dig deeper into components and cover the following
+    topics:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将深入研究组件，并涵盖以下主题：
+- en: Understanding the basics of components and mixins
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解组件和混合的基础知识
+- en: Setting up our Vue project
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设置我们的Vue项目
+- en: Creating the components for shuffling pictures
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建用于洗牌图片的组件
+- en: Letting users rearrange the slides
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 让用户重新排列幻灯片
+- en: Calculating the score based on timing
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 根据时间计算得分
+- en: Unit testing with Jest
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Jest进行单元测试
+- en: Technical requirements
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: The source code for this chapter is located at [https://github.com/PacktPublishing/-Vue.js-3-By-Example/tree/master/Chapter03](https://github.com/PacktPublishing/-Vue.js-3-By-Example/tree/master/Chapter03).
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的源代码位于[https://github.com/PacktPublishing/-Vue.js-3-By-Example/tree/master/Chapter03](https://github.com/PacktPublishing/-Vue.js-3-By-Example/tree/master/Chapter03)。
+- en: Understanding the basics of components and mixins
+  id: totrans-13
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解组件和混合的基础知识
+- en: There is more to components than what we did in [*Chapter 2*](B14405_02_ePub_RK.xhtml#_idTextAnchor023),
+    *Building a Vue 3 Progressive Web App*, to create the GitHub progress web app.
+    These components were the most basic parts. We will use timers with our components,
+    rather than just having components that get data and display it. Also, we will
+    look at when and how to use computed properties so that we can create reactive
+    properties that have values that are derived from other reactive properties. This
+    saves us from creating extra methods that we don't need or using directives unnecessarily.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 组件还有比我们在[*第2章*](B14405_02_ePub_RK.xhtml#_idTextAnchor023)中所做的更多，*构建一个 Vue 3
+    渐进式 Web 应用*，来创建 GitHub 渐进式 Web 应用。这些组件是最基本的部分。我们将在我们的组件中使用定时器，而不仅仅是获取数据并显示它的组件。此外，我们将看看何时以及如何使用计算属性，以便我们可以创建从其他响应式属性派生值的响应式属性。这样可以避免创建我们不需要的额外方法或不必要地使用指令。
+- en: Furthermore, we will look at how to use computed properties to return values
+    that are derived from other reactive properties. **Computed properties** are methods
+    that return values that are derived from one or more other reactive properties.
+    They are reactive properties themselves. The most common usage for them is getters.
+    However, computed properties can have both getters and setters. Their return values
+    are cached so that they don't run until one or more reactive properties have their
+    values updated. They are useful for replacing complex template expressions and
+    methods in an efficient manner.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们将看看如何使用计算属性来返回从其他响应式属性派生的值。**计算属性**是返回值的方法，这些值是从一个或多个其他响应式属性派生而来的。它们本身也是响应式属性。它们最常见的用法是作为getter。然而，计算属性既可以有getter也可以有setter。它们的返回值被缓存，以便在一个或多个响应式属性的值更新之前不会运行。它们可用于以高效的方式替换复杂的模板表达式和方法。
+- en: Another thing that components can do is emit custom events. An event can contain
+    one or more payloads emitted with the event. They have their own event name, and
+    we can listen to the events by listening to the event with the `v-on` directive.
+    We can get the emitted payload with the `$event` variable or the parameters of
+    the event handler methods.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 组件还可以发出自定义事件。一个事件可以包含一个或多个与事件一起发出的有效负载。它们有自己的事件名称，我们可以通过使用`v-on`指令来监听事件。我们可以使用`$event`变量或事件处理程序方法的参数来获取发出的有效负载。
+- en: Another important part of a Vue 3 app is **tests**. When we mention tests, they
+    are usually automated tests. Tests come in many forms and are useful for catching
+    various kinds of bugs. They are often used for catching regressions, which are
+    bugs that are created after we change the code that is already part of our app.
+    We can check for regressions with a few kinds of tests. The smallest tests we
+    can create are **unit tests**, which test a component and its parts in isolation.
+    It works by mounting our component in a test environment. Any dependencies that
+    prevent our tests from running in isolation are mocked so that we can run our
+    tests in isolation. This way, we can run our tests in any environment and in any
+    order.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue 3 应用的另一个重要部分是**测试**。当我们提到测试时，通常是指自动化测试。测试有许多形式，对捕捉各种类型的错误都很有用。它们经常用于捕捉回归，即在我们更改已经成为应用一部分的代码后创建的错误。我们可以通过几种测试来检查回归。我们可以创建的最小测试是**单元测试**，它测试一个组件及其部分的隔离。它通过在测试环境中挂载我们的组件来工作。任何阻止我们的测试隔离运行的依赖项都被模拟，以便我们可以在隔离环境中运行我们的测试。这样，我们可以在任何环境和任何顺序下运行我们的测试。
+- en: Each test is independent, so we shouldn't have any issues running them anywhere,
+    even without an internet connection. This is important because they are supposed
+    to be portable. Also, external resources such as API data and timers are very
+    volatile. They are also asynchronous, which makes them hard to test. Therefore,
+    we must make sure that we don't need them for our tests since we want consistency
+    in the results.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个测试都是独立的，所以我们不应该在任何地方运行它们时出现任何问题，即使没有互联网连接。这很重要，因为它们应该是可移植的。此外，诸如API数据和定时器之类的外部资源非常不稳定。它们也是异步的，这使它们难以测试。因此，我们必须确保我们的测试不需要它们，因为我们希望结果是一致的。
+- en: Vue comes with support for JavaScript test frameworks such as **Jest** and **Mocha**.
+    This is one of the great benefits of using the Vue CLI to create our Vue project.
+    We don't have to create all the scaffolding of the test code ourselves.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue支持JavaScript测试框架，如**Jest**和**Mocha**。这是使用Vue CLI创建Vue项目的一个巨大好处。我们不必自己创建所有测试代码的脚手架。
+- en: Another kind of test is *end-to-end* tests. These tests simulate how a user
+    would use our app. We usually have an environment that is created from scratch
+    and then taken down to run these tests. This is because we want fresh data in
+    our tests at all times. The tests must be able to run in a consistent manner.
+    We need consistent data for this to be done if we are going to use the app like
+    the user.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一种测试是*端到端*测试。这些测试模拟用户如何使用我们的应用程序。我们通常会创建一个从头开始然后关闭的环境来运行这些测试。这是因为我们希望我们的测试中始终有新鲜的数据。测试必须能够以一致的方式运行。如果我们要像用户一样使用应用程序，我们需要一致的数据来完成这项工作。
+- en: In this chapter, we will mainly look at unit tests for our frontend app. They
+    can provide DOM interactions like we do with end-to-end tests, but they are faster
+    and a lot smaller. They also run a lot faster since we don't have to create a
+    clean environment each time a test is run. The environment's creation and user
+    interaction tests will always be slower than unit tests. Therefore, we should
+    have many unit tests and a few end-to-end tests for testing the most critical
+    parts of our app.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将主要关注前端应用程序的单元测试。它们可以提供类似于端到端测试的DOM交互，但它们更快速，体积更小。它们也运行得更快，因为我们不必每次运行测试时都创建一个干净的环境。环境的创建和用户交互测试总是比单元测试慢。因此，我们应该有许多单元测试和少量端到端测试，用于测试应用程序最关键的部分。
+- en: Setting up the Vue project
+  id: totrans-22
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置Vue项目
+- en: Now that we've learned the basics about computed properties and getters and
+    setters, we are ready to look deeper at the component parts that we will need
+    and create the project.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经学会了计算属性和getter和setter的基础知识，我们准备深入研究我们将需要的组件部分并创建项目。
+- en: 'To create the project, we use the Vue CLI again. This time, instead of selecting
+    the default options, we must choose a few options. But before we do that, we will
+    create a project folder called `vue-example-ch3-slider-puzzle`. Then, we must
+    go into the folder and run the following commands with `npm`:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要创建项目，我们再次使用Vue CLI。这次，我们必须选择一些选项，而不是选择默认选项。但在这之前，我们将创建一个名为`vue-example-ch3-slider-puzzle`的项目文件夹。然后，我们必须进入文件夹并使用`npm`运行以下命令：
+- en: 'First, we must install the Vue CLI globally so that we can create and run our
+    project with it:'
+  id: totrans-25
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们必须全局安装Vue CLI，以便我们可以使用它创建和运行我们的项目：
+- en: '[PRE0]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Now, we can go into our project folder and run the following command to create
+    our project:'
+  id: totrans-27
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们可以进入我们的项目文件夹并运行以下命令来创建我们的项目：
+- en: '[PRE1]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Equivalently, we can run the following commands with Yarn:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样地，我们可以使用Yarn运行以下命令：
+- en: 'First, we must install the Vue CLI globally so that we can create and run our
+    project with it:'
+  id: totrans-30
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们必须全局安装Vue CLI，以便我们可以使用它创建和运行我们的项目：
+- en: '[PRE2]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Then, we can go into our project folder and run the following command to create
+    our project:'
+  id: totrans-32
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，我们可以进入我们的项目文件夹并运行以下命令来创建我们的项目：
+- en: '[PRE3]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'In either case, we should see the Vue CLI command-line program with instructions
+    on how to choose the items. If we are asked if we want to create the project in
+    the current folder, we can type *Y* and press *Enter* to do so. Then, we should
+    see the project types that we can create our project with. We should choose `Manually
+    select features`, and then `Vue 3` to create a Vue 3 project:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论哪种情况，我们都应该看到Vue CLI命令行程序并获得如何选择项目的说明。如果我们被问及是否要在当前文件夹中创建项目，我们可以输入*Y*并按*Enter*来执行。然后，我们应该看到我们可以使用的项目类型，我们应该选择`Manually
+    select features`，然后选择`Vue 3`来创建一个Vue 3项目：
+- en: '![Figure 3.1 – Selecting the project type to create in the Vue CLI wizard'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图3.1 - 在Vue CLI向导中创建项目类型的选择'
+- en: '](image/Figure_3.1_B14405.jpg)'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_3.1_B14405.jpg)'
+- en: Figure 3.1 – Selecting the project type to create in the Vue CLI wizard
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.1 - 在Vue CLI向导中创建项目类型的选择
+- en: On the next screen, we should see what we can add to the project. Choose `Unit`
+    `Testing,` and then you need to choose `Testing` `with` `Jest` so that we can
+    add tests to our app.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一个屏幕上，我们应该看到我们可以添加到项目中的内容。选择`Unit` `Testing`，然后您需要选择`Testing` `with` `Jest`，这样我们就可以为我们的应用程序添加测试。
+- en: 'This project will come with tests for many components once we''ve finished
+    writing the code:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们完成了编写代码，这个项目将为许多组件提供测试：
+- en: '![Figure 3.2 – The options we should choose for this project'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图3.2 - 我们应该为这个项目选择的选项'
+- en: '](image/Figure_3.2_B14405.jpg)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_3.2_B14405.jpg)'
+- en: Figure 3.2 – The options we should choose for this project
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.2 - 我们应该为这个项目选择的选项
+- en: Once we let the Vue CLI finish creating the project, we should see the code
+    files in the `src` folder. The tests should be in the `tests/unit` folder. The
+    Vue CLI saved us lots of effort from creating the test code all by ourselves.
+    It comes with an example test that we can expand from.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们让Vue CLI完成项目的创建，我们应该在`src`文件夹中看到代码文件。测试应该在`tests/unit`文件夹中。Vue CLI为我们节省了大量精力，因为我们不需要自己编写测试代码。它带有一个我们可以扩展的示例测试。
+- en: 'Once we''ve picked these options, we can start creating our app. In this project,
+    we will get some pictures from Unsplash, which provides us with royalty-free images.
+    Then, we will get the images and cut them up into nine pieces so that we can display
+    them in the `slider puzzle` component. We need both the whole image and the cut
+    pieces. For this example, we will get the images from the following links:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们选择了这些选项，我们就可以开始创建我们的应用程序。在这个项目中，我们将从Unsplash获取一些图片，该网站为我们提供了免版税的图片。然后，我们将获取这些图片并将它们分成九个部分，以便我们可以在`slider
+    puzzle`组件中显示它们。我们需要整张图片和切割后的部分。在这个例子中，我们将从以下链接获取图片：
+- en: '[https://unsplash.com/photos/EfhCUc_fjrU](https://unsplash.com/photos/EfhCUc_fjrU)'
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[https://unsplash.com/photos/EfhCUc_fjrU](https://unsplash.com/photos/EfhCUc_fjrU)'
+- en: '[https://unsplash.com/photos/CTvtrspsPQs](https://unsplash.com/photos/CTvtrspsPQs)'
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[https://unsplash.com/photos/CTvtrspsPQs](https://unsplash.com/photos/CTvtrspsPQs)'
+- en: '[https://unsplash.com/photos/XoCyW2JVmiE](https://unsplash.com/photos/XoCyW2JVmiE)'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[https://unsplash.com/photos/XoCyW2JVmiE](https://unsplash.com/photos/XoCyW2JVmiE)'
+- en: When we go to each page, we must click the **Download** button to download the
+    images. Once we've downloaded the images, we must go to [https://www.imgonline.com.ua/eng/cut-photo-into-pieces.php](https://www.imgonline.com.ua/eng/cut-photo-into-pieces.php)
+    to cut the images into nine pieces automatically.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们进入每个页面时，我们必须点击**下载**按钮来下载图片。一旦我们下载了图片，我们必须转到[https://www.imgonline.com.ua/eng/cut-photo-into-pieces.php](https://www.imgonline.com.ua/eng/cut-photo-into-pieces.php)自动将图片切成九块。
+- en: In *section 1*, we select our image file. In *section 2*, we set both **Parts
+    in width** and **Parts in height** to `3`. This way, we can divide our image into
+    nine pieces. Once we have done that, we can download the ZIP file that is generated
+    and then extract all the images into a folder. This should be repeated for each
+    image.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在*section 1*中，我们选择我们的图片文件。在*section 2*中，我们将**宽度分成的部分**和**高度分成的部分**都设置为`3`。这样，我们可以将我们的图片分成九个部分。一旦我们做到了这一点，我们就可以下载生成的ZIP文件，然后将所有的图片提取到一个文件夹中。这应该对每个图片都重复进行。
+- en: Once we have all the whole and cut image pieces, we should put them all into
+    the `src/assets` folder of Vue 3 project folder that we just created. This way,
+    we can access the images from our app and display them. The first image shows
+    a pink flower, so the whole image is named `pink.jpg` and the cut images are in
+    the `cut-pink` folder. The filenames that are generated for the cut images remain
+    unchanged. The second image is a purple flower, so the whole image is named `purple.jpg`
+    and the cut image folder is named `cut-purple`. The third image is a red flower.
+    So, it is named `red.jpg` and the folder containing the cut pieces of the image
+    is named `cut-red`.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们有了所有的整个和切割的图像片段，我们应该把它们都放到我们刚刚创建的Vue 3项目文件夹的`src/assets`文件夹中。这样，我们就可以从我们的应用程序访问并显示这些图像。第一张图片显示了一朵粉色的花，所以整个图片被命名为`pink.jpg`，切割后的图片在`cut-pink`文件夹中。生成的切割图片的文件名保持不变。第二张图片是一朵紫色的花，所以整个图片被命名为`purple.jpg`，切割后的图片文件夹被命名为`cut-purple`。第三张图片是一朵红色的花。因此，它被命名为`red.jpg`，包含图像切割片段的文件夹被命名为`cut-red`。
+- en: Now that we have taken care of the images, we can create our components.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经处理了图片，我们可以创建我们的组件。
+- en: First, we must remove `HelloWorld.vue` from the `src/components` folder since
+    we don't need it anymore. We must also remove any reference to it from the `App.vue`
+    file.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们必须从`src/components`文件夹中删除`HelloWorld.vue`，因为我们不再需要它了。我们还必须从`App.vue`文件中删除对它的任何引用。
+- en: 'Next, in the `components` folder, we must create the `Puzzles.vue` file to
+    let us select the puzzle. It has a template so that we can display the puzzles
+    we select. In the `component options` object, we have an array that contains the
+    puzzles data to display. Also, we have a method that lets us emit the event to
+    our parent component, which is the `App.vue` component. This way, we can display
+    the right puzzle in the slider puzzle component that we will create. To do that,
+    in `src/components/Puzzles.vue`, we must add the following template code:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，在`components`文件夹中，我们必须创建`Puzzles.vue`文件，以便让我们选择拼图。它有一个模板，这样我们就可以显示我们选择的拼图。在`component
+    options`对象中，我们有一个包含要显示的拼图数据的数组。此外，我们有一个方法，让我们向我们的父组件发出事件，即`App.vue`组件。这样，我们就可以在我们将创建的滑块拼图组件中显示正确的拼图。为此，在`src/components/Puzzles.vue`中，我们必须添加以下模板代码：
+- en: '[PRE4]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Then, we must add the following script and style tags:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们必须添加以下脚本和样式标签：
+- en: '[PRE5]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: In the `component options` object, we have the `data()` method, with the puzzle's
+    reactive property between the script tags. It has an array of objects with the
+    `id`, `image`, and `title` properties. The `id` property is a unique ID that we
+    use when we render the entries with the `v-for` directive. We also emit the ID
+    to `App.vue` so that we can pass it to our slide puzzle component from there as
+    a prop. `title` is the title we display on the template in a human - readable
+    way.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在脚本标签之间，我们有`component options`对象，其中包含`data()`方法，以及在脚本标签之间的拼图的响应属性。它有一个包含`id`、`image`和`title`属性的对象数组。`id`属性是一个唯一的ID，我们在使用`v-for`指令渲染条目时使用它。我们还向`App.vue`发出ID，这样我们就可以从那里将其作为属性传递给我们的滑块拼图组件。`title`是我们以人类可读的方式在模板中显示的标题。
+- en: In the `methods` property, we have a `selectPuzzle()` method that takes the
+    puzzle object. It calls `this.$emit` to emit the puzzle-changed event. The first
+    argument is `name`. The second argument is the `payload` property that we want
+    to emit in the event. We can listen to the event in the parent component by adding
+    a `v-on` directive to the element wherever this component is referenced.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`methods`属性中，我们有一个`selectPuzzle()`方法，它接受谜题对象作为参数。它调用`this.$emit`来触发puzzle-changed事件。第一个参数是`name`。第二个参数是我们想要在事件中触发的`payload`属性。我们可以通过在父组件中为元素添加`v-on`指令来监听事件，无论这个组件在哪里被引用。
+- en: In the template, we have the `title` displayed with the `h1` component. The
+    `v-for` directive loops through the items in the puzzle's `array` reactive property
+    and displays them. As usual, we need the `key` prop for each entry to be set to
+    a unique ID for Vue 3 to properly keep track of the values. We must also add a
+    `class` attribute so that we can style the rows. To display the image, we can
+    call `require` so that Vue 3 can resolve the path directly. The Vue CLI uses Webpack
+    so that it can load the image as a module. We can set it as the value of the `src`
+    prop and it will display the image. We load the whole images and display them.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在模板中，我们使用`h1`组件显示`title`。`v-for`指令循环遍历谜题的`array`响应属性中的项目并显示它们。像往常一样，我们需要为每个条目设置`key`属性，以便为Vue
+    3正确跟踪值设置唯一ID。我们还必须添加一个`class`属性，以便我们可以样式化行。要显示图像，我们可以调用`require`，这样Vue 3可以直接解析路径。Vue
+    CLI使用Webpack，因此它可以将图像作为模块加载。我们可以将其设置为`src`属性的值，它将显示图像。我们加载整个图像并显示它们。
+- en: Also, in the row, we have a button that calls the `selectPuzzle()` method when
+    we click on it. This will set the choice of the puzzle and propagate it to the
+    slider puzzle component that we will create so that we can see the correct puzzle
+    displayed.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，在行中，我们有一个按钮，当我们点击它时调用`selectPuzzle()`方法。这将设置谜题的选择并将其传播到我们将创建的滑块谜题组件，以便我们可以看到正确的谜题显示。
+- en: '`.row img select` has its width set to `100px` to display a thumbnail of the
+    whole image. Also, we can display the buttons in a way that they are aligned with
+    the other child elements.'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`.row img select`的宽度设置为`100px`，以显示整个图像的缩略图。此外，我们可以以一种与其他子元素对齐的方式显示按钮。'
+- en: Next, we must create the `src/components/Records.vue` file to add a component
+    that contains the speed records. This provides a list of fastest times for winning
+    the game. The fastest time records are stored in local storage for easy access.
+    In this component, all we do is display the components.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们必须创建`src/components/Records.vue`文件，以添加一个包含速度记录的组件。这提供了一个最快完成游戏的时间列表。最快的时间记录存储在本地存储中，以便轻松访问。在这个组件中，我们只是显示组件。
+- en: 'To create this component, we must write the following code in `src/components/Records.vue`:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要创建这个组件，我们必须在`src/components/Records.vue`中编写以下代码：
+- en: '[PRE6]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: In the `component` object, we have the `getRecords()` method, which obtains
+    the fastest time records from local storage. The `localStorage.getItem()` method
+    gets data by its key. The argument is the key that maps to the data that we want
+    to get. It returns a string with the data. Therefore, to convert the string into
+    an object, we must call `JSON.parse` to parse the JSON string into an object.
+    It should be an array since we will create an array and stringify it into a JSON
+    string before we record it. Local storage can only hold strings; so, this is a
+    required step.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`component`对象中，我们有`getRecords()`方法，它从本地存储中获取最快的时间记录。`localStorage.getItem()`方法通过其键获取数据。参数是映射到我们想要获取的数据的键。它返回一个包含数据的字符串。因此，为了将字符串转换为对象，我们必须调用`JSON.parse`将JSON字符串解析为对象。它应该是一个数组，因为我们将创建一个数组并将其字符串化为JSON字符串，然后记录它。本地存储只能保存字符串；因此，这是一个必需的步骤。
+- en: Once we've retrieved the records from local storage, we can set it as the value
+    of the `this.records` reactive property. In case there is no item with the `records`
+    key in local storage, we must set the default to an empty array. This way, we
+    always get an array assigned to `this.records`.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们从本地存储中检索到记录，我们可以将其设置为`this.records`响应式属性的值。如果本地存储中没有带有`records`键的项目，我们必须将默认值设置为空数组。这样，我们总是将一个数组分配给`this.records`。
+- en: Also, we have the `beforeMount` hook, which lets us get the records before the
+    component mounts. This way, we will see the records when the component is mounted.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们还有`beforeMount`钩子，它让我们在组件挂载之前获取记录。这样，当组件挂载时，我们将看到记录。
+- en: In the template, we show the speed records with the `v-for` directive to loop
+    through the items and display them. The `v-for` directive in the array entry has
+    the first item in the parentheses. The second item in the parentheses is the index.
+    We can set the `key` prop to the index since they are unique, and we are not moving
+    the entries around. We display both in the list.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在模板中，我们使用`v-for`指令显示速度记录，以循环遍历项目并显示它们。数组条目中的`v-for`指令在括号中有第一个项目。括号中的第二个项目是索引。我们可以将`key`属性设置为索引，因为它们是唯一的，而且我们不会移动条目。我们在列表中显示两者。
+- en: Also, we have a button that calls the `getRecords` method when we click it to
+    get the latest entries.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们有一个按钮，当我们点击它时调用`getRecords`方法以获取最新条目。
+- en: Now that we've created the simplest components, we can move on and create the
+    slider puzzle component.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经创建了最简单的组件，我们可以继续创建滑块拼图组件。
+- en: Creating the components for shuffling pictures
+  id: totrans-71
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建洗牌图片的组件
+- en: The slider puzzle game provides the slider puzzle where the player shuffles
+    the tiles into a picture to win, the elapsed time display, the logic for rearranging
+    the puzzles, the logic to check if we win, and a timer to calculate the elapsed
+    time since the game started.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 滑块拼图游戏提供了滑块拼图，玩家将拼图洗牌成图片以赢得比赛，显示经过的时间，重新排列拼图的逻辑，检查我们是否赢得比赛的逻辑，以及计算自游戏开始以来经过的时间的计时器。
+- en: To calculate the elapsed time easily, we can use the `moment` library. To install
+    the library, we can run `npm install moment`. Once we have installed the package,
+    we can begin writing the necessary code.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了轻松计算经过的时间，我们可以使用`moment`库。要安装该库，我们可以运行`npm install moment`。一旦我们安装了包，我们就可以开始编写必要的代码。
+- en: Let's create the `src/components/SliderPuzzle.vue` file. The full code for this
+    file can be found at [https://github.com/PacktPublishing/-Vue.js-3-By-Example/blob/master/Chapter03/src/components/SliderPuzzle.vue](https://github.com/PacktPublishing/-Vue.js-3-By-Example/blob/master/Chapter03/src/components/SliderPuzzle.vue).
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建`src/components/SliderPuzzle.vue`文件。该文件的完整代码可以在[https://github.com/PacktPublishing/-Vue.js-3-By-Example/blob/master/Chapter03/src/components/SliderPuzzle.vue](https://github.com/PacktPublishing/-Vue.js-3-By-Example/blob/master/Chapter03/src/components/SliderPuzzle.vue)找到。
+- en: 'We will start by creating the component with the `script` tag:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将首先通过`script`标签创建组件：
+- en: '[PRE7]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: First, we import the `moment` library to calculate the elapsed time. Next, we
+    define the `correctPuzzleArray` variable and assign it to an array with the correct
+    order of the files. We check against this array to determine if the player has
+    won the game.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们导入`moment`库来计算经过的时间。接下来，我们定义`correctPuzzleArray`变量，并将其分配给一个具有文件正确顺序的数组。我们根据这个数组来确定玩家是否赢得了比赛。
+- en: Then, we move on to creating the object for the component options. The `props`
+    property contains our own prop. `puzzleId` is a string with the ID of the puzzle
+    the player is playing. We must make sure that it is a string. We set its default
+    value to `'cut-pink'` so that we always have a puzzle set.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们开始创建组件选项的对象。`props`属性包含我们自己的属性。`puzzleId`是一个包含玩家正在玩的谜题的ID的字符串。我们必须确保它是一个字符串。我们将其默认值设置为`'cut-pink'`，这样我们就始终有一个谜题集。
+- en: 'The `data()` method contains our initial states. We return an object with them.
+    This way, we make sure that the values of the reactive properties are always isolated
+    from the other components in our app. The `correctPuzzleArray` reactive property
+    is just what we defined earlier. We just set it to a property so that it becomes
+    a reactive property. This makes it usable with our `isWinning` computed property
+    since we want the value to update when this array updates:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`data()`方法包含我们的初始状态。我们返回一个包含它们的对象。这样，我们可以确保响应属性的值始终与我们应用程序中的其他组件隔离。`correctPuzzleArray`响应属性就是我们之前定义的。我们只是将其设置为一个属性，使其成为一个响应属性。这使它可以与我们的`isWinning`计算属性一起使用，因为我们希望在此数组更新时更新值：'
+- en: '[PRE8]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: '`shuffledPuzzleArray` is a copy of the `correctPuzzleArray` reactive property,
+    but the items are shuffled so that the player has to rearrange the items to win
+    the game. To create the value for the property, first, we must make a copy of
+    the `correctPuzzleArray` array with the spread operator. Then, we must call `sort`
+    with a `callback`. `callback` is a function that generates a number between `-0.5`
+    and `0.5` with `Math.random()` – `0.5`. We need a random number between that range
+    so that the values sort randomly. `callback` is a comparator function. It can
+    take two parameters; that is, the previous and current array entry, so that we
+    can compare them:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`shuffledPuzzleArray`是`correctPuzzleArray`响应属性的副本，但项目被洗牌，以便玩家必须重新排列项目才能赢得游戏。为了创建属性的值，首先我们必须用扩展运算符复制`correctPuzzleArray`数组。然后，我们必须使用`callback`调用`sort`。`callback`是一个使用`Math.random()`生成介于`-0.5`和`0.5`之间的数字的函数。我们需要一个在这个范围内的随机数，以便值随机排序。`callback`是一个比较函数。它可以接受两个参数；也就是说，前一个和当前数组条目，这样我们就可以比较它们：'
+- en: '[PRE9]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Since we are sorting items randomly, we don't need to do any comparison. If
+    the comparator callback returns a negative number or `0`, then the order of the
+    items is unchanged. Otherwise, the order of the items in the array we are sorting
+    is switched around. The `sort()` method returns a new array with the entries sorted.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们是随机排序物品，所以不需要进行任何比较。如果比较器回调返回负数或`0`，则项目的顺序不变。否则，我们要排序的数组中的项目顺序会改变。`sort()`方法返回一个按顺序排列的新数组。
+- en: The `indexesToSwap` reactive property is used to add the index of the image
+    filenames that we want to swap. When we click the `swap()` method, we push a new
+    value to the `indexesToSwap` reactive property so that we can swap the two items
+    with the given index when there are two items in the `indexesToSwap` array.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`indexesToSwap`响应属性用于添加我们想要交换的图像文件名的索引。当我们点击`swap()`方法时，我们向`indexesToSwap`响应属性推送一个新值，这样当`indexesToSwap`数组中有两个项目时，我们就可以交换这两个项目。'
+- en: The `timer` reactive property may contain the object of the timer that's returned
+    by the `setInterval` function. The `setInterval` function lets us run code periodically.
+    It takes a callback with the code we want to run as the first argument. The second
+    argument is the time between each call of the callback in milliseconds.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`timer`响应属性可能包含由`setInterval`函数返回的计时器对象。`setInterval`函数让我们周期性地运行代码。它接受一个包含我们想要运行的代码的回调作为第一个参数。第二个参数是回调之间的时间间隔，以毫秒为单位。'
+- en: The `startDateTime` reactive property contains the date and time when the game
+    started. It is a `Date` instance that contains the current time. The `currentDateTime`
+    reactive property has the `Date` instance with the current date and time. It is
+    updated as the game is processing within the `callback` property we pass into
+    the `setInterval` function.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`startDateTime`响应属性包含游戏开始时的日期和时间。它是一个包含当前时间的`Date`实例。`currentDateTime`响应属性具有当前日期和时间的`Date`实例。随着游戏在我们传递给`setInterval`函数的`callback`属性中进行处理，它会被更新。'
+- en: The `data()` method contains the initial values of all the reactive properties.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`data()`方法包含了所有响应式属性的初始值。'
+- en: 'The `computed` property contains the computed properties. Computed properties
+    are synchronous functions that return some values that are based on other reactive
+    properties. Computed properties are reactive properties themselves. Their values
+    are updated when the reactive properties that are referenced within the computed
+    property functions that are referenced are updated. We defined three computed
+    properties in this component: `isWinning`, `elapsedDiff`, and `elapsedTime`.'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`computed`属性包含了计算属性。计算属性是同步函数，返回一些基于其他响应式属性的值。计算属性本身也是响应式属性。当计算属性函数中引用的响应式属性更新时，它们的值也会更新。在这个组件中，我们定义了三个计算属性：`isWinning`、`elapsedDiff`和`elapsedTime`。'
+- en: The `isWinning` computed property is the property that contains the state of
+    the game. If it returns `true`, then the player wins the game. Otherwise, the
+    player hasn't won the game. To check if the player has won the game, we loop through
+    the `correctPuzzleArray` reactive property and check if each entry of it is the
+    same as the one in the `shuffledPuzzleArray` reactive property array.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`isWinning`计算属性是包含游戏状态的属性。如果它返回`true`，那么玩家赢得了游戏。否则，玩家还没有赢得游戏。为了检查玩家是否赢得了游戏，我们循环遍历`correctPuzzleArray`响应式属性，并检查它的每个条目是否与`shuffledPuzzleArray`响应式属性数组中的条目相同。'
+- en: '`correctPuzzleArray` contains the correct items listed. So, if each item in
+    the `shuffledPuzzleArray` array''s reactive property matches the entries in `correctPuzzleArray`,
+    then we know that the player has won. Otherwise, the player hasn''t won. Therefore,
+    if there are any differences between `correctPuzzleArray` and `shuffledPuzzleArray`,
+    then it returns false. Otherwise, it returns true.'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`correctPuzzleArray`包含了正确的项目列表。因此，如果`shuffledPuzzleArray`数组的每个项目与`correctPuzzleArray`中的条目匹配，那么我们知道玩家已经赢了。否则，玩家还没有赢。因此，如果`correctPuzzleArray`和`shuffledPuzzleArray`之间有任何差异，那么它返回false。否则，返回true。'
+- en: The `elapsedDiff` computed property calculates the elapsed time in milliseconds.
+    This is where we use the `moment` library to calculate the elapsed time from `startDateTime`
+    to `currentDateTime`. We use the `moment` library to do this calculation since
+    it makes our job a lot easier. It has a `diff()` method that we can use to calculate
+    the difference between this and another `moment` object. The difference in milliseconds
+    is returned.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`elapsedDiff`计算属性计算了经过的时间（毫秒）。这是我们使用`moment`库从`startDateTime`到`currentDateTime`计算经过时间的地方。我们使用`moment`库来进行这个计算，因为它让我们的工作变得更容易。它有一个`diff()`方法，我们可以用它来计算这个和另一个`moment`对象之间的差异。以毫秒为单位返回差异。'
+- en: Once we've calculated the `elapsedDiff` computed property, we can use it to
+    format the elapsed with `moment` into a human-readable time format; that is, HH:mm:ss.
+    The `elapsedTime` computed property has the computed property return a string
+    with the formatted elapsed time. The `moment.utc()` method is a function that
+    takes a timespan in UTC, then returns a `moment` object where we can call the
+    `format()` method to let us calculate the time.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们计算出`elapsedDiff`计算属性，我们就可以使用它来使用`moment`格式化经过的时间为人类可读的时间格式，即HH:mm:ss。`elapsedTime`计算属性返回一个字符串，其中包含格式化后的经过时间。`moment.utc()`方法是一个函数，它接受一个UTC时间段，然后返回一个`moment`对象，我们可以调用`format()`方法来计算时间。
+- en: Now that we have defined all our reactive and computed properties, we can define
+    our methods so that we can rearrange our slides into the correct picture.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经定义了所有的响应式和计算属性，我们可以定义我们的方法，这样我们就可以将幻灯片重新排列成正确的图片。
+- en: Rearranging the slides
+  id: totrans-94
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 重新排列幻灯片
+- en: 'We can add the required `methods` for the `SliderPuzzle.vue` component by writing
+    the following code:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过编写以下代码为`SliderPuzzle.vue`组件添加所需的`methods`：
+- en: '[PRE10]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: The logic is defined in the `methods` property. We have the `swap()` method
+    to let us swap the cut image slides. The `start()` method lets us reset the reactive
+    properties into their initial states, shuffle the cut photo slides, and then start
+    the timer to calculate the elapsed time. We also check if the player has won each
+    time the timer code is run. The `stop()` method lets us stop the timer. The `resetTime()`
+    method lets us reset `startDateTime` and `currentDateTime` to their current date
+    time. The `recordSpeedRecords()` method lets us record the time that the player
+    took to win the game if they are in the top 10.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 逻辑定义在`methods`属性中。我们有`swap()`方法让我们交换切割图像幻灯片。`start()`方法让我们将响应式属性重置为初始状态，洗牌切割照片幻灯片，然后启动计时器计算经过的时间。我们还在每次运行计时器代码时检查玩家是否获胜。`stop()`方法让我们停止计时器。`resetTime()`方法让我们将`startDateTime`和`currentDateTime`重置为它们的当前日期时间。`recordSpeedRecords()`方法让我们记录玩家赢得游戏所花费的时间，如果他们进入前10名。
+- en: We start with the logic to swap the slides by defining the `swap()` method.
+    It takes an argument, which is the index of one of the slides that we want to
+    swap. When the player clicks on a slide, this method is called. This way, we add
+    the index of one of the items we want to swap with the other to the `indexesToSwap`
+    computed property. So, if the player clicks on two slides, then their positions
+    will be swapped with each other.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从逻辑上交换幻灯片开始，定义`swap()`方法。它接受一个参数，即我们想要交换的幻灯片之一的索引。当玩家点击幻灯片时，将调用此方法。这样，我们将要与另一个幻灯片交换的项目之一的索引添加到`indexesToSwap`计算属性中。因此，如果玩家点击两张幻灯片，它们的位置将彼此交换。
+- en: The `swap()` method body checks if the `indexesToSwap` reactive property has
+    less than two slide indexes inside it. If there's less than two, then we call
+    `push` to append the slide to the `indexesToSwap` array. Next, if there are indexes
+    in the `indexesToSwap` reactive property array, then we do the swapping.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`swap()`方法体检查`indexesToSwap`响应式属性是否包含少于两个幻灯片索引。如果少于两个，则调用`push`将幻灯片追加到`indexesToSwap`数组中。接下来，如果`indexesToSwap`响应式属性数组中有索引，则进行交换。'
+- en: 'To do the swapping, we destructure the indexes from the `indexToSwap` reactive
+    property. Then, we use our destructuring assignment again to do the swapping:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了进行交换，我们从`indexToSwap`响应式属性中解构索引。然后，我们再次使用解构赋值进行交换：
+- en: '[PRE11]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: To swap the items in an array, we just have to assign one with `index2` of `shuffledPuzzleArray`
+    to the item with `index1`. Then, the item that is originally in `index1` of `shuffledPuzzleArray`
+    is put into the `index2` slot of `shuffledPuzzleArray` in the same way. Finally,
+    we make sure that we empty the `indexesToSwap` array so that we can let the player
+    swap another pair of slides. Since `shuffledPuzzleArray` is a reactive property,
+    it is automatically rendered in the template as it updates with the `v-for` directive
+    in the template.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要交换数组中的项目，我们只需将`shuffledPuzzleArray`的`index2`分配给`index1`的项目。然后，原本在`shuffledPuzzleArray`的`index1`处的项目以相同的方式放入`shuffledPuzzleArray`的`index2`槽中。最后，我们确保清空`indexesToSwap`数组，以便让玩家交换另一对幻灯片。由于`shuffledPuzzleArray`是一个响应式属性，它会随着模板中的`v-for`指令更新而自动呈现在模板中。
+- en: The `start()` method lets us start the timer for calculating the elapsed time
+    between when the **Start** button is clicked to start the game and the current
+    date and time until the game is finished or when the user clicks the **Quit**
+    button. First, the method resets the `startDateTime` and `currentDateTime` reactive
+    properties by setting those values to the current date time, which we get by instantiating
+    the `Date` constructor. Then, we shuffle the slides by making a copy of `correctPuzzleArray`,
+    and then calling sort as we did previously to sort the copy of the `correctPuzzle`
+    array. Also, we set the `indexesToSwap` property to an empty array to clear any
+    items that are present so that we start afresh.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`start()`方法让我们可以启动计时器，计算从点击**开始**按钮开始游戏到游戏结束或用户点击**退出**按钮时的经过时间。首先，该方法通过将这些值设置为当前日期时间来重置`startDateTime`和`currentDateTime`响应式属性，我们通过实例化`Date`构造函数来获取当前日期时间。然后，我们通过复制`correctPuzzleArray`，然后调用sort来对`correctPuzzle`数组的副本进行排序来洗牌幻灯片。此外，我们将`indexesToSwap`属性设置为空数组，以清除任何已存在的项目，使我们可以重新开始。'
+- en: Once we've done all the resetting, we can call `setInterval` to start the timer.
+    This will update the `currentDateTime` reactive property with the current date
+    and time so that we can calculate the `elapsedDiff` and `elapsedTime` computed
+    properties. Next, we check the `isWinning` reactive property to check if it is
+    true. If it is, then we call the `this.recordSpeedRecords` method to record the
+    fastest time if the player has won.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们完成了所有重置，我们就可以调用`setInterval`来启动计时器。这将使用当前日期和时间更新`currentDateTime`响应式属性，以便我们可以计算`elapsedDiff`和`elapsedTime`计算属性。接下来，我们检查`isWinning`响应式属性是否为true。如果是，那么我们就调用`this.recordSpeedRecords`方法来记录玩家获胜时的最快时间。
+- en: If the player wins, as indicated by `isWinning` being `true`, we can also call
+    the `stop()` method to stop the timer. The `stop()` method just calls the `resetTime()`
+    method to reset all the times. Then, it calls `clearInterval` to clear the timer.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果玩家获胜，即`isWinning`为`true`，我们还可以调用`stop()`方法来停止计时器。`stop()`方法只是调用`resetTime()`方法来重置所有时间。然后，它调用`clearInterval`来清除计时器。
+- en: 'To display the slider puzzle, we can add the `template` tag:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要显示滑块拼图，我们可以添加`template`标签：
+- en: '[PRE12]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Then, we can add the required styles by writing the following code:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以通过编写以下代码来添加所需的样式：
+- en: '[PRE13]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: In the `styles` tag, we have the styles for styling the slider puzzle. We need
+    the slider puzzle so that we can display three slides in a row and three rows
+    altogether. This way, we display all the slides in a 3x3 grid. The `row` class
+    has the property set to `flex` so that we can use flexbox to lay out the slides.
+    We also set the `flex-wrap` property to `wrap` so that we can wrap any overflowing
+    items to the next row. `max-width` is set to `90vw` so that the slider puzzle
+    grid will stay on the screen.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`styles`标签中，我们有用于样式化滑块拼图的样式。我们需要滑块拼图，这样我们就可以在一行中显示三个幻灯片，总共三行。这样，我们可以在3x3的网格中显示所有幻灯片。`row`类的属性设置为`flex`，这样我们就可以使用flexbox来布局幻灯片。我们还将`flex-wrap`属性设置为`wrap`，这样我们就可以将任何溢出的项目包装到下一行。`max-width`设置为`90vw`，这样滑块拼图网格就会保持在屏幕上。
+- en: The `column` class has the `flex-grow` property set to `1` so that it is one
+    of three items displayed in the row.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`column`类的`flex-grow`属性设置为`1`，这样它就是在一行中显示的三个项目之一。'
+- en: In the template, we display our `title` for the game with the `h1` element.
+    We have a **Start Game** button that calls the `start()` method when we click
+    on the button to start the game timer. Also, we have a **Quit** button to call
+    the `stop()` method when we click on it to stop the timer. The `elapsedTime` computed
+    property is displayed like any other reactive property. And if the user wins,
+    as indicated by the `isWinning` reactive property returning true, we will see
+    the **'You Win'** message.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在模板中，我们使用`h1`元素显示游戏的`title`。我们有一个**开始游戏**按钮，当我们点击按钮开始游戏计时器时，它调用`start()`方法。此外，我们有一个**退出**按钮，当我们点击它停止计时器时，它调用`stop()`方法。`elapsedTime`计算属性显示方式与其他响应属性相同。如果用户获胜，即`isWinning`响应属性返回true，我们将看到**'You
+    Win'**消息。
+- en: To display the slides, we just loop through all the `shuffledPuzzleArray` reactive
+    properties with the `v-for` directive and render all the slides. When we click
+    on each slide, the `swap()` method is called with the index. And once we have
+    two indexes in the `indexesToSwap` reactive property, we swap the slides. The
+    `key` prop is set to the filename since they are unique. To display the slide
+    images, we call `require` with the path of the image so that we display the images.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要显示幻灯片，我们只需使用`v-for`指令循环遍历所有`shuffledPuzzleArray`响应属性，并呈现所有幻灯片。当我们点击每个幻灯片时，将调用`swap()`方法并传入索引。一旦我们在`indexesToSwap`响应属性中有两个索引，我们就交换幻灯片。由于它们是唯一的，所以将`key`属性设置为文件名。要显示幻灯片图像，我们使用图像路径调用`require`，以便显示图像。
+- en: Since we have the flexbox styles to display the items three in a row and in
+    three rows, all nine images will automatically be displayed in a 3x3 grid. Now
+    that we have the slider puzzle game logic out of the way, all we have to add is
+    the logic that records the timing score in local storage.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们有flexbox样式来以三行三列的方式显示项目，所有九个图像将自动显示在3x3的网格中。现在我们已经完成了滑块拼图游戏逻辑，我们只需要添加记录时间得分的逻辑到本地存储中。
+- en: Calculating the score based on timing
+  id: totrans-115
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 根据时间计算得分
+- en: This is done in the `recordSpeedRecords()` method. It gets the records by getting
+    the local storage item with the *key* records from the local storage. Then, we
+    get the `elapsedTime` and `elapsedDiff` reactive property values and push them
+    into the `records` array.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是在`recordSpeedRecords()`方法中完成的。它通过从本地存储中获取具有*键*记录的本地存储项来获取记录。然后，我们获取`elapsedTime`和`elapsedDiff`响应属性的值，并将它们推入`records`数组中。
+- en: Next, we sort the records with the `sort()` method. This time, we are not sorting
+    the items randomly. Rather, we are sorting them by the `elapsedDiff` reactive
+    property's timespan, which is measured in milliseconds. We pass in a callback
+    with the `a` and `b` parameters, which are the previous and current array entries,
+    respectively, and we return the difference between them. This way, if it returns
+    a negative number or 0, then the order between them is unchanged. Otherwise, we
+    switch the order. Then, we call `slice` with the first and last index to include
+    it in the returned array that we assigned to the `sortedRecords` constant. The
+    `slice()` method returns an array with the item in the first index included all
+    the way up to the last index, minus `1`.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们使用`sort()`方法对记录进行排序。这一次，我们不是随机排序项目，而是按照`elapsedDiff`响应属性的时间跨度进行排序，该时间以毫秒为单位。我们传入一个带有`a`和`b`参数的回调函数，它们分别是先前和当前的数组条目，然后返回它们之间的差异。这样，如果它返回一个负数或0，那么它们之间的顺序不变。否则，我们交换顺序。然后，我们调用`slice`方法，使用第一个和最后一个索引来包含它在分配给`sortedRecords`常量的返回数组中。`slice()`方法返回一个包含第一个索引的项目一直到最后一个索引减去1的数组。
+- en: Finally, we *stringify* the arrays with the `JSON.stringify()` method to convert
+    the `sortedRecords` array into a string. Then, we call `localStorage.setItem`
+    to put the item into an item with the `'records'` key.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们使用`JSON.stringify()`方法将数组*stringify*为字符串，将`sortedRecords`数组转换为字符串。然后，我们调用`localStorage.setItem`将该项放入具有`'records'`键的项中。
+- en: 'Finally, we must change the contents of the `App.vue` file to the following:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们必须将`App.vue`文件的内容更改为以下内容：
+- en: '[PRE14]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: We add the components we created earlier to render them on the screen. `selectedPuzzleId`
+    has the ID of the puzzle we selected by default.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将之前创建的组件添加到屏幕上进行渲染。`selectedPuzzleId`默认情况下具有我们选择的拼图的ID。
+- en: 'Now that we have all the code, we can run the project by running `npm run serve`
+    in our project folder if we haven''t already. Then, when we go to the URL that
+    is indicated by the Vue CLI, we will see the following:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经有了所有的代码，如果我们还没有运行过项目，我们可以在项目文件夹中运行`npm run serve`来运行项目。然后，当我们访问Vue CLI指示的URL时，我们将看到以下内容：
+- en: '![Figure 3.3 – Screenshot of the slider puzzle game'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图3.3 - 滑块拼图游戏的屏幕截图'
+- en: '](image/Figure_3.3_B14405.jpg)'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_3.3_B14405.jpg)'
+- en: Figure 3.3 – Screenshot of the slider puzzle game
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.3 - 滑块拼图游戏的屏幕截图
+- en: Now that we've finished the web app's code, we have to find an easy way to test
+    all its parts.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经完成了Web应用的代码，我们必须找到一种简单的方法来测试它的所有部分。
+- en: Unit testing with Jest
+  id: totrans-127
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Jest进行单元测试
+- en: Testing is an important part of any app. When we refer to tests, we usually
+    mean automated tests. These are tests that we can run in quick repetition to make
+    sure that our code is not broken. When any tests fail, we know that our code did
+    not do what it was doing before. Either we created a bug, or the tests are outdated.
+    Because we can run them quickly, we can write many of them and run them as we
+    build our code.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试是任何应用程序的重要部分。当我们提到测试时，通常指的是自动化测试。这些是我们可以快速重复运行的测试，以确保我们的代码没有出错。当任何测试失败时，我们知道我们的代码没有像以前那样工作。要么我们创建了一个bug，要么测试已经过时。因为我们可以快速运行它们，所以我们可以编写许多测试并在构建代码时运行它们。
+- en: This is much preferred to manual tests, which must be done by a person doing
+    the same actions over and over again. Manual tests are boring for the tester,
+    they are error-prone, and are very slow. It is just not a pleasant experience
+    for anyone. Therefore, it is better to write as many automated tests as possible
+    to minimize the manual tests.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这比手动测试要好得多，手动测试必须由一个人一遍又一遍地执行相同的操作。手动测试对测试人员来说很无聊，容易出错，而且非常慢。这对任何人来说都不是一种愉快的体验。因此，最好尽可能多地编写自动化测试，以最小化手动测试。
+- en: If the instructions that are shown in the Vue CLI are followed, it is very easy
+    to add skeleton test code without doing any extra work. The files for unit tests
+    should be automatically generated for us. We should have a `tests/unit` folder
+    in our code to separate our test code from our production code.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果按照Vue CLI中显示的说明进行操作，很容易在不进行任何额外工作的情况下添加骨架测试代码。单元测试文件应该会自动生成给我们。我们的代码中应该有一个`tests/unit`文件夹，用于将我们的测试代码与我们的生产代码分开。
+- en: '**Jest** is a JavaScript test framework that we can run unit tests with. It
+    provides us with a useful API that lets us describe our tests groups and define
+    our tests. Also, we can mock any external dependencies that are normally used,
+    such as timers, local storage, and states, easily. To mock the `localStorage`
+    dependency, we can use the `jest-localstorage-mock` package. We can install it
+    by running `npm install jest-localstorage-mock –save-dev`. The `–save-dev` flag
+    lets us save the package as a development dependency so that it is only installed
+    in the development environment and nowhere else. Also, in the `package.json` file,
+    we will add a `jest` property to it as a `root` property. To do that, we can write
+    the following code:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Jest**是一个JavaScript测试框架，我们可以用它来运行单元测试。它为我们提供了一个有用的API，让我们描述我们的测试组并定义我们的测试。此外，我们还可以轻松地模拟通常使用的任何外部依赖项，如定时器、本地存储和状态。要模拟`localStorage`依赖项，我们可以使用`jest-localstorage-mock`包。我们可以通过运行`npm
+    install jest-localstorage-mock –save-dev`来安装它。`–save-dev`标志让我们将包保存为开发依赖项，因此它只会安装在开发环境中，而不会安装在其他地方。此外，在`package.json`文件中，我们将添加一个`jest`属性作为`root`属性。为此，我们可以编写以下代码：'
+- en: '[PRE15]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'We have these properties in `package.json` so that when we run our tests, the
+    `localStorage` dependency will be mocked out so that we can check if its methods
+    have been called. Together with the other properties, our `package.json` file
+    should look something like the following:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`package.json`中有这些属性，这样当我们运行我们的测试时，`localStorage`依赖项将被模拟，以便我们可以检查它的方法是否已被调用。连同其他属性一起，我们的`package.json`文件应该看起来像以下内容：
+- en: '[PRE16]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Once we are done with that, we can add our tests.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，我们可以添加我们的测试。
+- en: Adding a test for the Puzzles.vue component
+  id: totrans-136
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 为Puzzles.vue组件添加测试
+- en: 'First, we must remove the existing files from the `tests/unit` folder. Then,
+    we can start writing our tests. We can start by writing tests for the `Puzzles.vue`
+    component. To do that, we must create the `tests/unit/puzzles.spec.js` file and
+    write the following code:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们必须从`tests/unit`文件夹中删除现有文件。然后，我们可以开始编写我们的测试。我们可以先为`Puzzles.vue`组件编写测试。为此，我们必须创建`tests/unit/puzzles.spec.js`文件并编写以下代码：
+- en: '[PRE17]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: The `describe` function takes a string with the description of our test group
+    in a string. The second argument is a callback with the tests inside it. The `describe`
+    function creates a block that groups several related tests together. Its main
+    purpose is to make the test results easier to read on our screens.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`describe`函数接受一个字符串，其中包含测试组的描述。第二个参数是一个包含测试的回调函数。`describe`函数创建一个块，将几个相关的测试组合在一起。它的主要目的是使测试结果在屏幕上更容易阅读。'
+- en: The `it()` function lets us describe our tests. It is also known as the `test()`
+    method. Its first argument is the `name` property of the test in string form.
+    The second argument is a callback function with the test code. It also takes an
+    optional third argument with `timeout` in milliseconds so that our tests won't
+    be stuck running forever. The default timeout is 5 seconds.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`it()`函数让我们描述我们的测试。它也被称为`test()`方法。它的第一个参数是测试的`name`属性，以字符串形式表示。第二个参数是带有测试代码的回调函数。它还接受一个可选的第三个参数，其中包含毫秒为单位的`timeout`，以便我们的测试不会永远运行下去。默认超时时间为5秒。'
+- en: If a `promise` is returned from the `it` or `test` function, Jest will wait
+    for the promise to resolve before the test completes. Jest also waits if we provide
+    an argument to the `it` or `test` function, which is usually called `done`. The
+    `done` function is called to indicate that the test is done if the `done` parameter
+    is added to the `it` or `test` callback.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果从`it`或`test`函数返回一个`promise`，Jest将等待`promise`解析完成后再完成测试。如果我们在`it`或`test`函数中提供一个参数，通常称为`done`，Jest也会等待。如果在`it`或`test`回调中添加了`done`参数，则调用`done`函数表示测试已完成。
+- en: The `it` or `test` function doesn't have to be inside the callback we pass into
+    `describe`. It can also be called **standalone**. However, it is better to group
+    related tests together with `describe` so that we can read the results more easily.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`it`或`test`函数不一定要在我们传递给`describe`的回调函数内部。它也可以被**独立调用**。然而，最好将相关的测试与`describe`一起分组，这样我们可以更容易地阅读结果。'
+- en: The first test tests that when the **Play** button is clicked, the `puzzle-changed`
+    event is emitted. As we can see from the `Puzzles.vue` component, the `puzzle-changed`
+    event is emitted with the `this.$emit()` method. To create our test, we call `mount`
+    to mount our component. It takes the component we want to test as its argument.
+    It also takes a second argument with the object of component options that we want
+    to override. In this test, since we are not overriding anything, we did not pass
+    in anything as the second argument.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个测试测试了当点击**播放**按钮时，会发出`puzzle-changed`事件。正如我们从`Puzzles.vue`组件中所看到的，`puzzle-changed`事件是通过`this.$emit()`方法发出的。为了创建我们的测试，我们调用`mount`来挂载我们的组件。它以我们要测试的组件作为参数。它还接受第二个参数，其中包含我们想要覆盖的组件选项的对象。在这个测试中，因为我们没有覆盖任何内容，所以我们没有传入任何东西作为第二个参数。
+- en: The `mount()` method returns the `wrapper` object, which is the `wrapper` object
+    for our component that we are testing. It has a few handy methods that we can
+    use to do the testing. In this test, we call the `find()` method to get the HTML
+    element with the given selector. It returns the HTML DOM object, which will call
+    the `trigger()` method to trigger the event that we want in our test.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`mount()`方法返回`wrapper`对象，这是我们正在测试的组件的`wrapper`对象。它有一些方便的方法，我们可以用来进行测试。在这个测试中，我们调用`find()`方法来获取具有给定选择器的HTML元素。它返回HTML
+    DOM对象，我们将调用`trigger()`方法来触发我们在测试中想要的事件。'
+- en: 'This way, we can trigger events such as keyboard and mouse events to simulate
+    user interaction. So, the following code is used to get the element with the `.play-button
+    button` selector and then trigger the click event on it:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样，我们可以触发键盘和鼠标事件，以模拟用户交互。因此，以下代码用于获取具有`.play-button button`选择器的元素，然后触发其上的点击事件：
+- en: '[PRE18]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: The last line of the test is used to check whether the `puzzle-changed` event
+    is emitted. The `emitted()` method returns an object with properties that have
+    names. These are the event names of the emitted events. The `toHaveProperty()`
+    method lets us check if the property name we passed in as the argument is in the
+    returned object. It is a property of the object that's returned by the `expect()`
+    method.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试的最后一行用于检查是否发出了`puzzle-changed`事件。`emitted()`方法返回一个具有名称的属性的对象。这些是发出的事件的事件名称。`toHaveProperty()`方法让我们检查作为参数传入的属性名称是否在返回的对象中。这是由`expect()`方法返回的对象的属性。
+- en: In the second test, we mount the component again and trigger the `click` event
+    on the same element. Then, we call the `emitted()` method with the event name
+    so that we can get the payload that is emitted with the event with the object
+    it returns. The `puzzleChanged` array contains the payload that is emitted as
+    the first element. Then, to check if the `puzzles[0].id` property is emitted,
+    we have the check in our last line. The `wrapper.vm` property contains the mounted
+    component object. Therefore, `wrapper.vm.puzzles` is the puzzle's reactive property
+    of the `Puzzles` component. So, this means we are checking if the `id` property
+    of the puzzle's reactive property from the `Puzzles` component has been emitted.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第二个测试中，我们再次挂载组件并在同一元素上触发`click`事件。然后，我们使用事件名称调用`emitted()`方法，以便通过返回的对象获取与事件一起发出的有效负载。`puzzleChanged`数组包含作为第一个元素发出的有效负载。然后，为了检查是否发出了`puzzles[0].id`属性，我们在最后一行进行检查。`wrapper.vm`属性包含挂载的组件对象。因此，`wrapper.vm.puzzles`是`Puzzles`组件的拼图的响应属性。因此，这意味着我们正在检查`Puzzles`组件中拼图的响应属性的`id`属性是否已发出。
+- en: Adding a test for the Records component
+  id: totrans-149
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 为Records组件添加测试
+- en: 'Next, we must write tests for the `Records` component. To do that, we must
+    create the `tests/unit/records.spec.js` file and write the following code:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们必须为`Records`组件编写测试。为此，我们必须创建`tests/unit/records.spec.js`文件，并编写以下代码：
+- en: '[PRE19]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: This is where we use the `jest-localstorage-mock` package. All we have to do
+    is to import the package file; then, the code in the file will run and mock the
+    `localStorage` dependency for us. In the test, we call `shallowMount` to mount
+    our `Records` component and then we can check if `localStorage.getItem` is called
+    with the `'records'` argument. With the `jest-localstorage-mocks` package, we
+    can pass in `localStorage.getItem` directly to expect it to do the check. The
+    `toHaveBeenCalledWith()` method lets us check the argument that it is called with.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们使用`jest-localstorage-mock`包的地方。我们只需导入包文件；然后，文件中的代码将运行并为我们模拟`localStorage`依赖项。在测试中，我们调用`shallowMount`来挂载我们的`Records`组件，然后我们可以检查`localStorage.getItem`是否使用`'records'`参数调用。使用`jest-localstorage-mocks`包，我们可以直接传递`localStorage.getItem`以期望它进行检查。`toHaveBeenCalledWith()`方法让我们检查它所调用的参数。
+- en: Since we called the `localStorage.getItem()` method in the `beforeMount()` method,
+    this test should pass since we called it as we were loading the component.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们在`beforeMount()`方法中调用了`localStorage.getItem()`方法，因此这个测试应该通过，因为我们在加载组件时调用了它。
+- en: Adding a test for the SliderPuzzle component
+  id: totrans-154
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 为SliderPuzzle组件添加测试
+- en: 'Finally, we must write some tests for the `SliderPuzzle` component. We will
+    add the `tests/unit/sliderPuzzle.spec.js` file and write the following code:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们必须为`SliderPuzzle`组件编写一些测试。我们将添加`tests/unit/sliderPuzzle.spec.js`文件，并编写以下代码：
+- en: '[PRE20]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: In the `'inserts the index of the image to swap when we click on an image'`
+    test, we mount the `SliderPuzzle` component and then trigger the `click` event
+    on the `img` element. The `img` element is the first slide of the slider puzzle.
+    The `swap()` method should be called so that the `indexesToSwap` reactive property
+    has the index of the first image that's added. The `toBeGreaterThan()` method
+    lets us check if the returned value of what we expected is greater than some number.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在“在单击图像时插入要交换的图像的索引”测试中，我们挂载`SliderPuzzle`组件，然后在`img`元素上触发`click`事件。`img`元素是滑块拼图的第一张幻灯片。应调用`swap()`方法，以便`indexesToSwap`响应属性具有添加的第一张图像的索引。`toBeGreaterThan()`方法让我们检查我们期望的返回值是否大于某个数字。
+- en: In the `'swaps the image order when 2 images are clicked'` test, we mount the
+    `SliderPuzzle` component again. Then, we get `wrapper.vm.shuffledPuzzleArray`
+    to get the indexes that are in the earlier array and destructure their values.
+    We will use it later to compare the values from the same array to see if they
+    have been swapped once we've clicked on two images.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在“当点击2个图像时交换图像顺序”测试中，我们再次挂载`SliderPuzzle`组件。然后，我们获取`wrapper.vm.shuffledPuzzleArray`以获取早期数组中的索引并解构它们的值。我们将在稍后使用它来比较来自同一数组的值，以查看在我们点击了两个图像后它们是否已经被交换。
+- en: 'Next, we trigger the click on the slides with the `wrapper.get()` method to
+    get the image element. Then, we call the `trigger()` method to trigger the click
+    events. Then, we check if the `indexesToSwap` reactive property has `0` for its
+    length after the swapping is done. Then, in the last three lines, we get the items
+    from `wrapper.vm.shuffledPuzzleArray` again and compare their values. Since the
+    entries are supposed to be swapped after the two slides, we have the following
+    code to check if swapping is actually done:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们使用`wrapper.get()`方法触发幻灯片上的点击，以获取图像元素。然后，我们调用`trigger()`方法来触发点击事件。接着，我们检查在交换完成后`indexesToSwap`响应属性的长度是否为`0`。然后，在最后三行中，我们再次从`wrapper.vm.shuffledPuzzleArray`中获取项目并比较它们的值。由于条目在两个幻灯片之后应该被交换，我们有以下代码来检查交换是否真的发生了：
+- en: '[PRE21]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'In the `''starts timer when start method is called''` test, we mount the `SliderPuzzle`
+    component again. This time, we call the `start()` method to make sure that the
+    timer is actually created with `setInterval`. We also check if the `setInterval`
+    function is called with a function and 1,000 milliseconds. To let us test anything
+    with timers easily, which includes testing anything that calls `setTimeout` or
+    `setInterval`, we call `jest.useFakeTimers()` to let us mock those functions so
+    that our tests won''t interfere with the operations of the other tests:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在“启动方法调用时启动计时器”测试中，我们再次挂载`SliderPuzzle`组件。这次，我们调用`start()`方法来确保计时器实际上是通过`setInterval`创建的。我们还检查`setInterval`函数是否以函数和1,000毫秒的方式调用。为了让我们轻松测试任何与计时器有关的内容，包括测试任何调用`setTimeout`或`setInterval`的内容，我们调用`jest.useFakeTimers()`来模拟这些函数，以便我们的测试不会干扰其他测试的操作：
+- en: '[PRE22]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: The `toHaveBeenCalledTimes()` method checks whether a function that we passed
+    into the `expect()` method is called a given number of times. Since we called
+    `jest.useFakeTimers(),` `setInterval` is actually a spy of the real `setInterval`
+    function rather than the real version. We can only use spies for a function with
+    `expect` and `toHaveBeenCalledTimes` and `toHaveBeenCalledWith`. So, the code
+    we have will work. The `toHaveBeenLastCalledWith()` method is used to check the
+    argument that our function spy is called with the given kind of argument. We make
+    sure the first argument is a function and that the second argument is 1,000 milliseconds.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`toHaveBeenCalledTimes()`方法检查我们传递给`expect()`方法的函数是否被调用了指定次数。由于我们调用了`jest.useFakeTimers()`，`setInterval`实际上是真正`setInterval`函数的一个间谍，而不是真正的版本。我们只能在函数与`expect`、`toHaveBeenCalledTimes`和`toHaveBeenCalledWith`一起使用间谍。所以，我们的代码将起作用。`toHaveBeenLastCalledWith()`方法用于检查我们的函数间谍被调用的参数类型。我们确保第一个参数是一个函数，第二个参数是1,000毫秒。'
+- en: 'In the `''stops timer when stop method is called''` test, we do something similar
+    by mounting the component and then calling the `stop()` method. We make sure `clearInterval`
+    is actually called when we call the `stop()` method:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在“停止方法调用时停止计时器”测试中，我们通过挂载组件然后调用`stop()`方法来做类似的事情。我们确保在调用`stop()`方法时实际上调用了`clearInterval`。
+- en: '[PRE23]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Next, we add the `'records record to local storage'` test. We make use of the
+    `jest-localstorage-mock` library again to mock the `localStorage` dependency.
+    We mount the `SliderPuzzle` component differently in this test. The second argument
+    is an object that contains the `data()` method. This is the `data()` method that
+    we have in the component's `options` object. We override the component's original
+    reactive property values with what we pass in. The `currentDateTime` and `startDateTime`
+    reactive properties are overridden so that we can set the date to what we want
+    so that we can do the testing with them instead.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们添加`'将记录保存到本地存储'`的测试。我们再次利用`jest-localstorage-mock`库来模拟`localStorage`依赖项。在这个测试中，我们以不同的方式挂载`SliderPuzzle`组件。第二个参数是一个包含`data()`方法的对象。这是我们在组件的`options`对象中拥有的`data()`方法。我们用传入的值覆盖了组件原始的响应式属性值，以便设置日期，以便我们可以对其进行测试。
+- en: Then, we call the `wrapper.vm.recordSpeedRecords()` method to test if the `localStorage.setItem()`
+    method is called. We call the method that is in the mounted component. Then, we
+    create the `stringifiedRecords` JSON string so that we can compare that with what
+    is being called with `localStrorage.setItem`. `toHaveBeenCalledWith` only works
+    with `localStorage.setItem` because we imported the `jest-localstorage-mock` library
+    to create a spy from the actual `localStorage.setItem()` method. This lets Jest
+    check whether the method is called or not with the given arguments.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们调用`wrapper.vm.recordSpeedRecords()`方法来测试是否调用了`localStorage.setItem()`方法。我们调用了挂载组件中的方法。然后，我们创建了`stringifiedRecords`
+    JSON字符串，以便我们可以将其与`localStrorage.setItem`调用进行比较。`toHaveBeenCalledWith`只适用于`localStorage.setItem`，因为我们导入了`jest-localstorage-mock`库来从实际的`localStorage.setItem()`方法创建一个间谍。这让Jest可以检查方法是否被调用以及给定的参数。
+- en: To test if the timer is started when the **Start** button is clicked, we have
+    the `'starts timer with Start button is clicked'` test. We just get the **Start**
+    button by its ID with the `get()` method and trigger the `click` event on it.
+    Then, we check that the `setInterval` function is called. Like with `localStorage`,
+    we mock the `setInterval` function with the `jest.useFakeTimers()` method to create
+    a spy from the actual `setInterval` function. This lets us check that it is called.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了测试当点击**开始**按钮时计时器是否启动，我们有`'点击开始按钮启动计时器'`的测试。我们只需使用`get()`方法按其ID获取**开始**按钮，并在其上触发`click`事件。然后，我们检查`setInterval`函数是否被调用。与`localStorage`一样，我们使用`jest.useFakeTimers()`方法模拟`setInterval`函数，以从实际的`setInterval`函数创建一个间谍。这让我们可以检查它是否被调用。
+- en: Similarly, we have the `'stops timer with Quit button is clicked'` test to check
+    if the `clearInterval` function is called if the **Quit** button is clicked.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类似地，我们有`'点击退出按钮停止计时器'`的测试，以检查是否在点击**退出**按钮时调用了`clearInterval`函数。
+- en: Finally, we have the `'shows the elapsed time'` test to mount the component
+    with different values for the `currentDateTime` and `startDateTime` reactive properties.
+    They are set to the values we want, and they will stay the way they are in the
+    test. Then, to check if the `elapsedTime` computed property is displayed properly,
+    we call the `wrapper.html()` method to return the rendered HTML in the wrapped
+    component, and we check that it includes the elapsed time string we are looking
+    for.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们有`'显示经过的时间'`的测试，以使用不同的值挂载组件的`currentDateTime`和`startDateTime`响应式属性。它们被设置为我们想要的值，并且它们在测试中保持不变。然后，为了检查`elapsedTime`计算属性是否正确显示，我们调用`wrapper.html()`方法来返回包装组件中呈现的HTML，并检查其中是否包含我们正在寻找的经过的时间字符串。
+- en: To clean up the mocks after each test so that we start afresh after each test,
+    we call the `jest.clearAllMocks()` method to clear all the mocks after each test.
+    The `afterEach` function takes a callback that is run after each test is done.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了在每个测试后清理模拟，以便在每个测试后重新开始，我们调用 `jest.clearAllMocks()` 方法来清除每个测试后的所有模拟。`afterEach`
+    函数接受一个在每个测试完成后运行的回调函数。
+- en: Running all the tests
+  id: totrans-172
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 运行所有测试
+- en: 'To run the tests, we run `npm run test:unit`. By doing this, we''ll see something
+    like the following:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行测试，我们运行 `npm run test:unit`。通过这样做，我们会看到类似以下的内容：
+- en: '![Figure 3.4 – Results of our unit tests'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图3.4 - 我们的单元测试结果'
+- en: '](image/Figure_3.4_B14405.jpg)'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_3.4_B14405.jpg)'
+- en: Figure 3.4 – Results of our unit tests
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.4 - 我们的单元测试结果
+- en: Since all the tests passed, the code in our project is doing what we expect
+    it to. It only takes around 4 seconds to run all the tests, which is much faster
+    than testing our code manually.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于所有测试都通过了，我们项目中的代码正在按照我们的预期运行。运行所有测试只需要大约4秒，比手动测试我们的代码要快得多。
+- en: Summary
+  id: totrans-178
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we looked deeper into components by defining the computed properties
+    in our components. Also, we added tests for our components so that we can test
+    the parts of our components individually. With the Vue CLI, we added test files
+    and dependencies easily within our app.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们通过在组件中定义计算属性来更深入地了解组件。此外，我们为组件添加了测试，以便可以单独测试组件的各个部分。通过Vue CLI，在我们的应用程序中轻松添加了测试文件和依赖项。
+- en: Inside our components, we can emit events that propagate to the parent component
+    with the `this.$emit()` method. It took a string with the event name. The other
+    arguments are the payloads that we want to pass from the parent component to the
+    child components.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的组件内部，我们可以使用 `this.$emit()` 方法发出传播到父组件的事件。它接受一个事件名称的字符串。其他参数是我们希望从父组件传递到子组件的有效负载。
+- en: To add unit tests to our Vue 3 app and run the tests, we used the Jest test
+    framework. Vue 3 adds its own specific APIs to Jest so that we can test Vue 3
+    components with it. To test components, we mounted the component by using the
+    `mount` and `shallowMount` functions. The `mount` function lets us mount the component
+    itself, including the nested component. The `shallowMount` function only mounts
+    the component itself without the child components. They both return a `wrapper`
+    for our component so that we can use it to interact with the component to do the
+    testing.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了向我们的Vue 3应用程序添加单元测试并运行测试，我们使用了Jest测试框架。Vue 3为Jest添加了自己特定的API，以便我们可以使用它来测试Vue
+    3组件。为了测试组件，我们使用 `mount` 和 `shallowMount` 函数来挂载组件。`mount` 函数让我们挂载组件本身，包括嵌套组件。`shallowMount`
+    函数只挂载组件本身，而不包括子组件。它们都返回我们组件的 `wrapper`，以便我们可以使用它与组件交互进行测试。
+- en: We should make sure that our tests run in isolation. This is why we were mocking
+    the external dependencies. We do not want to run any code that requires anything
+    external to the tests and the project code to be available. Also, we had to make
+    sure that we cleaned up any dependencies in our tests if needed. If there were
+    any mocks, we had to clean them up so that they were not carried forward to another
+    test. Otherwise, we may have tests that depend on other tests, which makes troubleshooting
+    tests very difficult.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们应该确保我们的测试是独立运行的。这就是为什么我们要模拟外部依赖关系。我们不希望运行任何需要外部测试和项目代码可用的代码。此外，如果需要，我们必须确保在测试中清理任何依赖关系。如果有任何模拟，我们必须清理它们，以便它们不会传递到另一个测试中。否则，我们可能会有依赖于其他测试的测试，这会使故障排除测试变得非常困难。
+- en: In the next chapter, we will look at how to create a photo gallery app that
+    saves data by sending the data we want to save to a backend API. We will introduce
+    the use of Vue Router so that we can navigate to different pages.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习如何创建一个照片库应用程序，通过将要保存的数据发送到后端API来保存数据。我们将介绍使用Vue Router，以便我们可以导航到不同的页面。

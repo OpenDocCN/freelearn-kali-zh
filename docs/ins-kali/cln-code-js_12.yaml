@@ -1,0 +1,4035 @@
+- en: Control Flow
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 控制流
+- en: 'This is the final chapter of our exploration into the syntax of JavaScript.
+    We have so far covered its more atomic components its many types, operators, declarations,
+    and statements. Gaining fluency in these is crucial to working effectively with
+    the language at a foundational level and allows us now to take a step back and
+    consider a larger concern: controlling a program''s flow. We''ll combine all of
+    the syntax we''ve picked up into clean and understandable programs.'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们对JavaScript语法的探索的最后一章。到目前为止，我们已经涵盖了它更原子的组件，包括它的许多类型、运算符、声明和语句。熟练掌握这些对于在基础级别有效地使用语言至关重要，现在允许我们退一步考虑一个更大的问题：控制程序的流程。我们将把我们学到的所有语法结合起来，编写干净和易懂的程序。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: What is control flow?
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 什么是控制流？
+- en: Imperative versus declarative programming
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 命令式与声明式编程
+- en: The movement of control
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 控制的移动
+- en: Statements of control flow
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 控制流语句
+- en: Handling cyclomatic complexity
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理圈复杂度
+- en: Asynchronous control flow
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 异步控制流
+- en: What is control flow?
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 什么是控制流？
+- en: Control flow refers to the order in which expressions and statements (and entire
+    blocks of code) will run. Programming is, in part, the *art of controlling flow*. By
+    writing code, we are specifying where control resides at any single moment.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 控制流指的是表达式和语句（以及整个代码块）运行的顺序。编程在某种程度上是*控制流的艺术*。通过编写代码，我们指定了控制在任何单一时刻的位置。
+- en: At a granular level, the order of execution is dictated by the individual operators
+    we use in our expressions. We explored the precedence and associativity of operators
+    in the last chapter, discovering that, even if you have a series of operators,
+    one after another, the exact order of their execution is defined by the individual
+    operators' precedence and associativities so that, in the expression, `1 + 2 *
+    3`, the `2 * 3` operation will occur before the addition.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在细粒度上，执行顺序由我们在表达式中使用的各个运算符决定。在上一章中，我们探讨了运算符的优先级和结合性，发现即使有一系列运算符，一个接一个，它们的执行顺序也由各个运算符的优先级和结合性定义，因此在表达式`1
+    + 2 * 3`中，`2 * 3`的操作将在加法之前发生。
+- en: 'Outside expressions, on the statement level, we control flow in the following
+    ways:'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在语句级别上，除了表达式外，我们以以下方式控制流程：
+- en: We can do so by ordering our statements in the order we wish them to occur.
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们可以通过按照我们希望它们发生的顺序来排列我们的语句。
+- en: 'We can do so by using conditional or iterative language constructs, including
+    the following:'
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们可以通过使用条件或迭代语言结构来实现，包括以下内容：
+- en: '`switch()` statements'
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`switch()`语句'
+- en: '`if()` statements'
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`if()`语句'
+- en: '`for()` statements'
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`for()`语句'
+- en: '`while()` statements'
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`while()`语句'
+- en: '`do{...} while()` statements'
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`do{...} while()`语句'
+- en: We can do so by invoking and then returning or yielding from functions or generators
+    (*yielding* and *returning* are both ways of *giving back control* to the caller).
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们可以通过调用函数或生成器来实现，然后从函数或生成器中返回或产出（*产出*和*返回*都是*将控制权交还*给调用者的方式）。
+- en: 'It''s easiest to imagine the control flow globally as a type of *cursor* or *finger* that
+    is always pointing to a specific expression or statement of code. When a program
+    is executing, the control flow will go down, line by line, until it encounters
+    a piece of syntax that will redirect control to another piece of code. If it encounters
+    an invocation of a function, then that function will be executed in the same manner;
+    the control will be with each consecutive line within the function until it is
+    returned to the caller of the function via a `return` statement. As *control* traverses
+    down through a program, each language construct it encounters will be given control
+    over the execution until they each complete. Consider the following simple piece
+    of code:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最容易想象控制流程全局地作为一种*光标*或*手指*，它总是指向特定的表达式或代码语句。当程序执行时，控制流将逐行向下进行，直到遇到一段语法，将重定向控制到另一段代码。如果遇到对函数的调用，那么该函数将以相同的方式执行；控制将在函数内的每一行连续进行，直到通过`return`语句将其返回给函数的调用者。当*控制*穿过程序时，它遇到的每个语言结构都将控制执行，直到它们各自完成。考虑以下简单的代码片段：
+- en: '[PRE0]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'The flow of control that is taken in the preceding code is as follows:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中采取的控制流程如下：
+- en: We start with `let basket = [];`
+  id: totrans-24
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们从`let basket = [];`开始
+- en: The `for` loop begins: `let i = 0`
+  id: totrans-25
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`for`循环开始：`let i = 0`'
+- en: 'Check `i < 3` (`true`!):'
+  id: totrans-26
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`i < 3`（为`true`！）：
+- en: Run `makeEgg()`
+  id: totrans-27
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`makeEgg()`
+- en: Push result via `basket.push(...)`
+  id: totrans-28
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过`basket.push(...)`推送结果
+- en: '`i++` (`i` is now `1`)'
+  id: totrans-29
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`i++`（`i`现在是`1`）'
+- en: 'Check `i < 3` (`true`!):'
+  id: totrans-30
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`i < 3`（为`true`！）：
+- en: Run `makeEgg()`
+  id: totrans-31
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`makeEgg()`
+- en: Push the result via `basket.push(...)`
+  id: totrans-32
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过`basket.push(...)`推送结果
+- en: '`i++` (`i` is now `2`)'
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`i++`（`i`现在是`2`）'
+- en: 'Check `i < 3` (`true`!):'
+  id: totrans-34
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`i < 3`（为`true`！）：
+- en: Run `makeEgg()`
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`makeEgg()`
+- en: Push result via `basket.push(...)`
+  id: totrans-36
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过`basket.push(...)`推送结果
+- en: '`i++` (`i` is now `3`)'
+  id: totrans-37
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`i++`（`i`现在是`3`）'
+- en: Check `i < 3` (`false`!).
+  id: totrans-38
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`i < 3`（为`false`！）。
+- en: End of Program
+  id: totrans-39
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 程序结束
+- en: Even for quite a simple program such as this, the flow can be quite complicated
+    and lengthy. For the benefit of our fellow programmers, it makes sense to try
+    to reduce this complexity whenever possible. The way to accomplish this is via
+    abstraction. Abstracting something won't eliminate that complexity, but it will
+    hide it so that programmers don't need to concern themselves with it. Therefore,
+    before delving into the specific language constructs of control flow in JavaScript,
+    we'll be exploring how these concepts of control flow and abstraction interrelate
+    via the two opposing approaches of imperative and declarative programming.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 即使对于这样一个非常简单的程序，流程也可能相当复杂且冗长。为了使我们的同行程序员受益，尽可能地减少这种复杂性是有意义的。实现这一点的方法是通过抽象。抽象某事物不会消除复杂性，但它会隐藏它，以便程序员不需要关心它。因此，在深入研究JavaScript中控制流的具体语言结构之前，我们将探讨控制流和抽象如何通过*命令式*和*声明式*编程这两种相反的方法相互关联。
+- en: Imperative versus declarative programming
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 命令式与声明式编程
+- en: 'Imperative programming concerns itself with **how** something is accomplished,
+    while declarative programming concerns itself with **what** we want accomplished.
+    It''s difficult to see the difference between these so it''s best to illustrate
+    them with a simple program:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 命令式编程关注于**如何**完成某事，而声明式编程关注于**我们想要**完成什么。很难看出它们之间的区别，所以最好用一个简单的程序来说明它们：
+- en: '[PRE1]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'This function''s problem domain would be: *getting unpaid invoices*. That is
+    the task the function has and it is *what* we want to achieve within the function.
+    This particular function, however, concerns itself a lot with *how* to achieve
+    its task:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个函数的问题领域将是：*获取未付发票*。这是函数的任务，也是我们希望在函数内部实现的*目标*。然而，这个特定的函数非常关注*如何*实现它的任务：
+- en: It initializes an empty array
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它初始化一个空数组
+- en: It initializes a counter
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它初始化一个计数器
+- en: It checks that counter (*multiple times*)
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它检查计数器（*多次*）
+- en: It increments that counter (*multiple times*)
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它增加了计数器（*多次*）
+- en: These and other elements of our function are not at all related to the problem
+    domain of *getting unpaid invoices*. Instead, they are the rather annoying implementation
+    details that we must go through to get our desired output. Functions like this
+    are called **imperative** because they are mostly concerned with *how*.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个函数的这些和其他元素与*获取未付发票*的问题领域毫不相关。相反，它们是我们必须经历的相当烦人的实现细节。这样的函数被称为**命令式**，因为它们主要关注*如何*。
+- en: 'While the *imperative* form of programming busies itself with procedural low-level
+    steps involved in a task, the *declarative* form of programming uses abstractions
+    to avoid the use of direct control flow, preferring to express things only in
+    terms of the problem domain itself. The following is a more declarative version
+    of our `getUnpaidInvoices` function:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然*命令式*形式的编程忙于任务中涉及的程序低级步骤，*声明式*形式的编程使用抽象来避免直接控制流，更倾向于仅用问题领域本身来表达事物。以下是我们`getUnpaidInvoices`函数的更声明式版本：
+- en: '[PRE2]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Here, we are delegating to `Array#filter` so it handles the specifics of initializing
+    a new array, iteration, and conditional checking. We have freed ourselves from
+    the complexity of conventional control flow by using an abstraction.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们委托给`Array#filter`来处理初始化新数组、迭代和条件检查的具体细节。通过使用抽象，我们摆脱了传统控制流的复杂性。
+- en: 'Declarative patterns such as this have become the staple of modern JavaScript.
+    They allow you to express the logic you desire at the level of your problem domain,
+    instead of having to worry about lower layers of abstraction such as *how to iterate*.
+    It''s important to see that both declarative and imperative approaches are not
+    completely distinct. They are at either end of a spectrum. On the declarative
+    side of the spectrum, you are operating at a higher level of abstraction, and
+    are hence not exposed to the implementation details that you would be without
+    such abstraction. On the imperative side of the spectrum, you are operating at
+    a lower level of abstraction, utilizing lower-level imperative constructs to tell
+    the machine what you want to accomplish:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样的声明式模式已经成为现代JavaScript的主流。它们允许您在问题领域的层面上表达所需的逻辑，而不必担心更低层次的抽象，比如*如何迭代*。重要的是要看到，声明式和命令式方法都不是完全不同的。它们处于光谱的两端。在光谱的声明式一侧，您在更高层次的抽象上操作，因此不会暴露在没有这种抽象的情况下会暴露的实现细节。在光谱的命令式一侧，您在更低层次的抽象上操作，利用更低级别的命令式构造来告诉机器您想要实现的目标：
+- en: '![](assets/e7797e12-6ae7-42f3-b4f0-e8e1d33b4ed3.png)'
+  id: totrans-54
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/e7797e12-6ae7-42f3-b4f0-e8e1d33b4ed3.png)'
+- en: Both of these approaches have implications for our control flow. The more imperative
+    approach directly states that it will iterate once through the array and then
+    conditionally push to the output array. The more declarative approach does not
+    make any demands about how the array is iterated through. Naturally, of course,
+    we know that the native `Array#filter` and `Array#map` methods will independently
+    iterate through their input arrays, but that is not something we are specifying.
+    All we are specifying is the condition on which our data should be filtered and
+    mapped. How the data is iterated through is completely the concern of the `Array#filter`
+    and `Array#map` abstractions.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这两种方法都对我们的控制流产生影响。更命令式的方法直接说明它将一次通过数组迭代，然后有条件地推送到输出数组。更声明式的方法不会对数组如何进行迭代提出任何要求。当然，我们知道原生的`Array#filter`和`Array#map`方法将独立地迭代它们的输入数组，但这不是我们在指定的内容。我们指定的只是我们的数据应该被过滤和映射的条件。数据如何进行迭代完全是`Array#filter`和`Array#map`抽象的关注。
+- en: The benefit of a more declarative approach is that it can increase clarity for
+    the human reader and enable you to more efficiently model complex problem domains.
+    Since you're not having to worry about *how* things are occurring, your mind is
+    left free to purely concern itself with *what* you wish to achieve.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更声明式方法的好处在于它可以增加人类读者的清晰度，并使您能够更有效地对复杂的问题领域进行建模。由于您不必担心*如何*发生事情，您的思维可以纯粹关注*您希望实现的*目标。
+- en: 'Imagine we''re given of task of conditionally executing a specific piece of
+    code but only if a certain feature is enabled. In our mind, this is how it should
+    work:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 想象一下，我们被要求有条件地执行特定的代码片段，但只有在某个功能启用时才能执行。在我们的想法中，这就是它应该工作的方式：
+- en: '[PRE3]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'This is the code we want to write, but we later find out that things are not
+    so simple. For starters, there is no `isEnabled` property for us to use on the
+    feature object. There is, however, a `flags` array property, which when fully
+    disabled will include `Feature.DISABLED_FLAG`:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们想要编写的代码，但后来我们发现事情并不那么简单。首先，我们没有`isEnabled`属性可以在功能对象上使用。但是，有一个`flags`数组属性，当完全禁用时将包括`Feature.DISABLED_FLAG`：
+- en: '[PRE4]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: That seems simple enough. But then we discover that, even if the feature does
+    not have this flag and so seems enabled, we also need to check that the time right
+    now aligns with a set of times stored in `feature.enabledTimeSlots`. If the current
+    time is not in one of the enabled time slots, then we must conclude that the feature
+    is disabled, regardless of whether it has the flag.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这似乎很简单。 但是然后我们发现，即使该功能没有此标志，因此似乎已启用，我们还需要检查当前时间是否与存储在`feature.enabledTimeSlots`中的一组时间对齐。
+    如果当前时间不在启用的时间段之一，则我们必须得出结论，即使具有该标志，该功能也已禁用。
+- en: 'This is starting to become quite complicated. In addition to checking for the
+    *disabled* flag, we''ll need to go through these time slots to discover whether
+    the feature is currently enabled based on the current time. So, our simple `if` statement
+    has very quickly become an unwieldy mess, with several layers of control flow:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这开始变得相当复杂。 除了检查*disabled*标志之外，我们还需要通过这些时间段来发现基于当前时间功能当前是否已启用。 因此，我们简单的`if`语句很快就变成了一个难以控制的混乱，具有多层控制流：
+- en: '[PRE5]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: This is undesirably complex code. It's very far away from the original declarative
+    code we wanted to write. To understand this code, a fellow programmer will have
+    to maintain the state of `featureIsEnabled` in their head while scanning through
+    each of the individual constructs. This is a mentally burdensome piece of code
+    to navigate through and is, therefore, more liable to misunderstandings, bugs,
+    and general unreliability.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是不受欢迎的复杂代码。 它与我们最初想要编写的原始声明性代码相去甚远。 要理解此代码，其他程序员在扫描每个单独的构造时必须在脑海中维护`featureIsEnabled`的状态。
+    这是一段令人心烦的代码，因此更容易产生误解，错误和一般的不可靠性。
+- en: 'The key question we must now ask ourselves is the following: what would it
+    take for us to abstract away all of these nested layers of control flow away so
+    that we can have our simple `if` statement back?'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在必须问自己的关键问题是：我们需要做什么才能将所有这些嵌套的控制流层次抽象出来，以便我们可以恢复我们简单的`if`语句？
+- en: 'We eventually decide to place all of this logic in a newly created `isEnabled` method
+    within the `Feature` class—but not only that! We decide to abstract the logic
+    further, by delegating to two internal methods, `_hasDisabledFlag`  and `_isEnabledTimeSlotNow`.
+    And these methods themselves delegate their iteration logic to array methods, `includes(...)` and `filter(...)`:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们最终决定将所有这些逻辑放在新创建的`Feature`类中的`isEnabled`方法中-但不仅如此！ 我们决定通过委托给两个内部方法`_hasDisabledFlag`和`_isEnabledTimeSlotNow`来进一步抽象逻辑。
+    而这些方法本身将它们的迭代逻辑委托给数组方法`includes(...)`和`filter(...)`：
+- en: '[PRE6]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'These very small declarative additions to the `Feature` class enable us to
+    write the declarative code we were originally aiming for:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些对`Feature`类的非常小的声明性添加使我们能够编写最初的声明性代码：
+- en: '[PRE7]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: This has not only been an exercise in simple abstraction. This has been an exercise
+    in reducing the layers of control flow. We've avoided the need to use nested layers
+    of for `if` and `for` blocks, reducing the cognitive burden faced by ourselves
+    and our fellow programmers, and fulfilling the task we originally set out to accomplish
+    in the cleanest way possible.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不仅仅是一个简单抽象的练习。 这是一个减少控制流层次的练习。 我们避免了使用嵌套的`if`和`for`块的需要，减少了我们自己和其他程序员面临的认知负担，并以最干净的方式完成了最初设定的任务。
+- en: By carefully refactoring and abstracting our original mess of control flow we
+    have, quite oddly, ended up with a set of code that includes very few traditional
+    control flow statements (`if`, `for`, `switch`, and so on). This doesn't mean
+    our code is without control flow; rather, it means that the control flow is either
+    minimized or hidden away under layers of abstractions. When using the native control
+    flow constructs of the JavaScript language, it is important to remember that they
+    are not your only tool with which to express the flow of a program; you can redirect
+    and split complicated logic into abstractions that each handle a very specific
+    part of your program's flow.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过仔细重构和抽象我们最初混乱的控制流，我们最终得到了一组代码，其中包含了非常少的传统控制流语句（`if`，`for`，`switch`等）。 这并不意味着我们的代码没有控制流；
+    相反，它意味着控制流要么被最小化，要么被隐藏在抽象的层次下。 在使用JavaScript语言的本机控制流构造时，重要的是要记住它们不是您表达程序流程的唯一工具；
+    您可以将复杂的逻辑重定向和分割为每个处理程序程序流程的非常特定部分的抽象。
+- en: Now that we've got a solid foundational understanding of what control flow is
+    and how it melds with what we know about abstractions, we can go through each
+    of JavaScript's individual control flow mechanisms, highlighting challenges and
+    potential gotchas.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经对控制流有了坚实的基础理解，并且知道它如何与我们对抽象的了解相融合，我们可以逐个讨论JavaScript的各个控制流机制，突出挑战和潜在的陷阱。
+- en: The movement of control
+  id: totrans-73
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 控制的移动
+- en: 'In JavaScript, there are several ways that control can be moved from one piece
+    of code to another. Generally, code will be evaluated from *left-to-right* and *top-to-bottom* until
+    it reaches any of the following situations:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在JavaScript中，有几种控制可以从一段代码移动到另一段代码。 通常，代码将从*左到右*和*上到下*进行评估，直到达到以下任何一种情况：
+- en: '**Invoking** (invocation of a function by `fn()`, `fn[PRE8]'
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**调用**（通过`fn()`，`fn[PRE8]`调用函数）'
+- en: someFunction();
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: someFunction();
+- en: (function(){})();
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: (function(){})();
+- en: someObject.someMethod();
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: someObject.someMethod();
+- en: '[function(){}][0]();'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[function(){}][0]();'
+- en: '[PRE9]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: function MyConstructor() {}
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function MyConstructor() {}
+- en: '// Both equivalent:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // 两者等效：
+- en: new MyConstructor();
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: new MyConstructor();
+- en: new MyConstructor;
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: new MyConstructor;
+- en: '[PRE10]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: '1();     // ! TypeError: 1 is not a function'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '1();     // ! TypeError: 1 is not a function'
+- en: '[]();    // ! TypeError: [] is not a function'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[]();    // ! TypeError: [] is not a function'
+- en: '''wat''(); // ! TypeError: "wat" is not a function'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '''wat''(); // ! TypeError: "wat" is not a function'
+- en: '[PRE11]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: const person = {
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const person = {
+- en: set name(name) {
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: set name(name) {
+- en: console.log('You are trying to set the name to', name);
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('You are trying to set the name to', name);
+- en: '}'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '};'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '};'
+- en: person.name = 'Leo';
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: person.name = 'Leo';
+- en: '// Logs: "You are trying to set the name to Leo"'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // 日志：“您正在尝试将名称设置为Leo”
+- en: '[PRE12]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: function sayHiToMe(name) {
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function sayHiToMe(name) {
+- en: if (name) {
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (name) {
+- en: return `Hi ${name}`;
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return `Hi ${name}`;
+- en: '}'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: // In the case of a truthy `name` this code is never arrived at
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // In the case of a truthy `name` this code is never arrived at
+- en: '// because `return` exists on a previous line:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// because `return` exists on a previous line:'
+- en: throw 'You do not have a name! :(';
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: throw 'You do not have a name! :(';
+- en: '}'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: sayHiToMe('James'); // => "Hi James"
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: sayHiToMe('James'); // => "Hi James"
+- en: '[PRE13]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: function findHighestMountain(mountains) {
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function findHighestMountain(mountains) {
+- en: if (!mountains || !mountains.length) {
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (!mountains || !mountains.length) {
+- en: return null;
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return null;
+- en: '}'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: if (mountains.length === 1) {
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (mountains.length === 1) {
+- en: return mountains[0];
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return mountains[0];
+- en: '}'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: // Do the actual work of finding the
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Do the actual work of finding the
+- en: // highest mountain here...
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // highest mountain here...
+- en: '}'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE14]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: function* makeSomeNumbers() {
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function* makeSomeNumbers() {
+- en: yield 645;
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: yield 645;
+- en: yield 422;
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: yield 422;
+- en: yield 789;
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: yield 789;
+- en: '}'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: const iterable = makeSomeNumbers();
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const iterable = makeSomeNumbers();
+- en: 'iterable.next(); // => {value: 645, done: false}'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'iterable.next(); // => {value: 645, done: false}'
+- en: 'iterable.next(); // => {value: 422, done: false}'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'iterable.next(); // => {value: 422, done: false}'
+- en: 'iterable.next(); // => {value: 789, done: false}'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'iterable.next(); // => {value: 789, done: false}'
+- en: '[PRE15]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: function* myGenerator() {
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function* myGenerator() {
+- en: console.log('Chunk A');
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Chunk A');
+- en: yield;
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: yield;
+- en: console.log('Chunk B');
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Chunk B');
+- en: yield;
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: yield;
+- en: '}'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: const iterable = myGenerator();
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const iterable = myGenerator();
+- en: console.log('Calling first time');
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Calling first time');
+- en: iterable.next();
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: iterable.next();
+- en: console.log('Done calling first time');
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Done calling first time');
+- en: console.log('Calling second time');
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Calling second time');
+- en: iterable.next();
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: iterable.next();
+- en: console.log('Done calling second time');
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Done calling second time');
+- en: '[PRE16]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: function* createAdder() {
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function* createAdder() {
+- en: let n = 0;
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let n = 0;
+- en: while (true) n += yield n;
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: while (true) n += yield n;
+- en: '}'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: const adder = createAdder();
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const adder = createAdder();
+- en: adder.next(); // Initialize (kick things off!)
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: adder.next(); // Initialize (kick things off!)
+- en: adder.next(100).value; // => 100
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: adder.next(100).value; // => 100
+- en: adder.next(100).value; // => 200
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: adder.next(100).value; // => 200
+- en: adder.next(150).value; // => 350
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: adder.next(150).value; // => 350
+- en: '[PRE17]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: for (let i = 0; i < array.length; i++) {
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (let i = 0; i < array.length; i++) {
+- en: if (myCriteriaIsMet(array[i]) {
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (myCriteriaIsMet(array[i]) {
+- en: happyPath();
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: happyPath();
+- en: break;
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: '}'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE18]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: switch (2) {
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (2) {
+- en: 'case 1: console.log(1);'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case 1: console.log(1);'
+- en: 'case 2: console.log(2);'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case 2: console.log(2);'
+- en: 'case 3: console.log(3);'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case 3: console.log(3);'
+- en: 'case 4: console.log(4); break;'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case 4: console.log(4); break;'
+- en: 'case 5: console.log(5);'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case 5: console.log(5);'
+- en: '}'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '// Logs: 2, 3, 4'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// Logs: 2, 3, 4'
+- en: '[PRE19]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'outerLoop: for (let obj in objects) {'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'outerLoop: for (let obj in objects) {'
+- en: for (let key in obj) {
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (let key in obj) {
+- en: if (/* some condition */) {
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (/* some condition */) {
+- en: break outerLoop;
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break outerLoop;
+- en: '}'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE20]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'specificWork: {'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'specificWork: {'
+- en: doSomeSpecificWork();
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: doSomeSpecificWork();
+- en: if (weAreFinished) {
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (weAreFinished) {
+- en: break specificWork;
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break specificWork;
+- en: '// immediately exits the `specificWork: {...}` block'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// immediately exits the `specificWork: {...}` block'
+- en: '}'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: doOtherWork();
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 做其他工作();
+- en: '}'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE21]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: const numbers = [1, 2, 3];
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const numbers = [1, 2, 3];
+- en: for (const n of numbers) {
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (const n of numbers) {
+- en: if (n === 2) continue;
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (n === 2) continue;
+- en: console.log(n);
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(n);
+- en: '}'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '// Logs: 1, 3'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// Logs: 1, 3'
+- en: '[PRE22]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'objectsIteration: for (let obj in objects) {'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'objectsIteration: for (let obj in objects) {'
+- en: for (let key in obj) {
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (let key in obj) {
+- en: if (/* some condition */) {
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (/* some condition */) {
+- en: continue objectsIteration;
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: continue objectsIteration;
+- en: '}'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE23]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: function nameToUpperCase(name) {
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function nameToUpperCase(name) {
+- en: if (typeof name !== 'string') {
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (typeof name !== 'string') {
+- en: throw new TypeError('Name should be a string');
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: throw new TypeError('Name should be a string');
+- en: '}'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: return name.toUpperCase();
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return name.toUpperCase();
+- en: '}'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE24]'
+  id: totrans-207
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: let theUpperCaseName;
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let theUpperCaseName;
+- en: try {
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: try {
+- en: theUpperCaseName = nameToUpperCase(null);
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: theUpperCaseName = nameToUpperCase(null);
+- en: '} catch(e) {'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} catch(e) {'
+- en: e.message; // => "Name should be a string"
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: e.message; // => "Name should be a string"
+- en: '}'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE25]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: class NetworkError extends Error {}
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: class NetworkError extends Error {}
+- en: async function makeDataRequest() {
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: async function makeDataRequest() {
+- en: try {
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: try {
+- en: const response = await fetch('/data');
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const response = await fetch('/data');
+- en: '} catch(e) {'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} catch(e) {'
+- en: throw NetworkError('Cannot fetch data');
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: throw NetworkError('Cannot fetch data');
+- en: '}'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: // ... (process response) ...
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ... (process response) ...
+- en: '}'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE26]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: try {
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: try {
+- en: throw new Error;
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: throw new Error;
+- en: '} catch(e) {'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} catch(e) {'
+- en: e.stack; // => "Error\n at filename.js:2:9"
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: e.stack; // => "Error\n at filename.js:2:9"
+- en: '}'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE27]'
+  id: totrans-230
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: if (ConditionExpression) Statement
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (ConditionExpression) Statement
+- en: '[PRE28]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: if (true) {}
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (true) {}
+- en: if (1 || 2 || 3) {}
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (1 || 2 || 3) {}
+- en: if ([1, 2, 3].filter(n => n > 2).length > 0) {}
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if ([1, 2, 3].filter(n => n > 2).length > 0) {}
+- en: '[PRE29]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: // These are equivalent
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // These are equivalent
+- en: if (true) { doBaz(); }
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (true) { doBaz(); }
+- en: if (true) doBaz();
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (true) doBaz();
+- en: '[PRE30]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: if (false) {}
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (false) {}
+- en: if (null) {}
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (null) {}
+- en: if (undefined) {}
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (undefined) {}
+- en: if (0n) {}
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (0n) {}
+- en: if (0) {}
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (0) {}
+- en: if ('') {}
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if ('') {}
+- en: if (NaN) {}
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (NaN) {}
+- en: '[PRE31]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: if (isLegalDrinkingAge) drink(); else leave();
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (isLegalDrinkingAge) drink(); else leave();
+- en: '// Equivalent, with Blocks:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// Equivalent, with Blocks:'
+- en: if (isLegalDrinkingAge) {
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (isLegalDrinkingAge) {
+- en: drink();
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: drink();
+- en: '} else {'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else {'
+- en: leave();
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: leave();
+- en: '}'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE32]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: if (number > 5) {
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (number > 5) {
+- en: // For numbers larger than five
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // For numbers larger than five
+- en: '} else if (number < 3) {'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else if (number < 3) {'
+- en: // For numbers less than three
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // For numbers less than three
+- en: '} else {'
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else {'
+- en: // For everything else
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // For everything else
+- en: '}'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE33]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: if (number > 5) {
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (number > 5) {
+- en: // For numbers larger than five
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // For numbers larger than five
+- en: '} else {'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else {'
+- en: if (number < 3) {
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (number < 3) {
+- en: // For numbers less than three
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // For numbers less than three
+- en: '} else {'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else {'
+- en: // For everything else
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // For everything else
+- en: '}'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE34]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: for (
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (
+- en: InitializerExpression;
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: InitializerExpression;
+- en: ConditionExpression;
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ConditionExpression;
+- en: UpdateExpression
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: UpdateExpression
+- en: ) IterationBody
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ) IterationBody
+- en: '[PRE35]'
+  id: totrans-280
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: for (let i = 0; i < array.length; i++) {
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (let i = 0; i < array.length; i++) {
+- en: array[i]; // => (Each `array` item)
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: array[i]; // => (Each `array` item)
+- en: '}'
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE36]'
+  id: totrans-284
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: '[r, g, b, a, r, g, b, a, ...]'
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[r, g, b, a, r, g, b, a, ...]'
+- en: '[PRE37]'
+  id: totrans-286
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: const pixelData = canvas.getContext('2d').getImageData(0, 0, 100, 100).data;
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const pixelData = canvas.getContext('2d').getImageData(0, 0, 100, 100).data;
+- en: for (let i = 0; i < pixelData.length; i += 4) {
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (let i = 0; i < pixelData.length; i += 4) {
+- en: let red = pixelData[i];
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let red = pixelData[i];
+- en: let blue = pixelData[i + 1];
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let blue = pixelData[i + 1];
+- en: let green = pixelData[i + 2];
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let green = pixelData[i + 2];
+- en: let alpha = pixelData[i + 3];
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let alpha = pixelData[i + 3];
+- en: // (do something with RGBA)
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // (do something with RGBA)
+- en: '}'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE38]'
+  id: totrans-295
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: var copy = [];
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: var copy = [];
+- en: for (
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (
+- en: let i = 0;
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let i = 0;
+- en: i < array.length;
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: i < array.length;
+- en: copy[i] = array[i++]
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: copy[i] = array[i++]
+- en: );
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: );
+- en: '[PRE39]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: for (
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (
+- en: let i = 0;
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let i = 0;
+- en: i < array.length;
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: i < array.length;
+- en: i++
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: i++
+- en: ) {
+  id: totrans-307
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ) {
+- en: copy[i] = array[i];
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: copy[i] = array[i];
+- en: '}'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE40]'
+  id: totrans-310
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: for (LeftSideAssignment in Object) IterationBody
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (LeftSideAssignment in Object) IterationBody
+- en: '[PRE41]'
+  id: totrans-312
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'const city = { name: ''London'', population: 8136000 };'
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'const city = { name: ''London'', population: 8136000 };'
+- en: for (const key in city) {
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (const key in city) {
+- en: console.log(key);
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(key);
+- en: '}'
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '// Logs: "name", "population"'
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// Logs: "name", "population"'
+- en: '[PRE42]'
+  id: totrans-318
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: for (let key in obj) {}
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (let key in obj) {}
+- en: for (var key in obj) {}
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (var key in obj) {}
+- en: for (const key in obj) {}
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (const key in obj) {}
+- en: for (key in obj) {}
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (key in obj) {}
+- en: '[PRE43]'
+  id: totrans-323
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: let key;
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let key;
+- en: for (key in obj) {}
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (key in obj) {}
+- en: '[PRE44]'
+  id: totrans-326
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: let foo = {};
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let foo = {};
+- en: for (foo.key in obj) {}
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (foo.key in obj) {}
+- en: '[PRE45]'
+  id: totrans-329
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'const objectA = { isFromObjectA: true };'
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'const objectA = { isFromObjectA: true };'
+- en: 'const objectB = { isFromObjectB: true };'
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'const objectB = { isFromObjectB: true };'
+- en: Object.setPrototypeOf(objectB, objectA);
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Object.setPrototypeOf(objectB, objectA);
+- en: for (const prop in objectB) {
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (const prop in objectB) {
+- en: console.log(prop);
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(prop);
+- en: '}'
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '// Logs: "isFromObjectB", "isFromObjectA"'
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // 输出："isFromObjectB", "isFromObjectA"
+- en: '[PRE46]'
+  id: totrans-337
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: for (const key in obj) {
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (const key in obj) {
+- en: if (obj.hasOwnProperty(key)) {
+  id: totrans-339
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (obj.hasOwnProperty(key)) {
+- en: // `key` is a non-inherited (direct) property of `obj`
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // `key` is a non-inherited (direct) property of `obj`
+- en: '}'
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE47]'
+  id: totrans-343
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: for (LeftSideAssignment in IterableObject) IterationBody
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (LeftSideAssignment in IterableObject) IterationBody
+- en: '[PRE48]'
+  id: totrans-345
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: const array = [1, 2, 3];
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const array = [1, 2, 3];
+- en: for (const i of array) {
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (const i of array) {
+- en: console.log(i);
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(i);
+- en: '}'
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '// Logs: 1, 2, 3'
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// 输出: 1, 2, 3'
+- en: '[PRE49]'
+  id: totrans-351
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: while (ConditionExpression) IterationBody
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: while (ConditionExpression) IterationBody
+- en: '[PRE50]'
+  id: totrans-353
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: const array = ['a', 'b', 'c'];
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const array = ['a', 'b', 'c'];
+- en: let i = -1;
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let i = -1;
+- en: while (++i < array.length) {
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: while (++i < array.length) {
+- en: console.log(array[i]);
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(array[i]);
+- en: '}'
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '// Logs: ''a'', ''b'', ''c'''
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// 输出: ''a'', ''b'', ''c'''
+- en: '[PRE51]'
+  id: totrans-360
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: while (true) {
+  id: totrans-361
+  prefs: []
+  type: TYPE_NORMAL
+  zh: while (true) {
+- en: if (/* some custom condition */) {
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (/* some custom condition */) {
+- en: break;
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: '}'
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE52]'
+  id: totrans-366
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: function *loopingAlphabet() {
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function *loopingAlphabet() {
+- en: let i = 0;
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let i = 0;
+- en: while (true) {
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: while (true) {
+- en: yield String.fromCharCode(
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: yield String.fromCharCode(
+- en: '97 + (i >= 26 ? i = 0 : i++)'
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '97 + (i >= 26 ? i = 0 : i++)'
+- en: );
+  id: totrans-372
+  prefs: []
+  type: TYPE_NORMAL
+  zh: );
+- en: '}'
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: const alphabet = loopingAlphabet();
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const alphabet = loopingAlphabet();
+- en: 'alphabet.next(); // => { value: "a" }'
+  id: totrans-376
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'alphabet.next(); // => { value: "a" }'
+- en: 'alphabet.next(); // => { value: "b" }'
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'alphabet.next(); // => { value: "b" }'
+- en: 'alphabet.next(); // => { value: "c" }'
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'alphabet.next(); // => { value: "c" }'
+- en: // ...
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ...
+- en: 'alphabet.next(); // => { value: "z" }'
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'alphabet.next(); // => { value: "z" }'
+- en: 'alphabet.next(); // => { value: "a" }'
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'alphabet.next(); // => { value: "a" }'
+- en: 'alphabet.next(); // => { value: "b" }'
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'alphabet.next(); // => { value: "b" }'
+- en: // ...
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ...
+- en: '[PRE53]'
+  id: totrans-384
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: do IterationBody while (ConditionExpression)
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: do IterationBody while (ConditionExpression)
+- en: '[PRE54]'
+  id: totrans-386
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: do {
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: do {
+- en: // Do something with `element`
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Do something with `element`
+- en: '} while (element = element.parentNode);'
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} while (element = element.parentNode);'
+- en: '[PRE55]'
+  id: totrans-390
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: switch (SwitchExpression) SwitchBody
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (SwitchExpression) SwitchBody
+- en: '[PRE56]'
+  id: totrans-392
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'case CaseExpression:'
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case CaseExpression:'
+- en: '[other JavaScript statements or additional clauses]'
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[other JavaScript statements or additional clauses]'
+- en: '[PRE57]'
+  id: totrans-395
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: function generateWelcomeMessage(language) {
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function generateWelcomeMessage(language) {
+- en: let welcomeMessage;
+  id: totrans-397
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let welcomeMessage;
+- en: switch (language) {
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (language) {
+- en: 'case ''DE'':'
+  id: totrans-399
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''DE'':'
+- en: welcomeMessage = 'Willkommen!';
+  id: totrans-400
+  prefs: []
+  type: TYPE_NORMAL
+  zh: welcomeMessage = 'Willkommen!';
+- en: break;
+  id: totrans-401
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: 'case ''FR'':'
+  id: totrans-402
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''FR'':'
+- en: welcomeMessage = 'Bienvenue!';
+  id: totrans-403
+  prefs: []
+  type: TYPE_NORMAL
+  zh: welcomeMessage = 'Bienvenue!';
+- en: break;
+  id: totrans-404
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: 'default:'
+  id: totrans-405
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'default:'
+- en: welcomeMessage = 'Welcome!';
+  id: totrans-406
+  prefs: []
+  type: TYPE_NORMAL
+  zh: welcomeMessage = 'Welcome!';
+- en: '}'
+  id: totrans-407
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: return welcomeMessage;
+  id: totrans-408
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return welcomeMessage;
+- en: '}'
+  id: totrans-409
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: generateWelcomeMessage('DE'); // => "Willkommen!"
+  id: totrans-410
+  prefs: []
+  type: TYPE_NORMAL
+  zh: generateWelcomeMessage('DE'); // => "Willkommen!"
+- en: generateWelcomeMessage('FR'); // => "Bienvenue!"
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: generateWelcomeMessage('FR'); // => "Bienvenue!"
+- en: generateWelcomeMessage('EN'); // => "Welcome!"
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: generateWelcomeMessage('EN'); // => "Welcome!"
+- en: generateWelcomeMessage(null); // => "Welcome!"
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: generateWelcomeMessage(null); // => "Welcome!"
+- en: '[PRE58]'
+  id: totrans-414
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: switch (language) {
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (language) {
+- en: 'case ''German'':'
+  id: totrans-416
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''German'':'
+- en: 'case ''Deutsche'':'
+  id: totrans-417
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''Deutsche'':'
+- en: 'case ''DE'':'
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''DE'':'
+- en: welcomeMessage = 'Willkommen!';
+  id: totrans-419
+  prefs: []
+  type: TYPE_NORMAL
+  zh: welcomeMessage = 'Willkommen!';
+- en: break;
+  id: totrans-420
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: 'case ''French'':'
+  id: totrans-421
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''French'':'
+- en: 'case: ''Francais'':'
+  id: totrans-422
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case: ''Francais'':'
+- en: 'case ''FR'':'
+  id: totrans-423
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''FR'':'
+- en: welcomeMessage = 'Bienvenue!';
+  id: totrans-424
+  prefs: []
+  type: TYPE_NORMAL
+  zh: welcomeMessage = 'Bienvenue!';
+- en: break;
+  id: totrans-425
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: 'default:'
+  id: totrans-426
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'default:'
+- en: welcomeMessage = 'Welcome!';
+  id: totrans-427
+  prefs: []
+  type: TYPE_NORMAL
+  zh: welcomeMessage = 'Welcome!';
+- en: '}'
+  id: totrans-428
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE59]'
+  id: totrans-429
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: function generateWelcomeMessage(language) {
+  id: totrans-430
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function generateWelcomeMessage(language) {
+- en: switch (language) {
+  id: totrans-431
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (language) {
+- en: 'case ''DE'':'
+  id: totrans-432
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''DE'':'
+- en: return 'Willkommen!';
+  id: totrans-433
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return 'Willkommen!';
+- en: 'case ''FR'':'
+  id: totrans-434
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''FR'':'
+- en: return 'Bienvenue!';
+  id: totrans-435
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return 'Bienvenue!';
+- en: 'default:'
+  id: totrans-436
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'default:'
+- en: return 'Welcome!';
+  id: totrans-437
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return 'Welcome!';
+- en: '}'
+  id: totrans-438
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-439
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE60]'
+  id: totrans-440
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: switch (speed) {
+  id: totrans-441
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (speed) {
+- en: 'case ''slow'': {'
+  id: totrans-442
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''slow'': {'
+- en: console.log('Initiating slow speed');
+  id: totrans-443
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Initiating slow speed');
+- en: car.changeSpeedTo(speed);
+  id: totrans-444
+  prefs: []
+  type: TYPE_NORMAL
+  zh: car.changeSpeedTo(speed);
+- en: car.enableUrbanCollisionControl();
+  id: totrans-445
+  prefs: []
+  type: TYPE_NORMAL
+  zh: car.enableUrbanCollisionControl();
+- en: '}'
+  id: totrans-446
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: 'case ''fast'': {'
+  id: totrans-447
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''fast'': {'
+- en: console.log('Initiating fast speed');
+  id: totrans-448
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Initiating fast speed');
+- en: car.changeSpeedTo(speed);
+  id: totrans-449
+  prefs: []
+  type: TYPE_NORMAL
+  zh: car.changeSpeedTo(speed);
+- en: car.enableSpeedLimitWarnings();
+  id: totrans-450
+  prefs: []
+  type: TYPE_NORMAL
+  zh: car.enableSpeedLimitWarnings();
+- en: car.enableCruiseControlOption();
+  id: totrans-451
+  prefs: []
+  type: TYPE_NORMAL
+  zh: car.enableCruiseControlOption();
+- en: '}'
+  id: totrans-452
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: 'case ''regular'':'
+  id: totrans-453
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''regular'':'
+- en: 'default: {'
+  id: totrans-454
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'default: {'
+- en: console.log('Initiating regular speed');
+  id: totrans-455
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('Initiating regular speed');
+- en: car.changeSpeedTo(speed);
+  id: totrans-456
+  prefs: []
+  type: TYPE_NORMAL
+  zh: car.changeSpeedTo(speed);
+- en: '}'
+  id: totrans-457
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-458
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE61]'
+  id: totrans-459
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: switch (month) {
+  id: totrans-460
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (month) {
+- en: 'case ''December'':'
+  id: totrans-461
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''December'':'
+- en: 'case ''January'':'
+  id: totrans-462
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''January'':'
+- en: 'case ''February'': {'
+  id: totrans-463
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''February'': {'
+- en: const message = 'In the UK, Spring is coming soon!';
+  id: totrans-464
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const message = 'In the UK, Spring is coming soon!';
+- en: // ...
+  id: totrans-465
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ...
+- en: '}'
+  id: totrans-466
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: //...
+  id: totrans-467
+  prefs: []
+  type: TYPE_NORMAL
+  zh: //...
+- en: '}'
+  id: totrans-468
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE62]'
+  id: totrans-469
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: switch (true) {
+  id: totrans-470
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (true) {
+- en: 'case user.role === ''admin'' || user.role === ''root'': {'
+  id: totrans-471
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case user.role === ''admin'' || user.role === ''root'': {'
+- en: // ...
+  id: totrans-472
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ...
+- en: break;
+  id: totrans-473
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: '}'
+  id: totrans-474
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: 'case user.role === ''member'' && user.isActive: {'
+  id: totrans-475
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case user.role === ''member'' && user.isActive: {'
+- en: // ...
+  id: totrans-476
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ...
+- en: break;
+  id: totrans-477
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: '}'
+  id: totrans-478
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: 'case user.role === ''member'' && user.isRecentlyInactive: {'
+  id: totrans-479
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case user.role === ''member'' && user.isRecentlyInactive: {'
+- en: // ...
+  id: totrans-480
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ...
+- en: break;
+  id: totrans-481
+  prefs: []
+  type: TYPE_NORMAL
+  zh: break;
+- en: '}'
+  id: totrans-482
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-483
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE63]'
+  id: totrans-484
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: if (a) {
+  id: totrans-485
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (a) {
+- en: alpha();
+  id: totrans-486
+  prefs: []
+  type: TYPE_NORMAL
+  zh: alpha();
+- en: if (b) bravo();
+  id: totrans-487
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (b) bravo();
+- en: if (c) charlie();
+  id: totrans-488
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (c) charlie();
+- en: '}'
+  id: totrans-489
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: if (d) delta();
+  id: totrans-490
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (d) delta();
+- en: '[PRE64]'
+  id: totrans-491
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: function getIDsFromLicenses(licenses) {
+  id: totrans-492
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function getIDsFromLicenses(licenses) {
+- en: const ids = [];
+  id: totrans-493
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const ids = [];
+- en: for (let i = 0; i < licenses.length; i++) {
+  id: totrans-494
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for (let i = 0; i < licenses.length; i++) {
+- en: let license = licenses[i];
+  id: totrans-495
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let license = licenses[i];
+- en: if (license.id != null) {
+  id: totrans-496
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (license.id != null) {
+- en: if (license.id.indexOf('c') === 0) {
+  id: totrans-497
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (license.id.indexOf('c') === 0) {
+- en: let nID = Number(license.id.slice(1));
+  id: totrans-498
+  prefs: []
+  type: TYPE_NORMAL
+  zh: let nID = Number(license.id.slice(1));
+- en: if (nID >= 1000000) {
+  id: totrans-499
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (nID >= 1000000) {
+- en: 'ids.push({ type: ''car'', digits: nID });'
+  id: totrans-500
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'ids.push({ type: ''car'', digits: nID });'
+- en: '} else {'
+  id: totrans-501
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else {'
+- en: 'ids.push({ type: ''car_old'', digits: nID });'
+  id: totrans-502
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'ids.push({ type: ''car_old'', digits: nID });'
+- en: '}'
+  id: totrans-503
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '} else if (license.id.indexOf(''h'') === 0) {'
+  id: totrans-504
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else if (license.id.indexOf(''h'') === 0) {'
+- en: ids.push({
+  id: totrans-505
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ids.push({
+- en: 'type: ''hgv'','
+  id: totrans-506
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'type: ''hgv'','
+- en: 'digits: Number(license.id.slice(1))'
+  id: totrans-507
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'digits: Number(license.id.slice(1))'
+- en: '});'
+  id: totrans-508
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '} else if (license.id.indexOf(''m'') === 0) {'
+  id: totrans-509
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else if (license.id.indexOf(''m'') === 0) {'
+- en: ids.push({
+  id: totrans-510
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ids.push({
+- en: 'type: ''motorcycle'','
+  id: totrans-511
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'type: ''motorcycle'','
+- en: 'digits: Number(license.id.slice(1))'
+  id: totrans-512
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'digits: Number(license.id.slice(1))'
+- en: '});'
+  id: totrans-513
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '}'
+  id: totrans-514
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-515
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-516
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: return ids;
+  id: totrans-517
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return ids;
+- en: '}'
+  id: totrans-518
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE65]'
+  id: totrans-519
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: getIDsFromLicenses([
+  id: totrans-520
+  prefs: []
+  type: TYPE_NORMAL
+  zh: getIDsFromLicenses([
+- en: '{ name: ''Jon Smith'', id: ''c32948'' },'
+  id: totrans-521
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{ name: ''Jon Smith'', id: ''c32948'' },'
+- en: '{ name: ''Marsha Brown'' },'
+  id: totrans-522
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{ name: ''Marsha Brown'' },'
+- en: '{ name: ''Leah Oak'', id: ''h109'' },'
+  id: totrans-523
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{ name: ''Leah Oak'', id: ''h109'' },'
+- en: '{ name: ''Jim Royle'', id: ''c29283928'' }'
+  id: totrans-524
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{ name: ''Jim Royle'', id: ''c29283928'' }'
+- en: ']);'
+  id: totrans-525
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ']);'
+- en: '// Outputs:'
+  id: totrans-526
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// 输出:'
+- en: '['
+  id: totrans-527
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '['
+- en: '{type: "car_old", digits: 32948}'
+  id: totrans-528
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{type: "car_old", digits: 32948}'
+- en: '{type: "hgv", digits: 109}'
+  id: totrans-529
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{type: "hgv", digits: 109}'
+- en: '{type: "car", digits: 29283928}'
+  id: totrans-530
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{type: "car", digits: 29283928}'
+- en: ']'
+  id: totrans-531
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ']'
+- en: '[PRE66]'
+  id: totrans-532
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: '[INPUT LICENSES] ==> (DERIVATION LOGIC) ==> [OUTPUT ID TYPES AND DIGITS]'
+  id: totrans-533
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[INPUT LICENSES] ==> (DERIVATION LOGIC) ==> [OUTPUT ID TYPES AND DIGITS]'
+- en: '[PRE67]'
+  id: totrans-534
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: ids = licenses.map(license => license.id)
+  id: totrans-535
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ids = licenses.map(license => license.id)
+- en: '[PRE68]'
+  id: totrans-536
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: ids = ids.filter(id => id != null)
+  id: totrans-537
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ids = ids.filter(id => id != null)
+- en: '[PRE69]'
+  id: totrans-538
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: ids = ids.filter(Boolean)
+  id: totrans-539
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ids = ids.filter(Boolean)
+- en: '[PRE70]'
+  id: totrans-540
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: ids = ids.map(id => getIDFields(
+  id: totrans-541
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ids = ids.map(id => getIDFields(
+- en: id.charAt(0),
+  id: totrans-542
+  prefs: []
+  type: TYPE_NORMAL
+  zh: id.charAt(0),
+- en: Number(id.slice(1))
+  id: totrans-543
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Number(id.slice(1))
+- en: ));
+  id: totrans-544
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ));
+- en: '[PRE71]'
+  id: totrans-545
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: function getIDFields(idType, digits) {
+  id: totrans-546
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function getIDFields(idType, digits) {
+- en: switch (idType) {
+  id: totrans-547
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (idType) {
+- en: 'case ''c'': return {'
+  id: totrans-548
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''c'': return {'
+- en: 'type: digits >= 1000000 ? ''car'' : ''car_old'','
+  id: totrans-549
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'type: digits >= 1000000 ? ''car'' : ''car_old'','
+- en: digits
+  id: totrans-550
+  prefs: []
+  type: TYPE_NORMAL
+  zh: digits
+- en: '};'
+  id: totrans-551
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '};'
+- en: 'case ''h'': return { type: ''hgv'', digits };'
+  id: totrans-552
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''h'': return { type: ''hgv'', digits };'
+- en: 'case ''m'': return { type: ''motorcycle'', digits };'
+  id: totrans-553
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''m'': return { type: ''motorcycle'', digits };'
+- en: '}'
+  id: totrans-554
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '}'
+  id: totrans-555
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE72]'
+  id: totrans-556
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'getIDFields(''c'', 1000); // => { type: "car_old", digits: 1000 }'
+  id: totrans-557
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'getIDFields(''c'', 1000); // => { type: "car_old", digits: 1000 }'
+- en: 'getIDFields(''c'', 2000000); // => { type: "car", digits: 1000 }'
+  id: totrans-558
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'getIDFields(''c'', 2000000); // => { type: "car", digits: 1000 }'
+- en: 'getIDFields(''h'', 1000); // => { type: "hgv", digits: 1000 }'
+  id: totrans-559
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'getIDFields(''h'', 1000); // => { type: "hgv", digits: 1000 }'
+- en: 'getIDFields(''i'', 1000); // => { type: "motorcycle", digits: 1000 }'
+  id: totrans-560
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'getIDFields(''i'', 1000); // => { type: "motorcycle", digits: 1000 }'
+- en: '[PRE73]'
+  id: totrans-561
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: function getIDsFromLicenses(licenses) {
+  id: totrans-562
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function getIDsFromLicenses(licenses) {
+- en: return licenses
+  id: totrans-563
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return licenses
+- en: .map(license => license.id)
+  id: totrans-564
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .map(license => license.id)
+- en: .filter(Boolean)
+  id: totrans-565
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .filter(Boolean)
+- en: .map(id => getIDFields(
+  id: totrans-566
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .map(id => getIDFields(
+- en: id.charAt(0),
+  id: totrans-567
+  prefs: []
+  type: TYPE_NORMAL
+  zh: id.charAt(0),
+- en: Number(id.slice(1))
+  id: totrans-568
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Number(id.slice(1))
+- en: ))
+  id: totrans-569
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ))
+- en: '}'
+  id: totrans-570
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE74]'
+  id: totrans-571
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: const someValue = getSomeValue();
+  id: totrans-572
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const someValue = getSomeValue();
+- en: doSomethingWithTheValue(someValue);
+  id: totrans-573
+  prefs: []
+  type: TYPE_NORMAL
+  zh: doSomethingWithTheValue(someValue);
+- en: '[PRE75]'
+  id: totrans-574
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: fetchSomeData();
+  id: totrans-575
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fetchSomeData();
+- en: processFetchedData();
+  id: totrans-576
+  prefs: []
+  type: TYPE_NORMAL
+  zh: processFetchedData();
+- en: '[PRE76]'
+  id: totrans-577
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: alert('Hello!');
+  id: totrans-578
+  prefs: []
+  type: TYPE_NORMAL
+  zh: alert('Hello!');
+- en: console.log('The alert has been dismissed by the user');
+  id: totrans-579
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log('The alert has been dismissed by the user');
+- en: '[PRE77]'
+  id: totrans-580
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: function requestData(path, callback) {
+  id: totrans-581
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function requestData(path, callback) {
+- en: // (Implementation of requestData)
+  id: totrans-582
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // (Implementation of requestData)
+- en: '}'
+  id: totrans-583
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE78]'
+  id: totrans-584
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: requestData('/data/123', (response) => { /* ... */ });
+  id: totrans-585
+  prefs: []
+  type: TYPE_NORMAL
+  zh: requestData('/data/123', (response) => { /* ... */ });
+- en: '[PRE79]'
+  id: totrans-586
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: function onResponse(response) {
+  id: totrans-587
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function onResponse(response) {
+- en: // Do something with the response...
+  id: totrans-588
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Do something with the response...
+- en: '}'
+  id: totrans-589
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: requestData('/data/123', onResponse);
+  id: totrans-590
+  prefs: []
+  type: TYPE_NORMAL
+  zh: requestData('/data/123', onResponse);
+- en: '[PRE80]'
+  id: totrans-591
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: createDropdownComponent({
+  id: totrans-592
+  prefs: []
+  type: TYPE_NORMAL
+  zh: createDropdownComponent({
+- en: onOpen() {},
+  id: totrans-593
+  prefs: []
+  type: TYPE_NORMAL
+  zh: onOpen() {},
+- en: onSelect() {},
+  id: totrans-594
+  prefs: []
+  type: TYPE_NORMAL
+  zh: onSelect() {},
+- en: onClose() {},
+  id: totrans-595
+  prefs: []
+  type: TYPE_NORMAL
+  zh: onClose() {},
+- en: onHover() {} // etc.
+  id: totrans-596
+  prefs: []
+  type: TYPE_NORMAL
+  zh: onHover() {} // etc.
+- en: '});'
+  id: totrans-597
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE81]'
+  id: totrans-598
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: fs.readFile('/path/to/file', (error, data) => {
+  id: totrans-599
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fs.readFile('/path/to/file', (error, data) => {
+- en: if (error) {
+  id: totrans-600
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (error) {
+- en: // Handle the error!
+  id: totrans-601
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Handle the error!
+- en: '} else {'
+  id: totrans-602
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '} else {'
+- en: // Handle the data! (No error has occurred!)
+  id: totrans-603
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Handle the data! (No error has occurred!)
+- en: '}'
+  id: totrans-604
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '});'
+  id: totrans-605
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE82]'
+  id: totrans-606
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: requestData('/data/current-user', (userData) => {
+  id: totrans-607
+  prefs: []
+  type: TYPE_NORMAL
+  zh: requestData('/data/current-user', (userData) => {
+- en: if (userData.preferences.twitterEnabled) {
+  id: totrans-608
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (userData.preferences.twitterEnabled) {
+- en: requestData(userData.twitterFeedURL, (twitterFeedData) => {
+  id: totrans-609
+  prefs: []
+  type: TYPE_NORMAL
+  zh: requestData(userData.twitterFeedURL, (twitterFeedData) => {
+- en: renderTwitterFeed(twitterFeedData, {
+  id: totrans-610
+  prefs: []
+  type: TYPE_NORMAL
+  zh: renderTwitterFeed(twitterFeedData, {
+- en: onRendered() {
+  id: totrans-611
+  prefs: []
+  type: TYPE_NORMAL
+  zh: onRendered() {
+- en: 'logEvent(''twitterFeedRender'', { userId: userData.id });'
+  id: totrans-612
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'logEvent(''twitterFeedRender'', { userId: userData.id });'
+- en: '}'
+  id: totrans-613
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '});'
+  id: totrans-614
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '});'
+  id: totrans-615
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '}'
+  id: totrans-616
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '});'
+  id: totrans-617
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE83]'
+  id: totrans-618
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: requestData('/data/current-user', (userData) => {
+  id: totrans-619
+  prefs: []
+  type: TYPE_NORMAL
+  zh: requestData('/data/current-user', (userData) => {
+- en: if (userData.preferences.twitterEnabled) {
+  id: totrans-620
+  prefs: []
+  type: TYPE_NORMAL
+  zh: if (userData.preferences.twitterEnabled) {
+- en: renderTwitterForUser(userData);
+  id: totrans-621
+  prefs: []
+  type: TYPE_NORMAL
+  zh: renderTwitterForUser(userData);
+- en: '}'
+  id: totrans-622
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '});'
+  id: totrans-623
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE84]'
+  id: totrans-624
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: '{'
+  id: totrans-625
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '{'
+- en: '"click": [Function, Function, Function],'
+  id: totrans-626
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"click": [Function, Function, Function],'
+- en: '"mouseover": [Function, Function],'
+  id: totrans-627
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"mouseover": [Function, Function],'
+- en: '"mouseout": [Function]'
+  id: totrans-628
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"mouseout": [Function]'
+- en: '}'
+  id: totrans-629
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE85]'
+  id: totrans-630
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: document,body.addEventListener('mousemove', e => {
+  id: totrans-631
+  prefs: []
+  type: TYPE_NORMAL
+  zh: document,body.addEventListener('mousemove', e => {
+- en: e; // => the Event object
+  id: totrans-632
+  prefs: []
+  type: TYPE_NORMAL
+  zh: e; // => the Event object
+- en: '});'
+  id: totrans-633
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE86]'
+  id: totrans-634
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: const server = http.createServer(...);
+  id: totrans-635
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const server = http.createServer(...);
+- en: function onConnect(req, cltSocket, head) {
+  id: totrans-636
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function onConnect(req, cltSocket, head) {
+- en: // Connect to an origin server...
+  id: totrans-637
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Connect to an origin server...
+- en: '}'
+  id: totrans-638
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: // Subscribe
+  id: totrans-639
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Subscribe
+- en: server.on('connect', onConnect);
+  id: totrans-640
+  prefs: []
+  type: TYPE_NORMAL
+  zh: server.on('connect', onConnect);
+- en: // Unsubscribe
+  id: totrans-641
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // Unsubscribe
+- en: server.off('connect', onConnect);
+  id: totrans-642
+  prefs: []
+  type: TYPE_NORMAL
+  zh: server.off('connect', onConnect);
+- en: '[PRE87]'
+  id: totrans-643
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: const dropdown = new DropDown();
+  id: totrans-644
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const dropdown = new DropDown();
+- en: dropdown.on('select', () => { /*...*/ });
+  id: totrans-645
+  prefs: []
+  type: TYPE_NORMAL
+  zh: dropdown.on('select', () => { /*...*/ });
+- en: dropdown.on('deselect', () => { /*...*/ });
+  id: totrans-646
+  prefs: []
+  type: TYPE_NORMAL
+  zh: dropdown.on('deselect', () => { /*...*/ });
+- en: dropdown.on('hover', () => { /*...*/ });
+  id: totrans-647
+  prefs: []
+  type: TYPE_NORMAL
+  zh: dropdown.on('hover', () => { /*...*/ });
+- en: '[PRE88]'
+  id: totrans-648
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: '// Less transparent & more burdensome:'
+  id: totrans-649
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '// Less transparent & more burdensome:'
+- en: dropdown.on('action', event => {
+  id: totrans-650
+  prefs: []
+  type: TYPE_NORMAL
+  zh: dropdown.on('action', event => {
+- en: switch (event.action) {
+  id: totrans-651
+  prefs: []
+  type: TYPE_NORMAL
+  zh: switch (event.action) {
+- en: 'case ''select'': /*...*/; break;'
+  id: totrans-652
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''select'': /*...*/; break;'
+- en: 'case ''deselect'': /*...*/; break;'
+  id: totrans-653
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'case ''deselect'': /*...*/; break;'
+- en: // ...
+  id: totrans-654
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // ...
+- en: '}'
+  id: totrans-655
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '});'
+  id: totrans-656
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE89]'
+  id: totrans-657
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: const answerToEverything = new Promise((resolve, reject) => {
+  id: totrans-658
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const answerToEverything = new Promise((resolve, reject) => {
+- en: setTimeout(() => {
+  id: totrans-659
+  prefs: []
+  type: TYPE_NORMAL
+  zh: setTimeout(() => {
+- en: resolve(42);
+  id: totrans-660
+  prefs: []
+  type: TYPE_NORMAL
+  zh: resolve(42);
+- en: '}, 1000);'
+  id: totrans-661
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}, 1000);'
+- en: '});'
+  id: totrans-662
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE90]'
+  id: totrans-663
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: answerToEverything.then(answer => {
+  id: totrans-664
+  prefs: []
+  type: TYPE_NORMAL
+  zh: answerToEverything.then(answer => {
+- en: answer; // => 42
+  id: totrans-665
+  prefs: []
+  type: TYPE_NORMAL
+  zh: answer; // => 42
+- en: '});'
+  id: totrans-666
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE91]'
+  id: totrans-667
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: const promiseOfData = fetch('/some/data?foo=bar');
+  id: totrans-668
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const promiseOfData = fetch('/some/data?foo=bar');
+- en: '[PRE92]'
+  id: totrans-669
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: const promiseOfData = fetch('/some/data');
+  id: totrans-670
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const promiseOfData = fetch('/some/data');
+- en: promiseOfData.then(
+  id: totrans-671
+  prefs: []
+  type: TYPE_NORMAL
+  zh: promiseOfData.then(
+- en: response => {
+  id: totrans-672
+  prefs: []
+  type: TYPE_NORMAL
+  zh: response => {
+- en: response; // The "fulfilled" Response
+  id: totrans-673
+  prefs: []
+  type: TYPE_NORMAL
+  zh: response; // The "fulfilled" Response
+- en: '},'
+  id: totrans-674
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '},'
+- en: error => {
+  id: totrans-675
+  prefs: []
+  type: TYPE_NORMAL
+  zh: error => {
+- en: error; // The "rejected" Error
+  id: totrans-676
+  prefs: []
+  type: TYPE_NORMAL
+  zh: error; // The "rejected" Error
+- en: '}'
+  id: totrans-677
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: );
+  id: totrans-678
+  prefs: []
+  type: TYPE_NORMAL
+  zh: );
+- en: '[PRE93]'
+  id: totrans-679
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: fetch('/data/users')
+  id: totrans-680
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fetch('/data/users')
+- en: .then(response => response.json())
+  id: totrans-681
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .then(response => response.json())
+- en: .then(jsonDataOfUsers => {
+  id: totrans-682
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .then(jsonDataOfUsers => {
+- en: jsonDataOfUsers; // the JSON data that we got from response.json()
+  id: totrans-683
+  prefs: []
+  type: TYPE_NORMAL
+  zh: jsonDataOfUsers; // the JSON data that we got from response.json()
+- en: '});'
+  id: totrans-684
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE94]'
+  id: totrans-685
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: fetch('/data/users')
+  id: totrans-686
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fetch('/data/users')
+- en: .then(response => response.json())
+  id: totrans-687
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .then(response => response.json())
+- en: .then(users => users.map(user => user.forename))
+  id: totrans-688
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .then(users => users.map(user => user.forename))
+- en: .then(userForenames => userForenames.sort());
+  id: totrans-689
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .then(userForenames => userForenames.sort());
+- en: '[PRE95]'
+  id: totrans-690
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: const promiseA = fetch('/data/users');
+  id: totrans-691
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const promiseA = fetch('/data/users');
+- en: const promiseB = promiseA.then(response => response.json());
+  id: totrans-692
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const promiseB = promiseA.then(response => response.json());
+- en: const promiseC = promiseB.then(users => users.map(user => user.forename))
+  id: totrans-693
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const promiseC = promiseB.then(users => users.map(user => user.forename))
+- en: const promiseD = promiseC.then(userForenames => userForenames.sort());
+  id: totrans-694
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const promiseD = promiseC.then(userForenames => userForenames.sort());
+- en: promiseA === promiseB; // => false
+  id: totrans-695
+  prefs: []
+  type: TYPE_NORMAL
+  zh: promiseA === promiseB; // => false
+- en: promiseB === promiseC; // => false
+  id: totrans-696
+  prefs: []
+  type: TYPE_NORMAL
+  zh: promiseB === promiseC; // => false
+- en: promiseC === promiseD; // => false
+  id: totrans-697
+  prefs: []
+  type: TYPE_NORMAL
+  zh: promiseC === promiseD; // => false
+- en: '[PRE96]'
+  id: totrans-698
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: const users = fetch('/data/users').then(r => r.json());
+  id: totrans-699
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const users = fetch('/data/users').then(r => r.json());
+- en: const forenames = users.then(users => users.map(user => user.forename));
+  id: totrans-700
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const forenames = users.then(users => users.map(user => user.forename));
+- en: const surnames = users.then(users => users.map(user => user.surname));
+  id: totrans-701
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const surnames = users.then(users => users.map(user => user.surname));
+- en: '[PRE97]'
+  id: totrans-702
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: function createForenamesComponent(forenamesPromise) {
+  id: totrans-703
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function createForenamesComponent(forenamesPromise) {
+- en: const div = document.createElement('div');
+  id: totrans-704
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const div = document.createElement('div');
+- en: function render(forenames) {
+  id: totrans-705
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function render(forenames) {
+- en: 'div.textContent = forenames ? forenames.join('', '') : ''Loading...'';'
+  id: totrans-706
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'div.textContent = forenames ? forenames.join('', '') : ''Loading...'';'
+- en: '}'
+  id: totrans-707
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: render(null); // Initial render
+  id: totrans-708
+  prefs: []
+  type: TYPE_NORMAL
+  zh: render(null); // 初始渲染
+- en: forenamesPromise.then(forenames => {
+  id: totrans-709
+  prefs: []
+  type: TYPE_NORMAL
+  zh: forenamesPromise.then(forenames => {
+- en: '// When we receive the forenames we want to render them:'
+  id: totrans-710
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // 当我们收到名字时，我们想要渲染它们：
+- en: render(forenames);
+  id: totrans-711
+  prefs: []
+  type: TYPE_NORMAL
+  zh: render(forenames);
+- en: '});'
+  id: totrans-712
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: return div;
+  id: totrans-713
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return div;
+- en: '}'
+  id: totrans-714
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE98]'
+  id: totrans-715
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE98]'
+- en: userInfoLoader.init();
+  id: totrans-716
+  prefs: []
+  type: TYPE_NORMAL
+  zh: userInfoLoader.init();
+- en: appStartup().then(() => {
+  id: totrans-717
+  prefs: []
+  type: TYPE_NORMAL
+  zh: appStartup().then(() => {
+- en: const userID = userInfoLoader.data.id;
+  id: totrans-718
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const userID = userInfoLoader.data.id;
+- en: const userName = userInfoLoader.data.name;
+  id: totrans-719
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const userName = userInfoLoader.data.name;
+- en: renderApplication(userID, userName);
+  id: totrans-720
+  prefs: []
+  type: TYPE_NORMAL
+  zh: renderApplication(userID, userName);
+- en: '});'
+  id: totrans-721
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE99]'
+  id: totrans-722
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE99]'
+- en: userInfoLoader.init()
+  id: totrans-723
+  prefs: []
+  type: TYPE_NORMAL
+  zh: userInfoLoader.init()
+- en: .then(() => appStartup())
+  id: totrans-724
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .then(() => appStartup())
+- en: .then(() => {
+  id: totrans-725
+  prefs: []
+  type: TYPE_NORMAL
+  zh: .then(() => {
+- en: const userID = userInfoLoader.data.id;
+  id: totrans-726
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const userID = userInfoLoader.data.id;
+- en: const userName = userInfoLoader.data.name;
+  id: totrans-727
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const userName = userInfoLoader.data.name;
+- en: renderApplication(userID, userName);
+  id: totrans-728
+  prefs: []
+  type: TYPE_NORMAL
+  zh: renderApplication(userID, userName);
+- en: '});'
+  id: totrans-729
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE100]'
+  id: totrans-730
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE100]'
+- en: async function getNumber() {
+  id: totrans-731
+  prefs: []
+  type: TYPE_NORMAL
+  zh: async function getNumber() {
+- en: return 42;
+  id: totrans-732
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return 42;
+- en: '}'
+  id: totrans-733
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE101]'
+  id: totrans-734
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE101]'
+- en: getNumber() instanceof Promise; // => true
+  id: totrans-735
+  prefs: []
+  type: TYPE_NORMAL
+  zh: getNumber() instanceof Promise; // => true
+- en: '[PRE102]'
+  id: totrans-736
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE102]'
+- en: getNumber().then(number => {
+  id: totrans-737
+  prefs: []
+  type: TYPE_NORMAL
+  zh: getNumber().then(number => {
+- en: number; // => 42
+  id: totrans-738
+  prefs: []
+  type: TYPE_NORMAL
+  zh: number; // => 42
+- en: '});'
+  id: totrans-739
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '[PRE103]'
+  id: totrans-740
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE103]'
+- en: await someAsyncFunction();
+  id: totrans-741
+  prefs: []
+  type: TYPE_NORMAL
+  zh: await someAsyncFunction();
+- en: '[PRE104]'
+  id: totrans-742
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE104]'
+- en: const n = await new Promise(fulfill => fulfill(123));
+  id: totrans-743
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const n = await new Promise(fulfill => fulfill(123));
+- en: n; // => 123
+  id: totrans-744
+  prefs: []
+  type: TYPE_NORMAL
+  zh: n; // => 123
+- en: '[PRE105]'
+  id: totrans-745
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE105]'
+- en: async function setupFeed() {
+  id: totrans-746
+  prefs: []
+  type: TYPE_NORMAL
+  zh: async function setupFeed() {
+- en: const response = await fetch('/data');
+  id: totrans-747
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const response = await fetch('/data');
+- en: const json = await response.json();
+  id: totrans-748
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const json = await response.json();
+- en: console.log(json);
+  id: totrans-749
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(json);
+- en: '}'
+  id: totrans-750
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE106]'
+  id: totrans-751
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE106]'
+- en: function setupFeed() {
+  id: totrans-752
+  prefs: []
+  type: TYPE_NORMAL
+  zh: function setupFeed() {
+- en: fetch('/data').then(response => {
+  id: totrans-753
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fetch('/data').then(response => {
+- en: return response.json()
+  id: totrans-754
+  prefs: []
+  type: TYPE_NORMAL
+  zh: return response.json()
+- en: '}).then(json => {'
+  id: totrans-755
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}).then(json => {'
+- en: console.log(json);
+  id: totrans-756
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(json);
+- en: '});'
+  id: totrans-757
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '});'
+- en: '}'
+  id: totrans-758
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '[PRE107]'
+  id: totrans-759
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE107]'
+- en: const allData = [
+  id: totrans-760
+  prefs: []
+  type: TYPE_NORMAL
+  zh: const allData = [
+- en: fetch('/data/1').then(r => r.json()),
+  id: totrans-761
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fetch('/data/1').then(r => r.json()),
+- en: fetch('/data/2').then(r => r.json()),
+  id: totrans-762
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fetch('/data/2').then(r => r.json()),
+- en: fetch('/data/3').then(r => r.json())
+  id: totrans-763
+  prefs: []
+  type: TYPE_NORMAL
+  zh: fetch('/data/3').then(r => r.json())
+- en: '];'
+  id: totrans-764
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '];'
+- en: for await (const data of allData) {
+  id: totrans-765
+  prefs: []
+  type: TYPE_NORMAL
+  zh: for await (const data of allData) {
+- en: console.log(data);
+  id: totrans-766
+  prefs: []
+  type: TYPE_NORMAL
+  zh: console.log(data);
+- en: '}'
+  id: totrans-767
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: // Logs data from /data/1, /data/2 and /data/3
+  id: totrans-768
+  prefs: []
+  type: TYPE_NORMAL
+  zh: // 记录来自/data/1、/data/2和/data/3的数据
+- en: '```'
+  id: totrans-769
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '```'
+- en: Without *Promises* or `await` and `async`, expressing this kind of asynchronous
+    process would require not only also more code but also more time to understand.
+    The beauty of these constructs and abstractions is that they allow us to ignore
+    the implementation details of asynchronous operations, enabling us to focus purely
+    on expressing our problem domain. As we move forward in this book, we will further
+    explore this spirit of abstraction as we tackle some larger and more unwieldy
+    problem domains.
+  id: totrans-770
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有*Promises*或`await`和`async`，表达这种异步过程不仅需要更多的代码，还需要更多的时间来理解。这些构造和抽象的美妙之处在于它们使我们能够忽略异步操作的实现细节，从而使我们能够纯粹地专注于表达我们的问题领域。随着我们在本书中的进展，我们将进一步探索这种抽象精神，因为我们将处理一些更大更棘手的问题领域。
+- en: Summary
+  id: totrans-771
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we have finalized our exploration of the JavaScript language,
+    discussing the difference between imperative and declarative syntax, exploring
+    how to cleanly control flow, and learning how to handle cases of cyclomatic complexity
+    in both synchronous and asynchronous contexts. This has involved an in-depth study
+    of all iteration and conditional constructs within the language, guidance on their
+    usage, and cautions against anti-patterns.
+  id: totrans-772
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们已经完成了对JavaScript语言的探索，讨论了命令式和声明式语法之间的区别，探讨了如何清晰地控制流程，并学习了如何处理同步和异步上下文中的圈复杂度情况。这涉及对语言中所有迭代和条件构造的深入研究，对它们的使用进行指导，并警告反模式。
+- en: In the next chapter, we will take all of the knowledge we've accrued about the
+    JavaScript language and combine it with some explorations into real-world design
+    patterns and paradigms that'll help us to build clean abstractions and architectures.
+  id: totrans-773
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将把我们对JavaScript语言积累的所有知识与对真实世界设计模式和范式的探索相结合，这将帮助我们构建清晰的抽象和架构。

@@ -1,0 +1,2300 @@
+- en: '*Chapter 12*: Performance Optimization in Angular'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '*第12章*：Angular性能优化'
+- en: 'Performance is always a concern in any product that you build for end users.
+    It is a critical element in increasing the chances of someone using your app for
+    the first time becoming a customer. Now, we can''t really improve an app''s performance
+    until we identify potential possibilities for improvement and the methods to achieve
+    this. In this chapter, you''ll learn some methods to deploy when it comes to improving
+    Angular applications. You''ll learn how to analyze, optimize, and improve your
+    Angular app''s performance using several techniques. Here are the recipes we''re
+    going to cover in this chapter:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 性能始终是您为最终用户构建的任何产品中关注的问题。这是增加某人第一次使用您的应用程序成为客户的机会的关键因素。现在，除非我们确定了改进的潜在可能性和实现这一点的方法，否则我们无法真正提高应用程序的性能。在本章中，您将学习一些在改进Angular应用程序时要部署的方法。您将学习如何使用多种技术来分析、优化和改进您的Angular应用程序的性能。以下是本章中要涵盖的内容：
+- en: Using `OnPush` change detection to prune component subtrees
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`OnPush`变更检测来修剪组件子树
+- en: Detaching the change detector from components
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从组件中分离变更检测器
+- en: Running `async` events outside Angular with `runOutsideAngular`
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`runOutsideAngular`在Angular外部运行`async`事件
+- en: Using `trackBy` for lists with `*ngFor`
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在`*ngFor`中使用`trackBy`来处理列表
+- en: Moving heavy computation to pure pipes
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将重型计算移至纯管道
+- en: Using web workers for heavy computation
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Web Workers进行重型计算
+- en: Using performance budgets for auditing
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用性能预算进行审计
+- en: Analyzing bundles with `webpack-bundle-analyzer`
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`webpack-bundle-analyzer`分析捆绑包
+- en: Technical requirements
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: 'For the recipes in this chapter, make sure you have **Git** and **Node.js**
+    installed on your machine. You also need to have the `@angular/cli` package installed,
+    which you can do with `npm install -g @angular/cli` from your terminal. The code
+    for this chapter can be found at the following link: [https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter12](https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter12).'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于本章中的食谱，请确保您的计算机上已安装了**Git**和**Node.js**。您还需要安装`@angular/cli`包，可以在终端中使用`npm
+    install -g @angular/cli`来安装。本章的代码可以在以下链接找到：[https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter12](https://github.com/PacktPublishing/Angular-Cookbook/tree/master/chapter12)。
+- en: Using OnPush change detection to prune component subtrees
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用OnPush变更检测来修剪组件子树
+- en: In today's world of modern web applications, performance is one of the key factors
+    for a great **user experience** (**UX**) and, ultimately, conversions for a business.
+    In this recipe, being the first recipe of this chapter, we're going to discuss
+    the fundamental or the most basic optimization you can do with your components
+    wherever it seems appropriate, and that is by using the `OnPush` change-detection
+    strategy.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在当今现代Web应用程序的世界中，性能是出色的**用户体验**（**UX**）和最终业务转化的关键因素之一。在本章的第一个食谱中，我们将讨论您可以在组件中进行的基本优化，即使用`OnPush`变更检测策略。
+- en: Getting ready
+  id: totrans-14
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project we are going to work with resides in `Chapter12/start_here/using-onpush-change-detection`,
+    inside the cloned repositor:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要处理的项目位于`Chapter12/start_here/using-onpush-change-detection`中，位于克隆存储库内：
+- en: Open the project in **Visual Studio Code** (**VS Code**).
+  id: totrans-16
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在**Visual Studio Code** (**VS Code**)中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-17
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: 'Run the `ng serve -o` command to start the Angular app and serve it on the
+    browser. You should see the app, as follows:'
+  id: totrans-18
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng serve -o`命令启动Angular应用程序并在浏览器上提供服务。您应该看到以下应用程序：
+- en: '![Figure 12.1 – App using OnPush change detection running at http://localhost:4200'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.1 – 使用OnPush变更检测运行的应用程序，位于http://localhost:4200'
+- en: '](image/Figure_12.1_B15150.jpg)'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.1_B15150.jpg)'
+- en: Figure 12.1 – App using OnPush change detection running at http://localhost:4200
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.1 – 应用程序使用OnPush变更检测在http://localhost:4200上运行
+- en: Now that we have the project served on the browser, let's see the steps of the
+    recipe in the next section.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经在浏览器上提供了项目，让我们在下一节中看到食谱的步骤。
+- en: How to do it…
+  id: totrans-23
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'The app we''re working with has some performance issues, particularly with
+    the `UserCardComponent` class. This is because it is using the `idUsingFactorial()`
+    method to generate a unique ID to show on the card. We''re going to experience
+    and understand the performance issue this causes. We will try to fix the issue
+    using the `OnPush` change-detection strategy. Let''s get started:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们正在处理的应用程序存在一些性能问题，特别是`UserCardComponent`类。这是因为它使用`idUsingFactorial()`方法来生成要显示在卡片上的唯一ID。我们将尝试体验和理解这会导致的性能问题。我们将尝试使用`OnPush`变更检测策略来解决这个问题。让我们开始吧：
+- en: First, try to search for a user named `Elfie Siegert` by entering their name
+    in the search box. You'll notice that the app immediately hangs and that it takes
+    a few seconds to show the user. You'll also notice that you don't even see the
+    typed letters in the search box as you type them.
+  id: totrans-25
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，尝试在搜索框中输入名为`Elfie Siegert`的用户。您会注意到应用程序立即挂起，并且需要几秒钟才能显示用户。您还会注意到在输入时，甚至看不到在搜索框中输入的字母。
+- en: Let's add some logic to the code. We'll check how many times Angular calls the
+    `idUsingFactorial()` method when the page loads.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们向代码添加一些逻辑。我们将检查页面加载时Angular调用`idUsingFactorial()`方法的次数。
+- en: 'Modify the `app/core/components/user-card/user-card.component.ts` file, updating
+    it as follows:'
+  id: totrans-27
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 修改`app/core/components/user-card/user-card.component.ts`文件，更新如下：
+- en: '[PRE0]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Now, refresh the app and open the Chrome DevTools and, in the **Console** tab,
+    type `appLogs` and press *Enter*. You should see an object, as follows:![Figure
+    12.2 – Logs reflecting number of calls to idUsingFactorial() method
+  id: totrans-29
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，刷新应用程序并打开Chrome DevTools，在**控制台**选项卡中，输入`appLogs`并按*Enter*。您应该会看到一个对象，如下所示：![图12.2
+    – 反映对idUsingFactorial()方法调用次数的日志
+- en: '](image/Figure_12.2_B15150.jpg)'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.2_B15150.jpg)'
+- en: Figure 12.2 – Logs reflecting number of calls to idUsingFactorial() method
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.2 – 反映对idUsingFactorial()方法调用次数的日志
+- en: Now, type the name `Elfie Siegert` again in the search box. Then, type `appLogs`
+    again in the **Console** tab and press *Enter* to see the object again. You'll
+    see that it has some increased numbers. If you didn't make a typo while entering
+    the name, you should see something like this:![Figure 12.3 – Logs after typing
+    the name Elfie Siegert
+  id: totrans-32
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，在搜索框中再次输入名称`Elfie Siegert`。然后，在**控制台**选项卡中再次输入`appLogs`并按*Enter*以再次查看对象。您会看到它有一些增加的数字。如果在输入名称时没有打错字，您应该会看到类似于这样的内容：![图12.3
+    – 输入名称Elfie Siegert后的日志
+- en: '](image/Figure_12.3_B15150.jpg)'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.3_B15150.jpg)'
+- en: Figure 12.3 – Logs after typing the name Elfie Siegert
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.3 – 输入名称Elfie Siegert后的日志
+- en: Notice the count when calling the `idUsingFactorial()` method for `justin.grewal@example.com`.
+    It has increased from `40` to `300` now, in just a few key presses.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意调用`idUsingFactorial()`方法时的计数，例如`justin.grewal@example.com`。现在，它从`40`增加到`300`，仅需按几下按键。
+- en: Let's use the `OnPush` change-detection strategy now. This will avoid the Angular
+    change-detection mechanism running on each browser event, which currently causes
+    a performance issue on each key press.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们使用`OnPush`变更检测策略。这将避免Angular变更检测机制在每个浏览器事件上运行，这目前会导致性能问题。
+- en: 'Open the `user-card.component.ts` file and update it, as follows:'
+  id: totrans-37
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开`user-card.component.ts`文件并进行更新，如下所示：
+- en: '[PRE1]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Now, try typing the name `Elfie Siegert` again in the search box. You''ll notice
+    that you can now see the typed letters in the search box, and it doesn''t hang
+    the app as much. Also, if you look at the `appLogs` object in the **Console**
+    tab, you should see something like this:'
+  id: totrans-39
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，再试着在搜索框中输入`Elfie Siegert`这个名字。你会注意到，现在你可以在搜索框中看到输入的字母，而且应用程序不会卡住那么多。另外，如果你在**控制台**选项卡中查看`appLogs`对象，你应该会看到类似下面的内容：
+- en: '![Figure 12.4 – Logs after typing the name Elfie Siegert with OnPush strategy'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.4 - 使用OnPush策略输入Elfie Siegert名称后的日志'
+- en: '](image/Figure_12.4_B15150.jpg)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.4_B15150.jpg)'
+- en: Figure 12.4 – Logs after typing the name Elfie Siegert with OnPush strategy
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.4 - 使用OnPush策略输入Elfie Siegert名称后的日志
+- en: Notice that even after refreshing the app, and after typing the name `Elfie
+    Siegert`, we now have a very low number of calls to the `idUsingFactorial()` method.
+    For example, for the `justin.grewal@example.com` email address, we only have **20**
+    hits, instead of the initial **40** hits shown in *Figure 12.2*, and **300** hits,
+    as shown in *Figure 12.3*, after typing.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，即使刷新应用程序并输入`Elfie Siegert`这个名字后，对`idUsingFactorial()`方法的调用次数也大大减少了。例如，对于`justin.grewal@example.com`电子邮件地址，我们只有**20**次调用，而不是*图12.2*中显示的初始**40**次调用，以及*图12.3*中显示的**300**次调用。
+- en: Great! Within a single step, by using the `OnPush` strategy we were able to
+    improve the overall performance of our `UserCardComponent`. Now you know how to
+    use this strategy, see the next section to understand how it works.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！通过使用`OnPush`策略，我们能够在一个步骤中改善`UserCardComponent`的整体性能。现在你知道如何使用这个策略了，接下来看下一节来了解它是如何工作的。
+- en: How it works…
+  id: totrans-45
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: Angular by default uses the **Default** change-detection strategy—or technically,
+    it is the `ChangeDetectionStrategy.Default` enum from the `@angular/core` package.
+    Since Angular doesn't know about every component we create, it uses the Default
+    strategy to not encounter any surprises. But as developers, if we know that a
+    component will not change unless one of its `@Input()` variables changes, we can—and
+    we should—use the `OnPush` change-detection strategy for that component. Why?
+    Because it tells Angular to not run change detection until an `@Input()` variable
+    for the component changes. This strategy is an absolute winner for **presentational**
+    components (sometimes called **dumb** components), which are just supposed to
+    show data using `@Input()` variables/attributes, and emit `@Output()` events on
+    interactions. These presentational components usually do not hold any business
+    logic such as heavy computation, using services to make **HyperText Transfer Protocol**
+    (**HTTP**) calls, and so on. Therefore, it is easier for us to use the `OnPush`
+    strategy in these components because they would only show different data when
+    any of the `@Input()` attributes from the parent component change.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Angular默认使用**默认**的变更检测策略 - 或者从`@angular/core`包中的`ChangeDetectionStrategy.Default`枚举来说，技术上来说是这样。由于Angular不知道我们创建的每个组件，它使用默认策略来避免遇到任何意外。但是作为开发人员，如果我们知道一个组件除非它的`@Input()`变量之一发生变化，否则不会改变，我们可以
+    - 而且应该 - 为该组件使用`OnPush`变更检测策略。为什么？因为它告诉Angular在组件的`@Input()`变量发生变化之前不要运行变更检测。这个策略对于**呈现**组件（有时被称为**哑**组件）来说是绝对胜利的，它们只是使用`@Input()`变量/属性来显示数据，并在交互中触发`@Output()`事件。这些呈现组件通常不包含任何业务逻辑，比如重型计算，使用服务进行**超文本传输协议**（**HTTP**）调用等。因此，对于这些组件来说，我们更容易使用`OnPush`策略，因为它们只会在父组件的`@Input()`属性发生变化时显示不同的数据。
+- en: Since we are now using the `OnPush` strategy on our `UserCardComponent`, it
+    only triggers change detection when we replace the entire array upon searching.
+    This happens after the **300ms** debounce (*line 28* in the `users.component.ts`
+    file), so we only do it when the user stops typing. So, essentially, before the
+    optimization, the default change detection was triggering on each keypress being
+    a browser event, and now, it doesn't.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们现在在 `UserCardComponent` 上使用了 `OnPush` 策略，它只在我们替换整个数组时触发变更检测。这发生在**300ms**
+    的去抖之后（*`users.component.ts` 文件中的第28行*），因此只有在用户停止输入时才会执行。因此，在优化之前，默认的变更检测是在每次按键时触发的浏览器事件，现在不会触发。
+- en: Important note
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: As you now know that the `OnPush` strategy only triggers the Angular change-detection
+    mechanism when one or more of the `@Input()` bindings changes, this means that
+    if we change a property within the component (`UserCardComponent`), it will not
+    be reflected in the view because the change-detection mechanism won't run in this
+    case, since that property isn't an `@Input()` binding. You would have to mark
+    the component as dirty so that Angular could check the component and run change
+    detection. You'll do this using the `ChangeDetectorRef` service—specifically,
+    with the `.markForCheck()` method.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您已经知道 `OnPush` 策略仅在一个或多个 `@Input()` 绑定发生变化时触发 Angular 变更检测机制，这意味着如果我们在组件 (`UserCardComponent`)
+    中更改属性，它不会在视图中反映出来，因为在这种情况下变更检测机制不会运行，因为该属性不是一个 `@Input()` 绑定。您必须标记组件为脏，以便 Angular
+    可以检查组件并运行变更检测。您将使用 `ChangeDetectorRef` 服务来实现这一点，具体来说，使用 `.markForCheck()` 方法。
+- en: See also
+  id: totrans-50
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Angular `ChangeDetectionStrategy` official documentation ([https://angular.io/api/core/ChangeDetectionStrategy](https://angular.io/api/core/ChangeDetectionStrategy))
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular `ChangeDetectionStrategy` 官方文档（[https://angular.io/api/core/ChangeDetectionStrategy](https://angular.io/api/core/ChangeDetectionStrategy)）
+- en: '`markForCheck()` method official documentation ([https://angular.io/api/core/ChangeDetectorRef#markforcheck](https://angular.io/api/core/ChangeDetectorRef#markforcheck))'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`markForCheck()` 方法官方文档（[https://angular.io/api/core/ChangeDetectorRef#markforcheck](https://angular.io/api/core/ChangeDetectorRef#markforcheck)）'
+- en: Detaching the change detector from components
+  id: totrans-53
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从组件中分离变更检测器
+- en: In the previous recipe, we learned how to use the `OnPush` strategy in our components
+    to avoid Angular change detection running unless one of the `@Input()` bindings
+    has changed. There is, however, another way to tell Angular to not run change
+    detection at all, in any instance. This is handy when you want full control on
+    when to run change detection. In this recipe, you'll learn how to completely detach
+    the change detector from an Angular component to gain performance improvements.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一个示例中，我们学习了如何在组件中使用 `OnPush` 策略，以避免 Angular 变更检测运行，除非其中一个 `@Input()` 绑定发生了变化。然而，还有另一种方法可以告诉
+    Angular 完全不运行变更检测。当您希望完全控制何时运行变更检测时，这将非常方便。在本示例中，您将学习如何完全分离 Angular 组件的变更检测器，以获得性能改进。
+- en: Getting ready
+  id: totrans-55
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The project for this recipe resides in `Chapter12/start_here/detaching-change-detecto:`
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例的项目位于 `Chapter12/start_here/detaching-change-detecto`：
+- en: Open the project in VS Code.
+  id: totrans-57
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在 VS Code 中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-58
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行 `npm install` 来安装项目的依赖项。
+- en: 'Run the `ng serve -o` command to start the Angular app and serve it on the
+    browser. You should see the app, as follows:'
+  id: totrans-59
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行 `ng serve -o` 命令来启动 Angular 应用程序并在浏览器上提供服务。您应该看到应用程序如下：
+- en: '![Figure 12.5 – App detaching-change-detector running at http://localhost:4200'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.5 – 应用程序 detaching-change-detector 在 http://localhost:4200 运行'
+- en: '](image/Figure_12.5_B15150.jpg)'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.5_B15150.jpg)'
+- en: Figure 12.5 – App detaching-change-detector running at http://localhost:4200
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.5 – 应用程序 detaching-change-detector 在 http://localhost:4200 运行
+- en: Now that we have the project served on the browser, let's see the steps of the
+    recipe in the next section.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们在浏览器上提供了项目，让我们在下一节中看一下本教程的步骤。
+- en: How to do it…
+  id: totrans-64
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'We have the same users list application but with a twist. Right now, we have
+    the `UserSearchInputComponent` component that holds the search input box. This
+    is where we type the username to search for it in the users list. On the other
+    hand, we have the `UserCardListComponent` component that has a list of users.
+    We''ll first experience the performance issues, and then we''ll detach the change
+    detector smartly to gain performance improvements. Let''s get starte:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有相同的用户列表应用程序，但有所不同。现在，我们有`UserSearchInputComponent`组件，其中包含搜索输入框。这是我们输入用户名以在用户列表中搜索的地方。另一方面，我们有`UserCardListComponent`组件，其中包含用户列表。我们将首先体验性能问题，然后巧妙地分离变更检测器以获得性能改进。让我们开始吧：
+- en: Refresh the app in the browser, then just click inside the search input, and
+    then click outside the search input to first trigger a `focus` event on the input
+    and then to trigger a `blur` event. Repeat this two times more, and then, on the
+    console inside the Chrome Dev Tools, check the value of the `appLogs` object.
+    You should see something like this:![Figure 12.6 – Logs after performing focus
+    and blur three times on the search input
+  id: totrans-66
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在浏览器中刷新应用程序，然后只需点击搜索输入框内部，然后再点击搜索输入框外部，首先触发输入框上的`focus`事件，然后触发`blur`事件。重复这两次，然后在Chrome
+    Dev Tools中的控制台中，检查`appLogs`对象的值。您应该会看到类似于这样的内容：![图12.6 - 在搜索输入框上执行三次焦点和模糊后的日志
+- en: '](image/Figure_12.6_B15150.jpg)'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: （图12.6_B15150.jpg）
+- en: Figure 12.6 – Logs after performing focus and blur three times on the search
+    input
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.6 - 在搜索输入框上执行三次焦点和模糊后的日志
+- en: The preceding screenshot shows that the `idUsingFactorial()` method in the `UserCardComponent`
+    class for the `justin.grewal@example.com` user has been called about 100 times,
+    just in the steps we've performed so far.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`UserCardComponent`类中的`idUsingFactorial()`方法已经被调用了大约100次，仅在我们迄今为止执行的步骤中。
+- en: Now, try to search for the `elfie` user by entering the name quickly in the
+    search box.
+  id: totrans-70
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，尝试快速在搜索框中输入`elfie`用户的名称进行搜索。
+- en: 'You''ll notice that the app immediately hangs, and it takes a few seconds to
+    show the user. You''ll also notice that you don''t even see the letters being
+    typed in the search box as you type them. If you''ve followed *Step 1* and *Step
+    2* correctly, you should see an `appLogs` object, as follows:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您会注意到应用程序立即挂起，需要几秒钟才能显示用户。您还会注意到，当您输入字母时，甚至看不到它们在搜索框中被输入。如果您已正确执行*步骤1*和*步骤2*，您应该会看到一个`appLogs`对象，如下所示：
+- en: '![Figure 12.7 – Logs after typing elfie in the input search box'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.7 - 在输入搜索框中输入elfie后的日志'
+- en: '](image/Figure_12.7_B15150.jpg)'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: （图12.7_B15150.jpg）
+- en: Figure 12.7 – Logs after typing elfie in the input search box
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.7 - 在输入搜索框中输入elfie后的日志
+- en: You can see in the preceding screenshot that the `idUsingFactorial()` method
+    for the `justin.grewal@example.com` user has now been called about 220 times.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在上述截图中看到，`justin.grewal@example.com`用户的`idUsingFactorial()`方法现在已经被调用了大约220次。
+- en: 'In order to improve performance, we''ll use the `ChangeDetectorRef` service
+    in this recipe to completely detach the change detector from the `UsersComponent`
+    component, which is our top component for the **Users** page. Update the `users.component.ts`
+    file, as follows:'
+  id: totrans-76
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了提高性能，我们将在本教程中使用`ChangeDetectorRef`服务，从`UsersComponent`组件中完全分离变更检测器，这是我们**用户**页面的顶级组件。更新`users.component.ts`文件，如下所示：
+- en: '[PRE2]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: If you refresh the app now, you'll see… Actually, you won't see anything, and
+    that's fine—we have more steps to follow.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果现在刷新应用程序，您会看到...实际上，您什么都看不到，这没关系 - 我们还有更多的步骤要遵循。
+- en: 'Now, since we want to run change detection only when we have searched the users—that
+    is, when the `users` array changes in the `UsersComponent` class—we can use the
+    `detectChanges()` method of the `ChangeDetectorRef` instance. Update the `users.component.ts`
+    file again, as follows:'
+  id: totrans-79
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，由于我们只想在搜索用户时运行变更检测 - 也就是当`UsersComponent`类中的`users`数组发生变化时，我们可以使用`ChangeDetectorRef`实例的`detectChanges()`方法。再次更新`users.component.ts`文件，如下所示：
+- en: '[PRE3]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Now, try performing the actions again—that is, refresh the page, focus in on
+    the input, focus out, focus in, focus out, focus in, focus out, and then type
+    `elfie` in the search input. Once you''ve followed the steps, you should see the
+    `appLogs` object, as follows:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，再试着执行一遍动作 - 也就是刷新页面，聚焦输入框，失去焦点，再次聚焦，再次失去焦点，再次聚焦，再次失去焦点，然后在搜索输入框中输入`elfie`。一旦你按照这些步骤操作，你应该会看到`appLogs`对象，如下所示：
+- en: '![Figure 12.8 – Logs after performing the test steps and using ChangeDetectorRef.detach()'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.8 - 在执行测试步骤并使用ChangeDetectorRef.detach()后的日志'
+- en: '](image/Figure_12.8_B15150.jpg)'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.8_B15150.jpg)'
+- en: Figure 12.8 – Logs after performing the test steps and using ChangeDetectorRef.detach()
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.8 - 在执行测试步骤并使用ChangeDetectorRef.detach()后的日志
+- en: You can see in the preceding screenshot that even after performing all the actions
+    mentioned in *Step 1* and *Step 2*, we have a very low count of the change-detection
+    run cycle.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从上面的截图中可以看到，即使在执行*步骤1*和*步骤2*中提到的所有操作之后，我们的变更检测运行周期非常低。
+- en: Awesomesauce! You've just learned how to detach the Angular change detector
+    using the `ChangeDetectorRef` service. Now that you've finished the recipe, see
+    the next section to understand how it works.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！你刚学会了如何使用`ChangeDetectorRef`服务分离Angular变更检测器。现在你已经完成了这个教程，看看下一节来了解它是如何工作的。
+- en: How it works…
+  id: totrans-87
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: The `ChangeDetectorRef` service provides a bunch of important methods to control
+    change detection completely. In the recipe, we use the `.detach()` method in the
+    `ngOnInit()` method of the `UsersComponent` class to detach the Angular change-detection
+    mechanism from this component as soon as it is created. As a result, no change
+    detection is triggered on the `UsersComponent` class, nor in any of its children.
+    This is because each Angular component has a change-detection tree in which each
+    component is a node. When we detach a component from the change-detection tree,
+    that component (as a tree node) is detached, and so are its child components (or
+    nodes). By doing this, we end up with absolutely no change detection happening
+    for the `UsersComponent` class. As a result, when we refresh the page nothing
+    is rendered, even after we've got the users from the **application programming
+    interface** (**API**) and have got them assigned to the `users` property inside
+    the `UsersComponent` class. Since we need to show the users on the view, which
+    requires the Angular change-detection mechanism to be triggered, we use the `.detectChanges()`
+    method from the `ChangeDetectorRef` instance, right after we've assigned the users
+    data to the `users` property. As a result, Angular runs the change-detection mechanism,
+    and we get the user cards shown on the view.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ChangeDetectorRef`服务提供了一系列重要的方法来完全控制变化检测。在这个示例中，我们在`UsersComponent`类的`ngOnInit()`方法中使用`.detach()`方法来从这个组件中分离出Angular变化检测机制。结果，`UsersComponent`类以及其子类都不会触发任何变化检测。这是因为每个Angular组件都有一个变化检测树，其中每个组件都是一个节点。当我们从变化检测树中分离一个组件时，该组件（作为树节点）以及其子组件（或节点）也会被分离。通过这样做，我们最终使`UsersComponent`类不会发生任何变化检测。因此，当我们刷新页面时，即使我们从**应用程序编程接口**（**API**）获取了用户并将它们分配给`UsersComponent`类中的`users`属性，也不会渲染任何内容。由于我们需要在视图上显示用户，这需要触发Angular变化检测机制，我们在将用户数据分配给`users`属性后，立即使用`ChangeDetectorRef`实例的`.detectChanges()`方法。结果，Angular运行了变化检测机制，我们在视图上看到了用户卡片。'
+- en: This means that in the entire **Users** page (that is, on the `/users` route)
+    the only time the Angular change-detection mechanism would trigger after the `UsersComponent`
+    class has initiated is when we call the `searchUsers()` method, get the data from
+    the API, and assign the result to the `users` property, thus creating a highly
+    controlled change-detection cycle, resulting in much better performance overall.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着在整个**Users**页面（即`/users`路由）上，只有在`UsersComponent`类初始化后，当我们调用`searchUsers()`方法，从API获取数据并将结果分配给`users`属性时，Angular变化检测机制才会触发，从而创建一个高度受控的变化检测周期，从而在整体上获得更好的性能。
+- en: See also
+  id: totrans-90
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 参见
+- en: '`ChangeDetectorRef` official documentation ([https://angular.io/api/core/ChangeDetectorRef](https://angular.io/api/core/ChangeDetectorRef))'
+  id: totrans-91
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`ChangeDetectorRef`官方文档([https://angular.io/api/core/ChangeDetectorRef](https://angular.io/api/core/ChangeDetectorRef))'
+- en: Running async events outside Angular with runOutsideAngular
+  id: totrans-92
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Angular之外运行异步事件的runOutsideAngular
+- en: Angular runs its change-detection mechanism on a couple of things, including—but
+    not limited to—all browser events such as `keyup`, `keydown`, and so on. It also
+    runs change detection on `setTimeout`, `setInterval`, and Ajax HTTP calls. If
+    we had to avoid running change detection on any of these events, we'd have to
+    tell Angular not to trigger change detection on them—for example, if you were
+    using the `setTimeout()` method in your Angular component, it would trigger an
+    Angular change detection each time its callback method was called. In this recipe,
+    you'll learn how to execute code blocks outside of the `ngZone` service, using
+    the `runOutsideAngular()` method.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Angular在一些事物上运行其变更检测机制，包括但不限于所有浏览器事件，如`keyup`、`keydown`等。它还在`setTimeout`、`setInterval`和Ajax
+    HTTP调用上运行变更检测。如果我们需要避免在这些事件中运行变更检测，我们需要告诉Angular不要在这些事件上触发变更检测 - 例如，如果您在Angular组件中使用`setTimeout()`方法，每次调用其回调方法时都会触发Angular变更检测。在这个食谱中，您将学习如何使用`runOutsideAngular()`方法在`ngZone`服务之外执行代码块。
+- en: Getting ready
+  id: totrans-94
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: The project for this recipe resides in `Chapter12/start_here/run-outside-angula:`
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个食谱的项目位于`Chapter12/start_here/run-outside-angula`中：
+- en: Open the project in VS Code.
+  id: totrans-96
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-97
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: 'Run the `ng serve -o` command to start the Angular app and serve it on the
+    browser. You should see the app, as follows:'
+  id: totrans-98
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng serve -o`命令启动Angular应用程序并在浏览器上提供服务。您应该看到应用程序，如下所示：
+- en: '![Figure 12.9 – App run-outside-angular running on http://localhost:4200'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.9 - 在http://localhost:4200上运行的App run-outside-angular'
+- en: '](image/Figure_12.9_B15150.jpg)'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.9_B15150.jpg)'
+- en: Figure 12.9 – App run-outside-angular running on http://localhost:4200
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.9 - 在http://localhost:4200上运行的App run-outside-angular
+- en: Now that we have the app running, let's see the steps of the recipe in the next
+    section.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序正在运行，让我们在下一节中看一下食谱的步骤。
+- en: How to do it…
+  id: totrans-103
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: We have an app that shows a watch. However, the change detection right now in
+    the app is not optimal, and we have plenty of room for improvement. We'll try
+    to remove any unnecessary change detection using the `runOutsideAngular` method
+    from `ngZone`. Let's get starte:.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有一个显示手表的应用程序。但是，目前应用程序中的变更检测并不理想，我们有很大的改进空间。我们将尝试使用`ngZone`中的`runOutsideAngular`方法来消除任何不必要的变更检测。让我们开始吧：
+- en: The clock values are constantly updating. Thus, we have change detection running
+    for each update cycle. Open the Chrome DevTools and switch to the **Console**
+    tab. Type `appLogs` and press *Enter* to see how many times change detection has
+    run for the `hours`, `minutes`, `seconds`, and `milliseconds` components. It should
+    look like this:![Figure 12.10 – The appLogs object reflecting number of change-detection
+    runs
+  id: totrans-105
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 时钟值不断更新。因此，我们对每个更新周期运行变更检测。打开Chrome DevTools并切换到**控制台**选项卡。键入`appLogs`并按*Enter*，以查看`hours`、`minutes`、`seconds`和`milliseconds`组件的变更检测运行次数。应该看起来像这样：![图12.10
+    - 反映变更检测运行次数的appLogs对象
+- en: '](image/Figure_12.10_B15150.jpg)'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.10_B15150.jpg)'
+- en: Figure 12.10 – The appLogs object reflecting number of change-detection runs
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.10 - 反映变更检测运行次数的appLogs对象
+- en: 'To measure performance, we need to see the numbers within a fixed time period.
+    Let''s add some code to turn off the interval timer in 4 seconds from the app''s
+    start for the clock. Modify the `watch-box.component.ts` file, as follows:'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了衡量性能，我们需要在固定时间段内查看数字。让我们添加一些代码，在应用程序启动后的4秒内关闭时钟的间隔计时器。修改`watch-box.component.ts`文件，如下所示：
+- en: '[PRE4]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Refresh the app and wait for 4 seconds for the clock to stop. Then, type `appLogs`
+    multiple times in the **Console** tab, press *Enter*, and see the results. The
+    clock stops but the animation is still running. You should see that change detection
+    for the `watch` key still increases, as follows:![Figure 12.11 – Change detection
+    still running for the watch component
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 刷新应用程序并等待4秒钟以停止时钟。然后，在**控制台**选项卡中多次输入`appLogs`，按*Enter*，并查看结果。时钟停止，但动画仍在运行。您应该看到`watch`键的变更检测仍在增加，如下所示：![图12.11
+    - 对手表组件的变更检测仍在运行
+- en: '](image/Figure_12.11_B15150.jpg)'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.11_B15150.jpg)'
+- en: Figure 12.11 – Change detection still running for the watch component
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.11 - 对手表组件的变更检测仍在运行
+- en: 'Let''s also stop the animation inside the watch after 4 seconds. Update the
+    `watch.component.ts` file, as follows:'
+  id: totrans-113
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在手表内部的动画运行4秒后停止。更新`watch.component.ts`文件如下：
+- en: '[PRE5]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Refresh the app and wait for the animation to stop. Have a look at the `appLogs`
+    object in the Chrome DevTools. You should see that change detection stops for
+    the `watch` key, as follows:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 刷新应用程序并等待动画停止。查看Chrome DevTools中的`appLogs`对象，您应该看到`watch`键的变更检测停止，如下所示：
+- en: '![Figure 12.12 – Change detection stops after we stop the animation interval'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.12 - 停止动画间隔后变更检测停止'
+- en: '](image/Figure_12.12_B15150.jpg)'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.12_B15150.jpg)'
+- en: Figure 12.12 – Change detection stops after we stop the animation interval
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.12 - 停止动画间隔后变更检测停止
+- en: 'We want the animation to run but without causing additional change-detection
+    runs. This is because we want to make our app more performant. So, let''s just
+    stop the clock for now. To do that, update the `watch-box.component.ts` file,
+    as follows:'
+  id: totrans-119
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们希望动画运行，但不会导致额外的变更检测运行。这是因为我们希望使我们的应用程序更加高效。所以，让我们暂停时钟。为此，请更新`watch-box.component.ts`文件如下：
+- en: '[PRE6]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Since we've now stopped the clock, the values for `appLogs` for the `watch`
+    key are now only based on the animation for these 4 seconds. You should now see
+    a value between **250** and **260** for the `watch` key.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们现在已经停止了时钟，因此`appLogs`中`watch`键的值现在仅基于这4秒的动画。您现在应该看到`watch`键的值在**250**和**260**之间。
+- en: 'Let''s avoid running change detection on the animation by running the interval
+    outside the `ngZone` service. We''ll use the `runOutsideAngular()` method for
+    this. Update the `watch.component.ts` file, as follows:'
+  id: totrans-122
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们通过在`ngZone`服务外部运行间隔来避免对动画进行变更检测。我们将使用`runOutsideAngular()`方法来实现这一点。更新`watch.component.ts`文件如下：
+- en: '[PRE7]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Refresh the app and wait for about 5 seconds. If you check the `appLogs` object
+    now, you should see a decrease in the overall number of change-detection runs
+    for each of the properties, as follows:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 刷新应用程序并等待大约5秒钟。如果现在检查`appLogs`对象，您应该看到每个属性的变更检测运行总数减少，如下所示：
+- en: '![Figure 12.13 – The appLogs object after using runOutsideAngular() in WatchComponent'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.13 - 在WatchComponent中使用runOutsideAngular()后的appLogs对象'
+- en: '](image/Figure_12.13_B15150.jpg)'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.13_B15150.jpg)'
+- en: Figure 12.13 – The appLogs object after using runOutsideAngular() in WatchComponent
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.13 - 在WatchComponent中使用runOutsideAngular()后的appLogs对象
+- en: Yayy! Notice that the value for the `watch` key in the `appLogs` object has
+    decreased from about **250** to **4** now. This means that our animation now doesn't
+    contribute to change detection at all.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 耶耶！注意`appLogs`对象中`watch`键的值已经从大约**250**减少到**4**。这意味着我们的动画现在根本不会影响变更检测。
+- en: 'Remove the usage of `clearInterval()` from the animation for the `WatchComponent`
+    class. As a result, the animation should keep running. Modify the `watch.component.ts`
+    file, as follows:'
+  id: totrans-129
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从`WatchComponent`类的动画中删除对`clearInterval()`的使用。结果，动画应该继续运行。修改`watch.component.ts`文件如下：
+- en: '[PRE8]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Finally, remove the usage of `clearInterval()` from the `WatchBoxComponent`
+    class to run the clock. Update the `watch-box.component.ts` file, as follows:'
+  id: totrans-131
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，从`WatchBoxComponent`类中删除对`clearInterval()`的使用以运行时钟。更新`watch-box.component.ts`文件如下：
+- en: '[PRE9]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Refresh the app and check the value of the `appLogs` object after a few seconds,
+    multiple times. You should see something like this:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 刷新应用程序并在几秒钟后多次检查`appLogs`对象的值。你应该看到类似于这样的内容：
+- en: '![Figure 12.14 – The appLogs object after performance optimization with runOutsideAngular()'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.14 - 使用runOutsideAngular()进行性能优化后的appLogs对象'
+- en: '](image/Figure_12.14_B15150.jpg)'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.14_B15150.jpg)'
+- en: Figure 12.14 – The appLogs object after performance optimization with runOutsideAngular()
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.14 - 使用runOutsideAngular()进行性能优化后的appLogs对象
+- en: 'Looking at the preceding screenshot, you''d be like: "*Ahsan! What is this?
+    We still have a huge number for the change-detection runs for the watch key. How
+    is this performant exactly?*" Glad you asked. I will tell you the *why* in the
+    *How it works…* section.'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看着前面的截图，你可能会说：“阿赫桑！这是什么？我们对于观察键的变化检测运行次数仍然很大。这到底有多高效？”很高兴你问了。我会在“它是如何工作的…”部分告诉你*为什么*。
+- en: 'As a final step, stop the Angular server and run the following command to start
+    the server in production mode:'
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后一步，停止Angular服务器，并运行以下命令以在生产模式下启动服务器：
+- en: '[PRE10]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Navigate to [https://localhost:4200](https://localhost:4200) again. Wait for
+    a few seconds and then check the `appLogs` object in the **Console** tab multiple
+    times. You should see the object, as follows:'
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 再次转到[https://localhost:4200](https://localhost:4200)。等待几秒钟，然后多次检查**控制台**选项卡中的`appLogs`对象。你应该看到如下对象：
+- en: '![Figure 12.15 – The appLogs object using the production build'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.15 - 使用生产构建的appLogs对象'
+- en: '](image/Figure_12.15_B15150.jpg)'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.15_B15150.jpg)'
+- en: Figure 12.15 – The appLogs object using the production build
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.15 - 使用生产构建的appLogs对象
+- en: Boom! If you look at the preceding screenshot, you should see that the change-detection
+    run count for the `watch` key is always just one cycle more than the `milliseconds`
+    key. This means that the `WatchComponent` class is almost only re-rendered whenever
+    we have the value of the `@Input() milliseconds` binding updated.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 砰！如果你看前面的截图，你会发现`watch`键的变化检测运行次数总是比`milliseconds`键多一个周期。这意味着`WatchComponent`类几乎只在我们更新`@Input()
+    milliseconds`绑定的值时重新渲染。
+- en: Now that you've finished the recipe, see the next section to understand how
+    it all works.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你已经完成了这个示例，看看下一节来了解它是如何工作的。
+- en: How it works…
+  id: totrans-146
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作…
+- en: In this recipe, we begin by looking at the `appLogs` object, which contains
+    some key-value pairs. The value for each key-value pair represents the number
+    of times Angular ran change detection for a particular component. The `hours`,
+    `milliseconds`, `minutes`, and `seconds` keys represent the `WatchTimeComponent`
+    instance for each of the values shown on the clock. The `watch` key represents
+    the `WatchComponent` instance.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们首先查看了`appLogs`对象，其中包含一些键值对。每个键值对的值表示Angular为特定组件运行变化检测的次数。`hours`、`milliseconds`、`minutes`和`seconds`键分别表示时钟上显示的每个值的`WatchTimeComponent`实例。`watch`键表示`WatchComponent`实例。
+- en: 'At the beginning of the recipe, we see that the value for the `watch` key is
+    more than twice the value of the `milliseconds` key. Why do we care about the
+    `milliseconds` key at all? Because the `@Input()` attribute binding `milliseconds`
+    changes most frequently in our application—that is, it changes every 1 **millisecond**
+    (**ms**). The second most frequently changed values are the `xCoordinate` and
+    `yCoordinates` properties within the `WatchComponent` class, which change every
+    30 ms. The `xCoordinate` and `yCoordinate` values aren''t bound directly to the
+    template (the **HyperText Markup Language** (**HTML**)) because they change the
+    **Cascading Style Sheets** (**CSS**) variables of the `stopWatch` view child.
+    This happens inside the `animate()` method, as follows:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在配方的开头，我们看到`watch`键的值比`milliseconds`键的值大两倍以上。我们为什么要关心`milliseconds`键呢？因为在我们的应用程序中，`@Input()`属性绑定`milliseconds`是最频繁变化的——也就是说，它每1毫秒（ms）就会变化一次。第二频繁变化的值是`WatchComponent`类中的`xCoordinate`和`yCoordinates`属性，它们每30毫秒变化一次。`xCoordinate`和`yCoordinate`的值并没有直接绑定到模板（超文本标记语言（HTML））上，因为它们会改变`stopWatch`视图子组件的层叠样式表（CSS）变量。这是在`animate()`方法内部发生的：
+- en: '[PRE11]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: Thus, changing these values shouldn't actually trigger change detection at all.
+    We begin by limiting the clock window, using the `clearInterval()` method in the
+    `WatchBoxComponent` class so that the clock stops within 4 seconds and we can
+    evaluate the numbers. In *Figure 12.11*, we see that even after the clock stops,
+    the change-detection mechanism keeps triggering for the `WatchComponent` class.
+    This increases the count for the `watch` key in the `appLogs` object as time passes.
+    We then stop the animation by using `clearInterval()` in the `WatchComponent`
+    class. This stops the animation after 4 seconds as well. In *Figure 12.12*, we
+    see that the count for the `watch` key stops increasing after the animation stops.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，改变这些值实际上不应该触发变化检测。我们首先通过在`WatchBoxComponent`类中使用`clearInterval()`方法来限制时钟窗口，以便时钟在4秒内停止，我们可以评估数字。在*图12.11*中，我们看到即使时钟停止后，变化检测机制仍然会为`WatchComponent`类触发。随着时间的推移，这会增加`appLogs`对象中`watch`键的计数。然后我们在`WatchComponent`类中使用`clearInterval()`来停止动画。这也在4秒后停止动画。在*图12.12*中，我们看到`watch`键的计数在动画停止后停止增加。
+- en: We then try to see the count of change detection only based on the animation.
+    In *Step 6*, we stop the clock. Therefore, we only get a count based on the animation
+    in the `appLogs` object for the `watch` key, which is a value between **250**
+    and **260**.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们尝试只基于动画来查看变化检测的计数。在*步骤6*中，我们停止了时钟。因此，我们只会得到`appLogs`对象中`watch`键的基于动画的计数，这个值在250和260之间。
+- en: We then introduce the magic `runOutsideAngular()` method into our code. This
+    method is part of the `NgZone` service. The `NgZone` service is packaged with
+    the `@angular/core` package. The `runOutsideAngular()` method accepts a method
+    as a parameter. This method is executed outside the Angular zone. This means that
+    the `setTimeout()` and `setInterval()` methods used inside the `runOutsideAngular()`
+    method do not trigger the Angular change-detection cycle. You can see in *Figure
+    12.13* that the count drops to **4** after using the `runOutsideAngular()` method.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们在代码中引入了神奇的`runOutsideAngular()`方法。这个方法是`NgZone`服务的一部分。`NgZone`服务打包在`@angular/core`包中。`runOutsideAngular()`方法接受一个方法作为参数。这个方法在Angular区域之外执行。这意味着在`runOutsideAngular()`方法内部使用的`setTimeout()`和`setInterval()`方法不会触发Angular变化检测周期。在*图12.13*中，您可以看到使用`runOutsideAngular()`方法后，计数下降到4。
+- en: We then remove the `clearInterval()` usage from both the `WatchBoxComponent`
+    and the `WatchComponent` classes—that is, to run the clock and the animation again,
+    as we did in the beginning. In *Figure 12.14*, we see that the count for the `watch`
+    key is almost twice the value of the `milliseconds` key. Now, why is that double
+    exactly? This is because in development mode, Angular runs the change-detection
+    mechanism twice. Therefore, in *Step 9* and *Step 10*, we run the application
+    in production mode, and in *Figure 12.15*, we see that the value for the `watch`
+    key is just one greater than the value for the `milliseconds` key, which means
+    that the animation does not trigger any change detection for our application any
+    more. Brilliant, isn't it? If you found this recipe useful, do let me know on
+    my socials.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们从`WatchBoxComponent`和`WatchComponent`类中删除了`clearInterval()`的使用-也就是说，像我们在开始时那样再次运行时钟和动画。在*图12.14*中，我们看到`watch`键的计数几乎是`milliseconds`键的两倍。现在，为什么会是两倍呢？这是因为在开发模式下，Angular运行变更检测机制两次。因此，在*步骤9*和*步骤10*中，我们以生产模式运行应用程序，在*图12.15*中，我们看到`watch`键的值仅比`milliseconds`键的值大1，这意味着动画不再触发我们应用程序的任何变更检测。很棒，不是吗？如果您发现这个示例有用，请在我的社交媒体上告诉我。
+- en: Now that you understand how it works, see the next section for further reading.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您已经了解了它的工作原理，请参阅下一节以获取更多信息。
+- en: See also
+  id: totrans-155
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: '`NgZone` official documentation ([https://angular.io/api/core/NgZone](https://angular.io/api/core/NgZone))'
+  id: totrans-156
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`NgZone`官方文档([https://angular.io/api/core/NgZone](https://angular.io/api/core/NgZone))'
+- en: Angular `ChangeDetectorRef` official documentation ([https://angular.io/api/core/ChangeDetectorRef](https://angular.io/api/core/ChangeDetectorRef))
+  id: totrans-157
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular `ChangeDetectorRef`官方文档([https://angular.io/api/core/ChangeDetectorRef](https://angular.io/api/core/ChangeDetectorRef))
+- en: Using trackBy for lists with *ngFor
+  id: totrans-158
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用*ngFor为列表添加trackBy
+- en: Lists are an essential part of most of the apps we build today. If you're building
+    an Angular app, there's a great chance you will use the `*ngFor` directive at
+    some point. We know that `*ngFor` allows us to loop over arrays or objects generating
+    HTML for each item. However, for large lists, using it may cause performance issues,
+    especially when the source for `*ngFor` is changed completely. In this recipe,
+    we'll learn how we can improve the performance of lists using the `*ngFor` directive
+    with the `trackBy` function. Let's get started.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 列表是我们今天构建的大多数应用程序的重要部分。如果您正在构建一个Angular应用程序，您很有可能会在某个时候使用`*ngFor`指令。我们知道`*ngFor`允许我们循环遍历数组或对象，为每个项目生成HTML。然而，对于大型列表，使用它可能会导致性能问题，特别是当`*ngFor`的源完全改变时。在这个示例中，我们将学习如何使用`*ngFor`指令和`trackBy`函数来提高列表的性能。让我们开始吧。
+- en: Getting ready
+  id: totrans-160
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The project for this recipe resides in `Chapter12/start_here/using-ngfor-trackb:`
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例的项目位于`Chapter12/start_here/using-ngfor-trackb:`中
+- en: Open the project in VS Code.
+  id: totrans-162
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`以安装项目的依赖项。
+- en: 'Run the `ng serve -o` command to start the Angular app and serve it on the
+    browser. You should see the app, as follows:'
+  id: totrans-164
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng serve -o`命令启动Angular应用程序并在浏览器上提供服务。您应该看到应用程序如下：
+- en: '![Figure 12.16 – App using-ngfor-trackby running on http://localhost:4200'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.16-应用程序使用-ngfor-trackby在http://localhost:4200上运行'
+- en: '](image/Figure_12.16_B15150.jpg)'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.16_B15150.jpg)'
+- en: Figure 12.16 – App using-ngfor-trackby running on http://localhost:4200
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.16-应用程序使用-ngfor-trackby在http://localhost:4200上运行
+- en: Now that we have the app running, let's see the steps of the recipe in the next
+    section.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序正在运行，让我们在下一节中看看这个示例的步骤。
+- en: How to do it…
+  id: totrans-169
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: We have an app that has a list of 1,000 users displayed on the view. Since we're
+    not using a virtual scroll and a standard `*ngFor` list, we do face some performance
+    issues at the moment. Notice that when you refresh the app, even after the loader
+    is hidden, you see a blank white box for about 2-3 seconds before the list appears.
+    Let's start the recipe to reproduce the performance issues and to fix them.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有一个应用程序，在视图上显示了1,000个用户的列表。由于我们没有使用虚拟滚动和标准的`*ngFor`列表，目前我们面临一些性能问题。请注意，当您刷新应用程序时，即使加载程序隐藏了，您会在列表出现之前看到一个空白的白色框大约2-3秒钟。让我们开始重现性能问题并修复它们的步骤。
+- en: First of all, open the Chrome DevTools and look at the **Console** tab. You
+    should see a `ListItemComponent initiated` message logged 1,000 times. This message
+    will be logged any time a list-item component is created/initiated.
+  id: totrans-171
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，打开Chrome DevTools并查看**控制台**选项卡。您应该看到“ListItemComponent initiated”消息被记录了1,000次。每当创建/初始化列表项组件时，都会记录此消息。
+- en: Now, delete the first item by using the cross button on it. You should see the
+    same message logged again about 999 times now, as shown in the following screenshot.
+    This means we recreate the list-item component for the remaining 999 items:![Figure
+    12.17 – Logs shown again after deleting an item
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，通过使用交叉按钮删除第一项。您现在应该再次看到大约999次相同的消息被记录，如下截图所示。这意味着我们为剩下的999个项目重新创建了列表项组件：![图12.17–删除项目后再次显示日志
+- en: '](image/Figure_12.17_B15150.jpg)'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.17_B15150.jpg)'
+- en: Figure 12.17 – Logs shown again after deleting an item
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.17–删除项目后再次显示日志
+- en: Now, refresh the app and tap on the first list item. You should see the `ListItemComponent
+    initiated` logs again, as shown in the following screenshot. This means we recreate
+    all the list items on an item update. You will notice that the update to the first
+    item's name in the **user interface** (**UI**) is reflected in about 2-3 seconds:![Figure
+    12.18 – Logs shown again after updating an item
+  id: totrans-175
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，刷新应用程序并点击第一个列表项。您应该再次看到“ListItemComponent initiated”日志，如下截图所示。这意味着我们在项目更新时重新创建所有列表项。您会注意到在**用户界面**（**UI**）中对第一项名称的更新在大约2-3秒内反映出来：![图12.18–更新项目后再次显示日志
+- en: '](image/Figure_12.18_B15150.jpg)'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.18_B15150.jpg)'
+- en: Figure 12.18 – Logs shown again after updating an item
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.18–更新项目后再次显示日志
+- en: 'Now, let''s fix the performance issue by using the `trackBy` function. Open
+    the `the-amazing-list.component.ts` file and update it, as follows:'
+  id: totrans-178
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们通过使用`trackBy`函数来解决性能问题。打开`the-amazing-list.component.ts`文件并进行更新，如下所示：
+- en: '[PRE12]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now, update the `the-amazing-list.component.html` file to use the `trackByFn()`
+    method we just created, as follows:'
+  id: totrans-180
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，更新`the-amazing-list.component.html`文件，使用我们刚刚创建的`trackByFn()`方法，如下所示：
+- en: '[PRE13]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Now, refresh the app, and click the first list item to update it. You will notice
+    that the item is updated immediately and we don't log the `ListItemComponent initiated`
+    message again anymore, as shown in the following screenshot:![Figure 12.19 – No
+    further logs after updating an item using the trackBy function
+  id: totrans-182
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，刷新应用程序，并点击第一个列表项进行更新。您会注意到项目立即更新，我们不再记录`ListItemComponent initiated`消息，如下截图所示：![图12.19–使用trackBy函数更新项目后没有更多日志
+- en: '](image/Figure_12.19_B15150.jpg)'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.19_B15150.jpg)'
+- en: Figure 12.19 – No further logs after updating an item using the trackBy function
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.19–使用trackBy函数更新项目后没有更多日志
+- en: Delete an item as well now, and you will see we do not log the `ListItemComponent
+    initiated` message again in this case, as well.
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在也删除一个项目，您会看到在这种情况下我们不再记录`ListItemComponent initiated`消息。
+- en: Great!! You now know how to use the `trackBy` function with the `*ngFor` directive
+    to optimize the performance of lists in Angular. To understand all the magic behind
+    the recipe, see the next section.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！您现在知道如何使用`*ngFor`指令的`trackBy`函数来优化Angular中列表的性能。要了解该配方背后的所有魔力，请参阅下一节。
+- en: How it works…
+  id: totrans-187
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的…
+- en: 'The `*ngFor` directive by default assumes that the object itself is its unique
+    identity, which means that if you just change a property in an object used in
+    the `*ngFor` directive, it won''t re-render the template for that object. However,
+    if you provide a new object in its place (different reference in memory), the
+    content for the particular item will re-render. This is what we actually do in
+    this recipe to reproduce the performance-issue content. In the `data.service.ts`
+    file, we have the following code for the `updateUser()` method:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`*ngFor`指令默认假定对象本身是其唯一标识，这意味着如果您只更改了`*ngFor`指令中使用的对象的属性，则不会重新呈现该对象的模板。但是，如果您提供一个新对象（内存中的不同引用），特定项目的内容将重新呈现。这实际上是我们在这个配方中为了重现性能问题内容所做的。在`data.service.ts`文件中，我们有`updateUser()`方法的以下代码：'
+- en: '[PRE14]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Notice that we use the object spread operator ( `{ … }` ) to return a new object
+    for each item in the array. This tells the `*ngFor` directive to re-render the
+    UI for each item in the `listItems` array in the `TheAmazingListComponent` class.
+    Suppose you send a query to the server to find or filter users. The server could
+    return a response that has 100 users. Out of those 100, about 90 were already
+    rendered on the view, and only 10 are different. Angular, however, would re-render
+    the UI for all the list items because of the following potential reasons (but
+    not limited to these):'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们使用对象扩展运算符（`{ … }`）为数组中的每个项目返回一个新对象。这告诉`*ngFor`指令在`TheAmazingListComponent`类的`listItems`数组中的每个项目上重新呈现UI。假设您向服务器发送查询以查找或过滤用户。服务器可能返回一个包含100个用户的响应。在这100个用户中，大约有90个已经在视图上呈现，只有10个不同。然而，由于以下潜在原因（但不限于此），Angular将重新呈现所有列表项的UI：
+- en: The sorting/placement of the users could have changed.
+  id: totrans-191
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户的排序/放置可能已经改变。
+- en: The length of the users could have changed.
+  id: totrans-192
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户的长度可能已经改变。
+- en: Now, we want to avoid using the object reference as the unique identifier for
+    each list item. For our use case, we know that each user's email is unique, therefore
+    we use the `trackBy` function to tell Angular to use the user's email as the unique
+    identifier. Now, even if we return a new object for each user after a user update
+    from the `updateUser()` method (as previously shown), Angular doesn't re-render
+    all the list items. This is because the new objects (users) have the same email
+    and Angular uses it to track them. Pretty cool, right?
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们希望避免使用对象引用作为每个列表项的唯一标识符。对于我们的用例，我们知道每个用户的电子邮件是唯一的，因此我们使用`trackBy`函数告诉Angular使用用户的电子邮件作为唯一标识符。现在，即使我们在`updateUser()`方法中为每个用户返回一个新对象（如前所示），Angular也不会重新呈现所有列表项。这是因为新对象（用户）具有相同的电子邮件，Angular使用它来跟踪它们。很酷，对吧？
+- en: Now that you've learned how the recipe works, see the next section to view a
+    link for further reading.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您已经了解了该配方的工作原理，请查看下一节以查看进一步阅读的链接。
+- en: See also
+  id: totrans-195
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: '`NgForOf` official documentation ([https://angular.io/api/common/NgForOf](https://angular.io/api/common/NgForOf))'
+  id: totrans-196
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`NgForOf`官方文档（[https://angular.io/api/common/NgForOf](https://angular.io/api/common/NgForOf)）'
+- en: Moving heavy computation to pure pipes
+  id: totrans-197
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将重计算移动到纯管道
+- en: In Angular, we have a particular way of writing components. Since Angular is
+    heavily opinionated, we already have a lot of guidelines from the community and
+    the Angular team on what to consider when writing components—for example, making
+    HTTP calls directly from a component is considered a not-so-good practice. Similarly,
+    if we have heavy computation in a component, this is also not considered a good
+    practice. And when the view depends upon a transformed version of the data using
+    a computation constantly, it makes sense to use Angular pipes. In this recipe,
+    you'll learn how to use Angular pure pipes to avoid heavy computation within components.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Angular中，我们有一种特殊的编写组件的方式。由于Angular的观点很强烈，我们已经从社区和Angular团队那里得到了很多关于编写组件时要考虑的指南，例如，直接从组件中进行HTTP调用被认为是一个不太好的做法。同样，如果组件中有大量计算，这也被认为是一个不好的做法。当视图依赖于使用计算不断转换数据的转换版本时，使用Angular管道是有意义的。在这个示例中，您将学习如何使用Angular纯管道来避免组件内的大量计算。
+- en: Getting ready
+  id: totrans-199
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project we are going to work with resides in `Chapter12/start_here/using-pure-pipes`,
+    inside the cloned repositor:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要处理的项目位于`Chapter12/start_here/using-pure-pipes`，在克隆的存储库中：
+- en: Open the project in VS Code.
+  id: totrans-201
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-202
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: 'Run the `ng serve -o` command to start the Angular app and serve it on the
+    browser. You should see the app, as follows:'
+  id: totrans-203
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng serve -o`命令启动Angular应用程序并在浏览器上提供服务。您应该看到应用程序如下：
+- en: '![Figure 12.20 – using-pure-pipes app running at http://localhost:4200'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.20 – 在http://localhost:4200上运行using-pure-pipes应用程序'
+- en: '](image/Figure_12.20_B15150.jpg)'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.20_B15150.jpg)'
+- en: Figure 12.20 – using-pure-pipes app running at http://localhost:4200
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.20 – 在http://localhost:4200上运行using-pure-pipes应用程序
+- en: Now that we have the project served on the browser, let's see the steps of the
+    recipe in the next section.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们在浏览器上提供了项目，让我们在下一节中看看这个示例的步骤。
+- en: How to do it…
+  id: totrans-208
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'The app we''re working with has some performance issues, particularly with
+    the `UserCardComponent` class because it uses the `idUsingFactorial()` method
+    to generate a unique ID to show on the card. You''ll notice that if you try typing
+    `''irin''` in the search box, the app hangs for a while. We''re not able to see
+    the letters being typed instantly in the search box, and it takes a while before
+    the results show. We will fix the issues by moving the computation in the `idUsingFactorial()`
+    method to an Angular (pure) pipe. Let''s get starte:'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们正在处理的应用程序存在一些性能问题，特别是`UserCardComponent`类，因为它使用`idUsingFactorial()`方法来生成要显示在卡片上的唯一ID。如果您尝试在搜索框中输入`'irin'`，您会注意到应用程序会暂停一段时间。我们无法立即看到在搜索框中输入的字母，并且在结果显示之前需要一段时间。我们将通过将`idUsingFactorial()`方法中的计算移动到Angular（纯）管道中来解决这些问题。让我们开始：
+- en: 'Let''s create an Angular pipe. We''ll move the computation for generating a
+    unique ID for this pipe to later code. In the project root, run the following
+    command in the terminal:'
+  id: totrans-210
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们创建一个Angular管道。我们将把为这个管道生成唯一ID的计算移到后面的代码中。在项目根目录中，在终端中运行以下命令：
+- en: '[PRE15]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Now, copy the code for the `createUniqueId()` method from the `user-card.component.ts`
+    file and paste it into the `unique-id.pipe.ts` file. We''ll also modify the code
+    a bit, so it should now look like this:'
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，从`user-card.component.ts`文件中复制`createUniqueId()`方法的代码，并粘贴到`unique-id.pipe.ts`文件中。我们还将稍微修改代码，所以现在应该是这样的：
+- en: '[PRE16]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Now, also copy the `idUsingFactorial()` method from the `user-card.component.ts`
+    file to the `unique-id.pipe.ts` file and update the file, as follows:'
+  id: totrans-214
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，还要从`user-card.component.ts`文件中复制`idUsingFactorial()`方法到`unique-id.pipe.ts`文件，并更新文件，如下所示：
+- en: '[PRE17]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Now, update the `user-card.component.html` file to use the `uniqueId` pipe
+    instead of the component''s method. The code should look like this:'
+  id: totrans-216
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，更新`user-card.component.html`文件，使用`uniqueId`管道而不是组件的方法。代码应该如下所示：
+- en: '[PRE18]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Now, refresh the app and type the name `Elfie Siegert` in the search box. Notice
+    that the UI is not blocked. We're able to see the typed letters immediately as
+    we type them, and the search results are faster as well.
+  id: totrans-218
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，刷新应用程序并在搜索框中输入名称`Elfie Siegert`。注意到UI没有被阻塞。我们能够立即看到我们输入的字母，搜索结果也更快。
+- en: Boom! Now that you know how to optimize performance by moving heavy computation
+    to pure Angular pipes, see the next section to understand how this works.
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 砰！现在你知道了如何通过将繁重的计算移动到纯Angular管道来优化性能，接下来看看下一节，了解这是如何工作的。
+- en: How it works…
+  id: totrans-220
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的…
+- en: As we know, Angular by default runs change detection on each browser event triggered
+    in the app, and since we're using an `idUsingFactorial()` method in the component
+    template (UI), this function runs each time Angular runs the change-detection
+    mechanism, causing more computation and performance issues. This would also hold
+    true if we used a getter instead of a method. Here, we use a method because each
+    unique ID is dependent on the index and we need to pass the index in the method
+    when calling it.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所知，Angular默认在应用程序中触发的每个浏览器事件上运行变更检测，而且由于我们在组件模板（UI）中使用了`idUsingFactorial()`方法，这个函数会在每次Angular运行变更检测机制时运行，导致更多的计算和性能问题。如果我们使用getter而不是方法，情况也是如此。在这里，我们使用方法是因为每个唯一的ID都依赖于索引，当调用它时，我们需要在方法中传递索引。
+- en: We can take a step back from the initial implementation and think what the method
+    actually does. It takes an input, does some computation, and returns a value based
+    on the input—a classic example of data transformation, and also an example of
+    where you would use a pure function. Luckily, Angular pure pipes are pure functions,
+    and they do trigger change detection unless the input changes.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以从最初的实现中退一步，思考这个方法实际上是做什么。它接受一个输入，进行一些计算，并根据输入返回一个值——这是数据转换的经典例子，也是你会使用纯函数的例子。幸运的是，Angular纯管道是纯函数，除非输入发生变化，它们不会触发变更检测。
+- en: In the recipe, we move the computation to a newly created Angular pipe. The
+    pipe's `transform()` method receives the value to which we're applying the pipe,
+    which is the index of each user card in the `users` array. The pipe then uses
+    the `idUsingFactorial()` method and, ultimately, the `createUniqueId()` method
+    to calculate a random unique ID. When we start typing in the search box, the values
+    for the index do not change. This results in no change detection being triggered
+    until we get back a new set of users as output. Therefore, there is no unnecessary
+    computation run as we type the input into the search box, thus optimizing performance
+    and unblocking the UI thread.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，我们将计算移动到一个新创建的Angular管道中。管道的`transform()`方法接收我们应用管道的值，即`users`数组中每个用户卡的索引。然后管道使用`idUsingFactorial()`方法，最终使用`createUniqueId()`方法来计算一个随机的唯一ID。当我们开始在搜索框中输入时，索引的值不会改变。这导致在我们输入到搜索框中时不会触发变更检测，从而优化性能并解除UI线程的阻塞。
+- en: See also
+  id: totrans-224
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Angular pure and impure pipes official documentation ([https://angular.io/guide/pipes#pure-and-impure-pipes](https://angular.io/guide/pipes#pure-and-impure-pipes))
+  id: totrans-225
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular纯管道和不纯管道官方文档（[https://angular.io/guide/pipes#pure-and-impure-pipes](https://angular.io/guide/pipes#pure-and-impure-pipes)）
+- en: Using web workers for heavy computation
+  id: totrans-226
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Web Workers进行繁重的计算
+- en: If your Angular application does a lot of computation during an action, there's
+    a great chance that it will block the UI thread. This will cause a lag in rendering
+    the UI because it blocks the main JavaScript thread. Web workers allow us to run
+    heavy computation in the background thread, thus freeing the UI thread as it is
+    not blocked. In this recipe, we're going to use an application that does a heavy
+    computation in the `UserService` class. It creates a unique ID for each user card
+    and saves it into the `localStorage`. However, it loops a couple of thousand times
+    before doing so, which causes our application to hang for a while. In this recipe,
+    we'll move the heavy computation from the components to a web worker and will
+    also add a fallback in case web workers aren't available.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您的Angular应用程序在执行操作期间进行了大量计算，那么它很有可能会阻塞UI线程。这将导致UI渲染出现延迟，因为它阻塞了主JavaScript线程。Web
+    workers允许我们在后台线程中运行大量计算，从而释放UI线程，因为它不会被阻塞。在本教程中，我们将使用一个应用程序，在`UserService`类中进行大量计算。它为每个用户卡创建一个唯一ID，并将其保存到`localStorage`中。但是，在这样做之前，它会循环几千次，这会导致我们的应用程序暂时挂起。在本教程中，我们将把大量计算从组件移动到web
+    worker，并在web worker不可用的情况下添加一个回退。
+- en: Getting ready
+  id: totrans-228
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'The project we are going to work with resides in `Chapter12/start_here/using-web-workers`,
+    inside the cloned repositor:'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要处理的项目位于克隆存储库中的`Chapter12/start_here/using-web-workers`中：
+- en: Open the project in VS Code.
+  id: totrans-230
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-231
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: 'Run the `ng serve -o` command to start the Angular app and serve it on the
+    browser. You should see the app, as follows:'
+  id: totrans-232
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng serve -o`命令启动Angular应用程序并在浏览器上提供服务。您应该看到应用程序如下：
+- en: '![Figure 12.21 – App using-web-workers running at http://localhost:4200'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.21 - 应用程序 using-web-workers 在 http://localhost:4200 上运行'
+- en: '](image/Figure_12.21_B15150.jpg)'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.21_B15150.jpg)'
+- en: Figure 12.21 – App using-web-workers running at http://localhost:4200
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.21 - 应用程序 using-web-workers 在 http://localhost:4200 上运行
+- en: Now that we have the app running, let's see the steps of the recipe in the next
+    section.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用程序正在运行，让我们在下一节中看看本教程的步骤。
+- en: How to do it…
+  id: totrans-237
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 操作步骤如下…
+- en: 'Once you open the app, you''ll notice that it takes some time before the user
+    cards are rendered. This shows that the UI thread is blocked until we have the
+    computation finished. The culprit is the `saveUserUniqueIdsToStorage()` method
+    in the `UserService` class. This generates a unique ID a couple of thousands of
+    times before saving it to the `localStorage`. Let''s start the recipe, to improve
+    the performance of the app. We''ll start by implementing the web worke:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您打开应用程序，您会注意到在用户卡片被渲染之前需要一些时间。这表明UI线程被阻塞，直到计算完成。罪魁祸首是`UserService`类中的`saveUserUniqueIdsToStorage()`方法。这在保存到`localStorage`之前会生成几千个唯一ID。让我们开始本教程，以改善应用程序的性能。我们将首先实现web
+    worker：
+- en: 'We''ll first create a web worker. Run the following command in the project
+    root:'
+  id: totrans-239
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将首先创建一个web worker。在项目根目录中运行以下命令：
+- en: '[PRE19]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Now, copy the `for` loop from the `saveUserUniqueIdsToStorage()` method in
+    the `UserService` class to the newly created `id-generator.worker.ts` file. The
+    code should look like this:'
+  id: totrans-241
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，将`UserService`类中的`saveUserUniqueIdsToStorage()`方法中的`for`循环复制到新创建的`id-generator.worker.ts`文件中。代码应该如下所示：
+- en: '[PRE20]'
+  id: totrans-242
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Now that we have the worker file created, let''s create a single instance of
+    a worker to use it in the next steps. Create a new file in the `constants` folder.
+    Name it `get-unique-id-worker.ts` and add the following code inside the file:'
+  id: totrans-243
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们已经创建了worker文件，让我们创建一个worker的单个实例，以便在接下来的步骤中使用它。在`constants`文件夹中创建一个新文件。命名为`get-unique-id-worker.ts`，并在文件中添加以下代码：
+- en: '[PRE21]'
+  id: totrans-244
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Now, we''ll use the worker in the `user.service.ts` file. Update it, as follows:'
+  id: totrans-245
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们将在`user.service.ts`文件中使用worker。更新它如下：
+- en: '[PRE22]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'We''ll update the file again to modify the `saveUserUniqueIdsToStorage()` method.
+    We''ll use the worker instead of using the existing code, if we have web workers
+    available in the environment. Update the `user.service.ts` file, as follows:'
+  id: totrans-247
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将再次更新文件以修改`saveUserUniqueIdsToStorage()`方法。如果环境中有Web工作者可用，我们将使用工作者而不是使用现有的代码。按照以下方式更新`user.service.ts`文件：
+- en: '[PRE23]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Refresh the app and notice how long it takes for the user cards to render.
+    They should appear much faster than before. Also, you should be able to see the
+    following logs reflecting the communication from the app to the web worker, and
+    vice versa:'
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 刷新应用程序，注意用户卡片渲染需要多长时间。它们应该比以前出现得快得多。此外，你应该能够看到以下日志，反映了应用程序与Web工作者之间的通信：
+- en: '![Figure 12.22 – Logs showing messages to and from the app to web workers'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.22 - 显示应用程序与Web工作者之间消息的日志'
+- en: '](image/Figure_12.22_B15150.jpg)'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.22_B15150.jpg)'
+- en: Figure 12.22 – Logs showing messages to and from the app to web workers
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.22 - 显示应用程序与Web工作者之间消息的日志
+- en: Woohoo!!! The power of web workers! And now you know how to use web workers
+    in an Angular app to move heavy computation to them. Since you've finished the
+    recipe, see the next section on how this works.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哇呜！Web工作者的力量！现在你知道如何在Angular应用程序中使用Web工作者将繁重的计算移动到它们那里了。既然你已经完成了这个教程，那就看看下一节它是如何工作的吧。
+- en: How it works…
+  id: totrans-254
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'As we discussed in the recipe''s description, web workers allow us to run and
+    execute code in a separate thread from the main JavaScript (or UI thread). At
+    the beginning of the recipe, whenever we refresh the app or search for a user,
+    it blocks the UI thread. This is until a unique ID is generated for each card.
+    We begin the recipe by creating a web worker using the Angular **command-line
+    interface** (**CLI**). This creates an `id-generator.worker.ts` file, which contains
+    some boilerplate code to receive messages from the UI thread and to send a message
+    back to it as a response. The CLI command also updates the `angular.json` file
+    by adding a `webWorkerTsConfig` property. The value against the `webWorkerTsConfig`
+    property is the path to the `tsconfig.worker.json` file, and the CLI command also
+    creates this `tsconfig.worker.json` file. If you open the `tsconfig.worker.json`
+    file, you should see the following code:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在教程描述中讨论的那样，Web工作者允许我们在与主JavaScript（或UI线程）分开的线程中运行和执行代码。在教程开始时，每当我们刷新应用程序或搜索用户时，它都会阻塞UI线程。直到为每张卡生成一个唯一的ID为止。我们通过使用Angular的**命令行界面**（**CLI**）创建一个Web工作者来开始这个教程。这将创建一个`id-generator.worker.ts`文件，其中包含一些样板代码，用于接收来自UI线程的消息并作为响应发送消息回去。CLI命令还通过添加`webWorkerTsConfig`属性来更新`angular.json`文件。`webWorkerTsConfig`属性的值是`tsconfig.worker.json`文件的路径，CLI命令还创建了这个`tsconfig.worker.json`文件。如果你打开`tsconfig.worker.json`文件，你应该会看到以下代码：
+- en: '[PRE24]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: After creating a web worker file, we create another file named `uniqueIdWorker.ts`.
+    This file exports the `getUniqueIdWorker()` method as the default export. When
+    we call this method, it generates a new `Worker` instance if we don't have a worker
+    generated already. The method uses the `id-generator.worker.ts` file to generate
+    a worker. We also use the `addEventListener()` method inside the worker file to
+    listen to the messages sent from the UI thread (that is, the `UserService` class).
+    We receive the `index` of the user card and the `email` of the user as the data
+    in this message. We then use a `for` loop to generate a unique ID (`uniqueId`
+    variable), and once the loop ends, we use the `postMessage()` method to send the
+    `uniqueId` variable and the `email` back to the UI thread.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建完Web Worker文件后，我们创建另一个名为`uniqueIdWorker.ts`的文件。该文件将`getUniqueIdWorker()`方法作为默认导出。当我们调用此方法时，如果尚未生成Worker实例，它将生成一个新的`Worker`实例。该方法使用`id-generator.worker.ts`文件来生成Worker。我们还在Worker文件中使用`addEventListener()`方法来监听从UI线程（即`UserService`类）发送的消息。我们接收到的消息中包含用户卡的`index`和用户的`email`。然后我们使用`for`循环来生成一个唯一ID（`uniqueId`变量），循环结束后，我们使用`postMessage()`方法将`uniqueId`变量和`email`发送回UI线程。
+- en: Now, in the `UserService` class, we listen to messages from the worker. In the
+    `constructor()` method, we check if web workers are available in the environment
+    by checking the value from the `getUniqueIdWorker()` method, which should be a
+    non-null value. Then, we use the `worker.onmessage` property to assign it a method.
+    This is to listen to the messages from the worker. Since we already know that
+    we get the `uniqueId` variable and the `email` from the worker, we use the `email`
+    to get the appropriate user from the `usersCache` variable. Then, we store the
+    user data with the `uniqueId` variable to the `localStorage` against the user's
+    `email`.
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在`UserService`类中，我们监听来自Worker的消息。在`constructor()`方法中，我们通过检查`getUniqueIdWorker()`方法的值（应该是非空值）来检查环境中是否可用Web
+    Workers。然后，我们使用`worker.onmessage`属性来分配一个方法。这是为了监听来自Worker的消息。由于我们已经知道我们从Worker那里得到了`uniqueId`变量和`email`，我们使用`email`来从`usersCache`变量中获取相应的用户。然后，我们将用户数据与`uniqueId`变量存储到`localStorage`中，针对用户的`email`。
+- en: Finally, we update the `saveUserUniqueIdsToStorage()` method to use the worker
+    instance if it is available. Notice that we use the `worker.postMessage()` method
+    to pass the `index` and the `email` of the user. Note also that we are using the
+    previous code as a fallback for cases where we don't have web workers enabled.
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们更新`saveUserUniqueIdsToStorage()`方法以使用Worker实例（如果可用）。请注意，我们使用`worker.postMessage()`方法来传递用户的`index`和`email`。还要注意，我们在没有启用Web
+    Workers的情况下，使用先前的代码作为备用。
+- en: See also
+  id: totrans-260
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Angular official documentation on web workers ([https://angular.io/guide/web-worker](https://angular.io/guide/web-worker))
+  id: totrans-261
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular官方文档关于Web Workers的内容（[https://angular.io/guide/web-worker](https://angular.io/guide/web-worker)）
+- en: MDN web worker documentation ([https://developer.mozilla.org/en-US/docs/Web/API/Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker))
+  id: totrans-262
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: MDN关于Web Worker的文档（[https://developer.mozilla.org/en-US/docs/Web/API/Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker)）
+- en: Using performance budgets for auditing
+  id: totrans-263
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用性能预算进行审核
+- en: In today's world, most of the population has a pretty good internet connection
+    to use everyday applications, be it a mobile app or a web app, and it is fascinating
+    how much data we ship to our end users as a business. The amount of JavaScript
+    shipped to users has an ever-increasing trend now, and if you're working on a
+    web app, you might want to use performance budgets to make sure the bundle size
+    doesn't exceed a certain limit. With Angular apps, setting the budget sizes is
+    a breeze. In this recipe, you're going to learn how to use the Angular CLI to
+    set up budgets for your Angular apps.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在当今世界，大多数人口都有相当好的互联网连接，可以使用日常应用程序，无论是移动应用程序还是Web应用程序，令人着迷的是我们作为企业向最终用户发送了多少数据。现在向用户发送的JavaScript数量呈不断增长的趋势，如果你正在开发Web应用程序，你可能希望使用性能预算来确保捆绑包大小不超过一定限制。对于Angular应用程序，设置预算大小非常简单。在本教程中，您将学习如何使用Angular
+    CLI为您的Angular应用程序设置预算。
+- en: Getting ready
+  id: totrans-265
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The project for this recipe resides in `Chapter12/start_here/angular-performance-budget:`
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本教程的项目位于`Chapter12/start_here/angular-performance-budget`中：
+- en: Open the project in VS Code.
+  id: totrans-267
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-268
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`以安装项目的依赖项。
+- en: 'Run the `ng build --configuration production` command to build the Angular
+    app in production mode. Notice the output on the console. It should look like
+    this:'
+  id: totrans-269
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng build --configuration production`命令以在生产模式下构建Angular应用程序。注意控制台上的输出。它应该是这样的：
+- en: '![Figure 12.23 – Build output for production mode, without performance budgets'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.23 - 以生产模式构建输出，没有性能预算'
+- en: '](image/Figure_12.23_B15150.jpg)'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.23_B15150.jpg)'
+- en: Figure 12.23 – Build output for production mode, without performance budgets
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.23 - 以生产模式构建输出，没有性能预算
+- en: Notice that the bundle size for the `main.*.js` file is about 260 **kilobytes**
+    (**KB**) at the moment. Now that we have built the app, let's see the steps of
+    the recipe in the next section.
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`main.*.js`文件的捆绑包大小目前约为260千字节（KB）。现在我们已经构建了应用程序，让我们在下一节中看看教程的步骤。
+- en: How to do it…
+  id: totrans-274
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何操作…
+- en: 'We have an app that is really small in terms of bundle size at the moment.
+    However, this could grow into a huge app with upcoming business requirements.
+    For the sake of this recipe, we''ll increase the bundle size deliberately and
+    will then use performance budgets to stop the Angular CLI from building the app
+    for production if the bundle size exceeds the budget. Let''s begin the recip:'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，我们的应用程序在捆绑包大小方面非常小。然而，随着即将到来的业务需求，这可能会变成一个庞大的应用程序。为了本教程的目的，我们将故意增加捆绑包大小，然后使用性能预算来阻止Angular
+    CLI在捆绑包大小超过预算时构建应用程序。让我们开始教程：
+- en: 'Open the `app.component.ts` file and update it, as follows:'
+  id: totrans-276
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开`app.component.ts`文件并进行更新，如下所示：
+- en: '[PRE25]'
+  id: totrans-277
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Now, build the app again for production using the `ng build --configuration
+    production` command. You should see that the bundle size for the `main.*.js` file
+    is now 1.12 **megabytes** (**MB**). This is a huge increase in size compared to
+    the original 268.05 KB, as you can see in the following screenshot:![Figure 12.24
+    – The bundle size for main.*.js increased to 1.11 MB
+  id: totrans-278
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，使用`ng build --configuration production`命令再次为生产构建应用程序。您会看到`main.*.js`文件的捆绑包大小现在为1.12兆字节（MB）。与原始的268.05
+    KB相比，这是一个巨大的增加，如下截图所示：![图12.24 - main.*.js的捆绑包大小增加到1.11 MB
+- en: '](image/Figure_12.24_B15150.jpg)'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.24_B15150.jpg)'
+- en: Figure 12.24 – The bundle size for main.*.js increased to 1.11 MB
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.24 - main.*.js的捆绑包大小增加到1.11 MB
+- en: Let's suppose our business requires us to not ship apps with main bundle sizes
+    more than 1.0 MB. For this, we can configure our Angular app to throw an error
+    if the threshold is met.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们的业务要求我们不要将主捆绑包大小超过1.0 MB。为此，我们可以配置我们的Angular应用程序，如果达到阈值，就抛出错误。
+- en: 'Refresh the app, open the `angular.json file`, and update it. The property
+    that we''re targeting is `projects.angular-performance-budgets.architect.build.configurations.production.budgets`.
+    The file should look like this:'
+  id: totrans-282
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 刷新应用程序，打开`angular.json`文件并进行更新。我们要定位的属性是`projects.angular-performance-budgets.architect.build.configurations.production.budgets`。文件应该如下所示：
+- en: '[PRE26]'
+  id: totrans-283
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Now that we have the budgets in place, let's build the app once again using
+    the `ng build --configuration production` command. The build should fail and you
+    should see both a warning and an error on the console, as follows:![Figure 12.25
+    – Angular CLI throwing errors and warnings based on performance budgets
+  id: totrans-284
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们已经制定了预算，让我们再次使用`ng build --configuration production`命令构建应用程序。构建应该会失败，并且您应该在控制台上看到警告和错误，如下所示：![图12.25
+    – Angular CLI根据性能预算抛出错误和警告
+- en: '](image/Figure_12.25_B15150.jpg)'
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.25_B15150.jpg)'
+- en: Figure 12.25 – Angular CLI throwing errors and warnings based on performance
+    budgets
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.25 – Angular CLI根据性能预算抛出错误和警告
+- en: 'Let''s improve our application by not importing the entire libraries in the
+    `app.component.ts` file, and use the `date-fns` package instead of `moment.js`
+    to do the same thing. Run the following command to install the `date-fns` package:'
+  id: totrans-287
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过在`app.component.ts`文件中不导入整个库，并使用`date-fns`包代替`moment.js`来改进我们的应用程序。运行以下命令安装`date-fns`包：
+- en: '[PRE27]'
+  id: totrans-288
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Now, update the `app.component.ts` file, as follows:'
+  id: totrans-289
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，按照以下步骤更新`app.component.ts`文件：
+- en: '[PRE28]'
+  id: totrans-290
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Run the `ng build --configuration production` command again. You should see
+    a decreased bundle size, as follows:'
+  id: totrans-291
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 再次运行`ng build --configuration production`命令。您应该会看到捆绑包大小减小，如下所示：
+- en: '![Figure 12.26 – Reduced bundle size after using date-fns and optimized imports'
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.26 – 使用date-fns和优化导入后减小的捆绑包大小'
+- en: '](image/Figure_12.26_B15150.jpg)'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.26_B15150.jpg)'
+- en: Figure 12.26 – Reduced bundle size after using date-fns and optimized imports
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.26 – 使用date-fns和优化导入后减小的捆绑包大小
+- en: Boom!! You just learned how to use the Angular CLI to define performance budgets.
+    These budgets can be used to throw warnings and errors based on your configuration.
+    Note that the budgets can be modified based on changing business requirements.
+    However, as engineers, we have to be cautious about what we set as performance
+    budgets to not ship JavaScript over a certain limit to the end users.
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 砰！！你刚学会了如何使用Angular CLI来定义性能预算。这些预算可以根据您的配置来发出警告和错误。请注意，预算可以根据不断变化的业务需求进行修改。然而，作为工程师，我们必须谨慎地设置性能预算，以免将JavaScript超出一定限制发送给最终用户。
+- en: See also
+  id: totrans-296
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Performance budgets with the Angular CLI official documentation ([https://web.dev/performance-budgets-with-the-angular-cli/](https://web.dev/performance-budgets-with-the-angular-cli/))
+  id: totrans-297
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Angular CLI官方文档中的性能预算（[https://web.dev/performance-budgets-with-the-angular-cli/](https://web.dev/performance-budgets-with-the-angular-cli/)）
+- en: Analyzing bundles with webpack-bundle-analyzer
+  id: totrans-298
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用webpack-bundle-analyzer分析捆绑包
+- en: In the previous recipe, we looked at configuring budgets for our Angular app,
+    and this is useful because you get to know when the overall bundle size exceeds
+    a certain threshold, although you don't get to know how much each part of the
+    code is actually contributing to the final bundles. This is what we call *analyzing*
+    the bundles, and in this recipe, you will learn how to use `webpack-bundle-analyzer`
+    to audit the bundle sizes and the factors contributing to them.
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一个示例中，我们看到了为我们的Angular应用程序配置预算，这很有用，因为您可以知道整体捆绑包大小是否超过了某个阈值，尽管您不知道代码的每个部分实际上对最终捆绑包的贡献有多大。这就是我们所谓的*分析*捆绑包，在本示例中，您将学习如何使用`webpack-bundle-analyzer`来审计捆绑包大小和导致它们的因素。
+- en: Getting ready
+  id: totrans-300
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: 'The project we are going to work with resides in `Chapter12/start_here/using-webpack-bundle-analyzer`,
+    inside the cloned repositor:'
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要处理的项目位于克隆存储库中的`Chapter12/start_here/using-webpack-bundle-analyzer`中：
+- en: Open the project in VS Code.
+  id: totrans-302
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在VS Code中打开项目。
+- en: Open the terminal and run `npm install` to install the dependencies of the project.
+  id: totrans-303
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端并运行`npm install`来安装项目的依赖项。
+- en: Run the `ng serve -o` command to start the Angular app and serve it on the browser.
+    You should see the app, as follows:![Figure 12.27 – App using-webpack-bundle-analyzer
+    running at http://localhost:4200
+  id: totrans-304
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng serve -o`命令来启动Angular应用程序并在浏览器上提供服务。您应该看到应用程序如下所示：![图12.27 – 使用webpack-bundle-analyzer运行的应用程序位于http://localhost:4200
+- en: '](image/Figure_12.27_B15150.jpg)'
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.27_B15150.jpg)'
+- en: Figure 12.27 – App using-webpack-bundle-analyzer running at http://localhost:4200
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.27 – 使用webpack-bundle-analyzer运行的应用程序位于http://localhost:4200
+- en: 'Now, build the app using the `ng build --configuration production` command
+    to build the Angular app in production mode. You should see the following output:'
+  id: totrans-307
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，使用`ng build --configuration production`命令构建Angular应用程序的生产模式。您应该看到以下输出：
+- en: '![Figure 12.28 – The main bundle, having a size of 1.11 MB'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.28 – 主捆绑包，大小为1.11 MB'
+- en: '](image/Figure_12.28_B15150.jpg)'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.28_B15150.jpg)'
+- en: Figure 12.28 – The main bundle, having a size of 1.11 MB
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.28 – 主捆绑包，大小为1.11 MB
+- en: Now that we have built the app, let's see the steps of the recipe in the next
+    section.
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经构建了应用程序，让我们看看下一节中的步骤。
+- en: How to do it…
+  id: totrans-312
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'As you may have noticed, we have a main bundle of size 1.12 MB. This is because
+    we are using the `Three.js` library and the `moment.js` library in our `app.component.ts`
+    file, which imports those libraries, and they end up being in the main bundle.
+    Let''s start the recipe to analyze the factors for the bundle size visuall:'
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您可能已经注意到的，我们有一个大小为1.12 MB的主捆绑包。这是因为我们在`app.component.ts`文件中使用了`Three.js`库和`moment.js`库，它们被导入到主捆绑包中。让我们开始分析捆绑包大小的因素：
+- en: 'We''ll first install the `webpack-bundle-analyzer` package. Run the following
+    command in the project root:'
+  id: totrans-314
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们首先安装`webpack-bundle-analyzer`包。在项目根目录中运行以下命令：
+- en: '[PRE29]'
+  id: totrans-315
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Now, create a script in the `package.json` file. We''ll use this script in
+    the next steps to analyze our final bundles. Update the `package.json` file, as
+    follows:'
+  id: totrans-316
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，在`package.json`文件中创建一个脚本。我们将在接下来的步骤中使用这个脚本来分析我们的最终捆绑包。更新`package.json`文件如下：
+- en: '[PRE30]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Now, build the production bundle again, but with an argument to generate a
+    `stats.json` file as well. Run the following command from the project root:'
+  id: totrans-318
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，再次构建生产捆绑包，但使用参数生成一个`stats.json`文件。从项目根目录运行以下命令：
+- en: '[PRE31]'
+  id: totrans-319
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Now, run the `analyze-bundle` script to use the `webpack-bundle-analyzer` package.
+    Run the following command from the project root:'
+  id: totrans-320
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，运行`analyze-bundle`脚本来使用`webpack-bundle-analyzer`包。从项目根目录运行以下命令：
+- en: '[PRE32]'
+  id: totrans-321
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'This will spin up a server with the bundle analysis. You should see a new tab
+    opened in your default browser, and it should look like this:'
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将启动一个带有捆绑包分析的服务器。您应该看到默认浏览器中打开了一个新标签页，它应该是这样的：
+- en: '![Figure 12.29 – Bundle analysis using webpack-bundle-analyzer'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.29 – 使用webpack-bundle-analyzer进行捆绑包分析'
+- en: '](image/Figure_12.29_B15150.jpg)'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.29_B15150.jpg)'
+- en: Figure 12.29 – Bundle analysis using webpack-bundle-analyzer
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.29 – 使用webpack-bundle-analyzer进行捆绑包分析
+- en: 'Notice that the `lib` folder takes a huge portion of the bundle size—648.29
+    KB, to be exact, which you can check by just doing a mouseover on the `lib` box.
+    Let''s try to optimize the bundle size. Let''s install the `date-fns` package
+    so that we can use it instead of `moment.js`. Run the following command from your
+    project root:'
+  id: totrans-326
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 注意，`lib`文件夹占据了捆绑包大小的很大一部分——确切地说是648.29 KB，你可以通过在`lib`框上悬停鼠标来检查。让我们尝试优化捆绑包大小。让我们安装`date-fns`包，这样我们就可以使用它而不是`moment.js`。从项目根目录运行以下命令：
+- en: '[PRE33]'
+  id: totrans-327
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'Now, update the `app.component.ts` file to use the `date-fns` package''s `format()`
+    method instead of using the `moment().format()` method. We''ll also just import
+    the `Scene` class from the `Three.js` package instead of importing the whole library.
+    The code should look like this:'
+  id: totrans-328
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，更新`app.component.ts`文件，使用`date-fns`包的`format()`方法，而不是使用`moment().format()`方法。我们还将只从`Three.js`包中导入`Scene`类，而不是导入整个库。代码应该如下所示：
+- en: '[PRE34]'
+  id: totrans-329
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: Run the `ng build --configuration production --stats-json` command, and then
+    run `npm run analyze-bundle`.
+  id: totrans-330
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`ng build --configuration production --stats-json`命令，然后运行`npm run analyze-bundle`。
+- en: 'Once `webpack-bundle-analyzer` runs you should see the analysis, as shown in
+    the following screenshot. Notice that we don''t have the `moment.js` file or the
+    `lib` block anymore, and the overall bundle size has reduced from 1.15 MB to 831.44
+    KB:'
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦`webpack-bundle-analyzer`运行，您应该会看到分析结果，如下面的屏幕截图所示。请注意，我们不再有`moment.js`文件或`lib`块，整体捆绑大小已从1.15
+    MB减少到831.44 KB：
+- en: '![Figure 12.30 – Bundle analysis after using date-fns instead of moment.js'
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图12.30-在使用date-fns而不是moment.js之后进行捆绑分析'
+- en: '](image/Figure_12.30_B15150.jpg)'
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/Figure_12.30_B15150.jpg)'
+- en: Figure 12.30 – Bundle analysis after using date-fns instead of moment.js
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图12.30-在使用date-fns而不是moment.js之后进行捆绑分析
+- en: Woohoo!!! You now know how to use the `webpack-bundle-analyzer` package to audit
+    bundle sizes in Angular applications. This is a great way of improving overall
+    performance, because you can identify the chunks causing the increase in the bundle
+    size and then optimize the bundles.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哇呜！！！您现在知道如何使用`webpack-bundle-analyzer`包来审计Angular应用程序中的捆绑大小。这是改善整体性能的好方法，因为您可以识别导致捆绑大小增加的块，然后优化捆绑。
+- en: See also
+  id: totrans-336
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Getting started with webpack ([https://webpack.js.org/guides/getting-started/](https://webpack.js.org/guides/getting-started/))
+  id: totrans-337
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开始使用webpack（[https://webpack.js.org/guides/getting-started/](https://webpack.js.org/guides/getting-started/)）
+- en: '`webpack-bundle-analyzer`—GitHub repository ([https://github.com/webpack-contrib/webpack-bundle-analyzer](https://github.com/webpack-contrib/webpack-bundle-analyzer))'
+  id: totrans-338
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`webpack-bundle-analyzer`—GitHub存储库（[https://github.com/webpack-contrib/webpack-bundle-analyzer](https://github.com/webpack-contrib/webpack-bundle-analyzer))'

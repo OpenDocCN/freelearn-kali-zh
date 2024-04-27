@@ -1,0 +1,1251 @@
+- en: Chapter 8. Configuration Management
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第8章。配置管理
+- en: According to a study, most of the critical errors that occur in large IT systems
+    are due to people and processes. Half of those errors are due to a lack of release
+    synchronization, coordination between machines, and configuration management.
+    Big machinery and infrastructure are way too hard to manage and maintain for any
+    single team. Having an identical configuration set for every machine to make them
+    all work in synchronization is a nightmare for management teams. For these reasons,
+    we have a process called **Configuration Management** (**CM**).
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据一项研究，大型IT系统中发生的大多数关键错误都是由于人和流程造成的。其中一半的错误是由于发布同步不足、机器之间的协调以及配置管理不足造成的。大型机械和基础设施对于任何一个团队来说都太难管理和维护了。为了让所有机器都能同步工作，需要为每台机器设置相同的配置集，这对管理团队来说是一场噩梦。因此，我们有一个叫做**配置管理**（**CM**）的流程。
+- en: In this chapter, we are going to describe how to use the CM process to maintain
+    and manage a CentOS 7 Linux server infrastructure. We are going to describe in
+    brief some of the most common open source configuration management tools, with
+    an example of setting up a management server with a client using Puppet.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将描述如何使用CM流程来维护和管理CentOS 7 Linux服务器基础设施。我们将简要描述一些最常见的开源配置管理工具，并举例说明如何使用Puppet设置管理服务器和客户端。
+- en: 'Through this chapter, you are going to learn these topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过本章，您将学习以下主题：
+- en: Operating system configuration management
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 操作系统配置管理
+- en: Open source configuration management tools
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开源配置管理工具
+- en: Installation and configuration of a Puppet server and client
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Puppet服务器和客户端的安装和配置
+- en: Introducing configuration management
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍配置管理
+- en: Configuration management is a process that helps organize multiple machines/systems
+    so that they can coordinate with each other to perform one rather big process
+    or run multiple redundant processes. It is widely used by military organizations
+    to manage their systems, such as weapon systems, vehicles, and information systems.
+    Outside the military, it is widely used in IT service management for big infrastructure
+    handling.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置管理是一个帮助组织多台机器/系统，使它们能够协调执行一个较大过程或运行多个冗余过程的流程。它被军事组织广泛使用来管理其系统，如武器系统、车辆和信息系统。在军事之外，它在IT服务管理中被广泛用于大型基础设施处理。
+- en: There are still many IT organizations that work with old and traditional tools
+    such as customized scripts (shell scripts, expect scripts, and so on) and manual
+    process implementation to run repetitive tasks. We have well acknowledged the
+    fact that those techniques are no longer effective, especially when used in large-scale
+    infrastructures. Even for small infrastructures, it is hard to track and maintain
+    them due to all-time configuration changes. All of this may have a direct impact
+    on the reliability of the infrastructure itself, which may also affect the productivity
+    of the organization.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仍然有许多IT组织使用旧的传统工具，如定制脚本（shell脚本、expect脚本等）和手动流程实施来运行重复任务。我们已经充分认识到，这些技术已不再有效，特别是在大规模基础设施中使用时。即使对于小型基础设施，由于配置不断变化，很难跟踪和维护它们。所有这些可能会直接影响基础设施本身的可靠性，也可能影响组织的生产力。
+- en: Automated configuration management has put an end to manual scripting and configuration;
+    it has also been used to perform other tasks that most system administrators do
+    on a daily basis (system updates, firmware patch, release update and management,
+    and so on).
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 自动化配置管理已经结束了手动脚本编写和配置；它还被用于执行大多数系统管理员每天都要做的其他任务（系统更新、固件补丁、发布更新和管理等）。
+- en: For the new generation of system administrators, everything is automated. Most
+    machines run on the same set of configurations, and a set of servers to manage
+    them all. Everything is watched by monitoring tools. The job of a system administrator
+    is to initialize their infrastructure's basic configuration to start their configuration
+    management server, set up clients if needed on other machines, and then start
+    sending configurations to the clients to apply it. The configuration management
+    server will act as the master of the Puppets and send them direct orders to follow
+    for whatever their architecture or type of OS is.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于新一代系统管理员来说，一切都是自动化的。大多数机器都运行在相同的配置集上，并有一组服务器来管理它们。一切都由监控工具监视。系统管理员的工作是初始化他们基础设施的基本配置，启动他们的配置管理服务器，如果需要在其他机器上设置客户端，然后开始向客户端发送配置以应用它。配置管理服务器将充当Puppet的主人，并向它们发送直接命令，无论它们的架构或操作系统类型如何。
+- en: '![Introducing configuration management](img/B04674_08_08.jpg)'
+  id: totrans-12
+  prefs: []
+  type: TYPE_IMG
+  zh: '![介绍配置管理](img/B04674_08_08.jpg)'
+- en: 'Source: [http://flylib.com/](http://flylib.com/)'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://flylib.com/](http://flylib.com/)
+- en: 'For our case, we will be setting up a CentOS 7 server to control a CentOS 7
+    client using configuration management, where we are going to show you how manual
+    configuration is time consuming and unreliable. Before that, we will be showing
+    you a list of famous open source tools used for configuration management:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的情况，我们将设置一个CentOS 7服务器来控制一个使用配置管理的CentOS 7客户端，我们将向您展示手动配置是多么耗时和不可靠。在此之前，我们将向您展示一些用于配置管理的著名开源工具的列表：
+- en: '![Introducing configuration management](img/B04674_08_09.jpg)'
+  id: totrans-15
+  prefs: []
+  type: TYPE_IMG
+  zh: '![介绍配置管理](img/B04674_08_09.jpg)'
+- en: 'Source: [http://www.axiossystems.it](http://www.axiossystems.it)'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://www.axiossystems.it](http://www.axiossystems.it)
+- en: Open source configuration management tools
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 开源配置管理工具
+- en: In this section, we are going to enumerate the world's most famous open source
+    configuration management tools, going through the description of each tool, the
+    major focus, and where it can serve well.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将列举世界上最著名的开源配置管理工具，介绍每个工具的描述、主要重点以及它可以发挥作用的领域。
+- en: Chef
+  id: totrans-19
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 厨师
+- en: Chef is a configuration management tool that helps us configure and maintain
+    servers that provide a variety of services. Chef uses something called recipes,
+    made to describe the desired management (configuration, installation, change)
+    for the server's applications and utilities. It is widely used for infrastructure
+    with cloud-computing-based platforms (such as Rackspace, Internap, Amazon, Google,
+    OpenStack, SoftLayer, and Microsoft) because of its capacity to automatically
+    provision and configure new machines on the go. The scalability of Chef allows
+    it to be used for small and large infrastructures on demand.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'Chef是一个配置管理工具，帮助我们配置和维护提供各种服务的服务器。Chef使用称为配方的东西，用于描述服务器应用程序和实用程序的所需管理（配置，安装，更改）。由于其自动提供和配置新机器的能力，Chef被广泛用于基于云计算的基础设施（如Rackspace，Internap，Amazon，Google，OpenStack，SoftLayer和Microsoft）。Chef的可扩展性使其能够根据需求用于小型和大型基础设施。 '
+- en: Chef can be executed as a server or a client. The clients are executed on the
+    servers/machines that we want to manage using our server. And the Chef server
+    agent is installed in one centralized server, on which it manages the recipes
+    depending on what the administrator has defined for each node (web server, cluster
+    machine, storage server, and so on). Then the client executes the recipes sent
+    to it by the server. By default, the client updates its recipe from the server
+    every 30 minutes to see whether there is any change that needs to be done.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Chef可以作为服务器或客户端执行。客户端在我们想要使用服务器管理的服务器/机器上执行。并且Chef服务器代理安装在一个集中的服务器上，它根据管理员为每个节点定义的内容（Web服务器，集群机器，存储服务器等）来管理配方。然后客户端执行服务器发送给它的配方。默认情况下，客户端每30分钟从服务器更新其配方，以查看是否有任何需要更改的内容。
+- en: At the beginning of the project, Chef used to manage only Linux machines, but
+    now it is capable of managing Windows machines as well. The Chef server is now
+    supported by multiple Linux platforms (RHEL/CentOS, FreeBSD, OSX, Solaris, and
+    so on).
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在项目开始时，Chef只用于管理Linux机器，但现在它也能够管理Windows机器。Chef服务器现在受到多个Linux平台的支持（RHEL/CentOS，FreeBSD，OSX，Solaris等）。
+- en: This is what it looks like, architecture-wise, after having Chef installed.
+    The first images shows the interaction between chef and a variety of nodes that
+    can manage.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是在安装了Chef之后的架构。第一张图片显示了Chef与各种可以管理的节点之间的交互。
+- en: '![Chef](img/B04674_08_10.jpg)'
+  id: totrans-24
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Chef](img/B04674_08_10.jpg)'
+- en: 'Source: [http://www.yet.org](http://www.yet.org)'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://www.yet.org](http://www.yet.org)
+- en: The following screenshot show the interaction between chef and the Amazon web
+    services to be on use for advanced configuration
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下截图显示了Chef与亚马逊网络服务之间的交互，以用于高级配置
+- en: '![Chef](img/B04674_08_11.jpg)'
+  id: totrans-27
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Chef](img/B04674_08_11.jpg)'
+- en: 'Source: [https://www.chef.io/](https://www.chef.io/)'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[https://www.chef.io/](https://www.chef.io/)
+- en: Note
+  id: totrans-29
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'For more detailed information on how to set up and master Chef, please have
+    a look at some of Packt''s other books on Chef at: [https://www.packtpub.com/all/?search=chef](https://www.packtpub.com/all/?search=chef)'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关如何设置和掌握Chef的更详细信息，请查看Packt关于Chef的其他图书：[https://www.packtpub.com/all/?search=chef](https://www.packtpub.com/all/?search=chef)
+- en: SaltStack (Salt)
+  id: totrans-31
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: SaltStack（Salt）
+- en: SaltStack is a Python-based open source configuration management tool. It is
+    also called a remote engine. In a way, it is a new approach to infrastructure
+    management. It is easy to run, scalable, can handle thousands of nodes, and can
+    establish very fast communication between its nodes (servers, terminals, and so
+    on).
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SaltStack是一个基于Python的开源配置管理工具。它也被称为远程引擎。在某种程度上，这是基础设施管理的一种新方法。它易于运行，可扩展，可以处理数千个节点，并且可以在其节点之间（服务器，终端等）建立非常快速的通信。
+- en: It is well known due to its dynamic communication inside the infrastructures
+    it mages, where it benefit amazingly from that to organize, execute, and establish
+    configuration management through its nodes, as well as much more.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于其内部基础设施中的动态通信而闻名，Salt能够通过其节点组织，执行和建立配置管理，以及更多。
+- en: It is available for a variety of operating systems (CentOS, Debian, RHEL, Ubuntu,
+    and even Windows).
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它适用于各种操作系统（CentOS，Debian，RHEL，Ubuntu，甚至Windows）。
+- en: 'Salt is designed to be very extensible, wherein it has the capacity to use
+    module management so as to be moldable to a variety of applications. Salt offers
+    dynamic modules to manage the remote execution and administration of its components.
+    They are categorized as follows: execution modules, state modules, grains, renderer
+    modules, returners, and runners.'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Salt被设计为非常可扩展，具有使用模块管理的能力，以便塑造成各种应用程序。Salt提供动态模块来管理其组件的远程执行和管理。它们分为以下几类：执行模块，状态模块，颗粒，渲染器模块，返回器和运行器。
+- en: 'SaltStack has a paid product called SaltStack Enterprise. It is designed for
+    big infrastructures in IT organizations, system administration, site reliability
+    engineering, and development configuration and management for modern data center
+    infrastructures, applications, and code. It is briefly depicted in the following
+    figure, which shows how it covers a variety of fields to help the establishment,
+    management, and maintenance of the following services shown in the two following
+    figures:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SaltStack有一个付费产品叫做SaltStack Enterprise。它专为IT组织，系统管理，站点可靠性工程和现代数据中心基础设施，应用程序和代码的开发配置和管理而设计。它在下图中简要描述了，显示了它如何涵盖各种领域，以帮助建立，管理和维护以下两个图中显示的服务：
+- en: '![SaltStack (Salt)](img/B04674_08_01.jpg)'
+  id: totrans-37
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SaltStack（Salt）](img/B04674_08_01.jpg)'
+- en: 'Source: [http://www.saltstack.com](http://www.saltstack.com)'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://www.saltstack.com](http://www.saltstack.com)
+- en: This figure shows the interaction between the three major services (ITOps, DevOps,
+    CloudOps) and the capacity to use SaltStack to manage those all together.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这张图显示了三个主要服务（ITOps，DevOps，CloudOps）之间的交互，以及使用SaltStack来一起管理它们的能力。
+- en: '![SaltStack (Salt)](img/B04674_08_12.jpg)'
+  id: totrans-40
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SaltStack（Salt）](img/B04674_08_12.jpg)'
+- en: 'Source: [http://www.saltstack.com](http://www.saltstack.com)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://www.saltstack.com](http://www.saltstack.com)
+- en: 'SaltStack services operate on several steps as shown in the following figure:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SaltStack服务按照下图所示的几个步骤运行：
+- en: '![SaltStack (Salt)](img/B04674_08_13.jpg)'
+  id: totrans-43
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SaltStack (Salt)](img/B04674_08_13.jpg)'
+- en: 'Source: [http://saltstack.com](http://saltstack.com)'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://saltstack.com](http://saltstack.com)
+- en: Note
+  id: totrans-45
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'For more detailed information on how to set up and master SaltStack, please
+    have a look at some of Packt''s other books on SaltStack at: [https://www.packtpub.com/all/?search=saltstack](https://www.packtpub.com/all/?search=saltstack).'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关如何设置和掌握SaltStack的更详细信息，请查看Packt关于SaltStack的其他图书：[https://www.packtpub.com/all/?search=saltstack](https://www.packtpub.com/all/?search=saltstack)。
+- en: Ansible
+  id: totrans-47
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Ansible
+- en: Ansible is a free and simple solution for configuration management. It is well
+    known for automated configuration management, whereby it relies on SSH to access
+    nodes and configure them through Python-based solutions. It uses a minimal amount
+    of dependencies and environment tools (such as client agents), and is secure.
+    It is also very reliable and does not require very advanced learning lessons to
+    start using it.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Ansible是一个免费且简单的配置管理解决方案。它以自动化配置管理而闻名，依靠SSH访问节点，并通过基于Python的解决方案对其进行配置。它使用了最少的依赖和环境工具（如客户端代理），并且是安全的。它也非常可靠，不需要非常高级的学习课程就能开始使用它。
+- en: Its configuration requires the editing of some human-readable configuration
+    files to ensure that everyone can understand them, if an update or reconfiguration
+    is ever needed. It requires only the SSH password or an SSH key in order to access
+    the nodes to be managed, without the need for the installation of an agent. So,
+    there will definitely be no need to worry about not having the agent running due
+    to an upgrade, patch, or daemon malfunction.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它的配置需要编辑一些人类可读的配置文件，以确保每个人都能理解它们，如果需要更新或重新配置。它只需要SSH密码或SSH密钥来访问要管理的节点，无需安装代理。因此，绝对不需要担心由于升级、补丁或守护进程故障而导致代理未运行。
+- en: Ansible supports modules as well. Basically, most of them run on JSON and it
+    has standard output support for all kinds of programming languages. It also includes
+    more than 200 modules, which can be used to manage and automate services.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Ansible也支持模块。基本上，大多数模块都是基于JSON运行的，并且它支持所有种类编程语言的标准输出。它还包括了200多个模块，可以用来管理和自动化服务。
+- en: It is well supported by the RHEL community (Red Hat, Fedora, CentOS, and Scientific
+    Linux). It is easily downloadable through the EPEL repository. It is also supported
+    by other Linux distributions of the Debian family, and other Unix-like systems
+    such as OS X, BSD, and recently by MS Windows.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它得到了RHEL社区（Red Hat、Fedora、CentOS和Scientific Linux）的良好支持。可以通过EPEL存储库轻松下载。它还受到Debian家族的其他Linux发行版以及其他类Unix系统（如OS
+    X、BSD）和最近的MS Windows的支持。
+- en: '![Ansible](img/B04674_08_14.jpg)'
+  id: totrans-52
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Ansible](img/B04674_08_14.jpg)'
+- en: 'Source: [https://sysadmincasts.com](https://sysadmincasts.com)'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[https://sysadmincasts.com](https://sysadmincasts.com)
+- en: Note
+  id: totrans-54
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'For more detailed information on how to set up and master Ansible, please have
+    a look at some of Packt''s other books on Ansible at: [https://www.packtpub.com/all/?search=ansible](https://www.packtpub.com/all/?search=ansible)'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关如何设置和掌握Ansible的更详细信息，请查看Packt关于Ansible的其他图书：[https://www.packtpub.com/all/?search=ansible](https://www.packtpub.com/all/?search=ansible)
+- en: Puppet
+  id: totrans-56
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Puppet
+- en: Puppet is an open source configuration management tool designed to manage and
+    configure machines within the same infrastructure, to simplify various system
+    administration tasks where the user declares the machines' states and resources
+    using different ways (Ruby DSL, Puppet declaration language, and others). It is
+    published under the GPL and Apache licenses. It is mainly used to manage and configure
+    Unix-based machines and Microsoft systems. To establish Puppet, as best practice,
+    we require a Puppet server agent to do the role of a configuration management
+    server and for the other nodes, the ones the server is going to manage, we require
+    the client version. Puppet inspects each node's configuration, and then identifies
+    the changes between the old and the new configurations specified at its configuration
+    file, if there are any. Then it starts making the required changes to adjust the
+    node to the specified state. This task is useful; not only for establishing a
+    new configuration, but also for regaining it if anything goes wrong with the machines.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Puppet是一个开源的配置管理工具，旨在管理和配置同一基础架构内的机器，简化各种系统管理任务，用户可以使用不同的方式（Ruby DSL、Puppet声明语言等）声明机器的状态和资源。它是在GPL和Apache许可下发布的。主要用于管理和配置基于Unix的机器和Microsoft系统。为了建立Puppet，最佳实践是需要一个Puppet服务器代理来扮演配置管理服务器的角色，对于其他节点，即服务器将要管理的节点，我们需要客户端版本。Puppet检查每个节点的配置，然后识别其配置文件中指定的旧配置和新配置之间的更改，如果有的话。然后开始进行必要的更改，以调整节点到指定的状态。这个任务不仅对建立新配置有用，而且对于在机器出现问题时恢复配置也很有用。
+- en: 'Basically, Puppet''s major advantages are that it automates every step of the
+    software delivery process, from the provisioning of physical and virtual machines
+    to organization and reporting. Puppet is widely used by many organizations because
+    it has the following features:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基本上，Puppet的主要优势在于它自动化了软件交付过程的每一步，从物理和虚拟机器的供应到组织和报告。Puppet被许多组织广泛使用，因为它具有以下功能：
+- en: It is designed to prevent duplication during the process of problem resolution
+  id: totrans-59
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它旨在在问题解决过程中防止重复
+- en: It gives the capacity to make rapid and repeatable configurations automatically
+  id: totrans-60
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它具有使快速和可重复的自动配置的能力
+- en: It simplifies the management of both physical and virtual devices
+  id: totrans-61
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它简化了对物理和虚拟设备的管理
+- en: It makes the task of system administration much easier
+  id: totrans-62
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它使系统管理任务变得更加容易
+- en: 'Puppet offers two services: one as an open source and free solution, and the
+    other as a paid solution for enterprises. Both of them serve to help system administrators
+    automate their infrastructure configuration management. Puppet Enterprise has
+    much more to offer for big enterprises.'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Puppet提供两种服务：一种是开源免费解决方案，另一种是面向企业的付费解决方案。它们都可以帮助系统管理员自动化基础设施配置管理。Puppet Enterprise为大型企业提供了更多的功能。
+- en: '![Puppet](img/B04674_08_15.jpg)'
+  id: totrans-64
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Puppet](img/B04674_08_15.jpg)'
+- en: 'Source: [http://www.slideshare.net/](http://www.slideshare.net/)'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://www.slideshare.net/](http://www.slideshare.net/)
+- en: Puppet is not just a simple configuration management tool. It is a streamlined
+    node installation, management, and repair solution that simplifies the management
+    of a grid of nodes.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Puppet不仅仅是一个简单的配置管理工具。它是一个简化节点安装、管理和修复的解决方案，简化了节点网格的管理。
+- en: 'As the following figure shows, to use Puppet to establish a new configuration,
+    there are four important steps to be followed: Define, Simulate, Enforce, and
+    Report. Herein, the system administrator first defines what kind of configuration
+    needs to be set. Then, Puppet tests the deployment without harming the infrastructure
+    and makes sure that it will work ok. After that, Puppet starts comparing what
+    is new to what is already being used, and starts enforcing what needs to be done
+    to meet the user''s demands. Finally, it reports the status of each node on its
+    dashboard.'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如下图所示，要使用Puppet建立新的配置，需要遵循四个重要步骤：定义、模拟、执行和报告。在这里，系统管理员首先定义需要设置的配置类型。然后，Puppet在不损害基础设施的情况下测试部署，并确保它能正常工作。之后，Puppet开始比较新的内容和已经使用的内容，并开始执行满足用户需求的操作。最后，它在仪表板上报告每个节点的状态。
+- en: '![Puppet](img/B04674_08_02.jpg)'
+  id: totrans-68
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Puppet](img/B04674_08_02.jpg)'
+- en: 'Source: [http://www.slideshare.net](http://www.slideshare.net)'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://www.slideshare.net](http://www.slideshare.net)
+- en: Installing and configuring Puppet
+  id: totrans-70
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 安装和配置Puppet
+- en: For our Puppet installation, we are going to install the free open source version
+    of Puppet.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的Puppet安装，我们将安装Puppet的免费开源版本。
+- en: We have chosen Puppet to be our primary configuration management solution because
+    Puppet is a more declarative solution. This has made it more attractive for damage
+    repair than any other solution.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们选择Puppet作为我们的主要配置管理解决方案，因为Puppet是一种更具声明性的解决方案。这使得它比其他解决方案更具吸引力，用于损坏修复。
+- en: 'There are two possible architectures for Puppet: the Agent/Master architecture
+    or the standalone architecture. The Agent/Master architecture is based on one
+    or many Puppet master servers managing servers/nodes that has a Puppet client
+    agent running as a background service. In the standalone architecture, the client
+    nodes run Puppet as a master and slave agent at the same time. Which is used usually
+    to schedule management tasks or jobs to that machine it is installed on.'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Puppet有两种可能的架构：Agent/Master架构或独立架构。Agent/Master架构基于一个或多个Puppet主控服务器管理运行Puppet客户端代理的服务器/节点。在独立架构中，客户端节点同时作为主控和从属代理运行Puppet。通常用于安排管理任务或作业到安装了Puppet的机器上。
+- en: In this chapter, we are going to use the Client/Master architecture, where we
+    are going to use two CentOS 7 servers; one will be used as the master Puppet server
+    and the other as the client that the Puppet agent will run on.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将使用客户端/主控架构，我们将使用两台CentOS 7服务器；一台将用作主Puppet服务器，另一台将用作Puppet代理运行的客户端。
+- en: Before starting the installation, we need to make sure that some preinstallation
+    tasks are done. We have already decided on the architecture, so we have a better
+    idea of which software packages we are going to install.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始安装之前，我们需要确保完成一些预安装任务。我们已经决定了架构，因此我们更清楚将要安装哪些软件包。
+- en: Then we should define which machine will act as a Puppet server agent. We should
+    always start by installing the server and then move on to the clients.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们应该确定哪台机器将充当Puppet服务器代理。我们应该始终从安装服务器开始，然后再转向客户端。
+- en: 'The following figure presents the interaction between the Puppet master and
+    client when trying to establish a change requested by the manager from the Puppet
+    master interface:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下图展示了Puppet主控和客户端之间在Puppet主控界面上尝试建立经理请求的更改时的交互：
+- en: '![Installing and configuring Puppet](img/B04674_08_03.jpg)'
+  id: totrans-78
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_03.jpg)'
+- en: 'Source: [http://elatov.github.io/2014/08/setting-up-puppet-master-on-centos-7/](http://elatov.github.io/2014/08/setting-up-puppet-master-on-centos-7/)'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://elatov.github.io/2014/08/setting-up-puppet-master-on-centos-7/](http://elatov.github.io/2014/08/setting-up-puppet-master-on-centos-7/)
+- en: 'Our infrastructure will consist of the following:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的基础设施将包括以下内容：
+- en: 'Puppet master server:'
+  id: totrans-81
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Puppet主控服务器：
+- en: '**OS**: `CentOS 7`'
+  id: totrans-82
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 操作系统：`CentOS 7`
+- en: '**IP address**: `10.0.0.10`'
+  id: totrans-83
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: IP地址：`10.0.0.10`
+- en: '**Hostname**: `masterpuppet.packt.co.uk`'
+  id: totrans-84
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 主机名：`masterpuppet.packt.co.uk`
+- en: 'First client server:'
+  id: totrans-85
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第一个客户端服务器：
+- en: '**OS**: `CentOS 7`'
+  id: totrans-86
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 操作系统：`CentOS 7`
+- en: '**IP address**: `10.0.0.11`'
+  id: totrans-87
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: IP地址：`10.0.0.11`
+- en: '**Hostname**: `webserver1.packt.co.uk`'
+  id: totrans-88
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 主机名：`webserver1.packt.co.uk`
+- en: 'Second client server:'
+  id: totrans-89
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第二个客户端服务器：
+- en: '**OS**: `CentOS 7`'
+  id: totrans-90
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 操作系统：`CentOS 7`
+- en: '**IP address**: `10.0.0.12`'
+  id: totrans-91
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: IP地址：`10.0.0.12`
+- en: '**Hostname**: `webserver2.packt.co.uk`'
+  id: totrans-92
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 主机名：`webserver2.packt.co.uk`
+- en: Usually, we should check which Linux version and family we are using for the
+    clients and the servers of the infrastructure. In our case, we have already defined
+    those to be CentOS 7 for all the machines of our environment.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，我们应该检查客户端和基础设施服务器所使用的Linux版本和系列。在我们的情况下，我们已经定义了所有环境中的机器都使用CentOS 7。
+- en: 'After that, the Puppet architecture will be managed through the network, so
+    we should make sure that all the nodes (servers and clients) are well configured
+    to run the Puppet traffic. And we need to open the default Puppet access port
+    8140 for incoming connections at the server so that the client can access it:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，Puppet架构将通过网络进行管理，因此我们应该确保所有节点（服务器和客户端）都配置良好以运行Puppet流量。我们需要在服务器上打开默认的Puppet访问端口8140，以便客户端可以访问它：
+- en: '[PRE0]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Finally, for the network, we should have all the nodes configured with a unique
+    hostname, and each one of the machines needs to have in its `/etc/hosts` file
+    all the other machines defined with their IP addresses:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，对于网络，我们应该将所有节点配置为唯一的主机名，并且每台机器的`/etc/hosts`文件中都需要定义所有其他机器的IP地址：
+- en: '[PRE1]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'To ensure that all the confirmations are synchronized between the nodes, we
+    need to establish a network time-server (using NTP) connection to have all nodes
+    synchronized with the same time:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了确保所有确认在节点之间同步，我们需要建立一个网络时间服务器（使用NTP）连接，使所有节点与相同的时间同步：
+- en: '![Installing and configuring Puppet](img/B04674_08_16.jpg)'
+  id: totrans-99
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_16.jpg)'
+- en: 'We can now start the installation of our Puppet server:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以开始安装我们的Puppet服务器：
+- en: 'The first step is to enable the Puppet open source repository that offers Puppet,
+    PuppetDB, and other packages. We will be using RPM to add the Puppetlabs file
+    to the system:'
+  id: totrans-101
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 第一步是启用提供Puppet、PuppetDB和其他软件包的Puppet开源存储库。我们将使用RPM将Puppetlabs文件添加到系统中：
+- en: '[PRE2]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Then we install the Puppet server:'
+  id: totrans-103
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后我们安装Puppet服务器：
+- en: '[PRE3]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: We need to accept all that the installation manager may ask, for example, the
+    RPM-GPG-Key verification, and whether we want to install the package or not.
+  id: totrans-105
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们需要接受安装管理器可能询问的所有内容，例如RPM-GPG-Key验证，以及是否要安装软件包。
+- en: 'Then we need to configure Puppet to understand that this node is the master
+    Puppet server:'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后我们需要配置Puppet以理解这个节点是主Puppet服务器：
+- en: '[PRE4]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Next, we need to add these two lines under the `[main]` section:'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要在`[main]`部分下添加这两行：
+- en: '[PRE5]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Since this is our Puppet server, we need to create its certificate. We need
+    to start the Puppet server manually, for long enough until it creates the required
+    certificate. After that, we need to stop it because we are still running the configuration:'
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 由于这是我们的Puppet服务器，我们需要创建它的证书。我们需要手动启动Puppet服务器，直到它创建所需的证书为止。之后，我们需要停止它，因为我们仍在运行配置：
+- en: '[PRE6]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'After getting the following message, we need to hit Ctrl + C to stop the service:'
+  id: totrans-112
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在收到以下消息后，我们需要按Ctrl + C停止服务：
+- en: '[PRE7]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'At this point, we can start Puppet. But we would like to integrate the Puppet
+    service with Apache to make it one service that can serve both by installing a
+    special module. To do this, we need to install some useful packages:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上，我们可以启动Puppet。但我们希望将Puppet服务与Apache集成，使其成为一个可以通过安装特殊模块同时提供服务的服务。为此，我们需要安装一些有用的软件包：
+- en: '[PRE8]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Then we need to install Passenger, which is an open source tool that we will
+    use to install some Apache plugins to help with the development of the Puppet
+    web server. For the installation task, we will use GEM, a Ruby tool for installing
+    Ruby-based packages:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们需要安装Passenger，这是一个开源工具，我们将使用它来安装一些Apache插件，以帮助开发Puppet Web服务器。对于安装任务，我们将使用GEM，这是一个用于安装基于Ruby的软件包的Ruby工具：
+- en: '[PRE9]'
+  id: totrans-117
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'From that point onward, we can install the Passenger Apache module. For CentOS
+    7, we need to locate the executable file. It doesn''t get its binary set in the
+    BIN environment during the installation. So, we need to execute it from where
+    it is installed:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从那时起，我们可以安装Passenger Apache模块。对于CentOS 7，我们需要找到可执行文件。在安装过程中，它不会在BIN环境中设置其二进制文件。因此，我们需要从安装位置执行它：
+- en: '[PRE10]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: '![Installing and configuring Puppet](img/B04674_08_17.jpg)'
+  id: totrans-120
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_17.jpg)'
+- en: After that, we follow the instructions provided by the last command as follows.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，我们按照最后一个命令提供的说明进行操作。
+- en: 'First, we need to write `1` to install the Apache 2 module:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要输入`1`来安装Apache 2模块：
+- en: '[PRE11]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Then we just type *Enter* whenever the program asks. We can ignore the warnings
+    and hope for no errors. Otherwise, we need to make sure that we have installed
+    all the required tools earlier. We know that it is done when we see the error
+    and warning summary, and we get this message:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后每当程序询问时，我们只需输入*Enter*。我们可以忽略警告，并希望不会出现错误。否则，我们需要确保我们之前已安装了所有所需的工具。当我们看到错误和警告摘要，并收到以下消息时，我们知道已完成：
+- en: '[PRE12]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Next, we create the two directories where Puppet is going to generate its public
+    and temporary files, and set ownership to its configuration file:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们创建两个目录，Puppet将在其中生成其公共和临时文件，并将所有权设置为其配置文件：
+- en: '[PRE13]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'To finish, we create the Puppet virtual host file at the Apache2 configuration
+    directory, as follows:'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们在Apache2配置目录中创建Puppet虚拟主机文件，如下所示：
+- en: '[PRE14]'
+  id: totrans-129
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'We fill it with the following configuration options, changing the red text
+    depending on what we have configured on a different environment:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们填写以下配置选项，根据我们在不同环境中配置的内容更改红色文本：
+- en: '[PRE15]'
+  id: totrans-131
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'We set SELinux to permissive to let the new modules use the resources:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将SELinux设置为宽松模式，以便新模块可以使用资源：
+- en: '[PRE16]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Next, we change the SELINUX option to look like this:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将SELINUX选项更改为如下所示：
+- en: '[PRE17]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Then we need to restart the Apache service and add it to the system startup
+    services, while disabling the Puppet service:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们需要重新启动Apache服务，并将其添加到系统启动服务中，同时禁用Puppet服务：
+- en: '[PRE18]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: With this step done, we can say that we are done configuring the server. We
+    can now proceed to setting up and configuring the clients.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成了这一步，我们可以说我们已经完成了服务器的配置。现在我们可以继续设置和配置客户端。
+- en: '![Installing and configuring Puppet](img/B04674_08_18.jpg)'
+  id: totrans-139
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_18.jpg)'
+- en: 'Source: [http://www.aosabook.org](http://www.aosabook.org)'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://www.aosabook.org](http://www.aosabook.org)
+- en: 'As we said earlier, we need to make sure that the `/etc/hosts` file is well
+    configured and has all the nodes (whether client or server) on it. Plus, we need
+    to make sure that the NTP service is running and loading the time for the same
+    time-server as our server. Usually, we can just go with the default set by the
+    system and that works fine:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前所说，我们需要确保`/etc/hosts`文件配置正确，并且所有节点（无论是客户端还是服务器）都在其中。此外，我们需要确保NTP服务正在运行，并且正在加载与我们的服务器相同的时间服务器的时间。通常，我们可以使用系统默认设置，这样就可以正常工作。
+- en: '[PRE19]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'As with the server, we do the same thing to configure the Puppet repository
+    for the clients:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与服务器一样，我们对客户端配置Puppet存储库做同样的事情：
+- en: '[PRE20]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Then we install the Puppet client agent:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们安装Puppet客户端代理：
+- en: '[PRE21]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Next, just before starting the service, we need to add the Puppet master server
+    id to the client agent configuration file. So, we go ahead and edit the Puppet
+    configuration file. We add the server address under the agent option:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，在启动服务之前，我们需要将Puppet主服务器ID添加到客户端代理配置文件中。因此，我们继续编辑Puppet配置文件。我们在代理选项下添加服务器地址：
+- en: '[PRE22]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Then we save the file, start the service, and enable it for the system startup
+    services:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们保存文件，启动服务，并将其启用为系统启动服务：
+- en: '[PRE23]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: We need to do the same for all client servers.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要为所有客户端服务器执行相同的操作。
+- en: 'After that, we go back to our Puppet server and check whether the certificate
+    has been sent:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，我们返回到我们的Puppet服务器并检查证书是否已发送：
+- en: '[PRE24]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'We should see something like this:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们应该看到类似于这样的东西：
+- en: '[PRE25]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'This means that we have a client asking the server to approve a certificate
+    request. We can sign each server certificate using this command:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着我们有一个客户端请求服务器批准证书请求。我们可以使用以下命令签署每个服务器证书：
+- en: '[PRE26]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'We can now go back to the client to check whether the certificate is successfully
+    set using the following command:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以返回到客户端检查证书是否已成功设置，使用以下命令：
+- en: '[PRE27]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'We know that it is well configured if we get the following output:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们得到以下输出，就表示它已经配置好了：
+- en: '![Installing and configuring Puppet](img/B04674_08_04.jpg)'
+  id: totrans-161
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_04.jpg)'
+- en: At this point, our puppet Master and Client infrastructure is working fine.
+    Let's try and create a configuration from the Puppet server and send it to the
+    client to apply it.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，我们的Puppet主服务器和客户端基础设施运行良好。让我们尝试从Puppet服务器创建配置并将其发送到客户端以应用它。
+- en: 'We need to create a manifest file called `site.pp` in the `/etc/puppet/manifest`
+    folder, as follows:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要在`/etc/puppet/manifest`文件夹中创建一个名为`site.pp`的清单文件，如下所示：
+- en: '[PRE28]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Then we test the service by making the client nodes (`webserver1` and `webserver2`)
+    and install some tools. We need to add the following code to the last opened file
+    for editing:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们通过使客户端节点（`webserver1`和`webserver2`）测试服务并安装一些工具。我们需要将以下代码添加到最后打开的文件进行编辑：
+- en: '[PRE29]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'To verify that Puppet is running well we can always go to the client and type
+    in the following:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要验证Puppet是否正常运行，我们可以随时转到客户端并输入以下内容：
+- en: '[PRE30]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: '![Installing and configuring Puppet](img/B04674_08_05.jpg)'
+  id: totrans-169
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_05.jpg)'
+- en: 'By default, the Puppet agent will check the Puppet server every 30 minutes
+    to see whether there is any change that has happened so that it can apply it.
+    Therefore, during the test, we can always force a manual update, as we did earlier.
+    The update time can be changed, by changing it in the Puppet configuration file
+    under the `[main]` section, as follows:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，Puppet代理将每30分钟检查一次Puppet服务器，以查看是否有任何更改发生，以便应用它。因此，在测试期间，我们可以随时强制手动更新，就像我们之前做的那样。更新时间可以通过在Puppet配置文件中的`[main]`部分进行更改来更改，如下所示：
+- en: '[PRE31]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Then we can change it to have a service installed and ensure that it is running:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以更改它以安装服务并确保其运行：
+- en: '[PRE32]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: '![Installing and configuring Puppet](img/B04674_08_06.jpg)'
+  id: totrans-174
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_06.jpg)'
+- en: 'We can also install a program that is located only at the EPEL repository by
+    forcing the installation of the EPEL repository before the program:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以通过在安装程序之前强制安装EPEL存储库来安装仅位于EPEL存储库中的程序：
+- en: '[PRE33]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: '![Installing and configuring Puppet](img/B04674_08_07.jpg)'
+  id: totrans-177
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_07.jpg)'
+- en: 'Then we can perform some user manipulation where we can create a user on all
+    the client servers. First, we need to create it at the same machine to get its
+    password with the hashing. Then we edit the `site.pp` file to give some information
+    about the user:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以执行一些用户操作，我们可以在所有客户端服务器上创建一个用户。首先，我们需要在同一台机器上创建它，以获取其哈希密码。然后我们编辑`site.pp`文件以提供有关用户的一些信息：
+- en: '[PRE34]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Before finishing the chapter, we would like to explore what the Puppet Labs
+    offer as extra modules, which we can use without the need to create our own, to
+    perform simple, daily tasks. To search for the modules, we use the following command:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在完成本章之前，我们想探索Puppet Labs提供的额外模块，我们可以在不需要创建自己的情况下使用这些模块来执行简单的日常任务。要搜索模块，我们使用以下命令：
+- en: '[PRE35]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Then, to install the desired one, we use the `install` option:'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，要安装所需的软件，我们使用`install`选项：
+- en: '[PRE36]'
+  id: totrans-183
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: Then, to check what is installed, we go to the `/etc/puppet/module` folder,
+    and there we will have all the modules with their configuration files. We can
+    always change them depending on our needs.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，要检查安装了什么，我们转到`/etc/puppet/module`文件夹，那里我们将拥有所有模块及其配置文件。我们可以根据需要随时更改它们。
+- en: '![Installing and configuring Puppet](img/B04674_08_19.jpg)'
+  id: totrans-185
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装和配置Puppet](img/B04674_08_19.jpg)'
+- en: 'Source: [http://static.virtualizationpractice.com](http://static.virtualizationpractice.com)'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：[http://static.virtualizationpractice.com](http://static.virtualizationpractice.com)
+- en: Note
+  id: totrans-187
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'We believe that we have presented some decent information about how to use
+    Puppet for CentOS 7 but still Puppet has a lot to offer. To explore more about
+    it, please check some of Packt''s other books on mastering Puppet at: [https://www.packtpub.com/all/?search=puppet](https://www.packtpub.com/all/?search=puppet)'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们相信我们已经提供了一些关于如何在CentOS 7上使用Puppet的体面信息，但Puppet仍有很多可提供的。要了解更多信息，请查看Packt关于Puppet的其他图书：[https://www.packtpub.com/all/?search=puppet](https://www.packtpub.com/all/?search=puppet)
+- en: References
+  id: totrans-189
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 参考资料
+- en: 'Now, let''s have a look at the references used throughout the chapter:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们看一下本章中使用的参考资料：
+- en: 'Configuration management on Wikipedia: [https://en.wikipedia.org/wiki/Configuration_management](https://en.wikipedia.org/wiki/Configuration_management)'
+  id: totrans-191
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 维基百科上的配置管理：[https://en.wikipedia.org/wiki/Configuration_management](https://en.wikipedia.org/wiki/Configuration_management)
+- en: 'Chef website: [https://www.chef.io/](https://www.chef.io/)'
+  id: totrans-192
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Chef网站：[https://www.chef.io/](https://www.chef.io/)
+- en: 'SaltStack website: [http://saltstack.com](http://saltstack.com)'
+  id: totrans-193
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: SaltStack网站：[http://saltstack.com](http://saltstack.com)
+- en: 'Ansible website: [http://www.ansible.com](http://www.ansible.com)'
+  id: totrans-194
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Ansible网站：[http://www.ansible.com](http://www.ansible.com)
+- en: 'Puppet website: [https://puppetlabs.com](https://puppetlabs.com)'
+  id: totrans-195
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Puppet网站：[https://puppetlabs.com](https://puppetlabs.com)
+- en: 'What is puppet web page: [https://puppetlabs.com/puppet/what-is-puppet](https://puppetlabs.com/puppet/what-is-puppet)'
+  id: totrans-196
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Puppet网页是什么：[https://puppetlabs.com/puppet/what-is-puppet](https://puppetlabs.com/puppet/what-is-puppet)
+- en: Summary
+  id: totrans-197
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we introduced configuration management and its benefits for
+    system administrators, especially when working in a big computer environment.
+    We introduced in brief some of the well-known open source solutions used to carry
+    out configuration management on Linux servers, especially CentOS 7\. Then we chose
+    Puppet as our candidate to show in a step-by-step tutorial how to set up and configure
+    master/client architecture. And, finally, we have tested some commands on the
+    client nodes.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们介绍了配置管理及其对系统管理员的好处，特别是在大型计算机环境中工作时。我们简要介绍了一些用于在Linux服务器上进行配置管理的知名开源解决方案，特别是CentOS
+    7。然后我们选择了Puppet作为我们的候选人，以逐步教程的方式展示如何设置和配置主/客户端架构。最后，我们在客户端节点上测试了一些命令。
+- en: In the final chapter, we will show you a few things that we believe every system
+    administrator using Linux in general and CentOS more specifically should know,
+    to better manage and secure their infrastructure in the best-practice ways.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在最后一章中，我们将向您展示一些我们认为每个使用Linux系统管理员，特别是CentOS的管理员应该知道的东西，以更好地以最佳实践方式管理和保护他们的基础设施。

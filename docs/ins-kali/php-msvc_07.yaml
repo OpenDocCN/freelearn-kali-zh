@@ -1,0 +1,2018 @@
+- en: Chapter 7. Security
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第7章 安全
+- en: When we are developing an application, we should always be thinking about how
+    we can make our microservices more secure. There are some techniques and methods
+    that every developer should know in order to avoid security problems. In this
+    chapter, you will discover the ways to use authentication and authorization to
+    use in your microservices, and how to manage the permissions of each functionality
+    once your users log in. You will also discover the different methods you can use
+    to encrypt your data.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们开发应用程序时，我们应该始终考虑如何使我们的微服务更加安全。有一些技术和方法，每个开发人员都应该了解，以避免安全问题。在本章中，您将发现如何在您的微服务中使用身份验证和授权，以及在用户登录后如何管理每个功能的权限。您还将发现可以用来加密数据的不同方法。
+- en: Encryption in microservices
+  id: totrans-2
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 微服务中的加密
+- en: We can define encryption as the process of transforming information in such
+    a way that only authorized parties are able to read it. This process can be done
+    practically at any level of your application. For example, you can encrypt your
+    whole database, or you can add the encryption in the transport layer with SSL/TSL
+    or with **JSON Web Token** (**JWT**).
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将加密定义为将信息转换为只有授权方能够阅读的过程。这个过程实际上可以在您的应用程序的任何级别进行。例如，您可以加密整个数据库，或者您可以在传输层使用SSL/TSL或**JSON
+    Web Token**（**JWT**）进行加密。
+- en: 'These days, the encryption/decryption process is done through modern algorithms
+    and the highest level where the encryption is added is on the transport layer.
+    All the algorithms used in this layer provide at least the following features:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如今，加密/解密过程是通过现代算法完成的，加密添加的最高级别是在传输层。在这一层中使用的所有算法至少提供以下功能：
+- en: '**Authentication**: This feature allows you to verify the origin of a message'
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**认证**：此功能允许您验证消息的来源'
+- en: '**Integrity**: This feature gives you proof that the content of the message
+    wasn''t changed on its way from the origin'
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**完整性**：此功能可为您提供消息内容在从原始内容到目的地的过程中未更改的证据'
+- en: The final mission of the encryption algorithms is to provide you with a security
+    layer so that you can interchange or store sensitive data without having to worry
+    about someone stealing your information, but it is not free of cost. Your environment
+    will use some resources dealing with encryption, decryption, or handshakes among
+    other related things.
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 加密算法的最终任务是为您提供一个安全层，以便您可以在不必担心有人窃取您的信息的情况下交换或存储敏感数据，但这并非免费。您的环境将使用一些资源来处理加密、解密或其他相关事项中的握手。
+- en: 'As a developer, you need to think that you will be deployed to a hostile environment--production
+    is a war zone. If you start thinking this way, you will probably start asking
+    yourself the following questions:'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为开发人员，您需要考虑到您将被部署到一个敌对的环境——生产环境是一个战区。如果您开始这样思考，您可能会开始问自己以下问题：
+- en: Will we deploy to hardware or to a virtualized environment? Will we share resources?
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们将部署到硬件还是虚拟化环境？我们将共享资源吗？
+- en: Can we trust all the possible neighbors of our application?
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们能相信我们应用程序的所有可能的邻居吗？
+- en: Will we split our application into different and separated zones? How will we connect
+    our zones?
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们将把我们的应用程序分割成不同的和分离的区域吗？我们将如何连接我们的区域？
+- en: Will our application be PCI compliant or will it need a very high degree of
+    security due to the data we store/manage?
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们的应用程序是否符合PCI标准，或者由于我们存储/管理的数据，它是否需要非常高的安全级别？
+- en: When you start answering all these questions (among others), you will start
+    figuring out the level of security needed for your application.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您开始回答所有这些问题（以及其他问题）时，您将开始确定应用程序所需的安全级别。
+- en: In this section, we will show you the most common ways to encrypt the data in
+    your application so that you can later choose which one to implement.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将向您展示加密应用程序数据的最常见方法，以便您可以随后选择要实施的方法。
+- en: Note that we are not considering full disk encryption because it is considered
+    to be the weakest method to protect your data.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们不考虑全盘加密，因为它被认为是保护数据的最弱方法。
+- en: Database encryption
+  id: totrans-16
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 数据库加密
+- en: When you are dealing with sensitive data, the most flexible and with lower overhead
+    method of protecting your data is using encryption in your application layer.
+    However, what happens if, for some reason, you cannot change your application?
+    The next most powerful solution is to encrypt your database.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您处理敏感数据时，保护数据的最灵活且开销最低的方法是在应用程序层中使用加密。然而，如果由于某种原因您无法更改您的应用程序，接下来最强大的解决方案是加密您的数据库。
+- en: 'For our application, we have chosen a *relational database*; specifically,
+    we are using Percona, a MySQL fork. Currently, you have two different options
+    to encrypt your data in this database:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的应用程序，我们选择了*关系数据库*；具体来说，我们使用的是Percona，一个MySQL分支。目前，您在该数据库中有两种不同的加密数据的选项：
+- en: Enable the encryption through MariaDB patch (another MySQL form that is pretty
+    similar to Percona). This patch is available in 10.1.3 and the later versions.
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过MariaDB补丁启用加密（另一个与Percona非常相似的MySQL形式）。此补丁在10.1.3及更高版本中可用。
+- en: The InnoDB tablespace level encryption method is available from Percona Server
+    5.7.11 or MySQL 5.7.11.
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: InnoDB表空间级加密方法可从Percona Server 5.7.11或MySQL 5.7.11开始使用。
+- en: Perhaps you are wondering why we are talking about MariaDB and MySQL when we
+    have chosen Percona. This is because the three of them have the same core, sharing
+    most of their core functionalities.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也许您想知道为什么我们在选择了Percona后还在谈论MariaDB和MySQL。这是因为它们三者具有相同的核心，共享大部分核心功能。
+- en: Tip
+  id: totrans-22
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: All the major database softwares allow you to encrypt your data. If you are
+    not using Percona, check the official documentation of your database to find the
+    required steps needed to allow encryption.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有主要的数据库软件都允许您加密数据。如果您没有使用Percona，请查看您的数据库的官方文档，找到允许加密所需的步骤。
+- en: 'As a developer, you need to know the weakness of using a database level encryption
+    in your application. Among others, we can highlight the following ones:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为开发人员，你需要了解在应用中使用数据库级加密的弱点。除其他外，我们可以强调以下几点：
+- en: Privileged database users have access to the key ring file, so be strict with
+    user permissions in your database.
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 特权数据库用户可以访问密钥环文件，因此在你的数据库中要严格控制用户权限。
+- en: Data is not encrypted while is stored in the RAM of your server, it is only
+    encrypted when the data is written in the hard drive. A privileged and malicious
+    user can use some tools to read the server memory and as a consequence, your application
+    data too.
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据在存储在服务器的RAM中时并不加密，只有在数据写入硬盘时才会加密。一个特权且恶意的用户可以使用一些工具来读取服务器内存，因此也可以读取你的应用数据。
+- en: Some tools like GDB can be used to change the root user password structure,
+    allowing you to copy data without any issues.
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一些工具，比如GDB，可以用来更改根用户密码结构，从而允许你无任何问题地复制数据。
+- en: Encryption in MariaDB
+  id: totrans-28
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: MariaDB中的加密
+- en: Imagine that instead of using Percona, you want to use MariaDB; database encryption
+    is available thanks to the `file_key_management` plugin. In our application example,
+    we are using Percona as data storage for the secrets microservice, so let's add
+    a new container for MariaDB only so that you can later give it a try and interchange the
+    two RDBMS.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 想象一下，如果你不想使用Percona，而是想使用MariaDB；由于`file_key_management`插件，数据库加密是可用的。在我们的应用示例中，我们正在使用Percona作为secrets微服务的数据存储，所以让我们添加一个新的MariaDB容器，以便以后尝试并交换这两个RDBMS。
+- en: 'First, create a `mariadb` folder in your Docker repository inside the secrets
+    microservice on the same level as the database folder. Here, you can add a `Dockerfile`
+    with the following content:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在与数据库文件夹处于同一级别的secrets微服务内的Docker存储库中创建一个`mariadb`文件夹。在这里，你可以添加一个包含以下内容的`Dockerfile`：
+- en: '[PRE0]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'In the preceding code, we are pulling the latest official MariaDB image, updating
+    it, and creating some certificates that we will need for our encryption. The long
+    string saved in the `keys.txt` file is a key we generated ourselves with the following
+    command:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，我们正在拉取最新的官方MariaDB镜像，更新它，并创建一些我们加密需要的证书。在`keys.txt`文件中保存的长字符串是我们自己生成的密钥，使用以下命令生成：
+- en: '[PRE1]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'The last command of our `Dockerfile` will copy our bespoke database configurations
+    inside the container. Create our custom database configuration in `etc/encryption.cnf`
+    with the following content:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们`Dockerfile`的最后一个命令将我们定制的数据库配置复制到容器内。在`etc/encryption.cnf`中创建我们的自定义数据库配置，内容如下：
+- en: '[PRE2]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'In the preceding code, we are telling our database engine where we store our
+    certs and we enable the encryption. Now, you can edit our `docker-compose.yml`
+    file and add the following container definition:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，我们告诉我们的数据库引擎我们存储证书的位置，并启用了加密。现在，你可以编辑我们的`docker-compose.yml`文件，并添加以下容器定义：
+- en: '[PRE3]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: As you can see from the preceding code, we are not defining anything new; you
+    now probably have enough experience with Docker to understand that we are defining
+    where our `Dockerfile` is located. We set up some environment variables and mapped
+    the `7777` local port to the container `3306` port. As soon as you have made all
+    your changes, a simple `docker-compose build microservice_secret_database` command
+    will generate the new container.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从上述代码中可以看出，我们并没有定义任何新的内容；你现在可能已经有足够的Docker经验来理解我们正在定义`Dockerfile`的位置。我们设置了一些环境变量，并将本地的`7777`端口映射到容器的`3306`端口。一旦你做出所有的更改，一个简单的`docker-compose
+    build microservice_secret_database`命令将生成新的容器。
+- en: 'After building the container, it''s time to check whether everything is working.
+    Spin up the new container with `docker-compose up microservice_secret_database` and
+    try to connect it to our local `7777` port. Now, you can start using encryption
+    in this container. Consider the following example:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 构建完容器后，是时候检查一切是否正常运行了。使用`docker-compose up microservice_secret_database`启动新容器，并尝试将其连接到我们本地的`7777`端口。现在，你可以开始在这个容器中使用加密。考虑以下示例：
+- en: '[PRE4]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: In the preceding code, we added some extra tags to our SQL; they enable the
+    encryption in the table and use the encryption key with the ID `1` we stored in
+    `keys.txt` (the file we used to start our database). Give it a try and, if everything
+    runs smoothly, feel free to make the necessary changes to use this new database
+    container instead of the other one we have in our project.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，我们为我们的SQL添加了一些额外的标签；它们启用了表中的加密，并使用我们在`keys.txt`中存储的ID为`1`的加密密钥（我们用它来启动数据库的文件）。试一试，如果一切顺利，随时可以进行必要的更改，使用这个新的数据库容器代替我们项目中的另一个容器。
+- en: InnoDB encryption
+  id: totrans-42
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: InnoDB加密
+- en: Percona and MySQL 5.7.11+ versions come with a new feature out of the box--support
+    for **InnoDB** tablespace level encryption. With this feature, you can encrypt
+    all your InnoDB tables without too much fuss or configuration. In our example
+    application, we are using Percona 5.7 on the secrets microservice. Let's look
+    at how to encrypt our tables.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Percona和MySQL 5.7.11+版本自带一个新功能--支持**InnoDB**表空间级加密。有了这个功能，你可以在不需要太多麻烦或配置的情况下加密所有的InnoDB表。在我们的示例应用中，我们正在使用Percona
+    5.7来处理secrets微服务。让我们看看如何加密我们的表。
+- en: 'First, we need to make some small amendments to our Docker environment; first
+    of all, open `microservices/secret/database/Dockerfile` and replace all the content
+    with the following the lines of code:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要对我们的Docker环境进行一些小的修改；首先，打开`microservices/secret/database/Dockerfile`，并用以下代码替换所有内容：
+- en: '[PRE5]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'At this point in the book, you probably don''t need an explanation of what
+    we did in our `Dockerfile`, so let''s create a new `config` file that we will
+    later copy to our container. Inside the `secret microservice` folder, create an
+    `etc` folder and generate a new `encryption.cnf` file with the following content:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书的这一部分，你可能不需要解释我们在`Dockerfile`中做了什么，所以让我们创建一个新的`config`文件，稍后将其复制到我们的容器中。在`secret
+    microservice`文件夹中，创建一个`etc`文件夹，并生成一个名为`encryption.cnf`的新文件，内容如下：
+- en: '[PRE6]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: In the configuration file we created earlier, we are loading the `keyring` lib,
+    where our database can find and store the generated keyrings used to encrypt our
+    data.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们之前创建的配置文件中，我们正在加载`keyring`库，数据库可以在其中找到并存储用于加密数据的生成密钥环。
+- en: At this point, you have everything you need to enable the encryption, so rebuild
+    the container with `docker-compose build microservice_secret_database` and spin
+    all your containers up again with `docker-compose up -d`.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，您已经拥有了启用加密所需的一切，因此使用`docker-compose build microservice_secret_database`重新构建容器，并使用`docker-compose
+    up -d`再次启动所有容器。
+- en: 'If everything is fine, you should be able to open your database without any
+    problems and you can alter the tables we stored with the following SQL command:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果一切正常，您应该能够无问题地打开数据库，并且可以使用以下SQL命令更改我们存储的表：
+- en: '[PRE7]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: You may be wondering why we altered our `secrets` table if we already enabled
+    the encryption in the database. The reason behind this is because the encryption
+    doesn't come enabled by default, so you need to explicitly tell the engine which
+    tables you want to encrypt.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也许您会想知道为什么我们修改了`secrets`表，如果我们已经在数据库中启用了加密。背后的原因是因为加密不是默认启用的，因此您需要明确告诉引擎您想要加密哪些表。
+- en: Performance overhead
+  id: totrans-53
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 性能开销
+- en: Using encryption in your database will reduce the performance of your application.
+    Your machines/containers will use some resources dealing with the encrypt/decrypt
+    process. In some tests, this overhead can be over 20% when you are not using the
+    tablespace level encryption (MySQL/Percona +5.7). Our recommendation is to measure
+    the average performance of your application with and without the encryption enabled.
+    This way, you can ensure that the encryption will not have a high impact on your
+    application.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在数据库中使用加密将降低应用程序的性能。您的机器/容器将使用一些资源来处理加密/解密过程。在某些测试中，当您不使用表空间级加密（MySQL/Percona
+    +5.7）时，这种开销可能超过20%。我们建议您测量启用和未启用加密时应用程序的平均性能。这样，您可以确保加密不会对应用程序产生很大影响。
+- en: In this section, we showed you two quick ways of adding an extra layer of security
+    to your application. The final decision for using these features depends on you
+    and the specifications of your application.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们向您展示了两种快速增加应用程序安全性的方法。使用这些功能的最终决定取决于您和您的应用程序的规格。
+- en: TSL/SSL protocols
+  id: totrans-56
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: TSL/SSL协议
+- en: '**Transport Layer Security** (**TSL**) and **Secure Sockets Layer** (**SSL**)
+    are cryptographic protocols used to secure communication in an untrusted network,
+    for example, the Internet or LAN of your ISP. SSL is the predecessor of TSL and
+    both of them are often used interchangeably or in conjunction with TLS/SSL. These
+    days, SSL and TSL are practically the same thing and it makes no difference if
+    you choose to use one or the other, you will be using the same level of encryption,
+    dictated by the server. If an application, for example, an e-mail client, gives
+    you the option to choose between SSL or TSL, you are only selecting how the secure
+    connection is initiated, nothing else.'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**传输层安全**（**TSL**）和**安全套接字层**（**SSL**）是用于在不受信任的网络中保护通信的加密协议，例如，互联网或ISP的局域网。
+    SSL是TSL的前身，它们两者经常可以互换使用或与TLS/SSL一起使用。如今，SSL和TSL实际上是一回事，如果您选择使用其中之一，选择另一个没有区别，您将使用服务器规定的相同级别的加密。例如，如果应用程序（例如电子邮件客户端）让您在SSL或TSL之间进行选择，您只是选择了安全连接的启动方式，没有其他区别。'
+- en: All the power and security of these protocols rely on what we know as certificates.
+    TSL/SSL certificates can be defined as small data files that digitally bind a
+    cryptographic key to an organization or a person's details. You can find all kinds
+    of companies that sell TSL/SSL certificates, but if you don't want to spend money
+    (or you are in the development phase), you can create self-signed certificates.
+    These kinds of certificates can be used to encrypt data, but the clients will not
+    trust them unless you skip the validation.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些协议的所有功能和安全性都依赖于我们所知的证书。TSL/SSL证书可以定义为将加密密钥与组织或个人的详细信息数字绑定的小型数据文件。您可以找到各种公司出售TSL/SSL证书，但如果您不想花钱（或者您处于开发阶段），您可以创建自签名证书。这些类型的证书可用于加密数据，但客户端将不信任它们，除非您跳过验证。
+- en: How the TSL/SSL protocol works
+  id: totrans-59
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: TSL/SSL协议的工作原理
+- en: Before you start using TSL/SSL in your application, you need to know how it
+    works. There are many other books dedicated to explaining how these protocols
+    work, so we will only give you a sneak peek.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您开始在应用程序中使用TSL/SSL之前，您需要了解它的工作原理。还有许多其他专门解释这些协议工作原理的书籍，因此我们只会给您一个初步了解。
+- en: 'The following diagram is a summary of how the TSL/SSL protocol works; first,
+    you need to know that TSL/SSL is a TCP client-server protocol and the encryption
+    starts after a few steps:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表总结了TSL/SSL协议的工作原理；首先，您需要知道TSL/SSL是一个TCP客户端-服务器协议，加密在经过几个步骤后开始：
+- en: '![How the TSL/SSL protocol works](graphics/B06142_07_01.jpg)'
+  id: totrans-62
+  prefs: []
+  type: TYPE_IMG
+  zh: '![TSL/SSL协议的工作原理](graphics/B06142_07_01.jpg)'
+- en: TSL/SSL protocol
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: TSL/SSL协议
+- en: 'The following are the steps of the TSL/SSL protocol:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: TSL/SSL协议的步骤如下：
+- en: Our client wants to start a connection to a server/service secured with TSL/SSL,
+    so it asks the server to identify itself.
+  id: totrans-65
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们的客户希望与使用TSL/SSL保护的服务器/服务建立连接，因此它要求服务器进行身份验证。
+- en: The server attends to the petition and sends the client a copy of its TSL/SSL
+    certificate.
+  id: totrans-66
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 服务器响应请求并向客户端发送其TSL/SSL证书的副本。
+- en: The client checks if the TSL/SSL certificate is a trusted one and if so, sends
+    a message to the server.
+  id: totrans-67
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 客户端检查TSL/SSL证书是否是受信任的，如果是，则向服务器发送消息。
+- en: The server returns a digitally signed acknowledgement to start a session.
+  id: totrans-68
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 服务器返回数字签名的确认以开始会话。
+- en: After all the previous steps (handshake), the encrypted data is shared between
+    the client and the server.
+  id: totrans-69
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在所有先前的步骤（握手）之后，加密数据在客户端和服务器之间共享。
+- en: As you can imagine, the terms *client* and *server* are ambiguous; a client
+    can be a browser trying to reach your page or the client can be a microservice
+    trying to communicate with another microservice.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所能想象的，术语*客户端*和*服务器*是模棱两可的；客户端可以是试图访问你的页面的浏览器，也可以是试图与另一个微服务通信的微服务。
+- en: TSL/SSL termination
+  id: totrans-71
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: TSL/SSL终止
+- en: As you learned before, adding a TSL/SSL layer to your application adds a little
+    overhead to the overall performance of your app. To mitigate this problem, we
+    have what we call TSL/SSL termination, a form of TSL/SSL offloading, which moves
+    the responsibility of encryption/decryption from the server to a different part
+    of your application.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你之前学到的，为你的应用添加TSL/SSL层会给应用的整体性能增加一些开销。为了缓解这个问题，我们有所谓的TSL/SSL终止，一种TSL/SSL卸载形式，它将加密/解密的责任从服务器转移到应用的不同部分。
+- en: 'TSL/SSL termination relies on the fact that once all the data is decrypted,
+    you trust all the communication channels you are using to move this decrypted
+    data. Let''s see an example with a microservice; take a look at the following
+    image:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: TSL/SSL终止依赖于这样一个事实，即一旦所有数据被解密，你就信任你正在使用的所有通信渠道来传输这些解密后的数据。让我们以一个微服务为例；看一下下面的图片：
+- en: '![TSL/SSL termination](graphics/B06142_07_02.jpg)'
+  id: totrans-74
+  prefs: []
+  type: TYPE_IMG
+  zh: '![TSL/SSL终止](graphics/B06142_07_02.jpg)'
+- en: TSL/SSL termination in a microservice
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务中的TSL/SSL终止
+- en: In the preceding image, all the in/out communications are encrypted using a
+    specific component of our microservice architecture. This component will be acting
+    as a proxy and it will be dealing with all the TSL/SSL stuff. As soon as a request
+    from a client comes, it manages all the handshake and decrypts the request. Once
+    the request is decrypted, it is proxied to the specific microservice component
+    (in our case, it is NGINX) and our microservice does what is needed, for example,
+    getting some data from the database. Once the microservice needs to return a response,
+    it uses the proxy where all our response is encrypted. If you have multiple microservices,
+    you can scale out this small example and do the same--encrypt all the communications
+    between the different microservices and use encrypted data inside the microservice.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述图片中，所有的输入/输出通信都是使用我们微服务架构的特定组件加密的。这个组件将充当代理，并处理所有的TSL/SSL事务。一旦来自客户端的请求到来，它就会处理所有的握手并解密请求。一旦请求被解密，它就会被代理到特定的微服务组件（在我们的案例中，它是NGINX），我们的微服务就会执行所需的操作，例如从数据库中获取一些数据。一旦微服务需要返回响应，它就会使用代理，其中我们所有的响应都是加密的。如果你有多个微服务，你可以扩展这个小例子并做同样的事情--加密不同微服务之间的所有通信，并在微服务内部使用加密数据。
+- en: TSL/SSL with NGINX
+  id: totrans-77
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用NGINX进行TSL/SSL
+- en: 'You can find multiple softwares that you can use to do TSL/SSL termination.
+    Among others, the following list flags the most well known:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以找到多个软件，可以用来进行TSL/SSL终止。以下列出了一些最知名的：
+- en: '**Load balancer**: Amazon ELB and HaProxy'
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**负载均衡器**：Amazon ELB和HaProxy'
+- en: '**Proxies**: NGINX, Traefik, and Fabio'
+  id: totrans-80
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**代理**：NGINX、Traefik和Fabio'
+- en: In our case, we will use NGINX to manage all the TSL/SSL termination, but feel
+    free to try other options.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的案例中，我们将使用NGINX来管理所有的TSL/SSL终止，但是请随意尝试其他选项。
+- en: As you probably know already, NGINX is one of the most versatile softwares in
+    the market. You can use it as a reverse proxy or a web server with a high performance
+    level and stability.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能已经知道，NGINX是市场上最多才多艺的软件之一。你可以将其用作反向代理或具有高性能水平和稳定性的Web服务器。
+- en: 'We will explain how to do a TSL/SSL termination in NGINX, for example, for
+    the battle microservice. First, open the `microservices/battle/nginx/Dockerfile`
+    file and add the following command just before the CMD command:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将解释如何在NGINX中进行TSL/SSL终止，例如对于battle微服务。首先，打开`microservices/battle/nginx/Dockerfile`文件，并在CMD命令之前添加以下命令：
+- en: '[PRE8]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Here, we created some self-signed certificates and stored them inside the `/etc/nginx`
+    folder of the `nginx` container.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们创建了一些自签名证书，并将它们存储在`nginx`容器的`/etc/nginx`文件夹中。
+- en: 'Once we have our certificates, it''s time to change the NGINX configuration
+    file. Open the `microservices/battle/nginx/config/nginx/nginx.conf.ctmpl` file
+    and add the following server definition:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们有了证书，就是时候改变NGINX配置文件了。打开`microservices/battle/nginx/config/nginx/nginx.conf.ctmpl`文件，并添加以下服务器定义：
+- en: '[PRE9]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: The preceding piece of code sets up a new listener in the `nginx` server, in
+    the `443` port. As you can see, it is very similar to the default server settings;
+    the difference lies in the ports and the location of the certificates we created
+    in the previous step.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述代码片段在`nginx`服务器中设置了一个新的监听器，在`443`端口。正如你所看到的，它与默认服务器设置非常相似；不同之处在于端口和我们在上一步中创建的证书的位置。
+- en: 'To use this new TSL/SSL endpoint, we need to make some small changes to the
+    `docker-compose.yml` file and map the `443` NGINX port. To do this, you only need
+    to go to the `microservice_battle_nginx` definition and add a new line in the
+    ports declaration, as follows:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使用这个新的TSL/SSL端点，我们需要对`docker-compose.yml`文件进行一些小的更改，并映射`443` NGINX端口。你只需要去`microservice_battle_nginx`定义中添加一个新的端口声明行，如下所示：
+- en: '[PRE10]'
+  id: totrans-90
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: The new line will map our `8443` port to the `nginx` container `443` port, allowing
+    us to connect through TSL/SSL. You can give it a try now with Postman but, due
+    to the fact that it is a self-signed certificate, by default it is not accepted.
+    Open **Preferences** and disable **SSL certificate verification**. As homework,
+    you can change all our example services to only use the TSL/SSL layer to communicate
+    with each other.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 新的行将我们的`8443`端口映射到`nginx`容器的`443`端口，允许我们通过TSL/SSL连接。你现在可以用Postman试一试，但是由于它是一个自签名证书，默认情况下是不被接受的。打开**首选项**并禁用**SSL证书验证**。作业时，你可以将我们所有的示例服务都改为只使用TSL/SSL层来相互通信。
+- en: In this section of the chapter, we have shown you the main ways in which you
+    can add an extra layer of security to your application, encrypting your data and
+    the communication channel used to interchange messages. Now that we are sure that
+    our application has at least some level of encryption, let's continue with another
+    important aspect of any application--authentication.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的这一部分，我们向您展示了如何为您的应用程序添加额外的安全层，加密数据和用于交换消息的通信渠道。现在我们确信我们的应用程序至少具有一定程度的加密，让我们继续讨论应用程序的另一个重要方面--认证。
+- en: Authentication
+  id: totrans-93
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 认证
+- en: The starting point of every project is the authentication system, in which it
+    is possible to identify the users or customers who will use our application or
+    API. There are many libraries to implement the different ways to authenticate
+    users; in this book, we will see two of the most important ways: **OAuth 2** and
+    **JWT**.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个项目的起点是认证系统，通过它可以识别将使用我们的应用程序或API的用户或客户。有许多库可以实现不同的用户认证方式；在本书中，我们将看到两种最重要的方式：**OAuth
+    2**和**JWT**。
+- en: 'As we already know, microservices are *stateless*, which means that they should
+    communicate with each other and users using an *access token* instead of cookies
+    and sessions. So, let''s look at what the workflow of the authentication is like
+    using it:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们已经知道的，微服务是*无状态*的，这意味着它们应该使用*访问令牌*而不是cookie和会话与彼此和用户进行通信。因此，让我们看看使用它进行认证的工作流程是什么样的：
+- en: '![Authentication](graphics/B06142_07_03-1.jpg)'
+  id: totrans-96
+  prefs: []
+  type: TYPE_IMG
+  zh: '![认证](graphics/B06142_07_03-1.jpg)'
+- en: Authentication by token workflow
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过令牌进行认证的工作流程
+- en: 'As you can see in the preceding image, this should be the process of getting
+    a list of secrets required by a customer or user:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您在上图中所看到的，这应该是获取客户或用户所需的秘密列表的过程：
+- en: '**USER** asks **FRONTEND LOGIN** for a list of secrets.'
+  id: totrans-99
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**USER**向**FRONTEND LOGIN**请求秘密列表。'
+- en: '**FRONTEND LOGIN** asks **BACKEND** for the list of secrets.'
+  id: totrans-100
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**FRONTEND LOGIN**向**BACKEND**请求秘密列表。'
+- en: '**BACKEND** asks **FRONTEND LOGIN** for the user access token.'
+  id: totrans-101
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**BACKEND**向**FRONTEND LOGIN**请求用户访问令牌。'
+- en: '**FRONTEND LOGIN** asks **GOOGLE** (or any other provider) for the access token.'
+  id: totrans-102
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**FRONTEND LOGIN**向**GOOGLE**（或任何其他提供者）请求访问令牌。'
+- en: '**GOOGLE** asks **USER** for their credentials.'
+  id: totrans-103
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**GOOGLE**向**USER**请求他们的凭据。'
+- en: '**USER** provides credentials to **GOOGLE**.'
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**USER**向**GOOGLE**提供凭据。'
+- en: '**GOOGLE** provides user access token to **FRONTEND LOGIN**.'
+  id: totrans-105
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**GOOGLE**向**FRONTEND LOGIN**提供用户访问令牌。'
+- en: '**FRONTEND LOGIN** provides **BACKEND** the user access token.'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**FRONTEND LOGIN**提供**BACKEND**用户访问令牌。'
+- en: '**BACKEND** checks with **GOOGLE** who the user of that access token is.'
+  id: totrans-107
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**BACKEND**与**GOOGLE**检查使用该访问令牌的用户是谁。'
+- en: '**GOOGLE** tells **BACKEND** who the user is.'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**GOOGLE**告诉**BACKEND**用户是谁。'
+- en: '**BACKEND** checks the user and tells **FRONTEND LOGIN** the list of secrets.'
+  id: totrans-109
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**BACKEND**检查用户并告诉**FRONTEND LOGIN**秘密列表。'
+- en: '**FRONTEND LOGIN** shows **USER** the list of secrets.'
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**FRONTEND LOGIN**向**USER**显示秘密列表。'
+- en: Obviously, in this process, everything happens without the user knowing it.
+    The user only has to provide his/her credentials to the proper service. In the
+    preceding example, the service is **GOOGLE**, but it can even be our own application.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，在这个过程中，一切都是在用户不知情的情况下发生的。用户只需要向适当的服务提供他/她的凭据。在前面的例子中，服务是**GOOGLE**，但它甚至可以是我们自己的应用程序。
+- en: Now, we will build a new docker container in order to create and set up a database
+    to authenticate users using OAuth 2 and JWT.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将构建一个新的docker容器，以便使用OAuth 2和JWT来创建和设置一个用于认证用户的数据库。
+- en: 'Create a `Dockerfile` in the docker user microservice under the ` docker/microservices/user/database/Dockerfile`
+    database folder with the following line. We will use Percona as we did for the
+    secret microservice:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在docker用户微服务的`docker/microservices/user/database/Dockerfile`数据库文件夹下创建一个`Dockerfile`，并添加以下行。我们将像我们为secret微服务所做的那样使用Percona：
+- en: '[PRE11]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Once you have created the `Dockerfile,` open the `docker-composer.yml` file
+    and add the user database microservice configuration at the end of the User microservice
+    section (just before the source containers). Also, add `microservice_user_database`
+    to the `microservice_user_fpm` links section to make the database visible:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建了`Dockerfile`之后，打开`docker-composer.yml`文件，并在用户微服务部分的末尾添加用户数据库微服务配置（就在源容器之前）。还要将`microservice_user_database`添加到`microservice_user_fpm`链接部分，以使数据库可见：
+- en: '[PRE12]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Once we have set the configuration, it is time to build it, so run the following
+    command on your terminal to create the new container we have just set up:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们设置了配置，就该构建它了，所以在您的终端上运行以下命令来创建我们刚刚设置的新容器：
+- en: '[PRE13]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'It can take some time; when it finishes, we have to start the containers again
+    by running the following command:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可能需要一些时间；当它完成时，我们必须通过运行以下命令再次启动容器：
+- en: '[PRE14]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: You can check whether the user database microservice was created correctly by
+    executing `docker ps`, so check to see the new `microservice_user_database` on
+    it.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过执行`docker ps`来检查用户数据库微服务是否正确创建，因此请检查其中的新`microservice_user_database`。
+- en: 'It is time to set up the user microservice to be able to use the database container
+    we have just created, so add the following line to the  `bootstrap/app.php` file:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是时候设置用户微服务以便能够使用我们刚刚创建的数据库容器了，所以将以下行添加到`bootstrap/app.php`文件中：
+- en: '[PRE15]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Also, create the `config/database.php` file with the following configuration:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要创建`config/database.php`文件，并添加以下配置：
+- en: '[PRE16]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Note that, in the preceding code, we have used the same credentials we used
+    on the `docker-compose.yml` file in order to connect to the database container.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在上述代码中，我们使用了与`docker-compose.yml`文件中用于连接到数据库容器的相同凭据。
+- en: 'That is everything. We now have a new database container connected to user
+    microservice and it is ready to be used. Add a new users table by creating a migration
+    or executing the following query in your favorite SQL client:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样。我们现在有一个新的数据库容器连接到用户微服务，它已经准备好使用了。通过创建迁移或在您喜爱的SQL客户端中执行以下查询来添加一个新的用户表：
+- en: '[PRE17]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: OAuth 2
+  id: totrans-129
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: OAuth 2
+- en: Let's introduce a secure and especially useful in microservices authentication
+    system based on access tokens.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们介绍一种安全且特别适用于微服务的基于访问令牌的认证系统。
+- en: OAuth 2 is a standard protocol that allows us to limit some methods of our API
+    REST to specific users, avoiding having to ask the users for their usernames and
+    passwords.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: OAuth 2是一种标准协议，允许我们将API REST的某些方法限制为特定用户，而无需要求用户提供用户名和密码。
+- en: This protocol is very common because it is more secure as it avoids sharing
+    passwords or delicate credentials when communicating between APIs.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个协议非常常见，因为它更安全，可以避免在API之间通信时共享密码或敏感凭据。
+- en: OAuth 2 uses an access token that needs to be obtained by the user in order
+    to use the application. The token will have an expiration time and it can be refreshed
+    without having to give the user credentials again.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: OAuth 2使用访问令牌，用户需要获取该令牌才能使用应用程序。令牌将具有过期时间，并且可以在无需再次提供用户凭据的情况下进行刷新。
+- en: How to use OAuth 2 on Lumen
+  id: totrans-134
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 如何在Lumen上使用OAuth 2
+- en: Now, we will explain how to install, set up, and try OAuth 2 authentication
+    on Lumen. The goal of this is to have a microservice using OAuth 2 for your methods;
+    in other words, the consumer will need to provide a token before using the methods
+    that require authentication.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将解释如何在Lumen上安装、设置和尝试OAuth 2身份验证。这样做的目的是让微服务使用OAuth 2来限制方法；换句话说，在使用需要身份验证的方法之前，消费者需要提供一个令牌。
+- en: OAuth 2 installation
+  id: totrans-136
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: OAuth 2安装
+- en: 'Go to the user microservice by executing the following commands on the docker
+    folder:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过在docker文件夹上执行以下命令进入用户微服务：
+- en: '[PRE18]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Once we are in the User microservice, it is necessary to install OAuth 2 by
+    adding the following line in the `composer.json` file in the `require` section:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们进入用户微服务，就需要通过在`composer.json`文件的`require`部分中添加以下行来安装OAuth 2：
+- en: '[PRE19]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Then, execute `composer update` and the package will install OAuth 2 on your
+    microservice.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，执行`composer update`，该包将在您的微服务上安装OAuth 2。
+- en: Setup
+  id: totrans-142
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 设置
+- en: Once the package is installed, we have to set up some important things in order
+    to run OAuth 2\. Firstly, we need to copy the OAuth 2 config file located at `/vendor/lucadegasperi/oauth2-server-laravel/config/oauth2.php`
+    to `/config/oauth2.php`; if the `config` folder does not exist, create it. Also,
+    we need to copy the migration files included in the `/vendor/lucadegasperi/oauth2-server-laravel/database/migrations
+    to /database/migrations` folder.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装完包后，我们必须设置一些重要的东西才能运行OAuth 2。首先，我们需要将位于`/vendor/lucadegasperi/oauth2-server-laravel/config/oauth2.php`的OAuth
+    2配置文件复制到`/config/oauth2.php`；如果`config`文件夹不存在，则创建它。此外，我们需要将包含在`/vendor/lucadegasperi/oauth2-server-laravel/database/migrations`中的迁移文件复制到`/database/migrations`文件夹中。
+- en: 'Do not forget to register OAuth 2 by adding the following lines to `/bootstrap/app.php`:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记通过在`/bootstrap/app.php`中添加以下行来注册OAuth 2：
+- en: '[PRE20]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'At the top of the file, before the `app->withFacades();` line (if it is not
+    uncommented, do it), add the following lines:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`app->withFacades();`行之前的文件顶部（如果没有取消注释，请这样做），添加以下行：
+- en: '[PRE21]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Now, we will execute the migrations in order to create the necessary tables
+    in the database:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将执行迁移以在数据库中创建必要的表：
+- en: '[PRE22]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Tip
+  id: totrans-150
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: If you have issues in executing the migrations, try adding the `'migrations'
+    => 'migrations', 'fetch' => PDO::FETCH_CLASS,` line to the `config/database.php`
+    file and then, execute `php artisan migrate:install --database=mysql`.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果在执行迁移时遇到问题，请尝试将`'migrations' => 'migrations', 'fetch' => PDO::FETCH_CLASS,`添加到`config/database.php`文件中，然后执行`php
+    artisan migrate:install --database=mysql`。
+- en: 'Once we have created all the necessary tables, insert a register in the `oauth_clients`
+    table using Lumen seeders or by executing the following query on your favorite
+    SQL client:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们创建了所有必要的表，可以使用Lumen seeders在`oauth_clients`表中插入一个注册，或者通过在您喜爱的SQL客户端上执行以下查询来执行：
+- en: '[PRE23]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Now, we have to add a new route on `/app/Http/routes.php` in order to get a
+    valid token for the user we have just created. For example, the route can be `oauth/access_token`:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们必须在`/app/Http/routes.php`中添加一个新路由，以便为我们刚刚创建的用户获取有效的令牌。例如，路由可以是`oauth/access_token`：
+- en: '[PRE24]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Finally, modify the `grant_types` value on the `/config/oauth2.php` file, changing
+    it to the following lines of code:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，修改`/config/oauth2.php`文件中的`grant_types`值，将其更改为以下代码行：
+- en: '[PRE25]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Let's try OAuth2
+  id: totrans-158
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 让我们尝试OAuth2
+- en: 'We are now ready to get our token by doing a POST call on Postman to `http://localhost:8084/api/v1/oauth/access_token`,
+    including the following parameters on the body:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以通过在Postman上对`http://localhost:8084/api/v1/oauth/access_token`进行POST调用来获取我们的令牌，包括在body中包含以下参数：
+- en: '[PRE26]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'If we enter the wrong credentials, it will give the following response:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果输入错误的凭据，将会得到以下响应：
+- en: '[PRE27]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'If the credentials are correct, we will get the `access_token` in JSON:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果凭据正确，我们将在JSON中获得`access_token`：
+- en: '[PRE28]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Once we have a valid access token, we can restrict some methods for unregistered
+    users. This is very easy on Lumen. We just have to enable route middlewares on
+    `/bootstrap/app.php`, so add the following code in that file:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们获得有效的访问令牌，我们可以限制一些未注册用户的方法。这在Lumen上非常容易。我们只需在`/bootstrap/app.php`上启用路由中间件，因此在该文件中添加以下代码：
+- en: '[PRE29]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Go to the controller `UserController.php` file and add a `__construct()` function
+    with the following code:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 转到`UserController.php`文件并添加一个带有以下代码的`__construct()`函数：
+- en: '[PRE30]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'This will affect all the methods on the controller, but we can exclude some
+    of them with the following code:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将影响控制器上的所有方法，但我们可以使用以下代码排除其中一些方法：
+- en: '[PRE31]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: Now we can test the index function by doing a GET call to `http://localhost:8084/api/v1/user`.
+    Do not forget to include a header called `Authorization` with the `Bearer anU2e6xgXiLm7UARSSV7M4Wa7u86k4JryKWrIQhu` value.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以通过在`http://localhost:8084/api/v1/user`上进行GET调用来测试index函数。不要忘记在`Authorization`标头中包含`Bearer
+    anU2e6xgXiLm7UARSSV7M4Wa7u86k4JryKWrIQhu`值。
+- en: 'If we excluded the index function or if we enter the token properly, we will
+    get the JSON response with status code 200:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们排除了index函数，或者如果我们正确输入了令牌，我们将获得状态码200的JSON响应：
+- en: '[PRE32]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'If we did not exclude the index method and we enter a wrong token, we will
+    get an error code 401 and the following message:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们没有排除index方法并输入了错误的令牌，我们将收到错误代码401和以下消息：
+- en: '[PRE33]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: Now you have a secure and better application. Remember that you can add the
+    error handling you learned in the last chapter to your authorization methods.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您有一个安全且更好的应用程序。请记住，您可以将上一章中学到的错误处理添加到您的授权方法中。
+- en: JSON Web Token
+  id: totrans-177
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: JSON Web Token
+- en: '**JSON Web Token** (**JWT**) is group of security methods to be used in HTTP
+    requests and to be transferred between the client and the server. A JWT token
+    is a JSON object that is digitally signed using JSON web signature.'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**JSON Web Token**（**JWT**）是一组安全方法，用于HTTP请求和客户端与服务器之间的传输。JWT令牌是使用JSON Web签名进行数字签名的JSON对象。'
+- en: In order to create a token with JWT, we need the user credentials, a secret
+    key, and the encryption type to be used; it can be HS256, HS384, or HS512.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使用JWT创建令牌，我们需要用户凭据、秘密密钥和要使用的加密类型；可以是HS256、HS384或HS512。
+- en: How to use JWT on Lumen
+  id: totrans-180
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 如何在Lumen上使用JWT
+- en: 'It is possible to install JWT on Lumen using composer. So, once you are in
+    the user microservice container, execute the following command in your terminal:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以使用composer在Lumen上安装JWT。因此，一旦您在用户微服务容器中，就在终端中执行以下命令：
+- en: '[PRE34]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Another way to install the library is to open your `composer.json` file and
+    add `"tymon/jwt-auth": "^1.0@dev"` to the list of required libraries. Once it
+    is installed, we need to register JWT on register service providers as we did
+    with OAuth 2\. On Lumen, it is possible to do this by adding the following line
+    in the `bootstrap/app.php` file:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '安装该库的另一种方法是打开您的`composer.json`文件，并将`"tymon/jwt-auth": "^1.0@dev"`添加到所需库列表中。安装后，我们需要像在OAuth
+    2中注册服务提供程序一样在注册服务提供程序上注册JWT。在Lumen上，可以通过在`bootstrap/app.php`文件中添加以下行来实现：'
+- en: '[PRE35]'
+  id: totrans-184
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Also, uncomment the following line:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要取消以下行的注释：
+- en: '[PRE36]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Your ` bootstrap/app.php` file should look as follows:'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的`bootstrap/app.php`文件应如下所示：
+- en: '[PRE37]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: Setting up JWT
+  id: totrans-189
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 设置JWT
+- en: 'Now we need a secret key, so run the following command in order to generate
+    and place it on the JWT config file:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要一个秘密密钥，因此运行以下命令以生成并将其放置在JWT配置文件中：
+- en: '[PRE38]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'Once it is generated, you can see the secret key placed in the `.env` file
+    (your secret key will be different). Check this and ensure that your `.env` looks
+    as shown:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 生成后，您可以在`.env`文件中看到放置的秘密密钥（您的秘密密钥将不同）。检查并确保您的`.env`如下所示：
+- en: '[PRE39]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Now, go to the `config/jwt.php` file; this is the JWT `config` file, ensure
+    that your file is as follows:'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，转到`config/jwt.php`文件；这是JWT `config`文件，请确保您的文件如下所示：
+- en: '[PRE40]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'It is also necessary to set up `config/app.php` properly. Ensure that you entered
+    the user model correctly, it will define the table where JWT should search for
+    the user and password provided:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还需要正确设置`config/app.php`。确保您正确输入了用户模型，它将定义JWT应该搜索用户和提供的密码的表：
+- en: '[PRE41]'
+  id: totrans-197
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'Now we are ready to define the methods that require authentication by editing
+    `/app/Http/routes.php`:'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们准备通过编辑`/app/Http/routes.php`来定义需要身份验证的方法：
+- en: '[PRE42]'
+  id: totrans-199
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: You can see in the preceding code that our middleware only affects the methods
+    included in the group that we defined the middleware in. We can create all the
+    groups we want in order to pass the methods through the middleware(s) that we
+    select.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在上述代码中看到，我们的中间件只影响我们在其中定义了中间件的组中包含的方法。我们可以创建所有我们想要的组，以便通过我们选择的中间件传递方法。
+- en: 'And finally, edit the `/app/Providers/AuthServiceProvider.php` file and add
+    the following highlighted code:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，编辑`/app/Providers/AuthServiceProvider.php`文件，并添加以下突出显示的代码：
+- en: '[PRE43]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'Finally, we need to make some changes on your user model file, so go to `/app/Model/User.php`
+    and add the following lines of `JWTSubject` to the class implements list:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们需要对用户模型文件进行一些更改，因此转到`/app/Model/User.php`并将以下行添加到类实现列表中的`JWTSubject`：
+- en: '[PRE44]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: Do not forget to add the `getJWTIdentifier()` and `getJWTCustomClaims()` functions,
+    as you can see in the preceding code. These functions are necessary to implement
+    `JWTSubject`.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记添加`getJWTIdentifier()`和`getJWTCustomClaims()`函数，如上述代码所示。这些函数是实现`JWTSubject`所必需的。
+- en: Let's try JWT
+  id: totrans-206
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 让我们尝试JWT
+- en: 'In order to test this, we have to create a new user in the users table of the
+    database. So, add it by making a migration or executing the following query in
+    your favorite SQL client:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了测试这一点，我们必须在数据库的用户表中创建一个新用户。因此，通过执行迁移或在您喜欢的SQL客户端中执行以下查询来添加它：
+- en: '[PRE45]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: The hashed password inserted manually corresponds to '123456'. Lumen will save
+    your user passwords hashed for security reasons.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 手动插入的哈希密码对应于'123456'。Lumen会为安全原因保存您的用户密码的哈希值。
+- en: 'Open Postman and give it a try by making a POST call to `http://localhost:8084/user`.
+    You should receive the following response:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开Postman并尝试通过对`http://localhost:8084/user`进行POST调用。您应该收到以下响应：
+- en: '[PRE46]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: This is happening because the `http://localhost:8084/user` method is protected
+    by an authentication middleware. You can check this on your `routes.php` file.
+    In order to get the user, it is necessary to provide a valid access token.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是因为`http://localhost:8084/user`方法受到身份验证中间件的保护。您可以在`routes.php`文件中检查这一点。为了获取用户，需要提供有效的访问令牌。
+- en: 'The method to get a valid access token is `http://localhost:8084/login`, so
+    make a POST call with the parameters that correspond to the user we added, `email
+    = john@phpmicroservices.com`, and password, `123456`. If they are correct, we
+    will get a valid access token:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 获取有效访问令牌的方法是`http://localhost:8084/login`，因此使用与我们添加的用户对应的参数进行POST调用，`email =
+    john@phpmicroservices.com`，密码为`123456`。如果它们是正确的，我们将获得有效的访问令牌：
+- en: '[PRE47]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'So now, we can use the preceding access token to make the POST call to `http://localhost:8084/user` as
+    we did before. This time, we will get the user info:'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以使用前面的访问令牌进行POST调用`http://localhost:8084/user`，就像以前一样。这次，我们将获得用户信息：
+- en: '[PRE48]'
+  id: totrans-216
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: As you can see, it is very simple to protect your methods using a valid access
+    token. It will make your application more secure.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，使用有效的访问令牌保护您的方法非常简单。这将使您的应用程序更加安全。
+- en: Access Control List
+  id: totrans-218
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 访问控制列表
+- en: This is a very common system in all applications regardless of their size. **Access
+    Control List** (**ACL**) provides us with an easy way to manage and filter the
+    permissions of every user. Let's look at this in a little more detail.
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是所有应用程序中非常常见的系统，无论其大小如何。**访问控制列表**（**ACL**）为我们提供了一种简单的方式来管理和过滤每个用户的权限。让我们更详细地看一下。
+- en: What is ACL?
+  id: totrans-220
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: ACL是什么？
+- en: The method that an application uses to identify every single user of the application
+    is ACL. This is the system that informs the application what access rights or
+    permissions a user or group of users have for a specific task or action.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用程序用于识别应用程序的每个单个用户的方法是ACL。这是一个系统，它告诉应用程序特定任务或操作的用户或用户组有什么访问权限或权限。
+- en: Every task (function or action) has an attribute to identify which users can
+    use it, and ACL is a list that links every task with every action, such as read,
+    write, or execute.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个任务（函数或操作）都有一个属性来标识哪些用户可以使用它，ACL是一个将每个任务与每个操作（如读取、写入或执行）关联的列表。
+- en: 'ACL has the following two featured advantages for the applications that use
+    it:'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于使用ACL的应用程序，ACL具有以下两个特点优势：
+- en: '**Management**: Using ACL in our application allows us to add users to groups
+    and manage the permissions for each group. Also, it is easier to add, modify,
+    or remove permissions to many users or groups.'
+  id: totrans-224
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**管理**：在我们的应用程序中使用ACL允许我们将用户添加到组中，并管理每个组的权限。此外，可以更容易地向许多用户或组添加、修改或删除权限。'
+- en: '**Security**: Having different permissions for each user is better for the
+    application''s security. It avoids fake users or exploits breaking the application
+    just by giving different permissions to normal users and administrators.'
+  id: totrans-225
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**安全性**：为每个用户设置不同的权限对应用程序的安全性更好。它可以避免虚假用户或利用通过给予普通用户和管理员不同的权限来破坏应用程序。'
+- en: For our application based on microservices, we recommend having a different
+    ACL for each microservice; this avoids having a single point of entry for the
+    entire application. Remember that we are building microservices, and one of the
+    requirements was that microservices should be isolated and independent; so, having
+    a microservice to control the rest of them is not a good practice.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们基于微服务的应用程序，我们建议为每个微服务设置不同的ACL；这样可以避免整个应用程序只有一个入口点。请记住，我们正在构建微服务，其中一个要求是微服务应该是隔离和独立的；因此，有一个微服务来控制其他微服务并不是一个好的做法。
+- en: This is not a difficult task, it makes sense because every microservice should
+    have different tasks and every task is different for each user in terms of permissions.
+    Imagine that we have a user who has the following permissions. This user can create
+    secrets and check the nearby secrets, but is not allowed to create battles or
+    new users. Managing the ACL globally will be a problem in terms of scalability
+    when a new microservice is added to the system or even when new developers join
+    the team and they have to understand the complex system of global ACL. As you
+    can see, it is better to have an ACL system for each microservice, so when you
+    add a new one, it is not necessary to modify the ACL for the rest.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这并不是一项困难的任务，这是有道理的，因为每个微服务应该有不同的任务，每个任务在权限方面对每个用户都是不同的。想象一下，我们有一个用户，该用户具有以下权限。该用户可以创建秘密并检查附近的秘密，但不允许创建战斗或新用户。在全局管理ACL将成为一个问题，因为当新的微服务添加到系统中时，甚至当新的开发人员加入团队并且他们必须理解全局ACL的复杂系统时，会出现可扩展性问题。正如你所看到的，最好为每个微服务设置一个ACL系统，这样当你添加一个新的微服务时，就不需要修改其余的ACL。
+- en: How to use ACL
+  id: totrans-228
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何使用ACL
+- en: Lumen provides us with an authentication process in order to get a user to sign
+    up, log in, log out, and reset the password, and it also provides an ACL system
+    whose classes are called `Gate`.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Lumen为我们提供了一个身份验证过程，以便让用户注册、登录、注销和重置密码，并且还提供了一个名为`Gate`的ACL系统。
+- en: '`Gate` allows us to know whether a specific user has permissions to do a specific
+    action. This is very easy and it can be used in every method of your API.'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Gate`允许我们知道特定用户是否有权限执行特定操作。这非常简单，可以在API的每个方法中使用。'
+- en: To set up ACL on Lumen, you have to enable facades on your `bootstrap/app.php`
+    by removing the semicolon from the `app->withFacades();` line; if this line does
+    not appear on your file, add it.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在Lumen上设置ACL，必须通过从`app->withFacades();`行中删除分号来启用门面；如果您的文件中没有这一行，请添加它。
+- en: 'It is also necessary to create a new file on `config/Auth.php` with the following
+    code:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`config/Auth.php`上创建一个新文件是必要的，文件中包含以下代码：
+- en: '[PRE49]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: The preceding code is necessary to use the `Gate` class on our controller in
+    order to check the user permissions.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的控制器上使用`Gate`类来检查用户权限，需要上述代码。
+- en: 'Once this is set up, we have to define the different actions or situations
+    available for a specific user. To do this, open the `app/Providers/AuthServiceProvider.php` file;
+    on the `boot()` function, we can define every action or situation by writing the
+    following code:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设置好这些后，我们必须定义特定用户可用的不同操作或情况。为此，打开`app/Providers/AuthServiceProvider.php`文件；在`boot()`函数中，我们可以通过编写以下代码来定义每个操作或情况：
+- en: '[PRE50]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Once we have defined the situation, we can put it into our function. There
+    are three different ways to use it: *allows*, *checks* and *denies*. The first
+    two are the same, they return true when the defined situation returns true, and
+    the last one returns true when the defined situation returns false:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们定义了情况，我们就可以将其放入我们的函数中。有三种不同的使用方法：*allows*、*checks*和*denies*。前两种是相同的，当定义的情况返回true时，它们返回true，最后一种在定义的情况返回false时返回true：
+- en: '[PRE51]'
+  id: totrans-238
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: As you can see, it is not necessary to send the `$user` variable, it will get
+    the current user automatically.
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，不需要发送`$user`变量，它会自动获取当前用户。
+- en: Security of the source code
+  id: totrans-240
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 源代码的安全性
+- en: The most likely situation is that your project will connect to an external service
+    using some credentials, for example, a database. Where will you store all this
+    information? The most common way is to have a configuration file inside your source
+    where you place all your credentials. The main problem with this approach is that
+    you will commit the credentials, and any person with access to the source will
+    have access to them. It doesn't matter that you trust the people who have access
+    to the repo; it is not a good idea to store credentials.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最有可能的情况是，您的项目将使用一些凭证连接到外部服务，例如数据库。您会把所有这些信息存储在哪里？最常见的方法是在源代码中有一个配置文件，您可以在其中放置所有凭证。这种方法的主要问题是您会提交凭证，任何有权访问源代码的人都将能够访问它们。不管您信任有权访问存储库的人，将凭证存储起来都不是一个好主意。
+- en: 'If you can''t store credentials in your source code, you are probably wondering
+    how you will store them. You have two main options:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您不能在源代码中存储凭证，您可能想知道如何存储它们。您有两个主要选项：
+- en: Environment variables
+  id: totrans-243
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 环境变量
+- en: External services
+  id: totrans-244
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 外部服务
+- en: Let's take a look at each one so that you can choose which option is better
+    for your project.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看看每一个，这样您就可以选择哪个选项更适合您的项目。
+- en: Environment variables
+  id: totrans-246
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 环境变量
+- en: This way of storing credentials is very easy to implement--you only define the
+    variables you want to store in the environment and later, you can get them in
+    your source.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种存储凭证的方式非常容易实现--您只需定义要存储在环境中的变量，稍后可以在源代码中获取它们。
+- en: 'The framework we have chosen for our project is Lumen and with this framework,
+    it is very easy to define your environment variables and later use them in the
+    code. The most important file is the `.env` file, located in the root of your
+    source. By default, this file is in `gitignore` to avoid being committed, but
+    the framework comes with an `.env.example` example so that you can check how to
+    define the variables. In this file, you can find definitions, such as the following
+    ones:'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们选择的项目框架是Lumen，使用这个框架非常容易定义您的环境变量，然后在代码中使用它们。最重要的文件是位于源代码根目录的`.env`文件。默认情况下，这个文件在`gitignore`中，以避免被提交，但框架附带了一个`.env.example`示例，以便您可以查看如何定义这些变量。在这个文件中，您可以找到以下定义：
+- en: '[PRE52]'
+  id: totrans-249
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: The preceding definitions will create the environment variables and you can
+    get the values in your code with a simple `env('DB_DATABASE');` or `env('DB_DATABASE',
+    'default_value');`. The `env()` function supports two parameters, so you can define
+    a default value in case the variable you are trying to get is not defined.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的定义将创建环境变量，您可以使用简单的`env('DB_DATABASE');`或`env('DB_DATABASE', 'default_value');`在代码中获取值。`env()`函数支持两个参数，因此您可以定义一个默认值，以防您要获取的变量未定义。
+- en: The main benefit of using environment variables is that you can have different
+    environments without needing to change anything in your source; you can even change
+    the values without making any changes to your code.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用环境变量的主要好处是您可以拥有不同的环境，而无需更改源代码中的任何内容；您甚至可以在不对代码进行任何更改的情况下更改值。
+- en: External services
+  id: totrans-252
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 外部服务
+- en: This way of storing credentials uses an external service to store all the credentials
+    and they work more or less like the environment variables. When you need any credentials,
+    you have to ask this service.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种存储凭证的方式使用外部服务来存储所有凭证，它们的工作方式与环境变量差不多。当您需要任何凭证时，您必须向该服务请求。
+- en: 'One of the mainstream credential storage systems these days is the HashiCorp
+    Vault project, an open source tool that allows you to create a secure place where
+    you can store your credentials. It has multiple benefits and we highlight, among
+    them, the following ones:'
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些天主流的凭证存储系统之一是HashiCorp Vault项目，这是一个开源工具，允许您创建一个安全的地方来存储您的凭证。它有多个好处，我们其中一些重点包括以下几点：
+- en: HTTP API
+  id: totrans-255
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: HTTP API
+- en: Key rolling
+  id: totrans-256
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 密钥滚动
+- en: Audit logs
+  id: totrans-257
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 审计日志
+- en: Support for multiple secret backends
+  id: totrans-258
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 支持多个秘密后端
+- en: The main disadvantage of using an external service is the extra complexity you
+    are adding to your application; you will add a new component to manage and keep
+    up to date.
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用外部服务的主要缺点是您为应用程序增加了额外的复杂性；您将添加一个新组件来管理和保持最新状态。
+- en: Tracking and monitoring
+  id: totrans-260
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 跟踪和监控
+- en: When you are dealing with security in your application, it is important to keep
+    track and monitor what is happening in it. In [Chapter 6](ch06.html "Chapter 6. Monitoring"),
+    *Monitoring*, we implemented Sentry as a log and monitoring system and we also
+    added Datadog as our APM, so you can use these tools to keep track of what is
+    happening and to send you alerts.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您处理应用程序中的安全性时，重要的是要跟踪和监视其中发生的事情。在[第6章](ch06.html "第6章.监控") *监控*中，我们实现了Sentry作为日志和监控系统，并且还添加了Datadog作为我们的APM，因此您可以使用这些工具来跟踪发生的情况并发送警报。
+- en: However, what do you want to track? Let's imagine that you have a login system,
+    this component is a good place to add your tracking. If you track each failed
+    login for a user, you can know if somebody is trying to attack your login system.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，您想要跟踪什么？让我们想象一下，您有一个登录系统，这个组件是一个很好的地方来添加您的跟踪。如果您跟踪每次用户登录失败，您就可以知道是否有人试图攻击您的登录系统。
+- en: Does your application allow users to add, modify, and delete content? Track
+    any changes to the content so that you can detect untrusted users.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的应用程序是否允许用户添加、修改和删除内容？跟踪内容的任何更改，以便您可以检测到不受信任的用户。
+- en: In security, there are no standards about what to track and what not to track,
+    simply use your common sense. Our main recommendation is to create a list of sensitive
+    points in your application that cover at least where the users can login, create
+    content, or delete it and later use these lists as a starting point to add tracking
+    and monitoring.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在安全方面，没有关于要跟踪什么和不要跟踪什么的标准，只需运用常识。我们的主要建议是创建一个敏感点列表，至少涵盖用户可以登录、创建内容或删除内容的地方，并将这些列表用作添加跟踪和监控的起点。
+- en: Best practices
+  id: totrans-265
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 最佳实践
+- en: As with any other part of the application, when you are dealing with security,
+    there are some well-known best practices you need to follow or at least be aware
+    of to avoid future issues. Here, you can find the most common ones related to
+    web development.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与应用程序的任何其他部分一样，当您处理安全性时，有一些众所周知的最佳实践需要遵循，或者至少要意识到以避免未来的问题。在这里，您可以找到与Web开发相关的最常见的最佳实践。
+- en: File permissions and ownership
+  id: totrans-267
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 文件权限和所有权
+- en: 'One of the most basic security mechanisms is file/folder permissions and ownership.
+    Assuming that you are working on a Linux/Unix system, the main recommendation
+    is to assign the ownership of your source code to the web server or PHP engine
+    user. Regarding file permissions, you should be using the following setting:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件/文件夹权限和所有权是最基本的安全机制之一。假设您正在使用Linux/Unix系统，主要建议是将您的源代码的所有权分配给Web服务器或PHP引擎用户。关于文件权限，您应该使用以下设置：
+- en: '**500 permissions for directories (dr-x------)**: This setting prevents any
+    accidental deletion or modification of files in the directory.'
+  id: totrans-269
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 目录的500权限（dr-x------）：此设置防止意外删除或修改目录中的文件。
+- en: '**400 permissions for files (-r--------)**: This setting prevents any users
+    from overwriting files.'
+  id: totrans-270
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文件的400权限（-r--------）：此设置防止任何用户覆盖文件。
+- en: '**700 permissions (drwx------)**: This is for any writable directories. It
+    gives full control to the owner and is used in upload folders.'
+  id: totrans-271
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 700权限（drwx------）：这适用于任何可写目录。它给予所有者完全控制，并用于上传文件夹。
+- en: '**600 permissions (-rw-------)** : This setting is for any writable files.
+    It avoids any modification of your files by any user who is not an owner.'
+  id: totrans-272
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 600权限（-rw-------）：这个设置适用于任何可写文件。它避免了任何非所有者的用户对您的文件进行修改。
+- en: PHP execution locations
+  id: totrans-273
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: PHP执行位置
+- en: Avoid any future problems by allowing the execution of PHP scripts only on selected
+    paths and deny any kind of execution in sensitive (writable) directories, for
+    example, any upload directories.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过仅允许在选定路径上执行PHP脚本并拒绝在敏感（可写）目录中执行任何类型的执行，例如，任何上传目录，避免任何未来问题。
+- en: Never trust users
+  id: totrans-275
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 永远不要相信用户
+- en: As a rule of thumb, never trust the user. Filter any input that comes from anybody,
+    you never know the dark intentions behind a form submit. Of course, never rely
+    only on frontend filtering and validation. If you added filtering and validation
+    to the frontend, do it again in the backend.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个经验法则，永远不要相信用户。过滤来自任何人的任何输入，您永远不知道表单提交背后的黑暗意图。当然，永远不要仅依赖于前端过滤和验证。如果您在前端添加了过滤和验证，请在后端再次进行过滤和验证。
+- en: SQL injection
+  id: totrans-277
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: SQL注入
+- en: Nobody wants their data to be exposed or to be accessed by someone who does
+    not have permission and this type of attack against your application is due to
+    bad filtering or validation of the inputs. Imagine that you use a field to store
+    the name of the user that is not correctly filtered, a malicious user can use
+    this field to execute SQL queries. To help you to avoid this issue, use the ORM
+    filtering methods or any filtering method available in your favorite framework
+    when you are dealing with databases.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有人希望他们的数据被暴露或被未经许可的人访问，对您的应用程序的这种攻击是由于输入的过滤或验证不当。想象一下，您使用一个字段来存储未经正确过滤的用户名称，恶意用户可以使用此字段执行SQL查询。为了帮助您避免这个问题，当您处理数据库时，请使用ORM过滤方法或您喜欢的框架中可用的任何过滤方法。
+- en: Cross-site scripting XSS
+  id: totrans-279
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 跨站脚本XSS
+- en: This is another type of attack against your application and is due to bad filtering.
+    If you allow your users to post any kind of content on your page, it may be possible
+    for some malicious users to add scripts to the page without your permission. Imagine
+    that you have a comments section on your page and your input filtering is not
+    the best, a malicious user can add a script as a comment that opens a spam pop
+    up. Remember what we told you before--never trust your users--filter and validate
+    everything.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是对您的应用程序的另一种攻击类型，是由于过滤不当。如果您允许用户在页面上发布任何类型的内容，一些恶意用户可能会未经您的许可向页面添加脚本。想象一下，您的页面上有评论部分，您的输入过滤不是最好的，恶意用户可以添加一个作为评论的脚本，打开垃圾邮件弹出窗口。记住我们之前告诉过您的--永远不要相信您的用户--过滤和验证一切。
+- en: Session hijacking
+  id: totrans-281
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 会话劫持
+- en: In this attack, the malicious user steals another user's session keys, giving
+    the malicious user the opportunity to be like the other user. Imagine that your
+    application deals with financial information and a malicious user can steal an
+    admin session key, now this user can get all the information they need. Most of
+    the time, sessions are stolen using an XSS attack, so first, try to avoid any
+    XSS attacks. Another way of mitigating this issue is preventing JavaScript from
+    having access to the session ID; you can do this in your `php.ini` with the `session.cookie.httponly` setting.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种攻击中，恶意用户窃取另一个用户的会话密钥，使恶意用户有机会像其他用户一样。想象一下，您的应用程序涉及财务信息，一个恶意用户可以窃取管理员会话密钥，现在这个用户可以获得他们需要的所有信息。大多数情况下，会话是通过XSS攻击窃取的，所以首先要尽量避免任何XSS攻击。另一种减轻这个问题的方法是防止JavaScript访问会话ID；您可以在`php.ini`中使用`session.cookie.httponly`设置来做到这一点。
+- en: Remote files
+  id: totrans-283
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 远程文件
+- en: Including remote files from your application can be very dangerous, you will
+    never be 100% sure that the remote file you are including can be trusted. If at
+    some point, the included remote file is compromised, attackers can do what they
+    want, for example, remove all the data from your application.
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从您的应用程序包含远程文件可能非常危险，您永远无法100%确定您包含的远程文件是否可信。如果在某个时刻，被包含的远程文件受到损害，攻击者可以为所欲为，例如，从您的应用程序中删除所有数据。
+- en: 'An easy way to avoid this is to disable the remote files in your `php.ini`.
+    Open it and disable the following settings:'
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 避免这种问题的简单方法是在您的`php.ini`中禁用远程文件。打开它并禁用以下设置：
+- en: '`allow_url_fopen`: This is enabled by default'
+  id: totrans-286
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`allow_url_fopen`：默认情况下启用'
+- en: '`allow_url_include`: This is disabled by default; if you disable the `allow_url_fopen`
+    setting, it forces this to be disabled too'
+  id: totrans-287
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`allow_url_include`：默认情况下禁用；如果禁用`allow_url_fopen`设置，它会强制禁用此设置。'
+- en: Password storage
+  id: totrans-288
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 密码存储
+- en: Never store any passwords in plain text. When we say never, we mean never. If
+    you think that you will need to check a user's password you are wrong, any kind
+    of restoring or resupplying a missing password needs to go through a recovery
+    system. When you store a password, you store the password hash that is mixed with
+    some random salt.
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 永远不要以明文存储任何密码。当我们说永远不要，我们是指永远不要。如果你认为你需要检查用户的密码，那么你是错误的，任何恢复或补充丢失密码的操作都需要通过恢复系统进行。当你存储一个密码时，你存储的是与一些随机盐混合的密码哈希。
+- en: Password policies
+  id: totrans-290
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 密码策略
+- en: 'If you keep sensitive data and you don''t want your application to be exposed
+    by the passwords of your users, put a very strict password policy in place. For
+    example, you can create the following password policy to reduce cracking and dictionary
+    attacks:'
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你保留敏感数据，并且不希望你的应用程序因用户的密码而暴露，那么请制定非常严格的密码策略。例如，你可以创建以下密码策略来减少破解和字典攻击：
+- en: At least 18 characters
+  id: totrans-292
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 至少18个字符
+- en: At least 1 uppercase
+  id: totrans-293
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 至少1个大写字母
+- en: At least 1 number
+  id: totrans-294
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 至少1个数字
+- en: At least 1 special character
+  id: totrans-295
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 至少1个特殊字符
+- en: Not been used before
+  id: totrans-296
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 以前未使用过
+- en: Not being a concatenation of the user data, changing vowels to numbers
+  id: totrans-297
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 不是用户数据的串联，将元音变成数字
+- en: Expires every 3 months
+  id: totrans-298
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每3个月过期
+- en: Source code revelation
+  id: totrans-299
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 源代码泄露
+- en: Keep the source code out of sight of curious eyes, if for some reason your server
+    is broken, all the source code will be exposed as plain text. The only way to
+    avoid this is to only keep the required files in the web server root folder. As
+    an addition, be careful with special files, such as `composer.json`. If we expose
+    our `composer.json`, everybody will know the different versions of each of our
+    libraries, giving them an easy way of knowing any possible bugs.
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将源代码放在好奇的眼睛看不见的地方，如果你的服务器出了问题，所有的源代码都将以明文形式暴露出来。避免这种情况的唯一方法是只在web服务器根目录中保留所需的文件。另外，要小心特殊文件，比如`composer.json`。如果我们暴露了我们的`composer.json`，每个人都会知道我们每个库的不同版本，从而轻松地了解可能存在的任何错误。
+- en: Directory traversal
+  id: totrans-301
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 目录遍历
+- en: This kind of an attack tries to access files that are stored outside the web
+    root folder. Most of the time, this is due to bugs in the code, so the malicious
+    user can manipulate variables that reference files. There is no easy way to avoid
+    this; however, if you use external frameworks or libraries, keeping them up to
+    date will help you.
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种攻击试图访问存储在web根目录之外的文件。大多数情况下，这是由于代码中的错误导致的，因此恶意用户可以操纵引用文件的变量。没有简单的方法可以避免这种情况；然而，如果你使用外部框架或库，保持它们最新将有所帮助。
+- en: These are the most obvious security concerns you need to be aware of, but this
+    is not an exhaustive list. Subscribe to security newsletters and keep all your
+    code up to date to reduce risks to the minimum.
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些是你需要注意的最明显的安全问题，但这并不是一个详尽的列表。订阅安全新闻通讯，并保持所有代码最新，以将风险降到最低。
+- en: Summary
+  id: totrans-304
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we talked about security and authentication. We showed you
+    how you can encrypt your data and communication layers; we even showed you how
+    to build a robust login system, and how you can deal with the secrets of your
+    application. Security is a very important aspect in any project, so we gave you
+    a small list of common security risks you need to be aware of and, of course,
+    the main recommendation--never trust your users.
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一章中，我们谈到了安全和认证。我们向您展示了如何加密数据和通信层；我们甚至向您展示了如何构建一个强大的登录系统，以及如何处理应用程序的秘密。安全是任何项目中非常重要的一个方面，所以我们给出了一个常见安全风险的小列表，当然，主要建议是——永远不要相信你的用户。

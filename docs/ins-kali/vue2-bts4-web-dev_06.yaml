@@ -1,0 +1,1290 @@
+- en: Chapter 7. Adding a Menu and Routing Functionality Using vue-router and Nuxt.js
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第7章。使用vue-router和Nuxt.js添加菜单和路由功能
+- en: In the previous chapter, we added a very important feature to our application
+    – *authentication*. Now, our users are able to register, log in to the application,
+    and manage their resources once they are logged in. So, now they can manage the
+    configuration of the Pomodoro timer and their account's settings. They also have
+    access to their statistics data once they are logged in. We have learned how to
+    use Firebase's authentication API and connect the Vue application to it. I must
+    say, the previous chapter has been extensive in learning and a very backend oriented
+    chapter. I enjoyed it a lot and I hope you enjoyed it as well.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们为我们的应用程序添加了一个非常重要的功能 - *身份验证*。现在，我们的用户可以注册、登录应用程序，并在登录后管理他们的资源。因此，他们现在可以管理番茄钟计时器的配置和他们账户的设置。一旦登录，他们还可以访问他们的统计数据。我们已经学会了如何使用Firebase的身份验证API并将Vue应用程序连接到它。我必须说，上一章在学习上非常广泛，而且非常偏向后端。我非常喜欢它，希望你也喜欢。
+- en: 'Despite having this complex feature of authentication and authorization, our
+    application still lacks navigation. For simplicity reasons, we are currently displaying
+    all the application''s parts on the main page. This is… ugly:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管我们的应用程序具有身份验证和授权的复杂功能，但仍然缺乏导航。出于简单起见，我们目前在主页上显示应用程序的所有部分。这很丑陋：
+- en: '![Adding a Menu and Routing Functionality Using vue-router and Nuxt.js](../images/00112.jpeg)'
+  id: totrans-3
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用vue-router和Nuxt.js添加菜单和路由功能](../images/00112.jpeg)'
+- en: Admit it, this is ugly
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 承认吧，这很丑陋
+- en: 'In this chapter, we are not going to make things beautiful. What we are going
+    to do is make things navigable so that all parts of the application are accessible
+    through navigation. We are going to apply the `vue-router` mechanism in order
+    to achieve the natural browser''s navigation and we are going to use Bootstrap''s
+    `navbar` in order to have the corresponding buttons to navigate to each section
+    easily. Thus, in this chapter we are going to:'
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们不打算让事情变得美丽。我们要做的是使事情可导航，以便通过导航访问应用程序的所有部分。我们将应用`vue-router`机制，以实现自然的浏览器导航，并且我们将使用Bootstrap的`navbar`来轻松导航到每个部分。因此，在本章中，我们将：
+- en: Explore `vue-router` again to achieve the navigation of the ProFitOro application
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 再次探索`vue-router`以实现ProFitOro应用程序的导航
+- en: Use Bootstrap's `navbar` to render the navigation bar
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Bootstrap的`navbar`来渲染导航栏
+- en: Explore code splitting techniques to load each part of the application only
+    when it's needed
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 探索代码拆分技术，仅在需要时加载应用程序的每个部分
+- en: And, finally, we are going to explore the Nuxt.js template, rebuild our application
+    using it, and achieve routing in an unobtrusive and enjoyable way
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最后，我们将探索Nuxt.js模板，使用它重建我们的应用程序，并以不显眼和愉快的方式实现路由
+- en: Adding navigation using vue-router
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用vue-router添加导航
+- en: 'I hope you still remember from the second chapter what `vue-router` is, what
+    it does, and how it works. Just to remind you:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 希望你还记得第二章中`vue-router`是什么，它是做什么的，以及它是如何工作的。只是提醒一下：
+- en: Vue-router is the official router for Vue.js. It deeply integrates with Vue.js
+    core to make building Single Page Applications with Vue.js a breeze.
+  id: totrans-12
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+  zh: Vue-router是Vue.js的官方路由器。它与Vue.js核心深度集成，使使用Vue.js构建单页面应用程序变得轻而易举。
+- en: -(From the official documentation of vue-router)
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: -(来自vue-router的官方文档)
+- en: 'The `vue-router` is very easy to use, and we don''t need to install anything
+    – it already comes with the default scaffolding of Vue applications with a webpack
+    template. In a nutshell, if we have Vue components that should represent the routes,
+    this is what we have to do:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`vue-router`非常容易使用，我们不需要安装任何东西 - 它已经与Vue应用程序的默认脚手架和webpack模板一起提供。简而言之，如果我们有应该表示路由的Vue组件，这就是我们要做的事情：'
+- en: Tell Vue to use `vue-router`
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 告诉Vue使用`vue-router`
+- en: Create a router instance and map each component to its path
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建一个路由实例并将每个组件映射到其路径
+- en: Pass this instance to the options of a Vue instance or component
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将此实例传递给Vue实例或组件的选项
+- en: Render it using the `router-view` component
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`router-view`组件进行渲染
+- en: Note
+  id: totrans-19
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'Check the official `vue-router` documentation: [https://router.vuejs.org](https://router.vuejs.org)'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看官方`vue-router`文档：[https://router.vuejs.org](https://router.vuejs.org)
+- en: 'When you create your router, you should pass the array of routes to it. Each
+    array item represents the mapping of a given component to some path:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建路由时，应将路由数组传递给它。每个数组项表示给定组件与某个路径的映射：
+- en: '[PRE0]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'ProFitOro only has four possible routes – the Pomodoro timer itself, which
+    we can consider as the home page, views with settings and statistics, and the
+    view with collaborative workouts. Thus, our router looks very simple and easy
+    to understand:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ProFitOro只有四个可能的路由 - 番茄钟计时器本身，我们可以将其视为主页，带有设置和统计信息的视图，以及协作锻炼的视图。因此，我们的路由看起来非常简单易懂：
+- en: '[PRE1]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Now, if you import the created router in the `ContentComponent` view, pass
+    it to the options of the component and render the `router-view` component, you
+    will be able to see the Vue routing in action! You can also delete all the component
+    imports, because the only thing that `ContentComponent` should actually import
+    now is the router which will be responsible for everything else. So, `ContentComponent`
+    will look as follows:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您在`ContentComponent`视图中导入创建的路由，将其传递给组件的选项并渲染`router-view`组件，您将能够看到Vue路由的实际效果！您还可以删除所有组件导入，因为`ContentComponent`现在实际上应该导入的唯一事物是负责其他一切的路由。因此，`ContentComponent`将如下所示：
+- en: '[PRE2]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Open the page, type `localhost:8080/settings`, `localhost:8080/statistics`,
+    `localhost:8080/workouts` in the browser's address bar and you will see how the
+    views appear according to what you are actually trying to access. You must admit
+    that this was really easy.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开页面，在浏览器地址栏中输入`localhost:8080/settings`，`localhost:8080/statistics`，`localhost:8080/workouts`，您将看到视图根据您实际尝试访问的内容而出现。您必须承认，这真的很容易。
+- en: Now let's add the links, because we want to navigate by clicking some buttons
+    and not by introducing the navigation URL in the browser address bar, right?
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们添加链接，因为我们希望通过单击某些按钮进行导航，而不是在浏览器地址栏中输入导航URL，对吧？
+- en: 'Adding navigation links with `vue-router` is fairly easy. Use the provided
+    `router-link` component with the attribute `to` that points the link to the desired
+    path:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`vue-router`添加导航链接非常容易。使用提供的`router-link`组件，带有指向所需路径的`to`属性的链接：
+- en: '[PRE3]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Let''s add these links in our `Header` component. This is the component that
+    should be responsible for the navigation representation. So, in the `template`
+    section of our `HeaderComponent.vue`, add the following:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在我们的`Header`组件中添加这些链接。这个组件应该负责导航表示。因此，在我们的`HeaderComponent.vue`的`template`部分中，添加以下内容：
+- en: '[PRE4]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Don''t forget to import the router and export it in the component''s options:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记在组件选项中导入路由并导出它：
+- en: '[PRE5]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'With a bit of playing around with Bootstrap classes, we get something like
+    this:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过一点Bootstrap类的调整，我们可以得到如下结果：
+- en: '![Adding navigation using vue-router](../images/00113.jpeg)'
+  id: totrans-36
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用vue-router添加导航](../images/00113.jpeg)'
+- en: Navigating ProFitOro using vue-router
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用vue-router导航ProFitOro
+- en: This is, in a nutshell, the basics covering routing and navigation using `vue-router`
+    and its components. You can find the final code for this part in the `chapter7/1/profitoro`
+    folder. Pay special attention to the router itself (`router/index.js`), `ContentComponent.vue`
+    and the `HeaderComponent.vue` files.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是用`vue-router`及其组件进行路由和导航的基础知识。您可以在`chapter7/1/profitoro`文件夹中找到此部分的最终代码。特别注意路由器本身（`router/index.js`）、`ContentComponent.vue`和`HeaderComponent.vue`文件。
+- en: Exercise - restrict the navigation according to the authentication
+  id: totrans-39
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习 - 根据身份验证限制导航
+- en: Don't forget that we have to restrict the navigation links according to the
+    authentication state of the user. If the user is authenticated anonymously, we
+    shouldn't show the navigation links at all. However, there should be a button
+    that enables users to go back to the main page. So, this button should invoke
+    a logout functionality and just display a different text, let's say, **Go to the
+    start page**. You already know how to conditionally render Vue components. Our
+    router links are no more than just regular components, so apply the conditional
+    rendering mechanism to them based on the value of the user and its property as
+    `isAnonymous`.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记，我们必须根据用户的身份验证状态限制导航链接。如果用户是匿名身份验证的，我们不应该显示导航链接。然而，应该有一个按钮，让用户返回到主页。因此，这个按钮应该调用注销功能，并显示不同的文本，比如**返回到起始页**。您已经知道如何有条件地渲染Vue组件。我们的路由链接不过是普通组件，所以根据用户的值和其属性`isAnonymous`应用条件渲染机制。
+- en: Check the solution for this exercise in the `chapter7/2/profitoro` folder. Pay
+    attention to the `HeaderComponent` component.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`chapter7/2/profitoro`文件夹中检查此练习的解决方案。注意`HeaderComponent`组件。
+- en: Using Bootstrap navbar for navigation links
+  id: totrans-42
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Bootstrap导航栏进行导航链接
+- en: 'Our current navigation bar is great – it''s functional, but not responsive.
+    Luckily for us, Bootstrap has a `navbar` component that implements responsiveness
+    and adaptiveness for us. We just have to wrap our navigation elements with some
+    Bootstrap classes and then sit back and check our beautiful navigation bar that
+    collapses on mobile devices and expands on desktop devices. Check Bootstrap''s
+    documentation regarding the `navb` `ar` component: [https://v4-alpha.getbootstrap.com/components/navbar/](https://v4-alpha.getbootstrap.com/components/navbar/).'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们当前的导航栏很棒 - 它很实用，但不是响应式的。幸运的是，Bootstrap有一个`navbar`组件，为我们实现了响应性和适应性。我们只需用一些Bootstrap类包装我们的导航元素，然后坐下来检查我们美丽的导航栏，在移动设备上折叠，在桌面设备上展开。查看Bootstrap关于`navbar`组件的文档：[https://v4-alpha.getbootstrap.com/components/navbar/](https://v4-alpha.getbootstrap.com/components/navbar/)。
+- en: Note
+  id: totrans-44
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Keep in mind that this URL is for the alpha version. The next stable version
+    4 will be available on the official website.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，此URL是用于alpha版本。下一个稳定版本4将在官方网站上提供。
+- en: 'These are the classes we are going to use to transform our simple navigation
+    bar into a Bootstrap-managed responsive navigation bar:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些是我们将使用的类，将我们简单的导航栏转换为由Bootstrap管理的响应式导航栏：
+- en: '`navbar`: This wraps the whole navigation bar element'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 导航栏：这个包裹整个导航栏元素
+- en: '`navbar-toggleable-*`: This should also wrap the whole navigation bar element
+    and will tell it when to toggle between expanded/collapsed state (for example,
+    `navbar-toggleable-md` would make navigation bar collapse on medium-size devices)'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`navbar-toggleable-*`：这也应该包裹整个导航栏元素，并告诉它何时在展开/折叠状态之间切换（例如，`navbar-toggleable-md`会使导航栏在中等大小设备上折叠）'
+- en: '`navbar-toggler`: This is a class for the button that will be clicked to open
+    the collapsed menu on small devices'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`navbar-toggler`：这是一个用于在小型设备上打开折叠菜单的按钮类'
+- en: '`navbar-toggler-*`: This tells the `toggler` element where to be positioned,
+    for example, `navbar-toggler-right`'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`navbar-toggler-*`：这告诉`toggler`元素应该被放置在哪里，例如，`navbar-toggler-right`'
+- en: '`navbar-brand`: This is a class for the navigation bar element that will represent
+    a brand (can be logo and/or text)'
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`navbar-brand`：这是代表品牌的导航栏元素的类（可以是标志和/或文本）'
+- en: '`collapse navbar-collapse`: These are classes that will wrap the navigation
+    bar elements that should be collapsed on small devices'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`collapse navbar-collapse`：这些类将包裹应该在小设备上折叠的导航栏元素'
+- en: '`nav-item`: This is a class for each of the navigation bar items'
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`nav-item`：这是每个导航栏项的类'
+- en: '`nav-link`: This is a class for the nested element of the `nav-item` items;
+    this will finally be an anchor that will lead you to the given link'
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`nav-link`：这是`nav-item`项的嵌套元素的类；最终这将是一个将您带到给定链接的锚点'
+- en: 'There are lots of other classes to define a color scheme for your navigation
+    bar, as well as its positioning, alignment, and so on. Check the documentation
+    and try them all. I will just change the markup of the `Header` component. So,
+    it will look like the following:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有许多其他类来定义导航栏的颜色方案，以及其定位、对齐等。查看文档并尝试它们。我将只改变`Header`组件的标记。因此，它将看起来像下面这样：
+- en: '[PRE6]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'You have probably noticed that I used our `router-link` elements with `nav-link`
+    classes inside the navigation items. It turns out that they play really nicely
+    together. So, we mixed the Vue routing mechanism with Bootstrap''s navigation
+    bar and achieved an elegant solution for responsive routing in our Vue application.
+    Now, our header looks as great as this:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，我在导航项中使用了我们的`router-link`元素和`nav-link`类。事实证明它们非常好地配合在一起。因此，我们将Vue路由机制与Bootstrap的导航栏混合在一起，在我们的Vue应用程序中实现了一个优雅的响应式路由解决方案。现在，我们的页眉看起来就像这样：
+- en: '![Using Bootstrap navbar for navigation links](../images/00114.jpeg)'
+  id: totrans-58
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用Bootstrap导航栏进行导航链接](../images/00114.jpeg)'
+- en: ProFitOro's navigation bar on desktop device
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ProFitOro在桌面设备上的导航栏
+- en: 'If we open our ProFitOro on a mobile device, we will see a nice toggle button
+    instead of the menu:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们在移动设备上打开ProFitOro，我们将看到一个漂亮的切换按钮而不是菜单：
+- en: '![Using Bootstrap navbar for navigation links](../images/00115.jpeg)'
+  id: totrans-61
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用Bootstrap导航栏进行导航链接](../images/00115.jpeg)'
+- en: This is how ProFitOro's menu looks on a mobile device
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是ProFitOro在移动设备上的菜单样子
+- en: 'If we click on the toggle button on the mobile device, the menu will expand
+    vertically:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们在移动设备上点击切换按钮，菜单将垂直展开：
+- en: '![Using Bootstrap navbar for navigation links](../images/00116.jpeg)'
+  id: totrans-64
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用Bootstrap导航栏进行导航链接](../images/00116.jpeg)'
+- en: This is how an expanded ProFitOro menu looks on a mobile device
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是在移动设备上扩展的ProFitOro菜单的样子
+- en: Tip
+  id: totrans-66
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: 'This works nicely with alpha version of Bootstrap 4, however, if you use Bootstrap
+    4 Beta you will see some inconsistencies. Some classes were dropped, some classes
+    were added. In order to make it to look exactly the same, do the following:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这在Bootstrap 4的alpha版本中运行良好，但是如果您使用Bootstrap 4 Beta，您将看到一些不一致之处。一些类被删除，一些类被添加。为了使它看起来完全相同，做如下操作：
+- en: replace the `navbar-tooglable-md` class with the `navbar-expand-lg`
+  id: totrans-68
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用`navbar-expand-lg`替换`navbar-tooglable-md`类
+- en: replace `btn-secondary` buttons' class with `button-outline-secondary` swap
+    the toggler button and brand element
+  id: totrans-69
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将`btn-secondary`按钮的类替换为`button-outline-secondary`，交换切换按钮和品牌元素
+- en: 'The functionality of conditional rendering based on the authentication has
+    been dropped. I will re-add it, but instead of hiding the elements when the user
+    is anonymous, I will make them disabled. This will bring extra value to the application
+    – an unregistered user will constantly be reminded that there is some nice functionality
+    that he can use if he registers. Thus, I will bind the `disabled` Bootstrap class
+    to the `router-link` elements. This class will be activated if the user is anonymous.
+    So, each of our router links will look like the following:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于身份验证的条件渲染功能已被删除。我将重新添加它，但是不再在用户匿名时隐藏元素，而是将它们禁用。这将为应用程序带来额外的价值-未注册用户将不断被提醒，如果他注册，就可以使用一些不错的功能。因此，我将把`disabled`
+    Bootstrap类绑定到`router-link`元素上。如果用户是匿名的，这个类将被激活。因此，我们的每个路由链接将如下所示：
+- en: '[PRE7]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'If you open the page now and enter the application as an anonymous user you
+    will see that the links appear as disabled:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你现在打开页面并以匿名用户的身份进入应用程序，你会发现链接显示为禁用状态：
+- en: '![Using Bootstrap navbar for navigation links](../images/00117.jpeg)'
+  id: totrans-73
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用Bootstrap导航栏进行导航链接](../images/00117.jpeg)'
+- en: For an unauthorized user the links appear as disabled
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于未经授权的用户，链接将显示为禁用状态
+- en: But, our user is smart, we all know that, right? Our user will do exactly the
+    same thing that you are considering doing right now (if you haven't already done
+    it) - open the developer tools console, go to the elements tab, edit the markup
+    and remove the class `disabled`. *Ba-dum-tsss*, now you can click on the navigation
+    links!
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，我们的用户很聪明，我们都知道，对吧？我们的用户将做与你现在考虑做的事情完全相同（如果你还没有做过的话）-打开开发者工具控制台，转到元素选项卡，编辑标记并删除`disabled`类。*Ba-dum-tsss*，现在你可以点击导航链接了！
+- en: So, we need also to protect it on the router side. Fortunately for us, `vue-router`
+    instance provides a hook method called `beforeEach`. This method receives both
+    the next and previous routes and, inside it, you can evaluate them and invoke
+    the `next()` method that will proceed to the next route or replace the path being
+    invoked, depending on the condition.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们还需要在路由器端保护它。幸运的是，`vue-router`实例提供了一个名为`beforeEach`的钩子方法。这个方法接收下一个和上一个路由，并且在其中你可以评估它们并调用`next()`方法，这将根据条件继续到下一个路由或替换被调用的路径。
+- en: 'Additionally, each route item can include the meta attribute where we can pass
+    a condition on which this route can or cannot be invoked. Check the `vue-router`
+    documentation in this regard: [https://router.vuejs.org/en/advanced/meta.html](https://router.vuejs.org/en/advanced/meta.html).'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，每个路由项都可以包括元属性，我们可以在其中传递一个条件，该条件决定是否可以调用该路由。在这方面，请查看`vue-router`文档：[https://router.vuejs.org/en/advanced/meta.html](https://router.vuejs.org/en/advanced/meta.html)。
+- en: 'So, let''s add a meta attribute `requiresAuth` to each of three route items
+    and use the `beforeEach` method like this:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，让我们为每个三个路由项添加一个`requiresAuth`的元属性，并像这样使用`beforeEach`方法：
+- en: '[PRE8]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: '*Et voilá*, from now on, even if you explicitly type one of the conditional
+    routes URLs in the browser''s address bar while being unauthorized, you will be
+    redirected to the home page!'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*Et voilá*，从现在开始，即使你在未经授权的情况下在浏览器地址栏中明确输入了其中一个有条件的路由URL，你也会被重定向到主页！'
+- en: Check the final code for this part in the `chapter7/3/profitoro` folder. Pay
+    special attention to the router itself (`router/index.js`) and to the `Header`
+    component.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看`chapter7/3/profitoro`文件夹中此部分的最终代码。特别注意路由器本身（`router/index.js`）和`Header`组件。
+- en: Code splitting or lazy loading
+  id: totrans-82
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 代码拆分或延迟加载
+- en: When we build our application to deploy for production, all the JavaScript is
+    bundled into a unique JavaScript file. It's very handy, because once the browser
+    loads this file, the whole application is already on the client side and no one
+    is worried about loading more things. Of course, this is only valid for SPAs.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们构建应用程序以部署到生产环境时，所有JavaScript都被捆绑到一个唯一的JavaScript文件中。这非常方便，因为一旦浏览器加载了这个文件，整个应用程序已经在客户端上了，没有人担心加载更多的东西。当然，这仅适用于单页应用程序。
+- en: Our ProFitOro application (at least at this stage) benefits from such bundling
+    behavior – it's small, it's a single request, everything is in place and we don't
+    need to request anything from the server for any of the JavaScript files.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的ProFitOro应用程序（至少在这个阶段）受益于这种捆绑行为-它很小，只有一个请求，一切就位，我们不需要为任何JavaScript文件从服务器请求任何内容。
+- en: However, this kind of bundling might have some downsides. I am pretty sure that
+    you have already built or have already seen huge JavaScript applications. There'll
+    always be some point when loading huge bundles will become unbearably slow, especially
+    when we want these apps to run on both desktop and mobile environments.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，这种捆绑可能会有一些缺点。我非常确定您已经构建过或已经看到过庞大的JavaScript应用程序。总会有一些时候，加载庞大的捆绑包将变得难以忍受地慢，特别是当我们希望这些应用程序在桌面和移动环境下运行时。
+- en: An obvious solution for this problem would be to split the code in such a way
+    that different chunks of code are loaded only when they are needed. This is quite
+    a challenge for single page applications and this is why we have a huge community
+    working on web development nowadays.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个问题的一个明显解决方案是以一种方式拆分代码，只有在需要时才加载不同的代码块。这对于单页应用程序来说是一个相当大的挑战，这就是为什么我们现在有一个庞大的社区致力于网页开发。
+- en: 'Right now, some simple techniques already exist in the web development world
+    that can be used to split the code in webpack applications. Check the official
+    webpack documentation to find out more about it: [https://webpack.js.org/guides/code-splitting/](https://webpack.js.org/guides/code-splitting/).'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，在网页开发领域已经存在一些简单的技术，可以用来拆分webpack应用程序中的代码。查看官方webpack文档以了解更多信息：[https://webpack.js.org/guides/code-splitting/](https://webpack.js.org/guides/code-splitting/)。
+- en: 'In order to use code splitting in a Vue.js application, you don''t need to
+    do anything complex. There is no need to reconfigure your webpack configuration
+    files and there is no need to rewrite your components. Check this documentation
+    entry regarding lazy loading routes: [https://router.vuejs.org/en/advanced/lazy-loading.html](https://router.vuejs.org/en/advanced/lazy-loading.html).'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了在Vue.js应用程序中使用代码拆分，您不需要做任何复杂的事情。无需重新配置您的webpack配置文件，也无需重写您的组件。查看有关延迟加载路由的文档条目：[https://router.vuejs.org/en/advanced/lazy-loading.html](https://router.vuejs.org/en/advanced/lazy-loading.html)。
+- en: Tip
+  id: totrans-89
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: '**TL;DR**: in order to lazy load your routes, you just need to change the way
+    you are importing them. So, consider the following code: `import PomodoroTimer
+    from ''@/components/main/sections/PomodoroTimer''` To lazy load your routes, you
+    would write the following instead: `const PomodoroTimer = () => import(''@/components/main/sections/PomodoroTimer'')`'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**TL;DR**：为了延迟加载您的路由，您只需要改变导入它们的方式。因此，请考虑以下代码：`import PomodoroTimer from ''@/components/main/sections/PomodoroTimer''`
+    要惰性加载您的路由，您应该写成以下形式：`const PomodoroTimer = () => import(''@/components/main/sections/PomodoroTimer'')`'
+- en: The rest of the code remains totally unchanged!
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其余的代码保持完全不变！
+- en: 'Thus, we just change the way that we import components in our router:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们只需改变在路由器中导入组件的方式：
+- en: '[PRE9]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: That's it! Check the page and ensure that everything still works as intended.
+    Check the network panel. You will see that now it will request different JavaScript
+    bundles for different route views!
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样！检查页面，确保一切仍然按预期工作。检查网络面板。您会看到现在将为不同的路由视图请求不同的JavaScript包！
+- en: 'If you compare the network requests with the previous version, you will see
+    that there are now actually four requests – `0.js`, `1.js`, `2.js,` and `3.js
+    -` compared to the previous single `app.js` request:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您将网络请求与以前的版本进行比较，您将看到现在实际上有四个请求-`0.js`，`1.js`，`2.js`和`3.js`-与以前的单个`app.js`请求相比：
+- en: '![Code splitting or lazy loading](../images/00118.jpeg)'
+  id: totrans-96
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码分割或延迟加载](../images/00118.jpeg)'
+- en: A single request for app.js bundle before code splitting
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码分割或延迟加载之前的app.js包的单个请求
+- en: 'After the code splitting, if we navigate through the application''s navigation
+    links, we will see the following:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在代码分割之后，如果我们通过应用程序的导航链接导航，我们将看到以下内容：
+- en: '![Code splitting or lazy loading](../images/00119.jpeg)'
+  id: totrans-99
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码分割或延迟加载](../images/00119.jpeg)'
+- en: Considerably smaller JavaScript chunk is being requested for every route
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个路由都会请求相当小的JavaScript块
+- en: Pay attention to the chunk sizes. Don't you agree that for big projects the
+    code splitting technique might actually increase the application's performance?
+    Check the router's code in the `chapter7/3.1/profitoro` folder.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意一下块的大小。您不认为对于大型项目，代码分割技术实际上可能会增加应用程序的性能吗？检查`chapter7/3.1/profitoro`文件夹中的路由器代码。
+- en: Server-side rendering
+  id: totrans-102
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 服务器端渲染
+- en: '**Server-side rendering** (**SSR**) recently became yet another popular abbreviation
+    in the web development world. Used in addition to code splitting techniques, it
+    helps you to boost the performance of your web application. It also positively
+    affects your SEO, since all the content comes at once, and crawlers are able to
+    see it immediately, contrary to cases where the content is being built in the
+    browser after the initial request.'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**服务器端渲染**（**SSR**）最近成为了Web开发世界中又一个流行的缩写词。它与代码分割技术一起使用，有助于提高Web应用的性能。它还对SEO产生积极影响，因为所有内容一次性加载，爬虫能够立即看到，而不是在初始请求后在浏览器中构建内容的情况。'
+- en: 'I found a great article about SSR that compares server and client side rendering
+    (although it''s from 2012). Check it out: [http://openmymind.net/2012/5/30/Client-Side-vs-Server-Side-Rendering/](http://openmymind.net/2012/5/30/Client-Side-vs-Server-Side-Rendering/).'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我找到了一篇关于SSR的好文章，比较了服务器端和客户端渲染（尽管它是2012年的）。看看这个链接：[http://openmymind.net/2012/5/30/Client-Side-vs-Server-Side-Rendering/](http://openmymind.net/2012/5/30/Client-Side-vs-Server-Side-Rendering/)。
+- en: 'It''s fairly easy to bring server-side rendering to your Vue application –
+    check the official documentation in this regard: [https://ssr.vuejs.org](https://ssr.vuejs.org).'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将服务器端渲染引入Vue应用程序非常容易-在这方面查看官方文档：[https://ssr.vuejs.org](https://ssr.vuejs.org)。
+- en: It is important that our applications are performant; it is also important that
+    SEO works. However, it is also important not to abuse the tools and not to introduce
+    implementation overhead and overkill. Do we need SSR for the ProFitOro application?
+    To answer this question let's think about our content. If there is a lot of content
+    which is being brought to the page and is being used as a base for the initial
+    rendering then the answer is probably yes. Well, this is not the case for our
+    application. We have a simple login page, our ProFitOro timer, and a couple of
+    configuration settings. The only view where it might make sense in the future
+    is the one that contains workouts. But for now, let's not complicate things. You
+    can try out server-side rendering techniques for Vue applications with our ProFitOro,
+    but keep in mind that it's not something that should be used all the time. Learn
+    the differences between server-side rendering and pre-rendering as well ([https://github.com/chrisvfritz/prerender-spa-plugin](https://github.com/chrisvfritz/prerender-spa-plugin))
+    and check how our application could actually benefit from both of these techniques.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序性能很重要；SEO的工作也很重要。然而，重要的是不滥用工具，不引入实现开销和过度。我们的ProFitOro应用程序需要SSR吗？要回答这个问题，让我们考虑一下我们的内容。如果有大量的内容被带到页面上，并被用作初始渲染的基础，那么答案可能是肯定的。好吧，这不适用于我们的应用程序。我们有一个简单的登录页面，我们的ProFitOro计时器，以及一些配置设置。目前可能有意义的唯一视图是包含锻炼的视图。但现在，让我们不要把事情搞得太复杂。您可以尝试使用我们的ProFitOro进行Vue应用程序的服务器端渲染技术，但请记住，这不是应该始终使用的东西。还要了解服务器端渲染和预渲染之间的区别（[https://github.com/chrisvfritz/prerender-spa-plugin](https://github.com/chrisvfritz/prerender-spa-plugin)），并检查我们的应用程序实际上如何从这两种技术中受益。
+- en: Nuxt.js
+  id: totrans-107
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Nuxt.js
+- en: 'While we were busy defining our router object, router links, code splitting
+    and learning things about the server-side rendering, someone implemented a way
+    of developing Vue.js applications without being worried about all these things
+    at all. Just write your code. All the things like routing, code splitting and
+    even server-side rendering will be handled behind the scenes for you! If you are
+    wondering what the hell it is, let me introduce you to Nuxt.js: [https://nuxtjs.org](https://nuxtjs.org).'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们忙于定义路由器对象、路由器链接、代码拆分和学习有关服务器端渲染的知识时，有人实现了一种开发Vue.js应用程序的方式，而不必担心所有这些事情。只需编写您的代码。所有诸如路由、代码拆分甚至服务器端渲染的事情都将在幕后为您处理！如果你想知道这到底是什么，让我向你介绍Nuxt.js：[https://nuxtjs.org](https://nuxtjs.org)。
+- en: So, what is Nuxt.js?
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，Nuxt.js是什么？
+- en: Nuxt.js is a framework for creating Universal Vue.js Applications.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Nuxt.js是用于创建通用Vue.js应用程序的框架。
+- en: Its main scope is UI rendering while abstracting away the client/server distribution.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它的主要范围是UI渲染，同时抽象出客户端/服务器分发。
+- en: What's so great about it? Nuxt.js introduces the concept of pages – basically,
+    pages are also Vue components, but each one of the pages represents a *route*.
+    Once you define your components inside the `pages` folder they become routes without
+    any additional configuration.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它有什么了不起的地方？Nuxt.js引入了页面的概念 - 基本上，页面也是Vue组件，但每个页面代表一个*路由*。一旦您在`pages`文件夹中定义了您的组件，它们就会成为路由，无需任何额外的配置。
+- en: In this chapter, we will totally migrate our ProFitOro to the Nuxt architecture.
+    So, brace yourself; we are going to make lots of changes! At the end of the chapter,
+    our efforts will be rewarded with a piece of nice, elegant code.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将完全将我们的ProFitOro迁移到Nuxt架构。所以，做好准备；我们将进行大量的更改！在本章结束时，我们的努力将得到一段漂亮、优雅的代码。
+- en: The Nuxt application has a single `config` file, where you can define the necessary
+    webpack configuration, as well as `meta`, `links` and additional `scripts` for
+    your `index.html` file. This is because Nuxt will generate your `index.html` automatically
+    during the build process, so you don't have to have it in your application's root
+    directory. In this config file, you can also define a transition that should happen
+    on each route change.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Nuxt应用有一个单独的`config`文件，你可以在其中定义必要的webpack配置，以及`meta`、`links`和额外的`scripts`用于你的`index.html`文件。这是因为Nuxt会在构建过程中自动生成你的`index.html`，所以你不必在应用的根目录中拥有它。在这个配置文件中，你还可以定义每个路由变化时应该发生的过渡效果。
+- en: 'The way to create a Nuxt application is very similar to creating any Vue application
+    – all Nuxt.js functionality is built in the `nuxt-starter` template: [https://github.com/nuxt-community/starter-template](https://github.com/nuxt-community/starter-template).
+    So, creating the Vue.js application with a Nuxt template is just:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建Nuxt应用的方式与创建任何Vue应用非常相似 - 所有Nuxt.js功能都内置在`nuxt-starter`模板中：[https://github.com/nuxt-community/starter-template](https://github.com/nuxt-community/starter-template)。因此，使用Nuxt模板创建Vue.js应用只是：
+- en: '[PRE10]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Let''s create a `profitoro-nuxt` project and see how it works. Run the following
+    command:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个`profitoro-nuxt`项目并看看它是如何工作的。运行以下命令：
+- en: '[PRE11]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: Click Enter to answer to the questions.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 点击Enter回答问题。
+- en: 'Enter the generated folder, install the dependencies, and run the application:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 进入生成的文件夹，安装依赖，并运行应用：
+- en: '[PRE12]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Open the page on `localhost:3000` and make sure that you see this:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`localhost:3000`上打开页面，并确保你看到这个：
+- en: '![Nuxt.js](../images/00120.jpeg)'
+  id: totrans-123
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Nuxt.js](../images/00120.jpeg)'
+- en: The initial default page of the Nuxt application
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Nuxt应用的初始默认页面
+- en: Let's explore the folders' structure and the code. There's a folder called `pages`
+    where you can find the `index.vue` page. There's also a folder called `components`
+    – here we will store our components. There is a `nuxt.config.js` file where all
+    the basic configuration is stored. In a nutshell, that's it.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来探索文件夹的结构和代码。有一个名为`pages`的文件夹，你可以在里面找到`index.vue`页面。还有一个名为`components`的文件夹
+    - 在这里我们将存储我们的组件。有一个`nuxt.config.js`文件，其中存储了所有基本配置。简而言之，就是这样。
+- en: 'Let''s work on the `pages` folder. What components of our ProFitOro application
+    can we define as `pages`? It''s fairly easy to identify them, since we already
+    have our defined routes. So, I would say that we can identify the following pages:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来处理`pages`文件夹。我们的ProFitOro应用的哪些组件可以定义为`pages`？很容易识别它们，因为我们已经定义了路由。所以，我会说我们可以识别以下页面：
+- en: '`index.vue`: This will check if the user is logged in and render either the
+    login page or the Pomodoro timer page'
+  id: totrans-127
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`index.vue`：这将检查用户是否已登录，并渲染登录页面或番茄钟计时器页面'
+- en: '`login.vue`: This page is identical to our current `LandingComponent.vue`'
+  id: totrans-128
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`login.vue`：这个页面与我们当前的`LandingComponent.vue`完全相同'
+- en: '`pomodoro.vue`: This will be the page that contains the Pomodoro timer component'
+  id: totrans-129
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pomodoro.vue`：这将是包含番茄钟计时器组件的页面'
+- en: '`settings.vue`: This page will represent our `Settings.vue` component'
+  id: totrans-130
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`settings.vue`：这个页面将代表我们的`Settings.vue`组件'
+- en: '`statistics.vue`: This page will be responsible for rendering the `Statistics.vue`
+    component'
+  id: totrans-131
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`statistics.vue`：这个页面将负责渲染`Statistics.vue`组件'
+- en: '`workouts.vue`: This page will be responsible for managing the workouts'
+  id: totrans-132
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`workouts.vue`：这个页面将负责管理锻炼'
+- en: 'Let''s create placeholders for all these pages. This is what my directory structure
+    inside the `pages` folder looks like:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们为所有这些页面创建占位符。这是我在`pages`文件夹内部的目录结构：
+- en: '[PRE13]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'This is the initial content of the `login.vue` page:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是`login.vue`页面的初始内容：
+- en: '[PRE14]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'All the other pages are very similar to this one, except the `index.vue` page:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其他页面都和这个页面非常相似，除了`index.vue`页面：
+- en: '[PRE15]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: If you open this application in your browser and try to type different paths
+    (`localhost:3000/pomodoro`, `localhost:3000/settings`, and so on) in the browser's
+    address bar, you will see how it actually renders the corresponding pages. How
+    nice is that? We didn't have to define any routes or any additional configuration
+    in order to achieve this behavior! Check the code for this part in the `chapter7/4/profitoro-nuxt`
+    folder.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你在浏览器中打开此应用程序，并尝试在浏览器的地址栏中键入不同的路径（`localhost:3000/pomodoro`，`localhost:3000/settings`等），你将看到它实际上呈现了相应的页面。多么美妙啊！我们不需要定义任何路由或任何额外的配置就能实现这种行为！在`chapter7/4/profitoro-nuxt`文件夹中检查此部分的代码。
+- en: Adding links with nuxt-link
+  id: totrans-140
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用nuxt-link添加链接
+- en: Just like `vue-router` provides a component called `router-link`, Nuxt provides
+    a very similar component called `nuxt-link`. Let's change our `HeaderComponent`
+    using nuxt-links instead of router-links and let's include this component inside
+    our pages.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像`vue-router`提供了一个名为`router-link`的组件一样，Nuxt提供了一个非常相似的组件，名为`nuxt-link`。让我们使用nuxt-links而不是router-links来更改我们的`HeaderComponent`，并将此组件包含在我们的页面中。
+- en: 'Before doing that, let''s install `sass-loader`, because, if you remember,
+    we are using the sass pre-processor for our CSS and our `HeaderComponent` is actually
+    heavily relying on that. So, go ahead and run the following:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这之前，让我们安装`sass-loader`，因为，如果你记得的话，我们正在使用sass预处理器来处理我们的CSS，而我们的`HeaderComponent`实际上在很大程度上依赖于它。因此，请继续运行以下命令：
+- en: '[PRE16]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: I've also re-included Bootstrap styles, using its *sass* styles instead of plain
+    CSS. Check out the `assets/styles` folder in the `chapter7/5/profitoro-nuxt` folder.
+    Run `npm install` inside this folder and use this as your working directory for
+    this part.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我还重新包含了Bootstrap样式，使用它的*sass*样式而不是纯CSS。查看`chapter7/5/profitoro-nuxt`文件夹中的`assets/styles`文件夹。在此文件夹中运行`npm
+    install`，并将其用作本部分的工作目录。
+- en: 'Let''s now copy our `HeaderComponent.vue` and `Logo.vue` to the `components/common`
+    folder. Our logo''s markup will change. Before it was wrapped inside the `router-link`
+    component and pointing to the home page. Instead of using `router-link` we will
+    use the `nuxt-link` component:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们将`HeaderComponent.vue`和`Logo.vue`复制到`components/common`文件夹中。我们的logo标记将发生变化。之前它被包裹在`router-link`组件内，并指向主页。我们将使用`nuxt-link`组件，而不是使用`router-link`：
+- en: '[PRE17]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Note that we are binding the `src` attribute to the `src` value. We will get
+    our source from the `assets` folder. In the Nuxt application, we can use the `~`
+    notation to indicate the root directory of the application. Using this notation
+    actually facilitates the usage of the relative paths. Thus, the source data attribute
+    for the logo will look like the following:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们将`src`属性绑定到`src`值。我们将从`assets`文件夹获取我们的源。在Nuxt应用程序中，我们可以使用`~`符号来指示应用程序的根目录。使用此符号实际上有助于使用相对路径。因此，logo的源数据属性将如下所示：
+- en: '[PRE18]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Our logo is ready; now it's time to check the `HeaderComponent` component and
+    replace all the router links with `nuxt-links`.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的logo已经准备好了；现在是时候检查`HeaderComponent`组件，并用`nuxt-links`替换所有的路由链接。
+- en: 'Open the just copied `HeaderComponent.vue` component and remove all the data
+    used from the Vuex store for now and leave only the `import` of the `Logo` component:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开刚刚复制的`HeaderComponent.vue`组件，暂时删除从Vuex存储中使用的所有数据，只保留`Logo`组件的`import`：
+- en: '[PRE19]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Also, remove all the references to any data inside the markup, leave only the
+    links and replace them with `nuxt-link` components. So, our links section will
+    look like the following:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另外，删除标记内部所有数据的引用，只保留链接并用`nuxt-link`组件替换它们。因此，我们的链接部分将如下所示：
+- en: '[PRE20]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Import `HeaderComponent` to our pages (`settings`, `statistics`, `pomodoro`
+    and `workouts`):'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将`HeaderComponent`导入到我们的页面（`settings`，`statistics`，`pomodoro`和`workouts`）中：
+- en: '[PRE21]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Open the page. Check that our links haven''t changed at all:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开页面。检查我们的链接是否完全没有改变：
+- en: '![Adding links with nuxt-link](../images/00121.jpeg)'
+  id: totrans-157
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用 nuxt-link 添加链接](../images/00121.jpeg)'
+- en: Our links look absolutely the same!
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的链接看起来完全一样！
+- en: 'Check that even our responsiveness is still there. If you resize your page,
+    you will see the Bootstrap''s menu button:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查一下，即使我们的响应性仍然存在。如果调整页面大小，你会看到 Bootstrap 的菜单按钮：
+- en: '![Adding links with nuxt-link](../images/00122.jpeg)'
+  id: totrans-160
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用 nuxt-link 添加链接](../images/00122.jpeg)'
+- en: Menu button is still there as well
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 菜单按钮仍然存在
+- en: The most important part, of course, is that the routing works! Click on the
+    links and check that the pages change.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，最重要的部分是路由工作！点击链接并检查页面是否变化。
+- en: Have you also noticed a nice transition happening when you change from one page
+    to another?
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你也注意到了当你从一个页面切换到另一个页面时发生了一个很好的过渡吗？
+- en: '![Adding links with nuxt-link](../images/00123.jpeg)'
+  id: totrans-164
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用 nuxt-link 添加链接](../images/00123.jpeg)'
+- en: The transition happens automatically, we haven't written any extra code for
+    it to happen!
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 过渡是自动发生的，我们没有额外编写任何代码让它发生！
+- en: You can find the final code up to this point in the `chapter7/6/profitoro-nuxt`
+    folder.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以在 `chapter7/6/profitoro-nuxt` 文件夹中找到到目前为止的最终代码。
+- en: Exercise – making the menu button work
+  id: totrans-167
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习 - 使菜单按钮工作
+- en: As we have already checked, our responsive menu button is still there. However,
+    if you click on it, nothing happens! This is because this button's behavior is
+    defined in the `bootstrap.js` dependency and we still haven't included it. Use
+    `nuxt.config.js` to include the necessary JavaScript files to make the menu button
+    great again.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们已经检查过的，我们的响应式菜单按钮仍然存在。但是，如果你点击它，什么也不会发生！这是因为这个按钮的行为是在 `bootstrap.js` 依赖中定义的，而我们还没有包含它。使用
+    `nuxt.config.js` 来包含必要的 JavaScript 文件，使菜单按钮再次变得伟大。
+- en: After you're done, check my solution in the `chapter7/7/profitoro-nuxt` folder.
+    In particular, check the `head` section of the `nuxt.config.js` file.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，检查我在 `chapter7/7/profitoro-nuxt` 文件夹中的解决方案。特别要检查 `nuxt.config.js` 文件的 `head`
+    部分。
+- en: Nuxt.js and Vuex store
+  id: totrans-170
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Nuxt.js 和 Vuex store
+- en: 'Well, there will not be anything new in this section – the Vuex store can be
+    used in the exact same way it has been used before. Ah, wait. Inside the Nuxt
+    application, we have to export the function that returns Vuex store and not an
+    instance itself. Check the official documentation in this regard: [https://nuxtjs.org/guide/vuex-store](https://nuxtjs.org/guide/vuex-store).
+    So, basically, we will not use the following code:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分不会有任何新东西 - Vuex store 可以以与以前相同的方式使用。啊，等等。在 Nuxt 应用程序内，我们必须导出返回 Vuex store
+    而不是实例本身的函数。在这方面查看官方文档：[https://nuxtjs.org/guide/vuex-store](https://nuxtjs.org/guide/vuex-store)。所以，基本上我们不会使用以下代码：
+- en: '[PRE22]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Instead, we have to do the following:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 相反，我们必须这样做：
+- en: '[PRE23]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Let's also use this opportunity to initialise the Firebase application in a
+    separate file and use it as a singleton for our application. So, move the `firebaseApp`
+    initialization to its individual `firebase/index.js` file and replace all the
+    occurrences of the `state.firebaseApp` with the imported `firebaseApp` instance.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们也利用这个机会在一个单独的文件中初始化 Firebase 应用程序，并将其用作我们应用程序的单例。因此，将 `firebaseApp` 的初始化移动到其单独的
+    `firebase/index.js` 文件中，并用导入的 `firebaseApp` 实例替换所有 `state.firebaseApp` 的出现。
+- en: 'Last, but not least, don''t forget to install the required `vuexfire` and `firebase`
+    dependencies:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，但同样重要的是，不要忘记安装所需的 `vuexfire` 和 `firebase` 依赖项：
+- en: '[PRE24]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: Check the code for this part in the `chapter7/8/profitoro-nuxt` folder. In particular,
+    pay special attention to the `store` and `firebase` folders.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在 `chapter7/8/profitoro-nuxt` 文件夹中检查此部分的代码。特别要注意 `store` 和 `firebase` 文件夹。
+- en: Nuxt.js middleware
+  id: totrans-179
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Nuxt.js 中间件
+- en: Do you remember how we had to introduce the `beforeEach` method to the vue router
+    instance in order to prevent some routes from being rendered if the user is not
+    authenticated? There is a very similar mechanism for Nuxt.js. You just have to
+    define a so-called `middleware` where you can redirect the request based on some
+    conditions (for example, on the value of the `isAuthenticated` attribute from
+    the Vuex store) and then tell the pages that they have to rely on the authentication
+    middleware. Then, every time that an attempted routing to the given page occurs,
+    the middleware's function will run and do whatever it demands to do.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你还记得我们如何不得不在vue路由实例中引入`beforeEach`方法，以防止一些路由在用户未经身份验证时被渲染吗？Nuxt.js有一个非常类似的机制。你只需要定义一个所谓的`middleware`，在其中可以根据一些条件（例如，基于Vuex存储中的`isAuthenticated`属性的值）重定向请求，然后告诉页面它们必须依赖于身份验证中间件。然后，每当尝试路由到给定页面时，中间件的函数将运行并执行其要求执行的任何操作。
+- en: 'Let''s add this kind of middleware to our ProFitOro Nuxt application. Create
+    a file `authentication.js` inside the folder `middleware` and add the following
+    content:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们将这种类型的中间件添加到我们的ProFitOro Nuxt应用程序中。在`middleware`文件夹内创建一个名为`authentication.js`的文件，并添加以下内容：
+- en: '[PRE25]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: This piece of code is responsible for checking the `isAuthenticated` property
+    and redirecting the user to the home page in case it's either false or undefined.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码负责检查`isAuthenticated`属性并在其为false或未定义时将用户重定向到主页。
+- en: 'Now, add the property middleware to the settings, statistics, and workouts
+    pages:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在设置、统计和锻炼页面中添加middleware属性：
+- en: '[PRE26]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Open the page and try to click on the corresponding links for the pages to which
+    we just added the middleware. It will not work! Try to remove the middleware code
+    for some of the pages and check that the routing then works. Isn't it fantastic?
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开页面并尝试单击我们刚刚添加了middleware的页面的相应链接。它不会起作用！尝试删除一些页面的middleware代码，并检查路由是否正常工作。这不是很棒吗？
+- en: Check the code for this part in the `chapter7/9/profitoro-nuxt` folder. Check
+    the `middleware/index.js` file and Vue pages inside the `pages` folder.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查`chapter7/9/profitoro-nuxt`文件夹中的此部分代码。检查`middleware/index.js`文件和`pages`文件夹中的Vue页面。
+- en: Exercise – finish 'em all!
+  id: totrans-188
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习-完成所有！
+- en: Well, we've done a lot in order to make our ProFitOro into a Nuxt.js application,
+    but our functionality is still not totally there. We still have to copy lots of
+    components. So, please do it. Right now, it's just a matter of a good copy-paste.
+    So, please do it and make sure that our ProFitOro works fine.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 嗯，为了使我们的ProFitOro成为Nuxt.js应用程序，我们已经做了很多工作，但我们的功能还不完全。我们仍然需要复制很多组件。所以，请做吧。现在，这只是一个很好的复制粘贴的问题。所以，请做，并确保我们的ProFitOro正常工作。
+- en: If in doubt, check the `chapter7/10/profitoro-nuxt` folder. You will probably
+    run into the issue of trying to login with an *Enter* key and finding yourself
+    being an anonymous user. This is a minor issue that will be fixed in the next
+    chapters. For now, please, every time you try to login with your valid credentials,
+    just don't forget to click the **LOGIN** button!
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果有疑问，请查看`chapter7/10/profitoro-nuxt`文件夹。您可能会遇到尝试使用*Enter*键登录并发现自己成为匿名用户的问题。这是一个将在接下来的章节中修复的小问题。现在，请每次尝试使用有效凭据登录时，只需不要忘记点击**登录**按钮！
+- en: Summary
+  id: totrans-191
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter we have added basic routing to our application using different
+    tools. First, we learned how to use vue-router to achieve routing functionality
+    and then we used the Nuxt.js template to build a brand new application using old
+    components and styles. We have used the concept of pages offered by Nuxt vue in
+    order to achieve the same routing functionality as with `vue-router` and have
+    transformed our ProFitOro application into a Nuxt application in an easy and unobtrusive
+    way. We have significantly reduced the amount of code and learned something new.
+    Total winners!
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们使用不同的工具为我们的应用程序添加了基本路由。首先，我们学习了如何使用vue-router来实现路由功能，然后我们使用Nuxt.js模板来使用旧组件和样式构建全新的应用程序。我们使用了Nuxt
+    vue提供的页面概念，以便以与`vue-router`相同的路由功能，并以轻松和不显眼的方式将我们的ProFitOro应用程序转变为Nuxt应用程序。我们显著减少了代码量并学到了新东西。完全是赢家！
+- en: In this chapter we have also used Bootstrap's `navbar` to display our navigation
+    routes in a nice and responsive way, and learned that even with the most drastic
+    refactoring, the functionality and responsiveness stays with us when we use the
+    Bootstrap approach. Once again – great success!
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们还使用了Bootstrap的`navbar`以一种漂亮和响应的方式显示我们的导航路由，并且学会了即使进行了最彻底的重构，当我们使用Bootstrap方法时，功能和响应性仍然与我们同在。再次取得了巨大成功！
+- en: Our application is almost fully functional, however, it still lacks its main
+    functionality – workouts. For now, during the Pomodoro intervals we are showing
+    a hardcoded pushups workout.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序几乎完全功能，但是它仍然缺少主要功能 - 锻炼。目前，在番茄工作法间隔期间，我们正在展示一个硬编码的俯卧撑锻炼。
+- en: Are you using the ProFitOro application while reading this book? If yes, I guess
+    I will recognize you on the street – you will have huge muscles after doing so
+    many pushups.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在阅读本书时，您是否正在使用ProFitOro应用程序？如果是的话，我想我会在街上认出你 - 你会因为做了这么多俯卧撑而有巨大的肌肉。
+- en: It's time to add more workouts to our application, don't you think? If you remember
+    the requirements, workouts are the subject of collaborative work. So, we will
+    add this functionality in the next chapter. We will use Firebase's data storage
+    mechanism in order to store the workouts' images, the real-time database to store
+    the workouts' objects, Bootstrap's cards layout to display different workouts
+    and the Bootstrap-powered form in order to add new workouts to our application.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 是时候在我们的应用程序中添加更多的锻炼了，不是吗？如果你还记得需求，锻炼是协作工作的主题。因此，我们将在下一章中添加这个功能。我们将使用Firebase的数据存储机制来存储锻炼的图像，实时数据库来存储锻炼的对象，Bootstrap的卡片布局来显示不同的锻炼，以及基于Bootstrap的表单来向我们的应用程序添加新的锻炼。

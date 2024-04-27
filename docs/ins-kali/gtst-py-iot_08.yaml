@@ -1,0 +1,3157 @@
+- en: Sensing and Displaying Real-World Data
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 感知和显示真实世界的数据
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Using devices with the I²C bus
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用I2C总线的设备
+- en: Reading analog data using an analog-to-digital converter
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用模拟数字转换器读取模拟数据
+- en: Logging and plotting data
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 记录和绘制数据
+- en: Extending the Raspberry Pi GPIO with an I/O expander
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过I/O扩展器扩展树莓派GPIO
+- en: Capturing data in an SQLite database
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在SQLite数据库中捕获数据
+- en: Viewing data from your own web server
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 查看来自您自己的Web服务器的数据
+- en: Sensing and sending data to online services
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 感知和发送数据到在线服务
+- en: Introduction
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍
+- en: In this chapter, we will learn how to collect analog data from the real world
+    and process it so we can display, log, graph, and share the data and make use
+    of it in our programs.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习如何收集来自现实世界的模拟数据并对其进行处理，以便在程序中显示、记录、绘制和共享数据，并利用这些数据。
+- en: We will extend the capabilities of the Raspberry Pi by interfacing with **analog-to-digital
+    converters** (**ADCs**), LCD alphanumeric displays, and digital port expanders
+    using Raspberry Pi's GPIO connections.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过使用树莓派的GPIO连接来扩展树莓派的功能，与模拟数字转换器（ADC）、LCD字母显示器和数字端口扩展器进行接口。
+- en: Using devices with the I2C bus
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用I2C总线的设备
+- en: Raspberry Pi can support several higher-level protocols that a wide range of
+    devices can easily be connected to. In this chapter, we shall focus on the most
+    common bus, called **I-squared-C** (**I²C**). It provides a medium-speed bus for
+    communicating with devices over two wires. In this section, we shall use I²C to
+    interface with an 8-bit ADC. This device will measure an analog signal, convert
+    it to a relative value between 0 and 255, and send the value as a digital signal
+    (represented by 8-bits) over the I²C bus to the Raspberry Pi.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 树莓派可以支持多种高级协议，可以轻松连接各种设备。在本章中，我们将专注于最常见的总线，称为I-squared-C（I²C）。它提供了一个用于通过两根导线与设备通信的中速总线。在本节中，我们将使用I²C与8位ADC进行接口。该设备将测量模拟信号，将其转换为0到255之间的相对值，并将该值作为数字信号（由8位表示）通过I²C总线发送到树莓派。
+- en: 'The advantages of I²C can be summarized as follows:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: I²C的优势可以总结如下：
+- en: Maintains a low pin/signal count, even with numerous devices on the bus
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 即使在总线上有许多设备的情况下，也能保持低引脚/信号计数
+- en: Adapts to the needs of different slave devices
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 适应不同从设备的需求
+- en: Readily supports multiple masters
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 容易支持多个主设备
+- en: Incorporates ACK/NACK functionality for improved error handling
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 包括ACK/NACK功能以改进错误处理
+- en: Getting ready
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The I²C bus is not enabled in all Raspberry Pi images; therefore, we need to
+    enable the module and install some supporting tools. Newer versions of Raspbian
+    use **device trees** to handle hardware peripherals and drivers.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并非所有树莓派镜像都启用了I²C总线；因此，我们需要启用模块并安装一些支持工具。Raspbian的新版本使用设备树来处理硬件外围设备和驱动程序。
+- en: In order to make use of the I²C bus, we need to enable the ARM I²C in the `bootconfig.txt`
+    file.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使用I²C总线，我们需要在`bootconfig.txt`文件中启用ARM I²C。
+- en: 'You can do this automatically using the following command:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下命令自动执行此操作：
+- en: '[PRE0]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Select Advanced Options from the menu and then select I²C, as shown in the
+    following screenshot. When asked, select Yes to enable the interface and then
+    click Yes to load the module by default:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从菜单中选择高级选项，然后选择I²C，如下截图所示。当询问时，选择是以启用接口，然后点击是以默认加载模块：
+- en: '![](Images/de619297-5684-41b7-8733-887b49dc9185.png)The raspi-config menu'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/de619297-5684-41b7-8733-887b49dc9185.png)raspi-config菜单'
+- en: From the menu, select I2C and select Yes to enable the interface and to load
+    the module by default.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从菜单中选择I2C，选择是以启用接口并默认加载模块。
+- en: The `raspi-config` program enables the `I2C_ARM` interface by altering `/boot/config.txt`
+    to include `dtparam=i2c_arm=on`. The other bus (I2C_VC) is typically reserved
+    for interfacing with Raspberry Pi HAT add-on boards (to read the configuration
+    information from the on-board memory devices); however, you can enable this using
+    `dtparam=i2c_vc=on`.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`raspi-config`程序通过修改`/boot/config.txt`以包括`dtparam=i2c_arm=on`来启用`I2C_ARM`接口。另一种总线（I2C_VC）通常保留用于与树莓派HAT附加板进行接口（从板载存储器设备读取配置信息）；但是，您也可以使用`dtparam=i2c_vc=on`来启用此功能。'
+- en: If you wish, you can also enable the SPI using the `raspi-config` list, which
+    is another type of bus.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您愿意，您还可以使用`raspi-config`列表启用SPI，这是另一种类型的总线。
+- en: 'Next, we should include the I²C module to be loaded upon turning the Raspberry
+    Pi on, as follows:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们应该包括I²C模块在打开树莓派时加载，如下所示：
+- en: '[PRE1]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Add the following on separate lines and save (*Ctrl* + *X*, *Y*, *Enter*):'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 添加以下内容并保存（*Ctrl* + *X*, *Y*, *Enter*）：
+- en: '[PRE2]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Similarly, we can also enable the SPI module by adding `spi-bcm2708`.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类似地，我们还可以通过添加`spi-bcm2708`来启用SPI模块。
+- en: 'Next, we will install some tools to use I²C devices directly from the command
+    line, as follows:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将安装一些工具，以便直接从命令行使用I²C设备，如下所示：
+- en: '[PRE3]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Finally, shut down the Raspberry Pi before attaching the hardware in order
+    to allow the changes to be applied, as follows:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在连接硬件之前关闭树莓派，以便应用更改，如下所示：
+- en: '[PRE4]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'You will need a PCF8591 module (retailers of these are listed in the Appendix, *Hardware
+    and Software List*) or you can obtain the PCF8591 chip separately and build your
+    own circuit (see the *There''s more...* section for details on the circuit):'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将需要一个PCF8591模块（这些的零售商在附录*硬件和软件清单*中列出）或者您可以单独获取PCF8591芯片并构建自己的电路（有关电路的详细信息，请参阅*还有更多...*部分）：
+- en: '![](Images/41781e79-5740-4a5f-a202-14e498aae716.png)The PCF8591 ADC and sensor
+    module from dx.com'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/41781e79-5740-4a5f-a202-14e498aae716.png)来自dx.com的PCF8591 ADC和传感器模块'
+- en: 'Connect the GND, VCC, SDA, and SCL pins to the Raspberry Pi GPIO header as
+    follows:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将GND、VCC、SDA和SCL引脚连接到树莓派的GPIO引脚头，如下所示：
+- en: '![](Images/e4093aac-4d52-4588-8bbf-7e2bb556d812.png)I2C connections on the
+    Raspberry Pi GPIO headerYou can use the same I²C tools/code with other I²C devices
+    by studying the datasheet of the device to find out what messages to send/read
+    and which registers are used to control your device.'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/e4093aac-4d52-4588-8bbf-7e2bb556d812.png)树莓派GPIO引脚上的I2C连接您可以通过研究设备的数据表找出要发送/读取的消息以及用于控制设备的寄存器，使用相同的I²C工具/代码与其他I²C设备。'
+- en: How to do it...
+  id: totrans-42
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作步骤...
+- en: 'The `i2cdetect` command is used to detect the I²C devices (the `--y` option
+    skips any warnings about possible interference with other hardware that could
+    be connected to the I²C bus). The following commands are used to scan both the
+    buses:'
+  id: totrans-43
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`i2cdetect`命令用于检测I²C设备（`--y`选项跳过有关可能干扰连接到I²C总线的其他硬件的警告）。以下命令用于扫描两个总线：'
+- en: '[PRE5]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Depending on your Raspberry Pi board revision, the address of the device should
+    be listed on bus 0 (for Model B Rev1 boards) or bus 1 (for Raspberry Pi 2 and
+    3, and Raspberry Pi 1 Model A and Model B Revision 2). By default, the PCF8591
+    address is `0x48`:'
+  id: totrans-45
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 根据您的树莓派板子版本，设备的地址应该在总线0上列出（适用于Model B Rev1板）或总线1上（适用于树莓派2和3，以及树莓派1 Model A和Model
+    B Revision 2）。默认情况下，PCF8591地址是`0x48`：
+- en: '| **I²C bus number to use** | **Bus 00** | **Bus 11** |'
+  id: totrans-46
+  prefs: []
+  type: TYPE_TB
+  zh: '| **要使用的I²C总线号** | **总线00** | **总线11** |'
+- en: '| Raspberry Pi 2 and 3 | HAT ID (I2C_VC) | GPIO (I2C_ARM) |'
+  id: totrans-47
+  prefs: []
+  type: TYPE_TB
+  zh: '| 树莓派2和3 | HAT ID（I2C_VC） | GPIO（I2C_ARM） |'
+- en: '| Model A and Model B Revision 2 | P5 | GPIO |'
+  id: totrans-48
+  prefs: []
+  type: TYPE_TB
+  zh: '| Model A和Model B Revision 2 | P5 | GPIO |'
+- en: '| Model B Revision 1 | GPIO | N/A |'
+  id: totrans-49
+  prefs: []
+  type: TYPE_TB
+  zh: '| Model B Revision 1 | GPIO | N/A |'
+- en: 'The following screenshot shows the output of `i2cdetect`:'
+  id: totrans-50
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了`i2cdetect`的输出：
+- en: '![](Images/987cdc05-6091-4931-be83-02cbe8e5871f.png)The PCF8591 address (48)
+    is displayed here on bus 1'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/987cdc05-6091-4931-be83-02cbe8e5871f.png)PCF8591地址（48）在总线1上显示'
+- en: If nothing is listed, shut down and double-check your connections (the ADC module
+    from [www.dx.com](http://www.dx.com/) will switch on a red LED when powered).
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果没有列出任何内容，请关闭并仔细检查您的连接（来自[www.dx.com](http://www.dx.com/)的ADC模块在上电时会打开红色LED）。
+- en: 'If you receive an error stating that the `/dev/i2c1` bus doesn''t exist, you
+    can perform the following checks:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果收到错误消息，指出`/dev/i2c1`总线不存在，您可以执行以下检查：
+- en: 'Ensure that the `/etc/modprobe.d/raspi-blacklist.conf` file is empty (that
+    is, that the modules haven''t been blacklisted), using the following command to
+    view the file:'
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 确保`/etc/modprobe.d/raspi-blacklist.conf`文件为空（即模块未被列入黑名单），使用以下命令查看文件：
+- en: '`           sudo nano /etc/modprobe.d/raspi-blacklist.conf`'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`           sudo nano /etc/modprobe.d/raspi-blacklist.conf`'
+- en: If there is anything in the file (such as `blacklist i2c-bcm2708`), remove it
+    and save
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果文件中有任何内容（例如`blacklist i2c-bcm2708`），请删除并保存
+- en: Check `/boot/config` and ensure there isn't a line that contains `device_tree_param=`
+    (this will disable support for the new device tree configurations and disable
+    support for some Raspberry Pi HAT add-on boards)
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查`/boot/config`，确保没有包含`device_tree_param=`的行（这将禁用对新设备树配置的支持，并禁用对某些树莓派HAT附加板的支持）
+- en: Check whether the modules have been loaded by using `lsmod` and look for `i2c-bcm2708`
+    and `i2c_dev`
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`lsmod`检查模块是否已加载，并查找`i2c-bcm2708`和`i2c_dev`
+- en: 'Using the detected bus number (`0` or `1`) and the device address (`0x48`),
+    use `i2cget` to read from the device (after a power up or channel change, you
+    will need to read the device twice to see the latest value), as follows:'
+  id: totrans-59
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用检测到的总线号（`0`或`1`）和设备地址（`0x48`），使用`i2cget`从设备读取（上电或通道更改后，您需要两次读取设备才能看到最新值），如下所示：
+- en: '[PRE6]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'To read from channel `1` (this is the temperature sensor on the module), we
+    can use `i2cset` to write `0x01` to the PCF8591 control register. Again, use two
+    reads to get a new sample from channel `1`, as follows:'
+  id: totrans-61
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要从通道`1`读取（这是模块上的温度传感器），我们可以使用`i2cset`将`0x01`写入PCF8591控制寄存器。同样，使用两次读取来从通道`1`获取新样本，如下所示：
+- en: '[PRE7]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'To cycle through each of the input channels, use `i2cset` to set the control
+    register to `0x04`, as follows:'
+  id: totrans-63
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要循环遍历每个输入通道，请使用`i2cset`将控制寄存器设置为`0x04`，如下所示：
+- en: '[PRE8]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'We can also control the AOUT pin using the following command to set it fully
+    on (lighting up the LED D1):'
+  id: totrans-65
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还可以使用以下命令控制AOUT引脚，将其完全打开（点亮LED D1）：
+- en: '[PRE9]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Finally, we can use the following command to set it fully off (switching off
+    the LED D1):'
+  id: totrans-67
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们可以使用以下命令将其完全关闭（关闭LED D1）：
+- en: '[PRE10]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: How it works...
+  id: totrans-69
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: The first read from the device after it has been switched on will return `0x80`
+    and will also trigger the new sample from channel 0\. If you read it a second
+    time, it will return the sample previously read and generate a fresh sample. Each
+    reading will be an 8-bit value (ranging from `0` to `255`), representing the voltage
+    to VCC (in this case, 0 V to 3.3 V). On the [www.dx.com](http://www.dx.com) module,
+    channel 0 is connected to a light sensor, so if you cover up the module with your
+    hand and resend the command, you will observe a change in the values (darker means
+    a higher value and lighter means a lower one). You will find that the readings
+    are always one behind; this is because, as it returns the previous sample, it
+    captures the next sample.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设备上电后的第一次读取将返回`0x80`，并且还将触发通道0的新样本。如果再次读取，它将返回先前读取的样本并生成新样本。每次读取都将是一个8位值（范围从`0`到`255`），表示电压到VCC（在本例中为0V到3.3V）。在[www.dx.com](http://www.dx.com)模块上，通道0连接到光传感器，因此如果用手遮住模块并重新发送命令，您将观察到值的变化（较暗表示较高的值，较亮表示较低的值）。您会发现读数总是滞后一步；这是因为当它返回先前的样本时，它捕获了下一个样本。
+- en: 'We use the following command to specify a particular channel to read:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用以下命令指定要读取的特定通道：
+- en: '[PRE11]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'This changes the channel that is read to channel 1 (this is marked as **AIN1**
+    on the module). Remember, you will need to perform two reads before you see data
+    from the newly selected channel. The following table shows the channels and pin
+    names, as well as which jumper connectors enable/disable each of the sensors:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将更改要读取的通道为通道1（在模块上标有**AIN1**）。请记住，您需要执行两次读取，然后才能从新选择的通道看到数据。以下表格显示了通道和引脚名称，以及哪些跳线连接器启用/禁用了每个传感器：
+- en: '| **Channel** | **0** | **1** | **2** | **3** |'
+  id: totrans-74
+  prefs: []
+  type: TYPE_TB
+  zh: '| **通道** | **0** | **1** | **2** | **3** |'
+- en: '| Pin Name | AIN0 | AIN1 | AIN2 | AIN3 |'
+  id: totrans-75
+  prefs: []
+  type: TYPE_TB
+  zh: '| 引脚名称 | AIN0 | AIN1 | AIN2 | AIN3 |'
+- en: '| Sensor | Light-Dependent Resistor | Thermistor | External Pin | Potentiometer
+    |'
+  id: totrans-76
+  prefs: []
+  type: TYPE_TB
+  zh: '| 传感器 | 光敏电阻 | 热敏电阻 | 外部引脚 | 电位器 |'
+- en: '| Jumper | P5 | P4 |  | P6 |'
+  id: totrans-77
+  prefs: []
+  type: TYPE_TB
+  zh: '| 跳线 | P5 | P4 |  | P6 |'
+- en: 'Next, we control the AOUT pin by setting the analog output enable flag (bit
+    6) of the control register and using the next value to set the analog voltage
+    (0V-3.3V, 0x00-0xFF), as follows:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们通过设置控制寄存器的模拟输出使能标志（第6位）来控制AOUT引脚，并使用下一个值来设置模拟电压（0V-3.3V，0x00-0xFF），如下所示：
+- en: '[PRE12]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Finally, you can set bit 2 (`0x04`) to auto increment and cycle through the
+    input channels as follows:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，可以将第2位（`0x04`）设置为自动递增，并循环通过输入通道，如下所示：
+- en: '[PRE13]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Each time you run `i2cget -y 1 0x48`, the next channel will be selected, starting
+    with channel AIN0, then running from AIN1 through to AIN3 and back to AIN0 again.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每次运行`i2cget -y 1 0x48`，下一个通道将被选择，从AIN0开始，然后从AIN1到AIN3再返回到AIN0。
+- en: To understand how to set a particular bit in a value, it helps to look at the
+    binary representation of the number. The 8-bit value `0x04` can be written as
+    `b0000 0100` in binary (`0x` indicates the value is written in hexadecimal, or
+    hex, and b indicates a binary number).
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要理解如何设置值中的特定位，有助于查看数字的二进制表示。8位值`0x04`可以用二进制`b0000 0100`来表示（`0x`表示值以十六进制表示，b表示二进制数）。
+- en: Bits within binary numbers are counted from right to left, starting with 0 -
+    that is, MSB 7 6 5 4 3 2 1 0 LSB.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 二进制数中的位从右到左进行计数，从0开始 - 即，MSB 7 6 5 4 3 2 1 0 LSB。
+- en: Bit 7 is known as the **most significant bit** (**MSB**) and bit 0 is known
+    as the **least significant bit** (**LSB**). Therefore, by setting bit 2, we end
+    up with `b0000 0100` (which is `0x04`).
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第7位被称为**最高有效位**（**MSB**），第0位被称为**最低有效位**（**LSB**）。因此，通过设置第2位，我们最终得到`b0000 0100`（即`0x04`）。
+- en: There's more...
+  id: totrans-86
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The I²C bus allows us to easily connect multiple devices using only a few wires.
+    The PCF8591 chip can be used to connect your own sensors to the module or just
+    the chip.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: I²C总线允许我们只使用少量线路轻松连接多个设备。PCF8591芯片可用于将自己的传感器连接到模块或仅连接芯片。
+- en: Using multiple I2C devices
+  id: totrans-88
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用多个I2C设备
+- en: All commands on the I²C bus are addressed to a specific I²C device (many have
+    the option to set some pins high or low to select additional addresses and allow
+    multiple devices to exist on the same bus). Each device must have a unique address
+    so that only one device will respond at any one time. The PCF8591 starting address
+    is `0x48`, with additional addresses selectable by the three address pins to `0x4F`.
+    This allows up to eight PCF8591 devices to be used on the same bus.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: I²C总线上的所有命令都是针对特定的I²C设备的（许多设备可以选择将一些引脚设为高电平或低电平以选择附加地址，并允许多个设备存在于同一总线上）。每个设备必须具有唯一地址，以便一次只有一个设备会做出响应。PCF8591的起始地址是`0x48`，通过三个地址引脚可选择附加地址为`0x4F`。这允许在同一总线上使用多达八个PCF8591设备。
+- en: If you decide to use the I2C_VC bus that is located on GPIO pins 27 and 2828
+    (or on the P5 header on Model A and Revision 2 Model B devices), you may need
+    to add a 1k8 ohm pull-up resistor between the I²C lines and 3.3 V. These resistors
+    are already present on the I²C bus on the GPIO connector. However, some I²C modules,
+    including the PCF8591 module, have their own resistors fitted, so it will work
+    without the extra resistors.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果决定使用位于GPIO引脚27和28（或位于Model A和Revision 2 Model B设备的P5标头）的I2C_VC总线，则可能需要在I²C线和3.3V之间添加1k8欧姆的上拉电阻。这些电阻已经存在于GPIO连接器上的I²C总线上。但是，一些I²C模块，包括PCF8591模块，已经安装了自己的电阻，因此可以在没有额外电阻的情况下工作。
+- en: I2C bus and level shifting
+  id: totrans-91
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: I2C总线和电平转换
+- en: 'The I²C bus consists of two wires, one data (SDA), and one clock (SCL). Both
+    are passively pulled to VCC (on the Raspberry Pi, this is 3.3 V) with pull-up
+    resistors. The Raspberry Pi will control the clock by pulling it low every cycle
+    and the data line can be pulled low by Raspberry Pi to send commands or by the
+    connected device to respond with data:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: I²C总线由两根线组成，一根数据线（SDA）和一根时钟线（SCL）。两根线都通过上拉电阻被被动地拉到VCC（在树莓派上，这是3.3V）。树莓派将通过每个周期将时钟线拉低来控制时钟，数据线可以被树莓派拉低以发送命令，或者被连接的设备拉低以回应数据：
+- en: '![](Images/11df565b-2693-41b3-a66f-6bd9b04650f1.png)The Raspberry Pi I²C pins
+    include pull-up resistors on SDA and SCL'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/11df565b-2693-41b3-a66f-6bd9b04650f1.png)树莓派I²C引脚包括SDA和SCL上的上拉电阻'
+- en: Since the slave devices can only pull the data line to **GND**, the device may
+    be powered by 3.3 V or even 5 V without the risk of driving the GPIO pins too
+    high (remember that the Raspberry Pi GPIO is not able to handle voltages over
+    3.3 V). This should work as long as the I²C bus of the device can recognize the
+    logic maximum a 3.3 V rather than 5 V. The I²C device must not have its own pull-up
+    resistors fitted, as this will cause the GPIO pins to be pulled to the supply
+    voltage of the I²C device.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于从机设备只能将数据线拉到**GND**，因此设备可以由3.3V甚至5V供电，而不会有驱动GPIO引脚电压过高的风险（请记住，树莓派GPIO无法处理超过3.3V的电压）。只要设备的I²C总线能够识别逻辑最大值为3.3V而不是5V，这应该可以工作。I²C设备不能安装自己的上拉电阻，因为这会导致GPIO引脚被拉到I²C设备的供电电压。
+- en: 'Note that the PCF8591 module used in this chapter has resistors fitted; therefore,
+    we must only use **VCC = 3V3**. A bidirectional logic level converter can be used
+    to overcome any issues with logic levels. One such device is the **Adafruit**
+    I²C bidirectional logic level translator module, which is shown in the following
+    image:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，本章中使用的PCF8591模块已安装了电阻；因此，我们只能使用**VCC = 3V3**。双向逻辑电平转换器可用于克服逻辑电平的任何问题。其中一种设备是**Adafruit**
+    I²C双向逻辑电平转换模块，如下图所示：
+- en: '![](Images/56cec6a4-4017-44e6-a92f-0c7477a90691.png)Adafruit I²C Bidirectional
+    logic level translator module'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/56cec6a4-4017-44e6-a92f-0c7477a90691.png)Adafruit I²C双向逻辑电平转换模块'
+- en: In addition to ensuring that any logic voltages are at suitable levels for the
+    device you are using, it will allow the bus to be extended over longer wires (the
+    level shifter will also act as a bus repeater).
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了确保任何逻辑电压适合您使用的设备之外，它还将允许总线在更长的导线上延伸（电平转换器还将充当总线中继）。
+- en: Using just the PCF8591 chip or adding alternative sensors
+  id: totrans-98
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 仅使用PCF8591芯片或添加替代传感器
+- en: 'A circuit diagram of the PCF8591 module without the sensors attached is shown
+    in the following diagram:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下图显示了PCF8591模块不带传感器的电路图：
+- en: '![](Images/74186137-d1fd-441d-ae48-799f6c5ef883.png)Circuit diagram of the
+    PCF8591 module without sensor attachment'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/74186137-d1fd-441d-ae48-799f6c5ef883.png)PCF8591模块的电路图，不带传感器附件'
+- en: As you can see, excluding the sensors, there are only five additional components.
+    We have a power-filtering capacitor (C1) and a power-indicating LED (D2) with
+    a current-limiting resistor (R5), all of which are optional.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，除了传感器外，只有五个额外的元件。我们有一个电源滤波电容（C1）和一个带有限流电阻（R5）的电源指示LED（D2），所有这些都是可选的。
+- en: Note that the module includes two 10K pull-up resistors (R8 and R9) for SCL
+    and SDA signals. However, since the GPIO I²C connections on the Raspberry Pi also
+    include pull-up resistors, these are not needed on the module (and could be removed).
+    It also means we should only connect this module to VCC = 3.3 V (if we use 5 V,
+    then voltages on SCL and SDA will be around 3.56 V, which is too high for the
+    Raspberry Pi GPIO pins).
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，该模块包括两个10K上拉电阻（R8和R9）用于SCL和SDA信号。但是，由于树莓派上的GPIO I²C连接也包括上拉电阻，因此模块上不需要这些电阻（并且可以被移除）。这也意味着我们应该只将该模块连接到VCC
+    = 3.3V（如果我们使用5V，则SCL和SDA上的电压将约为3.56V，这对于树莓派的GPIO引脚来说太高）。
+- en: 'The sensors on the PCF891 module are all resistive, so the voltage level that
+    is present on the analog input will change between **GND** and **VCC** as the
+    resistance of the sensor changes:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: PCF891模块上的传感器都是电阻性的，因此模拟输入上的电压电平将随着传感器电阻的变化在GND和VCC之间变化：
+- en: '![](Images/c955d053-69ec-4060-a84d-a776759f5e74.png)A potential divider circuit.
+    This provides voltage proportional to the sensor''s resistance.'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/c955d053-69ec-4060-a84d-a776759f5e74.png)电位分压电路。这提供了与传感器电阻成比例的电压。'
+- en: The module uses a circuit known as a potential divider. The resistor at the
+    top balances the resistance provided by the sensor at the bottom to provide a
+    voltage that is somewhere between **VCC** and **GND.**
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该模块使用一种称为电位分压器的电路。顶部的电阻平衡了底部传感器提供的电阻，以提供介于**VCC**和**GND**之间的电压。
+- en: 'The output voltage (*V[out]*) of the potential divider can be calculated as
+    follows:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 电位器的输出电压（*V[out]*）可以计算如下：
+- en: '![](Images/f5739d01-f1d4-4ce7-b689-dbd73ca2705b.png)'
+  id: totrans-107
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](Images/f5739d01-f1d4-4ce7-b689-dbd73ca2705b.png)'
+- en: R[t] and R[b] are the resistance values at the top and bottom, respectively,
+    and VCC is the supply voltage.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: R[t]和R[b]分别是顶部和底部的电阻值，VCC是供电电压。
+- en: The potentiometer in the module has the 10K ohm resistance split between the
+    top and bottom, depending on the position of the adjuster. So, halfway, we have
+    5K ohm on each side and an output voltage of 1.65 V; a quarter of the way (clockwise),
+    we have 2.5K ohm and 7.5K ohm, producing 0.825 V.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模块中的电位器具有10K欧姆的电阻，根据调节器的位置在顶部和底部之间分割。因此，在中间，我们在每一侧都有5K欧姆和输出电压为1.65V；四分之一的位置（顺时针），我们有2.5K欧姆和7.5K欧姆，产生0.825V。
+- en: I haven't shown the AOUT circuit, which is a resistor and LED. However, as you
+    will find, an LED isn't suited to indicate an analog output (except to show the
+    on/off states).
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我没有显示AOUT电路，它是一个电阻和LED。但是，正如您将发现的，LED不适合指示模拟输出（除了显示开/关状态）。
+- en: For more sensitive circuits, you can use more complex circuits, such as a **Wheatstone
+    bridge** (which allows the detection of very small changes in resistance), or
+    you can use dedicated sensors that output an analog voltage based on their readings
+    (such as a **TMP36** temperature sensor). The PCF891 also supports the differential
+    input mode, where the input of one channel can be compared to the input of another
+    (the resultant reading will be the difference between the two).
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于更敏感的电路，您可以使用更复杂的电路，例如**惠斯通电桥**（它允许检测电阻的微小变化），或者您可以使用专用传感器，根据其读数输出模拟电压（例如**TMP36**温度传感器）。PCF891还支持差分输入模式，其中一个通道的输入可以与另一个通道的输入进行比较（结果读数将是两者之间的差异）。
+- en: For more information on the PCF8591 chip, refer to the datasheet at [http://www.nxp.com/documents/data_sheet/PCF8591.pdf](http://www.nxp.com/documents/data_sheet/PCF8591.pdf).
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关PCF8591芯片的更多信息，请参阅[http://www.nxp.com/documents/data_sheet/PCF8591.pdf](http://www.nxp.com/documents/data_sheet/PCF8591.pdf)上的数据表。
+- en: Reading analog data using an analog-to-digital converter
+  id: totrans-113
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用模拟数字转换器读取模拟数据
+- en: The I²C tools (used in the previous section) are very useful for debugging I²C
+    devices in the command line, but they are not practical for use within Python,
+    as they would be slow and require significant overhead to use. Fortunately, there
+    are several Python libraries that provide I²C support, allowing the efficient
+    use of I²C to communicate with connected devices and providing easy operation.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在命令行中使用的I²C工具（在上一节中使用）对于调试I²C设备非常有用，但对于Python来说并不实用，因为它们会很慢并且需要大量的开销。幸运的是，有几个Python库提供了I²C支持，允许有效地使用I²C与连接的设备进行通信并提供简单的操作。
+- en: We will use such a library to create our own Python module that will allow us
+    to quickly and easily obtain data from the ADC device and use it in our programs.
+    The module is designed in such a way that other hardware or data sources may be
+    put in its place without impacting the remaining examples.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用这样的库来创建我们自己的Python模块，它将允许我们快速轻松地从ADC设备获取数据并在我们的程序中使用它。该模块设计得非常灵活，可以在不影响其余示例的情况下放置其他硬件或数据源。
+- en: Getting ready
+  id: totrans-116
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: To use the I²C bus using Python 3, we will use *Gordon Henderson's* WiringPi2
+    (see [http://wiringpi.com/](http://wiringpi.com/) for more details).
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使用Python 3使用I²C总线，我们将使用*Gordon Henderson的* WiringPi2（有关更多详细信息，请参见[http://wiringpi.com/](http://wiringpi.com/)）。
+- en: The easiest way to install `wiringpi2` is by using `pip` for Python 3\. The `pip`
+    is a package manager for Python that works in a similar way to `apt-get`. Any
+    packages you wish to install will be automatically downloaded and installed from
+    an online repository.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装`wiringpi2`的最简单方法是使用Python 3的`pip`。`pip`是Python的软件包管理器，其工作方式类似于`apt-get`。您希望安装的任何软件包都将从在线存储库自动下载并安装。
+- en: 'To install `pip`, use the following command:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要安装`pip`，请使用以下命令：
+- en: '[PRE14]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Then, install `wiringpi2` with the following command:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，使用以下命令安装`wiringpi2`：
+- en: '[PRE15]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Once the installation has completed, you should see the following, indicating
+    success:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装完成后，您应该看到以下内容，表示成功：
+- en: '![](Images/e0d4f643-b6ce-4174-8a8c-023b23a47d99.png)Successfully installed
+    WiringPi2'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/e0d4f643-b6ce-4174-8a8c-023b23a47d99.png)成功安装WiringPi2'
+- en: 'You will need the PCF8591 module wired as it was previously used in the I²C
+    connections of the Raspberry Pi:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您需要将PCF8591模块连接到树莓派的I²C连接上，就像之前使用的那样：
+- en: '![](Images/c3aa40b6-c765-446b-b1d2-7941f47ea5df.png)The PCF8591 module and
+    pin connections to the Raspberry Pi GPIO connector'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/c3aa40b6-c765-446b-b1d2-7941f47ea5df.png)PCF8591模块和引脚连接到树莓派GPIO连接器'
+- en: How to do it...
+  id: totrans-127
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: In the next section, we shall write a script to allow us to gather data that
+    we will then use later on in this chapter.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将编写一个脚本，以便我们可以收集数据，然后稍后在本章中使用。
+- en: 'Create the following script, `data_adc.py`, as follows:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建以下脚本`data_adc.py`，如下所示：
+- en: 'First, import the modules and create the variables we will use, as follows:'
+  id: totrans-130
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，导入我们将使用的模块并创建变量，如下所示：
+- en: '[PRE16]'
+  id: totrans-131
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Create the `device` class with a constructor to initialize it, as follows:'
+  id: totrans-132
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建`device`类并使用构造函数进行初始化，如下所示：
+- en: '[PRE17]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Within the class, define a function to provide a list of channel names, as
+    follows:'
+  id: totrans-134
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在类中，定义一个函数以提供通道名称列表，如下所示：
+- en: '[PRE18]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Define another function (still as part of the class) to return a new set of
+    samples from the ADC channels, as follows:'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 定义另一个函数（仍然作为类的一部分）以返回ADC通道的新样本集，如下所示：
+- en: '[PRE19]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Finally, after the device class, create a test function to exercise our new
+    `device` class, as follows. This is only to be run when the script is executed
+    directly:'
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，在设备类之后，创建一个测试函数来测试我们的新`device`类，如下所示。这只能在直接执行脚本时运行：
+- en: '[PRE20]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'You can run the test function of this module using the following command:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下命令运行此模块的测试函数：
+- en: '[PRE21]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: How it works...
+  id: totrans-142
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: We start by importing `wiringpi2` so we can communicate with our I²C device
+    later on. We will create a class to contain the required functionality to control
+    the ADC. When we create the class, we can initialize `wiringpi2` in such a way
+    that it is ready to use the I²C bus (using `wiringpi2.I2C()`), and we will set
+    up a generic I²C device with the chip's bus address (using `self.i2c.setup(0x48)`).
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先导入`wiringpi2`，以便稍后可以与我们的I²C设备通信。我们将创建一个类来包含控制ADC所需的功能。创建类时，我们可以初始化`wiringpi2`，使其准备好使用I²C总线（使用`wiringpi2.I2C()`），并使用芯片的总线地址设置一个通用I²C设备（使用`self.i2c.setup(0x48)`）。
+- en: '`wiringpi2` also has a dedicated class to use with the PCF8591 chip; however,
+    in this case, it is more useful to use the standard I²C functionality to illustrate
+    how any I²C device can be controlled using `wiringpi2`. By referring to the device
+    datasheet, you can use similar commands to communicate to any connected I²C device
+    (whether it is directly supported or not).'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`wiringpi2`还有一个专用类，可与PCF8591芯片一起使用；但是，在这种情况下，更有用的是使用标准I²C功能来说明如何使用`wiringpi2`控制任何I²C设备。通过参考设备数据表，您可以使用类似的命令与任何连接的I²C设备进行通信（无论是否直接支持）。'
+- en: As before, we perform a device read and configure the ADC to cycle through the
+    channels, but instead of `i2cget` and `i2cset`, we use the `wiringpi2` read and
+    write functions of the `I2C` object. Once initialized, the device will be ready
+    to read the analog signals on each of the channels.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与以前一样，我们执行设备读取并配置ADC以循环通过通道，但是我们使用`wiringpi2`的`I2C`对象的`read`和`write`函数，而不是`i2cget`和`i2cset`。初始化后，设备将准备好读取每个通道上的模拟信号。
+- en: The class will also have two member functions. The first function, `getName()`,
+    returns a list of channel names (which we can use to correlate our data to its
+    source) and the second function, `getNew()`, returns a new set of data from all
+    the channels. The data is read from the ADC using the `i2c.read()` function, and
+    since we have already put it into cycle mode, each read will be from the next
+    channel.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该类还将有两个成员函数。第一个函数`getName()`返回一个通道名称列表（我们可以用它来将数据与其来源进行关联），第二个函数`getNew()`返回所有通道的新数据集。数据是使用`i2c.read()`函数从ADC读取的，由于我们已经将其放入循环模式，每次读取都将来自下一个通道。
+- en: As we plan to reuse this class later on, we will use the `if __name__` test
+    to allow us to define a code to run when we execute the file directly. Within
+    our `main()` function, we create the ADC, which is an instance of our new device
+    class. We can choose to select a non-default address if we need to; otherwise,
+    the default address for the chip will be used. We use the `getName()` function
+    to print out the names of the channels and then we can collect data from the `ADC`
+    (using `getNew()`) and display them.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们计划稍后重用此类，因此我们将使用`if __name__`测试来允许我们定义在直接执行文件时要运行的代码。在我们的`main()`函数中，我们创建ADC，这是我们新设备类的一个实例。如果需要，我们可以选择选择非默认地址；否则，将使用芯片的默认地址。我们使用`getName()`函数打印出通道的名称，然后我们可以从`ADC`（使用`getNew()`）收集数据并显示它们。
+- en: There's more...
+  id: totrans-148
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The following allows us to define an alternative version of the device class
+    in `data_adc.py` so it can be used in place of the ADC module. This will allow
+    the remaining sections of the chapter to be tried without needing any specific
+    hardware.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下允许我们在`data_adc.py`中定义设备类的另一个版本，以便可以在ADC模块的位置使用它。这将允许在本章的其余部分中尝试而无需任何特定的硬件。
+- en: Gathering analog data without hardware
+  id: totrans-150
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 无硬件收集模拟数据
+- en: If you don't have an ADC module available, there is a wealth of data available
+    from within Raspberry Pi that you can use instead.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您没有可用的ADC模块，则可以从树莓派内部获得大量可用数据，可以代替使用。
+- en: 'Create the `data_local.py` script as follows:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建`data_local.py`脚本如下：
+- en: '[PRE22]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'The preceding script allows us to gather system information from the Raspberry
+    Pi using the following commands (the `subprocess` module allows us to capture
+    the results and process them):'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的脚本允许我们使用以下命令从树莓派中收集系统信息（`subprocess`模块允许我们捕获结果并处理它们）：
+- en: 'CPU speed:'
+  id: totrans-155
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CPU速度：
+- en: '[PRE23]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'CPU load:'
+  id: totrans-157
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CPU负载：
+- en: '[PRE24]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Core temperature (scaled by 1,000):'
+  id: totrans-159
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 核心温度（乘以1,000）：
+- en: '[PRE25]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'Drive info:'
+  id: totrans-161
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 驱动器信息：
+- en: '[PRE26]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'RAM info:'
+  id: totrans-163
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: RAM信息：
+- en: '[PRE27]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Each data item is sampled using one of the functions. In the case of the drive
+    and RAM information, we split the response into a list (separated by spaces) and
+    select the items that we want to monitor (such as available memory and used drive
+    space).
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个数据项都是使用其中一个函数进行采样的。在驱动和RAM信息的情况下，我们将响应拆分为一个列表（由空格分隔），并选择我们想要监视的项目（如可用内存和已用驱动器空间）。
+- en: This is all packaged up to function in the same way as the `data_adc.py` file
+    and the `device` class (so you can choose to use either in the following examples
+    just by swapping the `data_adc` include with `data_local`).
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一切都打包成与`data_adc.py`文件和`device`类相同的方式运行（因此您可以选择在以下示例中使用`data_adc`包括或`data_local`包括，只需将`data_adc`包括替换为`data_local`）。
+- en: Logging and plotting data
+  id: totrans-167
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 记录和绘制数据
+- en: Now that we are able to sample and collect a lot of data, it is important that
+    we can capture and analyze it. For this, we will make use of a Python library
+    called `matplotlib`, which includes lots of useful tools for manipulating, graphing,
+    and analyzing data. We will use `pyplot` (which is a part of `matplotlib`) to
+    produce graphs of our captured data. For more information on `pyplot`, go to [http://matplotlib.org/users/pyplot_tutorial.html](http://matplotlib.org/users/pyplot_tutorial.html).
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们能够采样和收集大量数据，重要的是我们能够捕获和分析它。为此，我们将使用一个名为`matplotlib`的Python库，其中包含许多有用的工具来操作、绘制和分析数据。我们将使用`pyplot`（它是`matplotlib`的一部分）来生成我们捕获数据的图表。有关`pyplot`的更多信息，请访问[http://matplotlib.org/users/pyplot_tutorial.html](http://matplotlib.org/users/pyplot_tutorial.html)。
+- en: It is a MATLAB-style data visualization framework for Python.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个用于Python的类似MATLAB的数据可视化框架。
+- en: Getting ready
+  id: totrans-170
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: To use `pyplot`, we will need to install `matplotlib`.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使用`pyplot`，我们需要安装`matplotlib`。
+- en: Because of a problem with the `matplotlib` installer, performing the installation
+    using `pip-3.2` doesn't always work correctly. The method that follows will overcome
+    this problem by performing all the steps `pip` does manually; however, this can
+    take over 30 minutes to complete.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于`matplotlib`安装程序存在问题，使用`pip-3.2`进行安装并不总是正确的。以下方法将通过手动执行`pip`的所有步骤来克服这个问题；然而，这可能需要超过30分钟才能完成。
+- en: To save time, you can try the `pip` installation, which is much quicker. If
+    it doesn't work, you can install it using the aforementioned manual method.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为节省时间，您可以尝试使用`pip`安装，这样会快得多。如果不起作用，您可以使用前面提到的手动方法进行安装。
+- en: 'Use the following commands to try to install `matplotlib` using `pip`:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下命令尝试使用`pip`安装`matplotlib`：
+- en: '`  sudo apt-get install tk-dev python3-tk libpng-dev`'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`  sudo apt-get install tk-dev python3-tk libpng-dev`'
+- en: '`  sudo pip-3.2 install numpy`'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`  sudo pip-3.2 install numpy`'
+- en: '`  sudo pip-3.2 install matplotlib`'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`  sudo pip-3.2 install matplotlib`'
+- en: 'You can confirm that `matplotlib` has been installed by running `python3` and
+    trying to import it from the Python Terminal, as follows:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过运行`python3`并尝试从Python终端导入它来确认`matplotlib`已安装，如下所示：
+- en: '[PRE28]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'If the installation fails, it will respond with the following:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果安装失败，它将以以下方式响应：
+- en: '`  ImportError: No module named matplotlib`'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`  ImportError: No module named matplotlib`'
+- en: Otherwise, there will be no errors.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 否则，将不会有错误。
+- en: 'Use the following steps to install `matplotlib` manually:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下步骤手动安装`matplotlib`：
+- en: 'Install the support packages as follows:'
+  id: totrans-184
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装支持包如下：
+- en: '[PRE29]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Download the source files from the Git repository (the command should be a
+    single line) as follows:'
+  id: totrans-186
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从Git存储库下载源文件（命令应为单行）如下：
+- en: '[PRE30]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Unzip and open the `matplotlib-master` folder that is created, as follows:'
+  id: totrans-188
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 解压并打开创建的`matplotlib-master`文件夹，如下所示：
+- en: '[PRE31]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Run the setup file to build (this will take a while) and install it as follows:'
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行设置文件进行构建（这将需要一段时间）并安装如下：
+- en: '[PRE32]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Test the installation in the same way as the automated install.
+  id: totrans-192
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 以与自动安装相同的方式测试安装。
+- en: We will either need the PCF8591 ADC module (and `wiringpi2`, installed as before),
+    or we can use the `data_local.py` module from the previous section (just replace
+    `data_adc` with `data_local` in the import section of the script). We also need
+    to have `data_adc.py` and `data_local.py` in the same directory as the new script,
+    depending on which you use.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要么需要PCF8591 ADC模块（和之前安装的`wiringpi2`），要么我们可以使用上一节中的`data_local.py`模块（只需在脚本的导入部分用`data_local`替换`data_adc`）。我们还需要在新脚本的同一目录中拥有`data_adc.py`和`data_local.py`，具体取决于您使用哪个。
+- en: How to do it...
+  id: totrans-194
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Create a script called `log_adc.py`:'
+  id: totrans-195
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`log_adc.py`的脚本：
+- en: '[PRE33]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'Create a second script called `log_graph.py`, as follows:'
+  id: totrans-197
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`log_graph.py`的第二个脚本，如下所示：
+- en: '[PRE34]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: How it works...
+  id: totrans-199
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: The first script, `log_adc.py`, allows us to collect data and write it to a
+    log file.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个脚本`log_adc.py`允许我们收集数据并将其写入日志文件。
+- en: 'We can use the ADC device by importing `data_adc` as the `dataDevice`, or we
+    can import `data_local` to use the system data. The numbers given to `VAL0` through
+    `VAL3` allow us to change the order of the channels (and, if using the `data_local`
+    device, select the other channels). We can also define the format string for the
+    header and each line in the log file (to create a file with data separated by
+    tabs) using `%s`, `%d`, and `%f` to allow us to substitute strings, integers,
+    and float values, as shown in the following table:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过导入`data_adc`作为`dataDevice`来使用ADC设备，或者我们可以导入`data_local`来使用系统数据。给`VAL0`到`VAL3`赋予的数字允许我们改变通道的顺序（如果使用`data_local`设备，则选择其他通道）。我们还可以定义头文件和日志文件中每行的格式字符串（使用`%s`，`%d`和`%f`来允许我们替换字符串，整数和浮点值），如下表所示：
+- en: '![](Images/dc5e9dc1-c3b0-43e5-be73-bcce7a60ad1d.png)The table of data captured
+    from the ADC sensor module'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/dc5e9dc1-c3b0-43e5-be73-bcce7a60ad1d.png)从ADC传感器模块捕获的数据表'
+- en: When logging in to the file (when `FILE=True`), we open `data.log` in write
+    mode using the `'w'` option (this will overwrite any existing files; to append
+    to a file, use `'a'`).
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在记录到文件时（当`FILE=True`时），我们使用`'w'`选项以写模式打开`data.log`（这将覆盖任何现有文件；要追加到文件，请使用`'a'`）。
+- en: As part of our data log, we generate `timestamp` using `time` and `datetime`
+    to get the current **epoch time** (this is the number of milliseconds since January
+    1, 1970) using the `time.time()` command. We convert the value into a more friendly
+    `year-month-day hour:min:sec` format using `strftime()`.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为我们的数据日志的一部分，我们使用`time`和`datetime`生成`timestamp`来获取当前的**epoch时间**（这是自1970年1月1日以来的毫秒数），使用`time.time()`命令。我们使用`strftime()`将值转换为更友好的`年-月-日
+    时:分:秒`格式。
+- en: The `main()` function starts by creating an instance of our `device` class (we
+    made this in the previous example), which will supply the data. We fetch the channel
+    names from the `data` device and construct the `header` string. If `DEBUG` is
+    set to `True`, the data is printed to the screen; if `FILE` is set to `True`,
+    it will be written to the file.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`main()`函数首先创建我们的`device`类的一个实例（我们在前面的示例中创建了这个类），它将提供数据。我们从`data`设备获取通道名称并构造`header`字符串。如果`DEBUG`设置为`True`，数据将打印到屏幕上；如果`FILE`设置为`True`，它将被写入文件。'
+- en: 'In the main loop, we use the `getNew()` function of the device to collect data
+    and format it to display on the screen or be logged to the file. The `main()`
+    function is called using the `try: finally:` command, which will ensure that when
+    the script is aborted, the file will be closed correctly.'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '在主循环中，我们使用设备的`getNew()`函数来收集数据并格式化以在屏幕上显示或记录到文件中。使用`try: finally:`命令调用`main()`函数，这将确保在脚本中止时，文件将被正确关闭。'
+- en: 'The second script, `log_graph.py`, allows us to read the log file and produce
+    a graph of the recorded data, as shown in the following diagram:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个脚本`log_graph.py`允许我们读取日志文件并生成记录的数据的图表，如下图所示：
+- en: '![](Images/ec2f4f51-eed4-46d3-8679-b60c386d6df6.png)Graphs produced by log_graph.py
+    from the light and temperature sensors'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/ec2f4f51-eed4-46d3-8679-b60c386d6df6.png)由log_graph.py从光线和温度传感器产生的图表'
+- en: We start by opening up the log file and reading the first line; this contains
+    the header information (which we can then use to identify the data later on).
+    Next, we use `numpy`, a specialist Python library that extends how we can manipulate
+    data and numbers. In this case, we use it to read in the data from the file, split
+    it up based on the tab delimiter, and provide identifiers for each of the data
+    channels.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先打开日志文件并读取第一行；这包含头信息（然后我们可以用来在以后识别数据）。接下来，我们使用`numpy`，这是一个专门的Python库，扩展了我们可以操作数据和数字的方式。在这种情况下，我们使用它来从文件中读取数据，根据制表符分割数据，并为每个数据通道提供标识符。
+- en: We define a figure to hold our graphs, adding two subplots (located in a 2 x
+    1 grid at positions 1 and 2 in the grid - set by the values `211` and `212`).
+    Next, we define the values we want to plot, providing the `x` values (`data['sample']`),
+    the `y` values (`data['DATA0']`), the `color` value (`'r'` for `Red` or `'b'`
+    for `Blue`), and `label` (set to the heading text we read previously from the
+    top of the file).
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们定义一个图形来保存我们的图表，添加两个子图（位于2 x 1网格中的位置1和2 - 由值`211`和`212`设置）。接下来，我们定义我们要绘制的值，提供`x`值（`data['sample']`），`y`值（`data['DATA0']`），`color`值（`'r'`表示`红色`或`'b'`表示`蓝色`），和`label`（设置为我们之前从文件顶部读取的标题文本）。
+- en: Finally, we set a title and the `x` and `y` labels for each subplot, enable
+    legends (to show the labels), and display the plot (using `plt.show()`).
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们为每个子图设置标题和`x`和`y`标签，启用图例（显示标签），并显示图表（使用`plt.show()`）。
+- en: There's more...
+  id: totrans-212
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: Now that we have the ability to see the data we have been capturing, we can
+    take things even further by displaying it as we sample it. This will allow us
+    to instantly see how the data reacts to changes in the environment or stimuli.
+    We can also calibrate our data so that we can assign the appropriate scaling to
+    produce measurements in real units.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了查看我们一直在捕获的数据的能力，我们可以通过在采样时显示它来进一步扩展。这将使我们能够立即看到数据对环境或刺激变化的反应。我们还可以校准我们的数据，以便我们可以分配适当的缩放来产生实际单位的测量值。
+- en: Plotting live data
+  id: totrans-214
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 绘制实时数据
+- en: Besides plotting data from files, we can use `matplotlib` to plot sensor data
+    as it is sampled. To achieve this, we can use the `plot-animation` feature, which
+    automatically calls a function to collect new data and update our plot.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了从文件中绘制数据，我们还可以使用`matplotlib`来绘制传感器数据的采样。为此，我们可以使用`plot-animation`功能，它会自动调用一个函数来收集新数据并更新我们的图表。
+- en: 'Create the following script, called `live_graph.py`:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建以下脚本，名为`live_graph.py`：
+- en: '[PRE35]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: We start by defining our `dataDevice` object and creating an empty array, `dispdata[]`,
+    which will hold all the data which has been collected. Next, we define our subplot
+    and the line we are going to plot.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先定义我们的`dataDevice`对象并创建一个空数组`dispdata[]`，它将保存所有已收集的数据。接下来，我们定义我们的子图和我们要绘制的线。
+- en: The `FuncAnimation()` function allows us to update a figure (`fig`) by defining
+    an update function and a generator function. The generator function (`data_gen()`)
+    will be called every interval (1,000 ms) and will produce a data value.
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`FuncAnimation()`函数允许我们通过定义更新函数和生成器函数来更新图形（`fig`）。生成器函数（`data_gen()`）将在每个间隔（1,000毫秒）调用，并产生一个数据值。'
+- en: 'This example uses the core temperature reading that, when divided by 1,000,
+    gives the actual temperature in `degC`:'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例使用核心温度读数，当除以1,000时，会给出实际的温度（以`degC`为单位）。
+- en: 'To use the ADC data instead, change the import for `dataDevice` to `data_adc`
+    and adjust the following line to use a channel other than `[1]` and apply a scaling
+    that is different from 1,000:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使用ADC数据，将`dataDevice`的导入更改为`data_adc`，并调整以下行以使用通道而不是`[1]`，并应用不同于1,000的缩放：
+- en: '`yield myData.getNew()[1]/1000`'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`yield myData.getNew()[1]/1000`'
+- en: '![](Images/f4dabe2e-4897-4ffd-9f8d-d95e6260dee1.png)Raspberry Pi plotting in
+    real time'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/f4dabe2e-4897-4ffd-9f8d-d95e6260dee1.png)树莓派实时绘图'
+- en: The data value is passed to the `update()` function, which allows us to add
+    it to our `dispdata[]` array that will contain all the data values to be displayed
+    in the plot. We adjust the *x* axis range to be near the `min` and `max` values
+    of the data. We also adjust the *y* axis to grow as we continue to sample more
+    data.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据值传递给`update()`函数，这允许我们将其添加到将包含要在图中显示的所有数据值的`dispdata[]`数组中。我们调整*x*轴范围，使其接近数据的`min`和`max`值。我们还调整*y*轴，以便在继续采样更多数据时继续增长。
+- en: The `FuncAnimation()` function requires the `data_gen()` object to be a special
+    type of function called a `generator`. A `generator` function produces a continuous
+    series of values each time it is called, and can even use its previous state to
+    calculate the next value if required. This is used to perform continuous calculations
+    for plotting; this is why it is used here. In our case, we just want to run the
+    same sampling function (`new_data()`) continuously so that each time it is called,
+    it will yield a new sample.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`FuncAnimation()`函数需要`data_gen()`对象是一种称为`generator`的特殊类型的函数。`generator`函数每次被调用时都会产生一系列连续的值，甚至可以使用其先前的状态来计算下一个值（如果需要的话）。这用于执行连续的计算以进行绘图；这就是为什么它在这里使用的原因。在我们的情况下，我们只想连续运行相同的采样函数（`new_data()`），以便每次调用它时，它都会产生一个新的样本。'
+- en: Finally, we update the *x* and *y* axes data with our `dispdata[]` array (using
+    the `set_data()` function), which will plot our samples against the number of
+    seconds we are sampling. To use other data, or to plot data from the ADC, adjust
+    the import for `dataDevice` and select the required channel (and scaling) in the
+    `data_gen()` function.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们使用`dispdata[]`数组（使用`set_data()`函数）更新*x*和*y*轴数据，这将使我们的样本根据我们进行采样的秒数进行绘制。要使用其他数据，或者绘制来自ADC的数据，请调整`dataDevice`的导入，并在`data_gen()`函数中选择所需的通道（和缩放）。
+- en: Scaling and calibrating data
+  id: totrans-227
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 缩放和校准数据
+- en: You may have noticed that it can sometimes be difficult to interpret data read
+    from an ADC, since the value is just a number. A number isn't much help on its
+    own; all it can tell you is that the environment is slightly hotter or slightly
+    darker than the previous sample. However, if you can use another device to provide
+    comparable values (such as the current room temperature), you can then calibrate
+    your sensor data to provide more useful real-world information.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，有时很难解释从ADC读取的数据，因为该值只是一个数字。一个数字本身并没有太多帮助；它只能告诉您环境比上一个样本稍微热一些或稍微暗一些。但是，如果您可以使用另一个设备提供可比较的值（例如当前室温），那么您可以校准传感器数据以提供更有用的真实世界信息。
+- en: 'To obtain a rough calibration, we shall use two samples to create a linear
+    fit model that can then be used to estimate real-world values for other ADC readings
+    (this assumes the sensor itself is mostly linear in its response). The following
+    diagram shows a linear fit graph using two readings at 25 and 30 degrees Celsius,
+    providing estimated ADC values for other temperatures:'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了获得粗略的校准，我们将使用两个样本创建一个线性拟合模型，然后可以用于估计其他ADC读数的真实世界值（这假设传感器本身在其响应中大部分是线性的）。以下图表显示了使用25和30摄氏度的两个读数创建的线性拟合图，为其他温度提供了估计的ADC值：
+- en: '![](Images/47102c86-e5f9-4c4d-b4ac-f5f297865ded.png)Samples are used to linearly
+    calibrate temperature sensor readings'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/47102c86-e5f9-4c4d-b4ac-f5f297865ded.png)样本用于线性校准温度传感器读数'
+- en: 'We can calculate our model using the following function:'
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用以下函数来计算我们的模型：
+- en: '[PRE36]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: This will return `cal`, which will contain the model slope (`A`) and offset
+    (`C`).
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将返回`cal`，其中将包含模型斜率（`A`）和偏移（`C`）。
+- en: 'We can then use the following function to calculate the value of any reading
+    by using the calculated `cal` values for that channel:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以使用以下函数通过使用该通道的计算`cal`值来计算任何读数的值：
+- en: '[PRE37]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: For more accuracy, you can take several samples and use linear interpolation
+    between the values (or fit the data to other, more complex mathematical models),
+    if required.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了更准确，您可以进行多次采样，并在值之间进行线性插值（或将数据拟合到其他更复杂的数学模型），如果需要的话。
+- en: Extending the Raspberry Pi GPIO with an I/O expander
+  id: totrans-237
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用I/O扩展器扩展树莓派GPIO
+- en: As we have seen, making use of the higher-level bus protocols allows us to connect
+    to more complex hardware quickly and easily. The I²C can be put to great use by
+    using it to expand the available I/O on the Raspberry Pi, as well as providing
+    additional circuit protection (and, in some cases, additional power to drive more
+    hardware).
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，利用更高级别的总线协议可以让我们快速轻松地连接到更复杂的硬件。通过使用I²C，我们可以将树莓派上可用的I/O扩展，并提供额外的电路保护（在某些情况下，还提供额外的电源来驱动更多的硬件）。
+- en: There are lots of devices available that provide I/O expansion over the I²C
+    bus (and also SPI), but the most commonly used is a 28-pin device, MCP23017, which
+    provides 16 additional digital input/output pins. Being an I²C device, it only
+    requires the two signals (SCL and SDA connections, plus ground, and power) and
+    will happily function with other I²C devices on the same bus.
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多可用的设备可以通过I²C总线（以及SPI）进行I/O扩展，但最常用的是28引脚设备MCP23017，它提供16个额外的数字输入/输出引脚。作为I²C设备，它只需要两个信号（SCL和SDA连接，加上地和电源），并且可以与同一总线上的其他I²C设备一起正常工作。
+- en: We shall see how the Adafruit I²C 16x2 RGB LCD Pi Plate makes use of one of
+    these chips to control an LCD alphanumeric display and keypad over the I²C bus
+    (without the I/O expander, this would normally require up to 15 GPIO pins).
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将看到Adafruit I²C 16x2 RGB LCD Pi Plate如何利用这些芯片来通过I²C总线控制LCD字母显示和键盘（如果没有I/O扩展器，这通常需要多达15个GPIO引脚）。
+- en: Boards from other manufacturers will also work. A 16x2 LCD module and I²C-to-serial
+    interface module can be combined to have our own low cost I²C LCD module.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其他制造商的板也可以使用。16x2 LCD模块和I²C到串行接口模块可以组合在一起，以拥有我们自己的低成本I²C LCD模块。
+- en: Getting ready
+  id: totrans-242
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: 'You will need the Adafruit I²C 16x2 RGB LCD Pi Plate (which also includes five
+    keypad buttons), shown in the following photo:'
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将需要Adafruit I²C 16x2 RGB LCD Pi Plate（还包括五个键盘按钮），如下图所示：
+- en: '![](Images/ae827aa6-e260-42a8-a195-2a15b0ca1d68.png)Adafruit I²C 16x2 RGB LCD
+    Pi Plate with keypad buttons'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/ae827aa6-e260-42a8-a195-2a15b0ca1d68.png)带有键盘按钮的Adafruit I²C 16x2
+    RGB LCD Pi Plate'
+- en: The Adafruit I²C 16x2 RGB LCD Pi Plate directly connects to the GPIO connector
+    of Raspberry Pi.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Adafruit I²C 16x2 RGB LCD Pi Plate直接连接到树莓派的GPIO连接器。
+- en: As before, we can use the PCF8591 ADC module or use the `data_local.py` module
+    from the previous section (use `data_adc` or `data_local` in the import section
+    of the script). The `data_adc.py` and `data_local.py` files should be in the same
+    directory as the new script.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与之前一样，我们可以使用PCF8591 ADC模块，或者使用上一节中的`data_local.py`模块（在脚本的导入部分使用`data_adc`或`data_local`）。`data_adc.py`和`data_local.py`文件应该与新脚本在同一个目录中。
+- en: The LCD Pi Plate only requires four pins (SDA, SCL, GND, and 5V); it connects
+    over the whole GPIO header. If we want to use it with other devices, such as the
+    PCF8591 ADC module, then something similar to a TriBorg from PiBorg (which splits
+    the GPIO port into three) can be used to add ports.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: LCD Pi Plate只需要四个引脚（SDA、SCL、GND和5V）；它连接整个GPIO引脚。如果我们想要将其与其他设备一起使用，例如PCF8591
+    ADC模块，那么可以使用类似于PiBorg的TriBorg（将GPIO端口分成三个）来添加端口。
+- en: How to do it...
+  id: totrans-248
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作步骤...
+- en: 'Create the following script, called `lcd_i2c.py`:'
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建以下脚本，名为`lcd_i2c.py`：
+- en: '[PRE38]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'With the LCD module connected, run the script as follows:'
+  id: totrans-251
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 连接LCD模块后，按以下方式运行脚本：
+- en: '[PRE39]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Select the data channel you want to display using the left and right buttons
+    and press the SELECT button to exit.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用左右按钮选择要显示的数据通道，然后按SELECT按钮退出。
+- en: How it works...
+  id: totrans-254
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: 'The `wiringpi2` library has excellent support for I/O expander chips, like
+    the one used for the Adafruit LCD character module. To use the Adafruit module,
+    we need to set up the pin mapping for all the pins of MCP23017 Port A, as shown
+    in the following table (then, we set up the I/O expander pins with an offset of
+    `100`):'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`wiringpi2`库对于I/O扩展器芯片（如Adafruit LCD字符模块所使用的芯片）有很好的支持。要使用Adafruit模块，我们需要为MCP23017端口A的所有引脚设置引脚映射，如下表所示（然后，我们使用偏移量`100`设置I/O扩展器引脚）：'
+- en: '| **Name** | **SELECT** | **RIGHT** | **DOWN** | **UP** | **LEFT** | **GREEN**
+    | **BLUE** | **RED** |'
+  id: totrans-256
+  prefs: []
+  type: TYPE_TB
+  zh: '| **名称** | **SELECT** | **RIGHT** | **DOWN** | **UP** | **LEFT** | **GREEN**
+    | **BLUE** | **RED** |'
+- en: '| MCP23017 Port A | A0 | A1 | A2 | A3 | A4 | A6 | A7 | A8 |'
+  id: totrans-257
+  prefs: []
+  type: TYPE_TB
+  zh: '| MCP23017端口A | A0 | A1 | A2 | A3 | A4 | A6 | A7 | A8 |'
+- en: '| WiringPi pin | 100 | 101 | 102 | 103 | 104 | 106 | 107 | 108 |'
+  id: totrans-258
+  prefs: []
+  type: TYPE_TB
+  zh: '| WiringPi引脚 | 100 | 101 | 102 | 103 | 104 | 106 | 107 | 108 |'
+- en: 'The pin mapping for all of MCP23017 Port B''s pins is as follows:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MCP23017端口B的所有引脚的引脚映射如下：
+- en: '| **Name** | **DB7** | **DB6** | **DB5** | **DB4** | **E** | **RW** | **RS**
+    |'
+  id: totrans-260
+  prefs: []
+  type: TYPE_TB
+  zh: '| **名称** | **DB7** | **DB6** | **DB5** | **DB4** | **E** | **RW** | **RS**
+    |'
+- en: '| MCP23017 Port B | B1 | B2 | B3 | B4 | B5 | B6 | B7 |'
+  id: totrans-261
+  prefs: []
+  type: TYPE_TB
+  zh: '| MCP23017端口B | B1 | B2 | B3 | B4 | B5 | B6 | B7 |'
+- en: '| WiringPi pin | 109 | 110 | 111 | 112 | 113 | 114 | 115 |'
+  id: totrans-262
+  prefs: []
+  type: TYPE_TB
+  zh: '| WiringPi引脚 | 109 | 110 | 111 | 112 | 113 | 114 | 115 |'
+- en: To set up the LCD screen, we initialize `wiringPiSetup()` and the I/O expander,
+    `mcp23017Setup()`. We then specify the pin offset and bus address of the I/O expander.
+    Next, we set all the hardware buttons as inputs (using `pinMode(pin number,0)`),
+    and the RW pin of the LCD to an output. The `wiringpi2` LCD library expects the
+    RW pin to be set to `LOW` (forcing it into read-only mode), so we set the pin
+    to `LOW` (using `digitalWrite(AF_RW,0)`).
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要设置LCD屏幕，我们初始化`wiringPiSetup()`和I/O扩展器`mcp23017Setup()`。然后，我们指定I/O扩展器的引脚偏移和总线地址。接下来，我们将所有硬件按钮设置为输入（使用`pinMode(引脚号,0)`），并将LCD的RW引脚设置为输出。`wiringpi2`
+    LCD库期望RW引脚设置为`LOW`（将其强制设置为只读模式），因此我们将引脚设置为`LOW`（使用`digitalWrite(AF_RW,0)`）。
+- en: We create an `lcd` object by defining the number of rows and columns of the
+    screen and stating whether we are using a 4- or 8-bit data mode (we are using
+    four of the eight data lines, so we will be using 4-bit mode). We also provide
+    the pin mapping of the pins we are using (the last four are set to `0` since we
+    are only using four data lines).
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们通过定义屏幕的行数和列数以及说明我们是否使用4位或8位数据模式（我们使用8个数据线中的4个，因此将使用4位模式）来创建一个`lcd`对象。我们还提供了我们使用的引脚的引脚映射（最后四个设置为`0`，因为我们只使用四个数据线）。
+- en: Now, we will create a function called `PrintLCD()`, which will allow us to send
+    strings to show on each line of the display. We use `lcdPosition()` to set the
+    cursor position on the `lcd` object for each line and then print the text for
+    each line. We also add some blank spaces at the end of each line to ensure the
+    full line is overwritten.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将创建一个名为`PrintLCD()`的函数，它将允许我们发送字符串以显示在显示器的每一行上。我们使用`lcdPosition()`为每一行设置`lcd`对象上的光标位置，然后打印每一行的文本。我们还在每一行的末尾添加一些空格，以确保整行被覆盖。
+- en: The next function, `checkBtn()`, briefly checks the left/right and select buttons
+    to see if they have been pressed (using the `digitalRead()` function). If the
+    left/right button has been pressed, then the index is set to the previous/next
+    item in the array. If the SELECT button is pressed, then the `run` flag is set
+    to `False` (this will exit the main loop, allowing the script to finish).
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一个函数`checkBtn()`，简要检查左右和选择按钮是否已被按下（使用`digitalRead()`函数）。如果按下了左/右按钮，则将索引设置为数组中的上一个/下一个项目。如果按下了SELECT按钮，则将`run`标志设置为`False`（这将退出主循环，允许脚本完成）。
+- en: The `main()` function calls `gpiosetup()` to create our `lcd` object; then,
+    we create our `dataDevice` object and fetch the data names. Within the main loop,
+    we get new data; then, we use our `printLCD()` function to display the data name
+    on the top line and the data value on the second line. Finally, we check to see
+    whether the buttons have been pressed and set the index to our data as required.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`main()`函数调用`gpiosetup()`来创建我们的`lcd`对象；然后，我们创建我们的`dataDevice`对象并获取数据名称。在主循环中，我们获取新数据；然后，我们使用我们的`printLCD()`函数在顶部行上显示数据名称，并在第二行上显示数据值。最后，我们检查按钮是否已被按下，并根据需要设置索引到我们的数据。'
+- en: There's more...
+  id: totrans-268
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: Using an expander chip such as the MCP23017 provides an excellent way to increase
+    the amount of hardware connectivity to the Raspberry Pi while also providing an
+    additional layer of protection (it is cheaper to replace the expander chip Raspberry
+    Pi).
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用诸如MCP23017之类的扩展器芯片提供了一种增加与树莓派的硬件连接性的绝佳方式，同时还提供了额外的保护层（更换扩展器芯片比更换树莓派便宜）。
+- en: I/O expander voltages and limits
+  id: totrans-270
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: I/O扩展器的电压和限制
+- en: The port expander only uses a small amount of power when in use, but if you
+    are powering it using the 3.3 V supply, then you will still only be able to draw
+    a maximum of 50 mA in total from all the pins. If you draw too much power, then
+    you may experience system freezes or corrupted read/writes on the SD card.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 扩展器在使用时只使用少量功率，但如果您使用3.3V供电，那么您仍然只能从所有引脚中最多吸取50mA。如果吸取的功率过多，那么您可能会遇到系统冻结或SD卡上的读/写损坏。
+- en: If you power the expander using the 5V supply, then you can draw up to the maximum
+    power the expander can support (around a maximum of 25 mA per pin and 125 mA in
+    total), as long as your USB power supply is powerful enough.
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您使用5V供电扩展器，那么您可以吸取扩展器支持的最大功率（每个引脚最多约25mA，总共125mA），只要您的USB电源供应足够强大。
+- en: We must remember that if the expander is powered with a 5 V supply, the inputs/outputs
+    and interrupt lines will also be 5 V and should never be connected back to the
+    Raspberry Pi (without using level shifters to translate the voltage down to 3.3
+    V).
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们必须记住，如果扩展器使用5V电源供电，输入/输出和中断线也将是5V，绝不能连接回树莓派（除非使用电平转换器将电压转换为3.3V）。
+- en: 'By changing the wiring of the address pins (A0, A1, and A2) on the expander
+    chip, up to eight modules can be used on the same I²C bus simultaneously. To ensure
+    there is enough current available for each, we would need to use a separate 3.3
+    V supply. A linear regulator such as LM1117-3.3 would be suitable (this would
+    provide up to 800 mA at 3.3 V, 100 mA for each), and only needs the following
+    simple circuit:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过更改扩展器芯片上的地址引脚（A0、A1和A2）的接线，最多可以同时在同一I²C总线上使用八个模块。为了确保每个模块都有足够的电流可用，我们需要使用单独的3.3V供电。像LM1117-3.3这样的线性稳压器将是合适的（这将提供最多800mA的3.3V，每个100mA），并且只需要以下简单的电路：
+- en: '![](Images/f17c86f4-937c-42b6-a2b7-9bbe74e089a4.png)The LM1117 linear voltage
+    regulator circuit'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/f17c86f4-937c-42b6-a2b7-9bbe74e089a4.png)LM1117线性稳压器电路'
+- en: 'The following diagram shows how a voltage regulator can be connected to the
+    I/O expander (or other device) to provide more current for driving extra hardware:'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了如何将稳压器连接到I/O扩展器（或其他设备）以为驱动额外硬件提供更多电流：
+- en: '![](Images/596bf4cd-d3a3-4ac6-a961-c7aabfe61b8b.png)Using a voltage regulator
+    with the Raspberry Pi'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/596bf4cd-d3a3-4ac6-a961-c7aabfe61b8b.png)使用稳压器与树莓派'
+- en: The input voltage (Vin) is provided by the Raspberry Pi (for example, from the
+    GPIO pin header, such as 5 V pin 2). However, Vin could be provided by any other
+    power supply (or battery pack) as long as it is between 4.5 V and 15 V and is
+    able to provide enough current. The important part is to ensure that the ground
+    connections (GND) of the Raspberry Pi, the power supply (if a separate one is
+    used), the regulator, and the I/O expander are all connected together (as a common
+    ground).
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输入电压（Vin）由树莓派提供（例如，来自GPIO引脚头，如5V引脚2）。但是，只要在4.5V和15V之间并且能够提供足够的电流，Vin可以由任何其他电源（或电池组）提供。重要的是要确保树莓派、电源（如果使用单独的电源）、稳压器和I/O扩展器的地连接（GND）都连接在一起（作为公共地）。
+- en: Using your own I/O expander module
+  id: totrans-279
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用您自己的I/O扩展器模块
+- en: 'You can use one of the I/O expander modules that are available (or just the
+    MCP23017 chip in the following circuit) to control most HD44780-compatible LCD
+    displays:'
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用可用的I/O扩展器模块（或者只是以下电路中的MCP23017芯片）来控制大多数HD44780兼容的LCD显示器：
+- en: '![](Images/418d237b-b8ec-45b3-b519-48ac23a76624.png)The I/O expander and a
+    HD44780-compatible display'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/418d237b-b8ec-45b3-b519-48ac23a76624.png)I/O扩展器和HD44780兼容显示器'
+- en: The D-Pad circuit, u*sing Python-to-drive hardware*, can also be connected to
+    the remaining port A pins of the expander (`PA0` to button 1, `PA1` to right,
+    `PA2` to down, `PA3` to up, `PA4` to left, and `PA5` to button 2). As in the previous
+    example, the buttons will be `PA0` to `PA4` (WiringPi pin number 100 to 104);
+    apart from these, we have the second button added to `PA5` (WiringPi pin number
+    105).
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: D-Pad电路，*使用Python驱动硬件*，也可以连接到扩展器的剩余端口A引脚（`PA0`到按钮1，`PA1`到右，`PA2`到下，`PA3`到上，`PA4`到左，`PA5`到按钮2）。与前面的例子一样，按钮将是`PA0`到`PA4`（WiringPi引脚编号100到104）；除此之外，我们还将第二个按钮添加到`PA5`（WiringPi引脚编号105）。
+- en: Directly controlling an LCD alphanumeric display
+  id: totrans-283
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 直接控制LCD字母显示器
+- en: 'Alternatively, you can also drive the screen directly from the Raspberry Pi
+    with the following connections:'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，您也可以直接从树莓派驱动屏幕，连接如下：
+- en: We are not using the I²C bus here.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们这里不使用I²C总线。
+- en: '| **LCD** | **VSS** | **VDD** | **V0** | **RS** | **RW** | **E** | **DB4**
+    | **DB5** | **DB6** | **DB7** |'
+  id: totrans-286
+  prefs: []
+  type: TYPE_TB
+  zh: '| **LCD** | **VSS** | **VDD** | **V0** | **RS** | **RW** | **E** | **DB4**
+    | **DB5** | **DB6** | **DB7** |'
+- en: '| **LCD Pin** | 1 | 2 | 3 | 4 | 5 | 6 | 11 | 12 | 13 | 14 |'
+  id: totrans-287
+  prefs: []
+  type: TYPE_TB
+  zh: '| **LCD引脚** | 1 | 2 | 3 | 4 | 5 | 6 | 11 | 12 | 13 | 14 |'
+- en: '| **Raspberry Pi GPIO** | 6 (GND) | 2 (5V) | Contrast | 11 | 13 (GND) | 15
+    | 12 | 16 | 18 | 22 |'
+  id: totrans-288
+  prefs: []
+  type: TYPE_TB
+  zh: '| **树莓派 GPIO** | 6 (GND) | 2 (5V) | 对比度 | 11 | 13 (GND) | 15 | 12 | 16 | 18
+    | 22 |'
+- en: The preceding table lists the connections required between the Raspberry Pi
+    and the HD44780-compatible, alphanumeric display module.
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上表列出了树莓派和HD44780兼容的字母显示模块之间所需的连接。
+- en: The contrast pin (V0) can be connected to a variable resistor as before (with
+    one side connected to the 5 V supply and the other to GND); although, depending
+    on the screen, you may find you can connect directly to GND/5 V to obtain the
+    maximum contrast.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对比度引脚（V0）可以像以前一样连接到可变电阻器（一端连接到5V供电，另一端连接到GND）；尽管根据屏幕的不同，您可能会发现可以直接连接到GND/5V以获得最大对比度。
+- en: The `wiringpi2` LCD library assumes that the RW pin is connected to GND (read
+    only); this avoids the risk that the LCD will send data back if it is connected
+    directly to the Raspberry Pi (this would be a problem since the screen is powered
+    by 5 V and will send data using 5 V logic).
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`wiringpi2` LCD库假定RW引脚连接到GND（只读）；这样可以避免LCD直接连接到树莓派时发送数据的风险（这将是一个问题，因为屏幕由5V供电，并将使用5V逻辑发送数据）。'
+- en: Ensure that you update the code with the new `AF_XX` references and refer to
+    the physical pin number by changing the setup within the `gpiosetup()` function.
+    We can also skip the setup of the MCP23017 device.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保您使用新的`AF_XX`引用更新代码，并通过更改`gpiosetup()`函数中的设置来引用物理引脚号。我们还可以跳过MCP23017设备的设置。
+- en: 'Have a look at the following commands:'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看一下以下命令：
+- en: '[PRE40]'
+  id: totrans-294
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Replace the preceding commands with the following command:'
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用以下命令替换前面的命令：
+- en: '[PRE41]'
+  id: totrans-296
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: You can see that we only need to change the pin references to switch between
+    using the I/O expander and not using it, which shows how convenient the `wiringpi2`
+    implementation is.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到，我们只需要更改引脚引用以在使用I/O扩展器和不使用它之间切换，这显示了`wiringpi2`实现的方便之处。
+- en: Capturing data in an SQLite database
+  id: totrans-298
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在SQLite数据库中捕获数据
+- en: Databases are a perfect way to store lots of structured data while maintaining
+    the ability to access and search for specific data. **Structured Query Language**
+    (**SQL**) is a standardized set of commands to update and query databases. For
+    this example, we will use SQLite (a lightweight, self-contained implementation
+    of an SQL database system).
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据库是存储大量结构化数据并保持访问和搜索特定数据能力的完美方式。**结构化查询语言**（**SQL**）是一套标准化的命令，用于更新和查询数据库。在本例中，我们将使用SQLite（SQL数据库系统的轻量级、独立实现）。
+- en: 'In this chapter, we will gather raw data from our ADC (or local data source)
+    and build our own database. We can then use a Python library called `sqlite3`
+    to add data to a database and then query it:'
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将从ADC（或本地数据源）中收集原始数据，并构建自己的数据库。然后，我们可以使用一个名为`sqlite3`的Python库将数据添加到数据库，然后查询它：
+- en: '[PRE42]'
+  id: totrans-301
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: Getting ready
+  id: totrans-302
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'To capture data in our database, we will install SQLite so that it is ready
+    to be used with Python''s `sqlite3` built-in module. Use the following command
+    to install SQLite:'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了在数据库中捕获数据，我们将安装SQLite，以便它可以与Python的`sqlite3`内置模块一起使用。使用以下命令安装SQLite：
+- en: '[PRE43]'
+  id: totrans-304
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Next, we will perform some basic operations with SQLite to see how to use SQL
+    queries.
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将执行一些基本的SQLite操作，以了解如何使用SQL查询。
+- en: 'Run SQLite directly, creating a new `test.db` database file with the following
+    command:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 直接运行SQLite，使用以下命令创建一个新的`test.db`数据库文件：
+- en: '[PRE44]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'This will open an SQLite console, within which we enter SQL commands directly.
+    For example, the following commands will create a new table, add some data, display
+    the content, and then remove the table:'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将打开一个SQLite控制台，在其中我们直接输入SQL命令。例如，以下命令将创建一个新表，添加一些数据，显示内容，然后删除表：
+- en: '[PRE45]'
+  id: totrans-309
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: You will need the same hardware setup as the previous recipe, as detailed in
+    the *Getting ready* section of the *Using devices with the I²C bus* recipe.
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将需要与以前的配方中*准备就绪*部分中详细描述的相同的硬件设置，使用I²C总线与设备配合使用。
+- en: How to do it...
+  id: totrans-311
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作步骤
+- en: 'Create the following script, called `mysqlite_adc.py`:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建以下脚本，名为`mysqlite_adc.py`：
+- en: '[PRE46]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'If you do not have the ADC module hardware, you can capture local data by setting
+    the `dataDevice` module as `data_local`. Ensure you have `data_local.py` (from
+    the *There''s more...* section in the *Reading analog data using an analog-to-digital
+    converter* recipe) in the same directory as the following script:'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您没有ADC模块硬件，可以通过将`dataDevice`模块设置为`data_local`来捕获本地数据。确保您在以下脚本的同一目录中拥有`data_local.py`（来自*读取模拟数据使用模数转换器*配方中*还有更多...*部分）：
+- en: '`import data_local as dataDevice`'
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`import data_local as dataDevice`'
+- en: This will capture the local data (RAM, CPU activity, temperature, and so on)
+    to the SQLite database instead of ADC samples.
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将捕获本地数据（RAM、CPU活动、温度等）到SQLite数据库，而不是ADC样本。
+- en: How it works...
+  id: totrans-317
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'When the script is first run, it will create a new SQLite database file called
+    `mydatabase.db`, which will add a table named `recordeddata`. The table is generated
+    by `createTable()`, which runs the following SQLite command:'
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当首次运行脚本时，它将创建一个名为`mydatabase.db`的新SQLite数据库文件，该文件将添加一个名为`recordeddata`的表。该表由`createTable()`生成，该函数运行以下SQLite命令：
+- en: '[PRE47]'
+  id: totrans-319
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'The new table will contain the following data items:'
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 新表将包含以下数据项：
+- en: '| **Name** | **Description** |'
+  id: totrans-321
+  prefs: []
+  type: TYPE_TB
+  zh: '| **名称** | **描述** |'
+- en: '| `itm_date` | Used to store the date of the data sample. When the data record
+    is created, the current date (using `date(''now'',''localtime'')`) is applied
+    as the default value. |'
+  id: totrans-322
+  prefs: []
+  type: TYPE_TB
+  zh: '| `itm_date` | 用于存储数据样本的日期。创建数据记录时，当前日期（使用`date(''now'',''localtime'')`）被应用为默认值。
+    |'
+- en: '| `itm_time` | Used to store the time of the data sample. When the data record
+    is created, the current time (using `time(''now'',''localtime'')`) is applied
+    as the default value. |'
+  id: totrans-323
+  prefs: []
+  type: TYPE_TB
+  zh: '| `itm_time` | 用于存储数据样本的时间。创建数据记录时，当前时间（使用`time(''now'',''localtime'')`）被应用为默认值。
+    |'
+- en: '| `itm_name` | Used to record the name of the sample. |'
+  id: totrans-324
+  prefs: []
+  type: TYPE_TB
+  zh: '| `itm_name` | 用于记录样本的名称。|'
+- en: '| `itm_value` | Used to keep the sampled value. |'
+  id: totrans-325
+  prefs: []
+  type: TYPE_TB
+  zh: '| `itm_value` | 用于保存采样值。 |'
+- en: 'We then use the same method to capture 10 data samples from the ADC as we did
+    in the *Logging and plotting **data* recipe previously (as shown in the `captureSamples()`
+    function). However, this time, we will then add the captured data into our new
+    SQLite database table, using the following SQL command (applied using `cursor.execute(sqlquery)`):'
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们使用与以前的*记录和绘图数据*配方中相同的方法从ADC中捕获10个数据样本（如`captureSamples()`函数中所示）。但是，这次，我们将使用以下SQL命令将捕获的数据添加到我们的新SQLite数据库表中（使用`cursor.execute(sqlquery)`应用）：
+- en: '[PRE48]'
+  id: totrans-327
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'The current date and time will be added by default to each record as it is
+    created. We end up with a set of 40 records (4 records for every cycle of ADC
+    samples captured), which are now stored in the SQLite database:'
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当前日期和时间将默认添加到每个记录中。我们最终得到一组40条记录（每个ADC样本周期捕获4条记录），这些记录现在存储在SQLite数据库中：
+- en: '![](Images/b1090b4d-96d0-4c69-85ba-45afc253bfb8.png)Eight ADC samples have
+    been captured and stored in the SQLite database'
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/b1090b4d-96d0-4c69-85ba-45afc253bfb8.png)已捕获并存储了八个ADC样本在SQLite数据库中'
+- en: After the records have been created, we must remember to call `cursor.commit()`,
+    which will save all the new records to the database.
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记录创建后，我们必须记得调用`cursor.commit()`，这将保存所有新记录到数据库中。
+- en: 'The last part of the script calls `displayAll()`, which will use the following
+    SQL command:'
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 脚本的最后部分调用`displayAll()`，它将使用以下SQL命令：
+- en: '[PRE49]'
+  id: totrans-332
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'This will select all of the data records in the `recordeddata` table, and we
+    use `cursor.fetch()` to provide the selected data as a list we can iterate through:'
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将选择`recordeddata`表中的所有数据记录，并且我们使用`cursor.fetch()`将所选数据提供为我们可以迭代的列表：
+- en: '[PRE50]'
+  id: totrans-334
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: This allows us to print out the full contents of the database, displaying the
+    captured data.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这使我们能够打印出数据库的全部内容，显示捕获的数据。
+- en: Note that here we use the `try`, `except`, and `finally` constructs in this
+    script to attempt to handle the mostly likely scenario that users will face when
+    running the script.
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在此脚本中我们使用`try`、`except`和`finally`结构来尝试处理用户运行脚本时最有可能遇到的情况。
+- en: First, we ensure that if the database directory doesn't exist, we create it.
+    Next, we try opening the database file; this process will automatically create
+    a new database file if one doesn't already exist. If either of these initial steps
+    fail (because they don't have read/write permissions, for example) we cannot continue,
+    so we report that we cannot open the database and simply exit the script.
+  id: totrans-337
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们确保如果数据库目录不存在，我们会创建它。接下来，我们尝试打开数据库文件；如果不存在数据库文件，此过程将自动创建一个新的数据库文件。如果这些初始步骤中的任何一个失败（例如因为它们没有读/写权限），我们就无法继续，因此我们报告无法打开数据库并简单地退出脚本。
+- en: Next, we try to open the required table within the database and display it.
+    If the database file is brand new, this operation will always fail, as it will
+    be empty. However, if this occurs, we just catch the exception and create the
+    table before continuing with the script to add our sampled data to the table and
+    display it.
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们尝试在数据库中打开所需的表并显示它。如果数据库文件是全新的，此操作将始终失败，因为它将是空的。但是，如果发生这种情况，我们只需捕获异常并在继续使用脚本将采样数据添加到表并显示它之前创建表。
+- en: This allows the script to gracefully handle potential problems, take corrective
+    action, and then continue smoothly. The next time the script is run, the database
+    and table will already exist, so we won't need to create them a second time, and
+    we can append the sample data to the table within the same database file.
+  id: totrans-339
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这允许脚本优雅地处理潜在问题，采取纠正措施，然后平稳地继续。下次运行脚本时，数据库和表将已经存在，因此我们不需要第二次创建它们，并且我们可以将样本数据附加到同一数据库文件中的表中。
+- en: There's more...
+  id: totrans-340
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: 'There are many variants of SQL servers available (such as MySQL, Microsoft
+    SQL Server, and PostgreSQL), however they should at least have the following primary
+    commands (or equivalent):'
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多可用的SQL服务器变体（如MySQL、Microsoft SQL Server和PostgreSQL），但它们至少应该具有以下主要命令（或等效命令）：
+- en: '[PRE51]'
+  id: totrans-342
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: You should find that even if you choose to use a different SQL server to the
+    SQLite one used here, the SQL commands will be relatively similar.
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 即使您选择使用与此处使用的SQLite不同的SQL服务器，您也应该发现SQL命令会相对类似。
+- en: The CREATE TABLE command
+  id: totrans-344
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建表命令
+- en: 'The `CREATE TABLE` command is used to define a new table by specifying the
+    column names (and also to set default values, if desired):'
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`CREATE TABLE`命令用于通过指定列名来定义新表（还可以设置默认值，如果需要）。'
+- en: '[PRE52]'
+  id: totrans-346
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: The previous SQL command will create a new table called `table_name`, containing
+    three data items. One column will contain text, other integers (for example, 1,
+    3, -9), and finally, one column will contain real numbers (for example, 5.6, 3.1749,
+    1.0).
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上一个SQL命令将创建一个名为`table_name`的新表，其中包含三个数据项。一列将包含文本，其他整数（例如1、3、-9），最后，一列将包含实数（例如5.6、3.1749、1.0）。
+- en: The INSERT command
+  id: totrans-348
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 插入命令
+- en: 'The `INSERT` command will add a particular entry to a table in the database:'
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`INSERT`命令将向数据库中的表添加特定条目：'
+- en: '[PRE53]'
+  id: totrans-350
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: This will enter the values provided into the corresponding columns in the table.
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将把提供的值输入到表中相应的列中。
+- en: The SELECT command
+  id: totrans-352
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SELECT命令
+- en: 'The `SELECT` command allows us to specify a particular column or columns from
+    the database table, returning a list of records with the data:'
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`SELECT`命令允许我们从数据库表中指定特定列或列，返回带有数据的记录列表：'
+- en: '[PRE54]'
+  id: totrans-354
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'It can also allow us to select all of the items, using this command:'
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它还可以允许我们选择所有项目，使用此命令：
+- en: '[PRE55]'
+  id: totrans-356
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: The WHERE command
+  id: totrans-357
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: WHERE命令
+- en: 'The `WHERE` command is used to specify specific entries to be selected, updated,
+    or deleted:'
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`WHERE`命令用于指定要选择、更新或删除的特定条目：'
+- en: '[PRE56]'
+  id: totrans-359
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: This will `SELECT` any records where the `column_name1` matches `'Terry Pratchett'`.
+  id: totrans-360
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将`SELECT`任何`column_name1`匹配`'Terry Pratchett'`的记录。
+- en: The UPDATE command
+  id: totrans-361
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更新命令
+- en: 'The `UPDATE` command will allow us to change (`SET`) the values of data in
+    each of the specified columns. We can also combine this with the `WHERE` command
+    to limit the records the change is applied to:'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`UPDATE`命令将允许我们更改（`SET`）指定列中的数据值。我们还可以将其与`WHERE`命令结合使用，以限制应用更改的记录：'
+- en: '[PRE57]'
+  id: totrans-363
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: The DELETE command
+  id: totrans-364
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 删除命令
+- en: 'The `DELETE` command allows any records selected using `WHERE` to be removed
+    from the specified table. However, if the whole table is selected, using `DELETE
+    * FROM table_name` will delete the entire contents of the table:'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`DELETE`命令允许使用`WHERE`选择的任何记录从指定的表中删除。但是，如果选择整个表，使用`DELETE * FROM table_name`将删除表的全部内容：'
+- en: '[PRE58]'
+  id: totrans-366
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: The DROP command
+  id: totrans-367
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 删除命令
+- en: 'The `DROP` command allows a table to be removed completely from the database:'
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`DROP`命令允许完全从数据库中删除表：'
+- en: '[PRE59]'
+  id: totrans-369
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Be warned that this will permanently remove all the data that was stored in
+    the specified table and the structure.
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，这将永久删除存储在指定表和结构中的所有数据。
+- en: Viewing data from your own webserver
+  id: totrans-371
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从您自己的Web服务器查看数据
+- en: Gathering and collecting information into databases is very helpful, but if
+    it is locked inside a database or a file, it isn't of much use. However, if we
+    allow the stored data to be viewed via a web page, it will be far more accessible;
+    not only can we view the data from other devices, but we can also share it with
+    others on the same network.
+  id: totrans-372
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 收集和整理信息到数据库非常有帮助，但如果它被锁在数据库或文件中，它就没有太多用处。然而，如果我们允许存储的数据通过网页查看，它将更容易访问；我们不仅可以从其他设备查看数据，还可以在同一网络上与其他人分享。
+- en: 'We shall create a local web server to query and display the captured SQLite
+    data and allow it to be viewed through a PHP web interface. This will allow the
+    data to be viewed, not only via the web browser on the Raspberry Pi, but also
+    on other devices, such as cell phones or tablets, on the local network:'
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建一个本地web服务器来查询和显示捕获的SQLite数据，并允许通过PHP web界面查看。这将允许数据不仅可以通过树莓派上的web浏览器查看，还可以在本地网络上的其他设备上查看，如手机或平板电脑：
+- en: '![](Images/0722af98-22cb-45da-b77e-f039fb491c8d.png)Data captured in the SQLite
+    database displayed via a web page'
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/0722af98-22cb-45da-b77e-f039fb491c8d.png)通过web页面显示的SQLite数据库中捕获的数据'
+- en: Using a web server to enter and display information is a powerful way to allow
+    a wide range of users to interact with your projects. The following example demonstrates
+    a web server setup that can be customized for a variety of uses.
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用web服务器输入和显示信息是允许广泛用户与您的项目互动的强大方式。以下示例演示了一个可以为各种用途定制的web服务器设置。
+- en: Getting ready
+  id: totrans-376
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: Ensure you have completed the previous recipe so that the sensor data has been
+    collected and stored in the SQLite database. We need to install a web server (**Apache2**)
+    and enable PHP support to allow SQLite access.
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保您已完成上一个步骤，以便传感器数据已被收集并存储在SQLite数据库中。我们需要安装一个web服务器（**Apache2**）并启用PHP支持以允许SQLite访问。
+- en: 'Use these commands to install a web server and PHP:'
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下命令安装web服务器和PHP：
+- en: '[PRE60]'
+  id: totrans-379
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: The `/var/www/` directory is used by the web server; by default, it will load
+    `index.html` (or `index.php`) – otherwise, it will just display a list of the
+    links to the files within the directory.
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`/var/www/`目录被web服务器使用；默认情况下，它将加载`index.html`（或`index.php`）- 否则，它将只显示目录中文件的链接列表。'
+- en: 'To test whether the web server is running, create a default `index.html` page.
+    To do this, you will need to create the file using `sudo` permissions (the `/var/www/`
+    directory is protected from changes made by normal users). Use the following command:'
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要测试web服务器是否正在运行，请创建一个默认的`index.html`页面。为此，您需要使用`sudo`权限创建文件（`/var/www/`目录受到普通用户更改的保护）。使用以下命令：
+- en: '[PRE61]'
+  id: totrans-382
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'Create `index.html` with the following content:'
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建带有以下内容的`index.html`：
+- en: '[PRE62]'
+  id: totrans-384
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: Close and save the file (using *Ctrl* + *X*, *Y* and *Enter*).
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关闭并保存文件（使用*Ctrl* + *X*，*Y*和*Enter*）。
+- en: 'If you are using the Raspberry Pi with a screen, you can check whether it is
+    working by loading the desktop:'
+  id: totrans-386
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您正在使用带屏幕的树莓派，您可以通过加载桌面来检查它是否正常工作：
+- en: '[PRE63]'
+  id: totrans-387
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'Then, open the web browser (**epiphany-browser**) and enter `http://localhost`
+    as the address. You should see the following test page, indicating that the web
+    server is active:'
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，打开web浏览器（**epiphany-browser**）并输入`http://localhost`作为地址。您应该看到以下测试页面，表明web服务器处于活动状态：
+- en: '![](Images/8e497ae9-d176-410b-ae38-0bfc5a9b6181.png)Raspberry Pi browser displaying
+    the test page, located at http://localhost'
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/8e497ae9-d176-410b-ae38-0bfc5a9b6181.png)树莓派浏览器显示位于http://localhost的测试页面'
+- en: If you are using the Raspberry Pi remotely or it is connected to your network,
+    you should also be able to view the page on another computer on your network.
+    First, identify the IP address of the Raspberry Pi (using `sudo hostname -I`)
+    and then use this as the address in your web browser. You may even find you can
+    use the actual hostname of the Raspberry Pi (by default, this is `http://raspberrypi/`).
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您远程使用树莓派或将其连接到您的网络，您还应该能够在网络上的另一台计算机上查看该页面。首先，确定树莓派的IP地址（使用`sudo hostname
+    -I`），然后在web浏览器中使用此地址。您甚至可能发现您可以使用树莓派的实际主机名（默认情况下，这是`http://raspberrypi/`）。
+- en: If you are unable to see the web page from another computer, ensure that you
+    do not have a firewall enabled (on the computer itself, or on your router) that
+    could be blocking it.
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您无法从另一台计算机上看到网页，请确保您没有启用防火墙（在计算机本身或路由器上）来阻止它。
+- en: 'Next, we can test that PHP is operating correctly. We can create a web page
+    called `test.php`, and ensure that it is located in the `/var/www/ directory`:'
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们可以测试PHP是否正常运行。我们可以创建一个名为`test.php`的网页，并确保它位于`/var/www/`目录中：
+- en: '[PRE64]'
+  id: totrans-393
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: 'The PHP web page to view the data in the SQLite database has the following
+    details:'
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用于查看SQLite数据库中数据的PHP网页具有以下细节：
+- en: '![](Images/5e5b4d29-1b48-400f-b29b-292129ae3652.png)Viewing the test.php page
+    at http://localhost/test.php'
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/5e5b4d29-1b48-400f-b29b-292129ae3652.png)在http://localhost/test.php查看test.php页面'
+- en: We are now ready to write our own PHP web page to view the data in the SQLite
+    database.
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们准备编写我们自己的PHP网页来查看SQLite数据库中的数据。
+- en: How to do it...
+  id: totrans-397
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: Create the following PHP files and save them in the web server directory named
+    `/var/www/./`.
+  id: totrans-398
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建以下PHP文件并将它们保存在名为`/var/www/./`的web服务器目录中。
+- en: 'Use the following command to create the PHP file:'
+  id: totrans-399
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令创建PHP文件：
+- en: '[PRE65]'
+  id: totrans-400
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'The `show_data_lite.php` file should contain the following:'
+  id: totrans-401
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`show_data_lite.php`文件应包含以下内容：'
+- en: '[PRE66]'
+  id: totrans-402
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'Use the following command to create the PHP file:'
+  id: totrans-403
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令创建PHP文件：
+- en: '[PRE67]'
+  id: totrans-404
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'In order for the PHP code to delete the table within the database, it needs
+    to be writable by the web server. Use the following command to allow it to be
+    writable:'
+  id: totrans-405
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使PHP代码能够删除数据库中的表，它需要被web服务器写入。使用以下命令允许它可写：
+- en: '`sudo chown www-data /var/databases/datasite -R`'
+  id: totrans-406
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`sudo chown www-data /var/databases/datasite -R`'
+- en: 'The `show_data_lite.php` file will appear as a web page if you open it in a
+    web browser by using the following address:'
+  id: totrans-407
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您使用以下地址在web浏览器中打开`show_data_lite.php`文件，它将显示为一个网页：
+- en: '[PRE68]'
+  id: totrans-408
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'Alternatively, you can open the web page (on another computer within your network,
+    if you wish) by referencing the IP address of the Raspberry Pi (use `hostname
+    -I` to confirm the IP address):'
+  id: totrans-409
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 或者，您可以通过引用树莓派的IP地址（使用`hostname -I`确认IP地址）在网络中的另一台计算机上打开网页：
+- en: '[PRE69]'
+  id: totrans-410
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: You may be able to use the hostname instead (by default, this would make the
+    address `http://raspberrypi/show_data_lite.php`). However, this may depend upon
+    your network setup.
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能还可以使用主机名（默认情况下，这将使地址为`http://raspberrypi/show_data_lite.php`）。但是，这可能取决于您的网络设置。
+- en: If there is no data present, ensure that you run the `mysqlite_adc.py` script
+    to capture additional data.
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果没有数据，请确保运行`mysqlite_adc.py`脚本以捕获额外的数据。
+- en: 'To make the `show_data_lite.php` page display automatically when you visit
+    the web address of your Raspberry Pi (instead of the *It works!* page), we can
+    change the `index.html` to the following:'
+  id: totrans-413
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要使`show_data_lite.php`页面在访问树莓派的网址时自动显示（而不是*It works!*页面），我们可以将`index.html`更改为以下内容：
+- en: '[PRE70]'
+  id: totrans-414
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: This will automatically redirect the browser to load our `show_data_lite.php`
+    page.
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将自动将浏览器重定向到加载我们的`show_data_lite.php`页面。
+- en: How it works...
+  id: totrans-416
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: The `show_data_lite.php` file shall display the temperature data that has been
+    stored within the SQLite database (either from the ADC samples or local data sources).
+  id: totrans-417
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`show_data_lite.php`文件将显示存储在SQLite数据库中的温度数据（来自ADC样本或本地数据源）。'
+- en: 'The `show_data_lite.php` file consists of standard HTML code, as well as a
+    special PHP code section. The HTML code sets `ACD Data` as the title on the head
+    section of the page and uses the following command to make the page automatically
+    reload every 10 seconds:'
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`show_data_lite.php`文件由标准HTML代码和特殊的PHP代码部分组成。HTML代码将`ACD Data`设置为页面头部的标题，并使用以下命令使页面每10秒自动重新加载：'
+- en: '[PRE71]'
+  id: totrans-419
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: 'Next, we define a `Delete` button, which will load the `del_data_lite.php`
+    page when clicked:'
+  id: totrans-420
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们定义一个`Delete`按钮，当单击时将加载`del_data_lite.php`页面：
+- en: '[PRE72]'
+  id: totrans-421
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: Finally, we use the PHP code section to load the SQLite database and display
+    the Channel 0 data.
+  id: totrans-422
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们使用PHP代码部分加载SQLite数据库并显示通道0数据。
+- en: 'We use the following PHP command to open the SQLite database we have previously
+    stored data in (located at `/var/databases/testsites/mydatabase.db`):'
+  id: totrans-423
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用以下PHP命令打开我们之前存储数据的SQLite数据库（位于`/var/databases/testsites/mydatabase.db`）：
+- en: '[PRE73]'
+  id: totrans-424
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'Next, we use the following SQLite query to select all the entries where the
+    zone includes `0:` in the text (for example, `0:Light`):'
+  id: totrans-425
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们使用以下SQLite查询来选择所有区域包含文本`0:`的条目（例如，`0:Light`）：
+- en: '[PRE74]'
+  id: totrans-426
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: Note that even though we are now using PHP, the queries we use with the SQLite
+    database are the same as we would use when using the `sqlite3` Python module.
+  id: totrans-427
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，即使我们现在使用PHP，我们与SQLite数据库使用的查询与使用`sqlite3` Python模块时使用的查询相同。
+- en: 'We now collect the query result in the `$response` variable:'
+  id: totrans-428
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将查询结果收集在`$response`变量中：
+- en: '[PRE75]'
+  id: totrans-429
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'The `del_data_lite.php` file is fairly similar; it starts by reopening the `mydatabase.db`
+    file as before. It then executes the following SQLite query:'
+  id: totrans-430
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`del_data_lite.php`文件与之前相似；它首先像以前一样重新打开`mydatabase.db`文件。然后执行以下SQLite查询：'
+- en: '[PRE76]'
+  id: totrans-431
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: As described in the *There's more...* section, this will remove the `recordeddata`
+    table from the database. If the `response` isn't equal to 1, the action was not
+    completed. The most likely reason for this is that the directory that contains
+    the `mydatabase.db` file isn't writable by the web server (see the note in the
+    *How to do it...* section about changing the file owner to `www-data`).
+  id: totrans-432
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如“还有更多...”部分所述，这将从数据库中删除`recordeddata`表。如果`response`不等于1，则操作未完成。这样做的最有可能原因是包含`mydatabase.db`文件的目录不可写入Web服务器（请参阅*如何操作...*部分中关于将文件所有者更改为`www-data`的注意事项）。
+- en: 'Finally, we provide another button that will take the user back to the `show_data_lite.php`
+    page (which will show that the recorded data has now been cleared):'
+  id: totrans-433
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们提供另一个按钮，将用户带回`show_data_lite.php`页面（这将显示已清除记录的数据）：
+- en: '![](Images/30098cc2-0e88-427e-bb10-2b8e1445ca72.png)Show_data_lite.php'
+  id: totrans-434
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/30098cc2-0e88-427e-bb10-2b8e1445ca72.png)Show_data_lite.php'
+- en: There's more...
+  id: totrans-435
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: You may have noticed that this recipe has focused more on HTML and PHP than
+    Python (yes, check the cover – this is still a book for Python programmers!).
+    However, it is important to remember that a key part of engineering is integrating
+    and combining different technologies to produce the desired results.
+  id: totrans-436
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，这个教程更多地关注了HTML和PHP，而不是Python（是的，请检查封面-这仍然是一本面向Python程序员的书！）。然而，重要的是要记住，工程的关键部分是集成和组合不同的技术以产生期望的结果。
+- en: By design, Python lends itself well to this kind of task since it allows easy
+    customization and integration with a huge range of other languages and modules.
+    We could just do it all in Python but why not make use of the existing solutions,
+    instead? After all, they are usually well documented, have undergone extensive
+    testing, and often meet industry standards.
+  id: totrans-437
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从设计上讲，Python非常适合这种任务，因为它允许轻松定制和与大量其他语言和模块集成。我们可以完全在Python中完成所有工作，但为什么不利用现有的解决方案呢？毕竟，它们通常有很好的文档，经过了广泛的测试，并且通常符合行业标准。
+- en: Security
+  id: totrans-438
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安全性
+- en: SQL databases are used in many places to store a wide range of information,
+    from product information to customer details. In such circumstances, users may
+    be required to enter information that is then formed into SQL queries. In a poorly
+    implemented system, a malicious user may be able to include additional SQL syntax
+    in their response, allowing them to compromise the SQL database (perhaps by accessing
+    sensitive information, altering it, or simply deleting it).
+  id: totrans-439
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SQL数据库在许多地方用于存储各种信息，从产品信息到客户详细信息。在这种情况下，用户可能需要输入信息，然后将其形成为SQL查询。在实现不良的系统中，恶意用户可能能够在其响应中包含额外的SQL语法，从而允许他们危害SQL数据库（也许是访问敏感信息，更改它，或者仅仅删除它）。
+- en: 'For example, when asking for a username within a web page, the user could enter
+    the following text:'
+  id: totrans-440
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，在网页中要求用户名时，用户可以输入以下文本：
+- en: '[PRE77]'
+  id: totrans-441
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'If this was used directly to construct the SQL query, we would end up with
+    the following:'
+  id: totrans-442
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果直接使用这个来构建SQL查询，我们最终会得到以下结果：
+- en: '[PRE78]'
+  id: totrans-443
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: We have just allowed the attacker to delete everything in the `CurrentOrders`
+    table!
+  id: totrans-444
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们刚刚允许攻击者删除`CurrentOrders`表中的所有内容！
+- en: Using user input to form part of SQL queries means we have to be careful what
+    commands we allow to be executed. In this example, the user may be able to wipe
+    out potentially important information, which could be very costly for a company
+    and its reputation.
+  id: totrans-445
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用用户输入来构成SQL查询的一部分意味着我们必须小心允许执行哪些命令。在这个例子中，用户可能能够清除潜在重要的信息，这对公司和其声誉可能是非常昂贵的。
+- en: 'This technique is called SQL injection, and is easily protected against by
+    using the parameters option of the SQLite `execute()` function. We can replace
+    our Python SQLite query with a safer version, as follows:'
+  id: totrans-446
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种技术称为SQL注入，可以通过使用SQLite `execute()`函数的参数选项轻松防范。我们可以用更安全的版本替换我们的Python SQLite查询，如下所示：
+- en: '[PRE79]'
+  id: totrans-447
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: Instead of blindly building the SQL query, the SQLite module will first check
+    that the provided parameters are valid values to enter into the database. Then,
+    it will ensure that no additional SQL actions will result from inserting them
+    into the command. Finally, the value of the `dataName` and `data[i]` parameters
+    will be used to replace the `?` characters to generate the final safe SQLite query.
+  id: totrans-448
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要盲目地构建SQL查询，SQLite模块将首先检查提供的参数是否是有效的值，然后确保插入命令不会导致额外的SQL操作。最后，`dataName`和`data[i]`参数的值将用于替换`?`字符，生成最终安全的SQLite查询。
+- en: Using MySQL instead
+  id: totrans-449
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用MySQL替代
+- en: SQLite, which is used in this recipe, is just one of many SQL databases available.
+    It is helpful for small projects that only require relatively small databases
+    and minimal resources. However, for larger projects that require additional features
+    (such as user accounts to control access and additional security), you can use
+    alternatives, such as MySQL.
+  id: totrans-450
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SQLite是这个示例中使用的数据库之一，它只是众多可用的SQL数据库之一。它对于只需要相对较小的数据库和最少资源的小型项目非常有用。但是，对于需要额外功能（如用户帐户来控制访问和额外安全性）的大型项目，您可以使用其他选择，如MySQL。
+- en: To use a different SQL database, you will need to adjust the Python code that
+    we used to capture the entries using a suitable Python module.
+  id: totrans-451
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使用不同的SQL数据库，您需要调整我们用来捕获条目的Python代码，使用适当的Python模块。
+- en: For MySQL (`mysql-server`), we can use a Python-3-compatible library called
+    **PyMySQL** to interface with it. See the PyMySQL website ([https://github.com/PyMySQL/PyMySQL](https://github.com/PyMySQL/PyMySQL))
+    for additional information about how to use this library.
+  id: totrans-452
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于MySQL（`mysql-server`），我们可以使用一个名为**PyMySQL**的兼容Python 3的库来进行接口。有关如何使用此库的其他信息，请参阅PyMySQL网站（[https://github.com/PyMySQL/PyMySQL](https://github.com/PyMySQL/PyMySQL)）。
+- en: To use PHP with MySQL, you will also need PHP MySQL (`php5-mysql`); for more
+    information, see the excellent resource at W3 Schools ([http://www.w3schools.com/php/php_mysql_connect.asp](http://www.w3schools.com/php/php_mysql_connect.asp)).
+  id: totrans-453
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在PHP中使用MySQL，您还需要PHP MySQL（`php5-mysql`）；有关更多信息，请参阅W3 Schools的优秀资源（[http://www.w3schools.com/php/php_mysql_connect.asp](http://www.w3schools.com/php/php_mysql_connect.asp)）。
+- en: You will notice that although there are small differences between SQL implementations,
+    the general concepts and commands should now be familiar to you, whichever one
+    you select.
+  id: totrans-454
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您会注意到，尽管SQL实现之间存在细微差异，但无论您选择哪种，一般概念和命令现在应该对您来说都很熟悉。
+- en: Sensing and sending data to online services
+  id: totrans-455
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 感知和发送数据到在线服务
+- en: In this section, we shall make use of an online service called Xively. The service
+    allows us to connect, transmit, and view data online. Xively makes use of a common
+    protocol that is used for transferring information over HTTP called **REpresentational
+    State Transfer** (**REST**). REST is used by many services, such as Facebook and
+    Twitter, using various keys and access tokens to ensure data is transferred securely
+    between authorized applications and verified sites.
+  id: totrans-456
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将使用一个名为Xively的在线服务。该服务允许我们在线连接、传输和查看数据。Xively使用一种称为**REpresentational
+    State Transfer**（**REST**）的用于在HTTP上传输信息的常见协议。REST被许多服务使用，如Facebook和Twitter，使用各种密钥和访问令牌来确保数据在授权的应用程序和经过验证的站点之间安全传输。
+- en: You can perform most REST operations (methods such as `POST`, `GET`, `SET`,
+    and so on) manually using a Python library called `requests` ([http://docs.python-requests.org](http://docs.python-requests.org)).
+  id: totrans-457
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用名为`requests`的Python库手动执行大多数REST操作（例如`POST`、`GET`、`SET`等）。
+- en: However, it is often easier to make use of specific libraries available for
+    the service you intend to use. They will handle the authorization process and
+    provide access functions, and if the service changes, the library can be updated
+    rather than your code.
+  id: totrans-458
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，通常更容易使用特定于您打算使用的服务的特定库。它们将处理授权过程并提供访问功能，如果服务发生变化，可以更新库而不是您的代码。
+- en: We will use the `xively-python` library, which provides Python functions to
+    allow us to easily interact with the site.
+  id: totrans-459
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用`xively-python`库，该库提供了Python函数，使我们能够轻松地与该站点进行交互。
+- en: For details about the `xively-python` library, refer to [http://xively.github.io/xively-python/](http://xively.github.io/xively-python/).
+  id: totrans-460
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关`xively-python`库的详细信息，请参阅[http://xively.github.io/xively-python/](http://xively.github.io/xively-python/)。
+- en: 'The data collected by Xively is shown in the following screenshot:'
+  id: totrans-461
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Xively收集的数据显示在以下截图中：
+- en: '![](Images/e1e1b35d-5143-4696-94bb-89c7e335ec3d.png)Xively collects and graphs
+    data transferred using REST'
+  id: totrans-462
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/e1e1b35d-5143-4696-94bb-89c7e335ec3d.png)Xively收集和以REST传输的数据绘图'
+- en: Getting ready
+  id: totrans-463
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'You will need to create an account at [www.xively.com](http://www.xively.com),
+    which we will use to receive our data. Go to the site and sign up for a free developer
+    account:'
+  id: totrans-464
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您需要在[www.xively.com](http://www.xively.com)创建一个帐户，我们将使用该帐户接收我们的数据。转到该网站并注册一个免费的开发者帐户：
+- en: '![](Images/171e04cc-7068-4787-8d92-52d677a2d662.png)Signing up and creating
+    a Xively account'
+  id: totrans-465
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/171e04cc-7068-4787-8d92-52d677a2d662.png)注册并创建Xively帐户'
+- en: Once you have registered and verified your account, you can follow the instructions
+    that will take you through a test drive example. This will demonstrate how you
+    can link to data from your smartphone (gyroscopic data, location, and so on),
+    which will give you a taste of what we can do with the Raspberry Pi.
+  id: totrans-466
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注册并验证您的帐户后，您可以按照指示进行测试。这将演示如何链接到您的智能手机的数据（陀螺仪数据，位置等），这将让您了解我们可以如何使用树莓派。
+- en: 'When you log in, you will be taken to the Development Devices dashboard (located
+    in the WebTools drop-down menu):'
+  id: totrans-467
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您登录时，您将被带到开发设备仪表板（位于WebTools下拉菜单中）：
+- en: '![](Images/56379efd-0385-4ae2-84ad-c91271596a48.png)Adding a new device'
+  id: totrans-468
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](Images/56379efd-0385-4ae2-84ad-c91271596a48.png)添加新设备'
+- en: Select +Add Device and fill in the details, giving your device a name and setting
+    Device as Private.
+  id: totrans-469
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 选择+添加设备并填写详细信息，为您的设备命名并将设备设置为私有。
+- en: 'You will now see the control page for your remote device, which contains all
+    the information you need to connect it and also where your data will be displayed:'
+  id: totrans-470
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您将看到远程设备的控制页面，其中包含您连接设备所需的所有信息，以及您的数据将显示的位置：
+- en: '![](Images/201ad47f-347f-475a-8408-26c5b4b09e9f.png)Example API key and feed
+    number (this will be unique for your device)'
+  id: totrans-471
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](Images/201ad47f-347f-475a-8408-26c5b4b09e9f.png)示例API密钥和数据源编号（这将是您的设备的唯一编号）'
+- en: 'Although there is a lot of information on this page, you only need two key
+    pieces of information:'
+  id: totrans-472
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管此页面上有很多信息，但您只需要两个关键信息：
+- en: 'The API key (which is the long code in the `API Keys` section), as follows:'
+  id: totrans-473
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: API密钥（在`API Keys`部分中的长代码），如下：
+- en: '[PRE80]'
+  id: totrans-474
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'The feed number (referred to in the `API Keys` section and also listed at the
+    top of the page), as follows:'
+  id: totrans-475
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据源编号（在`API Keys`部分中提到，并在页面顶部列出），如下：
+- en: '[PRE81]'
+  id: totrans-476
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: Now that we have the details we need to connect with Xively, we can focus on
+    the Raspberry Pi side of things.
+  id: totrans-477
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经获得了与Xively连接所需的详细信息，我们可以专注于树莓派方面的事情。
+- en: 'We will use `pip-3.2` to install Xively, as follows:'
+  id: totrans-478
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用`pip-3.2`来安装Xively，如下所示：
+- en: '[PRE82]'
+  id: totrans-479
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: 'Ensure that the following is reported:'
+  id: totrans-480
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保以下内容已报告：
+- en: '[PRE83]'
+  id: totrans-481
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: You are now ready to send some data from your Raspberry Pi.
+  id: totrans-482
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您现在可以从您的树莓派发送一些数据了。
+- en: How to do it...
+  id: totrans-483
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Create the following script, called `xivelyLog.py`. Ensure that you set `FEED_ID`
+    and `API_KEY` within the code to match the device you created:'
+  id: totrans-484
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建以下名为`xivelyLog.py`的脚本。确保您在代码中设置`FEED_ID`和`API_KEY`以匹配您创建的设备：
+- en: '[PRE84]'
+  id: totrans-485
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: How it works...
+  id: totrans-486
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: First, we initialize the Xively API client, to which we supply the `API_KEY`
+    (this authorizes us to send data to the `Xively` device we created previously).
+    Next, we use `FEED_ID` to link us to the specific feed we want to send the data
+    to. Finally, we request the data stream to connect to (if it doesn't already exist
+    in the feed, the `get_datastream()` function will create one for us).
+  id: totrans-487
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们初始化Xively API客户端，为其提供`API_KEY`（这将授权我们向我们之前创建的`Xively`设备发送数据）。接下来，我们使用`FEED_ID`将我们链接到我们要发送数据的特定数据源。最后，我们请求数据流连接（如果在数据源中不存在，`get_datastream()`函数将为我们创建一个）。
+- en: For each data stream in the feed, we supply a `name` function and `tags` (these
+    are keywords that help us identify the data; we can use our data names for this).
+  id: totrans-488
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于数据源中的每个数据流，我们提供一个`name`函数和`tags`（这些是帮助我们识别数据的关键字；我们可以使用我们的数据名称）。
+- en: Once we have defined our data streams, we enter the `main` loop. Here, we gather
+    our data values from `dataDevice`. We then set the `current_value` function and
+    also the timestamp of the data for each data item and apply them to our data stream
+    objects.
+  id: totrans-489
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们定义了我们的数据流，我们就进入`main`循环。在这里，我们从`dataDevice`中收集我们的数据值。然后，我们设置`current_value`函数和每个数据项的时间戳，并将它们应用于我们的数据流对象。
+- en: Finally, when all the data is ready, we update each of the data streams and
+    the data is sent to Xively, appearing within a few moments on the dashboard of
+    the device.
+  id: totrans-490
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，当所有数据准备就绪时，我们更新每个数据流，并将数据发送到Xively，在设备的仪表板上几秒钟内显示出来。
+- en: We can log in to our Xively account and view data as it comes in, using a standard
+    web browser. This provides the means to send data and remotely monitor it anywhere
+    in the world (perhaps from several Raspberry Pis at once, if required). The service
+    even supports the creation of triggers that can send additional messages back
+    if certain items go out of expected ranges, reach specific values, or match set
+    criteria. The triggers can, in turn, be used to control other devices or raise
+    alerts, and so on. They can also be used in other platforms, such as ThingSpeak
+    or plot.ly.
+  id: totrans-491
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以登录到我们的Xively帐户并查看数据，使用标准的网络浏览器。这提供了发送数据和在世界各地远程监视数据的手段（如果需要，甚至可以同时从几个树莓派发送数据）。该服务甚至支持创建触发器，如果某些项目超出预期范围，达到特定值或符合设定标准，则可以发送额外的消息。触发器反过来可以用于控制其他设备或引发警报等。它们还可以用于其他平台，如ThingSpeak或plot.ly。
+- en: See also
+  id: totrans-492
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The AirPi Air Quality and Weather project ([http://airpi.es](http://airpi.es))
+    shows you how to add your own sensors or use their AirPi kit to create your own
+    air quality and weather station (with data logging to your own Xively account).
+    The site also allows you to share your Xively data feeds with others around the
+    world.
+  id: totrans-493
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AirPi空气质量和天气项目（[http://airpi.es](http://airpi.es)）向您展示如何添加自己的传感器或使用他们的AirPi套件创建自己的空气质量和天气站（并将数据记录到您自己的Xively帐户）。该网站还允许您与世界各地的其他人分享您的Xively数据源。

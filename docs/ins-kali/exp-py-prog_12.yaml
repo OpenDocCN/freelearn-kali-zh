@@ -1,0 +1,1753 @@
+- en: Chapter 12. Optimization – Some Powerful Techniques
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第12章 优化-一些强大的技术
+- en: 'Optimizing a program is not a magical process. It is done by following a simple
+    algorithm, synthesized by Stefan Schwarzer at Europython 2006 in his original
+    pseudocode example:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 优化程序并不是一个神奇的过程。它是通过遵循一个简单的算法完成的，由Stefan Schwarzer在Europython 2006中合成的原始伪代码示例：
+- en: '[PRE0]'
+  id: totrans-2
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'This example probably isn''t the neatest and clearest one but captures pretty
+    much all the important aspects of an organized optimization procedure. The main
+    things we learn from it are:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个例子可能不是最整洁和最清晰的例子，但基本上涵盖了组织优化过程的所有重要方面。我们从中学到的主要内容是：
+- en: Optimization is an iterative process where not every iteration leads to better
+    results
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 优化是一个迭代过程，不是每一次迭代都会带来更好的结果
+- en: The main prerequisite is code that is verified to be working properly with tests
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 主要的前提是经过测试验证的代码能够正常工作
+- en: You should always focus on optimizing the current application bottleneck
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您应该始终专注于优化当前的应用程序瓶颈
+- en: Making your code work faster is not an easy task. In case of abstract mathematical
+    problems, the solution of course lies in choosing the right algorithm and proper
+    data structures. But in that case, it is very hard to provide some generic tips
+    and tricks that can be used in any code for solving algorithmic issues. There
+    are of course some generic methodologies for designing a new algorithm, or even
+    meta-heuristics that can be applied to a large variety of problems but they are
+    pretty language-agnostic and thus are rather out of scope of this book.
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使您的代码运行更快并不是一件容易的事情。在抽象数学问题的情况下，解决方案当然在于选择正确的算法和适当的数据结构。但在这种情况下，很难提供一些通用的提示和技巧，可以用于解决算法问题的任何代码。当然，有一些通用的方法论用于设计新算法，甚至可以应用于各种问题的元启发式算法，但它们是相当与语言无关的，因此超出了本书的范围。
+- en: 'Anyway, some performance issues are only caused by certain code quality defects
+    or application usage context. For instance, the speed of the application might
+    be reduced by:'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论如何，一些性能问题只是由特定的代码质量缺陷或应用程序使用上下文引起的。例如，应用程序的速度可能会因为：
+- en: Bad usage of basic built-in types
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 基本内置类型的错误使用
+- en: Too much complexity
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 过于复杂
+- en: Hardware resource usage patterns not matching with the execution environment
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 硬件资源使用模式与执行环境不匹配
+- en: Waiting too long for responses from third-party APIs or backing services
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 等待第三方API或后台服务的响应时间过长
+- en: Doing too much in time-critical parts of the application
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在应用程序的时间关键部分做得太多
+- en: More often, the solving of such performance issues does not require advanced
+    academic knowledge but only good software craftsmanship. And a big part of craftsmanship
+    is knowing when to use the proper tools. Fortunately, there are some well-known
+    patterns and solutions for dealing with performance problems.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更多时候，解决这些性能问题并不需要高级的学术知识，而只需要良好的软件工艺。而工艺的一大部分就是知道何时使用适当的工具。幸运的是，有一些处理性能问题的众所周知的模式和解决方案。
+- en: 'In this chapter, we will discuss some popular and reusable solutions that allow
+    you to non-algorithmically optimize your program through:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将讨论一些流行且可重复使用的解决方案，使您能够通过非算法优化程序：
+- en: Reducing the complexity
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 降低复杂性
+- en: Using architectural trade offs
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用架构权衡
+- en: Caching
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 缓存
+- en: Reducing the complexity
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 降低复杂性
+- en: Before we dig further into optimization techniques, let's define exactly what
+    we are going to deal with. From the chapter's introduction, we know that focusing
+    on improving application bottlenecks is critical for successful optimization.
+    A bottleneck is a single component that severely limits the capacity of a program
+    or computer system. An important characteristic of every piece of code with performance
+    issues is that it usually has only a single bottleneck. We discussed some profiling
+    techniques in the previous chapter, so you should already be familiar with the
+    tools required to locate and isolate such places. If your profiling results show
+    that there are few places that need immediate improvement, then you should at
+    first try to treat each as a separate component and optimize independently.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们进一步探讨优化技术之前，让我们明确定义我们要处理的内容。从本章的介绍中，我们知道专注于改进应用程序瓶颈对于成功的优化至关重要。瓶颈是严重限制程序或计算机系统容量的单个组件。每个具有性能问题的代码的一个重要特征是它通常只有一个瓶颈。我们在上一章中讨论了一些分析技术，所以您应该已经熟悉了定位和隔离这些地方所需的工具。如果您的分析结果显示有一些地方需要立即改进，那么您应该首先尝试将每个地方视为一个独立的组件并进行独立优化。
+- en: Of course, if there is no explicit bottleneck but your application still performs
+    under your expectations, then you are really in a bad position. The gains of the
+    optimization process are proportional to the performance impact of optimized bottlenecks.
+    Optimizing every small component that does not substantially contribute to the
+    overall execution time or resource consumption will only give you minimal benefit
+    for all the time spent on profiling and optimization. If your application does
+    not seem to have real bottlenecks, there is a possibility that you have missed
+    something. Try using different profiling strategies or tools or look at it from
+    a different perspective (memory, I/O operations, or network throughput). If that
+    does not help, you should really consider revising your software architecture.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，如果没有明显的瓶颈，但您的应用程序仍然表现不符合您的期望，那么您真的处于一个糟糕的位置。优化过程的收益与优化瓶颈的性能影响成正比。优化每个不会对整体执行时间或资源消耗产生实质性贡献的小组件，只会让您在分析和优化上花费的时间获益微薄。如果您的应用程序似乎没有真正的瓶颈，有可能是您遗漏了某些东西。尝试使用不同的分析策略或工具，或者从不同的角度（内存、I/O操作或网络吞吐量）来看待它。如果这并没有帮助，您应该真正考虑修改您的软件架构。
+- en: But if you have successfully found a single and integral component that limits
+    your application performance, then you are really lucky. There is high chance
+    that with only minimal code improvement, you will be able to really improve code
+    execution time and/or resource usage. And the gain from optimization will, again,
+    be proportional to the bottleneck size.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果您成功找到了限制应用程序性能的单个完整组件，那么您真的很幸运。很有可能，只需进行最小的代码改进，您就能真正提高代码执行时间和/或资源使用率。而优化的收益将再次与瓶颈的大小成正比。
+- en: The first and most obvious aspect to look after when trying to improve application
+    performance is complexity. There are many definitions of what makes a program
+    complex and many ways to express it. Some complexity metrics can provide objective
+    information about how the code behaves and such information can sometimes be extrapolated
+    into performance expectations. An experienced programmer can even reliably guess
+    how two different implementations will perform in practice knowing their complexities
+    and realistic execution contexts.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在尝试提高应用程序性能时，首要和最明显的方面是复杂性。关于程序复杂性有很多定义，也有很多表达方式。一些复杂度度量标准可以提供关于代码行为的客观信息，有时这些信息可以推断出性能期望。有经验的程序员甚至可以可靠地猜测两种不同的实现在实践中的性能，知道它们的复杂性和现实的执行环境。
+- en: 'The two popular ways to define application complexity are:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 定义应用程序复杂性的两种流行方法是：
+- en: '**Cyclomatic** **complexity** that is very often correlated with application
+    performance'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 圈复杂度经常与应用程序性能相关联
+- en: The Landau notation, also known as **big O** **notation**, that is an algorithm
+    classification method that is very useful in objectively judging performance
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Landau符号，也称为大O符号，是一种非常有用的算法分类方法，可以客观地评判性能。
+- en: From there, the optimization process may be sometimes understood as a process
+    of reducing the complexity. This section provides simple tips for this work by
+    simplifying loops. But first of all, let's learn how to measure complexity.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从那里，优化过程有时可以理解为降低复杂性的过程。本节提供了简化循环的简单技巧。但首先，让我们学习如何测量复杂性。
+- en: Cyclomatic complexity
+  id: totrans-28
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 圈复杂度
+- en: '**Cyclomatic** **complexity** is a metric developed by Thomas J. McCabe in
+    1976\. Because of its author, it is very often called **McCabe''s complexity**.
+    It measures the number of linear paths through the code. All `if`, `for`, and
+    `while` loops are counted to come up with a measure.'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 圈复杂度是由Thomas J. McCabe在1976年开发的一个度量标准。因为它的作者，它经常被称为McCabe的复杂度。它衡量了代码中的线性路径数量。所有的if，for和while循环都被计算出一个度量。
+- en: 'The code can then be categorized as follows:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后可以将代码分类如下：
+- en: '| Cyclomatic Complexity | What it means |'
+  id: totrans-31
+  prefs: []
+  type: TYPE_TB
+  zh: '| 圈复杂度 | 它的含义 |'
+- en: '| --- | --- |'
+  id: totrans-32
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- |'
+- en: '| 1 to 10 | Not complex |'
+  id: totrans-33
+  prefs: []
+  type: TYPE_TB
+  zh: '| 1到10 | 不复杂 |'
+- en: '| 11 to 20 | Moderately complex |'
+  id: totrans-34
+  prefs: []
+  type: TYPE_TB
+  zh: '| 11到20 | 中等复杂 |'
+- en: '| 21 to 50 | Really complex |'
+  id: totrans-35
+  prefs: []
+  type: TYPE_TB
+  zh: '| 21到50 | 真的很复杂 |'
+- en: '| More than 50 | Too complex |'
+  id: totrans-36
+  prefs: []
+  type: TYPE_TB
+  zh: '| 大于50 | 太复杂 |'
+- en: Cyclomatic complexity is rather the code quality score than a metric that objectively
+    judges its performance. It does not replace the need for code profiling for finding
+    performance bottlenecks. Anyway, code that has high cyclomatic complexity often
+    tends to utilize rather complex algorithms that may not perform well with larger
+    inputs.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 圈复杂度更多是代码质量评分，而不是客观评判其性能的度量标准。它不能取代寻找性能瓶颈的代码性能分析的需要。无论如何，具有较高圈复杂度的代码往往倾向于使用相当复杂的算法，这些算法在输入数据较大时可能表现不佳。
+- en: Although cyclomatic complexity is not a reliable way to judge application performance,
+    it has one very nice advantage. It is a source code metric so it can be measured
+    with proper tools. This cannot be said about other ways of expressing complexity—the
+    big O notation. Thanks to measurability, cyclomatic complexity may be a useful
+    addition to profiling that gives you more information about problematic parts
+    of the software. Complex parts of code are the first to review when considering
+    radical code architecture redesigns.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管圈复杂度不是判断应用程序性能的可靠方法，但它有一个非常好的优势。它是一个源代码度量标准，因此可以用适当的工具来测量。这不能说是关于表达复杂性的其他方式——大O符号。由于可测量性，圈复杂度可能是对性能分析的有用补充，它可以为您提供有关软件问题部分的更多信息。在考虑根本性的代码架构重设计时，复杂的代码部分是首先要审查的。
+- en: Measuring McCabe's complexity is relatively simple in Python because it can
+    be deduced from its Abstract Syntax Tree. Of course, you don't need to do that
+    by yourself. A popular tool that provides cyclomatic complexity measurement for
+    Python is `flake8` (with the `mccabe` plugin), which has already been introduced
+    in [Chapter 4](ch04.html "Chapter 4. Choosing Good Names"), *Choosing Good Names*.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Python中测量McCabe的复杂度相对简单，因为它可以从其抽象语法树中推导出来。当然，你不需要自己做这个。一个为Python提供圈复杂度测量的流行工具是flake8（带有mccabe插件），它已经在第4章“选择良好的名称”中介绍过。
+- en: The big O notation
+  id: totrans-40
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 大O符号
+- en: The most canonical method to define function complexity is the **big O notation**
+    (see [http://en.wikipedia.org/wiki/Big_O_notation](http://en.wikipedia.org/wiki/Big_O_notation)).
+    This metric defines how an algorithm is affected by the size of the input data.
+    For instance, does the algorithm scale linearly with the size of the input data
+    or quadratically?
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 定义函数复杂性的最经典方法是大O符号。这个度量标准定义了算法如何受输入数据大小的影响。例如，算法是否与输入数据的大小成线性关系还是二次关系？
+- en: Calculating the big O notation manually for an algorithm is the best approach
+    to get an overview on how its performance is related with the size of the input
+    data. Knowing the complexity of your application components gives you the ability
+    to detect and focus on the parts that will really slow down the code.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 手动计算算法的大O符号是获得算法性能与输入数据大小关系概览的最佳方法。了解应用程序组件的复杂度使您能够检测并专注于真正减慢代码的部分。
+- en: 'To measure the big O notation, all constants and low-order terms are removed
+    in order to focus on the portion that really weighs when the input data grows.
+    The idea is to try to categorize the algorithm in one of these categories, even
+    if it is an approximation:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了衡量大O符号，所有常数和低阶项都被移除，以便专注于当输入数据增长时真正起作用的部分。这个想法是尝试将算法归类为这些类别中的一个，即使它是一个近似值：
+- en: '| Notation | Type |'
+  id: totrans-44
+  prefs: []
+  type: TYPE_TB
+  zh: '| 符号 | 类型 |'
+- en: '| --- | --- |'
+  id: totrans-45
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- |'
+- en: '| O(1) | Constant. Does not depend on the input data. |'
+  id: totrans-46
+  prefs: []
+  type: TYPE_TB
+  zh: '| O(1) | 常数。不依赖于输入数据。 |'
+- en: '| O(n) | Linear. Will grow as "n" grows. |'
+  id: totrans-47
+  prefs: []
+  type: TYPE_TB
+  zh: '| O(n) | 线性。随着“n”的增长而增长。 |'
+- en: '| O(n log n) | Quasi linear. |'
+  id: totrans-48
+  prefs: []
+  type: TYPE_TB
+  zh: '| O(n log n) | 准线性。 |'
+- en: '| O(n²) | Quadratic complexity. |'
+  id: totrans-49
+  prefs: []
+  type: TYPE_TB
+  zh: '| O(n²) | 二次复杂度。 |'
+- en: '| O(n³) | Cubic complexity. |'
+  id: totrans-50
+  prefs: []
+  type: TYPE_TB
+  zh: '| O(n³) | 立方复杂度。 |'
+- en: '| O(n!) | Factorial complexity. |'
+  id: totrans-51
+  prefs: []
+  type: TYPE_TB
+  zh: '| O(n!) | 阶乘复杂度。 |'
+- en: For instance, we already know from [Chapter 2](ch02.html "Chapter 2. Syntax
+    Best Practices – below the Class Level"), *Syntax Best Practices – below the Class
+    Level*, that a `dict` lookup has an average complexity of *O(1)*. It is considered
+    constant regardless of how many elements are in the `dict`, whereas looking through
+    a list of items for a particular item is *O(n)*.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们已经从[第2章](ch02.html "第2章。类级别以下的语法最佳实践")中知道，`dict`查找的平均复杂度是*O(1)*。无论`dict`中有多少元素，它都被认为是常数，而查找特定项的列表中的元素是*O(n)*。
+- en: 'Let''s take another example:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看另一个例子：
+- en: '[PRE1]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: In that case, the print statement will be executed *n* times. Loop speed will
+    depend on `n`, so its complexity expresses using the big O notation will be *O(n)*.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，打印语句将被执行*n*次。循环速度将取决于`n`，因此它的复杂度使用大O符号表示将是*O(n)*。
+- en: 'If the function has conditions, the correct notation to keep is the highest
+    one:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果函数有条件，保留的正确符号是最高的：
+- en: '[PRE2]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: In this example, the function could be *O(1)* or *O(n)*, depending on the test.
+    But the worst case is *O(n)*, so whole function complexity is *O(n)*.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，函数可能是*O(1)*或*O(n)*，取决于测试。但最坏情况是*O(n)*，所以整个函数的复杂度是*O(n)*。
+- en: When discussing complexity expressed in big O notation, we usually review the
+    worst case scenario. While this is the best method to define complexity when comparing
+    two independent algorithms, it may not be the best approach in every practical
+    situation. Many algorithms change the runtime performance depending on the statistical
+    characteristic of input data or amortize the cost of worst case operations by
+    doing clever tricks. This is why, in many cases, it may be better to review your
+    implementation in terms *of average complexity* or *amortized complexity*.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在讨论用大O符号表示的复杂度时，我们通常会考虑最坏情况。虽然这是在比较两个独立算法的复杂度时最好的方法，但在每种实际情况下可能不是最佳方法。许多算法会根据输入数据的统计特征改变运行时性能，或者通过巧妙的技巧摊销最坏情况操作的成本。这就是为什么在许多情况下，最好以*平均复杂度*或*摊销复杂度*来审查你的实现。
+- en: For example, take a look at the operation of appending a single element to Python's
+    `list` type instance. We know that `list` in CPython uses an array with overallocation
+    for the internal storage instead of linked lists. In case an array is already
+    full, appending a new element requires allocation of the new array and copying
+    all existing elements (references) to a new area in the memory. If we look from
+    the point of the **worst-case complexity**, it is clear that the `list.append()`
+    method has *O(n)* complexity. And this is a bit expensive when compared to a typical
+    implementation of the linked list structure.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，看一下将单个元素附加到Python的`list`类型实例的操作。我们知道CPython中的`list`使用具有内部存储的过度分配的数组，而不是链表。如果数组已满，附加新元素需要分配新数组，并将所有现有元素（引用）复制到内存中的新区域。如果从**最坏情况复杂度**的角度来看，很明显`list.append()`方法的复杂度是*O(n)*。与链表结构的典型实现相比，这有点昂贵。
+- en: But we also know that the CPython `list` type implementation uses overallocation
+    to mitigate the complexity of such occasional reallocation. If we evaluate the
+    complexity over a sequence of operations, we will see that the *average complexity*
+    of `list.append()` is *O(1)* and this is actually a great result.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但我们也知道CPython的`list`类型实现使用过度分配来减轻这种偶尔重新分配的复杂性。如果我们评估一系列操作的复杂性，我们会发现`list.append()`的*平均复杂度*是*O(1)*，这实际上是一个很好的结果。
+- en: 'When solving problems, we often know a lot of details about our input data
+    such as its size or statistical distribution. When optimizing the application,
+    it is always worth using every bit of knowledge about your input data. Here, another
+    problem of worst-case complexity starts to show up. It is intended to show the
+    limiting behavior of the function when the input tends toward large values or
+    infinity, rather than give a reliable performance approximation for real-life
+    data. Asymptotic notation is great when defining the growth rate of a function
+    but it won''t give a reliable answer for the simple question: which implementation
+    will take less time? Worst-case complexity dumps all those little details about
+    both your implementation and data characteristic to show you how your program
+    will behave asymptotically. It works for arbitrarily large inputs that you may
+    not even need to consider.'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在解决问题时，我们通常对输入数据的许多细节有很多了解，比如它的大小或统计分布。在优化应用程序时，始终值得利用关于输入数据的每一个知识点。在这里，最坏情况复杂度的另一个问题开始显现出来。它旨在显示函数在输入趋向于大值或无穷大时的极限行为，而不是为真实数据提供可靠的性能近似值。渐近符号在定义函数的增长率时非常有用，但它不会对一个简单的问题给出可靠的答案：哪种实现会花费更少的时间？最坏情况复杂度会忽略关于你的实现和数据特征的所有细节，以显示你的程序在渐近上的行为。它适用于可能根本不需要考虑的任意大的输入。
+- en: For instance, let's assume that you have a problem to solve regarding data consisting
+    of *n* independent elements. Let's suppose also that you know two different ways
+    to solve this problem—*program A* and *program B*. You know that *program A* requires
+    100n² operations to finish and *program B* requires 5n³ operations to give the
+    problem a solution. Which one would you choose? When speaking about very large
+    inputs, *program A* is of course the better choice because it behaves better asymptotically.
+    It has *O(n²**)* complexity compared to *O(n³**)* complexity that characterizes
+    *program B*.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，假设您有一个关于由*n*个独立元素组成的数据的问题要解决。再假设您知道两种不同的解决这个问题的方法——*程序A*和*程序B*。您知道*程序A*需要100n²次操作才能完成，而*程序B*需要5n³次操作才能给出问题的解决方案。您会选择哪一个？当谈论非常大的输入时，*程序A*当然是更好的选择，因为它在渐近上表现更好。它的复杂度是*O(n²)*，而*程序B*的复杂度是*O(n³)*。
+- en: But by solving a simple 100 n² > 5 n³ inequality, we can find that *program
+    B* will take fewer operations when *n* is less than 20\. If we know a bit more
+    about our input bounds, we can make slightly better decisions.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是通过解决一个简单的100 n² > 5 n³不等式，我们可以发现当*n*小于20时，*程序B*将需要更少的操作。如果我们对输入范围有更多了解，我们可以做出稍微更好的决策。
+- en: Simplifying
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 简化
+- en: To reduce the complexity of code, the way data is stored is fundamental. You
+    should pick your data structure carefully. This section provides a few examples
+    on how the performance of simple code snippets can be improved by the proper datatypes
+    for the job.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了减少代码的复杂性，数据存储的方式是基础性的。您应该仔细选择数据结构。本节提供了一些简单代码片段的性能如何通过适当的数据类型来提高的示例。
+- en: Searching in a list
+  id: totrans-67
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在列表中搜索
+- en: Due to implementation details of the `list` type in Python, searching for a
+    specific value in a list isn't a cheap operation. The complexity of the `list.index()`
+    method is *O(n)*, where *n* is the number of list elements. Such linear complexity
+    is not especially bad if you don't need to perform many element index lookups,
+    but it can have a negative performance impact if there is a need for many such
+    operations.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于Python中`list`类型的实现细节，搜索列表中特定值不是一个廉价的操作。`list.index()`方法的复杂度是*O(n)*，其中*n*是列表元素的数量。如果不需要执行许多元素索引查找，这种线性复杂度并不特别糟糕，但如果需要执行许多这样的操作，它可能会产生负面的性能影响。
+- en: 'If you need fast search over a list, you can try the `bisect` module from the
+    Python standard library. The functions in this module are mainly designed for
+    inserting or finding insertion indexes for given values in a way that will preserve
+    the order of the already sorted sequence. Anyway, they can be used for efficiently
+    finding element indexes with a bisection algorithm. Here is the recipe from the
+    official documentation of the function that finds the element index using a binary
+    search:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您需要在列表上进行快速搜索，可以尝试Python标准库中的`bisect`模块。该模块中的函数主要设计用于以保持已排序序列顺序的方式插入或查找给定值的插入索引。无论如何，它们可以用于使用二分算法有效地查找元素索引。以下是官方文档中使用二分搜索查找元素索引的函数的配方：
+- en: '[PRE3]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Note that every function from the bisect module requires a sorted sequence in
+    order to work. If your list is not in the correct order, then sorting it is a
+    task with at least *O(n log n)* complexity. This is a worse class than *O(n)*,
+    so sorting the whole list for performing only a single search will definitely
+    not pay off. However, if you need to perform a lot of index searches in a huge
+    list that does not need to change often, then using a single sort operation bisect
+    may be a very good trade off.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`bisect`模块中的每个函数都需要一个排序好的序列才能工作。如果您的列表没有按正确的顺序排列，那么对其进行排序至少需要*O(n log n)*的复杂度。这是比*O(n)*更糟糕的类别，因此对整个列表进行排序仅进行单个搜索肯定不划算。但是，如果您需要在一个不经常改变的大列表中执行大量索引搜索，那么使用单个排序操作的`bisect`可能是一个非常好的折衷方案。
+- en: Also, if you already have a sorted list, you can insert new items into that
+    list using `bisect` without needing to re-sort it.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另外，如果您已经有一个排序好的列表，您可以使用`bisect`插入新的项目到该列表中，而无需重新排序。
+- en: Using a set instead of a list
+  id: totrans-73
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用`set`而不是列表
+- en: 'When you need to build a sequence of distinct values out of a given sequence,
+    the first algorithm that might come to your mind is:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您需要从给定序列中构建一系列不同值时，可能首先想到的算法是：
+- en: '[PRE4]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: The complexity is introduced by the lookup in the `result` list with the `in`
+    operator that has the time complexity, *O(n)*. It is then used in the loop, which
+    costs *O(n*). So, the overall complexity is quadratic—*O(n²**)*.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 复杂度是由在`result`列表中使用`in`运算符引入的，它的时间复杂度是*O(n)*。然后它在循环中使用，这将花费*O(n)*。因此，总体复杂度是二次的—*O(n²)*。
+- en: 'Using a `set` type for the same work will be faster because the stored values
+    are looked up using hashes same as in the `dict` type. Also, `set` ensures the
+    uniqueness of elements, so we don''t need to do anything more but create a new
+    set from our `sequence` object. In other words, for each value in `sequence`,
+    the time taken to see if it is already in the `set` will be constant:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于相同的工作使用`set`类型将更快，因为存储的值使用哈希查找，就像`dict`类型一样。此外，`set`确保元素的唯一性，因此我们不需要做任何额外的工作，只需从我们的`sequence`对象创建一个新的集合。换句话说，对于`sequence`中的每个值，查看它是否已经在`set`中所花费的时间将是恒定的：
+- en: '[PRE5]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: This lowers the complexity to *O(n),* which is the complexity of the `set` object
+    creation. The additional advantage is shorter and more explicit code.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将复杂度降低到*O(n)*，这是`set`对象创建的复杂度。额外的优势是代码更短更明确。
+- en: Note
+  id: totrans-80
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: When you try to reduce the complexity of an algorithm, carefully consider your
+    data structures. There are a range of built-in types, so pick the right one.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您尝试降低算法的复杂度时，要仔细考虑您的数据结构。有各种内置类型，所以要选择合适的类型。
+- en: Cut the external calls, reduce the workload
+  id: totrans-82
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 减少外部调用，减轻工作量
+- en: A part of the complexity is introduced by calls to other functions, methods,
+    and classes. In general, get as much of the code out of the loops as possible.
+    This is doubly important for nested loops. Don't recalculate over and over those
+    things that can be calculated before the loop even begins. Inner loops should
+    be tight.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 复杂性的一部分是由于调用其他函数、方法和类引入的。一般来说，尽可能多地将代码从循环中移出。对于嵌套循环来说，这一点尤为重要。不要一遍又一遍地重新计算那些在循环开始之前就可以计算出来的东西。内部循环应该是紧凑的。
+- en: Using collections
+  id: totrans-84
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用 collections
+- en: 'The `collections` module provides high-performance alternatives to the built-in
+    container types. The main types available in this module are:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`collections` 模块提供了高性能的替代内置容器类型。该模块中提供的主要类型有：'
+- en: '`deque`: A list-like type with extra features'
+  id: totrans-86
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`deque`：带有额外功能的类似列表的类型'
+- en: '`defaultdict`: A dict-like type with a built-in default factory feature'
+  id: totrans-87
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`defaultdict`：带有内置默认工厂功能的类似字典的类型'
+- en: '`namedtuple`: A tuple-like type that assigns keys for members'
+  id: totrans-88
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`namedtuple`：类似元组的类型，为成员分配键'
+- en: deque
+  id: totrans-89
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: deque
+- en: A `deque` is an alternative implementation for lists. While a list is based
+    on arrays, a `deque` is based on a doubly linked list. Hence, a `deque` is much
+    faster when you need to insert something into its middle or head but much slower
+    when you need to access an arbitrary index.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`deque` 是列表的另一种实现方式。列表基于数组，而 `deque` 基于双向链表。因此，当需要在中间或头部插入时，`deque` 要快得多，但是当需要访问任意索引时，`deque`
+    要慢得多。'
+- en: Of course, thanks to the overallocation of an internal array in the Python `list`
+    type, not every `list.append()` call requires memory reallocation, and the average
+    complexity of this method is *O(1)*. Still, *pops* and *appends* are generally
+    faster when performed on linked lists instead of arrays. The situation changes
+    dramatically when the element needs to be added on arbitrary point of sequence.
+    Because all elements on the right of the new one need to be shifted in an array,
+    the complexity of `list.insert()` is *O(n)*. If you need to perform a lot of pops,
+    appends, and inserts, the `deque` in place of the list may provide substantial
+    performance improvement. But always be sure to profile your code before switching
+    from a `list` to the `deque`, because a few things that are fast in arrays (such
+    as accessing arbitrary index) are extremely inefficient in linked lists.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，由于 Python `list` 类型中内部数组的过度分配，不是每次 `list.append()` 调用都需要内存重新分配，而这种方法的平均复杂度是
+    *O(1)*。但是，*pops* 和 *appends* 在链表上执行时通常比在数组上执行要快。当元素需要添加到序列的任意点时，情况会发生戏剧性的变化。因为数组中新元素右侧的所有元素都需要移动，所以
+    `list.insert()` 的复杂度是 *O(n)*。如果需要执行大量的 pops、appends 和 inserts，那么使用 `deque` 而不是列表可能会提供显著的性能改进。但是在从
+    `list` 切换到 `deque` 之前，一定要对代码进行分析，因为在数组中快速的一些操作（例如访问任意索引）在链表中非常低效。
+- en: 'For example, if we measure the time of appending one element and removing it
+    from the sequence with `timeit`, the difference between `list` and `deque` may
+    not even be noticeable:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，如果我们使用 `timeit` 测量向序列添加一个元素并从中删除的时间，`list` 和 `deque` 之间的差异甚至可能不会被注意到：
+- en: '[PRE6]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: '[PRE7]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'But if we do similar comparison for situations when we want to add and remove
+    the first element of the sequence, the performance difference is impressive:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果我们对想要添加和移除序列的第一个元素的情况进行类似的比较，性能差异是显著的：
+- en: '[PRE8]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'And the difference is, it gets bigger when the size of the sequence grows.
+    Here is an example of the same test performed on lists containing 10,000 elements:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 而且，当序列的大小增长时，这种差异会变得更大。以下是对包含 10,000 个元素的列表执行相同测试的示例：
+- en: '[PRE9]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Thanks to efficient `append()` and `pop()` methods that work at the same speed
+    from both ends of the sequence, `deque` makes a perfect type for implementing
+    queues. For example, a **FIFO** (**First In First Out**) queue will definitely
+    be much more efficient if implemented with a `deque` instead of `list`.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于高效的 `append()` 和 `pop()` 方法可以同时从序列的两端以相同的速度工作，`deque` 是实现队列的完美类型。例如，使用 `deque`
+    而不是 `list` 来实现 **FIFO**（先进先出）队列将会更加高效。
+- en: Note
+  id: totrans-100
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: '`deque` works great when implementing queues. Anyway, starting from Python
+    2.6 there is a separate `queue` module in Python''s standard library that provides
+    basic implementation for FIFO, LIFO, and priority queues. If you want to utilize
+    queues as a mechanism of interthread communication, you should really use classes
+    from the `queue` module instead of `collections.deque`. This is because these
+    classes provide all the necessary locking semantics. If you don''t use threading
+    and don''t utilize queues as a communication mechanism, then `deque` should be
+    enough to provide queue implementation basics.'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`deque` 在实现队列时效果很好。不过，从 Python 2.6 开始，Python 标准库中有一个单独的 `queue` 模块，提供了 FIFO、LIFO
+    和优先级队列的基本实现。如果要将队列用作线程间通信的机制，应该使用 `queue` 模块中的类，而不是 `collections.deque`。这是因为这些类提供了所有必要的锁定语义。如果不使用线程和不使用队列作为通信机制，那么
+    `deque` 应该足够提供队列实现的基础。'
+- en: defaultdict
+  id: totrans-102
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: defaultdict
+- en: The `defaultdict` type is similar to the `dict` type but adds a default factory
+    for new keys. This avoids writing an extra test to initialize the mapping entry
+    and is more efficient than the `dict.setdefault` method.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`defaultdict` 类型类似于 `dict` 类型，但为新键添加了一个默认工厂。这避免了编写额外的测试来初始化映射条目，并且比 `dict.setdefault`
+    方法更高效。'
+- en: '`defaultdict` seems just like syntactic sugar over `dict` that simply allows
+    you to write shorter code. In fact, the fallback to a predefined value on a failed
+    key lookup is also slightly faster than the `dict.setdefault()` method:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`defaultdict` 看起来只是 `dict` 上的语法糖，简单地允许您编写更短的代码。实际上，在失败的键查找时返回预定义值也比 `dict.setdefault()`
+    方法稍微快一些：'
+- en: '[PRE10]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: The difference isn't great because the computational complexity hasn't changed.
+    The `dict.setdefault` method consist of two steps (key lookup and key set), both
+    of which have a complexity of *O(1)*, as we have seen in the *Dictionaries* section
+    in [Chapter 2](ch02.html "Chapter 2. Syntax Best Practices – below the Class Level"),
+    *Syntax Best Practices – below the Class Level*. There is no way to have a complexity
+    class lower than *O(1)*. But it is indisputably faster in some situations and
+    it is worth knowing because every small speed improvement counts when optimizing
+    critical code sections.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 差异并不大，因为计算复杂度并没有改变。`dict.setdefault`方法包括两个步骤（键查找和键设置），这两个步骤的复杂度都是*O(1)*，正如我们在[第2章](ch02.html
+    "第2章。语法最佳实践-类级别以下")的*字典*部分中所看到的，*语法最佳实践-类级别以下*。没有办法使复杂度低于*O(1)*。但在某些情况下，它无疑更快，值得知道，因为在优化关键代码部分时，每一个小的速度提升都很重要。
+- en: 'The `defaultdict` type takes a factory as a parameter and can therefore be
+    used with built-in types or classes whose constructor does not take arguments.
+    Here is an example from the official documentation that shows how to use `defaultdict`
+    for counting:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`defaultdict`类型接受一个工厂作为参数，因此可以与不需要参数的内置类型或类一起使用其构造函数。以下是官方文档中的一个示例，展示了如何使用`defaultdict`进行计数：'
+- en: '[PRE11]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: namedtuple
+  id: totrans-109
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: namedtuple
+- en: '`namedtuple` is a class factory that takes a type name and a list of attributes
+    and creates a class out of it. The class can then be used to instantiate a tuple-like
+    object and provide accessors for its elements:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`namedtuple`是一个类工厂，它接受一个类型名称和一个属性列表，并创建一个类。然后可以用这个类来实例化一个类似元组的对象，并为其元素提供访问器：'
+- en: '[PRE12]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: It can be used to create records that are easier to write compared to a custom
+    class that would require some boilerplate code to initialize values. On the other
+    hand, it is based on tuple, so access to its elements by index is very fast. The
+    generated class can be subclassed to add more operations.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它可以用来创建比需要一些样板代码来初始化值的自定义类更容易编写的记录。另一方面，它基于元组，因此通过索引访问其元素非常快。生成的类可以被子类化以添加更多操作。
+- en: The gain from using `namedtuple` instead of other datatypes may not be obvious
+    at first. The main advantage is that it is way more easier to use, understand,
+    and interpret than ordinary tuples. Tuple indexes don't carry any semantics, so
+    it is great to access tuple elements by attributes too. However, you could get
+    the same benefit from dictionaries that have an *O(1)* average complexity of get/set
+    operations.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`namedtuple`而不是其他数据类型的收益一开始可能并不明显。主要优点是它比普通元组更容易使用、理解和解释。元组索引不携带任何语义，因此通过属性访问元组元素也很好。但是，你也可以从具有*O(1)*获取/设置操作平均复杂度的字典中获得相同的好处。
+- en: The first advantage in terms of performance is that `namedtuple` is still the
+    flavor of `tuple`. It means that it is immutable, so the underlying array storage
+    is allocated exactly for the needed size. Dictionaries, on the other hand, need
+    to use overallocation of the internal hash table to ensure low average complexity
+    of get/set operations. So, `namedtuple` wins over `dict` in terms of memory efficiency.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就性能而言，`namedtuple`的第一个优势是它仍然是`tuple`的一种。这意味着它是不可变的，因此底层数组存储被分配到了所需的大小。另一方面，字典需要使用内部哈希表的过度分配来确保获取/设置操作的平均复杂度较低。因此，`namedtuple`在内存效率方面胜过`dict`。
+- en: The fact that `namedtuple` is based on a tuple may also be beneficial for performance.
+    Its elements may be accessed by an integer index, like in two other simple sequence
+    objects—lists and tuples. This operation is both simple and fast. In the case
+    of `dict` or custom class instances (that also use dictionaries for storing attributes),
+    the element access requires hash table lookup. It is highly optimized to ensure
+    good performance independently from collection size, but the mentioned *O(1)*
+    complexity is actually only the *average complexity*. The actual, amortized worst
+    case complexity for set/get operations in `dict` is *O(n)*. The real amount of
+    work when performing such an operation at a given moment is dependent on both
+    collection size and its history. So, in sections of code that are critical for
+    performance, sometimes it may be wise to use lists or tuples instead of dictionaries.
+    This is only because they are more predictable when it comes to performance.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`namedtuple`基于元组的事实也可能对性能有益。它的元素可以通过整数索引访问，就像另外两个简单的序列对象-列表和元组一样。这个操作既简单又快速。在`dict`或自定义类实例（也使用字典来存储属性）的情况下，元素访问需要哈希表查找。它经过高度优化，以确保不管集合大小如何，性能都很好，但提到的*O(1)*复杂度实际上只是*平均复杂度*。`dict`在设置/获取操作的实际摊销最坏情况复杂度是*O(n)*。在对性能关键的代码部分，有时使用列表或元组而不是字典可能是明智的。这仅仅是因为它们在性能方面更可预测。'
+- en: 'In such a situation, `namedtuple` is a great type that combines the advantages
+    of dictionaries and tuples:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，`namedtuple`是一种很好的类型，它结合了字典和元组的优点：
+- en: In sections where readability is more important, the attribute access may be
+    preferred
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在更重视可读性的部分，可能更喜欢属性访问
+- en: In performance-critical sections, elements may be accessed by their indexes
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在性能关键的部分，元素可以通过它们的索引访问
+- en: Note
+  id: totrans-119
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Reduced complexity can be achieved by storing the data in an efficient data
+    structure that works well with the way the algorithm will use it.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过将数据存储在与算法使用方式良好匹配的高效数据结构中，可以实现降低复杂性。
+- en: That said, when the solution is not obvious, you should consider dropping and
+    rewriting the incriminated part instead of killing the code readability for the
+    sake of performance.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也就是说，当解决方案不明显时，你应该考虑放弃并重写被指责的部分，而不是为了性能而破坏代码的可读性。
+- en: Often, the Python code can be both readable and fast. So, try to find a good
+    way to perform the work instead of trying to work around a flawed design.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常情况下，Python代码既可以可读又可以快速。因此，尝试找到一种执行工作的好方法，而不是试图绕过有缺陷的设计。
+- en: Using architectural trade-offs
+  id: totrans-123
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用架构权衡
+- en: 'When your code cannot be improved any further by reducing the complexity or
+    choosing the proper data structure, a good approach may be to consider doing some
+    trade-offs. If we review user problems and define what is really important for
+    them, we can relax some of the application requirements. The performance can often
+    be improved by:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您的代码无法通过减少复杂性或选择适当的数据结构来进一步改进时，一个很好的方法可能是考虑做一些权衡。如果我们审查用户问题并定义对他们来说真正重要的是什么，我们可以放松一些应用要求。性能通常可以通过以下方式改进：
+- en: Replacing exact solution algorithms with heuristics and approximation algorithms
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用启发式和近似算法替换确切解算法
+- en: Deferring some work to delayed task queues
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将一些工作推迟到延迟任务队列
+- en: Using probabilistic data structures
+  id: totrans-127
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用概率数据结构
+- en: Using heuristics and approximation algorithms
+  id: totrans-128
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用启发式和近似算法
+- en: Some algorithmic problems simply don't have *good state of the art* solutions
+    that could run in time acceptable to the user. For example, consider a program
+    that deals with some complex optimization problems such as **Traveling Salesman
+    Problem** (**TSP**) or **Vehicle Routing Problem** (**VRP**). Both problems are
+    *NP-hard* problems in combinatorial optimization. The exact algorithms for such
+    problems that have low complexity are not known. This means that the size of the
+    problems that can be practically solved is greatly limited. For very large inputs,
+    it is very unlikely that it will be able to provide the exact solution in a time
+    that would be acceptable for any user.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有些算法问题根本没有可以在用户可接受的时间内运行的*最先进*解决方案。例如，考虑一个处理一些复杂优化问题的程序，如**旅行商问题**（**TSP**）或**车辆路径问题**（**VRP**）。这两个问题都是组合优化中的*NP难*问题。这些问题的确切算法的复杂度较低是未知的。这意味着可以实际解决的问题规模受到极大限制。对于非常大的输入，很可能无法在用户可接受的时间内提供确切的解决方案。
+- en: 'Fortunately, it is very probable that the user is not interested in the best
+    possible solution but the one that is good enough and the one that can be obtained
+    in a timely manner. So, it really makes sense to use **heuristics** or **approximation
+    algorithms** whenever they provide an acceptable quality of results:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，用户很可能对最佳解决方案不感兴趣，而是对足够好且及时获得的解决方案感兴趣。因此，当启发式或近似算法提供可接受的结果质量时，使用它们确实是有意义的：
+- en: Heuristics solve given problems by trading optimality, completeness, accuracy,
+    or precision for speed. They concentrate on the speed, but it may be really hard
+    to prove their solution quality compared to the result of exact algorithms.
+  id: totrans-131
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 启发式通过在速度上进行权衡优化给定问题，而不是完整性、准确性或精度。它们专注于速度，但可能很难证明它们的解决方案质量与确切算法的结果相比。
+- en: Approximation algorithms are similar in idea to heuristics, but unlike heuristics
+    have provable solution quality and run-time bounds.
+  id: totrans-132
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 近似算法与启发式类似，但与启发式不同的是，它们具有可证明的解决方案质量和运行时间界限。
+- en: For instance, there are known good heuristics and approximation problems that
+    can solve extremely large TSP problems within a reasonable time. They also have
+    a high probability of producing results just 2-5% from the optimal solution.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，已知一些良好的启发式和近似问题可以在合理的时间内解决极大的TSP问题。它们还有很高的概率产生距最优解仅2-5%的结果。
+- en: 'Another good thing about heuristics is that they don''t always need to be constructed
+    from scratch for every new problem you need to solve. Their higher-level versions,
+    called **metaheuristics**, provide strategies for solving mathematical optimization
+    problems that are not problem-specific and can thus be applied in many situations.
+    Some popular metaheuristic algorithms include:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启发式的另一个好处是，它们并不总是需要针对您需要解决的每个新问题从头开始构建。它们的高级版本，称为**元启发式**，提供了解决数学优化问题的策略，这些策略不是特定于问题的，因此可以应用于许多情况。一些流行的元启发式算法包括：
+- en: Simulated annealing
+  id: totrans-135
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 模拟退火
+- en: Genetic algorithms
+  id: totrans-136
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 遗传算法
+- en: Tabu search
+  id: totrans-137
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 禁忌搜索
+- en: Ant colony optimization
+  id: totrans-138
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 蚁群优化
+- en: Evolutionary computation
+  id: totrans-139
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 进化计算
+- en: Using task queues and delayed processing
+  id: totrans-140
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用任务队列和延迟处理
+- en: Sometimes it's not about doing a lot but about doing things at the right time.
+    A good example of that is sending e-mails in web applications. In that case, increased
+    response times may not necessarily be the result of your implementation. The response
+    time may be dominated by some third-party service, such as an e-mail server. Can
+    you optimize your application if it just spends most of its time on waiting for
+    other services to reply?
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有时并不是做很多事情，而是在正确的时间做事情。一个很好的例子是在网页应用中发送电子邮件。在这种情况下，增加的响应时间可能并不一定是您实现的结果。响应时间可能被某些第三方服务所主导，例如电子邮件服务器。如果您的应用程序大部分时间都在等待其他服务的回复，您能优化您的应用程序吗？
+- en: 'The answer is both: yes and no. If you don''t have any control over a service
+    that is the main contributor to your processing time and there is no other faster
+    solution you could use, you, of course, cannot speed it up any further. You cannot
+    simply skip in time to get the replies you are waiting for. A simple example of
+    processing an HTTP request that results in sending an e-mail is presented in the
+    following figure (*Figure* *1*). You cannot reduce the waiting time, but you can
+    change the way users will perceive it!'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 答案既是肯定的也是否定的。如果您无法控制服务，这是处理时间的主要贡献者，并且没有其他更快的解决方案可用，那么您当然无法进一步加快速度。您不能简单地跳过时间以获取您正在等待的回复。下图（*图*
+    *1*）展示了处理HTTP请求并导致发送电子邮件的简单示例。您无法减少等待时间，但可以改变用户的感知方式！
+- en: '![Using task queues and delayed processing](graphics/B05295_12_01.jpg)'
+  id: totrans-143
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用任务队列和延迟处理](graphics/B05295_12_01.jpg)'
+- en: Figure 1 An example of synchronous e-mail delivery in web application
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图1 网页应用中同步发送电子邮件的示例
+- en: The usual pattern for such type of problems is using message/task queues. When
+    you need to do something that may take an indefinite amount of time, just add
+    this to the queue of work that needs to be done and immediately respond to the
+    user whose request was accepted. Here, we come to the reason why sending e-mails
+    is such a great example. E-mails are already task queues! If you submit a new
+    message to the e-mail server using SMTP protocol, the successful response does
+    not mean that your e-mail was delivered to addressee. It means that the e-mail
+    was delivered to the e-mail server and it will try later to deliver it further.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种类型问题的通常模式是使用消息/任务队列。当您需要做一些可能需要不确定时间的事情时，只需将其添加到需要完成的工作队列中，并立即响应接受请求的用户。这里，我们来到为什么发送电子邮件是一个很好的例子的原因。电子邮件已经是任务队列！如果您使用SMTP协议向电子邮件服务器提交新消息，成功的响应并不意味着您的电子邮件已经传递给收件人。这意味着电子邮件已经传递给了电子邮件服务器，并且它将稍后尝试进一步传递。
+- en: 'So, if the response from the server does not guarantee that the e-mail was
+    delivered at all, you don''t need to wait for it in order to generate an HTTP
+    response for the user. The updated flow of processing requests with the usage
+    of the task queue is presented in the following figure:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，如果服务器的响应并不保证电子邮件是否已经传递，您无需等待它以生成用户的HTTP响应。使用任务队列处理请求的更新流程如下图所示：
+- en: '![Using task queues and delayed processing](graphics/B05295_12_02.jpg)'
+  id: totrans-147
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用任务队列和延迟处理](graphics/B05295_12_02.jpg)'
+- en: Figure 2 An example of asynchronous e-mail delivery in web application
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图2 Web应用程序中异步电子邮件传递的示例
+- en: Of course, your e-mail server may be responding blazingly fast, but you need
+    some more time to generate the message that needs to be sent. Perhaps you are
+    generating yearly reports in an XLS format or maybe delivering invoices in PDF
+    files. If you use e-mail transport that is already asynchronous, then put the
+    whole message generation task to the message processing system too. If you cannot
+    guarantee the exact time of delivery, then you should not bother to generate your
+    deliverables synchronously.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，您的电子邮件服务器可能响应非常快，但您需要更多时间来生成需要发送的消息。也许您正在生成XLS格式的年度报告，或者在PDF文件中交付发票。如果您使用的是已经是异步的电子邮件传输，那么也将整个消息生成任务放到消息处理系统中。如果无法保证准确的交付时间，那么您不应该打扰同步生成您的交付物。
+- en: 'The proper usage of task/message queues in critical sections of the application
+    can also give you other benefits:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在应用程序的关键部分正确使用任务/消息队列还可以给您带来其他好处：
+- en: Web workers that serve HTTP requests will be relieved from additional work and
+    processing requests faster. This means that you will be able to process more requests
+    with the same resources and thus handle greater load.
+  id: totrans-151
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为服务HTTP请求的Web工作者将从额外的工作中解脱出来，处理请求更快。这意味着您将能够使用相同的资源处理更多的请求，从而处理更大的负载。
+- en: Message queues are generally more immune to transient failures of external services.
+    For instance, if your database or e-mail server times out from time to time, you
+    can always re-queue the currently processed task and retry it later.
+  id: totrans-152
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 消息队列通常更不容易受到外部服务的瞬态故障的影响。例如，如果您的数据库或电子邮件服务器不时超时，您可以始终重新排队当前处理的任务并稍后重试。
+- en: With a good message queue implementation, you can easily distribute the work
+    on multiple machines. This approach may improve the scalability of some of your
+    application components.
+  id: totrans-153
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过良好的消息队列实现，您可以轻松地将工作分布在多台机器上。这种方法可能提高应用程序某些组件的可扩展性。
+- en: As you can see in *Figure 2*, adding an asynchronous task processing to your
+    application inevitably increases the complexity of the whole system's architecture.
+    You will need to set up some new backing services (a message queue such as RabbitMQ)
+    and create workers that will be able to process these asynchronous jobs. Fortunately,
+    there are some popular tools for building distributed task queues. The most popular
+    one among Python developers is **Celery** ([http://www.celeryproject.org/](http://www.celeryproject.org/)).
+    It is a full-fledged task queue framework with support of multiple message brokers
+    that also allows for the scheduled execution of tasks (it can replace your `cron`
+    jobs). If you need something simpler, then RQ ([http://python-rq.org/](http://python-rq.org/))
+    might be a good alternative. It is a lot simpler than Celery and uses Redis key/value
+    storage as its message broker (**RQ** actually stands for **Redis Queue**).
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您在*图2*中所见，将异步任务处理添加到应用程序中不可避免地增加了整个系统架构的复杂性。您将需要设置一些新的后备服务（例如RabbitMQ这样的消息队列）并创建能够处理这些异步作业的工作者。幸运的是，有一些流行的工具用于构建分布式任务队列。在Python开发人员中最受欢迎的是**Celery**（[http://www.celeryproject.org/](http://www.celeryproject.org/)）。它是一个完整的任务队列框架，支持多个消息代理，还允许定期执行任务（可以替代您的`cron`作业）。如果您需要更简单的东西，那么RQ（[http://python-rq.org/](http://python-rq.org/)）可能是一个不错的选择。它比Celery简单得多，并使用Redis键/值存储作为其消息代理（**RQ**实际上代表**Redis
+    Queue**）。
+- en: 'Although there are some good and battle-tested tools, you should always carefully
+    consider your approach to the task queues. Definitely not every kind of work should
+    be processed in queues. They are good at solving a few types of issues but also
+    introduce a load of new problems:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管有一些经过良好测试的工具，您应该始终仔细考虑您对任务队列的方法。绝对不是每种工作都应该在队列中处理。它们擅长解决一些问题，但也引入了一大堆新问题：
+- en: Increased complexity of system architecture
+  id: totrans-156
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 系统架构的复杂性增加
+- en: Dealing with *more than once* deliveries
+  id: totrans-157
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理“多次”交付
+- en: More services to maintain and monitor
+  id: totrans-158
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更多需要维护和监控的服务
+- en: Larger processing delays
+  id: totrans-159
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更长的处理延迟
+- en: More difficult logging
+  id: totrans-160
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更困难的日志记录
+- en: Using probabilistic data structures
+  id: totrans-161
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用概率数据结构
+- en: Probabilistic data structures are structures that are designed to store collections
+    of values in a way that allows you to answer some specific questions within time
+    or resource constraints that would not be possible with other data structures.
+    The most important fact is that the answer is only probable to be true or is the
+    approximation of the real value. However, the probability of the correct answer
+    or its accuracy can be easily estimated. So, despite not always giving the correct
+    answer, it can be still useful if we accept some level of error.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 概率数据结构是设计为以一种允许您在时间或资源约束内回答一些特定问题的方式存储值集合的结构，这是其他数据结构无法实现的。最重要的事实是答案只有可能是真实的或是真实值的近似。然而，可以很容易地估计正确答案的概率或准确性。因此，尽管不总是给出正确答案，如果我们接受一定程度的误差，它仍然可以是有用的。
+- en: There are a lot of data structures with such probabilistic properties. Each
+    one of them solves some specific problems, and due to theirs stochastic nature
+    cannot be used in every situation. But to give a practical example, let's talk
+    about one of them that is especially popular—**HyperLogLog**.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多具有这种概率特性的数据结构。它们中的每一个都解决了一些特定的问题，并且由于它们的随机性质，不能在每种情况下使用。但是，为了举一个实际的例子，让我们谈谈其中一个特别受欢迎的——HyperLogLog。
+- en: HyperLogLog (refer to [https://en.wikipedia.org/wiki/HyperLogLog](https://en.wikipedia.org/wiki/HyperLogLog))
+    is an algorithm that approximates the number of distinct elements in a multiset.
+    With ordinary sets, you need to store every element, and this may be very impractical
+    for very large datasets. HLL is distinct from the classical way of implementing
+    sets as programming data structures. Without digging into implementation details,
+    let's say that it only concentrates on providing an approximation of the set cardinality.
+    Thus, real values are never stored. They cannot be retrieved, iterated, and tested
+    for membership. HyperLogLog trades accuracy and correctness for time complexity
+    and size in memory. For instance, the Redis implementation of HLL takes only 12k
+    bytes with a standard error of 0.81% with no practical limit of collection size.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HyperLogLog（参见[https://en.wikipedia.org/wiki/HyperLogLog](https://en.wikipedia.org/wiki/HyperLogLog)）是一种近似估计多重集中不同元素数量的算法。对于普通集合，您需要存储每个元素，这对于非常大的数据集可能非常不切实际。HLL与实现集合的经典方式不同。不深入实现细节，我们可以说它只专注于提供集合基数的近似值。因此，实际值从不存储。它们不能被检索、迭代和测试成员资格。HyperLogLog以时间复杂度和内存大小交换准确性和正确性。例如，Redis实现的HLL只需要12k字节，标准误差为0.81%，集合大小没有实际限制。
+- en: Using probabilistic data structures is a very interesting way of solving performance
+    problems. In most cases, it is about trading off some accuracy or correctness
+    for faster processing or better resource usage. But it does not always need to
+    be that way. Probabilistic data structures are very often used in key/value storage
+    systems to speed up key lookups. One of the popular techniques used in such systems
+    is called approximate member query (AMQ). One interesting data structure that
+    can be used for that purpose is Bloom filter (refer to [https://en.wikipedia.org/wiki/Bloom_filter](https://en.wikipedia.org/wiki/Bloom_filter)).
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用概率数据结构是解决性能问题的一种非常有趣的方式。在大多数情况下，这是在速度更快的处理或更好的资源使用之间进行一些准确性或正确性的权衡。但并不总是需要这样。概率数据结构在键/值存储系统中经常用于加速键查找。在这类系统中使用的一种流行技术称为近似成员查询（AMQ）。可以用于此目的的一个有趣的数据结构是Bloom过滤器（参见[https://en.wikipedia.org/wiki/Bloom_filter](https://en.wikipedia.org/wiki/Bloom_filter)）。
+- en: Caching
+  id: totrans-166
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 缓存
+- en: 'When some of your application function takes too long to compute, the useful
+    technique to consider is caching. Caching is nothing but saving a return value
+    for future reference. The result of a function or method that is expensive to
+    run can be cached as long as:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您的应用程序函数计算时间过长时，可以考虑的有用技术是缓存。缓存无非是保存返回值以供将来参考。运行成本高昂的函数或方法的结果可以被缓存，只要：
+- en: The function is deterministic and the results have the same value every time,
+    given the same input
+  id: totrans-168
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 函数是确定性的，给定相同的输入，结果每次都是相同的值
+- en: The return value of the function continues to be useful and valid for some period
+    of time (nondeterministic)
+  id: totrans-169
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 函数的返回值在一段时间内仍然有用且有效（非确定性）
+- en: In other words, a deterministic function always returns the same result for
+    the same set of arguments, whereas a nondeterministic one returns results that
+    may vary in time. Such an approach usually greatly reduces the time of computation
+    and allows you to save a lot of computer resources.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 换句话说，确定性函数对于相同的参数集始终返回相同的结果，而非确定性函数返回可能随时间变化的结果。这种方法通常大大减少了计算时间，并允许您节省大量计算资源。
+- en: 'The most important requirement for any caching solution is to have a storage
+    that allows you to retrieve saved values significantly faster than it takes to
+    calculate them. Good candidates for caching are usually:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 任何缓存解决方案最重要的要求是具有允许您检索保存的值的存储，其速度明显快于计算它们所需的时间。通常适合缓存的是：
+- en: Results from callables that query databases
+  id: totrans-172
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 可查询数据库的可调用结果
+- en: Results from callables that render static values, such as file content, web
+    requests, or PDF rendering
+  id: totrans-173
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 来自呈现静态值的可调用的结果，例如文件内容、Web请求或PDF呈现
+- en: Results from deterministic callables that perform complex calculations
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 来自执行复杂计算的确定性可调用的结果
+- en: Global mappings that keep track of values with expiration times, such as web
+    session objects
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 全局映射，跟踪具有过期时间的值，例如Web会话对象
+- en: Results that needs to be accessed often and quickly
+  id: totrans-176
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 需要经常快速访问的结果
+- en: Another important use case for caching is saving results from third-party APIs
+    served over the Web. This may greatly improve application performance by cutting
+    off the network latencies but also allows you to save money if you are billed
+    for every request to such API.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 缓存的另一个重要用例是保存通过Web提供的第三方API的结果。这可能通过减少网络延迟大大提高应用程序性能，但也可以让您节省金钱，如果您被要求对此类API的每个请求进行计费。
+- en: Depending on your application architecture, the cache can be implemented in
+    many ways and with various levels of complexity. There are many ways to provide
+    caching and complex applications can use different approaches on different levels
+    of the application architecture stack. Sometimes a cache may be as simple as a
+    single global data structure (usually a `dict`) kept in the process memory. In
+    other situations, you may want to set up a dedicated caching service that will
+    run on carefully tailored hardware. This section will provide you with basic information
+    on the most popular caching approaches and guide you through the usual use cases
+    and also the common pitfalls.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据您的应用架构，缓存可以以许多种方式和各种复杂程度实现。提供缓存的方式有很多种，复杂的应用程序可以在应用程序架构堆栈的不同级别上使用不同的方法。有时，缓存可能只是一个保留在进程内存中的单个全局数据结构（通常是`dict`）。在其他情况下，您可能希望设置一个专用的缓存服务，该服务将在精心定制的硬件上运行。本节将为您提供有关最流行的缓存方法的基本信息，并指导您通过常见的用例和常见的陷阱。
+- en: Deterministic caching
+  id: totrans-179
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 确定性缓存
+- en: Deterministic functions are the easiest and safest use case for caching. Deterministic
+    functions always return the same value if given exactly the same input, so generally
+    you can store their result indefinitely. The only limitation is the size of storage
+    you use for caching. The simplest way to cache such results is to put them into
+    process memory because it is usually the fastest place to retrieve data from.
+    Such a technique is often called **memoization**.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确定性函数是缓存的最简单和最安全的用例。确定性函数如果给定完全相同的输入，总是返回相同的值，因此通常可以无限期地存储它们的结果。唯一的限制是用于缓存的存储大小。缓存这些结果的最简单方法是将它们放入进程内存中，因为这通常是从中检索数据的最快地方。这样的技术通常被称为**记忆化**。
+- en: 'Memoization is very useful when optimizing recursive functions that may evaluate
+    the same inputs multiple times. We already discussed recursive implementation
+    for the Fibonacci sequence in [Chapter 7](ch07.html "Chapter 7. Python Extensions
+    in Other Languages"), *Python Extensions in Other Languages*. Back then, we tried
+    to improve the performance of our program with C and Cython. Now we will try to
+    achieve the same goal by simpler means—with the help of caching. But before we
+    do that, let''s recall the code for the `fibonacci()` function:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在优化可能多次评估相同输入的递归函数时，记忆化非常有用。我们已经在[第7章](ch07.html "第7章. 其他语言中的Python扩展")中讨论了斐波那契数列的递归实现，*其他语言中的Python扩展*。当时，我们尝试用C和Cython来改进我们的程序的性能。现在我们将尝试通过更简单的方法来实现相同的目标——借助缓存的帮助。但在这样做之前，让我们回顾一下`fibonacci()`函数的代码：
+- en: '[PRE13]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: As we see, `fibonacci()` is a recursive function that calls itself twice if
+    the input value is more than two. This makes it highly inefficient. The run time
+    complexity is *O(2^n**)* and its execution creates a very deep and vast call tree.
+    For the large value, this function will take extremely long to execute and there
+    is high chance of quickly exceeding the maximal recursion limit of the Python
+    interpreter.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所见，`fibonacci()`是一个递归函数，如果输入值大于两，它会调用自身两次。这使得它非常低效。运行时间复杂度为*O(2^n)*，执行会创建一个非常深和广的调用树。对于大的值，这个函数将需要非常长的时间来执行，并且很有可能很快就会超过Python解释器的最大递归限制。
+- en: If you take a closer look at *Figure 3,* which presents an example call tree,
+    you will see that it evaluates many of the intermediate results multiple times.
+    A lot of time and resources could be saved if we could reuse some of these values.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您仔细观察*图3*，它展示了一个示例调用树，您会发现它多次评估许多中间结果。如果我们能够重用其中一些值，就可以节省大量时间和资源。
+- en: '![Deterministic caching](graphics/B05295_12_03.jpg)'
+  id: totrans-185
+  prefs: []
+  type: TYPE_IMG
+  zh: '![确定性缓存](graphics/B05295_12_03.jpg)'
+- en: Figure 3 Call tree for fibonacci(5) execution
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3 fibonacci(5)执行的调用树
+- en: 'A simple memoization attempt would be to store results of the previous runs
+    in a dictionary and retrieve them if they are available. Both the recursive calls
+    in the `fibonacci()` function are contained in a single line of code:'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个简单的记忆化尝试是将先前运行的结果存储在字典中，并在可用时检索它们。`fibonacci()`函数中的递归调用都包含在一行代码中：
+- en: '[PRE14]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'We know that Python evaluates instructions from left to right. This means that,
+    in this situation, the call to the function with a higher argument value will
+    be executed before the call to the function with a lower argument. Thanks to this,
+    we can provide memoizaton by constructing a very simple decorator:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们知道Python从左到右评估指令。这意味着，在这种情况下，具有更高参数值的函数调用将在具有较低参数的函数调用之前执行。由于这个原因，我们可以通过构建一个非常简单的装饰器来提供记忆化：
+- en: '[PRE15]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: We used the dictionary on the closure of the `memoize()` decorator as a simple
+    storage from cached values. Saving and retrieving value to that data structure
+    has an average *O(1)* complexity, so this greatly reduces the overall complexity
+    of the memoized function. Every unique function call will be evaluated only once.
+    The call tree of such an updated function is presented in *Figure 4*. Without
+    going into mathematical proofs, we can visually deduce that without changing the
+    core of the `fibonacci()` function, we reduced the complexity from the very expensive
+    *O(2n)* to the linear *O(n)*.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`memoize()`装饰器的闭包上使用了字典作为缓存值的简单存储。将值保存和检索到这个数据结构的平均*O(1)*复杂度，因此这大大降低了记忆化函数的总体复杂度。每个唯一的函数调用将只被评估一次。这样更新的函数的调用树如*图4*所示。在不进行数学证明的情况下，我们可以直观地推断，在不改变`fibonacci()`函数的核心的情况下，我们将复杂度从非常昂贵的*O(2n)*降低到线性的*O(n)*。
+- en: '![Deterministic caching](graphics/B05295_12_04.jpg)'
+  id: totrans-192
+  prefs: []
+  type: TYPE_IMG
+  zh: '![确定性缓存](graphics/B05295_12_04.jpg)'
+- en: Figure 4 A call tree for fibonacci(5) execution with memoization
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4 使用记忆化执行fibonacci(5)的调用树
+- en: 'The implementation of our `memoize()` decorator is, of course, not perfect.
+    It worked well for that simple example, but it definitely isn''t a reusable piece
+    of software. If you need to memoize functions with multiple arguments or want
+    to limit the size of your cache, you need something more generic. Luckily, the
+    Python standard library provides a very simple and reusable utility that may be
+    used in most cases when you need to cache in memory the results of deterministic
+    functions. It is the `lru_cache(maxsize, typed)` decorator from the `functools`
+    module. The name comes from the LRU cache, which stands for *last recently used*.
+    The additional parameters allow for finer control over memoization behavior:'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们的`memoize()`装饰器的实现并不完美。它在那个简单的例子中表现良好，但绝对不是可重用的软件。如果您需要记忆化具有多个参数的函数或想要限制缓存的大小，您需要更通用的东西。幸运的是，Python标准库提供了一个非常简单和可重用的实用程序，它在大多数情况下都可以用于在内存中缓存确定性函数的结果。这就是`functools`模块中的`lru_cache(maxsize,
+    typed)`装饰器。名称来自LRU缓存，代表*最近最少使用*。附加参数允许更精细地控制记忆化行为：
+- en: '`maxsize`: This sets the maximum size of the cache. The `None` value means
+    no limit at all.'
+  id: totrans-195
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`maxsize`：这设置了缓存的最大大小。`None`值表示没有限制。'
+- en: '`typed`: This defines if the values of different types that compare as equal
+    should be cached as giving the same result.'
+  id: totrans-196
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`typed`：这定义了不同类型的值是否应该被缓存为给出相同结果。'
+- en: 'The usage of `lru_cache` in our Fibonacci sequence example would be as follows:'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的斐波那契数列示例中使用`lru_cache`的方法如下：
+- en: '[PRE16]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Nondeterministic caching
+  id: totrans-199
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 非确定性缓存
+- en: The caching of nondeterministic functions is way more trickier that memoization.
+    Due to the fact that every execution of such a function may give different results,
+    it is usually impossible to use previous values for an arbitrarily long amount
+    of time. What you need to do is to decide for how long a cached value can be considered
+    valid. After a defined period of time passes, the stored results are considered
+    to be stale and the cache needs to be refreshed by a new value.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于非确定性函数的缓存比记忆化更加棘手。由于这样一个函数的每次执行可能会产生不同的结果，通常不可能在任意长的时间内使用先前的值。你需要做的是决定缓存值可以被视为有效的时间有多长。在经过一段时间后，存储的结果被视为过时，缓存需要通过新值进行刷新。
+- en: 'Nondeterministic functions that are usually a subject of caching very often
+    depend on some external state that is hard to track inside of your application
+    code. Typical examples of components are:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常需要缓存的非确定性函数往往依赖于很难在应用程序代码内部跟踪的某些外部状态。典型的组件示例包括：
+- en: Relational databases and generally any type of structured data storage engine
+  id: totrans-202
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 关系数据库和通常任何类型的结构化数据存储引擎
+- en: Third-party services accessible through network connection (web APIs)
+  id: totrans-203
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过网络连接访问的第三方服务（Web API）
+- en: Filesystems
+  id: totrans-204
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文件系统
+- en: So, in other words, nondeterministic caching is used in any situation when you
+    temporarily use precomputed results without being sure if they represent a state
+    that is consistent with the state of other system components (usually, the backing
+    service).
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 换句话说，非确定性缓存在任何情况下都可以使用，当您临时使用预先计算的结果时，而不确定它们是否代表与其他系统组件的状态一致的状态（通常是后备服务）。
+- en: Note that such an implementation of caching is obviously a trade-off. Thus,
+    it is somehow related to the techniques we featured in the *Using architectural
+    trade-offs* section. If you resign from running part of your code every time and
+    instead use the results saved in the past, you are risking using data that becomes
+    stale or represents an inconsistent state of your system. This way, you are trading
+    the correctness and/or completeness for speed and performance.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，这种缓存的实现显然是一种权衡。因此，它与我们在*使用架构权衡*部分中介绍的技术有一定关系。如果您放弃每次运行代码的一部分，而是使用过去保存的结果，您就有可能使用变得过时或代表系统不一致状态的数据。这样，您就在以速度和性能换取正确性和/或完整性。
+- en: Of course, such caching is efficient as long as the time taken to interact with
+    the cache is less than the time taken by the function. If it's faster to simply
+    recalculate the value, by all means do so! That's why setting up a cache has to
+    be done only if it's worth it; setting it up properly has a cost.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，只要与缓存交互所花费的时间少于函数所花费的时间，这种缓存就是有效的。如果重新计算值更快，那就尽管这样做！这就是为什么只有在值得的情况下才需要设置缓存；正确设置缓存是有成本的。
+- en: The actual things that are cached are usually the whole results of interaction
+    with other components of your system. If you want to save time and resources when
+    communicating with the database, it is worth to cache expensive queries. If you
+    want to reduce the number of I/O operations, you may want to cache the content
+    of the files that are accessed very often (configuration files, for instance).
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常缓存的实际内容通常是与系统的其他组件交互的整个结果。如果您想在与数据库通信时节省时间和资源，值得缓存昂贵的查询。如果您想减少I/O操作的数量，您可能希望缓存经常访问的文件的内容（例如配置文件）。
+- en: Techniques for caching non-deterministic functions are actually very similar
+    to those used in caching the deterministic ones. The most notable difference is
+    that they usually require the option to invalidate cached values by their age.
+    This means that the `lru_cache()` decorator from the `functools` module has very
+    limited use in such situations. It should not be so hard to extend this function
+    to provide the expiration feature, but I will leave it as an exercise for you.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 缓存非确定性函数的技术实际上与缓存确定性函数的技术非常相似。最显著的区别是它们通常需要通过其年龄来使缓存值失效的选项。这意味着`functools`模块中的`lru_cache()`装饰器在这种情况下的用途非常有限。扩展此功能以提供过期功能应该不是很难，但我会把它留给你作为一个练习。
+- en: Cache services
+  id: totrans-210
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 缓存服务
+- en: We said that nondeterministic caching can be implemented using local process
+    memory, but actually it is rarely done that way. It's because local process memory
+    is very limited in its utility as storage for caching in large applications.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们说过，非确定性缓存可以使用本地进程内存来实现，但实际上很少这样做。这是因为本地进程内存在大型应用程序中作为缓存存储的效用非常有限。
+- en: If you run into a situation where non-deterministic caching is your preferred
+    solution to solve performance problems, you usually need something more than that.
+    Usually, nondeterministic caching is your *must have* solution when you need to
+    serve data or service to multiple users at the same time. If it's true, then sooner
+    or later you will need to ensure that users can be served concurrently. While
+    local memory provides a way to share data between multiple threads, it may not
+    be the best concurrency model for every application. It does not scale well, so
+    you will eventually need to run your application as multiple processes.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你遇到非确定性缓存是你首选的解决性能问题的方案，通常你需要更多。通常，当你需要同时为多个用户提供数据或服务时，非确定性缓存是你必须要的解决方案。如果是这样，那么迟早你需要确保用户可以同时被服务。虽然本地内存提供了一种在多个线程之间共享数据的方式，但它可能不是每个应用程序的最佳并发模型。它的扩展性不好，所以最终你将需要将你的应用程序作为多个进程运行。
+- en: If you are lucky enough, you may need to run your application on hundreds or
+    thousands of machines. If you would like to store cached values in local memory,
+    it means that your cache needs to be duplicated on every process that requires
+    it. It isn't only a total waste of resources. If every process has its own cache,
+    that is already a trade-off between speed and consistency, how can you guarantee
+    that all caches are consistent with each other?
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你足够幸运，你可能需要在数百甚至数千台机器上运行你的应用程序。如果你想要将缓存值存储在本地内存中，这意味着你的缓存需要在每个需要它的进程上进行复制。这不仅仅是对资源的浪费。如果每个进程都有自己的缓存，那就已经是速度和一致性之间的权衡，你如何保证所有的缓存与彼此一致呢？
+- en: Consistency across subsequent request is a serious concern (especially) for
+    web applications with distributed backends. In complex distributed systems, it
+    is extremely hard to ensure that the user will be always consistently served by
+    the same process hosted on the same machine. It is of course doable to some extent,
+    but once you solve that problem, ten others will pop up.
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在后续请求之间保持一致性是一个严重的问题（尤其是）对于具有分布式后端的Web应用程序。在复杂的分布式系统中，确保用户始终由托管在同一台机器上的同一进程一致地提供服务是非常困难的。当然，在一定程度上是可以做到的，但一旦解决了这个问题，就会出现十个其他问题。
+- en: If you are making an application that will need to serve multiple concurrent
+    users, then the best way to handle a nondeterministic cache is to use some dedicated
+    service for that. With tools such as Redis or Memcached, you allow all your application
+    processes to share the same cached results. This both reduces the usage of precious
+    computing resources and saves you from problems caused by having multiple independent
+    and inconsistent caches.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你正在开发一个需要为多个并发用户提供服务的应用程序，那么处理非确定性缓存的最佳方式是使用专门的服务。通过使用Redis或Memcached等工具，你可以让所有的应用程序进程共享相同的缓存结果。这既减少了宝贵的计算资源的使用，也避免了由多个独立和不一致的缓存引起的问题。
+- en: Memcached
+  id: totrans-216
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: Memcached
+- en: If you want to be serious about caching, **Memcached** is a very popular and
+    battle-tested solution. This cache server is used by big applications such as
+    Facebook or Wikipedia to scale their websites. Among simple caching features,
+    it has clustering capabilities that makes it possible to set up a highly efficient
+    distributed cache system in no time.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想认真对待缓存，**Memcached**是一个非常流行且经过实战验证的解决方案。这个缓存服务器被像Facebook或Wikipedia这样的大型应用程序用来扩展他们的网站。除了简单的缓存功能，它还具有集群功能，可以在很短的时间内建立一个高效的分布式缓存系统。
+- en: 'The tool is Unix-based but can be driven from any platform and from many languages.
+    There are many Python clients that differ slightly from each other but the basic
+    usage is usually the same. The simplest interaction with Memcached almost always
+    consists of three methods:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个工具是基于Unix的，但可以从任何平台和许多语言驱动。有许多略有不同的Python客户端，但基本用法通常是相同的。与Memcached的最简单交互几乎总是由三种方法组成：
+- en: '`set(key, value)`: This saves the value for the given key'
+  id: totrans-219
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`set(key, value)`: 保存给定键的值'
+- en: '`get(key)`: This gets the value for the given key if it exists'
+  id: totrans-220
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`get(key)`: 如果存在，获取给定键的值'
+- en: '`delete(key)`: This deletes the value under the given key if it exists'
+  id: totrans-221
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`delete(key)`: 如果存在，删除给定键下的值'
+- en: 'Here is an example of integration with Memcached using one of the popular Python
+    packages—`pymemcached`:'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里有一个与Memcached集成的示例，使用了流行的Python包之一——`pymemcached`：
+- en: '[PRE17]'
+  id: totrans-223
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'One of the downsides of Memcached is that it is designed to store values either
+    as strings or a binary blob, and this isn''t compatible with every native Python
+    type. Actually, it is compatible with only one—strings. This means that more complex
+    types need to be serialized in order to be successfully stored in Memcached. A
+    common serialization choice for simple data structures is JSON. Here is an example
+    of using JSON serialization with `pymemcached`:'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Memcached的一个缺点是它设计用于将值存储为字符串或二进制数据块，这与每种本地Python类型都不兼容。实际上，它只与一种类型兼容——字符串。这意味着更复杂的类型需要被序列化才能成功存储在Memcached中。对于简单数据结构来说，常见的序列化选择是JSON。这里有一个使用JSON序列化与`pymemcached`的示例：
+- en: '[PRE18]'
+  id: totrans-225
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: The other problem that is very common when working with every caching service
+    that works on the key/value storage principle is how to choose key names.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与每个基于键/值存储原则的缓存服务一起工作时，非常常见的另一个问题是如何选择键名。
+- en: For cases when you cache simple function invocations that have basic parameters,
+    the problem is usually simple. You can convert the function name and its arguments
+    to strings and concatenate them together. The only thing you need to care about
+    is to make sure there are no collisions between keys created for different functions
+    if you use cache in many parts of your application.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于缓存简单函数调用的情况，通常问题比较简单。您可以将函数名和其参数转换为字符串并将它们连接在一起。您唯一需要关心的是确保为应用程序的许多部分使用缓存时，为不同函数创建的键之间没有冲突。
+- en: A more problematic case is when cached functions have complex arguments consisting
+    of dictionaries or custom classes. In that case, you need to find a way to convert
+    such invocation signatures to cache keys in a consistent manner.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更棘手的情况是当缓存函数具有由字典或自定义类组成的复杂参数时。在这种情况下，您需要找到一种方法以一致的方式将这样的调用签名转换为缓存键。
+- en: The last problem is that Memcached, like many other caching services, does not
+    tend to like very long key strings. Usually, the shorter the better. Long keys
+    may either reduce performance or just not fit the hardcoded service limits. For
+    instance, if you cache whole SQL queries, the query strings themselves are generally
+    good unique identifiers that could be used as keys. But on the other hand, complex
+    queries are generally too long to be stored in typical caching services such as
+    Memcached. A common practice is to calculate the **MD5**, **SHA**, or any other
+    hash function and use it as a cache key instead. The Python standard library has
+    a `hashlib` module that provides implementation for few popular hash algorithms.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后一个问题是，像许多其他缓存服务一样，Memcached不太喜欢非常长的键字符串。通常，越短越好。长键可能会降低性能，或者根本不适合硬编码的服务限制。例如，如果你缓存整个SQL查询，查询字符串本身通常是可以用作键的良好唯一标识符。但另一方面，复杂的查询通常太长，无法存储在诸如Memcached之类的典型缓存服务中。一个常见的做法是计算**MD5**、**SHA**或任何其他哈希函数，并将其用作缓存键。Python标准库有一个`hashlib`模块，提供了几种流行的哈希算法的实现。
+- en: Remember that calculating a hash comes at a price. However, sometimes it is
+    the only viable solution. It is also a very useful technique when dealing with
+    complex types that need to be used when creating cache keys. One important thing
+    to care about when using hashing functions is hash collisions. There is no hash
+    function that guarantees that collisions will never occur, so always be sure to
+    know the probability and mind such risks.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，计算哈希是有代价的。然而，有时这是唯一可行的解决方案。在处理需要用于创建缓存键的复杂类型时，这也是一种非常有用的技术。在使用哈希函数时需要注意的一件重要事情是哈希冲突。没有哈希函数能保证冲突永远不会发生，所以一定要知道概率并注意这样的风险。
+- en: Summary
+  id: totrans-231
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: 'In this chapter, you have learned:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您已经学到了：
+- en: How to define the complexity of the code and some approaches to reduce it
+  id: totrans-233
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何定义代码的复杂性以及一些减少复杂性的方法
+- en: How to improve performance using some architectural trade-offs
+  id: totrans-234
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何利用一些架构上的权衡来提高性能
+- en: What caching is and how to use it to improve application performance
+  id: totrans-235
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 缓存是什么以及如何使用它来提高应用程序性能
+- en: The preceding methods concentrated our optimization efforts inside a single
+    process. We tried to reduce the code complexity, choose better datatypes, or reuse
+    old function results. If that did not help, we tried to make some trade-offs using
+    approximations, doing less, or leaving work for later.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的方法集中了我们在单个进程内的优化工作。我们试图减少代码复杂性，选择更好的数据类型，或者重用旧的函数结果。如果这些都没有帮助，我们尝试做一些权衡，使用近似值，做得更少，或者留下工作以后再做。
+- en: In the next chapter, we will discuss a few techniques for concurrency and parallel
+    processing in Python.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将讨论一些Python中的并发和并行处理技术。

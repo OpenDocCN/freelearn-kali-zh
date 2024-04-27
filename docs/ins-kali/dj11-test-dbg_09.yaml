@@ -1,0 +1,2568 @@
+- en: 'Chapter 9. When You Don''t Even Know What to Log: Using Debuggers'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第9章。当你甚至不知道要记录什么时：使用调试器
+- en: For many problems encountered during development, a debugger is the most efficient
+    tool to use to help figure out what is going on. A debugger lets you see exactly
+    what the code is doing, step by step if necessary. It lets you see, and change,
+    the values of variables along the way. With a debugger, you can even test out
+    potential code fixes before making changes to the source code.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于开发中遇到的许多问题，调试器是最有效的工具，可以帮助弄清楚发生了什么。调试器可以让您逐步查看代码的确切操作，如果需要的话。它可以让您查看并更改沿途的变量值。有了调试器，甚至可以在对源代码进行更改之前测试潜在的代码修复。
+- en: 'This chapter focuses on using debuggers to help debug during development of
+    Django applications. Specifically, in this chapter we will:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章重点介绍如何使用调试器来帮助调试Django应用程序的开发过程。具体来说，在本章中我们将：
+- en: Continue development of the survey application, seeing how the Python debugger,
+    pdb, can be used to help figure out any problems that arise
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 继续开发调查应用程序，看看Python调试器pdb如何帮助弄清楚出现的任何问题
+- en: Learn how to use the debugger to verify correct operation of code that is subject
+    to multi-process race conditions
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 学习如何使用调试器来验证受多进程竞争条件影响的代码的正确操作
+- en: Briefly discuss the use of graphical debuggers for debugging Django applications
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 简要讨论使用图形调试器调试Django应用程序
+- en: Implementing the Survey results display
+  id: totrans-6
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实施调查结果显示
+- en: 'The survey application has one major piece that still remains to be implemented:
+    display of the results for a completed survey. What form should this display take?
+    A text-only tally of votes received for each answer for each question in the survey
+    would be easy enough to write, but not very good at communicating results. A graphical
+    representation of the results, such as a pie chart, would be far more effecting
+    in conveying the breakdown of votes.'
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 调查应用程序还有一个主要部分尚未实施：显示已完成调查的结果。这种显示应该采取什么形式？对于调查中每个问题的每个答案收到的投票，仅以文本形式进行计数将很容易编写，但不太能有效地传达结果。结果的图形表示，如饼图，将更有效地传达投票的分布情况。
+- en: In this chapter, we will explore a couple of different approaches to implementing
+    a survey results view that incorporates pie charts to display vote distributions.
+    Along the way we'll encounter some difficulties, and see how the Python debugger
+    can be used to help figure out what is going wrong.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将探讨几种不同的方法来实施调查结果视图，其中包括使用饼图来显示投票分布。在此过程中，我们将遇到一些困难，并看到Python调试器如何帮助弄清楚出了什么问题。
+- en: Before starting on the implementation of code to display survey results, let's
+    set up some test data to use in testing out the results as we go along. We can
+    use the existing **Television Trends** survey and simply adjust its data to reflect
+    what we want to test. First, we need to change its `closes` date to be in the
+    last two weeks, so that it will display as a completed survey instead of an active
+    one.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始实施用于显示调查结果的代码之前，让我们设置一些测试数据，以便在进行结果测试时使用。我们可以使用现有的**电视趋势**调查，只需调整其数据以反映我们想要测试的内容。首先，我们需要将其“关闭”日期更改为过去两周，这样它将显示为已完成的调查，而不是活动中的调查。
+- en: Second, we need to set the `votes` counts for the question answers to ensure
+    we test any special cases we want to cover. This `Survey` has two questions, thus
+    we can use it to test both the case where there is a single clear winner among
+    the answers and the case where there is a tie.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，我们需要设置问题答案的“投票”计数，以确保我们测试任何特殊情况。这个“调查”有两个问题，因此我们可以用它来测试答案中有一个明显的单一赢家和答案平局的情况。
+- en: 'We can use the admin application to set up a tie for the winner on the first
+    question:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用管理应用程序在第一个问题上设置获胜者平局：
+- en: '![Implementing the Survey results display](img/7566_09_01.jpg)'
+  id: totrans-12
+  prefs: []
+  type: TYPE_IMG
+  zh: '![实施调查结果显示](img/7566_09_01.jpg)'
+- en: Here we have set **Comedy** and **Drama** to be in a two-way tie for the winning
+    answer. The total number of votes (5) has been kept low for simplicity. It will
+    be easy to verify that the pie charts look correct when the wedges are supposed
+    to contain amounts such as one and two fifths of the total.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们已经将**喜剧**和**戏剧**设置为获胜答案的平局。为简单起见，投票总数（5）被保持在较低水平。当扇形应包含总数的五分之一和五分之二时，验证饼图的外观将很容易。
+- en: 'For the second question, we can set up the data so that there is a single clear
+    winner:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于第二个问题，我们可以设置数据，以便有一个明显的单一赢家：
+- en: '![Implementing the Survey results display](img/7566_09_02.jpg)'
+  id: totrans-15
+  prefs: []
+  type: TYPE_IMG
+  zh: '![实施调查结果显示](img/7566_09_02.jpg)'
+- en: 'For this question, our results display should list only **Hardly any: I already
+    watch too much TV!** as the single winning answer.'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个问题，我们的结果显示应该只列出**几乎没有：我已经看太多电视了！**作为唯一的获胜答案。
+- en: Results display using pygooglechart
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用pygooglechart显示结果
+- en: 'Once we''ve decided we want to create pie charts, the next question is: how
+    do we do that? Chart creation is not built into the Python language. There are,
+    however, several add-on libraries that provide this function. We''ll start by
+    experimenting with one of the simplest alternatives, `pygooglechart`, which is
+    a Python wrapper around the Google chart API.'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们决定要创建饼图，下一个问题是：我们该如何做到这一点？图表创建并不内置于Python语言中。但是，有几个附加库提供了这个功能。我们将首先尝试使用最简单的替代方案之一，即`pygooglechart`，它是围绕Google图表API的Python包装器。
+- en: The `pygooglechart` package is available on the Python Package Index site, [http://pypi.python.org/pypi/pygooglechart](http://pypi.python.org/pypi/pygooglechart).
+    Information on the underlying Google chart API can be found at [http://code.google.com/apis/chart/](http://code.google.com/apis/chart/).
+    The version of `pygooglechart` used in this chapter is 0.2.0.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`pygooglechart`包可以在Python包索引网站[http://pypi.python.org/pypi/pygooglechart](http://pypi.python.org/pypi/pygooglechart)上找到。有关基础Google图表API的信息可以在[http://code.google.com/apis/chart/](http://code.google.com/apis/chart/)上找到。本章中使用的`pygooglechart`版本是0.2.0。'
+- en: One reason using `pygooglechart` is very simple, for a web application, is that
+    the result of constructing a chart is simply a URL that can be used to fetch the
+    chart image. There is no need to generate or serve an image file from our application.
+    Rather, all of the work can be pushed off to the Google chart API, and our application
+    simply includes HTML `img` tags that refer to images served by Google.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`pygooglechart`的一个原因非常简单，对于Web应用程序来说，构建图表的结果只是一个URL，可以用来获取图表图像。我们不需要从我们的应用程序生成或提供图像文件。相反，所有的工作都可以推迟到Google图表API，并且我们的应用程序只需包含引用由Google提供的图像的HTML
+    `img`标签。
+- en: 'Let''s start, then, with the template for displaying results of a survey. The
+    current implementation of this template, `survey/completed_survey.html`, does
+    nothing more than print a header noting the title of the survey:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后让我们从显示调查结果的模板开始。当前的模板`survey/completed_survey.html`的实现只是打印一个标题，指出调查的标题：
+- en: '[PRE0]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'We want to change this now, and add template code that loops through the questions
+    in the survey and prints out the results for each. Recall that the `Question`
+    model has a method (implemented in [Chapter 3](ch03.html "Chapter 3. Testing 1,
+    2, 3: Basic Unit Testing"), *Testing 1, 2, 3: Basic Unit Testing*) that returns
+    the winning answers:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在想要改变这一点，并添加模板代码，循环遍历调查中的问题，并打印出每个问题的结果。请记住，`Question`模型有一个方法（在[第3章](ch03.html
+    "第3章。测试1, 2, 3：基本单元测试")中实现，*测试1, 2, 3：基本单元测试*），该方法返回获胜的答案：
+- en: '[PRE1]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'In the template, then, we can use this method to access the winning answer
+    (or answers, in the case of a tie). For each `Question` in the `Survey`, we will
+    print out the question text, a list of the winning answers, and a pie chart showing
+    a breakdown of the votes for each `Answer`. Template code that does this is:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，在模板中，我们可以使用这个方法来访问获胜的答案（或者在平局的情况下是答案）。对于`Survey`中的每个`Question`，我们将打印出问题文本，获胜答案的列表，以及显示每个`Answer`的投票结果的饼图。执行此操作的模板代码如下：
+- en: '[PRE2]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Here we have added a `{% for %}` block which loops through the questions in
+    the passed survey. For each, the list of winning answers is retrieved using the
+    `winning_answers` method and cached in the `winners` template variable. Then,
+    if there is anything in `winners`, the following items are displayed:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们添加了一个`{% for %}`块，它循环遍历传递的调查中的问题。对于每个问题，使用`winning_answers`方法检索获胜答案的列表，并将其缓存在`winners`模板变量中。然后，如果`winners`中有任何内容，则显示以下项目：
+- en: The question text, as a level two heading.
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 问题文本，作为二级标题。
+- en: A heading paragraph for the winners list that is properly pluralized depending
+    on the length of `winners`.
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 获胜者列表的标题段落，根据`winners`的长度正确使用复数形式。
+- en: A text list of the winning answers formatted as an unordered list.
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 获胜答案的文本列表，格式为无序列表。
+- en: 'An embedded image that will be the pie chart breakdown of answer votes. The
+    URL for this image is retrieved using a routine that needs to be implemented on
+    the `Question` model: `get_piechart_url`.'
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个嵌入式图像，将是答案投票的饼图分解。使用需要在`Question`模型上实现的例程检索此图像的URL：`get_piechart_url`。
+- en: Note that the display of this entire list of items is protected by an `{% if
+    winners %}` block to guard against the edge case of attempting to display results
+    for a `Question` that received no answers. That may be unlikely but it's best
+    to never display likely odd-looking output for edge cases to users, so at the
+    template level here we simply avoid showing anything at all in this case.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，整个项目列表的显示受到`{% if winners %}`块的保护，以防止尝试为未收到答案的`Question`显示结果的边缘情况。这可能不太可能，但最好永远不要为用户显示可能看起来奇怪的输出，因此在这里的模板级别上，我们在这种情况下简单地避免显示任何内容。
+- en: 'Next, we need to implement the `get_piechart_url` method for the `Question`
+    model. After some reading up on the `pygooglechart` API, an initial implementation
+    might be:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要为`Question`模型实现`get_piechart_url`方法。在阅读了`pygooglechart` API之后，初始实现可能是：
+- en: '[PRE3]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'This code retrieves the set of answers associated with the `Question` and caches
+    it in the local variable `answer_set`. (This is done because the set is iterated
+    through multiple times in the following code and caching it in a local variable
+    ensures the data is fetched from the database only once.) Then, the `pygooglechart`
+    API is called to create a three-dimensional pie chart, `chart`, which will be
+    500 pixels wide and 230 pixels high. Then, data values are set for the pie chart
+    wedges: these data values are the `votes` count for each answer in the set. Next,
+    labels are set for each of the wedges to be the `answer` values. Finally, the
+    method returns the URL for the constructed chart, using the `get_url` method.'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此代码检索与`Question`相关联的答案集，并将其缓存在本地变量`answer_set`中。（这是因为在接下来的代码中，该集合被多次迭代，将其缓存在本地变量中可以确保数据只从数据库中获取一次。）然后，调用`pygooglechart`
+    API创建一个三维饼图`chart`，宽度为500像素，高度为230像素。然后，为饼图楔设置数据值：这些数据值是集合中每个答案的`votes`计数。接下来，为每个楔设置标签为`answer`值。最后，该方法使用`get_url`方法返回构建图表的URL。
+- en: 'How well does that work? When we navigate to the survey application home page,
+    the **Television Trends** survey should now (since its `closes` date has been
+    set to have already passed) be listed under the heading that indicates we can
+    see its results:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那效果如何？当我们导航到调查应用程序的主页时，**电视趋势**调查现在应该（因为它的`closes`日期已经设置为已经过去）在指示我们可以看到其结果的标题下列出：
+- en: '![Results display using pygooglechart](img/7566_09_03.jpg)'
+  id: totrans-37
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用pygooglechart显示结果](img/7566_09_03.jpg)'
+- en: 'Clicking on the **Television Trends** link now brings up a completed survey
+    results page:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在点击**电视趋势**链接将显示一个已完成的调查结果页面：
+- en: '![Results display using pygooglechart](img/7566_09_04.jpg)'
+  id: totrans-39
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用pygooglechart显示结果](img/7566_09_04.jpg)'
+- en: That's not quite right. While the text displays of winning answer lists look
+    fine, the pie charts are not appearing. Rather, the browser is displaying the
+    alternate text defined for the image, **Pie Chart**, which means something went
+    wrong in retrieving the specified image.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不太对。虽然获胜答案列表的文本显示正常，但饼图没有出现。相反，浏览器显示了为图像定义的替代文本**饼图**，这意味着在检索指定图像时出现了问题。
+- en: 'Looking at the HTML source for the page, we see that both paragraphs containing
+    the image tags look like this:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看页面的HTML源代码，我们发现包含图像标签的两个段落看起来像这样：
+- en: '[PRE4]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Somehow, the `get_piechart_url` method returned an empty string instead of
+    a value. We might first add some logging to `get_piechart_url` to try to figure
+    out why:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不知何故，`get_piechart_url`方法返回了一个空字符串而不是一个值。我们可能首先要在`get_piechart_url`中添加一些日志，以尝试弄清楚原因：
+- en: '[PRE5]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'We''ve added a log statement on entry noting the primary key of the `Question`
+    instance, and a log statement prior to exit logging what the method is about to
+    return. However, reloading the page with the logging included produces confusing
+    output on the server console:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经在进入时添加了一个日志记录，记录了`Question`实例的主键，以及在退出之前记录了方法即将返回的内容。然而，重新加载包含日志的页面会在服务器控制台上产生混乱的输出：
+- en: '[PRE6]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: We can see that `survey_detail` called `display_completed_survey` and `get_piechart_url`
+    was called twice, but there are no messages showing what it was returning either
+    time. What happened? There's no branching in the code between the two `logging.debug`
+    calls, so how could one get executed and the other skipped?
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以看到`survey_detail`调用了`display_completed_survey`，并且`get_piechart_url`被调用了两次，但是两次都没有显示它返回了什么消息。发生了什么？在两个`logging.debug`调用之间的代码中没有分支，那么一个是如何执行的，另一个被跳过的呢？
+- en: We could try adding more logging calls, interspersed between each line of code.
+    However, while that may reveal how far execution proceeds in the method before
+    unexpectedly leaving, it won't provide any clue as to why execution stops proceeding
+    to the next line. It is also a nuisance to add logging after every line of code,
+    even for methods as small as this one. For problems like this, a debugger is a
+    much more efficient way to figure out what is going on.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以尝试添加更多的日志调用，插入到每行代码之间。然而，虽然这可能会揭示方法在意外离开之前执行了多远，但它不会提供任何关于为什么执行停止继续到下一行的线索。即使对于像这样小的方法，每行代码之后都添加日志也是一种麻烦。对于这样的问题，调试器是弄清楚发生了什么的更有效的方法。
+- en: Getting started with the debugger
+  id: totrans-49
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用调试器入门
+- en: A debugger is a powerful development tool that allows us to see what code is
+    doing as it runs. When a program is run under the control of a debugger, the user
+    is able to pause execution, examine and change the value of variables, flexibly
+    continue execution to the next line or other explicitly set "breakpoints", and
+    more. Python has a built-in debugger named pdb which provides a user interface
+    that is essentially an augmented Python shell. In addition to normal shell commands,
+    pdb supports various debugger-specific commands, many of which we will experiment
+    with in this chapter as we debug the survey results display code.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 调试器是一个强大的开发工具，可以让我们在代码运行时查看代码的运行情况。当程序在调试器的控制下运行时，用户可以暂停执行，检查和更改变量的值，灵活地继续执行到下一行或其他明确设置的“断点”，等等。Python有一个名为pdb的内置调试器，它提供了一个用户界面，本质上是一个增强的Python
+    shell。除了正常的shell命令，pdb还支持各种特定于调试器的命令，其中许多我们将在本章中进行实验，因为我们调试调查结果显示代码。
+- en: 'How, then, do we use pdb to help figure out what is going on here? We''d like
+    to enter the debugger and step through the code to see what is happening. The
+    first task, breaking into the debugger, can be accomplished by adding `import
+    pdb; pdb.set_trace()` wherever we''d like the debugger to get control. The `set_trace()`
+    call sets an explicit breakpoint in our program where execution will pause under
+    debugger control so we can investigate what the current state is and control how
+    the code proceeds. Thus, we can change the `get_piechart_url` method like so to
+    invoke the debugger on entry:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，我们如何使用pdb来帮助弄清楚这里发生了什么？我们想进入调试器并逐步执行代码，看看发生了什么。首先要做的任务是进入调试器，可以通过在我们想要调试器控制的地方添加`import
+    pdb; pdb.set_trace()`来完成。`set_trace()`调用在我们的程序中设置了一个显式断点，执行将在调试器控制下暂停，以便我们可以调查当前状态并控制代码的执行方式。因此，我们可以像这样更改`get_piechart_url`方法来在进入时调用调试器：
+- en: '[PRE7]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Now, when we reload the survey results page, the browser will appear to hang
+    while it tries to load the page:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当我们重新加载调查结果页面时，浏览器将在尝试加载页面时出现挂起的情况：
+- en: '![Getting started with the debugger](img/7566_09_05.jpg)'
+  id: totrans-54
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用调试器入门](img/7566_09_05.jpg)'
+- en: 'When we switch to the window containing the `runserver` console, we see:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们切换到包含`runserver`控制台的窗口时，我们看到：
+- en: '[PRE8]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Here we see that another call to the `survey_detail` view has been made, which
+    forwarded the request to the `display_completed_survey` function. Then, the debugger
+    was entered, due to the `pdb.set_trace()` call placed in `get_piechart_url`. On
+    entry, the debugger prints out two lines identifying the location of the next
+    line of code that is to be executed, and the contents of that line. So we can
+    see that we are on line 71 of the `survey/models.py` file, in the `get_piechart_url`
+    method, about to issue the call to log entry to the method. After the two lines
+    noting where execution stopped, the debugger prints its prompt, `(Pdb)`, and waits
+    for user input.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们看到对`survey_detail`视图的另一个调用已经完成，它将请求转发到`display_completed_survey`函数。然后，由于在`get_piechart_url`中放置的`pdb.set_trace()`调用，进入了调试器。进入时，调试器打印出两行标识下一行要执行的代码的位置以及该行的内容。因此，我们可以看到我们正在`survey/models.py`文件的第71行，在`get_piechart_url`方法中，即将发出调用以记录方法的日志。在两行指出执行停止的地方之后，调试器打印出其提示符`(Pdb)`，并等待用户输入。
+- en: Before proceeding to step through the code and see what's happening as the code
+    runs, let's see what we can learn about where we are and the present state of
+    things. Pdb supports many commands and not all will be covered here, rather just
+    the ones that are most commonly useful will be demonstrated. We'll start with
+    a few that are helpful in getting context for where the code is, how it got there,
+    and what arguments were passed to the current function.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在继续逐步执行代码并查看代码运行时发生了什么之前，让我们先看看我们能了解到关于我们所处的位置和当前状态的信息。Pdb支持许多命令，并不是所有命令都会在这里介绍，而只会演示最常用的一些。我们将从一些有助于了解代码所在位置、如何到达该位置以及传递给当前函数的参数的命令开始。
+- en: The list command
+  id: totrans-59
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: list命令
+- en: 'For example, if the single line of context provided on entry to the debugger
+    is not sufficient, more of the surrounding code can be seen by using the `list`
+    command. This command, like most pdb commands, can be abbreviated to its initial
+    letter. Using it here we see:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，如果调试器进入时提供的单行上下文不足够，可以使用`list`命令看到更多周围的代码。这个命令，像大多数pdb命令一样，可以缩写为它的首字母。在这里使用它我们看到：
+- en: '[PRE9]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Here we see that the response to the `list` command first displayed five lines
+    above the current line of execution, then the current line of execution (noted
+    by a `->` prefix), then five lines following the current line. At the `(Pdb)`
+    prompt, an empty line was then entered, which causes the last entered command
+    to be repeated. In the case of `list`, repeating the command results in the display
+    of 11 additional lines following the last ones that were displayed.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们看到`list`命令的响应首先显示了当前执行行上面的五行，然后是当前执行行（由`->`前缀标记），然后是当前行之后的五行。在`(Pdb)`提示符下，然后输入了一个空行，这会导致重复输入的最后一个命令。对于`list`，重复命令会导致显示比之前显示的多11行。
+- en: 'Arguments can be passed to `list` to specify exactly what lines to display,
+    for example `l 1,5` will display the first five lines in the current file:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以传递参数给`list`命令，以指定要显示的确切行，例如`l 1,5`将显示当前文件中的前五行。
+- en: '[PRE10]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: The `list` command is most useful, though, for seeing the lines of code right
+    around where execution is currently stopped. If more context is needed, I find
+    it easier to have the file open in an editor in a separate window than to try
+    to get a more complete picture of the file using `list` with arguments.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`list`命令最有用，可以看到当前停止执行的代码周围的行。如果需要更多上下文，我发现在编辑器中打开文件比尝试使用带参数的`list`命令更容易获得文件的更完整的图像。'
+- en: The where command
+  id: totrans-66
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: where命令
+- en: The `w` `here` command, which can be shorted to `w`, prints the current stack
+    trace. In this case, there is no particular mystery about how the code got to
+    where it is, but it can still be instructive to examine the details.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`w` `here`命令（可以缩写为`w`）打印当前的堆栈跟踪。在这种情况下，关于代码如何到达当前位置并没有特别的神秘之处，但检查细节仍然是有益的。'
+- en: 'The `get_piechart_url` method is called during template rendering, which means
+    it will have a long stack trace due to the recursive way in which template nodes
+    are rendered. The length of the response and the density of what gets printed
+    out may seem overwhelming at first, but by ignoring a lot of the details and just
+    focusing on the names of the files and functions you can get a good idea of the
+    overall code flow. For example, at the start of the response, the `where` command
+    here is:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`get_piechart_url`方法在模板渲染期间被调用，这意味着由于模板节点的递归渲染方式，它将具有很长的堆栈跟踪。起初，响应的长度和打印出的内容密度可能会让人感到不知所措，但通过忽略大部分细节，只关注文件和函数的名称，你可以对整体代码流程有一个很好的了解。例如，在响应的开始，这里的`where`命令是：'
+- en: '[PRE11]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'We may not be entirely sure what all of this code is doing, but with names
+    like `serve_forever()`, `handle_request()`, `process_request()`, `finish_request()`,
+    and `get_response()`, it seems likely that this is all part of a standard server
+    request-processing loop. In particular, `get_response()` sounds like the code
+    is getting close to the point where the real work of producing a response for
+    the request will be done. Next, we see:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可能并不完全确定所有这些代码在做什么，但像`serve_forever()`、`handle_request()`、`process_request()`、`finish_request()`和`get_response()`这样的名称，似乎这都是标准服务器请求处理循环的一部分。特别是`get_response()`听起来像是代码接近完成为请求生成响应的真正工作的地方。接下来，我们看到：
+- en: '[PRE12]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: Indeed, in the `get_response` function, at the point where it invokes `callback()`,
+    the code transitions from Django code (files in `/usr/lib/python2.5/site-packages/django`)
+    to our own code in `/dj_projects`. We then see that we have introduced our own
+    noise into the tracebacks with the logging wrapper functions—the references to
+    `__call__` in `logutils.py`.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，在`get_response`函数中，在调用`callback()`的地方，代码从Django代码（`/usr/lib/python2.5/site-packages/django`中的文件）转换为我们自己的代码`/dj_projects`。然后我们看到我们在跟踪中引入了自己的噪音，使用了日志包装函数——在`logutils.py`中的`__call__`的引用。
+- en: 'These don''t convey much information other than that the function calls being
+    made are being logged. But ignoring the noise, we can still see that `survey_detail`
+    was called, which in turned called `display_completed_survey`, which ran to the
+    point where it is about to return (the last displayed line is the end of the multi-line
+    call to `render_to_response` in `display_completed_survey`). The call to `render_to_response`
+    transitions back into Django code:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些并没有传达太多信息，只是表明正在记录所做的函数调用。但是忽略噪音，我们仍然可以看到`survey_detail`被调用，然后调用了`display_completed_survey`，它运行到即将返回的地方（在`display_completed_survey`中多行调用`render_to_response`的最后一行是结束）。对`render_to_response`的调用又回到了Django代码：
+- en: '[PRE13]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'What we can glean from this, and from the following `render()` and `render_node()`
+    calls, is that the Django code is processing through rendering the template. Eventually,
+    a few calls that are a bit different start appearing:'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以从这里以及接下来的`render()`和`render_node()`调用中得到的信息是，Django代码正在处理模板的渲染。最终，一些略有不同的调用开始出现：
+- en: '[PRE14]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: During rendering, the code finally got to the point where it needed to render
+    the value of the `{{ q.get_piechart_url }}` in the template. Ultimately that got
+    routed to a call to the `Question` model's `get_piechart_url` method, where we
+    had placed the call to enter the debugger, and that is where we are now.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在渲染过程中，代码最终到达需要在模板中渲染`{{ q.get_piechart_url }}`值的点。最终，这被路由到了`Question`模型的`get_piechart_url`方法的调用，我们在那里放置了进入调试器的调用，这就是我们现在所处的位置。
+- en: The args command
+  id: totrans-78
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: args命令
+- en: 'The `args` command, abbreviated as `a`, can be used to see the values of the
+    arguments passed to the currently executing function:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`args`命令，缩写为`a`，可用于查看传递给当前执行函数的参数的值：'
+- en: '[PRE15]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: The whatis command
+  id: totrans-81
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: whatis命令
+- en: 'The `whatis` command displays the type of its argument. For example:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`whatis`命令显示其参数的类型。例如：'
+- en: '[PRE16]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Recall pdb also behaves like a Python shell session, so the same result can
+    be obtained by taking the `type` of `self`:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回想一下，pdb也像Python shell会话一样运行，因此可以通过获取`self`的`type`来获得相同的结果：
+- en: '[PRE17]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'We can also interrogate individual attributes of variables, which can be helpful.
+    Here the value of `self` displayed for the `args` command includes all of the
+    individual attributes for this model, excepting its primary key value. We can
+    find out what it is:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以查询变量的单个属性，这可能会有所帮助。这里对于`args`命令显示的`self`的值包括了该模型的所有单个属性，但不包括其主键值。我们可以找出它是什么：
+- en: '[PRE18]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: The print and pp commands
+  id: totrans-88
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: print和pp命令
+- en: 'The `print` command, abbreviated as `p`, prints the representation of a variable:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`print`命令，缩写为`p`，打印变量的表示：'
+- en: '[PRE19]'
+  id: totrans-90
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'For large data structures, the output of `print` may be hard to read if it
+    ends up spilling across line boundaries. The alternative `pp` command pretty-prints
+    the output using the Python `pprint` module. This can result in output that is
+    more easily read. For example:'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于大型数据结构，如果`print`的输出跨越了行边界，可能会难以阅读。替代的`pp`命令使用Python的`pprint`模块对输出进行漂亮打印。这可能会导致更容易阅读的输出。例如：
+- en: '[PRE20]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Contrast that `print` output to the `pp` output:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将`print`输出与`pp`输出进行对比：
+- en: '[PRE21]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Debugging the pygooglechart results display
+  id: totrans-95
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 调试pygooglechart结果显示
+- en: At this point we know the code is at the beginning of processing in the `get_piechart_url`
+    method, and the current value of `self` indicates that the `Question` instance
+    we have been called for is the question that asks **What is your favorite type
+    of TV show?** That's good to know, but what we'd really like to understand is
+    what happens as execution continues.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时我们知道代码处于`get_piechart_url`方法的处理开始阶段，而`self`的当前值表明我们被调用的`Question`实例是询问“你最喜欢的电视节目类型是什么？”这是好事，但我们真正想要了解的是随着执行的继续会发生什么。
+- en: The step and next commands
+  id: totrans-97
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 步骤和下一步命令
+- en: 'What we''d like to do now is instruct the debugger to continue execution, but
+    keep the debugger active. There are two commands typically used here: `step` (abbreviated
+    as `s`) and `next` (abbreviated as `n`).'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在想要指示调试器继续执行，但保持调试器处于活动状态。通常在这里使用两个命令：`step`（缩写为`s`）和`next`（缩写为`n`）。
+- en: The `step` command begins execution of the current line and returns to the debugger
+    at the first available opportunity. The `next` command also begins execution of
+    the current line, but it does not return to the debugger until the next line in
+    the current function is about to be executed. Thus, if the current line contains
+    a function or method call, `step` is used to step into that function and trace
+    through it, while `next` is used to execute the called function in its entirety
+    and only return to the debugger when it is complete.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`step`命令开始执行当前行，并在第一个可用的机会返回到调试器。`next`命令也开始执行当前行，但直到当前函数中的下一行即将执行时才返回到调试器。因此，如果当前行包含函数或方法调用，`step`用于进入该函数并跟踪其执行，而`next`用于执行被调用的函数并在其完成时才返回到调试器。'
+- en: 'For where we are now, `next` is the command we''d want to use, since we do
+    not particularly want to step into the logging code and trace through what it
+    does:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们现在所处的位置，`next`是我们想要使用的命令，因为我们不特别想要进入日志记录代码并跟踪其执行过程：
+- en: '[PRE22]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Here, `next` caused execution of the `logging.debug` call, resulting in the
+    logged message getting printed to the console. Then the debugger stopped again,
+    right before execution of the next line in the current function. Entering nothing
+    causes the `next` command to be executed again, causing `answer_set` to be assigned
+    the value of `self.answer_set.all()`. We can see the result using the `print`
+    command:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，`next`导致执行`logging.debug`调用，导致记录的消息被打印到控制台。然后调试器再次停止，就在当前函数中的下一行执行之前。输入nothing会再次执行`next`命令，导致`answer_set`被赋予`self.answer_set.all()`的值。我们可以使用`print`命令查看结果：
+- en: '[PRE23]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'So far everything looks fine, so we continue on:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止一切看起来都很好，所以我们继续：
+- en: '[PRE24]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'There''s a problem: the call to `set_data` on `chart` raised an attribute error
+    with a message indicating that the chart has no such attribute. We made a mistake
+    in implementing this routine. While many of the `pygooglechart` methods start
+    with `set_`, the call to set the data for the chart is actually named `add_data`.
+    So the attempt to specify the data for the chart has failed. But why didn''t we
+    see that error reflected as a debug page returned instead of just an empty string
+    returned from `get_piechart_url`? We can get the answer to that question by continuing
+    on tracing through the code as it runs:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一个问题：对`chart`上的`set_data`的调用引发了一个属性错误，错误消息指示图表没有这样的属性。我们在实现这个例程时犯了一个错误。虽然`pygooglechart`的许多方法以`set_`开头，但设置图表数据的调用实际上命名为`add_data`。因此，尝试指定图表的数据失败了。但为什么我们没有看到该错误反映为返回的调试页面，而只是从`get_piechart_url`返回了一个空字符串？我们可以通过继续跟踪代码的执行来得到这个问题的答案：
+- en: '[PRE25]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: This shows that the `get_piechart_url` method is returning `None` at the point
+    in the code where the `AttributeError` was raised. Since we did not enclose the
+    code in `get_piechart_url` in a `try/except` block, the error is being propagated
+    up the call stack.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这表明`get_piechart_url`方法在引发`AttributeError`时返回`None`。由于我们没有将`get_piechart_url`中的代码包含在`try/except`块中，因此错误正在向上传播调用堆栈。
+- en: '[PRE26]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Here we see that the code which called `get_piechart_url` was enclosed in a
+    `try/except` block, and the `except` clauses are being tested for a match against
+    the actual exception raised. The first clause, `except TypeError`, did not match
+    `AttributeError`. The second one, `except Exception`, does match, since `AttributeError`
+    is derived from the base `Exception` class. Thus, the code should proceed to run
+    whatever code is in this except clause. Remember we can use the `list` command
+    to see what that is:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们看到调用`get_piechart_url`的代码被包含在`try/except`块中，并且正在测试`except`子句是否与实际引发的异常匹配。第一个子句`except
+    TypeError`没有匹配`AttributeError`。第二个子句`except Exception`匹配，因为`AttributeError`是从基类`Exception`派生的。因此，代码应该继续运行此`except`子句中的任何代码。记住我们可以使用`list`命令来查看那是什么：
+- en: '[PRE27]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'These `except` clauses appear to be testing for special cases where the raised
+    exception will be suppressed and the result produced will be set to the value
+    of `settings.TEMPLATE_STRING_IF_INVALID`. That gives a hint of how this exception
+    is ultimately not reflected in a debug page, though it may not happen immediately
+    in the `except` clause that is about to be executed:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些`except`子句似乎在测试特殊情况，其中引发的异常将被抑制，并且产生的结果将被设置为`settings.TEMPLATE_STRING_IF_INVALID`的值。这暗示了这个异常最终不会在调试页面中反映出来，尽管可能不会立即发生在即将执行的`except`子句中：
+- en: '[PRE28]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Indeed, at this point the code is proceeding to re-raise the exception, only
+    to have it be immediately caught again:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，此时代码正在重新引发异常，只是立即再次被捕获：
+- en: '[PRE29]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'The `list` command at this point shows what this `except` clause will do:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时的`list`命令显示了这个`except`子句将要做什么：
+- en: '[PRE30]'
+  id: totrans-117
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Here it helps to recall exactly how constructs such as `{{ q.get_piechart_url
+    }}` are handled during template rendering. Django template processing attempts
+    to resolve the value on the right-hand side of the dot using these four methods,
+    in order:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，有必要回想一下在模板渲染期间如何处理`{{ q.get_piechart_url }}`等结构。Django模板处理尝试使用以下四种方法按顺序解析点号右侧的值：
+- en: Dictionary lookup
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 字典查找
+- en: Attribute lookup
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 属性查找
+- en: Method call
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 方法调用
+- en: List-index lookup
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 列表索引查找
+- en: 'We entered the debugger right in the middle of the method call attempt, after
+    the first two options failed. The code that attempted the method call does not
+    distinguish between an `AttributeError` resulting from the method not existing
+    and an `AttributeError` raised by a called method, so the next step is going to
+    be to attempt a list-index lookup. This too is going to fail:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在方法调用尝试的中间进入了调试器，前两个选项失败后。尝试方法调用的代码不区分由于方法不存在而导致的`AttributeError`和由调用方法引发的`AttributeError`，因此下一步将尝试进行列表索引查找。这也将失败：
+- en: '[PRE31]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: Specifically, the list-index lookup attempt raises a `ValueError`, which we
+    can see from the previous code is going to be treated specially and turned into
+    a `VariableDoesNotExist` exception. We could continue tracing through the code,
+    but at this point it is pretty clear what is going to happen. Invalid variables
+    are turned into whatever is assigned to the `TEMPLATE_STRING_IF_INVALID` setting.
+    Since the survey project has this setting set to the default of the empty string,
+    an empty string is the ultimate result of the rendering of `{{ q.get_piechart_url
+    }}`.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 具体来说，列表索引查找尝试引发了`ValueError`，我们可以从先前的代码中看到，它将被特殊处理并转换为`VariableDoesNotExist`异常。我们可以继续跟踪代码，但在这一点上很明显会发生什么。无效的变量将被转换为`TEMPLATE_STRING_IF_INVALID`设置分配的内容。由于调查项目将此设置设置为默认的空字符串，因此空字符串是`{{
+    q.get_piechart_url }}`的渲染的最终结果。
+- en: The continue command
+  id: totrans-126
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 继续命令
+- en: 'At this point, we know what the problem is, how the problem resulted in an
+    empty string in the template instead of a debug page, and we are ready to go fix
+    the code. We can use the `continue` command, abbreviated as `c`, to tell the debugger
+    to exit and let program execution continue normally. When we do that here we see:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，我们知道问题是什么，问题是如何导致模板中出现空字符串而不是调试页面的问题，我们已经准备好去修复代码。我们可以使用`continue`命令，缩写为`c`，告诉调试器退出并让程序执行正常继续。当我们在这里这样做时，我们看到：
+- en: '[PRE32]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'What happened? We are right back where we started. The reason is because there
+    are two questions in the survey, and the template loops over them. The `get_piechart_url`
+    method is called once for each question. When we exited the debugger after figuring
+    out what happened with the first question, template processing continued and soon
+    enough it again called `get_piechart_url`, where again the `pdb.set_trace()` call
+    resulted in entry to the debugger. We can confirm this by seeing that `self` now
+    refers to the second question in the survey:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 发生了什么？我们又回到了起点。原因是调查中有两个问题，模板循环遍历它们。`get_piechart_url`方法为每个问题调用一次。当我们在弄清楚第一个问题发生了什么后退出调试器时，模板处理继续进行，很快又调用了`get_piechart_url`，再次导致`pdb.set_trace()`调用进入调试器。我们可以通过看到`self`现在指的是调查中的第二个问题来确认这一点：
+- en: '[PRE33]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: We could just `continue` again and proceed to fix our Python source file, but
+    this actually presents an opportunity to play with some additional debugger commands,
+    so we will do that.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以再次`continue`并继续修复我们的Python源文件，但这实际上提供了一个机会来使用一些额外的调试器命令，所以我们将这样做。
+- en: The jump command
+  id: totrans-132
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 跳转命令
+- en: 'First, use `next` to proceed to the line of code where the wrong method is
+    about to be called on `chart`:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，使用`next`来继续到即将在`chart`上调用错误方法的代码行：
+- en: '[PRE34]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Now, manually issue the call that should be there instead, `chart.add_data`:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，手动发出应该存在的调用，`chart.add_data`：
+- en: '[PRE35]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'That call returned `0`, which is much better than raising an attribute error.
+    Now we want to jump over the erroneous line of code. We can see that `set_data`
+    call is on line `74` of `models.py`; we want to skip line `74` and instead go
+    straight to line `75`. We do this with the `jump` command, which can be shortened
+    to `j`:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该调用返回了`0`，这比引发属性错误要好得多。现在我们想要跳过错误的代码行。我们可以看到`set_data`调用在`models.py`的第`74`行；我们想要跳过第`74`行，而是直接到第`75`行。我们可以使用`jump`命令，可以缩写为`j`：
+- en: '[PRE36]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'That seems to have worked. We can proceed through with `next` to confirm we''re
+    moving along without error in the code:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这似乎已经奏效。我们可以通过`next`继续进行，以确认我们在代码中没有错误地前进：
+- en: '[PRE37]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'Except we don''t seem to be moving along, we seem to be stuck on one line.
+    We''re not though. Notice that line includes a list comprehension: `[a.answer
+    for a in answer_set]`. The `next` command will avoid tracing through called functions,
+    but it does not do the same for list comprehensions. The line containing the comprehension
+    is going to appear to be executed once for every item added to the list by the
+    comprehension. This can get tedious, especially for long lists. In this case,
+    the list is only three elements long, since there are only three answers in the
+    set, so we could easily just keep hitting enter to get past it. However, there
+    is also a way to get around this, which we may as well learn next.'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了我们似乎没有在前进，我们似乎卡在一行上。不过我们并没有。请注意，该行包括一个列表推导式：`[a.answer for a in answer_set]`。`next`命令将避免跟踪调用的函数，但对于列表推导式却不会。包含推导式的行将对列表中每个项目的添加看起来被执行一次。这可能会变得乏味，特别是对于长列表。在这种情况下，列表只有三个元素，因为集合中只有三个答案，所以我们可以轻松地按回车键继续。但是，也有一种方法可以解决这个问题，我们可能也会学到。
+- en: The break command
+  id: totrans-142
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 断点命令
+- en: 'The `break` command, which can be shortened to `b`, sets a breakpoint on the
+    specified line. Since `next` isn''t getting us past line 75 as quickly as we would
+    like, we can set a breakpoint on line 76 and use `continue` to get through the
+    list comprehension on line 75 in one step:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`break`命令，可以缩写为`b`，在指定的行上设置断点。由于`next`没有像我们希望的那样快速地将我们超过第75行，我们可以在第76行设置断点，并使用`continue`一步到位地通过第75行的列表推导：'
+- en: '[PRE38]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: This can come in handy for getting past other looping constructs besides list
+    comprehensions, or for quickly moving forward in code when you get to a point
+    where you don't need to trace through each line, but you do want to stop a bit
+    further on and see the state of things.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这对于跳过除列表推导之外的其他循环结构，或者在代码中快速前进到不需要逐行跟踪的点时，但您确实想要停在稍后的某个地方并查看事物的状态，这将非常有用。
+- en: 'The `break` command issued without arguments prints out a list of the currently
+    set breakpoints, and how many times they have been hit:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有参数发出的`break`命令会打印出当前设置的断点列表，以及它们被触发的次数：
+- en: '[PRE39]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Notice the breakpoint resulting from `pdb.set_trace()` isn't included here,
+    this display just shows breakpoints set via the `break` command.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，由`pdb.set_trace()`产生的断点在此处不包括在内，此显示仅显示通过`break`命令设置的断点。
+- en: The `break` command also supports other arguments besides a simple line number.
+    You can specify a function name or a line in another file. In addition, you can
+    also specify a condition that must be met for the breakpoint to be triggered.
+    None of these more advanced options are covered in detail here. The Python documentation,
+    however, provides full details.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`break`命令还支持除简单行号之外的其他参数。您可以指定函数名称或另一个文件中的行。此外，您还可以指定必须满足的断点触发条件。这里没有详细介绍这些更高级的选项。然而，Python文档提供了完整的细节。'
+- en: The clear command
+  id: totrans-150
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 清除命令
+- en: 'After setting a breakpoint, there may come a time when you want to clear it.
+    This is done by the `clear` command, which can be shorted to `cl` (not `c`, since
+    that is `continue`):'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设置断点后，可能会有一段时间你想要清除它。这可以通过`clear`命令来完成，可以缩写为`cl`（不是`c`，因为那是`continue`）：
+- en: '[PRE40]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Now the debugger will no longer stop on line 76 of `models.py`. At this point,
+    we''ve probably seen enough of the various debugger commands, and can just enter
+    `c` to let the code continue on:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在调试器将不再停在`models.py`的第76行。在这一点上，我们可能已经看到了各种调试器命令，只需输入`c`让代码继续执行：
+- en: '[PRE41]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'There we see the code continued processing, logging the return value from `get_piechart_url`,
+    and exit from `display_completed_survey` and `survey_detail`. Ultimately, a `2989`
+    byte response was returned for this request. Switching back to the web browser
+    window, we see the browser waited all that time for a response. Furthermore, our
+    manual calling of the correct method and jumping over the wrong one did work.
+    The browser shows it was able to successfully retrieve the pie chart for the second
+    question:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在那里，我们看到代码继续处理，记录了从`get_piechart_url`返回的值，并退出了`display_completed_survey`和`survey_detail`。最终，对于此请求返回了一个`2989`字节的响应。切换回到网页浏览器窗口，我们看到浏览器等待了那么长时间才收到响应。此外，我们手动调用了正确的方法并跳过了错误的方法。浏览器显示它能够成功地检索到第二个问题的饼图：
+- en: '![The clear command](img/7566_09_06.jpg)'
+  id: totrans-156
+  prefs: []
+  type: TYPE_IMG
+  zh: '![清除命令](img/7566_09_06.jpg)'
+- en: Unfortunately, although the figure was produced without error, there is a bit
+    of a problem with the labels being too long to fit properly. To fix this, we can
+    try using a legend instead of labels. We'll do that, and make the change of replacing
+    `set_data` with `add_data`, next.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，尽管图表已经生成，但标签太长无法正确显示。为了解决这个问题，我们可以尝试使用图例而不是标签。我们将尝试这样做，并将`set_data`更改为`add_data`。
+- en: Fixing the pygooglechart results display
+  id: totrans-158
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 修复pygooglechart结果显示
+- en: 'We seem close to having a working implementation of pie charts for our results
+    display. We can update the `get_piechart_url` method to look like this:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们似乎已经接近了为结果显示创建饼图的工作实现。我们可以更新`get_piechart_url`方法，使其如下所示：
+- en: '[PRE42]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: The changes from the previous version are first removal of the logging calls
+    (since they weren't particularly helpful) and also removal of the import of logging.
+    The import for `PieChart3D` has been moved to the top of the file, with the other
+    imports. The erroneous call to `chart.set_data` has been replaced with the correct
+    `chart.add_data`. Finally, the call to `chart.set_pie_labels` had been replaced
+    by `chart.set_legend`, in hopes that when the answers are arranged as a legend,
+    they will be able to fit on the chart without spilling off the edges.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与上一个版本的更改首先是删除了日志调用（因为它们并不特别有用），还删除了日志的导入。`PieChart3D`的导入已经移动到文件顶部，与其他导入一起。对`chart.set_data`的错误调用已被正确的`chart.add_data`替换。最后，对`chart.set_pie_labels`的调用已被替换为`chart.set_legend`，希望当答案被安排为图例时，它们将能够适合图表而不会溢出边缘。
+- en: How well does that work? If we reload the browser page, the browser again appears
+    to hang, because the `get_piechart_url` method still has the `pdb.set_trace()`
+    call that breaks into the debugger. We might have removed that along with the
+    other changes, in hopeful belief that the new version of the code is surely going
+    to work, but often such hopes are dashed and we find ourselves having to re-add
+    the call to figure out what is going wrong next. In this case, there are also
+    a few more debugger commands to experiment with, which we'll do next.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样做效果如何？如果我们重新加载浏览器页面，浏览器似乎又卡住了，因为`get_piechart_url`方法仍然有`pdb.set_trace()`调用，这会打断调试器。我们可能已经删除了它以及其他更改，希望相信新版本的代码肯定会起作用，但往往这样的希望都会落空，我们发现自己不得不重新添加调用以弄清楚接下来出了什么问题。在这种情况下，还有一些调试器命令可以尝试，我们接下来会做。
+- en: The up and down commands
+  id: totrans-163
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 上下命令
+- en: 'When we switch to the `runserver` console window, we again find the code sitting
+    at the beginning of `get_piechart_url`:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们切换到`runserver`控制台窗口时，我们再次发现代码坐在`get_piechart_url`的开头：
+- en: '[PRE43]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'We could just continue and see how the new code behaves, but there are a few
+    debugger commands we have not experimented with, so let''s do that first. One
+    is the `step` command, which was mentioned previously, but never used since we
+    have exclusively used `next` for stepping through the code. If we try `step` a
+    few times here, we see:'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以继续看看新代码的行为如何，但是有一些调试器命令我们还没有尝试过，所以让我们先做这个。其中一个是`step`命令，之前提到过，但从来没有使用过，因为我们一直使用`next`来逐步执行代码。如果我们在这里尝试`step`几次，我们会看到：
+- en: '[PRE44]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: Here we have single-stepped six times and as a result are now nested a couple
+    of call levels deep into the Django code. We did it intentionally, and it's often
+    a useful way of learning more about how Django (or other support library) code
+    works. But it is also quite common when debugging to mistakenly start single-stepping
+    through support library code when we really only wanted to be single-stepping
+    through our own code. We then find ourselves suddenly nested possibly a few levels
+    deep in completely unfamiliar code, and we want to get back to stepping through
+    the code we are developing.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们单步执行了六次，结果现在嵌套了几个调用级别深入到Django代码中。我们是故意这样做的，这通常是了解Django（或其他支持库）代码工作原理的有用方式。但是在调试时，当我们真正只想单步执行我们自己的代码时，很常见的是错误地开始单步执行支持库代码。然后我们突然发现自己可能深入了几个完全陌生的代码层次，我们想要回到逐步执行我们正在开发的代码。
+- en: 'One way to accomplish this is with the `up` command, which can be shortened
+    to `u`. The `up` command moves the current stack frame up one level in the call
+    chain:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一种实现这一点的方法是使用`up`命令，可以缩写为`u`。`up`命令将当前堆栈帧上移一个级别：
+- en: '[PRE45]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'Here we have moved up three levels. The original current stack frame was the
+    one for the call to `create_manager`. The first `up` command switched the current
+    stack frame to the one for `__get__`, the next switched to `get_piechart_url`,
+    and the third went all the way back to the caller of `get_piechart_url`, `_resolve_lookup`.
+    Switching the current stack frame does not execute any code, it just changes the
+    context for commands. For example, now with the current stack frame for `_resolve_lookup`
+    being current, we can examine variables that exist in that frame:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们上移了三个级别。原始的当前堆栈帧是调用`create_manager`的堆栈帧。第一个`up`命令将当前堆栈帧切换到`__get__`的堆栈帧，下一个切换到`get_piechart_url`，第三个则回到了`get_piechart_url`的调用者`_resolve_lookup`的堆栈帧。切换当前堆栈帧不会执行任何代码，它只是改变了命令的上下文。例如，现在当前堆栈帧为`_resolve_lookup`，我们可以检查存在于该堆栈帧中的变量：
+- en: '[PRE46]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Also, `list` now will show us the code associated with the current stack frame:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，`list`现在将显示与当前堆栈帧相关联的代码：
+- en: '[PRE47]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'If we have switched stack frames and wonder where the current stack frame is
+    relative to where the current execution point is, the `where` command shows that.
+    In this case, the end of the `where` command output looks like this:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们切换了堆栈帧，并想知道当前堆栈帧相对于当前执行点的位置，`where`命令会显示出来。在这种情况下，`where`命令的输出看起来像这样：
+- en: '[PRE48]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: The last line listed is always the current execution point, while the current
+    stack frame is indicated by the `>` in the first column. Here, it indicates that
+    the current stack frame is the one for `_resolve_lookup`.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 列出的最后一行始终是当前执行点，而当前堆栈帧由第一列中的`>`表示。在这里，它表示当前堆栈帧是`_resolve_lookup`的堆栈帧。
+- en: 'In this case we moved up one stack frame further than we really wanted to.
+    To get back to our own code, we need to move back down one level. This is done
+    by using the `down` command (which can be shortened to `d`):'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，我们上移了一个堆栈帧，比我们真正想要的多了一个。要回到我们自己的代码，我们需要下移一个级别。这是通过使用`down`命令（可以缩写为`d`）来完成的：
+- en: '[PRE49]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'Now, if we want to continue running up to the next line from here, we can use
+    the `next` command:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果我们想要继续从这里运行到下一行，我们可以使用`next`命令：
+- en: '[PRE50]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Now we are back in familiar territory, and can continue with debugging our own
+    code.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们回到了熟悉的领域，可以继续调试我们自己的代码。
+- en: The return command
+  id: totrans-183
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 返回命令
+- en: 'A second way to accomplish the same thing is to use the `return` command, which
+    can be shortened to `r`. This command continues execution until the current function
+    returns, and then the debugger is entered again. To see it in action, let''s step
+    into the `PieChart3D` call:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二种实现相同功能的方法是使用`return`命令，可以缩写为`r`。该命令会继续执行，直到当前函数返回，然后再次进入调试器。让我们来看看它的运行情况，让我们步入`PieChart3D`的调用：
+- en: '[PRE51]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'We''ve taken a couple of steps into the method, but have made only one call,
+    so a single `return` should get us back to our survey code:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经进入了该方法的几个步骤，但只进行了一个调用，因此单个`return`应该让我们回到我们的调查代码：
+- en: '[PRE52]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'This method apparently does not have an explicit return line, so the line of
+    code displayed is the last line in the method. The `->None` in the output shows
+    what the method is returning. If we step from here:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法显然没有显式的返回行，因此显示的代码行是该方法中的最后一行。输出中的`->None`显示了该方法的返回值。如果我们从这里步进：
+- en: '[PRE53]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'We are now back to the next line of code after the call to create the pie chart.
+    From here, we can use return to see what the `get_piechart_url` method is going
+    to return:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们回到了创建饼图后的下一行代码。从这里，我们可以使用return来查看`get_piechart_url`方法将返回什么：
+- en: '[PRE54]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'That looks good; the function ran to completion and is returning a value. Also,
+    it seems that pdb shortens the displayed return values if they are long, since
+    the displayed value doesn''t look quite right. We can confirm this with either
+    of the `print` commands, which show that the actual value is a good bit longer:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看起来不错；函数已经完成运行并返回一个值。此外，似乎pdb会缩短显示的返回值，如果它们很长，因为显示的值看起来不太对。我们可以用任何一个`print`命令来确认这一点，这些命令显示实际值要长得多：
+- en: '[PRE55]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'At this point, it looks like all is working fine, so we may as well use `continue`
+    to let the program keep running, then `continue` again when the debugger is entered
+    for the second pie chart:'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前看来一切都很正常，所以我们可以使用`continue`让程序继续运行，然后当第二个饼图的调试器再次进入时再次使用`continue`：
+- en: '[PRE56]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'That all looks good. What does the browser show? Switching to its window, we
+    see the following:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一切看起来都很好。浏览器显示了什么？切换到它的窗口，我们看到以下内容：
+- en: '![The return command](img/7566_09_07.jpg)'
+  id: totrans-197
+  prefs: []
+  type: TYPE_IMG
+  zh: '![return命令](img/7566_09_07.jpg)'
+- en: That's better than before. Switching from labels to a legend has solved the
+    problem of the answer text spilling off the figure. However, it's a little disconcerting
+    for the pie charts themselves to be so different in size, depending on the length
+    of the answers. Also, it might be nice if the pie chart wedges could be labeled
+    with the percentage of the total that each represents.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这比以前好。从标签切换到图例解决了答案文本溢出图形的问题。然而，饼图本身的大小因答案长度不同而有所不同，这有点令人不安。此外，如果饼图楔形能够用表示每个楔形所代表的总数的百分比进行标记，那就更好了。
+- en: Researching more on the Google chart API doesn't reveal any way to control the
+    legend placement to perhaps keep the pie sizes the same, nor how to annotate the
+    wedges with information like the percentage of total. While reasonably simple
+    and straightforward to use, this API does not offer a lot in terms of customizing
+    the charts that are generated. Thus, we might want to investigate other alternatives
+    for generating charts, which we'll do next.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Google图表API上的更多研究并没有揭示任何控制图例放置的方法，也没有说明如何用信息注释楔形图，比如总百分比。虽然使用起来相当简单和直接，但这个API在定制生成的图表方面并没有提供太多功能。因此，我们可能需要调查其他生成图表的替代方法，这将是我们接下来要做的事情。
+- en: We'll keep the current implementation of `get_piechart_url`, though, since at
+    this point we don't know that we are going to really switch to an alternative.
+    Before moving on to the next thing, it makes sense to remove the import `pdb;
+    pdb.set_trace()` in that function. The routine is working now, and if we do return
+    to using it at a later point, it will be better if it runs to completion without
+    user intervention instead of breaking into the debugger.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将保留`get_piechart_url`的当前实现，因为在这一点上我们不知道我们是否真的要切换到另一种方法。在继续下一步之前，最好将该函数中的导入`pdb;
+    pdb.set_trace()`删除。该例程现在正在运行，如果我们以后返回使用它，最好是它在没有用户干预的情况下完成运行，而不是进入调试器中断。
+- en: Results display using matplotlib
+  id: totrans-201
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用matplotlib显示结果
+- en: The `matplotlib` library provides another alternative for generating charts
+    from Python. It can be found on the Python Package Index site, [http://pypi.python.org/pypi/matplotlib](http://pypi.python.org/pypi/matplotlib).
+    The version of `matplotlib` used in this chapter is 0.98.3.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`matplotlib`库提供了另一种从Python生成图表的方法。它可以在Python软件包索引网站[http://pypi.python.org/pypi/matplotlib](http://pypi.python.org/pypi/matplotlib)上找到。本章中使用的`matplotlib`版本是0.98.3。'
+- en: 'With `matplotlib`, our application cannot simply construct a URL and push the
+    task of generating and serving the image data off to another host. Instead, we
+    need to write a view that will generate and serve the image data. After some investigation
+    of the `matplotlib` APIs, an initial implementation (in `survey/views.py`) might
+    be:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`matplotlib`，我们的应用程序不能简单地构造一个URL并将生成和提供图像数据的任务交给另一个主机。相反，我们需要编写一个视图来生成和提供图像数据。经过对`matplotlib`API的一些调查，一个初始实现（在`survey/views.py`中）可能是：
+- en: '[PRE57]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'That is a bit more complicated than the `pygooglechart` version. First, we
+    need two imports from `matplotlib`: the basic `Figure` class, and an appropriate
+    backend that can be used to render figures. Here, we have chosen the `agg` (Anti-Grain
+    Geometry) backend, since it supports rendering to PNG format.'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这比`pygooglechart`版本要复杂一些。首先，我们需要从`matplotlib`导入两个内容：基本的`Figure`类和一个适合用于渲染图形的后端。在这里，我们选择了`agg`（Anti-Grain
+    Geometry）后端，因为它支持渲染为PNG格式。
+- en: 'Within the `answer_piechart` view, the first four lines are straightforward.
+    The `Question` instance is retrieved from the primary key value passed to the
+    view. The answer set for that question is cached in the local variable `answer_set`.
+    Then two arrays of data are created from the answer set: `x` contains the vote
+    count values for each answer and `labels` contains the answer text values.'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`answer_piechart`视图中，前四行很简单。从传递给视图的主键值中检索`Question`实例。该问题的答案集被缓存在本地变量`answer_set`中。然后从答案集创建了两个数据数组：`x`包含每个答案的投票计数值，`labels`包含答案文本值。
+- en: Next, a basic `matplotlib Figure` is created. A `matplotlib Figure` supports
+    having multiple subplots contained in it. For the simple case where the `Figure`
+    holds a single plot, `add_sublot` still needs to be called to create the subplot
+    and return an `Axes` instance that can be used to draw on the plot. The arguments
+    to `add_subplot` are the number of rows and columns in the subplot grid, then
+    the number of the plot being added to the `Figure`. The arguments `1, 1, 1` here
+    indicate the single subplot in a 1 x 1 grid.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，创建了一个基本的`matplotlib Figure`。`matplotlib Figure`支持包含多个子图。对于`Figure`只包含单个图的简单情况，仍然需要调用`add_subplot`来创建子图，并返回一个`Axes`实例，用于在图上绘制。`add_subplot`的参数是子图网格中的行数和列数，然后是要添加到`Figure`的图的编号。这里的参数`1,
+    1, 1`表示1 x 1网格中的单个子图。
+- en: The `pie` method is then invoked on the returned subplot `axes` to generate
+    a pie chart figure. The first argument `x` is the array of data values for the
+    pie wedges. The `autopct` keyword argument is used to specify a format string
+    for annotating each pie wedge with its percentage of the total. The value `%.0f%%`
+    specifies that the float percentage values should be formatted with zero digits
+    after the decimal point, followed by a percent sign.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后在返回的子图`axes`上调用`pie`方法生成饼图图。第一个参数`x`是饼图楔形的数据值数组。`autopct`关键字参数用于指定一个格式字符串，用于注释每个饼图楔形的百分比。值`%.0f%%`指定浮点百分比值应该以小数点后零位数字的格式显示，后跟一个百分号。
+- en: The `pie` method returns three data sequences. The first of these, `patches`,
+    describes the pie wedges and needs to be passed to the figure's `legend` method
+    for creating a legend to match the wedges to their associated answer values. Here
+    we have specified that the legend should be placed in the lower left corner of
+    the figure.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`pie`方法返回三个数据序列。其中第一个`patches`描述了饼图楔形，需要传递给图例的`legend`方法，以创建一个与楔形相关联的答案值的图例。在这里，我们指定图例应放置在图的左下角。'
+- en: The other two sequences returned by `pie` describe the text labels (which will
+    be blank here since `labels` were not specified when `pie` was called) and `autopct`
+    annotations for the wedges. The code here does not need to use these sequences
+    for anything.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`pie`返回的另外两个序列描述了文本标签（这里将为空，因为在调用`pie`时未指定`labels`）和楔形图的`autopct`注释。这里的代码不需要使用这些序列做任何事情。'
+- en: With the legend in place, the figure is complete. A `canvas` for it is created
+    using the previously imported `agg` backend `FigureCanvas`. An `HttpResponse`
+    with content type `image/png` is created, and the image is written in PNG format
+    to the response using the `print_png` method. Finally, the `answer_piechart` view
+    returns this response.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了图例，图就完成了。使用先前导入的`agg`后端`FigureCanvas`创建了一个`canvas`。创建了一个内容类型为`image/png`的`HttpResponse`，并使用`print_png`方法以PNG格式将图像写入响应。最后，`answer_piechart`视图返回此响应。
+- en: 'With the view code done, we need to update the `survey/urls.py` file to include
+    a mapping that will route requests to that view:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 视图代码完成后，我们需要更新`survey/urls.py`文件，包括一个映射，将请求路由到该视图：
+- en: '[PRE58]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: Here we have added the last pattern. This pattern matches URL paths that start
+    with `piechart/`, followed by one or more digits (the primary key), ending with
+    `.png`. These URLs are routed to the `survey.views.answer_piechart` view, passing
+    the captured primary key value as a parameter. The pattern is named `survey_answer_piechart`.
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们添加了最后一个模式。这个模式匹配以`piechart/`开头，后跟一个或多个数字（主键），以`.png`结尾的URL路径。这些URL被路由到`survey.views.answer_piechart`视图，传递捕获的主键值作为参数。该模式被命名为`survey_answer_piechart`。
+- en: 'The final piece needed to switch to using `matplotlib` instead of `pygooglechart`
+    is to update the `survey/completed_survey.html` template to generate URLs using
+    this pattern. The only change needed is to update the line containing the `img`
+    tag:'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 切换到使用`matplotlib`而不是`pygooglechart`所需的最后一步是更新`survey/completed_survey.html`模板，以使用这个模式生成URL。唯一需要的更改是更新包含`img`标签的行：
+- en: '[PRE59]'
+  id: totrans-216
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Here we have replaced the call to the question's `get_piechart_url` method with
+    a `url` template tag referencing the new pattern just added.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们用引用新添加的模式的`url`模板标签替换了对问题的`get_piechart_url`方法的调用。
+- en: 'How does that work? Reasonably well. We did not specify a size for the figures,
+    and the default size from `matplotlib` is a bit larger than what we had specified
+    for `pygooglechart`, so we cannot see the whole page without scrolling. However,
+    each individual figure looks pretty good. For example, the first one appears like
+    so:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是如何工作的？相当不错。我们没有为图形指定大小，而`matplotlib`的默认大小比我们为`pygooglechart`指定的要大一些，所以我们不能在不滚动的情况下看到整个页面。然而，每个单独的图看起来都很不错。例如，第一个看起来像这样：
+- en: '![Results display using matplotlib](img/7566_09_08.jpg)'
+  id: totrans-219
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用matplotlib显示结果](img/7566_09_08.jpg)'
+- en: 'And the second looks like this:'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个看起来像这样：
+- en: '![Results display using matplotlib](img/7566_09_09.jpg)'
+  id: totrans-221
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用matplotlib显示结果](img/7566_09_09.jpg)'
+- en: The `matplotlib` API supports much more customization than we have used here.
+    The size of the figure could be changed, as could placement of the pie, colors
+    of the wedge pieces, and font's properties for the text. The pie wedge for the
+    winning answer could be emphasized by exploding it out from the rest of the pie.
+    However, all of those items are cosmetic and beyond the scope of what we will
+    cover here. To get back to the subject of debugging, we will turn our attention
+    in the next section to removing some wasteful duplicate processing that was just
+    introduced as a result of switching to `matplotlib`.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`matplotlib` API支持的定制化远远超出了我们在这里使用的范围。图形的大小可以改变，饼图的位置可以改变，楔形图块的颜色和文本的字体属性也可以改变。获胜答案的饼图楔形可以通过从饼图的其余部分爆炸出来来强调。然而，所有这些项目都是装饰性的，超出了我们将在这里涵盖的范围。回到调试的主题，我们将在下一节中将注意力转向删除一些浪费的重复处理，这是由于切换到`matplotlib`而引入的。'
+- en: Improving the matplotlib approach
+  id: totrans-223
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 改进matplotlib方法
+- en: Consider what happens now when the page for a completed survey is requested
+    by a browser. For each question in the survey, the returned completed survey page
+    has an embedded image that, when fetched, will trigger a call to the `answer_piechart`
+    view. That view dynamically generates an image and is computationally expensive.
+    In fact, depending on your hardware, if you try stepping through that view you
+    may be able to observe appreciable pauses when stepping over some of the `matplotlib`
+    calls.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑一下当浏览器请求完成调查的页面时会发生什么。对于调查中的每个问题，返回的完成调查页面都有一个嵌入的图像，当获取时，将触发对`answer_piechart`视图的调用。该视图动态生成图像，计算成本很高。实际上，根据您的硬件，如果您尝试逐步执行该视图，您可能会观察到在跨越一些`matplotlib`调用时出现明显的暂停。
+- en: Now consider what happens when many different users request the same completed
+    survey page. That will trigger many calls into the computationally expensive `answer_piechart`
+    view. Ultimately, all of the users will be served the exact same data, since results
+    are not displayed until the survey is closed, so the underlying vote counts used
+    to create the pie chart will not be changing. Yet `answer_piechart` will be called
+    over and over to re-do the same considerable amount of work to produce the exact
+    same result. This is a wasteful use of our server capacity.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在考虑当许多不同的用户请求相同的完成调查页面时会发生什么。这将触发对计算成本高昂的`answer_piechart`视图的多次调用。最终，所有用户将得到完全相同的数据，因为在调查关闭之前不会显示结果，因此用于创建饼图的基础投票计数不会发生变化。然而，`answer_piechart`将一遍又一遍地被调用，以重新做相同数量的工作来产生完全相同的结果。这是对服务器容量的浪费。
+- en: 'How can we eliminate this waste? There are (at least) three possible approaches:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们如何消除这种浪费？有（至少）三种可能的方法：
+- en: Introduce caching, and cache the results of the `answer_piechart` view.
+  id: totrans-227
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 引入缓存，并缓存`answer_piechart`视图的结果。
+- en: Set up some external process that pre-computes all of the pie charts for a survey
+    when it closes and saves them on disk somewhere. Change the `img` tags in the
+    completed survey response template to refer to these static files instead of a
+    view that dynamically generates the images.
+  id: totrans-228
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设置一些外部进程，在调查关闭时预先计算所有饼图，并将它们保存在磁盘的某个地方。将完成调查响应模板中的`img`标签更改为引用这些静态文件，而不是动态生成图像的视图。
+- en: Dynamically generate the pie charts for a completed survey when the first request
+    for it comes in, and save them to disk somewhere. This is essentially the same
+    as the second approach, in that the `img` tags in the completed survey response
+    will now refer to static files, but the computation of the charts is moved from
+    some external process into the web server.
+  id: totrans-229
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当第一次请求完成调查时，动态生成饼图，并将其保存到磁盘上。这与第二种方法本质上是相同的，因为完成调查响应中的`img`标签现在将引用静态文件，但是图表的计算从某个外部进程移动到了Web服务器中。
+- en: Each of these approaches has pros and cons. The one we are going to pursue is
+    the last, simply because it offers the most opportunity to learn a couple of new
+    things. Specifically, in implementing this third approach we will see how to set
+    up the development server to serve static files, and we will see how pdb can be
+    used to ensure that code operates properly in the face of multi-process race conditions.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些方法各有利弊。我们要追求的是最后一种方法，仅仅是因为它提供了学习一些新东西的最大机会。具体来说，在实现这种第三种方法时，我们将看到如何设置开发服务器以提供静态文件，并且我们将看到如何使用pdb来确保代码在面对多进程竞争条件时能够正常运行。
+- en: Setting up static file serving
+  id: totrans-231
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设置静态文件服务
+- en: So far in the development of the survey application we have concentrated entirely
+    on serving dynamic content. While dynamic content is certainly the focus of Django
+    applications, in reality even the most dynamic of applications will have some
+    data that needs to be served from files. Here with the survey application we have
+    run into a case where we want to serve image files from disk. Most applications
+    will also have CSS and possibly JavaScript files that are better served directly
+    from disk rather than through Django view code.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，在调查应用程序的开发中，我们完全集中在提供动态内容上。虽然动态内容当然是Django应用程序的重点，但实际上，即使是最动态的应用程序也会有一些需要从文件中提供的数据。在这里，调查应用程序遇到了一个情况，我们希望从磁盘中提供图像文件。大多数应用程序还将具有最好直接从磁盘而不是通过Django视图代码提供的CSS和可能是JavaScript文件。
+- en: Django is a framework for serving dynamic content. Although it does not directly
+    support serving data from files, there are a couple of settings that facilitate
+    incorporating some static files into a project. These are `MEDIA_ROOT` and `MEDIA_URL`.
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Django是用于提供动态内容的框架。虽然它不直接支持从文件中提供数据，但有一些设置可以方便地将一些静态文件合并到项目中。这些是`MEDIA_ROOT`和`MEDIA_URL`。
+- en: '`MEDIA_ROOT` is a file system path—the path to the directory that holds the
+    static files for the project. It is used by Django internally as the base path
+    for saving files uploaded to a model containing a `FileField`. For the survey
+    application, we will use it as the base path for saving dynamically-generated
+    pie chart image files.'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`MEDIA_ROOT`是文件系统路径，即项目的静态文件所在目录的路径。Django在内部使用它作为保存上传到包含`FileField`的模型的文件的基本路径。对于调查应用程序，我们将使用它作为保存动态生成的饼图图像文件的基本路径。'
+- en: 'The default value for this setting is an empty string, so we need to set it
+    to something else now that we want to use it:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该设置的默认值为空字符串，因此我们现在需要将其设置为其他值：
+- en: '[PRE60]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: Here we have set `MEDIA_ROOT` to point to a `site_media` directory (which we
+    must create) under our main `marketr` project directory.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们将`MEDIA_ROOT`设置为指向主`marketr`项目目录下的`site_media`目录（我们必须创建）。
+- en: '`MEDIA_URL`, which also defaults to an empty string, is the base URL path for
+    referring to static files. It is used by Django internally to general the `url`
+    attribute of a file referenced by a `FileField` model.'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`MEDIA_URL`也默认为空字符串，是用于引用静态文件的基本URL路径。Django在内部使用它来生成`FileField`模型引用的文件的`url`属性。'
+- en: In addition, the `django.core.context_processors.media` context processor makes
+    the value of this setting available in templates by setting `MEDIA_URL` in the
+    template context. This context processor is enabled by default, so any templates
+    rendered with a `RequestContext` have access to `MEDIA_URL`.
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，`django.core.context_processors.media`上下文处理器通过在模板上设置`MEDIA_URL`，使得该设置的值在模板中可用。此上下文处理器默认启用，因此使用`RequestContext`渲染的任何模板都可以访问`MEDIA_URL`。
+- en: 'Let''s set `MEDIA_URL` in `settings.py` as follows:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在`settings.py`中设置`MEDIA_URL`如下：
+- en: '[PRE61]'
+  id: totrans-241
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: Note that one value that should not be used for `MEDIA_URL` is `'/media/'`.
+    This is the default setting for `ADMIN_MEDIA_PREFIX`, which defines the root URL
+    for static files used by the admin. Trying to place two different trees of static
+    files in the same place in the URL hierarchy does not work, and is most easily
+    avoided by setting `MEDIA_URL` to something other than `'/media/'`.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，不应将`'/media/'`用作`MEDIA_URL`的值。这是`ADMIN_MEDIA_PREFIX`的默认设置，它定义了管理界面使用的静态文件的根URL。尝试将两个不同的静态文件树放置在URL层次结构中的相同位置是行不通的，最简单的方法是将`MEDIA_URL`设置为`'/media/'`以外的其他值。
+- en: Note that though these settings are defined in terms that establish a mapping
+    from URL paths to files on disk, nothing in Django will automatically serve files
+    based on that mapping. During URL resolution, Django does not test to see if the
+    requested URL starts with `MEDIA_URL` and if so, serve up the corresponding file
+    found under `MEDIA_ROOT`. Rather, Django assumes that URLs referring to static
+    files on disk will be served by the web server directly and not routed through
+    Django code at all.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，尽管这些设置是根据在URL路径和磁盘文件之间建立映射的术语定义的，但Django不会自动根据该映射来提供文件。在URL解析期间，Django不会测试请求的URL是否以`MEDIA_URL`开头，如果是，则提供`MEDIA_ROOT`下找到的相应文件。相反，Django假设指向磁盘上静态文件的URL将直接由Web服务器提供，而不会通过Django代码路由。
+- en: However, so far during development we have not been using any web server other
+    than Django's own development server. If we want to continue using the development
+    server, we need to somehow get it to serve the image files created by the survey
+    application. How do we do that?
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，到目前为止，在开发过程中，我们除了Django自己的开发服务器之外，没有使用任何其他Web服务器。如果我们想继续使用开发服务器，我们需要以某种方式让它提供由调查应用程序创建的图像文件。我们该怎么做呢？
+- en: 'Django does provide a static file serving capability, specifically for use
+    during development. To use it, we need to update the project''s `urls.py` file
+    to route requests for URLs that start with `''site_media/''` to Django''s static
+    file serving view. Thus, we need to change the `urls.py` file to contain:'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Django确实提供了静态文件服务功能，特别是在开发过程中使用。要使用它，我们需要更新项目的`urls.py`文件，将以`'site_media/'`开头的URL请求路由到Django的静态文件服务视图。因此，我们需要更改`urls.py`文件以包含：
+- en: '[PRE62]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'The first change here from the previous version is the addition of the `import`
+    of `settings` from `django.conf`. Second is the addition of the pattern referring
+    to URLs that start with `site_media/`. These URLs are routed to `django.views.static.serve`.
+    Two parameters are passed to this view: `document_root` and `show_indexes`. For
+    `document_root`, the `MEDIA_ROOT` setting is specified, which means that the static
+    server will look for the requested files under `MEDIA_ROOT`. `True` is specified
+    for `show_indexes`, which means that the static server will return a list of files
+    when the requested URL refers to a directory instead of a file.'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与以前版本的第一个变化是从`django.conf`中添加`settings`的`import`。第二个是添加引用以`site_media/`开头的URL的模式。这些URL被路由到`django.views.static.serve`。两个参数传递给此视图：`document_root`和`show_indexes`。对于`document_root`，指定了`MEDIA_ROOT`设置，这意味着静态服务器将在`MEDIA_ROOT`下查找请求的文件。对于`show_indexes`，指定了`True`，这意味着当请求的URL引用目录而不是文件时，静态服务器将返回文件列表。
+- en: Dynamically generating image files
+  id: totrans-248
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 动态生成图像文件
+- en: Now that we have set everything up for serving image files from disk, we can
+    start to make the code changes necessary for this approach. First, we should remove
+    the `piechart` pattern from the `survey/urls.py` file, as it is no longer needed.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经设置好了从磁盘提供图像文件的一切，我们可以开始进行必要的代码更改。首先，我们应该从`survey/urls.py`文件中删除`piechart`模式，因为它不再需要。
+- en: 'Second, we can update the `display_completed_survey` function in `views.py`
+    to include code that ensures the pie chart image files for each question in the
+    survey have been generated before returning the completed survey response:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，我们可以更新`views.py`中的`display_completed_survey`函数，以包含在返回完成的调查响应之前确保为调查中的每个问题生成了饼图图像文件的代码：
+- en: '[PRE63]'
+  id: totrans-251
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: Here we have added the `for` loop that loops through all of the questions in
+    the survey. For each, it calls a new method on the question, `check_piechart`.
+    This routine will be responsible for ensuring that the pie chart file exists,
+    creating it if necessary.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们添加了 `for` 循环，循环遍历调查中的所有问题。对于每个问题，它调用问题的一个新方法 `check_piechart`。此例程将负责确保饼图文件存在，如有必要则创建它。
+- en: 'Next, we can move on to the `survey/models.py` file and update the `Question`
+    model to include an implementation of `check_piechart` and anything else that
+    might be needed to support the new approach. What else might be needed? For referencing
+    the pie chart URL from a template, it would be convenient if the `Question` model
+    supported returning the path to the pie chart file relative to `MEDIA_URL`. Thus,
+    we need two new methods in the `Question` model:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们可以继续移动到 `survey/models.py` 文件，并更新 `Question` 模型以包含 `check_piechart` 的实现以及支持新方法所需的其他任何内容。还需要什么？为了从模板引用饼图URL，如果
+    `Question` 模型支持返回相对于 `MEDIA_URL` 的饼图文件的路径，那将会很方便。因此，我们需要在 `Question` 模型中添加两个新方法：
+- en: '[PRE64]'
+  id: totrans-254
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: Here we have opted not to include a lot of file checking and creation code directly
+    in `survey/models.py`, but rather to factor that work out into a new independent
+    module in `survey/pie_utils.py`. The two routines implemented here, then, can
+    be kept very simple.
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在 `survey/models.py` 中，我们选择不直接包含大量文件检查和创建代码，而是将该工作分解到 `survey/pie_utils.py`
+    中的一个新的独立模块中。然后，这里实现的两个例程可以保持非常简单。
+- en: '`piechart_path`, which is implemented as a read-only property, returns the
+    path for the pie chart. This value can be combined with the `MEDIA_URL` setting
+    to create a URL path, or with the `MEDIA_ROOT` setting to create a file system
+    path. Since in the long-term we would expect to have more files than just pie
+    chart images in the tree, it''s not appropriate to put the pie charts in the root
+    of this tree. Thus, the `pie_utils.PIE_PATH` value is used to carve out a subtree
+    within the static file tree to hold the pie charts.'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`piechart_path` 作为只读属性实现，返回饼图的路径。此值可以与 `MEDIA_URL` 设置结合使用以创建URL路径，或者与 `MEDIA_ROOT`
+    设置结合使用以创建文件系统路径。由于从长远来看，我们期望在树中不仅有饼图图像，因此将饼图放在树的根部是不合适的。因此，`pie_utils.PIE_PATH`
+    值用于在静态文件树中划出一个子树来容纳饼图。'
+- en: Note that this routine is implemented to raise an `AttributeError` if the model
+    instance has not yet been saved to the database, or if it references a survey
+    that has not yet closed. In these situations, the pie chart file should not exist,
+    so any attempt to reference it should trigger an error.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，如果模型实例尚未保存到数据库，或者引用了尚未关闭的调查，此例程将实现引发 `AttributeError`。在这些情况下，饼图文件不应存在，因此任何尝试引用它都应触发错误。
+- en: 'The `check_piechart` method is implemented to forward the call to the `pie_utils
+    make_pie_if_necessary` function. This function takes two parameters: the path
+    for the pie chart, and the set of answers for the question.'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`check_piechart` 方法被实现为将调用转发到 `pie_utils make_pie_if_necessary` 函数。此函数接受两个参数：饼图的路径和问题的答案集。'
+- en: 'Before we move on to the implementation of the `pie_utils` module, we can make
+    a simple update to the `survey/completed_survey.html` template. The line containing
+    the `img` tag needs to be changed to use the `Question` model''s `piechart_path`
+    when creating the URL that references the pie chart image:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们继续实现 `pie_utils` 模块之前，我们可以对 `survey/completed_survey.html` 模板进行简单更新。包含 `img`
+    标签的行需要更改为在创建引用饼图图像的URL时使用 `Question` 模型的 `piechart_path`：
+- en: '[PRE65]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: Here, `piechart_path` is combined with `MEDIA_URL` (available in the template
+    since `display_completed_survey` specifies a `RequestContext` when calling `render_to_response`)
+    to build the full URL for the image.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，`piechart_path` 与 `MEDIA_URL`（在调用 `render_to_response` 时，`display_completed_survey`
+    指定了 `RequestContext`，因此在模板中可用）结合起来构建图像的完整URL。
+- en: 'Finally, we need to implement the `survey/pie_utils.py` code. This module must
+    define a value for `PIE_PATH`, and implement the `make_pie_if_necessary` function.
+    The first task is trivial and accomplished with something like the following:'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们需要实现 `survey/pie_utils.py` 代码。此模块必须定义 `PIE_PATH` 的值，并实现 `make_pie_if_necessary`
+    函数。第一个任务是微不足道的，并且可以通过以下方式完成：
+- en: '[PRE66]'
+  id: totrans-263
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: This code defines a value for `PIE_PATH` and ensures that the resulting subdirectory
+    under the project's `MEDIA_ROOT` exists, creating it if necessary. With this code
+    and the previously noted setting for `MEDIA_ROOT`, the pie chart image files for
+    the survey application will be placed in `/dj_projects/marketr/site-media/piecharts/`.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此代码定义了 `PIE_PATH` 的值，并确保项目的 `MEDIA_ROOT` 下的结果子目录存在，如有必要则创建它。有了这段代码和先前提到的 `MEDIA_ROOT`
+    设置，调查应用程序的饼图图像文件将放置在 `/dj_projects/marketr/site-media/piecharts/` 中。
+- en: The second piece needed to complete the `pie_utils` module, an implementation
+    of the `make_pie_if_necessary` function, may also seem quite simple at first glance.
+    If the file already exists, `make_pie_if_necessary` does not need to do anything,
+    otherwise it needs to create the file. However, things get more complicated when
+    you consider that the deployment environment for this code will eventually be
+    a potentially multi-process multi-threaded web server. This introduces the opportunity
+    for race conditions, which we'll discuss next.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成 `pie_utils` 模块所需的第二部分，`make_pie_if_necessary` 函数的实现，乍看起来也可能很简单。如果文件已经存在，`make_pie_if_necessary`
+    就不需要做任何事情，否则它需要创建文件。然而，当考虑到这段代码的部署环境最终将是一个潜在的多进程多线程的Web服务器时，情况就变得更加复杂了。这引入了竞争条件的机会，我们将在下面讨论。
+- en: Dealing with race conditions
+  id: totrans-266
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 处理竞争条件
+- en: 'A naïve implementation of the `make_pie_if_necessary` module might be:'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`make_pie_if_necessary` 模块的天真实现可能是：'
+- en: '[PRE67]'
+  id: totrans-268
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Here `make_pie_if_necessary` creates the full file path by combining the passed
+    relative path with the settings `MEDIA_ROOT` value. Then, if that file does not
+    exist, it calls `create_piechart`, passing along the filename and the answer set,
+    to create the pie chart file. This routine could be implemented like so:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，`make_pie_if_necessary`通过将传递的相对路径与设置的`MEDIA_ROOT`值相结合来创建完整的文件路径。然后，如果该文件不存在，它调用`create_piechart`，传递文件名和答案集，以创建饼图文件。这个例程可以这样实现：
+- en: '[PRE68]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: This code is essentially what was in the original `matplotlib` implementation
+    in the `answer_piechart` view, modified to account for the fact that the answer
+    set has been passed directly, as has the file to which the image data should be
+    written.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码基本上是原始`matplotlib`实现中`answer_piechart`视图的修改，以考虑直接传递的答案集，以及应该写入图像数据的文件。
+- en: This implementation of `make_pie_if_necessary`, when tested with the development
+    server, would work fine. It might even seem to work fine in a lightly loaded production
+    environment. However, if you consider a heavily loaded production environment,
+    with a multi-process web server where requests for the same page may be arriving
+    nearly simultaneously, a potential problem emerges. There is nothing to prevent
+    multiple nearly-simultaneous calls to `make_pie_if_necessary` from resulting in
+    multiple nearly-simultaneous calls to `canvas.print_png` to create the same file.
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个`make_pie_if_necessary`的实现，在开发服务器上测试时，可以正常工作。甚至在轻负载的生产环境中，它看起来也可以正常工作。然而，如果考虑到一个高负载的生产环境，其中一个多进程的Web服务器可能会几乎同时收到对同一页面的请求，就会出现潜在的问题。没有什么可以阻止几乎同时调用`make_pie_if_necessary`导致多次几乎同时调用`canvas.print_png`来创建相同的文件。
+- en: It's clear how this could happen on a multi-processor machine, since it's easy
+    to see how two simultaneous requests might get dispatched to different processors
+    and result in the same code running simultaneously on each. Both processes check
+    to see if the file exists, both find it does not, and both embark on creating
+    it.
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很明显，这种情况在多处理器机器上可能会发生，因为很容易看到两个同时的请求可能会分派到不同的处理器，并导致相同的代码同时在每个处理器上运行。两个进程都检查文件是否存在，都发现不存在，并都开始创建文件。
+- en: The same situation can also occur even on a single-processor machine, with preemptive
+    scheduling by the operating system. One process may check to see if the file exists,
+    find it does not, and start down the path of creating it. However, before this
+    code actually gets to the point of creating the file, the operating system's preemptive
+    scheduler suspends it and lets the process handling the second nearly-simultaneous
+    request run. This process also fails to find the file when it checks, and also
+    starts down the path of creating it.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 即使在单处理器机器上，由于操作系统的抢占式调度，也可能出现相同的情况。一个进程可能会检查文件是否存在，发现不存在，然后开始创建文件。然而，在这段代码真正开始创建文件之前，操作系统的抢占式调度器将其挂起，并让处理第二个几乎同时的请求的进程运行。这个进程在检查时也找不到文件，并开始创建文件的路径。
+- en: 'What would be the end result if this were to happen? Would it be that bad?
+    Perhaps not. Possibly one process would do its job of creating and writing the
+    file, and then the second one would do its work, overwriting the results from
+    the first. There would have been some duplicate work done, but the end result
+    might be fine: a file on disk containing the PNG image of the pie chart.'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果发生这种情况，最终结果会是什么？会很糟糕吗？也许不会。可能一个进程会完成创建和写入文件的工作，然后第二个进程会覆盖第一个进程的结果。可能会有一些重复的工作，但最终结果可能还不错：磁盘上包含饼图PNG图像的文件。
+- en: However, is there any guarantee that the work of the two nearly simultaneous
+    calls would be serialized like that? No. The `matplotlib` API doesn't provide
+    any such guarantee. Without digging into the implementation it's hard to be sure,
+    but it seems likely that the task of writing out an image file may be split into
+    several different individual write calls. This affords ample opportunity for random
+    interleaving of calls from different processes that reference the same file to
+    result in a corrupt image file ultimately written out to disk.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，有没有保证两个几乎同时的调用的工作会像那样被串行化？没有。`matplotlib` API没有提供任何这样的保证。没有深入研究实现，很难确定，但似乎写出图像文件的任务可能会被拆分成几个不同的单独的写入调用。这为来自引用相同文件的不同进程的随机交错调用提供了充分的机会，最终导致在磁盘上写出损坏的图像文件。
+- en: 'To prevent this, we need to change the `make_pie_if_necessary` function to
+    use an atomic method of checking for the file''s existence and create it if necessary:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了防止这种情况发生，我们需要改变`make_pie_if_necessary`函数，使用原子方法检查文件是否存在，并在必要时创建文件。
+- en: '[PRE69]'
+  id: totrans-278
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: This code uses a combination of flags passed to the `os.open` routine to atomically
+    create the file. `os.O_WRONLY` specifies that the file is open for writing only,
+    `os.O_CREAT` specifies that the file should be created if it does not exist, and
+    `os.O_EXCL`, in combination with `os.O_CREAT`, specifies that an error should
+    be raised if the file exists. Even if multiple processes simultaneously issue
+    this `os.open` call, the underlying implementation guarantees that only one will
+    be successful, and an error will be raised for the others. Thus, only one process
+    will proceed with the code that creates the pie chart.
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码使用传递给`os.open`例程的标志的组合来原子性地创建文件。`os.O_WRONLY`指定文件仅用于写入，`os.O_CREAT`指定如果文件不存在则创建文件，`os.O_EXCL`与`os.O_CREAT`结合使用，指定如果文件存在则引发错误。即使多个进程同时发出这个`os.open`调用，底层实现保证只有一个会成功，其他的会引发错误。因此，只有一个进程将继续执行创建饼图的代码。
+- en: Note that when running on Windows, `os.O_BINARY` also needs to be included in
+    the set of flags passed into `os.open`. Without that flag, Python will treat the
+    file data as text and automatically insert carriage return characters whenever
+    a linefeed is encountered in the data written to the file. This behavior will
+    result in corrupt PNG image files that cannot be displayed.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在Windows上运行时，`os.O_BINARY`也需要包含在传递给`os.open`的标志集中。如果没有这个标志，Python会将文件数据视为文本，并在遇到换行符时自动插入回车符。这种行为会导致无法显示的损坏的PNG图像文件。
+- en: One wrinkle introduced by this change is that the file descriptor returned by
+    `os.open` cannot be passed to `matplotlib` as a target file for the PNG data.
+    The `matplotlib` library accepts filenames, or Python file-like objects, but it
+    does not support a file descriptor as returned by `os.open`. Thus, the code here
+    converts the file descriptor to a Python file object using `os.fdopen`, and passes
+    the returned file to the `create_piechart` routine.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个改变引入的一个问题是，`os.open`返回的文件描述符不能作为PNG数据的目标文件传递给`matplotlib`。`matplotlib`库接受文件名或Python文件对象，但不支持`os.open`返回的文件描述符。因此，这里的代码使用`os.fdopen`将文件描述符转换为Python文件对象，并将返回的文件传递给`create_piechart`例程。
+- en: In the case where the `os.open` call raises an `OSError`, the exception's `errno`
+    attribute is tested against `errno.EEXIST`. This is the specific error that will
+    be raised when the file already exists, and should not be reflected up as an error
+    but rather should be ignored. Any other errors are reflected to the caller of
+    `make_pie_if_necessary`.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`os.open`调用引发`OSError`的情况下，将测试异常的`errno`属性是否等于`errno.EEXIST`。这是文件已经存在时将引发的特定错误，不应该作为错误反映出来，而应该被忽略。任何其他错误都会反映给`make_pie_if_necessary`的调用者。
+- en: These changes ensure that the image file will be created only once, which is
+    good. However, there's another potential problem. Consider what happens now with
+    multiple simultaneous requests. Only one will proceed down the path of creating
+    the file. All the others will see that the file already exists and simply proceed
+    to send a response referencing it.
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些更改确保图像文件只会被创建一次，这是好的。然而，还有另一个潜在的问题。考虑一下现在同时进行多个请求会发生什么。只有一个请求会继续创建文件。其他所有请求都会看到文件已经存在，然后简单地发送一个引用它的响应。
+- en: 'But note that the file existence does not guarantee that the image data has
+    been written to it: there is a fair amount of processing to be done first to create
+    the image, before it is written to the file. Is there any guarantee that this
+    processing will complete before any requests for the file are received and processed?
+    No. Depending on how fast clients are and how slow the image generation is, it''s
+    possible for a request for the file to arrive and be processed before the image
+    data is actually written to the file.'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但请注意，文件的存在并不能保证图像数据已经被写入其中：首先需要进行相当多的处理来创建图像，然后才会将其写入文件。有没有保证这个处理会在收到和处理文件请求之前完成？没有。根据客户端的速度和图像生成的速度，有可能在图像数据实际写入文件之前，文件的请求已经到达并被处理。
+- en: Is this likely to happen? Probably not. What would be the effect if it did?
+    Probably nothing terrible. Likely the browser would display a partial image or
+    the **Pie Chart** alternate text for the image. The user might try re-loading
+    the page to see if it worked better the second time, and by then the image file
+    would probably be served correctly.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可能会发生吗？可能不会。如果发生了会有什么影响？可能没有什么可怕的。可能浏览器会显示一个部分图像或者**饼图**的替代文本。用户可能会尝试重新加载页面，看看第二次是否更好，那时图像文件可能会被正确地提供。
+- en: 'Given the seemingly slim chances of this situation arising, and its fairly
+    minor effect, we might choose not to fix this particular problem. However, in
+    some situations it may be necessary to ensure that the file not only exists but
+    also contains data. It might be worthwhile to investigate fixing this potential
+    problem. One approach is to modify `make_pie_if_necessary` as follows:'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到这种情况发生的可能性似乎很小，而且影响也相当小，我们可能选择不修复这个特定的问题。然而，在某些情况下，可能需要确保文件不仅存在，而且还包含数据。调查修复这个潜在问题可能是值得的。一种方法是修改`make_pie_if_necessary`如下：
+- en: '[PRE70]'
+  id: totrans-287
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'Here the first change is to obtain an exclusive lock on the file, using `fcntl.flock`,
+    before calling `create_piechart`. (Note that `fcntl` is a Unix-only Python module.
+    Thus, this code will not work on Windows. There are add-on packages to get file
+    locking capabilities in Windows, but specifics of using any of them are beyond
+    the scope of what will be covered here.) Second, this file lock is released before
+    the file is closed after `create_piechart` returns. Third, in the case where the
+    file is found to already exist, instead of immediately returning, a new `wait_for_data`
+    function is called. The implementation of `wait_for_data` is:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里的第一个改变是在调用`create_piechart`之前，使用`fcntl.flock`在文件上获取独占锁。（注意，`fcntl`是一个仅适用于Unix的Python模块。因此，这段代码在Windows上不起作用。有一些附加包可以在Windows上获得文件锁定功能，但具体使用它们的细节超出了本文的范围。）第二，这个文件锁在`create_piechart`返回后关闭文件之前被释放。第三，在发现文件已经存在的情况下，不是立即返回，而是调用一个新的`wait_for_data`函数。`wait_for_data`的实现是：
+- en: '[PRE71]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: This code, given a filename, first opens the file for reading. It then assumes
+    the file is empty and enters a loop that will continue as long as the file remains
+    empty. In the loop, the code obtains a shared lock on the file, and then calls
+    `os.fstat` to determine the file's size. If the returned size is non-zero, then
+    `emtpy` is set to `False`, which will terminate the loop at the end of this iteration.
+    Before that, though, the file lock is released, and if the file is in fact empty,
+    the code sleeps for half a second before proceeding with the next iteration of
+    the loop. The sleep is intended to give the other process, presumably busy trying
+    to create and write the data, time to finish its work. Before returning, the file
+    is closed (if it was ever successfully opened).
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码首先打开文件进行读取。然后假设文件为空，并进入一个循环，只要文件保持为空就会继续进行。在循环中，代码获取文件的共享锁，然后调用`os.fstat`来确定文件的大小。如果返回的大小不为零，则将`empty`设置为`False`，这将在此迭代结束时终止循环。在此之前，文件锁被释放，如果文件实际上为空，代码会在继续下一次循环之前睡眠半秒钟。这个睡眠是为了给另一个进程，可能正忙于创建和写入数据，完成工作的时间。在返回之前，文件被关闭（如果它曾经成功打开）。
+- en: That all looks OK, and seems to work well enough when we try it out, testing
+    it in a browser. However, it is hard to be sure, just based on visual inspection
+    of code like this, that it is completely correct. Using a debugger here to artificially
+    create the kind of race conditions we are trying to guard against, can be helpful.
+    We'll do this next.
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一切看起来都很好，在我们尝试在浏览器中测试时似乎运行良好。然而，仅仅通过对这样的代码进行视觉检查，很难确定它是否完全正确。在这里使用调试器人为地创建我们试图防范的竞争条件可能会有所帮助。我们接下来将这样做。
+- en: Using the debugger to force race situations
+  id: totrans-292
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用调试器来强制发生竞争情况
+- en: 'It is not possible to force race conditions using the development server alone:
+    it is single-threaded and single-process. However, we can use the development
+    server in combination with a `manage.py shell` session, with debugger breakpoints
+    and single-stepping, to force any combination of multi-process interleaved execution
+    that we want to test out.'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仅仅使用开发服务器是无法强制发生竞争条件的：它是单线程和单进程的。然而，我们可以将开发服务器与`manage.py shell`会话结合使用，通过调试器断点和单步执行，来强制进行任何我们想要测试的多进程交错执行的组合。
+- en: 'For example, we can insert a breakpoint near the top of the `make_pie_if_necessary`
+    function:'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们可以在`make_pie_if_necessary`函数的顶部附近插入一个断点：
+- en: '[PRE72]'
+  id: totrans-295
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'Now, we need to delete any already-generated image files from disk, so that
+    when this function is first entered it will go down the path of trying to create
+    a file:'
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要从磁盘中删除任何已经生成的图像文件，这样当这个函数首次被调用时，它将沿着尝试创建文件的路径进行：
+- en: '[PRE73]'
+  id: totrans-297
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'Next, we ensure the development server is running, and from a browser, re-load
+    the results page for the **Television Trends** survey. The browser will appear
+    to hang, and in the development server console we will see the debugger entered:'
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们确保开发服务器正在运行，并从浏览器中重新加载**电视趋势**调查的结果页面。浏览器将会出现卡住的情况，在开发服务器控制台中我们将看到调试器已进入：
+- en: '[PRE74]'
+  id: totrans-299
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: 'If we use `next` to step over this call, we will see:'
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们使用`next`来跳过这个调用，我们将看到：
+- en: '[PRE75]'
+  id: totrans-301
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'Execution proceeded to the next line of code, so the `os.open` call was successful.
+    This thread is now frozen at the point where the file has been created, but no
+    data has been written to it. We want to verify that another process calling the
+    same function will correctly proceed to wait for the file data to be written before
+    continuing. To test this, we can start a `manage.py shell` in a separate window,
+    manually retrieve the appropriate question, and call its `check_piechart` method:'
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码执行到了下一行，所以`os.open`调用是成功的。这个线程现在被冻结在文件已经被创建但尚未写入数据的地方。我们希望验证另一个调用相同函数的进程是否会正确地等待文件数据被写入后再继续。为了测试这一点，我们可以在一个单独的窗口中启动`manage.py
+    shell`，手动检索适当的问题，并调用它的`check_piechart`方法：
+- en: '[PRE76]'
+  id: totrans-303
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: 'The breakpoint in `make_pie_if_necessary` has again stopped execution right
+    before the call to open the file. In this case when we use next to step over the
+    call, we should see the code take a different path, since the file already exists:'
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`make_pie_if_necessary`中的断点再次在调用打开文件之前停止执行。在这种情况下，当我们使用next来跳过调用时，我们应该看到代码走了不同的路径，因为文件已经存在：'
+- en: '[PRE77]'
+  id: totrans-305
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'That looks good. Stepping through the code we see that `os.open` raised an
+    `OSError` with `errno` attribute `errno.EEXIST`, as expected. The shell thread,
+    then, will proceed to wait for the file to have data. If we step into that routine,
+    we can see if it runs as we expect:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看起来不错。通过逐步执行代码，我们看到`os.open`引发了一个`OSError`，其`errno`属性为`errno.EEXIST`，正如预期的那样。然后，shell线程将继续等待文件有数据。如果我们进入该例程，我们可以看到它是否按我们的预期运行：
+- en: '[PRE78]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: 'At this point, we''ve done the preliminary processing in this routine. The
+    file is now open and `empty` has been initialized to `True`. We''re ready to enter
+    the first iteration of the loop. What should happen? Since the other thread of
+    control is still blocked before it has even obtained the exclusive lock on the
+    file, this thread should be able to obtain a shared lock on the file, test the
+    file size, and end up sleeping for half a second since the file is empty. Stepping
+    through, we see that is indeed what happens:'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，我们已经在这个例程中进行了初步处理。文件现在已经打开，并且`empty`已经被初始化为`True`。我们准备进入循环的第一次迭代。应该发生什么？由于另一个控制线程仍然被阻塞，甚至在获得文件的独占锁之前，这个线程应该能够获得文件的共享锁，测试文件大小，并最终因为空文件而睡眠半秒钟。通过逐步执行，我们看到确实发生了这种情况：
+- en: '[PRE79]'
+  id: totrans-309
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: 'The `fcntl.flock` to lock the file returned immediately since the file is not
+    yet locked by the other thread. This code found the file size to be zero, proceeded
+    to sleep for half a second, and is now beginning a second iteration of the loop.
+    Let''s step it forward to a point where it has again obtained a shared lock on
+    the file:'
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于文件尚未被另一个线程锁定，`fcntl.flock`立即返回。这段代码发现文件大小为零，继续睡眠半秒钟，现在开始第二次循环的迭代。让我们将它推进到它再次获得文件的共享锁的地方：
+- en: '[PRE80]'
+  id: totrans-311
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'We will now leave this thread frozen here, return to the development server
+    thread, and attempt to move forward in it:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将让这个线程在这里被冻结，返回到开发服务器线程，并尝试在其中继续前进：
+- en: '[PRE81]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: This code was not able to proceed very far. It did convert the file descriptor
+    into a Python file object, but the next call is to get an exclusive lock on the
+    file, and that call has been blocked—there is no `(Pdb)` prompt in response to
+    the final `n` command, so execution has stopped somewhere inside the call. That's
+    good, since a call to obtain an exclusive lock should not return until the other
+    thread releases its lock.
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码无法继续很远。它确实将文件描述符转换为Python文件对象，但接下来的调用是对文件获取独占锁，而该调用已被阻塞——在最后的`n`命令中没有`(Pdb)`提示，因此执行已在调用内的某个地方停止。这很好，因为调用获取独占锁不应该在其他线程释放锁之前返回。
+- en: 'We can switch back to that thread and move it forward to the point where it
+    releases the lock:'
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以切换回到该线程，并将其推进到释放锁的地方：
+- en: '[PRE82]'
+  id: totrans-316
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: 'Immediately when we stepped over the call to release the lock, the development
+    server console returned to the `(Pdb)` prompt:'
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们跳过释放锁的调用时，开发服务器控制台立即返回到`(Pdb)`提示符：
+- en: '[PRE83]'
+  id: totrans-318
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: 'This thread now has an exclusive lock on the file, and if we keep it frozen
+    at this point, we should see that the other thread will be blocked on its next
+    attempt to obtain a shared lock:'
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个线程现在对文件有独占锁，如果我们保持它在这一点上被冻结，我们应该看到另一个线程在尝试获取共享锁时会被阻塞：
+- en: '[PRE84]'
+  id: totrans-320
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: 'That looks good, this thread has been blocked. It should now not be able to
+    obtain the lock until the development server thread releases it, at which point
+    the file will have data. Let''s move the development server thread forward:'
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看起来很好，这个线程已经被阻塞。现在它应该无法获得锁，直到开发服务器线程释放它，此时文件将有数据。让我们推进开发服务器线程：
+- en: '[PRE85]'
+  id: totrans-322
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: 'Here we stepped over the call to create the pie chart, and the call to unlock
+    the file. At that point, the shell thread stopped blocking:'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们跳过了创建饼图的调用，以及解锁文件的调用。在那时，shell线程停止了阻塞：
+- en: '[PRE86]'
+  id: totrans-324
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'This thread should now see that the file has data:'
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个线程现在应该看到文件有数据：
+- en: '[PRE87]'
+  id: totrans-326
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'That looks good; the code is setting `empty` to `False`, which should trigger
+    the end of the loop once the task of releasing the shared lock is finished:'
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看起来不错；代码将`empty`设置为`False`，这应该在释放共享锁的任务完成后触发循环的结束：
+- en: '[PRE88]'
+  id: totrans-328
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: 'Indeed, the code proceeded to exit the loop, close the file, and return. We
+    can enter `c` to continue here, and get back the regular shell prompt. At this
+    point we can also let the development server continue, and it will re-enter the
+    debugger for processing of the second pie chart:'
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确实，代码继续退出循环，关闭文件并返回。我们可以输入`c`来继续这里，并获得常规的shell提示符。此时我们也可以让开发服务器继续，它将重新进入调试器以处理第二个饼图：
+- en: '[PRE89]'
+  id: totrans-330
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: Are we done or is there anything else we might want to test at this point? All
+    seemed to look good, but one thing you might have noticed tracing through the
+    code was that the second thread that was waiting on the file data was allowed
+    to proceed before the first thread actually closed the file. Might that be a problem?
+    In the absence of explicit calls to flush data to disk, it's possible that data
+    is buffered in memory, and won't actually get written until the file is closed.
+    Depending on how long that takes, the other thread that proceeded under the assumption
+    that the file was now all set for reading might run into trouble, because in fact
+    not all of the data is available on disk for reading by a separate thread.
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们完成了吗？或者在这一点上我们可能还想测试其他东西吗？一切看起来都很好，但你可能已经注意到在代码中跟踪时的一件事是，等待文件数据的第二个线程在第一个线程实际关闭文件之前被允许继续。这可能是个问题吗？在没有显式调用将数据刷新到磁盘的情况下，可能会在内存中缓冲数据，并且直到文件关闭才会实际写入。根据这需要多长时间，假设文件现在已经准备好供另一个线程读取，那么可能会遇到麻烦，因为实际上并非所有数据都可以供单独的线程读取。
+- en: 'Can we test that situation? Yes, we can use this second request by the development
+    server to see if there might be a problem. In this case, we leave the development
+    server blocked before the call to create the file, and from the shell session
+    we proceed to retrieve the second question and call its `check_piechart` method:'
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以测试一下这种情况吗？是的，我们可以使用开发服务器的第二个请求来看看是否可能存在问题。在这种情况下，我们在调用创建文件之前让开发服务器被阻塞，然后从shell会话中继续检索第二个问题并调用其`check_piechart`方法：
+- en: '[PRE90]'
+  id: totrans-333
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: 'Here we''ve moved along in the shell session all the way through locking the
+    file, creating the pie chart, and unlocking the file. We''ve not yet closed the
+    file. Now if we move forward in the development server, it will see that the file
+    exists and has data:'
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们在shell会话中一直进行到锁定文件、创建饼图和解锁文件。我们还没有关闭文件。现在，如果我们在开发服务器中继续，它将看到文件存在并且有数据：
+- en: '[PRE91]'
+  id: totrans-335
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: 'That looks good; the code in this case took the right path. But if we continue
+    from here, still without giving the shell thread a chance to close the file, will
+    the browser''s subsequent request for this image file be served successfully?
+    We can test it out by entering `c` here, and checking what the browser shows for
+    the second pie chart. It seems we do have a problem:'
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看起来不错；在这种情况下，代码走了正确的路径。但是如果我们从这里继续，仍然没有给shell线程关闭文件的机会，那么浏览器对这个图像文件的后续请求是否会成功呢？我们可以通过在这里输入`c`来测试一下，并检查浏览器对第二个饼图的显示。看起来我们有问题：
+- en: '![Using the debugger to force race situations](img/7566_09_10.jpg)'
+  id: totrans-337
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用调试器来强制竞争情况](img/7566_09_10.jpg)'
+- en: 'Either we''ve broken the code that generates the pie chart, or that''s the
+    result of serving an image file that has not yet been completely written to the
+    disk. The latter seems more likely. How do we fix this? We can change the `make_pie_if_necessary`
+    function to flush the data to disk before releasing the exclusive lock:'
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要么我们破坏了生成饼图的代码，要么这是为了提供一个尚未完全写入磁盘的图像文件的结果。后者似乎更有可能。我们该如何解决这个问题？我们可以更改`make_pie_if_necessary`函数，在释放独占锁之前将数据刷新到磁盘：
+- en: '[PRE92]'
+  id: totrans-339
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: Consulting the Python documentation shows both a `flush` of the file and a call
+    to `os.fsync`, for it is needed to ensure that all the file data is actually written
+    to disk, so we have added both of those before the call to unlock the file.
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查阅Python文档显示，需要对文件进行`flush`和调用`os.fsync`，以确保所有文件数据实际上被写入磁盘，因此我们在解锁文件之前添加了这两个调用。
+- en: Does that work? Testing it means again deleting the image files and again forcing
+    the race condition we are looking to exercise. The detailed output isn't included
+    here, but indeed if we force a new shell session to be the thread that creates
+    the second image file, halt it before it closes the file, and let the development
+    server thread proceed to send the completed survey response page and then serve
+    the image files, we see a complete second image in the browser. So adding the
+    calls to `flush` and `os.fsync` does appear to fix the problem.
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样行得通吗？测试它意味着再次删除图像文件，再次强制我们要进行的竞争条件。这里没有包括详细的输出，但确实，如果我们强制一个新的shell会话成为创建第二个图像文件的线程，在它关闭文件之前停止它，并让开发服务器线程继续发送完成的调查响应页面，然后提供图像文件，我们会在浏览器中看到完整的第二个图像。因此，添加`flush`和`os.fsync`的调用似乎可以解决问题。
+- en: This exercise has demonstrated how hard it can be to write code that correctly
+    handles race conditions. Unfortunately, such race conditions often cannot be avoided
+    in web applications, which will generally be deployed in multi-threaded, multi-process
+    web servers. The debugger is a valuable tool for ensuring that code written to
+    deal with these conditions works as intended.
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个练习展示了编写正确处理竞争条件的代码有多么困难。不幸的是，这种竞争条件通常无法在Web应用程序中避免，因为它们通常会部署在多线程、多进程的Web服务器中。调试器是确保处理这些条件的代码按预期工作的宝贵工具。
+- en: Notes on using graphical debuggers
+  id: totrans-343
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用图形调试器的注意事项
+- en: In this chapter, we have focused exclusively on use of the Python command-line
+    debugger, pdb. Graphical integrated development environments such as Eclipse,
+    NetBeans, and Komodo also provide debuggers that can be used for Django application
+    code (though some require installation of particular plugins to support development
+    of Python code). The details of setting up and using any of these environments
+    is beyond the scope of what is covered here, but some general notes on using graphical
+    debuggers for Django applications will be included next.
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们专注于使用Python命令行调试器pdb。图形集成开发环境，如Eclipse、NetBeans和Komodo也提供了可以用于Django应用程序代码的调试器（尽管有些需要安装特定插件来支持Python代码的开发）。设置和使用这些环境的细节超出了本文的范围，但下面将包括一些关于在Django应用程序中使用图形调试器的一般说明。
+- en: First, there are some definite advantages to using a graphical debugger. Usually,
+    a graphical debugger will provide individual window panes that show the currently
+    executing source code, the program stack trace, local variables, and program output.
+    This can make it easy to quickly get an overall sense of the state of the program.
+    It tends to be harder to do this in pdb, where you must run individual commands
+    to get the same information, and be able to keep the results in mind after they
+    scroll off the screen.
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，使用图形调试器有一些明显的优势。通常，图形调试器会提供单独的窗格，显示当前执行的源代码、程序堆栈跟踪、本地变量和程序输出。这可以让您快速地对程序的状态有一个整体的感觉。在pdb中做到这一点往往更难，您必须运行单独的命令来获取相同的信息，并且在它们从屏幕上滚动出去后能够记住结果。
+- en: A second advantage to graphical debuggers is that you can generally set breakpoints
+    simply by selecting the line of code in the debugger and choosing a menu item.
+    Thus, you can easily debug without changing the source to include explicit breaks
+    into the debugger.
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图形调试器的第二个优势是，通常可以通过在调试器中选择代码行并选择菜单项来设置断点。因此，您可以轻松地进行调试，而无需更改源代码以包含显式的断点进入调试器。
+- en: One requirement for breakpoints in graphical debuggers to work, though, is that
+    the `runserver` command used to start the development server in the debugger must
+    specify the `--noreload` option. Without this option, the development server reloads
+    itself automatically when it detects that running code has changed on disk. This
+    reload mechanism interferes with the method used by graphical debuggers to trigger
+    breakpoints activating the debugger, so it must be disabled by specifying `--noreload`
+    when running the server.
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图形调试器中断点的一个要求是，在调试器中启动开发服务器的`runserver`命令必须指定`--noreload`选项。没有这个选项，当检测到磁盘上的运行代码已更改时，开发服务器会自动重新加载自身。这种重新加载机制会干扰图形调试器用于触发断点激活调试器的方法，因此在运行服务器时必须通过指定`--noreload`来禁用它。
+- en: A downside of this of course, is that the development server running in the
+    integrated development environment will not automatically reload when code changes
+    are made. If you have gotten used to the automatic reload feature when running
+    from a simple command line, it can be hard to remember the need to manually restart
+    the server after making code changes.
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，这样做的一个缺点是，集成开发环境中运行的开发服务器在代码更改后不会自动重新加载。如果你已经习惯了从简单命令行运行时的自动重新加载功能，可能很难记住在进行代码更改后需要手动重新启动服务器。
+- en: Another thing to watch out for when using a graphical debugger is the debugger
+    itself triggering unexpected behavior. In order to produce the display of local
+    variables, for example, the debugger must interrogate their values. For local
+    variables that are `QuerySets`, this may mean that the debugger causes database
+    interactions that the application itself would never initiate. Thus the debugger,
+    in attempting to display the value of local variables, can trigger evaluation
+    of `QuerySets` at points where the application itself does not.
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用图形调试器时需要注意的另一件事是调试器本身可能会触发意外行为。例如，为了显示本地变量的值，调试器必须询问它们的值。对于`QuerySets`这样的本地变量，这可能意味着调试器会导致数据库交互，而应用程序本身永远不会发起。因此，调试器在尝试显示本地变量的值时，可能会在应用程序本身不会触发的地方触发`QuerySets`的评估。
+- en: '`QuerySets` are just one example of how the debugger can inject unexpected
+    behavior. Essentially the debugger may need to run a lot of code behind the scenes
+    in order to do its work, and that behind the scenes work may have side-effects.
+    These side-effects may or may not interfere with the task of debugging the application
+    code. If they do (generally signaled by unexpected results that occur only when
+    run under the debugger), it may be more productive to switch to a different debugging
+    technique rather than trying to figure out what exactly is going on behind the
+    scenes with the debugger.'
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`QuerySets`只是调试器可能引入意外行为的一个例子。基本上，调试器可能需要在幕后运行大量代码才能完成其工作，而这些幕后工作可能会产生副作用。这些副作用可能会干扰或不干扰调试应用程序代码的任务。如果它们干扰了（通常是在调试器下运行时出现意外结果），与其试图弄清楚调试器幕后到底发生了什么，不如换用不同的调试技术可能更有效。'
+- en: Summary
+  id: totrans-351
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: 'This brings us to the end of discussing the use of debuggers when developing
+    Django application code. In this chapter, we:'
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是我们讨论开发Django应用程序代码时使用调试器的结束。在本章中，我们：
+- en: Implemented the display of survey results using `pygooglechart` to create pie
+    charts. When we ran into some trouble along the way, we saw how the Python debugger,
+    pdb, could be used to help figure out what was going wrong. We experimented with
+    many of the most useful pdb commands. We learned the commands used to see the
+    context of the code that is running, examine and change the values of variables,
+    and flexibly control the execution of the code as it proceeds in the debugger.
+  id: totrans-353
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`pygooglechart`实现了显示调查结果的功能，以创建饼图。当我们在这个过程中遇到一些麻烦时，我们看到了Python调试器pdb如何帮助我们找出问题出在哪里。我们尝试了许多最有用的pdb命令。我们学会了查看正在运行的代码的上下文，检查和更改变量的值，并灵活地控制代码在调试器中的执行过程的命令。
+- en: Re-implemented the display of survey results using the `matplotlib` library.
+    For this alternative implementation, we ended up needing to write code that was
+    vulnerable to multi-process race conditions. Here we saw how pdb can be used to
+    help verify correct behavior of this type of code, since it allows us to force
+    problematic race conditions to occur, and then verify that the code behaves properly
+    for such cases.
+  id: totrans-354
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`matplotlib`库重新实现了显示调查结果的功能。对于这种替代实现，我们最终需要编写容易受到多进程竞争条件影响的代码。在这里，我们看到了pdb如何帮助验证这种类型代码的正确行为，因为它允许我们强制出现问题的竞争条件，然后验证代码对这种情况的行为是否正确。
+- en: Finally, some pros and cons of using graphical debuggers for Django application
+    code were discussed.
+  id: totrans-355
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最后，讨论了使用图形调试器来开发Django应用程序代码的一些利弊。
+- en: In the next chapter, we will learn what to do when we encounter problems during
+    development that none of the debugging techniques discussed so far seem to help
+    in fixing.
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习在开发过程中遇到问题时该怎么办，而目前讨论的调试技术似乎都无法解决这些问题。

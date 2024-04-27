@@ -1,0 +1,2307 @@
+- en: Extracting Patterns from Clickstream Data
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从点击流数据中提取模式
+- en: When collecting real-world data between individual measures or events, there
+    are usually very intricate and highly complex relationships to observe. The guiding
+    example for this chapter is the observation of click events that users generate
+    on a website and its subdomains. Such data is both interesting and challenging
+    to investigate. It is interesting, as there are usually many *patterns* that groups
+    of users show in their browsing behavior and certain *rules *they might follow.
+    Gaining insights about user groups, in general, is of interest, at least for the
+    company running the website and might be the focus of their data science team.
+    Methodology aside, putting a production system in place that can detect patterns
+    in real time, for instance, to find malicious behavior, can be very challenging
+    technically. It is immensely valuable to be able to understand and implement both
+    the algorithmic and technical sides.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在收集个别测量或事件之间的真实世界数据时，通常会有非常复杂和高度复杂的关系需要观察。本章的指导示例是用户在网站及其子域上生成的点击事件的观察。这样的数据既有趣又具有挑战性。它有趣，因为通常有许多*模式*显示出用户在其浏览行为中的行为和某些*规则*。至少对于运行网站的公司和可能成为他们数据科学团队的焦点，了解用户群体的见解是有趣的。方法论方面，建立一个能够实时检测模式的生产系统，例如查找恶意行为，技术上可能非常具有挑战性。能够理解和实施算法和技术两方面是非常有价值的。
+- en: 'In this chapter, we will look into two topics in depth: doing *pattern mining *and
+    working with *streaming data *in Spark. The chapter is split up into two main
+    sections. In the first, we will introduce the three available pattern mining algorithms
+    that Spark currently comes with and apply them to an interesting dataset. In the
+    second, we will take a more technical view on things and address the core problems
+    that arise when deploying a streaming data application using algorithms from the
+    first part. In particular, you will learn the following:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将深入研究两个主题：在Spark中进行*模式挖掘*和处理*流数据*。本章分为两个主要部分。在第一部分中，我们将介绍Spark目前提供的三种可用模式挖掘算法，并将它们应用于一个有趣的数据集。在第二部分中，我们将更加技术化地看待问题，并解决使用第一部分算法部署流数据应用时出现的核心问题。特别是，您将学习以下内容：
+- en: The basic principles of frequent pattern mining.
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 频繁模式挖掘的基本原则。
+- en: Useful and relevant data formats for applications.
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用程序的有用和相关数据格式。
+- en: How to load and analyze a clickstream data set generated from user activity
+    on [http://MSNBC.com](http://MSNBC.com).
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何加载和分析用户在[http://MSNBC.com](http://MSNBC.com)上生成的点击流数据集。
+- en: Understanding and comparing three pattern mining algorithms available in Spark,
+    namely *FP-growth, association rules*, and **prefix span.**
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Spark中了解和比较三种模式挖掘算法，即*FP-growth，关联规则*和**前缀跨度**。
+- en: How to apply these algorithms to MSNBC click data and other examples to identify
+    the relevant patterns.
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何将这些算法应用于MSNBC点击数据和其他示例以识别相关模式。
+- en: The very basics of *Spark Streaming* and what use cases can be covered by it.
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Spark Streaming*的基础知识以及它可以涵盖哪些用例。'
+- en: How to put any of the preceding algorithms into production by deploying them
+    with Spark Streaming.
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何通过使用Spark Streaming将任何先前的算法投入生产。
+- en: Implementing a more realistic streaming application with click events aggregated
+    on the fly.
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用实时聚合的点击事件实现更实际的流应用程序。
+- en: By construction, this chapter is more technically involved towards the end,
+    but with *Spark Streaming* it also allows us to introduce yet another very important
+    tool from the Spark ecosphere. We start off by presenting some of the basic questions
+    of pattern mining and then discuss how to address them.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过构建，本章在技术上更加涉及到了末尾，但是通过*Spark Streaming*，它也允许我们介绍Spark生态系统中另一个非常重要的工具。我们首先介绍模式挖掘的一些基本问题，然后讨论如何解决这些问题。
+- en: Frequent pattern mining
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 频繁模式挖掘
+- en: 'When presented with a new data set, a natural sequence of questions is:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当面对一个新的数据集时，一个自然的问题序列是：
+- en: What kind of data do we look at; that is, what structure does it have?
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们看什么样的数据；也就是说，它有什么结构？
+- en: Which observations in the data can be found frequently; that is, which patterns
+    or rules can we identify within the data?
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据中可以经常发现哪些观察结果；也就是说，我们可以在数据中识别出哪些模式或规则？
+- en: How do we assess what is frequent; that is, what are the good measures of relevance
+    and how do we test for it?
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们如何评估什么是频繁的；也就是说，什么是良好的相关性度量，我们如何测试它？
+- en: On a very high level, frequent pattern mining addresses precisely these questions.
+    While it's very easy to dive head first into more advanced machine learning techniques,
+    these pattern mining algorithms can be quite informative and help build an intuition
+    about the data.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在非常高的层次上，频繁模式挖掘正是在解决这些问题。虽然很容易立即深入研究更高级的机器学习技术，但这些模式挖掘算法可以提供相当多的信息，并帮助建立对数据的直觉。
+- en: To introduce some of the key notions of frequent pattern mining, let's first
+    consider a somewhat prototypical example for such cases, namely shopping carts.
+    The study of customers being interested in and buying certain products has been
+    of prime interest to marketers around the globe for a very long time. While online
+    shops certainly do help in further analyzing customer behavior, for instance,
+    by tracking the browsing data within a shopping session, the question of what
+    items have been bought and what patterns in buying behavior can be found applies
+    to purely offline scenarios as well. We will see a more involved example of clickstream
+    data accumulated on a website soon; for now, we will work under the assumption
+    that only the events we can track are the actual payment transactions of an item.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了介绍频繁模式挖掘的一些关键概念，让我们首先考虑一个典型的例子，即购物车。对顾客对某些产品感兴趣并购买的研究长期以来一直是全球营销人员的主要关注点。虽然在线商店确实有助于进一步分析顾客行为，例如通过跟踪购物会话中的浏览数据，但已购买的物品以及购买行为中的模式的问题也适用于纯线下场景。我们很快将看到在网站上积累的点击流数据的更复杂的例子；目前，我们将在假设我们可以跟踪的事件中只有物品的实际支付交易的情况下进行工作。
+- en: 'Just this given data, for instance, for groceries shopping carts in supermarkets
+    or online, leads to quite a few interesting questions, and we will focus mainly
+    on the following three:'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，对于超市或在线杂货购物车的给定数据，会引发一些有趣的问题，我们主要关注以下三个问题：
+- en: '*Which items are frequently bought together?* For instance, there is anecdotal
+    evidence suggesting that beer and diapers are often bought together in one shopping
+    session. Finding patterns of products that often go together may, for instance,
+    allow a shop to physically place these products closer to each other for an increased
+    shopping experience or promotional value even if they don''t belong together at
+    first sight. In the case of an online shop, this sort of analysis might be the
+    base for a simple recommender system.'
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*哪些物品经常一起购买？*例如，有传闻证据表明啤酒和尿布经常在同一次购物会话中一起购买。发现经常一起购买的产品的模式可能允许商店将这些产品放在彼此更近的位置，以增加购物体验或促销价值，即使它们乍一看并不属于一起。在在线商店的情况下，这种分析可能是简单推荐系统的基础。'
+- en: Based on the previous question, *are there any interesting implications or rules
+    to observe in shopping behaviour?,* continuing with the shopping cart example,
+    can we establish associations such as *if bread and butter have been bought, we
+    also often find cheese in the shopping cart*? Finding such association rules can
+    be of great interest, but also need more clarification of what we consider to
+    be *often*, that is, what does frequent mean.
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 基于前面的问题，*在购物行为中是否有任何有趣的影响或规则？*继续以购物车为例，我们是否可以建立关联，比如*如果购买了面包和黄油，我们也经常在购物车中找到奶酪*？发现这样的关联规则可能非常有趣，但也需要更多澄清我们认为的*经常*是什么意思，也就是，频繁意味着什么。
+- en: Note that, so far, our shopping carts were simply considered a *bag of items* without
+    additional structure. At least in the online shopping scenario, we can endow data
+    with more information. One aspect we will focus on is that of the *sequentiality *of
+    items; that is, we will take note of the order in which the products have been
+    placed into the cart. With this in mind, similar to the first question, one might
+    ask, *which sequence of items can often be found in our transaction data? *For
+    instance, larger electronic devices bought might be followed up by additional
+    utility items.
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 注意，到目前为止，我们的购物车只是被简单地视为一个*物品袋*，没有额外的结构。至少在在线购物的情况下，我们可以为数据提供更多信息。我们将关注物品的*顺序性*;也就是说，我们将注意产品被放入购物车的顺序。考虑到这一点，类似于第一个问题，人们可能会问，*我们的交易数据中经常可以找到哪些物品序列？*例如，购买大型电子设备后可能会跟随购买额外的实用物品。
+- en: The reason we focus on these three questions in particular is that Spark MLlib
+    comes with precisely three pattern mining algorithms that roughly correspond to
+    the aforementioned questions by their ability to answer them. Specifically, we
+    will carefully introduce *FP-growth*, *association rules*, and *prefix span, *in
+    that order, to address these problems and show how to solve them using Spark.
+    Before doing so, let's take a step back and formally introduce the concepts we
+    have been motivated for so far, alongside a running example. We will refer to
+    the preceding three questions throughout the following subsection.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们之所以特别关注这三个问题，是因为Spark MLlib正好配备了三种模式挖掘算法，它们大致对应于前面提到的问题，能够回答这些问题。具体来说，我们将仔细介绍*FP-growth*、*关联规则*和*前缀跨度*，以解决这些问题，并展示如何使用Spark解决这些问题。在这样做之前，让我们退一步，正式介绍到目前为止我们已经为之努力的概念，以及一个运行的例子。我们将在接下来的小节中提到前面的三个问题。
+- en: Pattern mining terminology
+  id: totrans-24
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 模式挖掘术语
+- en: We will start with a set of items *I = {a[1], ..., a[n]}*, which serves as the
+    base for all the following concepts. A *transaction* T is just a set of items
+    in I, and we say that T is a transaction of length *l* if it contains *l* item.
+    A *transaction database* D is a database of transaction IDs and their corresponding
+    transactions.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从一组项目*I = {a[1], ..., a[n]}*开始，这将作为所有以下概念的基础。*事务* T只是I中的一组项目，如果它包含*l*个项目，则我们说T是长度为*l*的事务。*事务数据库*
+    D是事务ID和它们对应的事务的数据库。
+- en: 'To give a concrete example of this, consider the following situation. Assume
+    that the full item set to shop from is given by *I = {bread, cheese, ananas, eggs,
+    donuts, fish, pork, milk, garlic, ice cream, lemon, oil, honey, jam, kale, salt}*.
+    Since we will look at a lot of item subsets, to make things more readable later
+    on, we will simply abbreviate these items by their first letter, that is, we''ll
+    write *I = {b, c, a, e, d, f, p, m, g, i, l, o, h, j, k, s}*. Given these items,
+    a small transaction database D could look as follows:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了给出一个具体的例子，考虑以下情况。假设要购物的完整物品集由*I = {面包，奶酪，菠萝，鸡蛋，甜甜圈，鱼，猪肉，牛奶，大蒜，冰淇淋，柠檬，油，蜂蜜，果酱，羽衣甘蓝，盐}*给出。由于我们将查看很多物品子集，为了使以后的事情更容易阅读，我们将简单地用它们的第一个字母缩写这些物品，也就是说，我们将写*I
+    = {b，c，a，e，d，f，p，m，g，i，l，o，h，j，k，s}*。给定这些物品，一个小的交易数据库D可能如下所示：
+- en: '| **Transaction ID** | **Transaction** |'
+  id: totrans-27
+  prefs: []
+  type: TYPE_TB
+  zh: 交易ID | 交易
+- en: '| 1 | a, c, d, f, g, i, m, p |'
+  id: totrans-28
+  prefs: []
+  type: TYPE_TB
+  zh: '| 1 | a, c, d, f, g, i, m, p |'
+- en: '| 2 | a, b, c, f, l, m, o |'
+  id: totrans-29
+  prefs: []
+  type: TYPE_TB
+  zh: '| 2 | a, b, c, f, l, m, o |'
+- en: '| 3 | b, f, h, j, o |'
+  id: totrans-30
+  prefs: []
+  type: TYPE_TB
+  zh: '| 3 | b, f, h, j, o |'
+- en: '| 4 | b, c, k, s, p |'
+  id: totrans-31
+  prefs: []
+  type: TYPE_TB
+  zh: '| 4 | b, c, k, s, p |'
+- en: '| 5 | a, c, e, f, l, m, n, p |'
+  id: totrans-32
+  prefs: []
+  type: TYPE_TB
+  zh: '| 5 | a, c, e, f, l, m, n, p |'
+- en: 'Table 1: A small shopping cart database with five transactions'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表1：一个包含五个交易的小购物车数据库
+- en: Frequent pattern mining problem
+  id: totrans-34
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 频繁模式挖掘问题
+- en: 'Given the definition of a transaction database, a *pattern* P is a *transaction
+    contained in the transactions in D* and the support, *supp(P)*, of the pattern
+    is the number of transactions for which this is true, divided or normalized by
+    the number of transactions in D:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 鉴于交易数据库的定义，*模式*P是包含在D中的交易，模式的支持*supp(P)*是这个为真的交易数量，除以或归一化为D中的交易数量：
+- en: '*supp(s) = supp[D](s) = |{ s'' ∈ S | s <s''}| / |D|*'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*supp(s) = supp[D](s) = |{ s'' ∈ S | s <s''}| / |D|*'
+- en: We use the *<* symbol to denote *s* as a subpattern of *s'* or, conversely,
+    call *s'* a superpattern of *s*. Note that in the literature, you will sometimes
+    also find a slightly different version of support that does not normalize the
+    value. For example, the pattern *{a, c, f}* can be found in transactions 1, 2,
+    and 5\. This means that *{a, c, f}* is a pattern of support *0.6* in our database
+    D of five items.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用*<*符号来表示*s*作为*s'*的子模式，或者反过来，称*s'*为*s*的超模式。请注意，在文献中，您有时也会找到一个略有不同的支持版本，它不会对值进行归一化。例如，模式*{a，c，f}*可以在交易1、2和5中找到。这意味着*{a，c，f}*是我们数据库D中支持为0.6的模式的模式。
+- en: Support is an important notion, as it gives us a first example of measuring
+    the frequency of a pattern, which, in the end, is what we are after. In this context,
+    for a given minimum support threshold *t*, we say *P* is a frequent pattern if
+    and only if *supp(P)* is at least *t*. In our running example, the frequent patterns
+    of length 1 and minimum support *0.6* are *{a}*, *{b}*, *{c}*, *{p}*, and *{m}*
+    with support 0.6 and *{f}* with support 0.8\. In what follows, we will often drop
+    the brackets for items or patterns and write *f* instead of *{f}*, for instance.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 支持是一个重要的概念，因为它给了我们一个测量模式频率的第一个例子，这正是我们追求的。在这种情况下，对于给定的最小支持阈值*t*，我们说*P*是一个频繁模式，当且仅当*supp(P)*至少为*t*。在我们的运行示例中，长度为1且最小支持*0.6*的频繁模式是*{a}，{b}，{c}，{p}，和{m}*，支持为0.6，以及*{f}*，支持为0.8。在接下来的内容中，我们经常会省略项目或模式的括号，并写*f*代替*{f}*，例如。
+- en: Given a minimum support threshold, the problem of finding all the frequent patterns
+    is called the *frequent pattern mining problem* and it is, in fact, the formalized
+    version of the aforementioned first question. Continuing with our example, we
+    have found all frequent patterns of length 1 for *t = 0.6* already. How do we
+    find longer patterns? On a theoretical level, given unlimited resources, this
+    is not much of a problem, since all we need to do is count the occurrences of
+    items. On a practical level, however, we need to be smart about how we do so to
+    keep the computation efficient. Especially for databases large enough for Spark
+    to come in handy, it can be very computationally intense to address the frequent
+    pattern mining problem.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 给定最小支持阈值，找到所有频繁模式的问题被称为*频繁模式挖掘问题*，实际上，这是前面提到的第一个问题的形式化版本。继续我们的例子，我们已经找到了*t =
+    0.6*的长度为1的所有频繁模式。我们如何找到更长的模式？在理论上，鉴于资源是无限的，这并不是什么大问题，因为我们所需要做的就是计算项目的出现次数。然而，在实际层面上，我们需要聪明地处理这个问题，以保持计算的高效性。特别是对于足够大以至于Spark能派上用场的数据库来说，解决频繁模式挖掘问题可能会非常计算密集。
+- en: 'One intuitive way to go about this is as follows:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个直观的解决方法是这样的：
+- en: Find all the frequent patterns of length 1, which requires one full database
+    scan. This is how we started with in our preceding example.
+  id: totrans-41
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 找到所有长度为1的频繁模式，这需要进行一次完整的数据库扫描。这就是我们在前面的例子中开始的方式。
+- en: For patterns of length 2, generate all the combinations of frequent 1-patterns,
+    the so-called candidates*,* and test if they exceed the minimum support by doing
+    another scan of D.
+  id: totrans-42
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对于长度为2的模式，生成所有频繁1-模式的组合，即所谓的候选项，并通过对D的另一次扫描来测试它们是否超过最小支持。
+- en: Importantly, we do not have to consider the combinations of infrequent patterns,
+    since patterns containing infrequent patterns can not become frequent. This rationale
+    is called the **apriori principle***.*
+  id: totrans-43
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重要的是，我们不必考虑不频繁模式的组合，因为包含不频繁模式的模式不能变得频繁。这种推理被称为**先验原则**。
+- en: For longer patterns, continue this procedure iteratively until there are no
+    more patterns left to combine.
+  id: totrans-44
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对于更长的模式，迭代地继续这个过程，直到没有更多的模式可以组合。
+- en: This algorithm, using a generate-and-test approach to pattern mining and utilizing
+    the apriori principle to bound combinations, is called the apriori algorithm.
+    There are many variations of this baseline algorithm, all of which share similar
+    drawbacks in terms of scalability. For instance, multiple full database scans
+    are necessary to carry out the iterations, which might already be prohibitively
+    expensive for huge data sets. On top of that, generating candidates themselves
+    is already expensive, but computing their combinations might simply be infeasible.
+    In the next section, we will see how a parallel version of an algorithm called
+    *FP-growth*, available in Spark, can overcome most of the problems just discussed.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种算法使用生成和测试方法进行模式挖掘，并利用先验原则来限制组合，称为先验算法。这种基线算法有许多变体，它们在可扩展性方面存在类似的缺点。例如，需要进行多次完整的数据库扫描来执行迭代，这对于庞大的数据集可能已经成本过高。此外，生成候选本身已经很昂贵，但计算它们的组合可能根本不可行。在下一节中，我们将看到Spark中的*FP-growth*算法的并行版本如何克服刚才讨论的大部分问题。
+- en: The association rule mining problem
+  id: totrans-46
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 关联规则挖掘问题
+- en: 'To advance our general introduction of concepts, let''s next turn to *association
+    rules, *as first introduced in *Mining Association Rules between Sets of Items
+    in Large Databases*, available at [http://arbor.ee.ntu.edu.tw/~chyun/dmpaper/agrama93.pdf](http://arbor.ee.ntu.edu.tw/~chyun/dmpaper/agrama93.pdf).
+    In contrast to solely counting the occurrences of items in our database, we now
+    want to understand the rulesor implications of patterns. What I mean is, given
+    a pattern *P[1]* and another pattern *P[2]*, we want to know whether *P[2]* is
+    frequently present whenever *P[1]* can be found in *D*, and we denote this by
+    writing *P[1 ]⇒ P[2]*. To make this more precise, we need a concept for rule frequency
+    similar to that of support for patterns, namely *confidence. *For a rule *P[1 ]⇒ P[2]*,
+    confidence is defined as follows:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了进一步介绍概念，让我们接下来转向*关联规则*，这是首次在*大型数据库中挖掘项集之间的关联规则*中引入的，可在[http://arbor.ee.ntu.edu.tw/~chyun/dmpaper/agrama93.pdf](http://arbor.ee.ntu.edu.tw/~chyun/dmpaper/agrama93.pdf)上找到。与仅计算数据库中项的出现次数相反，我们现在想要理解模式的规则或推论。我的意思是，给定模式*P[1]*和另一个模式*P[2]*，我们想知道在*D*中可以找到*P[1]*时，*P[2]*是否经常出现，我们用*P[1 ]⇒ P[2]*来表示这一点。为了更加明确，我们需要一个类似于模式支持的规则频率的概念，即*置信度*。对于规则*P[1 ]⇒ P[2]*，置信度定义如下：
+- en: '*conf(P[1] ⇒ P[2]) = supp(P[1] ∪ P[2]) / supp(P[1])*'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*conf(P[1] ⇒ P[2]) = supp(P[1] ∪ P[2]) / supp(P[1])*'
+- en: This can be interpreted as the conditional support of *P[2]* given to *P[1]*;
+    that is, if it were to restrict *D* to all the transactions supporting *P[1]*,
+    the support of *P[2]* in this restricted database would be equal to *conf(P[1 ]⇒ P[2])*.
+    We call *P[1 ]⇒ P[2]* a rule in *D* if it exceeds a minimum confidence threshold
+    *t*, just as in the case of frequent patterns. Finding all the rules for a confidence
+    threshold represents the formal answer to the second question, *association rule
+    mining. *Moreover, in this situation, we call P[1 ]the *antecedent *and P[2] the *consequent *of
+    the rule. In general, there is no restriction imposed on the structure of either
+    the antecedent or the consequent. However, in what follows, we will assume that
+    the consequent's length is 1, for simplicity.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可以解释为*P[1]*给出*P[2]*的条件支持；也就是说，如果将*D*限制为支持*P[1]*的所有交易，那么在这个受限制的数据库中，*P[2]*的支持将等于*conf(P[1 ]⇒ P[2])*。如果它超过最小置信度阈值*t*，我们称*P[1 ]⇒ P[2]*为*D*中的规则，就像频繁模式的情况一样。找到置信度阈值的所有规则代表了第二个问题*关联规则挖掘*的正式答案。此外，在这种情况下，我们称*P[1 ]*为*前提*，*P[2]*为*结论*。通常，对前提或结论的结构没有限制。但在接下来的内容中，为简单起见，我们将假设结论的长度为1。
+- en: 'In our running example, the pattern *{f, m}* occurs three times, while *{f,
+    m, p}* is just present in two cases, which means that the rule *{f, m} **⇒ {p}*
+    has confidence *2/3*. If we set the minimum confidence threshold to *t = 0.6*,
+    we can easily check that the following association rules with an antecedent and
+    consequent of length 1 are valid for our case:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的运行示例中，模式*{f，m}*出现了三次，而*{f，m，p}*只出现了两次，这意味着规则*{f，m}⇒{p}*的置信度为*2/3*。如果我们将最小置信度阈值设置为*t
+    = 0.6*，我们可以轻松地检查以下具有长度为1的前提和结论的关联规则对我们的情况有效：
+- en: '*{a} ⇒ {c}, **{a} ⇒ {f}, {a} ⇒ {m}, {a} ⇒ {p}** {c} ⇒ {a}, {c} ⇒ {f}, {c} ⇒
+    {m}, {c} ⇒ {p}** {f} ⇒ {a}, {f} ⇒ {c}, {f} ⇒ {m}** {m} ⇒ {a}, {m} ⇒ {c}, {m} ⇒ {f}, {m}
+    ⇒ {p}** {p} ⇒ {a}, {p} ⇒ {c}, {p} ⇒ {f}, {p} ⇒ {m}*'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*{a}⇒{c}，{a}⇒{f}，{a}⇒{m}，{a}⇒{p}，{c}⇒{a}，{c}⇒{f}，{c}⇒{m}，{c}⇒{p}，{f}⇒{a}，{f}⇒{c}，{f}⇒{m}，{m}⇒{a}，{m}⇒{c}，{m}⇒{f}，{m}⇒{p}，{p}⇒{a}，{p}⇒{c}，{p}⇒{f}，{p}⇒{m}*'
+- en: From the preceding definition of confidence, it should now be clear that it
+    is relatively straightforward to compute the association rules once we have the
+    support value of all the frequent patterns. In fact, as we will soon see, Spark's
+    implementation of association rules is based on calculating frequent patterns
+    upfront.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从置信度的前面定义可以清楚地看出，一旦我们有了所有频繁模式的支持值，计算关联规则就相对简单。实际上，正如我们将很快看到的那样，Spark对关联规则的实现是基于预先计算频繁模式的。
+- en: At this point, it should be noted that while we will restrict ourselves to the
+    measures of support and confidence, there are many other interesting criteria
+    available that we can't discuss in this book; for instance, the concepts of *conviction,
+    leverage, *or *lift. *For an in-depth comparison of the other measures, refer
+    to [http://www.cse.msu.edu/~ptan/papers/IS.pdf](http://www.cse.msu.edu/~ptan/papers/IS.pdf).
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时应该指出的是，虽然我们将限制自己在支持和置信度的度量上，但还有许多其他有趣的标准可用，我们无法在本书中讨论；例如，*信念、杠杆、*或*提升*的概念。有关其他度量的深入比较，请参阅[http://www.cse.msu.edu/~ptan/papers/IS.pdf](http://www.cse.msu.edu/~ptan/papers/IS.pdf)。
+- en: The sequential pattern mining problem
+  id: totrans-54
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 顺序模式挖掘问题
+- en: 'Let''s move on to formalizing, the third and last pattern matching question
+    we tackle in this chapter. Let''s look at *sequences* in more detail. A sequence
+    is different from the transactions we looked at before in that the order now matters.
+    For a given item set *I*, a sequence *S* in *I* of length *l* is defined as follows:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续正式化，这是我们在本章中处理的第三个也是最后一个模式匹配问题。让我们更详细地看一下*序列*。序列与我们之前看到的交易不同，因为现在顺序很重要。对于给定的项目集*I*，长度为*l*的序列*S*在*I*中定义如下：
+- en: '*s = <s[1,] s[2],..., s[l]>*'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*s = <s[1,] s[2],..., s[l]>*'
+- en: 'Here, each individual *s[i]* is a concatenation of items, that is, *s[i] =
+    (a[i1] ... a[im)]*, where *a[ij]* is an item in *I*. Note that we do care about
+    the order of sequence items *s[i]* but not about the internal ordering of the
+    individual *a[ij] *in *s[i]*. A sequence database *S* consists of pairs of sequence
+    IDs and sequences, analogous to what we had before. An example of such a database
+    can be found in the following table, in which the letters represent the same items
+    as in our previous shopping cart example:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，每个单独的*s[i]*都是项目的连接，即*s[i] = (a[i1] ... a[im)]*，其中*a[ij]*是*I*中的一个项目。请注意，我们关心序列项*s[i]*的顺序，但不关心*s[i]*中各个*a[ij]*的内部顺序。序列数据库*S*由序列ID和序列的成对组成，类似于我们之前的内容。这样的数据库示例可以在下表中找到，其中的字母代表与我们之前的购物车示例中相同的项目：
+- en: '| **Sequence ID** | **Sequence** |'
+  id: totrans-58
+  prefs: []
+  type: TYPE_TB
+  zh: '| **序列ID** | **序列** |'
+- en: '| 1 | *<a(abc)(ac)d(cf)>* |'
+  id: totrans-59
+  prefs: []
+  type: TYPE_TB
+  zh: '| 1 | *<a(abc)(ac)d(cf)>* |'
+- en: '| 2 | *<(ad)c(bc)(ae)>* |'
+  id: totrans-60
+  prefs: []
+  type: TYPE_TB
+  zh: '| 2 | *<(ad)c(bc)(ae)>* |'
+- en: '| 3 | *<(ef)(ab)(df)cb>* |'
+  id: totrans-61
+  prefs: []
+  type: TYPE_TB
+  zh: '| 3 | *<(ef)(ab)(df)cb>* |'
+- en: '| 4 | *<eg(af)cbc>* |'
+  id: totrans-62
+  prefs: []
+  type: TYPE_TB
+  zh: '| 4 | *<eg(af)cbc>* |'
+- en: 'Table 2: A small sequence database with four short sequences.'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表2：一个包含四个短序列的小序列数据库。
+- en: 'In the example sequences, note the round brackets to group individual items
+    into a sequence item. Also note that we drop these redundant braces if the sequence
+    item consists of a single item. Importantly, the notion of a subsequence requires
+    a little more carefulness than for unordered structures. We call *u = (u[1], ...,
+    u[n])* a subsequenceof *s = (s[1],..., s[l])* and write *u <s* if there are indices
+    *1 **≤ i1 < i2 < ... < in ≤ m* so that we have the following:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在示例序列中，注意圆括号将单个项目分组为序列项。还要注意，如果序列项由单个项目组成，我们会省略这些冗余的大括号。重要的是，子序列的概念需要比无序结构更加小心。我们称*u
+    = (u[1], ..., u[n])*为*s = (s[1],..., s[l])*的*子序列*，并写为*u <s*，如果存在索引*1 **≤ i1 <
+    i2 < ... < in ≤ m*，使得我们有以下关系：
+- en: '*u[1] < s[i1], ..., u[n] <s[in]*'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*u[1] < s[i1], ..., u[n] <s[in]*'
+- en: Here, the *<* signs in the last line mean that *u[j]* is a subpattern of*s[ij]*.
+    Roughly speaking, *u* is a subsequence of *s* if all the elements of *u* are subpatterns
+    of *s* in their given order. Equivalently, we call *s* a supersequence of *u*.
+    In the preceding example, we see that *<a(ab)ac>* and *a(cb)(ac)dc>* are examples
+    of subsequences of *<a(abc)(ac)d(cf)>* and that *<(fa)c>* is an example of a subsequence
+    of *<eg(af)cbc>*.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，最后一行中的*< *符号表示*u[j]*是*s[ij]*的子模式。粗略地说，如果*u*的所有元素按给定顺序是*s*的子模式，那么*u*就是*s*的子序列。同样地，我们称*s*为*u*的超序列。在前面的例子中，我们看到*<a(ab)ac>*和*a(cb)(ac)dc>*是*<a(abc)(ac)d(cf)>*的子序列的例子，而*<(fa)c>*是*<eg(af)cbc>*的子序列的例子。
+- en: 'With the help of the notion of supersequences, we can now define the *support*
+    of a sequence *s* in a given sequence database *S* as follows:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 借助超序列的概念，我们现在可以定义给定序列数据库*S*中序列*s*的*支持度*如下：
+- en: '*supp[S](s) = supp(s) = |{ s'' ∈ S | s <s''}| / |S|*'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*supp[S](s) = supp(s) = |{ s'' ∈ S | s <s''}| / |S|*'
+- en: Note that, structurally, this is the same definition as for plain unordered
+    patterns, but the *<* symbol means something else, that is, a subsequence. As
+    before, we drop the database subscript in the notation of *support* if the information
+    is clear from the context. Equipped with a notion of *support*, the definition
+    of sequential patterns follows the previous definition completely analogously.
+    Given a minimum support threshold *t*, a sequence *s* in *S* is said to be a *sequential
+    pattern* if *supp(s)* is greater than or equal to *t*. The formalization of the
+    third question is called the *sequential pattern mining problem*, that is, find
+    the full set of sequences that are sequential patterns in *S* for a given threshold
+    *t*.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，结构上，这与无序模式的定义相同，但*<*符号表示的是另一种含义，即子序列。与以前一样，如果上下文中的信息清楚，我们在*支持度*的表示法中省略数据库下标。具备了*支持度*的概念，顺序模式的定义完全类似于之前的定义。给定最小支持度阈值*t*，序列*S*中的序列*s*如果*supp(s)*大于或等于*t*，则称为*顺序模式*。第三个问题的形式化被称为*顺序模式挖掘问题*，即找到在给定阈值*t*下*S*中的所有顺序模式的完整集合。
+- en: Even in our little example with just four sequences, it can already be challenging
+    to manually inspect all the sequential patterns. To give just one example of a
+    sequential pattern of *support 1.0*, a subsequence of length 2 of all the four
+    sequences is *<ac>*. Finding all the sequential patterns is an interesting problem,
+    and we will learn about the so-called *prefix span *algorithm that Spark employs
+    to address the problem in the following section.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 即使在我们只有四个序列的小例子中，手动检查所有顺序模式也可能是具有挑战性的。举一个*支持度为1.0*的顺序模式的例子，所有四个序列的长度为2的子序列是*<ac>*。找到所有顺序模式是一个有趣的问题，我们将在下一节学习Spark使用的所谓*前缀span*算法来解决这个问题。
+- en: Pattern mining with Spark MLlib
+  id: totrans-71
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Spark MLlib进行模式挖掘
+- en: After having motivated and introduced three pattern mining problems along with
+    the necessary notation to properly talk about them, we will next discuss how each
+    of these problems can be solved with an algorithm available in Spark MLlib. As
+    is often the case, actually applying the algorithms themselves is fairly simple
+    due to Spark MLlib's convenient `run` method available for most algorithms. What
+    is more challenging is to understand the algorithms and the intricacies that come
+    with them. To this end, we will explain the three pattern mining algorithms one
+    by one, and study how they are implemented and how to use them on toy examples.
+    Only after having done all this will we apply these algorithms to a real-life
+    data set of click events retrieved from [http://MSNBC.com](http://MSNBC.com).
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在激发和介绍了三个模式挖掘问题以及必要的符号来正确讨论它们之后，我们将讨论如何使用Spark MLlib中可用的算法解决这些问题。通常情况下，由于Spark
+    MLlib为大多数算法提供了方便的`run`方法，实际应用算法本身相当简单。更具挑战性的是理解算法及其随之而来的复杂性。为此，我们将逐一解释这三种模式挖掘算法，并研究它们是如何实现以及如何在玩具示例中使用它们。只有在完成所有这些之后，我们才会将这些算法应用于从[http://MSNBC.com](http://MSNBC.com)检索到的点击事件的真实数据集。
+- en: The documentation for the pattern mining algorithms in Spark can be found at [https://spark.apache.org/docs/2.1.0/mllib-frequent-pattern-mining.html](https://spark.apache.org/docs/2.1.0/mllib-frequent-pattern-mining.html).
+    It provides a good entry point with examples for users who want to dive right
+    in.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark中模式挖掘算法的文档可以在[https://spark.apache.org/docs/2.1.0/mllib-frequent-pattern-mining.html](https://spark.apache.org/docs/2.1.0/mllib-frequent-pattern-mining.html)找到。它为希望立即深入了解的用户提供了一个很好的入口点。
+- en: Frequent pattern mining with FP-growth
+  id: totrans-74
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用FP-growth进行频繁模式挖掘
+- en: When we introduced the frequent pattern mining problem, we also quickly discussed
+    a strategy to address it based on the apriori principle. The approach was based
+    on scanning the whole transaction database again and again to expensively generate
+    pattern candidates of growing length and checking their support. We indicated
+    that this strategy may not be feasible for very large data.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们介绍频繁模式挖掘问题时，我们还快速讨论了一种基于apriori原则来解决它的策略。这种方法是基于一遍又一遍地扫描整个交易数据库，昂贵地生成不断增长长度的模式候选项并检查它们的支持。我们指出，这种策略对于非常大的数据可能是不可行的。
+- en: 'The so called *FP-growth algorithm*, where **FP** stands for **frequent pattern**,
+    provides an interesting solution to this data mining problem. The algorithm was
+    originally described in *Mining Frequent Patterns without Candidate Generation,* available
+    at [https://www.cs.sfu.ca/~jpei/publications/sigmod00.pdf](https://www.cs.sfu.ca/~jpei/publications/sigmod00.pdf).
+    We will start by explaining the basics of this algorithm and then move on to discussing
+    its distributed version, *parallel FP-growth, *which has been introduced in *PFP:
+    Parallel FP-Growth for Query Recommendation*, found at [https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34668.pdf](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34668.pdf).
+    While Spark''s implementation is based on the latter paper, it is best to first
+    understand the baseline algorithm and extend from there.'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '所谓的*FP-growth算法*，其中**FP**代表**频繁模式**，为这个数据挖掘问题提供了一个有趣的解决方案。该算法最初是在*Mining Frequent
+    Patterns without Candidate Generation*中描述的，可在[https://www.cs.sfu.ca/~jpei/publications/sigmod00.pdf](https://www.cs.sfu.ca/~jpei/publications/sigmod00.pdf)找到。我们将首先解释这个算法的基础知识，然后继续讨论其分布式版本*parallel
+    FP-growth*，该版本在*PFP: Parallel FP-Growth for Query Recommendation*中介绍，可在[https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34668.pdf](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34668.pdf)找到。虽然Spark的实现是基于后一篇论文，但最好先了解基线算法，然后再进行扩展。'
+- en: The core idea of FP-growth is to scan the transaction database D of interest
+    precisely once in the beginning, find all the frequent patterns of length 1, and
+    build a special tree structure called *FP-tree *from these patterns. Once this
+    step is done, instead of working with D, we only do recursive computations on
+    the usually much smaller FP-tree. This step is called the *FP-growth step *of
+    the algorithm, since it recursively constructs trees from the subtrees of the
+    original tree to identify patterns. We will call this procedure *fragment pattern
+    growth*, which does not require us to generate candidates but is rather built
+    on a *divide-and-conquer *strategy that heavily reduces the workload in each recursion
+    step.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: FP-growth的核心思想是在开始时精确地扫描感兴趣的交易数据库D一次，找到所有长度为1的频繁模式，并从这些模式构建一个称为*FP-tree*的特殊树结构。一旦完成了这一步，我们不再使用D，而是仅对通常要小得多的FP-tree进行递归计算。这一步被称为算法的*FP-growth步骤*，因为它从原始树的子树递归构造树来识别模式。我们将称这个过程为*片段模式增长*，它不需要我们生成候选项，而是建立在*分而治之*策略上，大大减少了每个递归步骤中的工作量。
+- en: 'To be more precise, let''s first define what an FP-tree is and what it looks
+    like in an example. Recall the example database we used in the last section, shown
+    in *Table 1*. Our item set consisted of the following 15 grocery items, represented
+    by their first letter: *b*, *c*, *a*, *e*, *d*, *f*, *p*, *m*, *i*, *l*, *o*,
+    *h*, *j*, *k*, *s*. We also discussed the frequent items; that is, patterns of
+    length 1, for a minimum support threshold of *t = 0.6*, were given by *{f, c,
+    b, a, m, p}*. In FP-growth, we first use the fact that the ordering of items does
+    not matter for the frequent pattern mining problem; that is, we can choose the
+    order in which to present the frequent items. We do so by ordering them by decreasing
+    frequency. To summarize the situation, let''s have a look at the following table:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更准确地说，让我们首先定义FP树是什么，以及在示例中它是什么样子。回想一下我们在上一节中使用的示例数据库，显示在*表1*中。我们的项目集包括以下15个杂货项目，用它们的第一个字母表示：*b*，*c*，*a*，*e*，*d*，*f*，*p*，*m*，*i*，*l*，*o*，*h*，*j*，*k*，*s*。我们还讨论了频繁项目；也就是说，长度为1的模式，对于最小支持阈值*t
+    = 0.6*，由*{f, c, b, a, m, p}*给出。在FP-growth中，我们首先利用了一个事实，即项目的排序对于频繁模式挖掘问题并不重要；也就是说，我们可以选择呈现频繁项目的顺序。我们通过按频率递减的顺序对它们进行排序。总结一下情况，让我们看一下下表：
+- en: '| **Transaction ID** | **Transaction** | **Ordered frequent items** |'
+  id: totrans-79
+  prefs: []
+  type: TYPE_TB
+  zh: '| **交易ID** | **交易** | **有序频繁项** |'
+- en: '| 1 | *a, c, d, f, g, i, m, p* | *f, c, a, m, p* |'
+  id: totrans-80
+  prefs: []
+  type: TYPE_TB
+  zh: '| 1 | *a, c, d, f, g, i, m, p* | *f, c, a, m, p* |'
+- en: '| 2 | *a, b, c, f, l, m, o* | *f, c, a, b, m* |'
+  id: totrans-81
+  prefs: []
+  type: TYPE_TB
+  zh: '| 2 | *a, b, c, f, l, m, o* | *f, c, a, b, m* |'
+- en: '| 3 | *b, f, h, j, o* | *f, b* |'
+  id: totrans-82
+  prefs: []
+  type: TYPE_TB
+  zh: '| 3 | *b, f, h, j, o* | *f, b* |'
+- en: '| 4 | *b, c, k, s, p* | *c, b, p* |'
+  id: totrans-83
+  prefs: []
+  type: TYPE_TB
+  zh: '| 4 | *b, c, k, s, p* | *c, b, p* |'
+- en: '| 5 | *a, c, e, f, l, m, n, p* | *f, c, a, m, p* |'
+  id: totrans-84
+  prefs: []
+  type: TYPE_TB
+  zh: '| 5 | *a, c, e, f, l, m, n, p* | *f, c, a, m, p* |'
+- en: 'Table 3: Continuation of the example started with Table 1, augmenting the table
+    by ordered frequent items.'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表3：继续使用表1开始的示例，通过有序频繁项扩充表格。
+- en: 'As we can see, ordering frequent items like this already helps us to identify
+    some structure. For instance, we see that the item set *{f, c, a, m, p}* occurs
+    twice and is slightly altered once as *{f, c, a, b, m}*. The key idea of FP-growth
+    is to use this representation to build a tree from the ordered frequent items
+    that reflect the structure and interdependencies of the items in the third column
+    of *Table 3*. Every FP-tree has a so-called *root *node that is used as a base
+    for connecting ordered frequent items as constructed. On the right of the following
+    diagram, we see what is meant by this:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，像这样有序的频繁项已经帮助我们识别一些结构。例如，我们看到项集*{f, c, a, m, p}*出现了两次，并且稍微改变为*{f, c,
+    a, b, m}*。FP增长的关键思想是利用这种表示来构建树，从有序频繁项中反映出项在*表3*的第三列中的结构和相互依赖关系。每个FP树都有一个所谓的*根*节点，用作连接构造的有序频繁项的基础。在以下图表的右侧，我们可以看到这是什么意思：
+- en: '![](img/00139.jpeg)'
+  id: totrans-87
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00139.jpeg)'
+- en: 'Figure 1: FP-tree and header table for our frequent pattern mining running
+    example.'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图1：FP树和我们频繁模式挖掘的运行示例的表头表。
+- en: 'The left-hand side of *Figure 1* shows a header table that we will explain
+    and formalize in just a bit, while the right-hand side shows the actual FP-tree.
+    For each of the ordered frequent items in our example, there is a directed path
+    starting from the root, thereby representing it. Each node of the tree keeps track
+    of not only the frequent item itself but also of the number of paths traversed
+    through this node. For instance, four of the five ordered frequent item sets start
+    with the letter *f* and one with *c*. Thus, in the FP-tree, we see `f: 4` and
+    `c: 1` at the top level. Another interpretation of this fact is that *f* is a
+    *prefix* for four item sets and *c* for one. For another example of this sort
+    of reasoning, let''s turn our attention to the lower left of the tree, that is,
+    to the leaf node `p: 2`. Two occurrences of *p* tells us that precisely two identical
+    paths end here, which we already know: *{f, c, a, m, p}* is represented twice.
+    This observation is interesting, as it already hints at a technique used in FP-growth--starting
+    at the leaf nodes of the tree, or the suffixes of the item sets, we can trace
+    back each frequent item set, and the union of all these distinct root node paths
+    yields all the paths--an important idea for parallelization.'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*图1*的左侧显示了我们将在稍后解释和正式化的表头表，右侧显示了实际的FP树。对于我们示例中的每个有序频繁项，都有一条从根开始的有向路径，从而表示它。树的每个节点不仅跟踪频繁项本身，还跟踪通过该节点的路径数。例如，五个有序频繁项集中有四个以字母*f*开头，一个以*c*开头。因此，在FP树中，我们在顶层看到`f:
+    4`和`c: 1`。这个事实的另一个解释是，*f*是四个项集的*前缀*，*c*是一个。对于这种推理的另一个例子，让我们将注意力转向树的左下部，即叶节点`p:
+    2`。两次*p*的出现告诉我们，恰好有两条相同的路径到此结束，我们已经知道：*{f, c, a, m, p}*出现了两次。这个观察很有趣，因为它已经暗示了FP增长中使用的一种技术--从树的叶节点开始，或者项集的后缀，我们可以追溯每个频繁项集，所有这些不同根节点路径的并集产生所有路径--这对于并行化是一个重要的想法。'
+- en: The header table you see on the left of *Figure 1* is a smart way of storing
+    items. Note that by the construction of the tree, a node is not the same as a
+    frequent item but, rather, items can and usually do occur multiple times, namely
+    once for each distinct path they are part of. To keep track of items and how they
+    relate, the header table is essentially a *linked list* of items, that is, each
+    item occurrence is linked to the next by means of this table. We indicated the
+    links for each frequent item by horizontal dashed lines in *Figure 1* for illustration
+    purposes.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*图1*左侧的表头表是一种存储项的聪明方式。请注意，通过树的构造，一个节点不同于一个频繁项，而是，项可以并且通常会多次出现，即每个它们所属的不同路径都会出现一次。为了跟踪项及其关系，表头表本质上是项的*链表*，即每个项的出现都通过这个表与下一个项相连。我们在*图1*中用水平虚线表示每个频繁项的链接，仅用于说明目的。'
+- en: With this example in mind, let's now give a formal definition of an FP-tree.
+    An FP-tree *T* is a tree that consists of a root node together with frequent item
+    prefix subtreesstarting at the root and a frequent item header table.Each node
+    of the tree consists of a triple, namely the item name, its occurrence count,
+    and a node link referring to the next node of the same name, or `null` if there
+    is no such next node.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这个例子，现在让我们给出FP树的正式定义。FP树*T*是一棵树，由根节点和从根节点开始的频繁项前缀子树以及频繁项表头表组成。树的每个节点由一个三元组组成，即项名称、出现次数和一个节点链接，指向相同名称的下一个节点，如果没有这样的下一个节点，则为`null`。
+- en: To quickly recap, to build *T*, we start by computing the frequent items for
+    the given minimum support threshold *t*, and then, starting from the root, insert
+    each path represented by the sorted frequent pattern list of a transaction into
+    the tree. Now, what do we gain from this? The most important property to consider
+    is that all the information needed to solve the frequent pattern mining problem
+    is encoded in the FP-tree *T* because we effectively encode all co-occurrences
+    of frequent items with repetition. Since *T* can also have at most as many nodes
+    as the occurrences of frequent items, *T* is usually much smaller than our original
+    database D. This means that we have mapped the mining problem to a problem on
+    a smaller data set, which in itself reduces the computational complexity compared
+    with the naive approach sketched earlier.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了快速回顾，构建*T*，我们首先计算给定最小支持阈值*t*的频繁项，然后，从根开始，将每个由事务的排序频繁模式列表表示的路径插入树中。现在，我们从中获得了什么？要考虑的最重要的属性是，解决频繁模式挖掘问题所需的所有信息都被编码在FP树*T*中，因为我们有效地编码了所有频繁项的重复共现。由于*T*的节点数最多与频繁项的出现次数一样多，*T*通常比我们的原始数据库D小得多。这意味着我们已经将挖掘问题映射到了一个较小的数据集上，这本身就降低了与之前草率方法相比的计算复杂性。
+- en: 'Next, we''ll discuss how to grow patterns recursively from fragments obtained
+    from the constructed FP tree. To do so, let''s make the following observation.
+    For any given frequent item *x*, we can obtain all the patterns involving *x*
+    by following the node links for *x*, starting from the header table entry for
+    *x*, by analyzing at the respective subtrees. To explain how exactly, we further
+    study our example and, starting at the bottom of the header table, analyze patterns
+    containing *p*. From our FP-tree *T*, it is clear that *p* occurs in two paths:
+    *(f:4, c:3, a:3, m:3, p:2)* and *(c:1, b:1, p:1)*, following the node links for *p*.
+    Now, in the first path, *p* occurs only twice, that is, there can be at most two
+    total occurrences of the pattern *{f, c, a, m, p}* in the original database D.
+    So, conditional on *p* being present*, *the paths involving *p* actually read
+    as follows: *(f:2, c:2, a:2, m:2, p:2)* and *(c:1, b:1, p:1)*. In fact, since
+    we know we want to analyze patterns, given *p*, we can shorten the notation a
+    little and simply write *(f:2, c:2, a:2, m:2)* and *(c:1, b:1)*. This is what
+    we call the **conditional pattern base for p**. Going one step further, we can
+    construct a new FP-tree from this conditional database. Conditioning on three
+    occurrences of *p*, this new tree does only consist of a single node, namely *(c:3)*.
+    This means that we end up with *{c, p}* as a single pattern involving *p*, apart
+    from *p* itself. To have a better means of talking about this situation, we introduce
+    the following notation: the conditional FP-tree for *p* is denoted by *{(c:3)}|p*.'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将讨论如何从构建的FP树中递归地从片段中生长模式。为此，让我们做出以下观察。对于任何给定的频繁项*x*，我们可以通过跟随*x*的节点链接，从*x*的头表条目开始，通过分析相应的子树来获得涉及*x*的所有模式。为了解释具体方法，我们进一步研究我们的例子，并从头表的底部开始，分析包含*p*的模式。从我们的FP树*T*来看，*p*出现在两条路径中：*(f:4,
+    c:3, a:3, m:3, p:2)*和*(c:1, b:1, p:1)*，跟随*p*的节点链接。现在，在第一条路径中，*p*只出现了两次，也就是说，在原始数据库D中*{f,
+    c, a, m, p}*模式的总出现次数最多为两次。因此，在*p*存在的条件下，涉及*p*的路径实际上如下：*(f:2, c:2, a:2, m:2)*和*(c:1,
+    b:1)*。事实上，由于我们知道我们想要分析模式，给定*p*，我们可以简化符号，简单地写成*(f:2, c:2, a:2, m:2)*和*(c:1, b:1)*。这就是我们所说的**p的条件模式基**。再进一步，我们可以从这个条件数据库构建一个新的FP树。在*p*出现三次的条件下，这棵新树只包含一个节点，即*(c:3)*。这意味着我们最终得到了*{c,
+    p}*作为涉及*p*的单一模式，除了*p*本身。为了更好地讨论这种情况，我们引入以下符号：*p*的条件FP树用*{(c:3)}|p*表示。
+- en: 'To gain more intuition, let''s consider one more frequent item and discuss
+    its conditional pattern base. Continuing bottom to top and analyzing *m*, we again
+    see two paths that are relevant: *(f:4, c:3, a:3, m:2)* and *(f:4, c:3, a:3, b:1,
+    m:1)*. Note that in the first path, we discard the *p:2* at the end, since we
+    have already covered the case of *p*. Following the same logic of reducing all
+    other counts to the count of the item in question and conditioning on *m*, we
+    end up with the conditional pattern base *{(f:2, c:2, a:2), (f:1, c:1, a:1, b:1)}*.
+    The conditional FP-tree in this situation is thus given by *{f:3, c:3, a:3}|m*.
+    It is now easy to see that actually every possible combination of *m* with each
+    of *f*, *c*, and *a* forms a frequent pattern. The full set of patterns, given
+    *m*, is thus *{m}*, *{am}*, *{cm}*, *{fm}*, *{cam]*, *{fam}*, *{fcm}*, and *{fcam}*.
+    By now, it should become clear as to how to continue, and we will not carry out
+    this exercise in full but rather summarize the outcome of it in the following
+    table:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了更直观，让我们考虑另一个频繁项并讨论它的条件模式基。继续从底部到顶部并分析*m*，我们再次看到两条相关的路径：*(f:4, c:3, a:3, m:2)*和*(f:4,
+    c:3, a:3, b:1, m:1)*。请注意，在第一条路径中，我们舍弃了末尾的*p:2*，因为我们已经涵盖了*p*的情况。按照相同的逻辑，将所有其他计数减少到所讨论项的计数，并在*m*的条件下，我们得到了条件模式基*{(f:2,
+    c:2, a:2), (f:1, c:1, a:1, b:1)}*。因此，在这种情况下，条件FP树由*{f:3, c:3, a:3}|m*给出。现在很容易看出，实际上每个*m*与*f*、*c*和*a*的每种可能组合都形成了一个频繁模式。给定*m*，完整的模式集合是*{m}*、*{am}*、*{cm}*、*{fm}*、*{cam}*、*{fam}*、*{fcm}*和*{fcam}*。到目前为止，应该清楚如何继续了，我们不会完全进行这个练习，而是总结其结果如下表所示：
+- en: '| **Frequent pattern** | **Conditional pattern base** | **Conditional FP-tree**
+    |'
+  id: totrans-95
+  prefs: []
+  type: TYPE_TB
+  zh: '| **频繁模式** | **条件模式基** | **条件FP树** |'
+- en: '| *p* | *{(f:2, c:2, a:2, m:2), (c:1, b:1)}* | *{(c:3)}&#124;p* |'
+  id: totrans-96
+  prefs: []
+  type: TYPE_TB
+  zh: '| *p* | *{(f:2, c:2, a:2, m:2), (c:1, b:1)}* | *{(c:3)}&#124;p* |'
+- en: '| *m* | *{(f :2, c:2, a:2), (f :1, c:1, a:1, b:1)}* | *{f:3, c:3, a:3}&#124;m*
+    |'
+  id: totrans-97
+  prefs: []
+  type: TYPE_TB
+  zh: '| *m* | *{(f :2, c:2, a:2), (f :1, c:1, a:1, b:1)}* | *{f:3, c:3, a:3}&#124;m*
+    |'
+- en: '| *b* | *{(f :1, c:1, a:1), (f :1), (c:1)}* | null |'
+  id: totrans-98
+  prefs: []
+  type: TYPE_TB
+  zh: '| *b* | *{(f :1, c:1, a:1), (f :1), (c:1)}* | null |'
+- en: '| *a* | *{(f:3, c:3)}* | *{(f:3, c:3)}&#124;a* |'
+  id: totrans-99
+  prefs: []
+  type: TYPE_TB
+  zh: '| *a* | *{(f:3, c:3)}* | *{(f:3, c:3)}&#124;a* |'
+- en: '| *c* | *{(f:3)}* | *{(f:3)}&#124;c* |'
+  id: totrans-100
+  prefs: []
+  type: TYPE_TB
+  zh: '| *c* | *{(f:3)}* | *{(f:3)}&#124;c* |'
+- en: '| *f* | null | null |'
+  id: totrans-101
+  prefs: []
+  type: TYPE_TB
+  zh: '| *f* | null | null |'
+- en: 'Table 4: The complete list of conditional FP-trees and conditional pattern
+    bases for our running example.'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表4：我们运行示例的条件FP树和条件模式基的完整列表。
+- en: 'As this derivation required a lot of attention to detail, let''s take a step
+    back and summarize the situation so far:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于这种推导需要非常仔细的注意，让我们退一步总结一下到目前为止的情况：
+- en: Starting from the original FP-tree *T*, we iterated through all the items using
+    node links.
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从原始FP树*T*开始，我们使用节点链接迭代所有项目。
+- en: 'For each item *x*, we constructed its conditional pattern base and its conditional
+    FP-tree. Doing so, we used the following two properties:'
+  id: totrans-105
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对于每个项目*x*，我们构建了它的条件模式基和条件FP树。这样做，我们使用了以下两个属性：
+- en: We discarded all the items following *x* in each potential pattern, that is,
+    we only kept the *prefix* of *x*
+  id: totrans-106
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在每个潜在模式中，我们丢弃了跟随*x*之后的所有项目，即我们只保留了*x*的*前缀*。
+- en: We modified the item counts in the conditional pattern base to match the count
+    of *x*
+  id: totrans-107
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们修改了条件模式基中的项目计数，以匹配*x*的计数。
+- en: Modifying a path using the latter two properties, we called the transformed
+    prefix path of *x*.
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用后两个属性修改路径，我们称*x*的转换前缀路径。
+- en: To finally state the FP-growth step of the algorithm, we need two more fundamental
+    observations that we have already implicitly used in the example. Firstly, the
+    support of an item in a conditional pattern base is the same as that of its representation
+    in the original database. Secondly, starting from a frequent pattern *x* in the
+    original database and an arbitrary set of items *y*, we know that *xy* is a frequent
+    pattern if and only if *y* is. These two facts can easily be derived in general,
+    but should be clearly demonstrated in the preceding example.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，要说明算法的FP增长步骤，我们需要两个在示例中已经隐含使用的基本观察结果。首先，在条件模式基中项目的支持与其在原始数据库中的表示相同。其次，从原始数据库中的频繁模式*x*和任意一组项目*y*开始，我们知道如果且仅当*y*是频繁模式时*xy*也是频繁模式。这两个事实可以很容易地一般推导出来，但在前面的示例中应该清楚地证明。
+- en: 'What this means is that we can completely focus on finding patterns in conditional
+    pattern bases, as joining them with frequent patterns is again a pattern, andthis
+    way, we can find all the patterns. This mechanism of recursively growing patterns
+    by computing conditional pattern bases is therefore called pattern growth, which
+    is why FP-growth bears its name. With all this in mind, we can now summarize the
+    FP-growth procedure in pseudocode, as follows:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着我们可以完全专注于在条件模式基中查找模式，因为将它们与频繁模式连接又是一种模式，这样，我们可以找到所有模式。因此，通过计算条件模式基递归地增长模式的机制被称为模式增长，这就是为什么FP增长以此命名。考虑到所有这些，我们现在可以用伪代码总结FP增长过程，如下所示：
+- en: '[PRE0]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'With this procedure, we can summarize our description of the complete FP-growth
+    algorithm as follows:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这个过程，我们可以总结完整的FP增长算法的描述如下：
+- en: Compute frequent items from D and compute the original FP-tree *T* from them
+    (*FP-tree computation).*
+  id: totrans-113
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从D计算频繁项，并从中计算原始FP树*T*（*FP树计算*）。
+- en: Run `fpGrowth(T, null)` (*FP-growth computation).*
+  id: totrans-114
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`fpGrowth(T, null)`（*FP增长计算*）。
+- en: 'Having understood the base construction, we can now proceed to discuss a parallel
+    extension of base FP-growth, that is, the basis of Spark''s implementation. **Parallel
+    FP-growth**, or **PFP** for short, is a natural evolution of FP-growth for parallel
+    computing engines such as Spark. It addresses the following problems with the
+    baseline algorithm:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在理解了基本构造之后，我们现在可以继续讨论基于Spark实现的FP增长的并行扩展，即Spark实现的基础。**并行FP增长**，或简称**PFP**，是FP增长在诸如Spark之类的并行计算引擎中的自然演变。它解决了基线算法的以下问题：
+- en: '*Distributed storage:* For frequent pattern mining, our database D may not
+    fit into memory, which can already render FP-growth in its original form unapplicable.
+    Spark does help in this regard for obvious reasons.'
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*分布式存储：*对于频繁模式挖掘，我们的数据库D可能无法适应内存，这已经使得原始形式的FP增长不适用。出于明显的原因，Spark在这方面确实有所帮助。'
+- en: '*Distributed computing: *With distributed storage in place, we will have to
+    take care of parallelizing all the steps of the algorithm suitably as well and
+    PFP does precisely this.'
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*分布式计算：*有了分布式存储，我们将不得不适当地并行化算法的所有步骤，并且PFP正是这样做的。'
+- en: '*Adequate support values:* When dealing with finding frequent patterns, we
+    usually do not want to set the minimum support threshold *t* too high so as to
+    find interesting patterns in the long tail. However, a small *t* might prevent
+    the FP-tree from fitting into memory for a sufficiently large D, which would force
+    us to increase *t*. PFP successfully addresses this problem as well, as we will
+    see.'
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*适当的支持值*：在处理查找频繁模式时，我们通常不希望将最小支持阈值*t*设置得太高，以便在长尾中找到有趣的模式。然而，一个小的*t*可能会导致FP树无法适应足够大的D而强制我们增加*t*。PFP也成功地解决了这个问题，我们将看到。'
+- en: 'The basic outline of PFP, with Spark for implementation in mind, is as follows:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到Spark的实现，PFP的基本概述如下：
+- en: '**Sharding**: Instead of storing our database D on a single machine, we distribute
+    it to multiple partitions. Regardless of the particular storage layer, using Spark
+    we can, for instance, create an RDD to load D.'
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**分片**：我们将数据库D分布到多个分区，而不是将其存储在单个机器上。无论特定的存储层如何，使用Spark，我们可以创建一个RDD来加载D。'
+- en: '**Parallel frequent item count**: The first step of computing frequent items
+    of D can be naturally performed as a map-reduce operation on an RDD.'
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**并行频繁项计数**：计算D的频繁项的第一步可以自然地作为RDD上的映射-归约操作执行。'
+- en: '**Building groups of frequent items**: The set of frequent items is divided
+    into a number of groups, each with a unique group ID.'
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**构建频繁项组**：频繁项集被划分为多个组，每个组都有唯一的组ID。'
+- en: '**Parallel FP-growth**:The FP-growth step is split into two steps to leverage
+    parallelism:'
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**并行FP增长**：FP增长步骤分为两步，以利用并行性：'
+- en: '**Map phase**:The output of a mapper is a pair comprising the group ID and
+    the corresponding transaction.'
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**映射阶段**：映射器的输出是一对，包括组ID和相应的交易。'
+- en: '**Reduce phase**:Reducers collect data according to the group ID and carry
+    out FP-growth on these group-dependent transactions.'
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**减少阶段**：Reducer根据组ID收集数据，并对这些组相关的交易进行FP增长。'
+- en: '**Aggregation**: The final step in the algorithm is the aggregation of results
+    over group IDs.'
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**聚合**：算法的最后一步是对组ID的结果进行聚合。'
+- en: 'In light of already having spent a lot of time with FP-growth on its own, instead
+    of going into too many implementation details of PFP in Spark, let''s instead
+    see how to use the actual algorithm on the toy example that we have used throughout:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 鉴于我们已经花了很多时间研究FP-growth本身，而不是深入了解Spark中PFP的太多实现细节，让我们看看如何在我们一直在使用的玩具示例上使用实际算法：
+- en: '[PRE1]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'The code is straightforward. We load the data into `transactions` and initialize
+    Spark''s `FPGrowth` implementation with a minimum support value of *0.6* and *5*
+    partitions. This returns a model that we can `run` on the transactions constructed
+    earlier. Doing so gives us access to the patterns or frequent item sets for the
+    specified minimum support, by calling `freqItemsets`, which, printed in a formatted
+    way, yields the following output of 18 patterns in total:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码很简单。我们将数据加载到`transactions`中，并使用最小支持值为*0.6*和*5*个分区初始化Spark的`FPGrowth`实现。这将返回一个模型，我们可以在之前构建的交易上运行。这样做可以让我们访问指定最小支持的模式或频繁项集，通过调用`freqItemsets`，以格式化的方式打印出来，总共有18个模式的输出如下：
+- en: '![](img/00140.jpeg)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00140.jpeg)'
+- en: Recall that we have defined transactions as *sets*, and we often call them item
+    sets. This means that within such an item set, a particular item can only occur
+    once, and `FPGrowth` depends on this. If we were to replace, for instance, the
+    third transaction in the preceding example by `Array("b", "b", "h", "j", "o")`,
+    calling `run` on these transactions would throw an error message. We will see
+    later on how to deal with such situations.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，我们已经将交易定义为“集合”，我们通常称它们为项目集。这意味着在这样的项目集中，特定项目只能出现一次，`FPGrowth`依赖于此。例如，如果我们将前面示例中的第三个交易替换为`Array("b",
+    "b", "h", "j", "o")`，在这些交易上调用`run`将会抛出错误消息。我们将在后面看到如何处理这种情况。
+- en: After having explained *association rules *and *prefix span* in a similar fashion
+    to what we just did with FP-growth, we will turn to an application of these algorithms
+    on a real-world data set.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在类似于我们刚刚在FP-growth中所做的方式中已经解释了关联规则和前缀跨度之后，我们将转向在真实数据集上应用这些算法。
+- en: Association rule mining
+  id: totrans-133
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 关联规则挖掘
+- en: Recall from the association rule introduction that in computing association
+    rules, we are about halfway there once we have frequent item sets, that is, patterns
+    for the specified minimum threshold. In fact, Spark's implementation of association
+    rules assumes that we provide an RDD of `FreqItemsets[Item]`, which we have already
+    seen an example of in the preceding call to `model.freqItemsets`. On top of that,
+    computing association rules is not only available as a standalone algorithm but
+    is also available through `FPGrowth`.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回想一下关联规则介绍中，在计算关联规则时，一旦我们有了频繁项集，也就是指定最小阈值的模式，我们就已经完成了大约一半。事实上，Spark的关联规则实现假设我们提供了一个`FreqItemsets[Item]`的RDD，我们已经在之前调用`model.freqItemsets`中看到了一个例子。除此之外，计算关联规则不仅作为一个独立的算法可用，而且还可以通过`FPGrowth`使用。
+- en: 'Before showing how to run the respective algorithm on our running example,
+    let''s quickly explain how association rules are implemented in Spark:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在展示如何在我们的运行示例上运行相应算法之前，让我们快速解释一下Spark中如何实现关联规则：
+- en: The algorithm is already provided with frequent item sets, so we don't have
+    to compute them anymore.
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 该算法已经提供了频繁项集，因此我们不需要再计算它们了。
+- en: For each pair of patterns, X and *Y*, compute the frequency of both items X
+    and Y co-occurring and store (*X*, (*Y*, supp(*X* ∪ *Y*)). We call such pairs
+    of patterns *candidate pairs, *where *X* acts as a potential antecedent and *Y*
+    as a consequent.
+  id: totrans-137
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对于每一对模式X和*Y*，计算同时出现的X和Y的频率，并存储（*X*，（*Y*，supp（*X* ∪ *Y*））。我们称这样的模式对为“候选对”，其中*X*充当潜在的前提，*Y*充当结论。
+- en: Join all the patterns with the candidate pairs to obtain statements of the form, (X,
+    ((Y, supp(*X* ∪ *Y*)), supp(*X*))).
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将所有模式与候选对连接起来，以获得形式为（X，（（Y，supp（*X* ∪ *Y*）），supp（*X*）））的语句。
+- en: We can then filter expressions of the form (X, ((Y, supp(*X* ∪ *Y*)), supp(*X*))) by
+    the desired minimum confidence value to return all rules *X ⇒ Y* with that level
+    of confidence.
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，我们可以通过所需的最小置信度值过滤形式为（X，（（Y，supp（*X* ∪ *Y*）），supp（*X*）））的表达式，以返回所有具有该置信度水平的规则*X
+    ⇒ Y*。
+- en: 'Assuming we didn''t compute the patterns through FP-growth in the last section
+    but, instead, were just given the full list of these item sets, we can create
+    an RDD from a sequence of `FreqItemset` from scratch and then run a new instance
+    of `AssociationRules` on it:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们在上一节中没有通过FP-growth计算模式，而是只给出了这些项目集的完整列表，我们可以从头开始创建一个RDD，然后在其上运行`AssociationRules`的新实例：
+- en: '[PRE2]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Note that after initializing the algorithm, we set the minimum confidence to
+    `0.7` before collecting the results. Moreover, running `AssociationRules` returns
+    an RDD of rules of the `Rule` type. These rule objects have accessors for `antecedent`,
+    `consequent`, and `confidence`, which we use to collect the results that read
+    as follows:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在初始化算法后，我们将最小置信度设置为`0.7`，然后收集结果。此外，运行`AssociationRules`将返回一个`Rule`类型的规则RDD。这些规则对象具有`antecedent`、`consequent`和`confidence`的访问器，我们使用这些访问器来收集结果，结果如下：
+- en: '![](img/00141.jpeg)'
+  id: totrans-143
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00141.jpeg)'
+- en: 'The reason we started this example from scratch is to convey the idea that
+    association rules are indeed a standalone algorithm in Spark. Since the only built-in
+    way to compute patterns in Spark is currently through FP-growth, and association
+    rules depends on the concept of `FreqItemset` (imported from the `FPGrowth` submodule)
+    anyway, this seems a bit unpractical. Using our results from the previous FP-growth
+    example, we could well have written the following to achieve the same:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从头开始展示这个例子的原因是为了传达关联规则在Spark中确实是一个独立的算法。由于目前在Spark中计算模式的唯一内置方式是通过FP-growth，而且关联规则无论如何都依赖于`FreqItemset`的概念（从`FPGrowth`子模块导入），这似乎有点不切实际。使用我们从之前的FP-growth示例中得到的结果，我们完全可以编写以下内容来实现相同的效果：
+- en: '[PRE3]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Interestingly, association rules can also be computed directly through the
+    interface of `FPGrowth`. Continuing with the notation from the earlier example,
+    we can simply write the following to end up with the same set of rules as before:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是，关联规则也可以直接通过`FPGrowth`的接口进行计算。继续使用之前示例中的符号，我们可以简单地写出以下内容，以得到与之前相同的一组规则：
+- en: '[PRE4]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: In practical terms, while both the formulations can be useful, the latter one
+    will certainly be more concise.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在实际情况下，虽然这两种表述都有用，但后一种肯定会更简洁。
+- en: Sequential pattern mining with prefix span
+  id: totrans-149
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用前缀跨度进行顺序模式挖掘
+- en: Turning to sequential pattern matching, the *prefix span algorithm* is a little
+    more complicated than association rules, so we need to take a step back and explain
+    the basics first. Prefix span has first been described in [http://hanj.cs.illinois.edu/pdf/tkde04_spgjn.pdf](http://hanj.cs.illinois.edu/pdf/tkde04_spgjn.pdf) as
+    a natural extension of the so-called *FreeSpan *algorithm. The algorithm itself
+    represents a notable improvement over other approaches, such as **Generalized
+    Sequential Patterns**(**GSP**). The latter is based on the apriori principle and
+    all the drawbacks we discussed earlier regarding many algorithms based on it carry
+    over to sequential mining as well, that is, expensive candidate generation, multiple
+    database scans, and so on.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 转向顺序模式匹配，前缀跨度算法比关联规则稍微复杂一些，因此我们需要退一步，首先解释基础知识。前缀跨度首次在[http://hanj.cs.illinois.edu/pdf/tkde04_spgjn.pdf](http://hanj.cs.illinois.edu/pdf/tkde04_spgjn.pdf)中被描述为所谓的FreeSpan算法的自然扩展。该算法本身相对于其他方法（如**广义顺序模式**（GSP））来说是一个显著的改进。后者基于先验原则，我们之前讨论的关于许多基于它的算法的缺点也适用于顺序挖掘，即昂贵的候选生成，多次数据库扫描等。
+- en: Prefix span, in its basic formulation, uses the same fundamental idea as FP-growth,
+    which is, projecting the original database to a usually smaller structure to analyze*.*
+    While in FP-growth, we recursively built new FP-trees for each *suffix *of a branch
+    in the original FP-tree, prefix span grows or spans new structures by considering
+    *prefixes*, as the name suggests.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前缀跨度，在其基本形式中，使用与FP-growth相同的基本思想，即将原始数据库投影到通常较小的结构中进行分析。而在FP-growth中，我们递归地为原始FP树中的每个分支的后缀构建新的FP树，前缀跨度通过考虑前缀来增长或跨越新的结构，正如其名称所示。
+- en: 'Let''s first properly define the intuitive notions of prefix and suffix in
+    the context of sequences. In what follows, we''ll always assume that the items
+    within a sequence item are alphabetically ordered, that is, if *s =  <s[1,] s[2],..., s[l]> *is
+    a sequence in *S* and each *s[i]* is a concatenation of items, that is, *s[i]
+    = (a[i1] ... a[im])*, where a[ij] are items in *I*, we assume that all *a[ij]* are
+    in the alphabetical order within *s[i]*. In such a situation, an element *s''
+    = <s''[1,] s''[2],..., s''m> *is called a prefixof *s* if and only if the following
+    three properties are satisfied:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先在序列的上下文中正确定义前缀和后缀的直观概念。在接下来的内容中，我们将始终假设序列项内的项目按字母顺序排列，也就是说，如果s = <s[1,]
+    s[2],..., s[l]>是S中的一个序列，每个s[i]都是项目的连接，也就是s[i] = (a[i1] ... a[im])，其中a[ij]是I中的项目，我们假设s[i]中的所有a[ij]都按字母顺序排列。在这种情况下，如果s'
+    = <s'[1,] s'[2],..., s'm>是s的前缀，当且仅当满足以下三个属性时，s'被称为s的前缀：
+- en: For all *i < m*, we have equality of sequence items, that is, *s'[i] = s[i]*
+  id: totrans-153
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于所有i < m，我们有序列项的相等，也就是s'[i] = s[i]
+- en: '*s''[m] < s[m]*, that is, the last item of *s''* is a subpattern of *s[m]*'
+  id: totrans-154
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: s'[m] < s[m]，也就是说，s'的最后一项是s[m]的子模式
+- en: If we subtract *s'[m]* from *s[m]*, that is, delete the subpattern *s'[m]* from
+    *s[m]*, all the frequent items left in *s[m] - s'[m]* have to come after all the
+    elements in *s'[m]*, in alphabetical order
+  id: totrans-155
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果我们从s[m]中减去s'[m]，也就是从s[m]中删除子模式s'[m]，那么s[m] - s'[m]中剩下的所有频繁项都必须在s'[m]中的所有元素之后按字母顺序排列
+- en: While the first two points come fairly naturally, the last one might seem a
+    little strange, so let's explain it in an example. Given a sequence, *<a(abc)>*,
+    from a database D, in which *a*, *b*, and *c* are indeed frequent, then, *<aa>*
+    and *<a(ab)>* are prefixes for *<a(abc)>*, but *<ab>* is not, because in the difference
+    of the last sequence items, *<(abc)> - <b> = <(ac)>*, the letter *a* does not
+    alphabetically come after *b* from *<ab>*. Essentially, the third property tells
+    us that a prefix can only cut out parts at the beginning of the last sequence
+    item it affects.
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前两点都相当自然，最后一点可能看起来有点奇怪，所以让我们通过一个例子来解释。给定一个序列< a(abc)>，来自数据库D，其中a，b和c确实频繁，那么<
+    aa>和< a(ab)>是< a(abc)>的前缀，但< ab>不是，因为在最后序列项的差异中，<(abc)> - <b> = <(ac)>，字母a并不按字母表顺序在<ab>后面。基本上，第三个属性告诉我们，前缀只能在它影响的最后序列项的开头切除部分。
+- en: 'With the notion of the prefix defined, it is now easy to say what a suffixis.
+    With the same notation as before, if *s''* is a prefix of *s*, then *s'''' = <(s[m]
+    - s''[m]), s[m+1], ..., s[l]>* is a suffixfor this prefix, which we denote as
+    *s'''' = s / s''*. Furthermore, we will write *s = s''s''''* in a product notation.
+    For instance, given that *<a(abc)>* is the original sequence and *<aa>* is the
+    prefix, we denote the suffix for this prefix as follows:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了前缀的概念，现在很容易说出后缀是什么。使用与之前相同的符号，如果s'是s的前缀，那么s'' = <(s[m] - s'[m]), s[m+1], ...,
+    s[l]>就是这个前缀的后缀，我们将其表示为s'' = s / s'。此外，我们将s = s's''写成乘积符号。例如，假设< a(abc)>是原始序列，<
+    aa>是前缀，我们将此前缀的后缀表示如下：
+- en: '*<(_bc)> = <a(abc)> / <aa>*'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: <(_bc)> = <a(abc)> / <aa>
+- en: Note that we use an underscore notation to denote the remainder of a sequence
+    by a prefix.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们使用下划线符号来表示前缀对序列的剩余部分。
+- en: 'Both the prefix and suffix notions are useful to split up or partition the
+    original sequential pattern mining problem into smaller parts, as follows. Let
+    *{<p[1]>, ...,<p[n]>}* be the complete set of sequential patterns of length 1\.
+    Then, we can make the following observations:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前缀和后缀的概念都有助于将原始的顺序模式挖掘问题分割成更小的部分，如下所示。让{<p[1]>, ...,<p[n]>}成为长度为1的完整顺序模式集。然后，我们可以得出以下观察结果：
+- en: All the sequential patterns start with one of the *p[i]*. This, in turn, means
+    that we can partition all sequential patterns into *n* disjoint sets, namely those
+    starting with *p[i]*, for *i* between *1* and *n*.
+  id: totrans-161
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 所有的顺序模式都以*p[i]*中的一个开头。这意味着我们可以将所有的顺序模式分成*n*个不相交的集合，即以*p[i]*开头的那些，其中*i*在*1*和*n*之间。
+- en: 'Applying this reasoning recursively, we end up with the following statement:
+    if *s* is a given sequential pattern of length 1 and *{s¹, ..., s^m}* is the complete
+    list of length *l+1* sequential superpatterns of *s*, then all sequential patterns
+    with the prefix *s* can be partitioned into *m* sets prefixed by *s^i*.'
+  id: totrans-162
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用这种推理递归地，我们得到以下的陈述：如果*s*是一个给定的长度为1的顺序模式，*{s¹, ..., s^m}*是长度为*l+1*的*s*的完整顺序超模式列表，那么所有具有前缀*s*的顺序模式可以被分成*m*个由*s^i*为前缀的集合。
+- en: Both these statements are easy to arrive at but provide a powerful tool to subdivide
+    the original problem set into disjointed smaller problems. Such a strategy is
+    called *divide and conquer*. With this in mind, we can now proceed very similarly
+    to what we did with conditioned databases in FP-growth, namely project databases
+    with respect to a given prefix. Given a sequential pattern database S and a prefix
+    *s*, the **s-projected database**, *S|[s]*, is the set of all the suffixes for
+    *s* in S.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这两个陈述都很容易得出，但提供了一个强大的工具，将原始问题集合划分为不相交的较小问题。这种策略被称为“分而治之”。有了这个想法，我们现在可以非常类似于FP-growth中对条件数据库所做的事情，即根据给定的前缀对数据库进行投影。给定一个顺序模式数据库S和一个前缀*s*，**s-投影数据库**，*S|[s]*，是S中所有*s*的后缀的集合。
+- en: 'We need one last definition to state and analyze the prefix span algorithm.
+    If *s* is a sequential pattern in S and *x* is a pattern with a prefix *s*, then
+    the *support count *of *x* in *S|[s]*, denoted by *supp[S|s](x)*, is the number
+    of sequences *y* in *S|[s]*, so that *x < sy*; that is, we simply carry over the
+    notion of support to s-projected databases. There are a few interesting properties
+    we can derive from this definition that make our situation much easier. For instance,
+    by definition, we see that for any sequence *x* with the prefix *s*, we have the
+    following:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要最后一个定义来陈述和分析前缀跨度算法。如果*s*是S中的一个顺序模式，*x*是一个具有前缀*s*的模式，那么在*S|[s]*中*x*的*支持计数*，用*supp[S|s](x)*表示，是*S|[s]*中序列*y*的数量，使得*x
+    < sy*；也就是说，我们简单地将支持的概念延续到了s-投影数据库。我们可以从这个定义中得出一些有趣的性质，使得我们的情况变得更容易。例如，根据定义，我们看到对于任何具有前缀*s*的序列*x*，我们有以下关系：
+- en: '*supp[S](x) = supp[S|s](x)*'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*supp[S](x) = supp[S|s](x)*'
+- en: That is, it does not matter if we count the support in the original or projected
+    database in this case. Moreover, if *s'* is a prefix of *s*, it is clear that
+    *S|[s] = (S|[s'])|[s]*, meaning we can prefix consecutively without losing information.
+    The last and most important statement from a computational complexity perspective
+    is that a projected database cannot exceed its original size. This property should
+    again be clear from the definitions, but it's immensely helpful to justify the
+    recursive nature of prefix span.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也就是说，在这种情况下，无论我们在原始数据库中还是在投影数据库中计算支持度都没有关系。此外，如果*s'*是*s*的前缀，很明显*S|[s] = (S|[s'])|[s]*，这意味着我们可以连续地添加前缀而不会丢失信息。从计算复杂性的角度来看，最后一个最重要的陈述是，投影数据库的大小不会超过其原始大小。这个性质应该再次从定义中清楚地看出来，但它对于证明前缀跨度的递归性质是极其有帮助的。
+- en: 'Given all this information, we can now sketch the prefix span algorithm in
+    pseudocode as follows. Note that we distinguish between an item `s''` being appended
+    to the end of a sequential pattern `s` and the sequence `<s''>` generated from
+    `s''` added to the end of `s`. To give an example, we could either add the letter
+    *e* to *<a(abc)>* to form *<a(abce)>* or add *<e>* at the end to form *<a(abc)e>*:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了所有这些信息，我们现在可以用伪代码勾勒出前缀跨度算法，如下所示。请注意，我们区分一个项目`s'`被附加到顺序模式`s`的末尾和从`s'`生成的序列`<s'>`被添加到`s`的末尾。举个例子，我们可以将字母*e*添加到*<a(abc)>*形成*<a(abce)>*，或者在末尾添加*<e>*形成*<a(abc)e>*：
+- en: '[PRE5]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: The prefix span algorithm, as outlined, finds all sequential patterns; that
+    is, it represents a solution to the sequential pattern mining problem. We cannot
+    outline the proof of this statement here, but we hopefully have provided you with
+    enough intuition to see how and why it works.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如所述，前缀跨度算法找到所有的顺序模式；也就是说，它代表了解决顺序模式挖掘问题的解决方案。我们无法在这里概述这个陈述的证明，但我们希望已经为您提供了足够的直觉来看到它是如何以及为什么它有效的。
+- en: 'Turning to Spark for an example, note that we did not discuss how to effectively
+    parallelize the baseline algorithm. If you are interested in knowing about the
+    implementation details, see [https://github.com/apache/spark/blob/v2.2.0/mllib/src/main/scala/org/apache/spark/mllib/fpm/PrefixSpan.scala](https://github.com/apache/spark/blob/v2.2.0/mllib/src/main/scala/org/apache/spark/mllib/fpm/PrefixSpan.scala),
+    as the parallel version is a little too involved would justify presenting it here.
+    We will study the example first provided in *Table 2*, that is, the four sequences
+    of *<a(abc)(ac)d(cf)>*, *<(ad)c(bc)(ae)>*, *<(ef)(ab)(df)cb>*, and *<eg(af)cbc>*.
+    To encode the nested structure of sequences, we use arrays of arrays of strings
+    and parallelize them to create an RDD from them. Initializing and running an instance
+    of `PrefixSpan` works pretty much the same way as it did for the other two algorithms.
+    The only thing noteworthy here is that, apart from setting the minimum support
+    threshold to `0.7` via `setMinSupport`, we also specify the maximum length of
+    the patterns to `5` through `setMaxPatternLength`. This last parameter is there
+    to limit the recursion depth. Despite the clever implementation, the algorithm
+    (and particularly, the computing database projections) can take a prohibitive
+    amount of time:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以Spark为例，注意我们没有讨论如何有效地并行化基线算法。如果您对实现细节感兴趣，请参阅[https://github.com/apache/spark/blob/v2.2.0/mllib/src/main/scala/org/apache/spark/mllib/fpm/PrefixSpan.scala](https://github.com/apache/spark/blob/v2.2.0/mllib/src/main/scala/org/apache/spark/mllib/fpm/PrefixSpan.scala)，因为并行版本涉及的内容有点太多，不适合在这里介绍。我们将首先研究*表2*中提供的示例，即四个序列*<a(abc)(ac)d(cf)>*，*<(ad)c(bc)(ae)>*，*<(ef)(ab)(df)cb>*和*<eg(af)cbc>*。为了编码序列的嵌套结构，我们使用字符串的数组数组，并将它们并行化以创建RDD。初始化和运行`PrefixSpan`的实例的方式与其他两个算法基本相同。这里唯一值得注意的是，除了通过`setMinSupport`将最小支持阈值设置为`0.7`之外，我们还通过`setMaxPatternLength`将模式的最大长度指定为`5`。最后一个参数用于限制递归深度。尽管实现很巧妙，但算法（特别是计算数据库投影）可能需要很长时间：
+- en: '[PRE6]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Running this code in your Spark shell should yield the following output of
+    14 sequential patterns:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的Spark shell中运行此代码应该产生14个顺序模式的以下输出：
+- en: '![](img/00142.jpeg)'
+  id: totrans-173
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00142.jpeg)'
+- en: Pattern mining on MSNBC clickstream data
+  id: totrans-174
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: MSNBC点击流数据的模式挖掘
+- en: 'Having spent a considerable amount of time explaining the basics of pattern
+    mining, let''s finally turn to a more realistic application. The data we will
+    be discussing next comes from server logs from [http://msnbc.com](http://msnbc.com)
+    (and in parts from [http://msn.com](http://msn.com), when news-related), and represents
+    a full day''s worth of browsing activity in terms of page views of users of these
+    sites. The data collected in September 1999 and has been made available for download
+    at [http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc990928.seq.gz](http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc990928.seq.gz).
+    Storing this file locally and unzipping it, the `msnbc990928.seq` file essentially
+    consists of a header and space-separated rows of integers of varying length. The
+    following are the first few lines of the file:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在花费了相当多的时间来解释模式挖掘的基础知识之后，让我们最终转向一个更现实的应用。我们接下来要讨论的数据来自[http://msnbc.com](http://msnbc.com)的服务器日志（部分来自[http://msn.com](http://msn.com)，与新闻相关），代表了这些网站用户的页面浏览活动的整整一天。这些数据是在1999年9月收集的，并且已经可以在[http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc990928.seq.gz](http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc990928.seq.gz)上下载。将此文件存储在本地并解压缩，`msnbc990928.seq`文件基本上由标题和长度不等的整数的空格分隔行组成。以下是文件的前几行：
+- en: '[PRE7]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Each row in this file is a *sequence* of encoded page visits of users within
+    that day. Page visits have not been collected to the most granular level but rather
+    grouped into 17 news-related categories, which are encoded as integers. The category
+    names corresponding to these categories are listed in the preceding header and
+    are mostly self-explanatory (with the exception of `bbs`, which stands for **bulletin
+    board service**). The n-th item in this list corresponds to category n; for example,
+    `1` stands for `frontpage`, while `travel` is encoded as `17`. For instance, the
+    fourth user in this file hit `opinion` once, while the third had nine page views
+    in total, starting and ending with `tech`.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个文件中的每一行都是用户当天的编码页面访问*序列*。页面访问并没有被收集到最精细的级别，而是被分成了17个与新闻相关的类别，这些类别被编码为整数。与这些类别对应的类别名称列在前面的标题中，大多数都是不言自明的（除了`bbs`，它代表**公告板服务**）。此列表中的第n个项目对应于第n个类别；例如，`1`代表`frontpage`，而`travel`被编码为`17`。例如，这个文件中的第四个用户点击了`opinion`一次，而第三个用户总共有九次页面浏览，从`tech`开始，以`tech`结束。
+- en: It is important to note that the page visits in each row have indeed been stored
+    *chronologically*, that is, this really is sequential data with respect to page
+    visit order. In total, data for 989,818 users has been collected; that is, the
+    data set has precisely that number of sequences. Unfortunately, it is unknown
+    how many URLs have been grouped to form each category, but we do know it ranges
+    rather widely from 10 to 5,000\. See the description available at [http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc.data.html](http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc.data.html) for
+    more information.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要的是要注意，每行中的页面访问确实已经按*时间顺序*存储，也就是说，这确实是关于页面访问顺序的顺序数据。总共收集了989,818个用户的数据；也就是说，数据集确实有这么多序列。不幸的是，我们不知道有多少个URL已经分组成每个类别，但我们确实知道它的范围相当广，从10到5,000。有关更多信息，请参阅[http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc.data.html](http://archive.ics.uci.edu/ml/machine-learning-databases/msnbc-mld/msnbc.data.html)上提供的描述。
+- en: 'Just from the description of this data set, it should be clear that all the
+    three pattern mining problems we have discussed so far can be applied to this
+    data--we can search for sequential patterns in this sequential database and, neglecting
+    the sequentiality, analyze both frequent patterns and association rules. To do
+    so, let''s first load the data using Spark. In what follows, we will assume that
+    the header of the file has been removed and a Spark shell session has been created
+    from the folder the sequence file is stored in:'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仅从这个数据集的描述中，就应该清楚到目前为止我们讨论过的所有三种模式挖掘问题都可以应用于这些数据--我们可以在这个序列数据库中搜索顺序模式，并且忽略顺序性，分析频繁模式和关联规则。为此，让我们首先使用Spark加载数据。接下来，我们将假设文件的标题已被删除，并且已经从存储序列文件的文件夹创建了一个Spark
+    shell会话：
+- en: '[PRE8]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'We load the sequence file into an RDD of integer-valued arrays first. Recall
+    from earlier sections that one of the assumptions of transactions in frequent
+    pattern mining was that the item sets are, in fact, sets and thus contain no duplicates.
+    To apply FP-growth and association rule mining, we therefore have to delete duplicate
+    entries, as follows:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先将序列文件加载到整数值数组的RDD中。回想一下，频繁模式挖掘中交易的一个假设是项目集实际上是集合，因此不包含重复项。因此，为了应用FP-growth和关联规则挖掘，我们必须删除重复的条目，如下所示：
+- en: '[PRE9]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Note that not only did we restrict to distinct items for each transaction but
+    we also cached the resulting RDD, which is recommended for all the three pattern
+    mining algorithms. This allows us to run FP-growth on this data, for which we
+    have to find a suitable minimum support threshold *t*. So far, in the toy examples,
+    we have chosen *t* to be rather large (between 0.6 and 0.8). It is not realistic
+    to expect *any* patterns to have such large support values in larger databases.
+    Although we only have to deal with 17 categories, browsing behaviors can vary
+    drastically from user to user. Instead, we choose a support value of just 5 %
+    to gain some insights:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们不仅限制了每个交易的不同项目，而且缓存了生成的RDD，这是所有三种模式挖掘算法的推荐做法。这使我们能够在这些数据上运行FP-growth，为此我们必须找到一个合适的最小支持阈值*t*。到目前为止，在玩具示例中，我们选择了*t*相当大（在0.6和0.8之间）。在更大的数据库中，不现实地期望*任何*模式具有如此大的支持值。尽管我们只需要处理17个类别，但用户的浏览行为可能会因人而异。因此，我们选择支持值只有5%来获得一些见解：
+- en: '[PRE10]'
+  id: totrans-184
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'The output of this computation shows that for *t=0.05* we only recover 14 frequent
+    patterns, as follows:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个计算的输出显示，对于*t=0.05*，我们只恢复了14个频繁模式，如下所示：
+- en: '![](img/00143.jpeg)'
+  id: totrans-186
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00143.jpeg)'
+- en: Not only are there, maybe, less patterns than you may have expected, but among
+    those, all but one have a length of *1*. Less surprising is the fact that the *front
+    page* is hit most often, with 31%, followed by the categories, *on-air* and *news. *Both
+    the *front page* and *news *sites have been visited by only 7% of users on that
+    day and no other pair of site categories was visited by more than 5% of the user
+    base. Categories 5, 15, 16, and 17 don't even make the list. If we repeat the
+    experiment with a *t* value of 1% instead, the number of patterns increases to
+    a total of 74.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不仅模式可能比您预期的要少，而且在这些模式中，除了一个之外，所有模式的长度都为*1*。不足为奇的是，*front page*被最频繁地访问，占31%，其次是*on-air*和*news*类别。*front
+    page*和*news*站点只有7%的用户在当天访问过，没有其他一对站点类别被超过5%的用户群体访问。类别5、15、16和17甚至都没有进入列表。如果我们将实验重复一次，将*t*值改为1%，模式的数量将增加到总共74个。
+- en: 'Let''s see how many length-3 patterns are among them:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看其中有多少长度为3的模式：
+- en: '[PRE11]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Running this on an `FPGrowth` instance with a minimum support value of *t=0.01*
+    will yield the following result:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用最小支持值*t=0.01*的`FPGrowth`实例运行这个操作将产生以下结果：
+- en: '![](img/00144.jpeg)'
+  id: totrans-191
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00144.jpeg)'
+- en: As one could have guessed, the most frequent length-1 patterns are also predominant
+    among the 3-patterns. Within these 11 patterns, 10 concern the *front page,* andnine
+    the *news. *Interestingly, the category *misc*, while only visited 7% of the time,
+    according to the earlier analysis, shows up in a total of four 3-patterns. If
+    we had more information about the underlying user groups, it would be interesting
+    to follow up on this pattern. Speculatively, users that have an interest in a
+    lot of *miscellaneous* topics will end up in this mixed category, along with some
+    other categories.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如人们可能猜到的那样，最频繁的长度为1的模式也是3模式中占主导地位的。在这11个模式中，有10个涉及*front page*，而九个涉及*news*。有趣的是，根据先前的分析，*misc*类别虽然只有7%的访问量，但在总共的四个3模式中出现。如果我们对潜在的用户群有更多的信息，跟进这个模式将是有趣的。可以推测，对许多*杂项*主题感兴趣的用户最终会进入这个混合类别，以及其他一些类别。
+- en: 'Following this up with an analysis of association rules is technically easy;
+    we just run the following lines to get all the rules with confidence `0.4` from
+    the existing FP-growth `model`:'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来进行关联规则的分析在技术上很容易；我们只需运行以下代码来从现有的FP-growth `model`中获取所有置信度为`0.4`的规则：
+- en: '[PRE12]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Note how we can conveniently access the antecedent, consequent, and confidence
+    of the respective rules. The output of this is as follows; this time with the
+    confidence rounded to two decimals:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们可以方便地访问相应规则的前提、结果和置信度。这次输出的结果如下；这次将置信度四舍五入到两位小数：
+- en: '![](img/00145.jpeg)'
+  id: totrans-196
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00145.jpeg)'
+- en: 'Again, naturally, the most frequent length-1 patterns show up in many of the
+    rules, most notably, *frontpage *as a consequent. Throughout this example, we
+    chose the support and confidence values so that the outputs are short and counts
+    easy to validate manually, but let''s do some automated calculations on rule sets,
+    regardless:'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，自然地，最频繁的长度为1的模式出现在许多规则中，尤其是*frontpage*作为结果。在这个例子中，我们选择了支持和置信度的值，以便输出简短且计数容易手动验证，但是让我们对规则集进行一些自动计算，不受限制：
+- en: '[PRE13]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Executing these statements, we see that about two-thirds of the rules have *front
+    page* as the consequent, that is, 14 of 22 rules in total, and among these, nine
+    contain *news* in their antecedent.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行这些语句，我们看到大约三分之二的规则都有*front page*作为结果，即总共22条规则中的14条，其中有九条包含*news*在它们的前提中。
+- en: Moving on to the sequence mining problem for this data set, we need to transform
+    our original `transactions` to an RDD of the `Array[Array[Int]]` type first, since
+    nested arrays are the way to encode sequences for prefix span in Spark, as we
+    have seen before. While somewhat obvious, it is still important to point out that
+    with sequences, we don't have to discard the additional information of repeating
+    items, as we just did for FP-growth.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来是针对这个数据集的序列挖掘问题，我们需要将原始的`transactions`转换为`Array[Array[Int]]`类型的RDD，因为嵌套数组是Spark中用于对前缀span编码序列的方式，正如我们之前所见。虽然有些显而易见，但仍然很重要指出，对于序列，我们不必丢弃重复项目的附加信息，就像我们刚刚对FP-growth所做的那样。
+- en: 'In fact, we even gain more structure by imposing sequentiality on individual
+    records. To do the transformation just indicated, we simply do the following:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事实上，通过对单个记录施加顺序性，我们甚至可以获得更多的结构。要进行刚刚指示的转换，我们只需执行以下操作：
+- en: '[PRE14]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Again, we cache the result to improve the performance of the algorithm, this
+    time, `prefixspan`. Running the algorithm itself is done as before:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次，我们缓存结果以提高算法的性能，这次是`prefixspan`。运行算法本身与以前一样：
+- en: '[PRE15]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'We set the minimum support value very low at 0.5%, to get a slightly bigger
+    result set this time. Note that we also search for patterns no longer than 15
+    sequence items. Let''s analyze the distribution over a frequent sequence length
+    by running the following:'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将最小支持值设置得非常低，为0.5%，这样这次可以得到一个稍微更大的结果集。请注意，我们还搜索不超过15个序列项的模式。通过运行以下操作来分析频繁序列长度的分布：
+- en: '[PRE16]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'In this chain of operations, we first map each sequence to a key-value pair
+    consisting of its length and a count of 1\. We then proceed with a reduce operation
+    that sums up the values by key, that is, we count how often this length occurs.
+    The rest is just sorting and formatting, which yields the following result:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一系列操作中，我们首先将每个序列映射到一个由其长度和计数1组成的键值对。然后进行一个reduce操作，通过键对值进行求和，也就是说，我们计算这个长度出现的次数。其余的只是排序和格式化，得到以下结果：
+- en: '![](img/00146.jpeg)'
+  id: totrans-208
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00146.jpeg)'
+- en: As we can see, the longest sequence has a length of 14, which, in particular,
+    means that our maximum value of 15 did not restrict the search space and we found
+    all the sequential patterns for the chosen support threshold of `t=0.005`. Interestingly,
+    most of the frequent sequential visits of users have a length between two and
+    six touch points on [http://msnbc.com](http://msnbc.com).
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，最长的序列长度为14，这特别意味着我们的最大值15并没有限制搜索空间，我们找到了所选支持阈值`t=0.005`的所有顺序模式。有趣的是，大多数用户的频繁顺序访问在[http://msnbc.com](http://msnbc.com)上的触点数量在两到六个之间。
+- en: 'To complete this example, let''s see what the most frequent pattern of each
+    length is and what the longest sequential pattern actually looks like. Answering
+    the second question will also give us the first, since there is only one length-14
+    pattern. Computing this can be done as follows:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了完成这个例子，让我们看看每个长度的最频繁模式是什么，以及最长的顺序模式实际上是什么样的。回答第二个问题也会给我们第一个答案，因为只有一个长度为14的模式。计算这个可以这样做：
+- en: '[PRE17]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Since this is one of the more complicated RDD operations we''ve considered
+    so far, let''s discuss all the steps involved. We first map each frequent sequence
+    to a pair consisting of its length and the sequence itself. This may seem a bit
+    strange at first, but it allows us to group all the sequences by length, which
+    we do in the next step. Each group consists of its key and an iterator over frequent
+    sequences*.* We map each group to its iterator and reduce the sequences by only
+    keeping the one with the largest frequency. To then properly display the result
+    of this operation, we make use of `mkString` twice to create a string from the
+    otherwise not readable nested arrays (when printed). The result of the preceding
+    chain is as follows:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于这是我们迄今为止考虑的比较复杂的RDD操作之一，让我们讨论一下涉及的所有步骤。我们首先将每个频繁序列映射到一个由其长度和序列本身组成的对。这一开始可能看起来有点奇怪，但它允许我们按长度对所有序列进行分组，这是我们在下一步中要做的。每个组由其键和频繁序列的迭代器组成。我们将每个组映射到其迭代器，并通过仅保留具有最大频率的序列来减少序列。然后，为了正确显示此操作的结果，我们两次使用`mkString`来从否则不可读的嵌套数组（在打印时）中创建字符串。前述链的结果如下：
+- en: '![](img/00147.jpeg)'
+  id: totrans-213
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00147.jpeg)'
+- en: We discussed earlier that *front page* was the most frequent item by far, which
+    makes a lot of sense intuitively, since it is the natural entry point to a website.
+    However, it is a bit of a surprise that the most frequent sequences of all lengths,
+    for the chosen threshold, consist of *front page* hits only. Apparently many users
+    spend a lot of time, and clicks, in and around the front page, which might be
+    a first indication of it's advertising value, as compared to the pages of the
+    other categories. As we indicated in the introduction of this chapter, analyzing
+    data like this, especially if enriched with other data sources, can be of a tremendous
+    value for owners of the respective websites, and we hope to have shown how frequent
+    pattern mining techniques can serve their part in doing so.
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们之前讨论过*首页*是迄今为止最频繁的项目，这在直觉上是有很多意义的，因为它是网站的自然入口点。然而，令人惊讶的是，在所选阈值下，所有长度最频繁的序列都只包括*首页*点击。显然，许多用户在首页及其周围花费了大量时间和点击，这可能是它相对于其他类别页面的广告价值的第一个迹象。正如我们在本章的介绍中所指出的，分析这样的数据，特别是如果结合其他数据源，对于各自网站的所有者来说可能具有巨大的价值，我们希望已经展示了频繁模式挖掘技术如何在其中发挥作用。
+- en: Deploying a pattern mining application
+  id: totrans-215
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 部署模式挖掘应用
+- en: The example developed in the last section was an interesting playground to apply
+    the algorithms we have carefully laid out throughout the chapter, but we have
+    to recognize the fact that *we were just handed the data.* At the time of writing
+    this book, it was often part of the culture in building data products to draw
+    a line in the sand between *data science* and *data engineering *at pretty much
+    exactly this point, that is, between real-time data collection and aggregation,
+    and (often offline) analysis of data, followed up by feeding back reports of the
+    insights gained into the production system. While this approach has its value,
+    there are certain drawbacks to it as well. By not taking the full picture into
+    account, we might, for instance, not exactly know the details of how the data
+    has been collected. Missing information like this can lead to false assumptions
+    and eventually wrong conclusions. While specialization is both useful and necessary
+    to a certain degree, at the very least, practitioners should strive to get a basic
+    understanding of applications *end-to-end*.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节中开发的示例是一个有趣的实验场，可以应用我们在整章中精心制定的算法，但我们必须承认一个事实，那就是我们只是被交给了数据。在撰写本书时，构建数据产品的文化往往在实时数据收集和聚合之间，以及（通常是离线的）数据分析之间划清界限，然后将获得的见解反馈到生产系统中。虽然这种方法有其价值，但也有一定的缺点。不考虑整体情况，我们可能不会准确了解数据的收集细节。缺少这样的信息可能导致错误的假设，最终得出错误的结论。虽然专业化在一定程度上既有用又必要，但至少从业者应该努力获得对应用程序的基本理解。
+- en: 'When we introduced the MSNBC data set in the last section, we said that it
+    had been retrieved from the server logs of the website. We drastically simplified
+    what this entails, so let us have a closer look:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们在上一节介绍MSNBC数据集时，我们说它是从网站的服务器日志中检索出来的。我们大大简化了这意味着什么，让我们仔细看一看：
+- en: '*High availability and fault tolerance: *Click events on a website need to
+    be tracked without downtime at any point throughout the day. Some businesses,
+    especially when it comes to any sort of payment transactions, for example, in
+    online shops, can not afford to lose certain events.'
+  id: totrans-218
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 高可用性和容错性：网站上的点击事件需要在一天中的任何时间点进行跟踪，而不会出现停机。一些企业，特别是在涉及任何形式的支付交易时，例如在线商店，不能承受丢失某些事件的风险。
+- en: '*High throughput of live data and scalability: *We need a system that can store
+    and process such events in real time and can cope with a certain load without
+    slowing down. For instance, the roughly *one million* unique users in the MSNBC
+    data set mean that, on average, there is activity of about 11 users per second*.* There
+    are many more events to keep track of, especially keeping in mind that the only
+    thing we have measured were page views.'
+  id: totrans-219
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实时数据的高吞吐量和可扩展性：我们需要一个系统，可以实时存储和处理这些事件，并且可以在不减速的情况下处理一定的负载。例如，MSNBC数据集中大约一百万个独立用户意味着平均每秒大约有11个用户的活动。还有许多事件需要跟踪，特别是要记住我们只测量了页面浏览。
+- en: '*Streaming data and batching thereof: *In principle, the first two points could
+    be addressed by writing events to a sufficiently sophisticated log. However, we
+    haven''t even touched the topic of aggregating data yet and we preferably need
+    an online processing system to do so. First, each event has to be attributed to
+    a user, which will have to be equipped with some sort of ID. Next, we will have
+    to think about the concept of a user session. While the user data has been aggregated
+    on a daily level in the MSNBC data set, this is not granular enough for many purposes.
+    It makes sense to analyze users'' behavior for the time period they are actually
+    active. For this reason, it is customary to consider* windows* of activities and
+    aggregate clicks and other events as per such windows.'
+  id: totrans-220
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 流数据和批处理：原则上，前两点可以通过将事件写入足够复杂的日志来解决。然而，我们甚至还没有涉及聚合数据的话题，我们更需要一个在线处理系统来做到这一点。首先，每个事件都必须归因于一个用户，该用户将必须配备某种ID。接下来，我们将不得不考虑用户会话的概念。虽然MSNBC数据集中的用户数据已经在日常级别上进行了聚合，但这对于许多目的来说还不够细粒度。分析用户的行为在他们实际活跃的时间段内是有意义的。因此，习惯上考虑活动窗口，并根据这些窗口聚合点击和其他事件。
+- en: '*Analytics on streaming data: *Assuming we had a system like we just described
+    and access to aggregated user session data in real time, what could we hope to
+    achieve? We would need an analytics platform that allows us to apply algorithms
+    and gain insights from this data.'
+  id: totrans-221
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 流数据分析：假设我们有一个像我们刚刚描述的系统，并且实时访问聚合的用户会话数据，我们可以希望实现什么？我们需要一个分析平台，允许我们应用算法并从这些数据中获得见解。
+- en: Spark's proposal to address these problems is its **Spark Streaming**module,
+    which we will briefly introduce next. Using Spark Streaming, we will build an
+    application that can at least *mock *generating and aggregating events in order
+    to then apply the pattern mining algorithms we studied to *streams of events.*
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark解决这些问题的提议是其Spark Streaming模块，我们将在下文简要介绍。使用Spark Streaming，我们将构建一个应用程序，至少可以模拟生成和聚合事件，然后应用我们研究的模式挖掘算法到事件流中。
+- en: The Spark Streaming module
+  id: totrans-223
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Spark Streaming模块
+- en: There is not enough time to give an in-depth introduction to Spark Streaming
+    here, but we can, at the very least, touch on some of the key notions, provide
+    some examples, and give some guidance to more advanced topics.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里没有足够的时间对Spark Streaming进行深入介绍，但至少我们可以涉及一些关键概念，提供一些示例，并为更高级的主题提供一些指导。
+- en: 'Spark Streaming is Spark''s module for stream data processing, and it is indeed
+    equipped with all the properties we explained in the preceding list: it is a highly
+    fault-tolerant, scalable, and high-throughput system for processing and analyzing
+    streams of live data. Its API is a natural extension of Spark itself and many
+    of the tools available for RDDs and DataFrames carry over to Spark Streaming.'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark Streaming是Spark的流数据处理模块，它确实具备我们在前面列表中解释的所有属性：它是一个高度容错、可扩展和高吞吐量的系统，用于处理和分析实时数据流。它的API是Spark本身的自然扩展，许多可用于RDD和DataFrame的工具也适用于Spark
+    Streaming。
+- en: The core abstraction of Spark Streaming applications is the notion of *DStream,* which
+    stands for *discretized stream. *To explain the nomenclature, we often think of
+    data streams as a continuous flow of events,which is, of course, an idealization,
+    since all we can ever measure are discrete events. Regardless, this continuous
+    flow of data will hit our system, and for us to process it further, we *discretize*
+    it into disjoint batches of data. This stream of discrete data batches is realized
+    as DStream in Spark Streaming and is internally implemented as a *sequence of
+    RDDs*.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark Streaming应用程序的核心抽象是“DStream”的概念，它代表“离散流”。为了解释这个术语，我们经常将数据流想象为连续的事件流，当然，这是一个理想化的想法，因为我们所能测量的只是离散的事件。无论如何，这连续的数据流将进入我们的系统，为了进一步处理它，我们将其离散化为不相交的数据批次。这个离散数据批次流在Spark
+    Streaming中被实现为DStream，并且在内部被实现为一系列RDD。
+- en: 'The following diagram gives a high-level overview of the data flow and transformation
+    with Spark Streaming:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表概述了Spark Streaming的数据流和转换：
+- en: '![](img/00148.jpeg)'
+  id: totrans-228
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00148.jpeg)'
+- en: 'Figure 2: Input data is fed into Spark Streaming, which discretises this stream
+    as a so called DStream. These sequences of RDDs can then be further transformed
+    and processed by Spark and any module thereof.'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图2：输入数据被馈入Spark Streaming，它将这个流离散化为所谓的DStream。然后，这些RDD序列可以通过Spark和其任何模块进一步转换和处理。
+- en: As the diagram shows, the data enters Spark Streaming through an input data
+    stream. This data can be produced and ingested from many different sources, which
+    we will discuss further later on. We speak of systems generating events that Spark
+    Streaming can process as *sources*.Input DStreams take data from sources and do
+    so via *receivers* for these sources. Once an input DStream has been created,
+    it can be processed through a rich API that allows for many interesting transformations.
+    It serves as a good mental model to think of DStreams as sequences or collections
+    of RDDs, which we can operate on through an interface that is very close to that
+    of RDDs in the Spark core. For instance, operations such as map-reduce, and filter
+    are available for DStreams as well and simply carry over the respective functionality
+    from the individual RDDs to sequences of RDDs. We will discuss all of this in
+    more detail, but let's first turn to a basic example.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如图表所示，数据通过输入数据流进入Spark Streaming。这些数据可以从许多不同的来源产生和摄入，我们将在后面进一步讨论。我们称生成事件的系统为Spark
+    Streaming可以处理的“来源”。输入DStreams通过这些来源的“接收器”从来源获取数据。一旦创建了输入DStream，它可以通过丰富的API进行处理，这个API允许进行许多有趣的转换。将DStreams视为RDD的序列或集合，并通过与Spark核心中RDD非常接近的接口对其进行操作是一个很好的思维模型。例如，map-reduce和filter等操作也适用于DStreams，并且可以将相应功能从单个RDD转移到RDD序列。我们将更详细地讨论所有这些内容，但首先让我们转向一个基本示例。
+- en: As the first example to get started with Spark Streaming, let's consider the
+    following scenario. Assume that we have already loaded the MSNBC data set from
+    earlier and have computed the prefix span model (`psModel`) from it. This model
+    was fit with data from a single day of user activity, say, yesterday's data. Today,
+    new events of user activity come in. We will create a simple Spark Streaming application
+    with a basic source that generates user data in precisely the schema we had for
+    the MSNBC data; that is, we are given space-separated strings containing numbers
+    between 1 and 17\. Our application will then pick up these events and create `DStream`
+    from them. We can then apply our prefix span model to the data of `DStream` to
+    find out if the new sequences fed into the system are indeed frequent sequences
+    according to `psModel`.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为开始使用Spark Streaming的第一个示例，让我们考虑以下情景。假设我们已经从先前加载了MSNBC数据集，并从中计算出了前缀跨度模型（`psModel`）。这个模型是用来自单日用户活动的数据拟合的，比如昨天的数据。今天，新的用户活动事件进来了。我们将创建一个简单的Spark
+    Streaming应用程序，其中包含一个基本的源，精确地生成用户数据，其模式与我们在MSNBC数据中的模式相同；也就是说，我们得到了包含1到17之间数字的空格分隔字符串。然后，我们的应用程序将接收这些事件并从中创建`DStream`。然后，我们可以将我们的前缀跨度模型应用于`DStream`的数据，以找出新输入到系统中的序列是否确实是根据`psModel`频繁的序列。
+- en: 'To start with a Spark Streaming application in the first place, we need to
+    create a so-called `StreamingContext` API, which, by convention, will be instantiated
+    as `ssc`. Assuming that we start an application from scratch, we create the following
+    context:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要创建一个所谓的“StreamingContext”API，按照惯例，它将被实例化为“ssc”。假设我们从头开始启动一个应用程序，我们创建以下上下文：
+- en: '[PRE18]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: If you work with the Spark shell, all but the first and last lines are not necessary,
+    since, in such a case, you will be provided with a Spark context (`sc`) already.
+    We include the creation of the latter regardless, since we aim at a self-contained
+    application. The creation of a new `StreamingContext` API takes two arguments,
+    namely a `SparkContext` and an argument called `batchDuration`, which we set to
+    10 seconds. The batch duration is the value that tells us *how to discretize *data
+    for a `DStream`, by specifying for how long the streaming data should be collected
+    to form a batch within the `DStream`, that is, one of the RDDs in the sequence.
+    Another detail we want to draw your attention to is that the Spark master is set
+    to two cores by setting `local[2]`. Since we assume you are working locally, it
+    is important to assign at least two cores to the application. The reason is that
+    one thread will be used to receive input data, while the other will then be free
+    to process it. Should you have more receivers in more advanced applications, you
+    need to reserve one core for each.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您使用Spark shell，除了第一行和最后一行之外，其他行都是不必要的，因为在这种情况下，您将已经提供了一个Spark上下文（`sc`）。我们包括后者的创建，因为我们的目标是一个独立的应用程序。创建一个新的`StreamingContext`API需要两个参数，即`SparkContext`和一个名为`batchDuration`的参数，我们将其设置为10秒。批处理持续时间是告诉我们*如何离散化*`DStream`数据的值，通过指定流数据应该收集多长时间来形成`DStream`中的批处理，即序列中的一个RDD。我们还想要吸引您的注意的另一个细节是，通过设置`local[2]`，Spark主节点设置为两个核心。由于我们假设您是在本地工作，将至少分配两个核心给应用程序是很重要的。原因是一个线程将用于接收输入数据，而另一个线程将空闲以处理数据。在更高级的应用程序中，如果有更多的接收器，您需要为每个接收器保留一个核心。
+- en: 'Next, we essentially repeat parts of the prefix span model for the sake of
+    completeness of this application. As before, the sequences are loaded from a local
+    text file. Note that this time, we assume the file is in the resources folder
+    of your project, but you can choose to store it anywhere you want:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们基本上重复了前缀跨度模型的部分，以完善这个应用程序。与之前一样，序列是从本地文本文件加载的。请注意，这次我们假设文件在项目的资源文件夹中，但您可以选择将其存储在任何位置：
+- en: '[PRE19]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: In the last step of the preceding computation, we collect all the frequent sequences
+    on the master and store them as `freqSequences`. The reason we do this is that
+    we want to compare this data against the incoming data to see if the sequences
+    of the new data are frequent with respect to the current model (`psModel`). Unfortunately,
+    unlike many of the algorithms from MLlib, none of the three available pattern
+    mining models in Spark are built to take new data once trained, so we have to
+    do this comparison on our own, using `freqSequences`.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面计算的最后一步中，我们在主节点上收集所有频繁序列，并将它们存储为`freqSequences`。我们这样做的原因是要将这些数据与传入的数据进行比较，以查看新数据的序列是否与当前模型（`psModel`）相对频繁。不幸的是，与MLlib中的许多算法不同，Spark中的三个可用的模式挖掘模型都不是在训练后接受新数据的，因此我们必须自己使用`freqSequences`进行比较。
+- en: 'Next, we can finally create a `DStream` object of the `String` type. To this
+    end, we call `socketTextStream` on our streaming context, which will allow us
+    to receive data from a server, running on port `8000` of `localhost`, listening
+    on a TCP socket:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们最终可以创建一个`String`类型的`DStream`对象。为此，我们在流处理上下文中调用`socketTextStream`，这将允许我们从运行在`localhost`端口`8000`上的服务器上接收数据，监听TCP套接字：
+- en: '[PRE20]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'What we call `rawSequences` is the data received through that connection, discretized
+    into 10-second intervals. Before we discuss *how to actually send data*, let''s
+    first continue with the example of processing it once we have received it. Recall
+    that the input data will have the same format as before, so we need to preprocess
+    it in exactly the same way, as follows:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们称之为`rawSequences`的数据是通过该连接接收的，离散为10秒的间隔。在讨论*如何实际发送数据*之前，让我们先继续处理一旦接收到数据的示例。请记住，输入数据的格式与之前相同，因此我们需要以完全相同的方式对其进行预处理，如下所示：
+- en: '[PRE21]'
+  id: totrans-241
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'The two `map` operations we use here are structurally the same as before on
+    the original MSNBC data, but keep in mind that this time, `map` has a different
+    context, since we are working with DStreams instead of RDDs. Having defined `sequences`,
+    a sequence of RDDs of the `Array[Array[Int]]` type, we can use it to match against
+    `freqSequences`. We do so by iterating over each RDD in sequences and then again
+    over each array contained in these RDDs. Next, we count how often the respective array is
+    found in `freqSequences`, and if it is found, we print that the sequence corresponding
+    to `array` is indeed frequent:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里使用的两个`map`操作在原始MSNBC数据上在结构上与之前相同，但请记住，这次`map`具有不同的上下文，因为我们使用的是DStreams而不是RDDs。定义了`sequences`，一个`Array[Array[Int]]`类型的RDD序列，我们可以使用它与`freqSequences`进行匹配。我们通过迭代sequences中的每个RDD，然后再次迭代这些RDD中包含的每个数组来做到这一点。接下来，我们计算`freqSequences`中相应数组的出现频率，如果找到了，我们打印出与`array`对应的序列确实是频繁的：
+- en: '[PRE22]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Note that in the preceding code, we need to compare deep copies of arrays, since
+    nested arrays can't be compared on the nose. To be more precise, one can check
+    them for equality, but the result will always be false.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在前面的代码中，我们需要比较数组的深层副本，因为嵌套数组不能直接比较。更准确地说，可以检查它们是否相等，但结果将始终为false。
+- en: 'Having done the transformation, the only thing we are left with on the receiving
+    side of the application is to actually tell it to start listening to the incoming
+    data:'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成转换后，应用程序接收端唯一剩下的事情就是实际告诉它开始监听传入的数据：
+- en: '[PRE23]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Through the streaming context, `ssc`, we tell the application to start and await
+    its termination. Note that in our specific context and for most other applications
+    of this fashion, we rarely want to terminate the program at all. By design, the
+    application is intended as a *long-running job*, since, in principle, we want
+    it to listen to and analyze new data indefinitely. Naturally, there will be cases
+    of maintenance, but we may also want to regularly update (re-train) `psModel`
+    with the newly acquired data.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过流上下文`ssc`，我们告诉应用程序启动并等待其终止。请注意，在我们特定的上下文中，以及对于这种类型的大多数其他应用程序，我们很少想要终止程序。按设计，该应用程序旨在作为*长时间运行的作业*，因为原则上，我们希望它无限期地监听和分析新数据。当然，会有维护的情况，但我们也可能希望定期使用新获取的数据更新（重新训练）`psModel`。
+- en: We have already seen a few operations on DStreams and we recommend you to refer
+    to the latest Spark Streaming documentation ([http://spark.apache.org/docs/latest/streaming-programming-guide.html](http://spark.apache.org/docs/latest/streaming-programming-guide.html))
+    for more details. Essentially, many of the (functional) programming functionalities
+    available on basic Scala collections that we also know from RDDs carry over seamlessly
+    to DStreams as well. To name a few, these are `filter`, `flatMap`, `map`, `reduce`,
+    and `reduceByKey`. Other SQL-like functionalities, such as cogroup, `count`, `countByValue`,
+    `join`, or `union`, are also at your disposal. We will see some of the more advanced
+    functionalities later on in a second example.
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经看到了一些关于DStreams的操作，并建议您参考最新的Spark Streaming文档（[http://spark.apache.org/docs/latest/streaming-programming-guide.html](http://spark.apache.org/docs/latest/streaming-programming-guide.html)）以获取更多详细信息。基本上，许多（功能性）编程功能在基本的Scala集合上都是可用的，我们也从RDD中知道，它们也可以无缝地转移到DStreams。举几个例子，这些是`filter`、`flatMap`、`map`、`reduce`和`reduceByKey`。其他类似SQL的功能，如cogroup、`count`、`countByValue`、`join`或`union`，也都可以使用。我们将在第二个例子中看到一些更高级的功能。
+- en: 'Now that we have covered the receiving end, let''s briefly discuss how to create
+    a data source for our app. One of the simplest ways to send input data from a
+    command line over a TCP socket is to use *Netcat*, which is available for most
+    operating systems, often preinstalled. To start Netcat locally on port `8000`,
+    run the following command in a terminal separate from your Spark application or
+    shell:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经涵盖了接收端，让我们简要讨论一下如何为我们的应用程序创建数据源。从命令行通过TCP套接字发送输入数据的最简单方法之一是使用*Netcat*，它适用于大多数操作系统，通常是预安装的。要在本地端口`8000`上启动Netcat，在与您的Spark应用程序或shell分开的终端中运行以下命令：
+- en: '[PRE24]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Assuming you already started the Spark Streaming application for receiving
+    data from before, we can now type new sequences into the Netcat terminal window
+    and confirm each by hitting *Enter*. For instance, type the following four sequences *within
+    10 seconds*:'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设您已经启动了用于接收数据的Spark Streaming应用程序，现在我们可以在Netcat终端窗口中输入新的序列，并通过按*Enter*键确认每个序列。例如，在*10秒内*输入以下四个序列：
+- en: '![](img/00149.jpeg)'
+  id: totrans-252
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00149.jpeg)'
+- en: 'You will see the following output:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你会看到以下输出：
+- en: '![](img/00150.jpeg)'
+  id: totrans-254
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00150.jpeg)'
+- en: If you are either really slow at typing or so unlucky that you start typing
+    when the 10-second window is almost over, the output might be split into more
+    parts. Looking at the actual output, you will see that the often discussed categories *front
+    page* and *news*,represented by categories 1 and 2, are frequent. Also, since
+    23 is not a sequence item contained in the original data set, it can't be frequent.
+    Lastly, the sequence <4, 5> is apparently also not frequent, which is something
+    we didn't know before.
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你打字速度很慢，或者在10秒窗口快要结束时开始打字，输出可能会分成更多部分。看看实际的输出，你会发现经常讨论的*首页*和*新闻*，由类别1和2表示，是频繁的。此外，由于23不是原始数据集中包含的序列项，它不能是频繁的。最后，序列<4,
+    5>显然也不频繁，这是我们以前不知道的。
+- en: 'Choosing Netcat for this example is a natural choice for the time and space
+    given in this chapter, but you will never see it used for this purpose in serious
+    production environments. In general, Spark Streaming has two types of sources
+    available: basic and advanced. Basic sources can also be queues of RDDsand other
+    custom sources apart from file streams, which the preceding example represents.
+    On the side of advanced sources, Spark Streaming has a lot of interesting connectors
+    to offer: Kafka, Kinesis, Flume, and advanced custom sources*.* This wide variety
+    of advanced sources makes it attractive to incorporate Spark Streaming as a production
+    component, integrating well with the other infrastructure components.'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 选择Netcat作为本例的示例是一个自然的选择，但在严肃的生产环境中，你永远不会看到它用于这个目的。一般来说，Spark Streaming有两种类型的可用源：基本和高级。基本源还可以是RDD队列和其他自定义源，除了文件流，前面的例子就是代表。在高级源方面，Spark
+    Streaming有许多有趣的连接器可供选择：Kafka、Kinesis、Flume和高级自定义源。这种广泛的高级源的多样性使其成为将Spark Streaming作为生产组件并入其他基础架构组件的吸引力所在。
+- en: 'Taking a few steps back and considering what we have achieved by discussing
+    this example, you may be inclined to say that apart from introducing Spark Streaming
+    itself and working with data producers and receivers, the application itself did
+    not solve many of our aforementioned concerns. This criticism is valid, and in
+    a second example, we want to address the following remaining issues with our approach:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 退后几步，考虑一下我们通过讨论这个例子所取得的成就，你可能会倾向于说，除了介绍Spark Streaming本身并与数据生产者和接收者一起工作之外，应用程序本身并没有解决我们之前提到的许多问题。这种批评是有效的，在第二个例子中，我们希望解决我们方法中的以下剩余问题：
+- en: Input data for our DStreams had the same structure as our offline data, that
+    is, it was already pre-aggregated with respect to users, which is not very realistic
+  id: totrans-258
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们的DStreams的输入数据与我们的离线数据具有相同的结构，也就是说，它已经针对用户进行了预聚合，这并不是非常现实的。
+- en: Apart from the two calls to `map` and one to `foreachRDD`, we didn't see much
+    in terms of functionality and added value in operating with DStreams
+  id: totrans-259
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 除了两次对`map`的调用和一次对`foreachRDD`的调用之外，我们在操作DStreams方面并没有看到太多功能和附加值
+- en: We did not do any analytics on data streams but only checked them against a
+    list of precomputed patterns
+  id: totrans-260
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们没有对数据流进行任何分析，只是将它们与预先计算的模式列表进行了检查
+- en: To resolve these issues, let's slightly redefine our example setting. This time,
+    let's assume that one event is represented by one user clicking on one site, where
+    each such site falls under one of the categories 1-17, as before. Now, we cannot
+    possibly simulate a complete production environment, so we make the simplifying
+    assumption that each unique user has already been equipped with an ID. Given this
+    information, let's say events come in as key-value pairs consisting of a user
+    ID and a category of this click event.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了解决这些问题，让我们稍微重新定义我们的示例设置。这一次，让我们假设一个事件由一个用户点击一个站点来表示，其中每个站点都属于1-17中的一个类别，就像以前一样。现在，我们不可能模拟一个完整的生产环境，所以我们做出了简化的假设，即每个唯一的用户已经被分配了一个ID。有了这些信息，让我们假设事件以用户ID和此点击事件的类别组成的键值对的形式出现。
+- en: With this setup, we have to think about how to aggregate these events to generate
+    sequences from them. For this purpose, we need to collect data points for each
+    user ID in a given window*. *In the original data set, this window was obviously
+    one full day, but depending on the application, it may make sense to choose a
+    much smaller window. If we think about the scenario of a user browsing his favorite
+    online shop, the click and other events that go back a few hours will unlikely
+    influence his or her current desire to buy something. For this reason, a reasonable
+    assumption made in online marketing and related fields is to limit the window
+    of interest to about 20-30 minutes, a so-called *user session.* In order for us
+    to see results much quicker, we will use an even smaller window of 20 seconds
+    for our application. We call this the **window length***.*
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这个设置，我们必须考虑如何对这些事件进行聚合，以生成序列。为此，我们需要在给定的*窗口*中为每个用户ID收集数据点。在原始数据集中，这个窗口显然是一整天，但根据应用程序的不同，选择一个更小的窗口可能是有意义的。如果我们考虑用户浏览他最喜欢的在线商店的情景，点击和其他事件可能会影响他或她当前的购买欲望。因此，在在线营销和相关领域做出的一个合理假设是将感兴趣的窗口限制在大约20-30分钟，即所谓的*用户会话*。为了让我们更快地看到结果，我们将在我们的应用程序中使用一个更小的20秒窗口。我们称之为**窗口长度**。
+- en: 'Now that we know how far back we want to analyze the data from a given point
+    in time, we also have to define *how often* we want to carry out the aggregation
+    step, which we will call the *sliding interval.* One natural choice would be to
+    set both to the same amount of time, leading to disjoint windows of aggregation,
+    that is, every 20 seconds. However, it might also be interesting to choose a shorter
+    sliding window of 10 seconds, which would lead to aggregation data that overlaps
+    10 seconds each. The following diagram illustrates the concepts we just discussed:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道了我们想要从给定时间点分析数据的时间跨度，我们还必须定义*多久*我们想要进行聚合步骤，我们将其称为*滑动间隔*。一个自然的选择是将两者都设置为相同的时间，导致不相交的聚合窗口，即每20秒。然而，选择一个更短的10秒滑动窗口也可能很有趣，这将导致每10秒重叠的聚合数据。以下图表说明了我们刚刚讨论的概念：
+- en: '![](img/00151.jpeg)'
+  id: totrans-264
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00151.jpeg)'
+- en: 'Figure 3: Visualisation of a window operation transforming a DStream to another.
+    In this example the batch duration of the Spark Streaming application has been
+    set to 10 seconds. The window length for the transformation operating on batches
+    of data is 40 seconds and we carry out the window operation every 20 seconds,
+    leading to an overlap of 20 seconds each and a resulting DStream that is batched
+    in 20-second blocks.'
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3：将DStream转换为另一个的窗口操作的可视化。在这个例子中，Spark Streaming应用程序的批处理持续时间设置为10秒。用于对数据批次进行转换的窗口长度为40秒，我们每20秒进行一次窗口操作，导致每次重叠20秒，并得到一个以20秒为一块的DStream。
+- en: 'To turn this knowledge into a concrete example, we assume that the event data
+    has the form *key:value*, that is, one such event could be `137: 2`, meaning that
+    the user with ID `137` clicked on a page with the category *news*. To process
+    these events, we have to modify our preprocessing like this:'
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '要将这些知识转化为具体示例，我们假设事件数据的形式为*键:值*，也就是说，这样的一个事件可能是`137: 2`，意味着ID为`137`的用户点击了一个类别为*新闻*的页面。为了处理这些事件，我们必须修改我们的预处理如下：'
+- en: '[PRE25]'
+  id: totrans-267
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'With these key-value pairs, we can now aim to do the aggregation necessary
+    to group events by the user ID. As outlined earlier, we do this by aggregating
+    on a given window of 20 seconds with a sliding interval of 10 seconds:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这些键值对，我们现在可以着手进行必要的聚合，以便按用户ID对事件进行分组。如前所述，我们通过在给定的20秒窗口上进行聚合，并设置10秒的滑动间隔来实现这一点：
+- en: '[PRE26]'
+  id: totrans-269
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: In the preceding code, we are using a more advanced operation on DStreams, namely
+    `reduceByKeyAndWindow`, in which we specify an aggregation function on values
+    of key-value pairs, as well as a window duration and sliding interval. In the
+    last step of the computation, we strip the user IDs so that the structure of `rawSequences`
+    is identical to the previous example. This means that we have successfully converted
+    our example to work on unprocessed events, and it will still check against frequent
+    sequences of our baseline model. We will not show more examples of how the output
+    of this application looks, but we encourage you to play around with this application
+    and see how the aggregation works on key-value pairs.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码中，我们使用了更高级的DStreams操作，即`reduceByKeyAndWindow`，其中我们指定了键值对的值的聚合函数，以及窗口持续时间和滑动间隔。在计算的最后一步中，我们剥离了用户ID，使`rawSequences`的结构与之前的示例相同。这意味着我们已成功将我们的示例转换为在未处理的事件上运行，并且它仍将检查我们基线模型的频繁序列。我们不会展示此应用程序输出的更多示例，但我们鼓励您尝试一下这个应用程序，并看看如何对键值对进行聚合。
+- en: 'To wrap up this example, and the chapter, let''s look at one more interesting
+    way of aggregating event data. Let''s say we want to dynamically count how often
+    a certain ID occurs in the event stream, that is, how many page clicks a user
+    generates. We already have our `events` DStream defined previously, so we could
+    approach the count as follows:'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了结束这个示例和本章，让我们再看一种有趣的聚合事件数据的方法。假设我们想要动态计算某个ID在事件流中出现的频率，也就是说，用户生成了多少次页面点击。我们已经定义了我们之前的`events`
+    DStream，所以我们可以按照以下方式处理计数：
+- en: '[PRE27]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'In a way, this works as we intended; it counts events for IDs. However, note
+    that what is returned is again a DStream, that is, we do not actually aggregate *across
+    streaming windows* but just within the sequences of RDDs. To aggregate across
+    the full stream of events, we need to keep track of count states since from the
+    start. Spark Streaming offers a method on DStreams for precisely this purpose,
+    namely `updateStateByKey`. It can be used by providing `updateFunction`, which
+    takes the current state and new values as input and returns an updated state.
+    Let''s see how it works in practice for our event count:'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在某种程度上，这符合我们的意图；它计算了ID的事件数量。但是，请注意，返回的是一个DStream，也就是说，我们实际上没有在流式窗口之间进行聚合，而只是在RDD序列内进行聚合。为了在整个事件流中进行聚合，我们需要从一开始就跟踪计数状态。Spark
+    Streaming提供了一个用于此目的的DStreams方法，即`updateStateByKey`。通过提供`updateFunction`，它可以使用当前状态和新值作为输入，并返回更新后的状态。让我们看看它在实践中如何为我们的事件计数工作：
+- en: '[PRE28]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: We first define our update function itself. Note that the signature of `updateStateByKey`
+    requires us to return an `Option`, but in essence, we just compute the running
+    sum of state and incoming values. Next, we provide `updateStateByKey` with an
+    `Int` type signature and the previously created `updateFunction` method. Doing
+    so, we get precisely the aggregation we wanted in the first place.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先定义了我们的更新函数本身。请注意，`updateStateByKey`的签名要求我们返回一个`Option`，但实质上，我们只是计算状态和传入值的运行总和。接下来，我们为`updateStateByKey`提供了一个`Int`类型的签名和先前创建的`updateFunction`方法。这样做，我们就得到了我们最初想要的聚合。
+- en: Summarizing, we introduced event aggregation, two more complex operations on
+    DStreams (`reduceByKeyAndWindow` and `updateStateByKey`), and counted events in
+    a stream with this example. While the example is still simplistic in what it does,
+    we hope to have provided the reader with a good entry point for more advanced
+    applications. For instance, one could extend this example to calculate moving
+    averages over the event stream or change it towards computing frequent patterns
+    on a per-window basis.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总结一下，我们介绍了事件聚合、DStreams上的两个更复杂的操作（`reduceByKeyAndWindow`和`updateStateByKey`），并使用这个示例在流中计算了事件的数量。虽然这个示例在所做的事情上仍然很简单，但我们希望为读者提供了更高级应用的良好入口点。例如，可以扩展这个示例以计算事件流上的移动平均值，或者改变它以在每个窗口基础上计算频繁模式。
+- en: Summary
+  id: totrans-277
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we introduced a new class of algorithms, that is, frequent
+    pattern mining applications, and showed you how to deploy them in a real-world
+    scenario. We first discussed the very basics of pattern mining and the problems
+    that can be addressed using these techniques. In particular, we saw how to implement
+    the three available algorithms in Spark, *FP-growth*, *association rules*, and
+    *prefix span*. As a running example for the applications we used clickstream data
+    provided by MSNBC, which also helped us to compare the algorithms qualitatively.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们介绍了一类新的算法，即频繁模式挖掘应用，并向您展示了如何在实际场景中部署它们。我们首先讨论了模式挖掘的基础知识以及可以使用这些技术解决的问题。特别是，我们看到了如何在Spark中实现三种可用的算法，即FP-growth、关联规则和前缀跨度。作为我们应用的运行示例，我们使用了MSNBC提供的点击流数据，这也帮助我们在质量上比较了这些算法。
+- en: Next, we introduced the basic terminology and entry points of Spark Streaming
+    and considered a few real-world scenarios. We discussed how to deploy and evaluate
+    one of the frequent pattern mining algorithms with a streaming context first.
+    After that, we addressed the problem of aggregating user session data from raw
+    streaming data. To this end, we had to find a solution to mock providing click
+    data as streaming events.
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们介绍了Spark Streaming的基本术语和入口点，并考虑了一些实际场景。我们首先讨论了如何首先部署和评估频繁模式挖掘算法与流上下文。之后，我们解决了从原始流数据中聚合用户会话数据的问题。为此，我们必须找到一种解决方案来模拟提供点击数据作为流事件。

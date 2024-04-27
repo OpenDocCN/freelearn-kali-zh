@@ -1,0 +1,2258 @@
+- en: Creating User Logins and API Authentication
+  id: totrans-0
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建用户登录和API身份验证
+- en: 'In the last two chapters, we started working on session and **JSON Web Token**
+    (**JWT**) authentication in Nuxt apps. We used sessions for authentication in
+    [Chapter 10](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml), *Adding a Vuex Store*,
+    to exercise `nuxtServerInit`. Then we used sessions and tokens together for authentication
+    in [Chapter 11](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml), *Writing Route Middlewares
+    and Server Middleware*s, to exercise per-route middleware, for example:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在过去的两章中，我们开始在Nuxt应用程序中使用会话和JSON Web Token（JWT）进行身份验证。我们在[第10章](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml)中使用会话进行身份验证，*添加Vuex
+    Store*，以练习`nuxtServerInit`。然后我们在[第11章](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml)中使用会话和令牌一起进行身份验证，*编写路由中间件和服务器中间件*，以练习按路由中间件，例如：
+- en: '[PRE0]'
+  id: totrans-2
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: They may seem overwhelming if you are new to web authentication but fear not.
+    In a nutshell, authentication is the process of verifying who you are. An authentication
+    system allows you to access a resource when your credentials match the credentials
+    in a database or a data authentication server. There are several authentication
+    methods. Session-based and token-based authentication are the most common, or
+    a combination of these two. So, let’s dive into them.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您是新手，它们可能会让人感到不知所措，但不用担心。简而言之，身份验证是验证您是谁的过程。身份验证系统允许您在您的凭据与数据库或数据身份验证服务器中的凭据匹配时访问资源。有几种身份验证方法。基于会话和基于令牌的身份验证是最常见的，或者这两种的组合。所以，让我们深入了解它们。
+- en: 'The topics we will cover in this chapter are as follows:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章我们将涵盖以下主题：
+- en: Understanding session-based authentication
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解基于会话的身份验证
+- en: Understanding token-based authentication
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解基于令牌的身份验证
+- en: Creating backend authentication
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建后端身份验证
+- en: Creating frontend authentication
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建前端身份验证
+- en: Signing in with Google OAuth
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Google OAuth进行登录
+- en: Understanding session-based authentication
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解基于会话的身份验证
+- en: '**HyperText Transfer Protocol** (**HTTP**) is stateless. Hence, all HTTP requests
+    are stateless. That means it does not remember anything or any user we have authenticated,
+    and our application wouldn''t know whether it is the same person from the previous
+    request. So, we would have to authenticate again on the next request. This is
+    not ideal.'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 超文本传输协议（HTTP）是无状态的。因此，所有HTTP请求都是无状态的。这意味着它不记住任何我们已经验证过的东西或任何用户，我们的应用程序也不知道它是否是上一个请求的同一个人。因此，我们将不得不在下一个请求上再次进行身份验证。这并不理想。
+- en: So, session-based and cookie-based authentication (usually referred to only
+    as session-based authentication) were introduced to store user data between HTTP
+    requests to put away the stateless nature of HTTP requests. They make the authentication
+    process "stateful." That means an authenticated record or session is stored on
+    both the server and client sides. The server can keep the active sessions in a
+    database or the server memory, thus it is known as session-based authentication.
+    The client can create a cookie to hold the session identifier (session ID), so
+    it is known as cookie-based authentication.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，基于会话和基于Cookie的身份验证（通常仅称为基于会话的身份验证）被引入以在HTTP请求之间存储用户数据，以消除HTTP请求的无状态性质。它们使身份验证过程“有状态”。这意味着经过身份验证的记录或会话存储在服务器和客户端两侧。服务器可以将活动会话保存在数据库或服务器内存中，因此它被称为基于会话的身份验证。客户端可以创建一个Cookie来保存会话标识符（会话ID），因此它被称为基于Cookie的身份验证。
+- en: But what are sessions and cookies anyway? Let's jump into them in the following
+    sections.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是会话和Cookie到底是什么？让我们在接下来的章节中深入了解它们。
+- en: What are sessions and cookies?
+  id: totrans-14
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 什么是会话和Cookie？
+- en: A session is a piece of temporary information interchanged between two or more
+    communicating devices, or between a computer and user. It is established at a
+    certain time and then expires at a future time. It also expires when the user
+    closes the browser or when leaving a website. When a session is established, a
+    file is created in a temporary directory (or in a database or the server memory)
+    on the server to store the registered session values. This data is then available
+    throughout the website during the visit, and the browser receives a session ID,
+    which is to be sent back, either by a cookie or by the `GET` variable, to the
+    server for validation.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 会话是在两个或多个通信设备之间，或者在计算机和用户之间交换的临时信息片段。它在特定时间建立，然后在将来的某个时间到期。当用户关闭浏览器或离开网站时，会话也会到期。建立会话时，在服务器的临时目录（或数据库或服务器内存）中创建一个文件，用于存储注册的会话值。然后在整个访问期间，这些数据都可用，并且浏览器会接收一个会话ID，该ID将通过cookie或`GET`变量发送回服务器进行验证。
+- en: In short, cookies and sessions are just data. Cookies are only stored on the
+    client-side machine, while sessions get stored on the client as well as on the
+    server. Sessions are considered more secure than cookies because the data can
+    be kept solely on the server. Cookies are often created when the session is established
+    and they are saved on the client computer. They can be the name, age, or ID of
+    the authenticated user and they are sent back to the server by the browser to
+    identify the user. Let's take a look at how they work in the next section with
+    an example flow.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，cookie和会话只是数据。Cookie仅存储在客户端机器上，而会话既存储在客户端又存储在服务器上。会话被认为比cookie更安全，因为数据可以仅保存在服务器上。当会话建立时通常会创建cookie，并且它们保存在客户端计算机上。它们可以是经过身份验证的用户的名称、年龄或ID，并且由浏览器发送回服务器以识别用户。让我们在下一节通过示例流程来看看它们是如何工作的。
+- en: The session authentication flow
+  id: totrans-17
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 会话身份验证流程
+- en: 'Session-based and cookie-based authentication can be understood in the following
+    example authentication flow:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于会话和基于cookie的身份验证可以通过以下示例身份验证流程来理解：
+- en: The user sends their credentials, for example, username and password, from the
+    client app on their browser to the server.
+  id: totrans-19
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 用户从其浏览器上的客户端应用程序发送其凭据，例如用户名和密码，到服务器。
+- en: The server checks the credentials and sends a unique token (session ID) to the
+    client. Also, this token will be saved in a database or memory on the server side.
+  id: totrans-20
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 服务器检查凭据并向客户端发送一个唯一的令牌（会话ID）。此令牌还将保存在服务器端的数据库或内存中。
+- en: The client app stores the token in cookies on the client side and will use it
+    in every HTTP request and send it back to the server.
+  id: totrans-21
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 客户端应用程序将令牌存储在客户端的cookie中，并在每个HTTP请求中使用它并发送回服务器。
+- en: The server receives the token and authenticates the user and then returns the
+    requested data to the client application.
+  id: totrans-22
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 服务器接收令牌并对用户进行身份验证，然后将请求的数据返回给客户端应用程序。
+- en: The client app destroys the token when the user logs out. Before logging out,
+    the client can also send a request to the server to remove the session, or the
+    session will end by itself depending on the expiration time that has been set.
+  id: totrans-23
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 客户端应用程序在用户注销时销毁令牌。在注销之前，客户端还可以向服务器发送请求以删除会话，或者会话将根据设置的到期时间自行结束。
+- en: In session-based authentication, the server does all the heavy lifting. It is
+    stateful. It associates the session identifier with the user account (for example,
+    in a database). The disadvantage of session-based authentication is the scalability
+    when there is a large number of users using the system at the same time because
+    sessions are stored in the server's memory, so it involves large memory usage.
+    Also, cookies work great on a single domain or subdomains but are disabled by
+    the browser normally on cross-domain sharing (cross-origin resource sharing).
+    So, this causes an issue for the client when making API requests that are served
+    from a different domain. But this issue can be overcome with token-based authentication,
+    which we will walk through in the next section.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在基于会话的身份验证中，服务器承担了所有繁重的工作。它是有状态的。它将会话标识符与用户账户关联起来（例如，在数据库中）。基于会话的身份验证的缺点是，在大量用户同时使用系统时，可伸缩性会受到影响，因为会话存储在服务器的内存中，因此涉及大量的内存使用。此外，cookie
+    在单个域或子域上运行良好，但通常在跨域共享（跨域资源共享）时被浏览器禁用。因此，当客户端从不同的域中进行API请求时，这会给客户端造成问题。但是，这个问题可以通过基于令牌的身份验证来解决，我们将在下一节中详细介绍。
+- en: Understanding token-based authentication
+  id: totrans-25
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解基于令牌的身份验证
+- en: Token-based authentication is simpler. There are a few implementations of tokens,
+    however, JSON Web Tokens is the most common one. Token-based authentication is
+    stateless. That means no session is persisted on the server side because the state
+    is stored inside the token on the client side. The responsibility of the server
+    is only to create a JWT with a secret and send it to the client. The client stores
+    the JWT in local storage, or a client-side cookie, and includes it in the header
+    whenever making a request. The server then validates the JWT and sends a response.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于令牌的身份验证更简单。有一些令牌的实现，但是JSON Web Tokens是最常见的一种。基于令牌的身份验证是无状态的。这意味着服务器端不会保留任何会话，因为状态存储在客户端的令牌中。服务器的责任只是使用秘钥创建一个JWT并将其发送给客户端。客户端将JWT存储在本地存储中，或者客户端的cookie中，并在发出请求时将其包含在标头中。服务器然后验证JWT并发送响应。
+- en: But what is a JWT and how does it work? Let's find out in the next section.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是JWT是什么，它是如何工作的？让我们在下一节中找出答案。
+- en: What are JSON Web Tokens?
+  id: totrans-28
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 什么是JSON Web Tokens？
+- en: 'To understand how a JWT works, we should understand what it is first. In short,
+    a JWT is a string of a hashed JSON object composed of a header, a payload, and
+    a signature. A JWT is generated with the following format:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要理解JWT的工作原理，我们首先应该了解它是什么。简而言之，JWT是一个由标头、有效载荷和签名组成的哈希JSON对象的字符串。JWT的生成格式如下：
+- en: '[PRE1]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'The header typically consists of two parts: type and algorithm. The type is
+    JWT, and the algorithm can be HMAC, SHA256, or RSA, which is a hashing algorithm
+    that uses a secret key to sign the token, for example:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 标头通常由两部分组成：类型和算法。类型是JWT，算法可以是HMAC、SHA256或RSA，这是一种使用秘钥对令牌进行签名的哈希算法，例如：
+- en: '[PRE2]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'The payload is the part where the information (or claims) is stored inside
+    a JWT, for example:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有效载荷是JWT中存储信息（或声明）的部分，例如：
+- en: '[PRE3]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: In this example, we only include two claims in the payload. You can put as many
+    claims as you like. The more claims you include, the bigger the JWT size, which
+    may affect performance. There are other optional claims, such as `iss` (issuer),
+    `sub` (subject), and `exp` (expiration time).
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们在有效载荷中只包括了两个声明。您可以放置任意多个声明。您包含的声明越多，JWT的大小就越大，这可能会影响性能。还有其他可选的声明，比如`iss`（发行者）、`sub`（主题）和`exp`（过期时间）。
+- en: If you want to find out more details about the JWT standard fields, please visit [https://tools.ietf.org/html/rfc7519](https://tools.ietf.org/html/rfc7519).
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想了解有关JWT标准字段的更多详细信息，请访问[https://tools.ietf.org/html/rfc7519](https://tools.ietf.org/html/rfc7519)。
+- en: 'The signature is computed using the encoded header, the encoded payload, a
+    secret, and the algorithm specified in the header. Whatever algorithm you choose
+    in the header part, you must use that algorithm to encrypt the first two parts
+    of the JWT: `base64(header) + ''.'' + base64(payload)`, for example, in this pseudocode:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 签名是使用编码的标头、编码的有效负载、一个密钥和标头中指定的算法计算的。无论您在标头部分选择了什么算法，您必须使用该算法来加密JWT的前两部分：`base64(header)
+    + '.' + base64(payload)`，例如，在这个伪代码中：
+- en: '[PRE4]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'The signature is the only part of the JWT that is not publicly readable because
+    it is encrypted with a secret key. Unless someone has the secret key, they cannot
+    decrypt this information. So, the example output from the preceding pseudocode
+    is three Base64-URL strings separated by dots that can be passed easily in HTTP
+    requests:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 签名是JWT中唯一不公开可读的部分，因为它是用一个秘钥加密的。除非有人有秘钥，否则他们无法解密这些信息。因此，前面伪代码的示例输出是由三个由点分隔的Base64-URL字符串，可以在HTTP请求中轻松传递。
+- en: '[PRE5]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Let's take a look at how this token authentication works in the next section,
+    with an example flow.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在下一节看看这个令牌认证是如何工作的，附带一个示例流程。
+- en: The token authentication flow
+  id: totrans-42
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 令牌认证流程
+- en: 'Token-based authentication can be understood with the following example authentication
+    flow:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于令牌的认证可以通过以下示例认证流程来理解：
+- en: The user sends their credentials, for example, username and password, from the
+    client app on their browser to the server.
+  id: totrans-44
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 用户从他们的浏览器上的客户端应用发送他们的凭据，例如用户名和密码，到服务器。
+- en: The server checks the username and password and returns a signed token (the
+    JWT) if the credentials are correct.
+  id: totrans-45
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 服务器检查用户名和密码，如果凭据正确，则返回一个签名令牌（JWT）。
+- en: This token is stored on the client side. It can be stored in local storage,
+    session storage, or in a cookie.
+  id: totrans-46
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 这个令牌存储在客户端。它可以存储在本地存储、会话存储或者cookie中。
+- en: The client app generally includes this token as an additional header on any
+    subsequent request to the server.
+  id: totrans-47
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 客户端应用通常会在任何后续请求到服务器时将该令牌作为附加标头包含进去。
+- en: The server receives and decodes the JWT and then allows request access if the
+    token is valid.
+  id: totrans-48
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 服务器接收并解码JWT，然后如果令牌有效就允许请求访问。
+- en: The token is destroyed on the client side when the user logs out and no further
+    interaction with the server is needed.
+  id: totrans-49
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 当用户注销并且不再需要与服务器进行进一步交互时，令牌将在客户端销毁。
+- en: 'In token-based authentication, generally, you should not include any sensitive
+    information in the payload and the token should not be kept over a long period.
+    The additional header that you use to include the token should be in this format:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在基于令牌的认证中，通常不应在有效负载中包含任何敏感信息，并且令牌不应保留太长时间。您用于包含令牌的附加标头应该是这种格式：
+- en: '[PRE6]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Scalability in token-based authentication is not an issue because the token
+    is stored on the client side. Cross-domain sharing is not an issue either because
+    JWT is a string with all the necessary information, included in the request header,
+    that is checked on each request made by the client to the server. In Node.js apps,
+    we can use one of the Node.js modules, such as `jsonwebtoken`, to generate the
+    token for us. Let's take a look at how we can use this Node.js module in the next
+    section.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于令牌的认证中的可扩展性不是一个问题，因为令牌存储在客户端。跨域共享也不是一个问题，因为JWT是一个包含所有必要信息的字符串，包含在请求标头中，由服务器检查每个客户端发出的请求。在Node.js应用中，我们可以使用Node.js模块之一，比如`jsonwebtoken`，来为我们生成令牌。让我们在下一节看看我们如何使用这个Node.js模块。
+- en: Using Node.js modules for JWT
+  id: totrans-53
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Node.js模块进行JWT
+- en: 'As we mentioned previously, `jsonwebtoken` can be used to generate JWTs on
+    the server side. You can use this module synchronously or asynchronously in the
+    following simplified steps:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前提到的，`jsonwebtoken`可以用于在服务器端生成JWT。您可以在以下简化的步骤中同步或异步地使用这个模块：
+- en: 'Install `jsonwebtoken` via npm:'
+  id: totrans-55
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装`jsonwebtoken`：
+- en: '[PRE7]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Import and sign a token on the server side:'
+  id: totrans-57
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在服务器端导入并签署令牌：
+- en: '[PRE8]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Asynchronously verify the token coming from the client side:'
+  id: totrans-59
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在服务器端异步验证来自客户端的令牌：
+- en: '[PRE9]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: If you want to find out more information about this module, please visit [https://github.com/brianloveswords/node-jws](https://github.com/brianloveswords/node-jws).
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想了解有关此模块的更多信息，请访问[https://github.com/brianloveswords/node-jws](https://github.com/brianloveswords/node-jws)。
+- en: 'So, now you have a basic understanding of session-based and token-based authentication,
+    we will guide you on how to apply them in server-side and client-side apps that
+    use Koa and Nuxt. In this chapter, we will use token-based authentication to create
+    two authentication options in our apps: local authentication and Google OAuth
+    authentication. Local authentication is the option where we authenticate the user
+    within our apps internally and locally, while Google OAuth authentication is the
+    option where we authenticate the user using Google OAuth. So, let''s find out
+    in the coming sections!'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，现在您对基于会话和基于令牌的身份验证有了基本的了解，我们将指导您如何在使用Koa和Nuxt的服务器端和客户端应用程序中应用它们。在本章中，我们将使用基于令牌的身份验证在我们的应用程序中创建两种身份验证选项：本地身份验证和Google
+    OAuth身份验证。本地身份验证是我们在应用程序内部和本地验证用户的选项，而Google OAuth身份验证是我们使用Google OAuth验证用户的选项。所以，让我们在接下来的章节中找出来！
+- en: Creating backend authentication
+  id: totrans-63
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建后端身份验证
+- en: 'In previous exercises in [Chapter 10](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml), *Adding
+    a Vuex Store*, and [Chapter 11](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml), *Writing
+    Route Middlewares and Server Middlewares*, we used a dummy user for our backend
+    authentication, particularly in `/chapter-11/nuxt-universal/route-middleware/per-route/`
+    for per-route middlewares, for example:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第10章](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml)和[第11章](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml)中的先前练习，*添加Vuex存储*和*编写路由中间件和服务器中间件*，我们在后端身份验证中使用了一个虚拟用户，特别是在`/chapter-11/nuxt-universal/route-middleware/per-route/`中用于每个路由中间件的虚拟用户，例如：
+- en: '[PRE10]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: But in this chapter, we are going to use a database with some user data for
+    authentication. Also, in [Chapter 9](232649f7-ae3b-43d7-a74e-55b481c4830c.xhtml),
+    *Adding a Server-Side Database*, we used MongoDB as our database server. But this
+    time, let's try a different database system for the sake of diversity – **MySQL**.
+    So, let's get started.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但在本章中，我们将使用一个带有一些用户数据的数据库进行身份验证。此外，在[第9章](232649f7-ae3b-43d7-a74e-55b481c4830c.xhtml)中，*添加服务器端数据库*，我们使用MongoDB作为我们的数据库服务器。但这一次，让我们尝试一种不同的数据库系统，以增加多样性
+    – **MySQL**。所以，让我们开始吧。
+- en: Using MySQL as the server database
+  id: totrans-67
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用MySQL作为服务器数据库
+- en: Be sure you have the MySQL server installed on your local machine. The latest
+    MySQL version is 5.7 at the time of writing this book. Depending on what operating
+    system you are using, you can find out the specific guidelines for your system
+    at [https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/installing.html](https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/installing.html).
+    If you are using Linux, you can find out the installation guide for your Linux
+    distribution at [https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/linux-installation.html](https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/linux-installation.html).
+    If you are on Linux Ubuntu and using the APT repository, you can follow the guide
+    at [https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/apt-repo-fresh-install](https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/#apt-repo-fresh-install).
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保您的本地计算机上安装了MySQL服务器。在撰写本书时，最新的MySQL版本是5.7。根据您使用的操作系统，您可以在[https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/installing.html](https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/installing.html)找到系统的具体指南。如果您使用的是Linux，您可以在[https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/linux-installation.html](https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/linux-installation.html)找到Linux发行版的安装指南。如果您使用的是Linux
+    Ubuntu并且使用APT存储库，您可以按照[https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/apt-repo-fresh-install](https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/#apt-repo-fresh-install)中的指南操作。
+- en: Alternatively, you can install the MariaDB server instead of the MySQL server
+    to use the **relational database management system** (**DBMS**) in your projects.
+    Again, depending on what operating system you are using, you can find out the
+    specific guidelines for your system at [https://mariadb.com/downloads/](https://mariadb.com/downloads/).
+    If you are using Linux, you can find the guide for your specific Linux distribution
+    at [https://downloads.mariadb.org/mariadb/repositories/](https://downloads.mariadb.org/mariadb/repositories/).
+    If you are on Linux Ubuntu 19.10, you can follow the guide at [https://downloads.mariadb.org/mariadb/repositories/#distro=Ubuntu&distro_release=eoan--ubuntu_eoan&mirror=bme&version=10.4](https://downloads.mariadb.org/mariadb/repositories/#distro=Ubuntu&distro_release=eoan--ubuntu_eoan&mirror=bme&version=10.4).
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，您可以安装MariaDB服务器，而不是MySQL服务器，以在项目中使用关系数据库管理系统（DBMS）。同样，根据您使用的操作系统，您可以在[https://mariadb.com/downloads/](https://mariadb.com/downloads/)找到系统的具体指南。如果您使用的是Linux，您可以在[https://downloads.mariadb.org/mariadb/repositories/](https://downloads.mariadb.org/mariadb/repositories/)找到特定Linux发行版的指南。如果您使用的是Linux
+    Ubuntu 19.10，您可以按照[https://downloads.mariadb.org/mariadb/repositories/#distro=Ubuntu&distro_release=eoan--ubuntu_eoan&mirror=bme&version=10.4](https://downloads.mariadb.org/mariadb/repositories/#distro=Ubuntu&distro_release=eoan--ubuntu_eoan&mirror=bme&version=10.4)中的指南操作。
+- en: 'Whichever you choose, it is convenient to have an administration tool to manage
+    your MySQL databases from a browser. You can use phpMyAdmin or Adminer ([https://www.adminer.org/latest.php](https://www.adminer.org/latest.php));
+    both require PHP installed on your machine. If you are new to PHP, you can use
+    the installation guide in [Chapter 16](387f7a98-77fc-4480-8b75-664d73962901.xhtml),
+    *Creating a Framework-Agnostic PHP API for Nuxt*. Adminer is preferred in this
+    book. You can download the program at [https://www.phpmyadmin.net/downloads/](https://www.phpmyadmin.net/downloads/).
+    If you want to use phpMyAdmin, please visit [https://www.phpmyadmin.net/](https://www.phpmyadmin.net/)
+    to find out more. As soon as you have the administration tool, take the following
+    steps to set up the database that we will need throughout this chapter:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论您选择哪种方式，都很方便在浏览器中使用管理工具来管理您的MySQL数据库。您可以使用phpMyAdmin或Adminer（[https://www.adminer.org/latest.php](https://www.adminer.org/latest.php)）；两者都需要在您的计算机上安装PHP。如果您对PHP不熟悉，可以在[第16章](387f7a98-77fc-4480-8b75-664d73962901.xhtml)中使用安装指南，*为Nuxt创建一个与框架无关的PHP
+    API*。本书中更倾向于使用Adminer。您可以在[https://www.phpmyadmin.net/downloads/](https://www.phpmyadmin.net/downloads/)下载该程序。如果您想使用phpMyAdmin，请访问[https://www.phpmyadmin.net/](https://www.phpmyadmin.net/)了解更多信息。一旦您有了管理工具，请按照以下步骤设置我们在本章中将需要的数据库：
+- en: Create a database, for example, "nuxt-auth", using Adminer.
+  id: totrans-71
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用Adminer创建一个名为“nuxt-auth”的数据库。
+- en: 'Insert the following table and sample data in the database:'
+  id: totrans-72
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在数据库中插入以下表格和示例数据：
+- en: '[PRE11]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: The user password in the preceding sample data is `123123` and is bcrypted as
+    `$2a$10$pyMYtPfIvE.PAboF3cIx9.IsyW73voMIRxFINohzgeV0I2BxwnrEu`. We will install
+    and use the `bcryptjs` Node.js module to hash and validate this password on the
+    server side. But before jumping to `bcryptjs`, let's take a look at the structure
+    for the app that we will create in the next section.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面示例数据中的用户密码是`123123`，并且以`$2a$10$pyMYtPfIvE.PAboF3cIx9.IsyW73voMIRxFINohzgeV0I2BxwnrEu`的形式进行了bcrypt加密。我们将安装并使用`bcryptjs`
+    Node.js模块来在服务器端对此密码进行哈希和验证。但在跳转到`bcryptjs`之前，让我们先看一下我们将在下一节中创建的应用程序的结构。
+- en: You can find a copy of the database we have exported as `nuxt-auth.sql` in `/chapter-12/`
+    in our GitHub repository.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库的`/chapter-12/`中找到我们导出的数据库副本`nuxt-auth.sql`。
+- en: Structuring cross-domain app directories
+  id: totrans-76
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 跨域应用目录结构
+- en: We have been making Nuxt apps for single domains. Our server-side APIs have
+    been tightly coupled with Nuxt since [Chapter 8](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml), *Adding
+    a Server-Side Framework*, in which we used Koa as the server-side framework and
+    API for handling and serving data for the Nuxt apps. If you take a look back in `/chapter-8/nuxt-universal/koa-nuxt/`
+    in our GitHub repository, you should remember we have kept our server-side programs
+    and files in the `/server/` directory. We have also kept our package/module dependencies
+    in one `package.json` file and installed them in the same `/node_modules/` directory.
+    It can be confusing eventually, when our apps get larger, mixing the module dependencies
+    for two frameworks (Nuxt and Koa) in the same `package.json` file. It can make
+    the debugging process harder too. So separating our single app that's made of
+    Nuxt and Koa (or any other server-side frameworks, such as Express) into two individual
+    apps probably is better for scalability and maintenance. Now, it is time to make
+    a cross-domain Nuxt app. We will reuse and restructure our Nuxt apps from [Chapter
+    8](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml), *Adding a Server-Side Framework*.
+    Let's call our Nuxt app a frontend app and the Koa app a backend app. We will
+    add new modules separately in these two apps as we go along.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们一直在为单个域制作Nuxt应用程序。自从[第8章](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml)以来，我们的服务器端API与Nuxt紧密耦合，*添加服务器端框架*，在这一章中，我们使用Koa作为处理和为Nuxt应用程序提供数据的服务器端框架和API。如果你回顾一下我们在GitHub存储库中的`/chapter-8/nuxt-universal/koa-nuxt/`，你应该记得我们将服务器端程序和文件保存在`/server/`目录中。我们还将我们的包/模块依赖项保存在一个`package.json`文件中，并在同一个`/node_modules/`目录中安装它们。当我们的应用程序变得更大时，混合两个框架（Nuxt和Koa）的模块依赖项在同一个`package.json`文件中可能会令人困惑。这也可能使调试过程变得更加困难。因此，将由Nuxt和Koa（或其他服务器端框架，如Express）制作的单个应用程序分开可能更有利于可扩展性和维护。现在，是时候制作一个跨域Nuxt应用程序了。我们将重用并重组我们在[第8章](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml)中制作的Nuxt应用程序，*添加服务器端框架*。让我们称我们的Nuxt应用程序为前端应用程序，Koa应用程序为后端应用程序。随着我们的进展，我们将分别在这两个应用程序中添加新的模块。
+- en: 'The backend app will do the backend authentication, while the frontend app
+    will do the frontend authentication separately, but they will act as one eventually.
+    And to make this learning and restructuring process easier for you, we will use
+    JWT only for authentication. So, let''s create our new working directories in
+    the following steps:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 后端应用程序将进行后端身份验证，而前端应用程序将分别进行前端身份验证，但最终它们将作为一个整体。为了使您更容易学习和重组这个过程，我们将仅使用JWT进行身份验证。因此，让我们按照以下步骤创建我们的新工作目录：
+- en: 'Create a project directory and name it anything you like with two subdirectories
+    in it. One is called `frontend` and the other is called `backend`, as follows:'
+  id: totrans-79
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个项目目录，并以您喜欢的任何名称命名，其中包含两个子目录。一个称为`frontend`，另一个称为`backend`，如下所示：
+- en: '[PRE12]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Install the Nuxt app with the scaffolding tool, `create-nuxt-app`, in the `/frontend/`
+    directory so you get the Nuxt directories that you are already familiar with,
+    as follows:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用脚手架工具`create-nuxt-app`在`/frontend/`目录中安装Nuxt应用程序，以便获得您已经熟悉的Nuxt目录，如下所示：
+- en: '[PRE13]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Create a `package.json` file, a `backpack.config.js` file, a `/static/` folder,
+    and an `/src/` folder in the `/backend/` directory, followed by other files and
+    subfolders (we will go through them in more detail in the upcoming section) in
+    the `/src/` folder as follows:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/backend/`目录中创建一个`package.json`文件，一个`backpack.config.js`文件，一个`/static/`文件夹和一个`/src/`文件夹，然后在`/src/`文件夹中按照以下方式添加其他文件和子文件夹（我们将在接下来的部分中更详细地介绍它们）：
+- en: '[PRE14]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: The backend directory is where our API is, which can be made using Express or
+    Koa. We will still use Koa, which you are already familiar with. We will install
+    server-side dependencies in this directory, such as `mysql`, `bcryptjs`, and `jsonwebtoken` so
+    that they don't get mixed up with the frontend modules for the Nuxt app.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 后端目录是我们的API所在的地方，可以使用Express或Koa来创建。我们仍然会使用Koa，这是您已经熟悉的。我们将在这个目录中安装服务器端的依赖，比如`mysql`、`bcryptjs`和`jsonwebtoken`，这样它们就不会与Nuxt应用的前端模块混在一起。
+- en: As you can see, in this new structure, we managed to separate and decouple our
+    API from the Nuxt app completely. There are benefits of this for debugging and
+    development. Technically, we will now develop and test an app at a time. Developing
+    two apps in a single environment can be confusing and it can be difficult to collaborate
+    when the apps get larger – just as we mentioned earlier.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，在这种新的结构中，我们成功地完全分离和解耦了我们的API和Nuxt应用。这对于调试和开发有好处。从技术上讲，我们现在将一次开发和测试一个应用。在单个环境中开发两个应用可能会令人困惑，当应用变得更大时，协作可能会变得困难，就像我们之前提到的那样。
+- en: Before looking into how we can use JWT on the server side, let's first take
+    a deeper look at how we can structure the API routes and modules in the `/src/`
+    directory in the next section.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入研究如何在服务器端使用JWT之前，让我们首先在下一节深入研究如何在`/src/`目录中结构化API路由和模块。
+- en: Creating API public/private routes and their modules
+  id: totrans-88
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建API公共/私有路由及其模块
+- en: 'Note that it is **not** mandatory to follow the directory structure suggested
+    here in this book. There are no arbitrary or official rules for how we should
+    structure our app with Koa. There are some skeletons, boilerplates, and frameworks
+    contributed by the Koa community, which you can take a look at by visiting [https://github.com/koajs/koa/wiki](https://github.com/koajs/koa/wiki).
+    Now let''s take a closer look at the directory structure in the `/src/` directory,
+    where we will develop our API source code, in the following steps:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在本书中，不是强制遵循此处建议的目录结构。关于如何使用Koa来构建应用程序的官方或任意规则是没有的。Koa社区提供了一些骨架、样板和框架，您可以访问[https://github.com/koajs/koa/wiki](https://github.com/koajs/koa/wiki)了解更多信息。现在让我们更仔细地看一下`/src/`目录中的目录结构，在接下来的步骤中，我们将在这里开发我们的API源代码。
+- en: 'Create the following folders and empty `.js` files in the `/src/` directory
+    as follows:'
+  id: totrans-90
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 按照以下方式在`/src/`目录中创建以下文件夹和空的`.js`文件：
+- en: '[PRE15]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: '[PRE16]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Inside the `/src/` directory, the `/middlewares/` directory is where all middlewares
+    are kept, such as `authenticate.js`, which we want to register with the Kao `app.use`
+    method, while the `/modules/` directory is where all the groups of API endpoints
+    are kept, such as `home`, `user`, and `login`.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`/src/`目录中，`/middlewares/`目录是存放所有中间件的地方，比如`authenticate.js`，我们希望将其注册到Kao的`app.use`方法中，而`/modules/`目录是存放所有API端点组的地方，比如`home`、`user`和`login`。
+- en: 'Create two main directories, `private` and `public`**,** with subdirectories
+    in each of them as follows:'
+  id: totrans-94
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建两个主要目录，`private`和`public`，每个目录中都有子目录，如下所示：
+- en: '[PRE17]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'The `/public/` directory is used for public access without JWT, such as the login
+    route, while the `/private/` directory is used for access that requires JWT to
+    protect the modules. As you can see, we have separated API routes into two main
+    groups, so the `/private/` group will be handled in `routes-private.js`, and the
+    `/public/` group will be handled in `routes-public.js`. We have the `/config/` directory
+    to keep all config files, and the `/core/` directory to keep the abstract programs
+    or modules that can be shared and used throughout the app, such as the mysql connection
+    pool that you will discover later in this chapter. So, from the preceding directory
+    tree, we will use these public modules in our API: `home`, `user`, `login`, and
+    one private module: `home`.'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`/public/`目录用于无需JWT的公共访问，例如登录路由，而`/private/`目录用于需要JWT保护模块的访问。正如你所看到的，我们已将API路由分为两个主要组，因此`/private/`组将在`routes-private.js`中处理，而`/public/`组将在`routes-public.js`中处理。我们有`/config/`目录来保存所有配置文件，以及`/core/`目录来保存可以在整个应用程序中共享和使用的抽象程序或模块，例如你将在本章后面发现的mysql连接池。因此，从前面的目录树中，我们将在我们的API中使用这些公共模块：`home`，`user`，`login`，以及一个私有模块：`home`。'
+- en: 'In each module, for example, in the `user` module, create a `/_routes/` directory
+    to configure all the routes (or endpoints) that belong to this particular module
+    (or group):'
+  id: totrans-97
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在每个模块中，例如`user`模块，创建一个`/_routes/`目录来配置属于该特定模块（或组）的所有路由（或端点）：
+- en: '[PRE18]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'In this `user`, module, the `/user/index.js` file is where all routes of this
+    module are assembled and grouped in the module route, for example:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`user`模块中，`/user/index.js`文件是该模块的所有路由被组装和分组的地方，例如：
+- en: '[PRE19]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: The value of `/users` that is set to the `prefix` key is the module route for
+    this user module. Inside each imported child route is where we develop our code,
+    such as the code for the login route.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`prefix`键设置为`/users`是该用户模块的模块路由。在每个导入的子路由内部是我们开发代码的地方，例如登录路由的代码。'
+- en: 'In each `.js` file in each module, for example, in the `user` module, add the
+    following basic code structure for building our code in the later stages:'
+  id: totrans-102
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在每个模块的每个`.js`文件中，例如`user`模块，添加以下用于在后期构建我们的代码的基本代码结构：
+- en: '[PRE20]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Let''s create the `home` module, which will return a response with a `''Hello
+    World!''` message as follows:'
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们创建`home`模块，它将返回一个包含`'Hello World!'`消息的响应。
+- en: '[PRE21]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'It is only one route from the `home` module, but we still need to assemble
+    this route in an `index.js` file in this module so that we can keep our code consistent
+    with other modules, as follows:'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`home`模块只有一个路由，但我们仍然需要在该模块的`index.js`文件中组装此路由，以便我们的代码与其他模块保持一致，如下所示：'
+- en: '[PRE22]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Note that there is no prefix added to this `home` module, so we can access its
+    only route directly at `localhost:4000/public`.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，此`home`模块未添加前缀，因此我们可以直接在`localhost:4000/public`上访问其唯一路由。
+- en: 'Create the `routes-public.js` file in the `/src/` directory and import all
+    the public routes from the public modules in the `/modules/` directory as follows:'
+  id: totrans-109
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/src/`目录中创建`routes-public.js`文件，并从`/modules/`目录中的公共模块导入所有公共路由，如下所示：
+- en: '[PRE23]'
+  id: totrans-110
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: As you can see, we imported the `home` module that we have just created in the
+    previous steps. We will create the `user` and `login` modules in the coming sections.
+    After importing these modules, we should register their routes to the router and
+    then export the router. Notice that a prefix, `/public`, is added to these routes.
+    Also, notice that every route is looped and registered to the router with the
+    plain JavaScript `for` loop function.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，我们导入了刚刚创建的`home`模块。我们将在接下来的部分中创建`user`和`login`模块。导入这些模块后，我们应该将它们的路由注册到路由器，然后导出路由器。请注意，这些路由都添加了前缀`/public`。还要注意，每个路由都使用纯JavaScript的`for`循环函数进行循环注册到路由器。
+- en: 'Create the `routes-private.js` file in the `/src/` directory and import all
+    the private routes from the private modules in the `/modules/` directory as follows:'
+  id: totrans-112
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/src/`目录中创建`routes-private.js`文件，并从`/modules/`目录中导入所有私有模块中的私有路由，如下所示：
+- en: '[PRE24]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: In this file, you can see that we will create a private `home` module only in
+    the coming sections. Also, an `authenticate` middleware is imported in this file
+    and added to the private route so that the private module can be protected.  After
+    that, we should export the private route with the router and prefix it with `/private`.
+    We will create this `authenticate` middleware in the coming section as well. For
+    now, let's configure our module file paths with Backpack and install the essential
+    Node.js modules that our API essentially depends on.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个文件中，你可以看到我们将在接下来的章节中只创建一个私有`home`模块。此外，这个文件中导入了一个`authenticate`中间件，并将其添加到私有路由中，以便保护私有模块。之后，我们应该导出带有路由的私有路由，并用`/private`前缀。我们也将在接下来的章节中创建这个`authenticate`中间件。现在，让我们用Backpack配置我们的模块文件路径，并安装我们的API基本依赖的Node.js模块。
+- en: 'Add the following additional file paths (`./src`, `./src/core`, and `./src/modules`)
+    to the webpack configuration through the Backpack config file:'
+  id: totrans-115
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过Backpack配置文件向webpack配置中添加以下额外的文件路径(`./src`, `./src/core`, 和 `./src/modules`)：
+- en: '[PRE25]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'With these additional file paths, we can import our module simply with `import
+    pool from ''core/database/mysql''`, instead of the following:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这些额外的文件路径，我们可以简单地用`import pool from 'core/database/mysql'`导入我们的模块，而不是以下方式：
+- en: '[PRE26]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: For more information about resolving modules by using the `modules` option in
+    webpack, please visit [https://webpack.js.org/configuration/resolve/#resolvemodules](https://webpack.js.org/configuration/resolve/#resolvemodules).
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关使用webpack中的`modules`选项解析模块的更多信息，请访问[https://webpack.js.org/configuration/resolve/#resolvemodules](https://webpack.js.org/configuration/resolve/#resolvemodules)。
+- en: 'Now we should install Backpack in our project, as well as the other basic and
+    essential Node.js modules that we will need in order to develop this backend app:'
+  id: totrans-120
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们应该在我们的项目中安装Backpack，以及其他基本和必要的Node.js模块，以便开发这个后端应用程序：
+- en: '[PRE27]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: You should be familiar with these modules as you have learned about them and
+    installed them in [Chapter 8](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml), *Adding
+    a Server-Side Framework, *which you can revisit in `/chapter-8/nuxt-universal/koa-nuxt/`
+    in our GitHub repository, and also, in [Chapter 10](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml),
+    *Adding a Vuex Store*, in `/chapter-10/nuxt-universal/nuxtServerInit/`, and [Chapter
+    11](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml), *Writing Route Middlewares and
+    Server Middlewares*, in `/chapter-11/nuxt-universal/route-middleware/per-route/`.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该熟悉这些模块，因为你已经在[第8章](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml)中学习过它们并安装了它们，*添加服务器端框架*，你可以在我们的GitHub存储库的`/chapter-8/nuxt-universal/koa-nuxt/`中重新访问它，还有[第10章](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml)，*添加Vuex
+    Store*，在`/chapter-10/nuxt-universal/nuxtServerInit/`，以及[第11章](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml)，*编写路由中间件和服务器中间件*，在`/chapter-11/nuxt-universal/route-middleware/per-route/`。
+- en: 'Add the following run scripts in `package.json` in the `/backend/` directory:'
+  id: totrans-123
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/backend/`目录中的`package.json`中添加以下运行脚本：
+- en: '[PRE28]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: So, the `"dev"` run script is used for developing our API, the `"build"` run
+    script is used for building our API when it is completed, and the `"start"` script
+    is used for serving the API after it is built.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，`"dev"`运行脚本用于开发我们的API，`"build"`运行脚本用于在完成时构建我们的API，`"start"`脚本用于构建后为API提供服务。
+- en: 'Add the following server configuration to the `index.js` file in the `/config/`
+    directory:'
+  id: totrans-126
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/config/`目录中的`index.js`文件中添加以下服务器配置：
+- en: '[PRE29]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: This config file only has a very simple configuration, which is the server,
+    configured to run at port `4000`.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个配置文件只有一个非常简单的配置，即服务器配置为在端口`4000`上运行。
+- en: 'Import the following modules that you have just installed and register them
+    as middlewares in the `middlewares.js` file in the `/src/` directory as follows:'
+  id: totrans-129
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导入您刚刚安装的以下模块，并在`/src/`目录中的`middlewares.js`文件中注册它们如下：
+- en: '[PRE30]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Create a middleware that handles the HTTP response with a `200` HTTP status
+    in the `/middlewares/` directory:'
+  id: totrans-131
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/middlewares/`目录中创建一个处理具有`200` HTTP状态的HTTP响应的中间件：
+- en: '[PRE31]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'We will get the following JSON output if the response is OK:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果响应正常，我们将获得以下JSON输出：
+- en: '[PRE32]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Create a middleware that handles an HTTP error status, such as `400`, `404`,
+    and `500`:'
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个处理HTTP错误状态（例如`400`、`404`和`500`）的中间件：
+- en: '[PRE33]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'You will get the following JSON response for a `400` error response:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于`400`错误响应，您将获得以下JSON响应：
+- en: '[PRE34]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Create a middleware that handles the HTTP 404 response specifically by throwing
+    a `''Not found''` message:'
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个专门处理HTTP 404响应的中间件，通过抛出一个'Not found'消息：
+- en: '[PRE35]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'We will get the following JSON output for an unknown route:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于未知路由，我们将获得以下JSON输出：
+- en: '[PRE36]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Import these three middlewares into `middlewares.js` and register them to the
+    Koa instance just like the other middlewares:'
+  id: totrans-143
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将这三个中间件导入`middlewares.js`并像其他中间件一样注册到Koa实例中：
+- en: '[PRE37]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: Notice how we arrange these middlewares in sequence – even though the `errorHandler` middleware
+    is registered first, it is the last middleware that will be re-executed in the
+    upstream cascading in Koa if there is an error in the HTTP response. The upstream
+    cascading will stop at the `okOutput` middleware if the HTTP response status is
+    `200`. Also, note that these middlewares must be registered after the `static`,
+    `favicon`, and `bodyparser` middlewares, which must be called and served publicly
+    first in the downstream cascading.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意我们如何按顺序安排这些中间件 - 即使`errorHandler`中间件首先注册，但如果HTTP响应中出现错误，它将是最后一个重新执行的中间件。如果HTTP响应状态为`200`，上游级联将在`okOutput`中间件处停止。还要注意，这些中间件必须在`static`、`favicon`和`bodyparser`中间件之后注册，这些中间件必须首先在下游级联中调用和公开服务。
+- en: 'Import the public and private routes from `routes-public.js` and `routes-private.js`
+    and register them after the preceding middlewares as follows:'
+  id: totrans-146
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从`routes-public.js`和`routes-private.js`导入公共和私有路由，并在前述中间件之后注册它们如下：
+- en: '[PRE38]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'Import Koa, all middlewares from the `middlewares.js` file, and the server
+    configuration in the `index.js` file in the `/config/` directory, instantiate
+    a Koa instance and pass it to the `middlewares.js` file, and then start the server
+    with this Koa instance:'
+  id: totrans-148
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/config/`目录中的`index.js`文件中导入Koa、`middlewares.js`文件中的所有中间件和服务器配置，实例化一个Koa实例并将其传递给`middlewares.js`文件，然后使用这个Koa实例启动服务器：
+- en: '[PRE39]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Run this API with `npm run dev` and you should see the app running on your
+    browser at `localhost:4000`. You should get the following output on your browser
+    when you are on `localhost:4000`:'
+  id: totrans-150
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`npm run dev`运行此API，您应该在`localhost:4000`上在浏览器中看到应用程序正在运行。当您在`localhost:4000`上时，您应该在浏览器中获得以下输出：
+- en: '[PRE40]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'This is because there is no route set on `/` anymore – we have prefixed all
+    our routes with `/public` or `/private`. But if you navigate to `localhost:4000/public`,
+    you will get the following JSON output:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是因为在`/`上不再设置路由 - 我们已经将所有路由前缀设置为`/public`或`/private`。但是，如果您导航到`localhost:4000/public`，您将获得以下JSON输出：
+- en: '[PRE41]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'This is the response from the `home` module we have just created in the preceding
+    steps. Also, you should see that your favicon and assets are served correctly
+    at `localhost:4000` – if you have placed any of them inside the `/static/` and
+    `/assets/` directories, for example:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们刚刚在前面步骤中创建的“home”模块的响应。此外，您应该看到您的网站图标和资源在`localhost:4000`上正确提供 - 如果您将它们放在`/static/`和`/assets/`目录中的任何一个，例如：
+- en: '[PRE42]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: You can see your files in these two directories at `localhost:4000`. That is
+    because the `static` and `favicon` middlewares are installed and registered to
+    be executed first in the middleware stacks when the downstream cascading in Koa
+    is taking place.
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在`localhost:4000`这两个目录中看到您的文件。这是因为`static`和`favicon`中间件已安装并注册为在Koa中进行下游级联时首先执行的中间件堆栈。
+- en: Well done! Now you have the new working directories ready and a basic API running
+    just like in [Chapter 8](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml), *Adding
+    a Server-Side Framework*. Next, you will need to install the other server-side
+    dependencies in the `/backend/` directory and start adding code to the routes
+    in the public `user` and `login` modules and the private `home` module. Let's
+    start with `bcryptjs` in the next section.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 干得好！现在您已经准备好了新的工作目录，并且基本的API正在运行，就像[第8章](1d20b423-d93c-454a-91b5-f7207e1988fb.xhtml)中一样，*添加服务器端框架*。接下来，您需要在`/backend/`目录中安装其他服务器端依赖项，并开始向公共`user`和`login`模块以及私有`home`模块的路由添加代码。让我们从下一节开始使用`bcryptjs`。
+- en: You can find the example app with the preceding structure in `/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/backend/` in
+    our GitHub repository.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库中的`/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/backend/`中找到具有前述结构的示例应用程序。
+- en: Using the bcryptjs module for Node.js
+  id: totrans-159
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Node.js的bcryptjs模块
+- en: 'As we mentioned before, `bcryptjs` is used to hash and validate passwords.
+    Please take a look at the simplified steps for further advice on how to use this
+    module in our app:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，`bcryptjs`用于对密码进行哈希和验证。请查看有关如何在我们的应用程序中使用此模块的进一步建议的简化步骤：
+- en: 'Install the bcryptjs module via npm:'
+  id: totrans-161
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装`bcryptjs`模块：
+- en: '[PRE43]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'Hash a password by adding `salt` with the password sent from the client in
+    the request body (request), for example, during a new user creation in the `user`
+    module:'
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过在请求体（请求）中添加`salt`与来自客户端的密码一起对密码进行哈希处理，例如，在`user`模块中进行新用户创建时：
+- en: '[PRE44]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: Note that to speed up our authentication lesson in the chapter, we skip the
+    process of creating a new user. But in a more complete CRUD, you can use this
+    step to hash the password provided by the user.
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在本章中为了加快我们的身份验证课程，我们跳过了创建新用户的过程。但在更完整的CRUD中，您可以使用此步骤来对用户提供的密码进行哈希处理。
+- en: 'Verify a password by comparing the password sent from the client (request)
+    with the one stored in the database, for example, during the login authentication
+    process in the `login` module as follows:'
+  id: totrans-166
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过将来自客户端的密码（请求）与数据库中存储的密码进行比较来验证密码，例如，在`login`模块中进行登录验证过程如下：
+- en: '[PRE45]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: Note that you can find out how this step is applied in our backend app in `/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/backend/src/modules/public/login/_routes/local.js` in
+    our GitHub repository.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，您可以在我们的GitHub存储库中的`/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/backend/src/modules/public/login/_routes/local.js`中找到此步骤在我们后端应用程序中的应用方式。
+- en: We will show you how to use `bcryptjs` to verify the incoming password from
+    the client in the coming section. But before hashing and verifying the password
+    from the client, first, we need to connect to our MySQL database in order to establish whether
+    to inject the new user or query the existing ones. For that, we will need the
+    next Node.js module in our app: mysql - a MySQL client. So let's move on to the
+    next section to see how you can install and use it.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将向您展示如何在接下来的部分中使用`bcryptjs`来验证来自客户端的密码。但在对客户端的密码进行哈希和验证之前，首先，我们需要连接到我们的MySQL数据库，以确定是要注入新用户还是查询现有用户。为此，我们将需要在我们的应用程序中使用下一个Node.js模块：mysql
+    - 一个MySQL客户端。所以让我们继续前进到下一部分，看看您如何安装和使用它。
+- en: If you want to find more information about this module and some asynchronous
+    examples, please visit [https://github.com/dcodeIO/bcrypt.js](https://github.com/dcodeIO/bcrypt.js).
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想找到关于这个模块和一些异步示例的更多信息，请访问[https://github.com/dcodeIO/bcrypt.js](https://github.com/dcodeIO/bcrypt.js)。
+- en: Using the mysql module for Node.js
+  id: totrans-171
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Node.js的mysql模块
+- en: 'We have the MySQL server that we installed in the previous section. Now we
+    will need a MySQL client that we can connect to the MySQL server and perform SQL
+    queries from our server-side program. mysql is the standard MySQL Node.js module
+    that implements the MySQL protocol, thus we can use this module for handling MySQL
+    connection and SQL queries, whether you are on MySQL server or MariaDB server.
+    So, let''s get it started in the following steps:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有在上一节中安装的MySQL服务器。现在我们需要一个MySQL客户端，我们可以连接到MySQL服务器并从服务器端程序执行SQL查询。mysql是标准的MySQL
+    Node.js模块，实现了MySQL协议，因此我们可以使用这个模块来处理MySQL连接和SQL查询，无论你是在MySQL服务器还是MariaDB服务器上。所以，让我们按照以下步骤开始：
+- en: 'Install the `mysql` module via npm:'
+  id: totrans-173
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装`mysql`模块：
+- en: '[PRE46]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Create the MySQL connection instance in a `mysql.js` file with your MySQL connection
+    details in the subdirectories in the `/src/` directory as follows:'
+  id: totrans-175
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/src/`目录的子目录中，使用你的MySQL连接详细信息在`mysql.js`文件中创建MySQL连接实例，如下所示：
+- en: '[PRE47]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Let''s go through the code we just created in the following notes:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在以下笔记中浏览我们刚刚创建的代码：
+- en: 'mysql does not support `async/await`, so we wrapped MySQL''s `pool.query` with
+    the `promisify` utility from Node.js. `pool.query` is the function from mysql
+    that handles our SQL query and it returns the result in a callback, for example:'
+  id: totrans-178
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: mysql不支持`async/await`，所以我们使用了Node.js的`promisify`实用程序来包装MySQL的`pool.query`。`pool.query`是mysql中处理我们的SQL查询的函数，它通过回调返回结果，例如：
+- en: '[PRE48]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'With the promisify utility, we have eliminated the callback and now we can
+    use `async/await` as follows:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过promisify实用程序，我们已经消除了回调，现在我们可以使用`async/await`，如下所示：
+- en: '[PRE49]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: '`pool.query` is a shortcut function for these three functions, `pool.getConnection`,
+    `connection.query`, and `connection.release`, that we should use together to perform
+    a SQL query in the connection pooling in the mysql module. By using `pool.query`,
+    the connection is automatically released back to the pool when you are done with
+    it. This is the basic underlying structure of the `pool.query` function:'
+  id: totrans-182
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pool.query`是这三个函数的快捷方式，`pool.getConnection`、`connection.query`和`connection.release`，我们应该一起使用它们在mysql模块的连接池中执行SQL查询。通过使用`pool.query`，当你完成时，连接会自动释放回连接池。这是`pool.query`函数的基本底层结构：'
+- en: '[PRE50]'
+  id: totrans-183
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: In this mysql module, instead of creating and managing the MySQL connections
+    one by one by using `mysql.createConnection`, which can be an expensive operation,
+    we can use `mysql.createPool` for connection pooling, which is a cache of reusable
+    database connections to reduce the cost of establishing fresh connections whenever
+    we want to connect to the database. For more information about connection pooling,
+    please visit [https://github.com/mysqljs/mysqlpooling-connections](https://github.com/mysqljs/mysql#pooling-connections).
+  id: totrans-184
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在这个mysql模块中，我们可以使用`mysql.createPool`进行连接池，而不是通过`mysql.createConnection`逐个创建和管理MySQL连接，这可能是一个昂贵的操作。连接池是一个可重用的数据库连接缓存，用于减少每次连接到数据库时建立新连接的成本。有关连接池的更多信息，请访问[https://github.com/mysqljs/mysqlpooling-connections](https://github.com/mysqljs/mysql#pooling-connections)。
+- en: 'So, we have abstracted the MySQL connection into the preceding file in the
+    `/core/` directory. Now we can use it to fetch the list of users in the `user` module
+    as follows:'
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 所以，我们已经将MySQL连接抽象成了`/core/`目录中的前述文件。现在我们可以使用它来获取`user`模块中用户列表，如下所示：
+- en: '[PRE51]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: You can see that we use the samecode structure that we have laid out in the
+    previous section to send our request to the MySQL server via the MySQL connection
+    pool. In the query that we send, we tell the MySQL server to return only the fields
+    of `id`, `name`, and `created_on` from the `users` table in the result for us.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到，我们使用了与前一节中所述的相同代码结构，通过MySQL连接池将我们的请求发送到MySQL服务器。在我们发送的查询中，我们告诉MySQL服务器仅为我们从`users`表中返回`id`、`name`和`created_on`字段的结果。
+- en: 'If you visit the user route at `localhost:4000/public/users`, you should get
+    the following output on your screen:'
+  id: totrans-188
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您访问`localhost:4000/public/users`上的用户路由，您应该在屏幕上看到以下输出：
+- en: '[PRE52]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: Now we have the mysql module for connecting to the MySQL server and databases,
+    and the bcryptjs module for hashing and verifying passwords from the client, so
+    we can refactor and improve the login code that we created roughly in the previous
+    chapter. Let's find out how in the next section.
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了用于连接到MySQL服务器和数据库的mysql模块，以及用于对客户端密码进行哈希和验证的bcryptjs模块，因此我们可以重构和改进我们在上一章中粗略创建的登录代码。让我们在下一节中找出如何做。
+- en: If you want to find out more information about the mysql module, please visit [https://github.com/mysqljs/mysql](https://github.com/mysqljs/mysql).
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想了解更多关于mysql模块的信息，请访问[https://github.com/mysqljs/mysql](https://github.com/mysqljs/mysql)。
+- en: Refactoring login code on the server side
+  id: totrans-192
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在服务器端重构登录代码
+- en: 'We have gathered all the essential ingredients in the previous sections, and
+    as soon as we have the MySQL connection pool created, we can refactor and improve
+    our login code from [Chapter 10](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml), *Adding
+    a Vuex Store*, and [Chapter 11](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml), *Writing
+    Route Middlewares and Server Middlewares*, in the following steps:'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经在前几节中收集了所有必要的要素，一旦我们创建了MySQL连接池，我们就可以重构和改进我们的登录代码，从[第10章](808b1fa6-d397-4c97-b45a-95de8238497a.xhtml)
+    *添加一个Vuex Store* 和[第11章](b24caa1b-6337-40ee-9c1a-c8586db1f3b2.xhtml) *编写路由中间件和服务器中间件*，按照以下步骤进行：
+- en: 'Import all the dependencies, such as `koa-router`, `jsonwebtoken`, `bcryptjs`,
+    and the MySQL connection pool for the login route as follows:'
+  id: totrans-194
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导入所有依赖项，如`koa-router`、`jsonwebtoken`、`bcryptjs`和MySQL连接池，用于登录路由如下：
+- en: '[PRE53]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: We imported the config file here for the configuration options of our API, which
+    contains the MySQL database connection details, the options for the server and
+    the static directory, and the secret code for the JWT that we will need later
+    for signing a token.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里导入了配置文件，用于API的配置选项，其中包含了MySQL数据库连接详细信息、服务器和静态目录的选项，以及我们稍后需要用于签署令牌的JWT的秘密代码。
+- en: 'Validate the user inputs inside the `post` method for the login route to ensure
+    they are defined and not empty:'
+  id: totrans-197
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在登录路由的`post`方法中验证用户输入，以确保它们已定义且不为空：
+- en: '[PRE54]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'Assign the username and password to variables for querying the database when
+    they pass the validation:'
+  id: totrans-199
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 当它们通过验证时，将用户名和密码分配给变量以查询数据库：
+- en: '[PRE55]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'Compare the stored password and the password from the user with bcryptjs if
+    there are results from the MySQL query:'
+  id: totrans-201
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果从MySQL查询中有结果，就使用bcryptjs比较存储的密码和用户输入的密码：
+- en: '[PRE56]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Sign a JWT and send it to the client if the user passes all the previous steps
+    and validations:'
+  id: totrans-203
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果用户通过了所有先前的步骤和验证，就对JWT进行签名并将其发送给客户端：
+- en: '[PRE57]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'Run the API with `npm run dev` and test the previous route manually with `curl`
+    on your terminal as follows:'
+  id: totrans-205
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`npm run dev`运行API，并在终端上手动使用`curl`测试上一个路由，如下所示：
+- en: '[PRE58]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'You should get the following result if you have logged in successfully:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您成功登录，您应该得到以下结果：
+- en: '[PRE59]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Of course, you will get a different token in the preceding response whenever
+    it is signed successfully. Now you have managed to refactor and improve the login
+    code. Next, we will look at how we can verify the preceding token, which will
+    be sent back in the request header from the client side, in the next section.
+    So, keep reading!
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，每当成功签署时，您将在前面的响应中获得不同的令牌。现在，您已经成功地重构和改进了登录代码。接下来，我们将看一下如何在下一节中验证前面的令牌，该令牌将从客户端以请求头的形式发送回来。所以，请继续阅读！
+- en: Verifying the incoming token on the server side
+  id: totrans-210
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在服务器端验证传入的令牌
+- en: We have successfully signed a token and returned it to the client when the credentials
+    match what we have stored in the database. But that is only half of the story.
+    We should verify this token each time the client makes a request with it, to access
+    all protected routes guarded by the server-side middleware.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们成功地签署了一个令牌，并在凭据与我们在数据库中存储的内容匹配时将其返回给客户端。但这只是故事的一半。每次客户端使用令牌进行请求时，我们都应该验证这个令牌，以便访问服务器端中间件保护的所有受保护路由。
+- en: 'So, let''s create the middleware and the protected route in the following steps:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，让我们按照以下步骤创建中间件和受保护的路由：
+- en: 'Create a middleware file in the `/middlewares/` directory inside the `/src/` directory
+    with the following code:'
+  id: totrans-213
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`/src/`目录内的`/middlewares/`目录中创建一个中间件文件，并使用以下代码：
+- en: '[PRE60]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'The `if` condition, `!ctx.headers.authorization`, is used to ensure that the
+    client has included the token in the request headers. Since `authorization` comes
+    in with the value in the format `Bearer: [token]`, which has a single space in
+    it, we split the value by that space and only take `[token]` for verification
+    in the `try` and `catch` blocks. If the token is valid, then we let the request
+    through to the next route with `await next()`.'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`if`条件`!ctx.headers.authorization`用于确保客户端已在请求头中包含了令牌。由于`authorization`以`Bearer:
+    [token]`的格式带有值，其中有一个单个空格，我们通过该空格拆分值，并仅在`try`和`catch`块中获取`[token]`进行验证。如果令牌有效，则我们允许请求通过到下一个路由，使用`await
+    next()`。'
+- en: 'Import and inject this middleware to the group of routes that we want to secure
+    with JWT:'
+  id: totrans-216
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导入并注入此中间件到我们想要用 JWT 保护的路由组中：
+- en: '[PRE61]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: In this API, we want to secure all routes that fall under the `/private` route.
+    So we will import any routes that we want to secure in this file, for example,
+    the preceding `/home` route. Therefore, when you request this route with `/private/home`,
+    you must include the token in the request to headers to access this route.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个 API 中，我们希望保护所有属于`/private`路由的路由。因此，我们将在这个文件中导入我们想要保护的任何路由，例如前面的`/home`路由。因此，当您使用`/private/home`请求此路由时，您必须在请求头中包含令牌以访问此路由。
+- en: That's it. You have managed to create and verify the JWT on the server side.
+    Next, we should look at how we can complete the JWT authentication with Nuxt on
+    the client side in the next section. Let's get going!
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样。你已经成功地在服务器端创建并验证了 JWT。接下来，我们应该看一下如何在下一节中使用 Nuxt 在客户端完成 JWT 认证。让我们开始吧！
+- en: Creating frontend authentication
+  id: totrans-220
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建前端身份验证
+- en: You will find this section easy and familiar because you have built a few authentication
+    Nuxt apps with the dummy backend authentication in the previous two chapters.
+    The difference in this chapter is that we are making cross-domain apps instead
+    of single-domain apps like in the previous two chapters. You can revisit these
+    single-domain Nuxt apps in `/chapter-10/nuxt-universal/nuxtServerInit/` and in
+    `/chapter-11/nuxt-universal/route-middleware/per-route/`.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你会发现这一部分很容易和熟悉，因为在前两章中你已经用虚拟后端身份验证构建了一些认证 Nuxt 应用。本章的不同之处在于我们正在制作跨域应用，而不是像前两章那样的单域应用。你可以在`/chapter-10/nuxt-universal/nuxtServerInit/`和`/chapter-11/nuxt-universal/route-middleware/per-route/`中重新访问这些单域
+    Nuxt 应用。
+- en: 'Furthermore, we will once again use the Nuxt modules that we already covered
+    in [Chapter 6](2102475f-1a6b-42c0-abaa-ec018f8fa25a.xhtml), *Writing Plugins and
+    Modules*: `@nuxtjs/axios` and `@nuxtjs/proxy`. You can revisit the Nuxt app that
+    adopts these two modules in `/chapter-6/nuxt-universal/module-snippets/top-level/`.
+    But for now, let''s get them installed and configured for this Nuxt app, which
+    we will refactor from the previous chapters, to create the client-side authentication
+    in the following steps:'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们将再次使用我们在[第6章](2102475f-1a6b-42c0-abaa-ec018f8fa25a.xhtml)中已经介绍过的Nuxt模块：`@nuxtjs/axios`和`@nuxtjs/proxy`。你可以在`/chapter-6/nuxt-universal/module-snippets/top-level/`中查看采用这两个模块的Nuxt应用。但现在，让我们安装并配置它们用于这个Nuxt应用，我们将在接下来的步骤中重构它，以创建客户端身份验证：
+- en: 'Install `@nuxtjs/axios` and `@nuxtjs/proxy` via npm:'
+  id: totrans-223
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装`@nuxtjs/axios`和`@nuxtjs/proxy`：
+- en: '[PRE62]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'Configure these two modules in the Nuxt config file as follows:'
+  id: totrans-225
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Nuxt配置文件中配置这两个模块如下：
+- en: '[PRE63]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: Since we know the remote API server that we created in the previous sections
+    is running at `localhost:4000`, in this configuration, we assign this API address
+    to the `/api/` key in the `proxy` option.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们知道我们在之前章节中创建的远程API服务器运行在`localhost:4000`，在这个配置中，我们将这个API地址分配给`proxy`选项中的`/api/`键。
+- en: 'Remove any `import` statement that we used to import the axios Node.js module
+    previously; for example, on the secured page:'
+  id: totrans-228
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 移除我们之前用来导入axios Node.js模块的任何`import`语句；例如，在安全页面上：
+- en: '[PRE64]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: This is because we are now using `@nuxtjs/axios` (the Nuxt Axios module) and
+    we will not need to import the vanilla axios Node.js module directly in our code
+    anymore.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是因为我们现在使用`@nuxtjs/axios`（Nuxt Axios模块）了，我们将不再需要直接在我们的代码中导入原始的axios Node.js模块。
+- en: 'Call the Nuxt Axios module by using `$axios` and replace `axios` (from the
+    vanilla axios Node.js module), which we used previously in our code for HTTP requests;
+    for example, on the secured page:'
+  id: totrans-231
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过使用`$axios`调用Nuxt Axios模块，并替换我们之前在我们的代码中用于HTTP请求的原始axios Node.js模块中的`axios`；例如，在安全页面上：
+- en: '[PRE65]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: The Nuxt Axios module is loaded to our Nuxt app via the Nuxt config file in
+    *step 2*, so we can access it from the Nuxt context or `this` by using `$axios`.
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Nuxt Axios模块通过*Nuxt配置文件*中的步骤2加载到我们的Nuxt应用中，所以我们可以通过Nuxt上下文或`this`来使用`$axios`访问它。
+- en: We also should refactor the rest of the code in the store and middleware in
+    this app with these two Nuxt modules – `@nuxtjs/axios` and `@nuxtjs/proxy`, and
+    the cookies, Node.js modules (client- and server-side). So let's get to it in
+    the following sections.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还应该使用这两个Nuxt模块`@nuxtjs/axios`和`@nuxtjs/proxy`以及cookies、Node.js模块（客户端和服务器端）来重构这个应用中存储和中间件的其余代码。所以让我们在以下部分开始吧。
+- en: Using cookies on the (Nuxt) client side
+  id: totrans-235
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在（Nuxt）客户端使用cookies
+- en: In this app, we no longer use sessions to "remember" the authenticated data.
+    Instead, we will use the `js-cookie` Node.js module to create cookies to store
+    the data from the remote server.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个应用中，我们不再使用会话来“记住”认证数据。相反，我们将使用`js-cookie` Node.js模块来创建cookies来存储来自远程服务器的数据。
+- en: 'It is very easy to use this Node.js module to create a cookie that presents
+    across the entire site; for example:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用这个Node.js模块非常容易创建一个在整个站点上都存在的cookie；例如：
+- en: 'Use the following format to set a cookie:'
+  id: totrans-238
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下格式设置cookie：
+- en: '[PRE66]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'Here''s the code for if you want to create a cookie that expires 30 days from
+    now:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是如果你想创建一个30天后过期的cookie的代码：
+- en: '[PRE67]'
+  id: totrans-241
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Use the following format to read the cookie:'
+  id: totrans-242
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下格式读取cookie：
+- en: '[PRE68]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'You can see how easy it is using this Node.js module – all you need is the
+    `set` and `get` methods to set and retrieve your cookies on the client side. So,
+    let''s refactor the code in our store in the following steps:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用这个Node.js模块是多么容易 - 你只需要使用`set`和`get`方法在客户端设置和检索你的cookies。所以，让我们按照以下步骤重构我们存储中的代码：
+- en: 'Use the `if` ternary condition to import the js-cookie Node.js module when
+    our Nuxt app is processed on the client side only:'
+  id: totrans-245
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 只有在Nuxt应用程序在客户端处理时，才使用`if`三元条件来导入js-cookie Node.js模块：
+- en: '[PRE69]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'Use the `set` function from js-cookie to store the data from the server as
+    `auth` in the `login` action as follows:'
+  id: totrans-247
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用js-cookie的`set`函数将服务器端的数据存储为`auth`，在`login`操作中如下所示：
+- en: '[PRE70]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'Use the `remove` function from js-cookie to delete the `auth` cookie in the
+    `logout` action as follows:'
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用js-cookie的`remove`函数在`logout`操作中删除`auth` cookie，如下所示：
+- en: '[PRE71]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: 'It is very simple, isn''t it? But, you may ask: what do we use this `auth`
+    cookie for, and how? Let''s find out in the next section on using cookies on the
+    Nuxt server side.'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这很简单，不是吗？但是，你可能会问：我们用这个`auth` cookie做什么，以及如何使用？让我们在下一节中了解如何在Nuxt服务器端使用cookie。
+- en: For more information and code examples of the Node.js module, please visit [https://github.com/js-cookie/js-cookie](https://github.com/js-cookie/js-cookie).
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关Node.js模块的更多信息和代码示例，请访问[https://github.com/js-cookie/js-cookie](https://github.com/js-cookie/js-cookie)。
+- en: Using cookies on the (Nuxt) server side
+  id: totrans-253
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在（Nuxt）服务器端使用cookie
+- en: Since our authenticated data with JWT has been hashed and stored in a cookie
+    by `js-cookie` as `auth`, we will need to read and parse this cookie whenever
+    we need it. This is where the Node.js module, `cookie`, comes in. Again, we have
+    used this Node.js module in past chapters but we haven't talked about it.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们使用JWT进行身份验证的数据已经被`js-cookie`以`auth`的形式哈希并存储在cookie中，因此我们需要在需要时读取和解析此cookie。这就是Node.js模块`cookie`的用武之地。同样，我们在过去的章节中使用了这个Node.js模块，但我们还没有讨论过它。
+- en: 'The cookie Node.js module is an HTTP cookie parser and serializer for HTTP
+    servers. It is used to parse the cookie header on the server side. Let''s take
+    a look at how we can use it on the `auth` cookie in the following steps:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: cookie Node.js模块是用于HTTP服务器的HTTP cookie解析器和序列化程序。它用于在服务器端解析cookie标头。让我们看看如何在以下步骤中在`auth`
+    cookie上使用它：
+- en: 'Use the `if` ternary condition to import the cookie Node.js module when our
+    Nuxt app is processed on the server side only:'
+  id: totrans-256
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 只有在Nuxt应用程序在服务器端处理时，才使用`if`三元条件来导入cookie Node.js模块：
+- en: '[PRE72]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'Use the `parse` function from the cookie Node.js module to parse the `auth`
+    cookie in the HTTP request headers in the `nuxtServerInit` action as follows:'
+  id: totrans-258
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用cookie Node.js模块的`parse`函数来解析`nuxtServerInit`操作中HTTP请求头中的`auth` cookie，如下所示：
+- en: '[PRE73]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'Use the `setHeader` function from the Nuxt Axios module via `$axios` to include
+    the token (JWT) in the HTTP header in the token middleware for accessing the private
+    API routes on the remote server as follows:'
+  id: totrans-260
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过`$axios`使用Nuxt Axios模块的`setHeader`函数将令牌（JWT）包含在远程服务器上的令牌中间件的HTTP标头中，以访问私有API路由，如下所示：
+- en: '[PRE74]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: Run the Nuxt app with `npm run dev`. You should get the app running on your
+    browser at `localhost:3000`. You can log in with credentials on the login page
+    and then access the restricted secured page, which is protected by the JWT.
+  id: totrans-262
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`npm run dev`运行Nuxt应用程序。您应该在`localhost:3000`上的浏览器中运行该应用程序。您可以使用登录页面上的凭据登录，然后访问受JWT保护的受限安全页面。
+- en: Well done! You have completed the token-based local authentication. You have
+    refactored the code in the store and middleware to get the `js-cookie` and `cookie`
+    Node.js modules to work together and complement each other perfectly on the client
+    and server sides in the Nuxt app for frontend authentication. Also, you have managed
+    to decouple the Nuxt app from the API with the cross-domain approach.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 干得好！您已经完成了基于令牌的本地身份验证。您已经重构了存储和中间件中的代码，使得`js-cookie`和`cookie` Node.js模块可以在Nuxt应用程序的前端身份验证中完美地在客户端和服务器端协同工作并相互补充。此外，您已成功将Nuxt应用程序与跨域方法解耦API。
+- en: As you can see, using the `js-cookie` and `cookie` Node.js modules for frontend
+    authentication is easy and great. But it also can be achieved with Google OAuth,
+    which we will look into in the next section. Adding Google OAuth to the frontend
+    authentication can give the user an extra option to log in to your app. So, let's
+    get to it.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，使用`js-cookie`和`cookie` Node.js模块进行前端身份验证非常简单且非常好。但是也可以通过Google OAuth实现，我们将在下一节中进行讨论。将Google
+    OAuth添加到前端身份验证可以为用户提供额外的登录选项。所以，让我们开始吧。
+- en: You can find the source code of this Nuxt app in `/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/frontend/`
+    in our GitHub repository.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库的`/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/frontend/`中找到此Nuxt应用程序的源代码。
+- en: For more information and code examples of the `cookie` Node.js module, please
+    visit [https://github.com/jshttp/cookie](https://github.com/jshttp/cookie).
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关`cookie` Node.js模块的更多信息和代码示例，请访问[https://github.com/jshttp/cookie](https://github.com/jshttp/cookie)。
+- en: For more information about helpers, such as the `setHeader` helper from the
+    Nuxt Axios module, please visit [https://axios.nuxtjs.org/helpers](https://axios.nuxtjs.org/helpers).
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关助手的更多信息，例如Nuxt Axios模块中的`setHeader`助手，请访问[https://axios.nuxtjs.org/helpers](https://axios.nuxtjs.org/helpers)。
+- en: Signing in with Google OAuth
+  id: totrans-268
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Google OAuth登录
+- en: 'OAuth is an open delegated authorization protocol that grants access between
+    websites or apps without exposing user passwords to the parties that have been
+    granted access. It is a very common access delegation used by many companies and
+    websites to identify users with parties such as Google and Facebook that provide
+    OAuth authorization. Let''s let our users log in to our app with Google OAuth.
+    This option requires a client ID and a client secret from the Google Developer
+    Console. They can be obtained with the following steps:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: OAuth是一种开放的委托授权协议，允许网站或应用程序之间进行访问，而不会将用户密码暴露给已被授予访问权限的各方。它是许多公司和网站用来识别用户的常见访问委托。让我们让我们的用户使用Google
+    OAuth登录我们的应用程序。此选项需要来自Google开发者控制台的客户端ID和客户端密钥。可以通过以下步骤获得它们：
+- en: Create a new project in the Google Developer Console at [https://console.developers.google.com/](https://console.developers.google.com/).
+  id: totrans-270
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在[https://console.developers.google.com/](https://console.developers.google.com/)的谷歌开发者控制台中创建一个新项目。
+- en: Select External on the OAuth consent screen tab.
+  id: totrans-271
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在OAuth同意屏幕选项卡上选择External。
+- en: Select OAuth client ID from the Create Credentials drop-down options on the
+    Credentials tab, and then select Web application for the Application type.
+  id: totrans-272
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在凭据选项卡上的“创建凭据”下拉选项中选择OAuth客户端ID，然后选择Web应用程序作为应用程序类型。
+- en: Provide the name of your OAuth client ID in the Name field and the redirect
+    URIs in the Authorized redirect URIs field for Google to redirect the user after
+    authenticating on the Google consent page.
+  id: totrans-273
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在“名称”字段中提供您的OAuth客户端ID的名称，在“授权重定向URI”字段中提供重定向URI，以便谷歌在用户在谷歌同意页面上进行身份验证后重定向用户。
+- en: Enable the Google People API, which provides access to information about profiles
+    and contacts in the API Library from the Library tab.
+  id: totrans-274
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在库选项卡中启用Google People API，该API提供对API库中有关配置文件和联系人的信息的访问权限。
+- en: Once you have a developer account set up and get the **client ID** and **client
+    secret** created by following the previous steps, you are ready to add Google
+    OAuth to the backend authentication in the next section. Let's get to it.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您设置了开发者帐户并按照上述步骤创建了**客户端ID**和**客户端密钥**，您就可以准备在下一节中将Google OAuth添加到后端身份验证中。让我们开始吧。
+- en: Adding Google OAuth to the backend authentication
+  id: totrans-276
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 将Google OAuth添加到后端身份验证
+- en: For us to sign someone into Google, we need to send them to the Google Login
+    page. From there, they will sign into their account and will be redirected to
+    our app with their Google sign-in details, from which we will extract the Google
+    code and send it back to Google to obtain the user data that we can use in our
+    app. This process requires the `googleapis` Node.js module, which is a client
+    library for using Google APIs.
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了让某人登录谷歌，我们需要将他们发送到谷歌登录页面。从那里，他们将登录他们的账户，并将被重定向到我们的应用程序，并携带他们的谷歌登录详细信息，我们将提取谷歌代码并将其发送回谷歌以获取我们可以在应用程序中使用的用户数据。这个过程需要`googleapis`
+    Node.js模块，这是一个用于使用谷歌API的客户端库。
+- en: 'Let''s get it installed and adopted in our code with the following steps:'
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们按照以下步骤在我们的代码中安装并采用它：
+- en: 'Install the `googleapis` Node.js module via npm:'
+  id: totrans-279
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装`googleapis` Node.js模块：
+- en: '[PRE75]'
+  id: totrans-280
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'Create a file with your credentials so Google knows who is making the requests:'
+  id: totrans-281
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个文件，包含你的凭证，这样谷歌就知道是谁在发出请求。
+- en: '[PRE76]'
+  id: totrans-282
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: Note you must replace the preceding `<client ID>` and `<client secret>` values
+    with the ID and secret that you obtain from the Google Developer Console. Also,
+    note that the URL in the `redirect` option must match the redirect URIs in Authorized
+    redirect URIs in your Google app API settings.
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，您必须用从谷歌开发者控制台获得的ID和密钥替换上述的`<client ID>`和`<client secret>`值。另外，请注意`redirect`选项中的URL必须与您的谷歌应用API设置中的授权重定向URI中的重定向URI匹配。
+- en: 'Generate a Google authentication URL with Google OAuth for sending the user
+    to the Google consent page to get permissions from the user to retrieve an access
+    token as follows:'
+  id: totrans-284
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用Google OAuth生成Google身份验证URL，将用户发送到谷歌同意页面，以获取用户检索访问令牌的权限，如下所示：
+- en: '[PRE77]'
+  id: totrans-285
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'Scopes determine what information and permissions we want from the user when
+    they sign in and then generate the URL. In our case, we want permission to retrieve
+    the information of the user email and profile: `userinfo.email` and `userinfo.profile`.
+    After the user has authenticated on the Google consent page, Google will redirect
+    the user back to our app with a bunch of authenticated data and an authorization
+    code for accessing the user data.'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当用户登录并生成URL时，范围决定了我们在用户登录时需要什么信息和权限。在我们的情况下，我们希望获得检索用户电子邮件和个人资料信息的权限：`userinfo.email`和`userinfo.profile`。用户在谷歌同意页面上进行了身份验证后，谷歌将用户重定向回我们的应用程序，并携带了一堆经过身份验证的数据和用于访问用户数据的授权代码。
+- en: 'Extract the value in the `code` parameter from the authenticated data appended
+    by Google in the returned URL in the previous step. We will come back to the Node.js
+    module, which can help us to extract the `code` parameter from the URL query later,
+    in the next section. Now, let''s assume we have extracted the `code` value and
+    sent it to the server side to request tokens with the Google OAuth2 instance in
+    the following basic code structure:'
+  id: totrans-287
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从谷歌在上一步返回的URL中附加的经过身份验证的数据中提取`code`参数中的值。我们将在下一节中回到Node.js模块，它可以帮助我们从URL查询中提取`code`参数。现在，让我们假设我们已经提取了`code`值，并将其发送到服务器端，以请求使用Google
+    OAuth2实例的令牌，如下所示：
+- en: '[PRE78]'
+  id: totrans-288
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: 'Obtain tokens from Google with the code we just extracted and pass them to
+    Google People, `google.people`, to get the user data with the `get` method and
+    specify what fields relating to the person need to be returned in the `personFields`
+    query parameter:'
+  id: totrans-289
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用我们刚刚提取的代码从谷歌获取令牌，并将它们传递给Google People，`google.people`，使用`get`方法获取用户数据，并指定在`personFields`查询参数中需要返回的与人相关的字段。
+- en: '[PRE79]'
+  id: totrans-290
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: You can see that we want only two fields relating to the person from Google
+    in our preceding code, which are `names` and `emailAddresses`. You can find out
+    what other fields relating to the person you want from Google at [https://developers.google.com/people/api/rest/v1/people/get](https://developers.google.com/people/api/rest/v1/people/get).
+    We should get the user data in the JSON format from Google if access is successful,
+    and then we can extract the email from that data to ensure it will match a user
+    in our database in the next step.
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到我们在前面的代码中只想要与Google中的人相关的两个字段，即`names`和`emailAddresses`。您可以在[https://developers.google.com/people/api/rest/v1/people/get](https://developers.google.com/people/api/rest/v1/people/get)上找到您想要从Google获取的与人相关的其他字段。如果访问成功，我们应该从Google以JSON格式获取用户数据，然后我们可以从该数据中提取电子邮件，以确保它将在下一步中与我们数据库中的用户匹配。
+- en: 'Retrieve the first email only from the Google person data and query our database
+    to see whether there is any user with that email already:'
+  id: totrans-292
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 仅从Google人员数据中检索第一个电子邮件，并查询我们的数据库，以查看是否已经有任何使用该电子邮件的用户：
+- en: '[PRE80]'
+  id: totrans-293
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'Send a `''signup required''` message to the client side with the user data
+    from Google if there is no user with that email and ask the user to sign up for
+    an account in our app:'
+  id: totrans-294
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果没有该电子邮件的用户，请向客户端发送来自Google的用户数据的`'signup required'`消息，并要求用户在我们的应用程序中注册帐户：
+- en: '[PRE81]'
+  id: totrans-295
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: 'Sign a JWT with a payload and the JWT secret if there is a match, and then
+    send the token (JWT) to the client side:'
+  id: totrans-296
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果匹配，则使用有效载荷和JWT密钥签署JWT，然后将令牌（JWT）发送到客户端：
+- en: '[PRE82]'
+  id: totrans-297
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: That's it. You have managed to add Google OAuth on the server side in the preceding
+    few steps. Next, we should look at how we can complete the authentication with
+    Nuxt on the client side for Google OAuth in the next section. Let's get going.
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样。在前面的几个步骤中，您已经成功在服务器端添加了Google OAuth。接下来，我们应该看看如何在下一节中使用Nuxt完成Google OAuth的客户端身份验证。让我们开始吧。
+- en: For more information about the googleapis Node.js module, please visit [https://github.com/googleapis/google-api-nodejs-client](https://github.com/googleapis/google-api-nodejs-client).
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关googleapis Node.js模块的更多信息，请访问[https://github.com/googleapis/google-api-nodejs-client](https://github.com/googleapis/google-api-nodejs-client)。
+- en: Creating frontend authentication for Google OAuth
+  id: totrans-300
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 为Google OAuth创建前端身份验证
+- en: 'When Google redirects the user back to our app, we will get a bunch of data
+    on the redirect URL, for example:'
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当Google将用户重定向回我们的应用程序时，我们将在重定向URL上获得大量数据，例如：
+- en: '[PRE83]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: 'It is quite difficult to read and decipher when you first look at it, but it
+    is just a query string with parameters appended to our redirect URL:'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您第一次看到它时，它很难阅读和解密，但它只是一个带有参数附加到我们重定向URL的查询字符串：
+- en: '[PRE84]'
+  id: totrans-304
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: 'We can use a Node.js module, `query-string`, to parse the query string in the
+    URL, for example:'
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用Node.js模块`query-string`来解析URL中的查询字符串，例如：
+- en: '[PRE85]'
+  id: totrans-306
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: 'Then you will get the following JavaScript object in your browser''s console:'
+  id: totrans-307
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后您将在浏览器控制台中获得以下JavaScript对象：
+- en: '[PRE86]'
+  id: totrans-308
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'The `code` parameter is what we are interested in the most in the preceding redirect
+    URL as we will need to send it to the server side as you learned in the previous
+    section, in order to obtain the Google user data through the googleapis Node.js
+    module. So, let''s get `query-string` installed and create the frontend authentication
+    in our Nuxt app in the following steps:'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的重定向URL中，`code`参数是我们最感兴趣的，因为我们需要将其发送到服务器端，以便通过googleapis Node.js模块获取Google用户数据，正如您在上一节中学到的。因此，让我们安装`query-string`并在接下来的步骤中在我们的Nuxt应用程序中创建前端身份验证：
+- en: 'Install the `query-string` Node.js module via npm:'
+  id: totrans-310
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过npm安装`query-string` Node.js模块：
+- en: '[PRE87]'
+  id: totrans-311
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'Create a button on the login page and bind a method called `loginWithGoogle`
+    to dispatch the `getGoogleUrl` method in the store as follows:'
+  id: totrans-312
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在登录页面上创建一个按钮，并绑定一个名为`loginWithGoogle`的方法，以调度存储中的`getGoogleUrl`方法，如下所示：
+- en: '[PRE88]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: 'Call the `/api/public/login/google/url` route in the API in the `getGoogleUrl`
+    method as follows:'
+  id: totrans-314
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在API中调用`/api/public/login/google/url`路由，在`getGoogleUrl`方法中如下所示：
+- en: '[PRE89]'
+  id: totrans-315
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: The `/api/public/login/google/url` route will send back a Google URL and then
+    we can use it to redirect the user to the Google Login page. From there, the user
+    will decide which Google account to log in to if they have more than one.
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`/api/public/login/google/url`路由将返回一个Google URL，然后我们可以使用它将用户重定向到Google登录页面。从那里，用户将决定要登录到哪个Google帐户（如果有多个）。'
+- en: 'Extract the query part from the returned URL and send it to the `loginWithGoogle`
+    method in the store when Google redirects the user back to the login page as follows:'
+  id: totrans-317
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从返回的URL中提取查询部分，并在Google将用户重定向回登录页面时将其发送到store中的`loginWithGoogle`方法中，如下所示：
+- en: '[PRE90]'
+  id: totrans-318
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: 'Extract the code from the `code` parameter in the preceding query part with
+    `query-string` and send it to our API, `/api/public/login/google/me`, using `$axios`
+    as follows:'
+  id: totrans-319
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`query-string`从前面的查询部分中提取`code`参数的代码，并使用`$axios`将其发送到我们的API`/api/public/login/google/me`，如下所示：
+- en: '[PRE91]'
+  id: totrans-320
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: We will redirect the user to a sign-up page when we get the `'signup required'` message
+    from the server. But if we get the message with JWT, then we can set a cookie
+    and the authenticated data to the store state. We will leave the sign-up page
+    to your imagination and own effort because it is a form to collect data from the
+    user to be stored in the database.
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们从服务器收到`'signup required'`消息时，我们将用户重定向到注册页面。但是，如果我们收到带有JWT的消息，那么我们可以将cookie和经过身份验证的数据设置到store状态中。我们将留下注册页面让您自己想象和努力，因为这是一个用于收集用户数据以存储在数据库中的表单。
+- en: Finally, run the Nuxt app with `npm run dev`. You should get the app running
+    on your browser at `localhost:3000`. You can log in with Google and then access
+    the restricted page, which is protected by the JWT – just like the local authentication.
+  id: totrans-322
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，使用`npm run dev`运行Nuxt应用程序。您应该可以在`localhost:3000`上在浏览器中运行该应用程序。您可以使用Google登录，然后访问受JWT保护的受限页面，就像本地认证一样。
+- en: So, there you go – these are the basic steps you take to sign the user in with
+    the Google OAuth API. It is not hard at all, is it? We can also use the Nuxt Auth
+    module to achieve almost the same as we have accomplished here. With this module,
+    you can sign the user in with Auth0, Facebook, GitHub, Laravel Passport, and Google.
+    If you are looking for quick, simple, and zero-boilerplate authentication support
+    for Nuxt, it could be a good option for your project. For more information about
+    this Nuxt module, please visit [https://auth.nuxtjs.org/](https://auth.nuxtjs.org/).
+    Now let's summarize what you have learned in this chapter in the next section.
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，这就是你使用Google OAuth API登录用户的基本步骤。这一点并不难，是吗？我们还可以使用Nuxt Auth模块来实现几乎与我们在这里完成的相同的功能。使用此模块，您可以使用Auth0、Facebook、GitHub、Laravel
+    Passport和Google登录用户。如果您正在寻找Nuxt的快速、简单和零样板认证支持，这可能是您项目的一个不错的选择。有关此Nuxt模块的更多信息，请访问[https://auth.nuxtjs.org/](https://auth.nuxtjs.org/)。现在让我们在下一节总结一下您在本章中学到的内容。
+- en: You can find the preceding login option with Google OAuth in `/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/`
+    in our GitHub repository.
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在我们的GitHub存储库中的`/chapter-12/nuxt-universal/cross-domain/jwt/axios-module/`中找到前面使用Google
+    OAuth的登录选项。
+- en: For more information about the usage of the `query-string` Node.js module, visit
+    [https://www.npmjs.com/package/query-string](https://www.npmjs.com/package/query-string).
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关`query-string` Node.js模块的使用信息，请访问[https://www.npmjs.com/package/query-string](https://www.npmjs.com/package/query-string)。
+- en: Summary
+  id: totrans-326
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: Well done! You have made it this far. After all, it is not difficult to work
+    on web authentication. In this chapter, you have learned what session-based authentication
+    and token-based authentication are, particularly about the JSON Web Token (JWT).
+    You should now know the differences between them and the constituents of a JWT,
+    and how to generate a JWT with the `jsonwebtoken` Node.js module. We have also
+    covered the MySQL Node.js module and used it as part of our authentication system.
+    You have also integrated Google OAuth for signing the user in and then creating
+    the frontend authentication using Nuxt.
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 干得好！您已经走了这么远。毕竟，在网页身份验证上工作并不难。在本章中，您已经了解了基于会话的身份验证和基于令牌的身份验证，特别是关于JSON Web Token（JWT）。您现在应该知道它们之间的区别以及JWT的组成部分，以及如何使用`jsonwebtoken`
+    Node.js模块生成JWT。我们还介绍了MySQL Node.js模块，并将其用作我们身份验证系统的一部分。您还集成了Google OAuth以便用户登录，然后使用Nuxt创建了前端身份验证。
+- en: In the next chapter, you will learn how to write end-to-end tests in your Nuxt
+    apps. You will learn about the tools you can install and use for writing your
+    end-to-end tests, notably AVA and Nightwatch. Besides this, you will also learn
+    how to use a Node.js module, which is `jsdom`, to make your end-to-end testing
+    possible on the server side. This is because Nuxt technically is a server-side
+    technology and renders our HTML pages on the server side, but there is no DOM
+    on the server side, so we can leverage `jsdom` for that. But rest assured, we
+    will walk you through the steps to get all these tools set up and write your tests.
+    So, stay tuned!
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，您将学习如何在您的Nuxt应用程序中编写端到端测试。您将了解可以安装和使用的用于编写端到端测试的工具，特别是AVA和Nightwatch。除此之外，您还将学习如何使用一个Node.js模块，即`jsdom`，使您的端到端测试在服务器端成为可能。这是因为Nuxt在技术上是一种服务器端技术，并在服务器端呈现我们的HTML页面，但在服务器端没有DOM，因此我们可以利用`jsdom`来实现。但请放心，我们将引导您完成设置所有这些工具并编写您的测试的步骤。所以，请继续关注！

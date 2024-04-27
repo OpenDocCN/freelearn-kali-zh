@@ -1,0 +1,2296 @@
+- en: Project 1 - Markdown Notebook
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 项目1 - Markdown笔记本
+- en: The first app we will create is a markdown notebook, using several Vue features
+    in a step-by-step manner. We will reuse what we saw in [Chapter 1](00860a76-5dac-4df9-825a-549899184959.xhtml),
+    *Getting Started with Vue*, and add more elements on top of it, such as useful
+    directives, events for user interaction, more instance options, and filters to
+    process values.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建的第一个应用是一个Markdown笔记本，逐步使用几个Vue功能。我们将重复使用我们在[第1章](00860a76-5dac-4df9-825a-549899184959.xhtml)中看到的内容，*使用Vue入门*，并在此基础上添加更多元素，如有用的指令，用户交互的事件，更多实例选项和用于处理值的过滤器。
+- en: 'Before we start writing the code, let''s talk about the app and review our
+    objectives:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开始编写代码之前，让我们谈谈这个应用并回顾我们的目标：
+- en: The notebook app will allow the user to write notes in markdown
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 笔记本应用将允许用户以Markdown格式编写笔记
+- en: The markdown will be previewed in real time
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Markdown将实时预览
+- en: The users will be able to add as many notes as they want
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户可以添加任意数量的笔记
+- en: The notes will be restored the next time the user visits the app
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 下次用户访问应用时，笔记将被恢复
+- en: 'To do that, we will divide the user interface into three sections:'
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了做到这一点，我们将把用户界面分成三个部分：
+- en: A main section in the middle with the note editor
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 中间的主要部分，带有笔记编辑器
+- en: A right pane, which previews the markdown of the current node
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 右侧窗格，预览当前笔记的Markdown
+- en: A left pane, with the list of notes and a button to add a new one
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 左侧窗格，显示笔记列表和添加新笔记的按钮
+- en: 'Here is what it will look like at the end of the chapter:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章结束时，它将看起来像这样：
+- en: '![](assets/26d6cfab-5fd8-4e60-a85b-6116232af19c.png)'
+  id: totrans-12
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/26d6cfab-5fd8-4e60-a85b-6116232af19c.png)'
+- en: A basic note editor
+  id: totrans-13
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 一个基本的笔记编辑器
+- en: We will start small with a very simple markdown note app that only displays
+    a text editor on the left and a markdown preview on the right. Then, we will turn
+    it into a full notebook with multiple note support.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从一个非常简单的Markdown笔记应用开始，只在左侧显示文本编辑器和右侧显示Markdown预览。然后，我们将把它变成一个具有多个笔记支持的完整笔记本。
+- en: Setting up the project
+  id: totrans-15
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置项目
+- en: 'For this project, we will have a few files ready to get us started:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个项目，我们将准备好一些文件来帮助我们开始：
+- en: 'First, download *simple-notebook* project files and extract them in the same
+    folder. Open the `index.html` file and add a `div` element with the `notebook`
+    ID and a nested `section` element with the `main` class. You should have the following
+    content inside the file:'
+  id: totrans-17
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，下载*simple-notebook*项目文件并将其解压缩到同一个文件夹中。打开`index.html`文件，并添加一个带有`notebook`
+    ID的`div`元素和一个带有`main`类的嵌套`section`元素。文件内应包含以下内容：
+- en: '[PRE0]'
+  id: totrans-18
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Now, open the `script.js` file to add some JavaScript. Just like you did in
+    [Chapter 1](00860a76-5dac-4df9-825a-549899184959.xhtml), *Getting Started with
+    Vue*, create a Vue instance mounted on the `#notebook` element with a Vue constructor:'
+  id: totrans-19
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，打开`script.js`文件添加一些JavaScript。就像你在[第1章](00860a76-5dac-4df9-825a-549899184959.xhtml)中所做的那样，*使用Vue入门*，创建一个Vue实例，挂载在`#notebook`元素上，使用Vue构造函数：
+- en: '[PRE1]'
+  id: totrans-20
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Then, add a data property called `content` that will hold the content of your
+    note:'
+  id: totrans-21
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，添加一个名为`content`的数据属性，用于保存笔记的内容：
+- en: '[PRE2]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Now you are ready to create your first real Vue app.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你已经准备好创建你的第一个真正的Vue应用了。
+- en: The note editor
+  id: totrans-24
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 笔记编辑器
+- en: Now that we have our app running, let's add the text editor. We will use a simple
+    `textarea` element and the `v-model` directive we saw in [Chapter 1](00860a76-5dac-4df9-825a-549899184959.xhtml),
+    *Getting Started with Vue*.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的应用正在运行，让我们添加文本编辑器。我们将使用一个简单的`textarea`元素和我们在[第1章](00860a76-5dac-4df9-825a-549899184959.xhtml)中看到的`v-model`指令，*使用Vue入门*。
+- en: 'Create a `section` element and put the `textarea` inside, then add the `v-model`
+    directive bound to our `content` property:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个`section`元素并将`textarea`放入其中，然后添加绑定到我们的`content`属性的`v-model`指令：
+- en: '[PRE3]'
+  id: totrans-27
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Now, if you change the text ;inside the note editor, the value of `content`
+    should automatically chance in the devtools.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你改变笔记编辑器中的文本，`content`的值应该会自动在devtools中改变。
+- en: The `v-model` directive is not limited to text inputs. You can also use it in
+    other form elements, such as checkboxes, radio buttons, or even custom components,
+    as we will see later in the book.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`v-model`指令不仅限于文本输入。你还可以在其他表单元素中使用它，比如复选框、单选按钮，甚至是自定义组件，正如我们将在本书中看到的那样。'
+- en: The preview pane
+  id: totrans-30
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 预览窗格
+- en: 'To compile the note markdown into valid HTML, we will need an additional library
+    called Marked ([https://www.npmjs.com/package/marked](https://www.npmjs.com/package/marked)):'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要将笔记markdown编译为有效的HTML，我们将需要一个名为Marked的额外库（[https://www.npmjs.com/package/marked](https://www.npmjs.com/package/marked)）：
+- en: 'Include the library in the page just after the `script` tag referencing Vue:'
+  id: totrans-32
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在引用Vue的`script`标签后，将库包含在页面中：
+- en: '[PRE4]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: '`marked` is very easy to use--just call it with the markdown text, and it will
+    return the corresponding HTML.'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`marked`非常容易使用--只需用markdown文本调用它，它就会返回相应的HTML。'
+- en: 'Try the library with some markdown text:'
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 尝试使用一些markdown文本来测试库：
+- en: '[PRE5]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'You should have the following output in the browser console:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该在浏览器控制台中看到以下输出：
+- en: '[PRE6]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Computed property
+  id: totrans-39
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 计算属性
+- en: 'A very powerful feature of Vue is the **computed property**. It allows us to
+    define new properties that combine any amount of properties and use transformations,
+    such as converting a markdown string into HTML--that''s why its value is defined
+    by a function. A computed property has the following features:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue非常强大的一个特性是**计算属性**。它允许我们定义新的属性，结合任意数量的属性并使用转换，比如将markdown字符串转换为HTML--这就是为什么它的值由一个函数定义。计算属性具有以下特点：
+- en: The value is cached so that the function doesn't rerun if it's not necessary,
+    preventing useless computation
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 该值被缓存，因此如果不需要，函数就不会重新运行，从而防止无用的计算
+- en: It is automatically updated as needed when a property used inside the function
+    has changed
+  id: totrans-42
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当函数内部使用的属性发生变化时，它会根据需要自动更新
+- en: A computed property can be used exactly like any property (and you can use computed
+    properties inside other computed properties)
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 计算属性可以像任何属性一样使用（你可以在其他计算属性中使用计算属性）
+- en: It is not computed until it is really used somewhere in the app
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 直到在应用程序的某个地方真正使用它之前，它都不会被计算。
+- en: 'This will help us automatically convert the note markdown into valid HTML,
+    so we can display a preview in real time. We just need to declare our computed
+    property in the `computed` option:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将帮助我们自动将笔记markdown转换为有效的HTML，这样我们就可以实时显示预览。我们只需要在`computed`选项中声明我们的计算属性：
+- en: '[PRE7]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Text interpolation escaping
+  id: totrans-47
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 文本插值转义
+- en: 'Let''s try to display our note in a new pane using a text interpolation:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们尝试使用文本插值在新窗格中显示我们的笔记：
+- en: 'Create an `<aside>` element with the `preview` class, which displays our `notePreview`
+    computed property:'
+  id: totrans-49
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个带有`preview`类的`<aside>`元素，显示我们的`notePreview`计算属性：
+- en: '[PRE8]'
+  id: totrans-50
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: We should now have the preview pane displaying our note on the right side of
+    the app. If you type some text in the note editor, you should see the preview
+    updating automatically. However, there is an issue with our app, which arises
+    when you use markdown formatting.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们应该在应用程序的右侧看到预览窗格显示我们的笔记。如果你在笔记编辑器中输入一些文本，你应该会看到预览自动更新。然而，我们的应用程序存在一个问题，当你使用markdown格式时会出现问题。
+- en: 'Try making your text bold by surrounding it with `**`, as follows:'
+  id: totrans-52
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 尝试使用`**`将文本加粗，如下所示：
+- en: '[PRE9]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Our computed property should return this in valid HTML, and we should have
+    some bold text rendered in our preview pane. Instead, we can see the following:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的计算属性应该返回有效的HTML，并且我们的预览窗格中应该呈现一些粗体文本。相反，我们可以看到以下内容：
+- en: '[PRE10]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: We have just discovered that the text interpolation automatically escapes the
+    HTML tags. This is to prevent injection attacks and improve the security of our
+    app. Fortunately, there is a way to display some HTML, as we will see in a moment.
+    However, this forces you to think about using it to include potentially harmful
+    dynamic content.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们刚刚发现文本插值会自动转义HTML标记。这是为了防止注入攻击并提高我们应用程序的安全性。幸运的是，有一种方法可以显示一些HTML，我们马上就会看到。然而，这会迫使您考虑使用它来包含潜在有害的动态内容。
+- en: For example, you create a comment system, where any user can write some text
+    to comment on your app pages. What if someone writes some HTML in their comment,
+    which is then displayed in the page as valid HTML? They could add some malicious
+    JavaScript code, and all the visitors of your app would be vulnerable. It's called
+    a cross-site scripting attack, or an XSS attack. That's why text interpolation
+    always escapes HTML tags.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，您可以创建一个评论系统，任何用户都可以在您的应用页面上写一些评论。如果有人在评论中写入一些HTML，然后在页面上显示为有效的HTML，会怎么样？他们可以添加一些恶意的JavaScript代码，您的应用程序的所有访问者都会变得脆弱。这被称为跨站脚本攻击，或者XSS攻击。这就是为什么文本插值总是转义HTML标记。
+- en: It is not recommended to use `v-html` on content created by the users of the
+    application. They could write malicious JavaScript code inside a `<script>` tag
+    that would be executed. However, with normal text interpolation, you would be
+    safe because the HTML would not be executed.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不建议在应用程序的用户创建的内容上使用`v-html`。他们可以在`<script>`标签内编写恶意JavaScript代码，这将被执行。然而，通过正常的文本插值，您将是安全的，因为HTML不会被执行。
+- en: Displaying HTML
+  id: totrans-59
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 显示HTML
+- en: 'Now that we know that text interpolations can''t render HTML for security reasons,
+    we will need another way to render dynamic HTML--the `v-html` directive. Like
+    the `v-model` directive we saw in [Chapter 1](00860a76-5dac-4df9-825a-549899184959.xhtml),
+    *Getting Started with Vue*, this is a special attribute that adds a new feature
+    to our template. This one is able to render any valid HTML string into our app.
+    Just pass the string as the value, as follows:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道出于安全原因文本插值无法渲染HTML，我们将需要另一种方式来渲染动态HTML--`v-html`指令。就像我们在[第1章](00860a76-5dac-4df9-825a-549899184959.xhtml)中看到的`v-model`指令一样，这是一个特殊的属性，为我们的模板添加了一个新功能。它能够将任何有效的HTML字符串渲染到我们的应用程序中。只需将字符串作为值传递，如下所示：
+- en: '[PRE11]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: Now, the markdown preview should work correctly, and the HTML is dynamically
+    inserted in our page.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，markdown预览应该可以正常工作，并且HTML会动态插入到我们的页面中。
+- en: Any content inside our `aside` element will be replaced by the value of the
+    `v-html` directive. You can use this to put placeholder contents inside.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们`aside`元素内的任何内容都将被`v-html`指令的值替换。您可以使用它来放置占位内容。
+- en: 'Here is the result you should have:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是您应该得到的结果：
+- en: '![](assets/a68e9943-826c-4926-823e-c780269c4f51.png)There is an equivalent
+    directive for text interpolation, `v-text`, which behaves like `v-html`, but escapes
+    the HTML tags just like classic text interpolations.'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](assets/a68e9943-826c-4926-823e-c780269c4f51.png)对于文本插值，还有一个等效的指令`v-text`，它的行为类似于`v-html`，但会像经典文本插值一样转义HTML标记。'
+- en: Saving the note
+  id: totrans-66
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 保存笔记
+- en: For now, if you close or refresh the app, your note will be lost. It would be
+    a good idea to save and load it the next time we open the app. To achieve this,
+    we will use the standard `localStorage` API provided by most browsers.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，如果关闭或刷新应用程序，您的笔记将丢失。在下次打开应用程序时保存和加载它是个好主意。为了实现这一点，我们将使用大多数浏览器提供的标准`localStorage`
+    API。
+- en: Watching changes
+  id: totrans-68
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 观察变化
+- en: We would like to save our note as soon as its content changes. That's why we
+    need something that is called when our `content` data property changes, such as
+    **watchers**. Let's add some watchers to our application!
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们希望在笔记内容发生变化时立即保存笔记。这就是为什么我们需要一些在`content`数据属性发生变化时被调用的东西，比如**观察者**。让我们向我们的应用程序添加一些观察者！
+- en: Add a new `watch` option to the Vue instance.
+  id: totrans-70
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Vue实例中添加一个新的`watch`选项。
+- en: This option is a dictionary with the keys being the name of the watched properties
+    and the value being a watching option object. This object has to have a `handler`
+    property, which is either a function or the name of a method. The handler will
+    receive two arguments--the new value and the old value of the property being watched.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个选项是一个字典，其中键是被观察属性的名称，值是一个观察选项对象。这个对象必须有一个`handler`属性，它可以是一个函数或者一个方法的名称。处理程序将接收两个参数--被观察属性的新值和旧值。
+- en: 'Here is an example with a simple handler:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个带有简单处理程序的例子：
+- en: '[PRE12]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now, when you type in the note editor, you should get the following message
+    in the browser console:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当你在笔记编辑器中输入时，你应该在浏览器控制台中看到以下消息：
+- en: '[PRE13]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: This will be very helpful in saving the note whenever it changes.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在笔记发生变化时非常有帮助。
+- en: 'There are two other options you can use alongside `handler`:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以在`handler`旁边使用另外两个选项：
+- en: '`deep` is a Boolean that tells Vue to watch for changes recursively inside
+    nested objects. This is not useful here, as we only watch a string.'
+  id: totrans-78
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`deep`是一个布尔值，告诉Vue递归地观察嵌套对象内的变化。这在这里并不有用，因为我们只观察一个字符串。'
+- en: '`immediate` is also a Boolean that forces the handler to be called immediately
+    instead of waiting for the first change. In our case, this will not have a meaningful
+    impact, but we can try it to note its effects.'
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`immediate`也是一个布尔值，强制处理程序立即被调用，而不是等待第一次变化。在我们的情况下，这不会有实质性的影响，但我们可以尝试一下来注意它的影响。'
+- en: The default value of these options is `false`, so if you don't need them, you
+    can skip them entirely.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些选项的默认值是`false`，所以如果你不需要它们，你可以完全跳过它们。
+- en: 'Add the immediate option to the watcher:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`immediate`选项添加到观察者中：
+- en: '[PRE14]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'As soon as you refresh the app, you should see the following message pop up
+    in the browser console:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦你刷新应用程序，你应该在浏览器控制台中看到以下消息弹出：
+- en: '[PRE15]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Unsurprisingly, the old value of the note was `undefined`, because the watcher
+    handler was called when the instance was created.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 毫不奇怪，笔记的旧值是`undefined`，因为观察者处理程序在实例创建时被调用。
+- en: 'We don''t really need this option here, so go ahead and delete it:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们这里真的不需要这个选项，所以继续删除它：
+- en: '[PRE16]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Since we are not using any option, we can use a shorter syntax by skipping
+    the object containing the `handler` option:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们没有使用任何选项，我们可以通过跳过包含`handler`选项的对象来使用更短的语法：
+- en: '[PRE17]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: This is the most common syntax for watchers when you don't need other options,
+    such as `deep` or `immediate`.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是当你不需要其他选项时观察者的最常见语法，比如`deep`或`immediate`。
+- en: 'Let''s save our note. Use the `localStorage.setItem()` API to store the note
+    content:'
+  id: totrans-91
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们保存我们的笔记。使用`localStorage.setItem()` API来存储笔记内容：
+- en: '[PRE18]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'To check whether this worked, edit the note and open the browser devtools in
+    the Application or Storage tab (depending on your browser) you should find a new
+    entry under the Local Storage section:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要检查这是否起作用，编辑笔记并在应用程序或存储选项卡中打开浏览器开发工具（取决于你的浏览器），你应该在本地存储部分下找到一个新的条目：
+- en: '![](assets/a0f073bb-c9be-4778-b02f-7b2e1378d589.png)'
+  id: totrans-94
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/a0f073bb-c9be-4778-b02f-7b2e1378d589.png)'
+- en: Using a method
+  id: totrans-95
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用一个方法
+- en: 'There is a good coding principle that says *Don''t Repeat Yourself*, and we
+    really should follow it. That''s why we can write some logic in reusable functions
+    called **methods**. Let''s move our saving logic into one:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一个很好的编码原则说*不要重复自己*，我们真的应该遵循它。这就是为什么我们可以在可重用的函数中写一些逻辑，称为**methods**。让我们把我们的保存逻辑移到一个方法中：
+- en: 'Add a new `methods` option to the Vue instance and use the `localStorage` API
+    there:'
+  id: totrans-97
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Vue实例中添加一个新的`methods`选项，并在那里使用`localStorage` API：
+- en: '[PRE19]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'We can now use the method name in the `handler` option of our watcher:'
+  id: totrans-99
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们现在可以在观察者的`handler`选项中使用方法名：
+- en: '[PRE20]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Alternatively, we can use it with the shorter syntax:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，我们可以使用更短的语法：
+- en: '[PRE21]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Accessing the Vue instance
+  id: totrans-103
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 访问Vue实例
+- en: 'Inside the methods, we can access the Vue instance with the `this` keyword.
+    For example, we could call another method:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在方法内部，我们可以使用`this`关键字访问Vue实例。例如，我们可以调用另一个方法：
+- en: '[PRE22]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Here, the `saveNote` method will be called from the `contentChanged` method.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，`saveNote`方法将从`contentChanged`方法中调用。
+- en: 'We can also access the other properties and special functions of our Vue instance
+    through `this`. We could remove the `saveNote` argument and access the `content`
+    data property directly:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以通过`this`访问Vue实例的其他属性和特殊函数。我们可以删除`saveNote`参数并直接访问`content`数据属性：
+- en: '[PRE23]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'This also works in the watcher handler we created in the *Watching changes*
+    section:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这也适用于我们在*监视更改*部分创建的观察程序处理程序：
+- en: '[PRE24]'
+  id: totrans-110
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Basically, you can access the Vue instance with `this` in any function bound
+    to it: methods, handlers, and other hooks.'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基本上，您可以在任何绑定到它的函数中使用`this`访问Vue实例：方法、处理程序和其他钩子。
+- en: Loading the saved note
+  id: totrans-112
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 加载保存的笔记
+- en: 'Now that we save the note content each time it changes, we will need to restore
+    it when the app is reopened. We will use the `localStorage.getItem()` API for
+    that. Add the following line at the end of your JavaScript file:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们每次更改时保存笔记内容，当应用程序重新打开时，我们需要恢复它。我们将使用`localStorage.getItem()` API。在您的JavaScript文件末尾添加以下行：
+- en: '[PRE25]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: When you refresh your app, you should see the saved note content printed in
+    the browser console.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您刷新应用程序时，您应该在浏览器控制台中看到保存的笔记内容。
+- en: Lifecycle hooks
+  id: totrans-116
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 生命周期钩子
+- en: The first way that comes to mind to restore our note content into the Vue instance
+    is to set the content data property when the instance is created.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恢复我们的笔记内容到Vue实例的第一种方式是在创建实例时设置内容数据属性。
+- en: Each Vue instance follows a precise lifecycle with several steps--it will be
+    created, mounted on the page, updated, and finally, destroyed. For example, during
+    the creating step, Vue will make the instance data reactive.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个Vue实例都遵循一个精确的生命周期，有几个步骤--它将被创建、挂载到页面上、更新，最后销毁。例如，在创建步骤期间，Vue将使实例数据具有反应性。
+- en: Hooks are a specific set of functions that are automatically called at some
+    point in time. They allow us to customize the logic of the framework. For example,
+    we can call a method when a Vue instance is created.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 钩子是一组特定的函数，在某个时间点自动调用。它们允许我们自定义框架的逻辑。例如，我们可以在创建Vue实例时调用一个方法。
+- en: 'We have multiple hooks at our disposal to execute logic when, or just before,
+    each of these steps occurs:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有多个可用的钩子来在每个步骤发生时执行逻辑，或者在这些步骤之前执行逻辑：
+- en: '`beforeCreate`: This is called when the Vue instance object is created (for
+    example, with `new Vue({})`), but before Vue has done anything with it.'
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`beforeCreate`：在Vue实例对象创建时调用（例如，使用`new Vue({})`），但在Vue对其进行任何操作之前调用。'
+- en: '`created`: This is called after the instance is ready and fully operating.
+    Note that, at this point, the instance is not in the DOM yet.'
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`created`：在实例准备就绪并完全运行后调用。请注意，在此时，实例尚未在DOM中。'
+- en: '`beforeMount`: This is called just before the instance is added (or mounted)
+    on the web page.'
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`beforeMount`：在实例添加（或挂载）到网页上之前调用。'
+- en: '`mounted`: This is called when the instance is on the page and visible in the
+    DOM.'
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`mounted`：当实例在页面上可见时调用。'
+- en: '`beforeUpdate`: This is called when the instance needs to be updated (generally,
+    when a data or computed property has changed).'
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`beforeUpdate`：当实例需要更新时调用（通常是在数据或计算属性发生变化时）。'
+- en: '`updated`: This is called after the data changes are applied to the template.
+    Note that the DOM may not be up to date yet.'
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`updated`：在数据更改应用到模板后调用。请注意，DOM可能尚未更新。'
+- en: '`beforeDestroy`: This is called just before the instance is torn down.'
+  id: totrans-127
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`beforeDestroy`：在实例被拆除之前调用。'
+- en: '`destroyed`: This is called when the instance is fully removed.'
+  id: totrans-128
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`destroyed`：在实例完全移除时调用。'
+- en: 'For now, we will only use the `created` hook to restore the note content. To
+    add a lifecycle hook, just add a function with the corresponding name into the
+    Vue instance options:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，我们将仅使用`created`钩子来恢复笔记内容。要添加生命周期钩子，只需将具有相应名称的函数添加到Vue实例选项中：
+- en: '[PRE26]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Now, when you refresh the app, the ;`created` hook will be automatically called
+    when the instance is created. This will set the `content` data property value
+    to the result of the restoration or to `'You can write in **markdown**'` if the
+    result was falsy, in case we didn't have anything saved before.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当您刷新应用程序时，`created`钩子将在实例创建时自动调用。这将把`content`数据属性值设置为恢复的结果，或者如果结果为假，则设置为`'You
+    can write in **markdown**'`，以防我们之前没有保存任何内容。
+- en: In JavaScript, a value is falsy when equal to `false`, `0`, an empty string,
+    `null`, `undefined`, or `NaN` (not a number). Here, the `localStorage.getItem()`
+    function will return `null` if the corresponding key doesn't exist in the browser
+    local storage data.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在JavaScript中，当值等于`false`、`0`、空字符串、`null`、`undefined`或`NaN`（不是一个数字）时，该值为假。在这里，如果对应的键在浏览器本地存储数据中不存在，`localStorage.getItem()`函数将返回`null`。
+- en: 'The watcher we set up is also called, so the note is saved, and you should
+    see something similar to this in the browser console:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们设置的观察者也被调用，因此笔记被保存，您应该在浏览器控制台中看到类似于这样的内容：
+- en: '[PRE27]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: We can see that when the created hook is called, Vue has already set the data
+    properties and their initial values (here, *This is a note*).
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以看到，当调用created钩子时，Vue已经设置了数据属性及其初始值（这里是*This is a note*）。
+- en: Initializing directly in the data
+  id: totrans-136
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 直接在数据中初始化
+- en: 'The other way is to initialize the `content` data property with the restored
+    value directly:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一种方法是直接使用恢复的值初始化`content`数据属性：
+- en: '[PRE28]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: With the preceding code, the watcher handler will not be called because we initialize
+    the `content` value instead of changing it.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中，观察者处理程序不会被调用，因为我们初始化了`content`值而不是改变它。
+- en: Multiple notes
+  id: totrans-140
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 多个笔记
+- en: A notebook with only one note is not that useful, so let's turn it into a multiple
+    note one. We will add a new side panel on the left with the list of notes, plus
+    a few extra elements, such as a text field to rename the notes and a favorite
+    toggle button.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只有一个笔记的笔记本并不那么有用，所以让我们将其变成一个多笔记本。我们将在左侧添加一个新的侧边栏，其中包含笔记列表，以及一些额外的元素，例如重命名笔记的文本字段和一个收藏切换按钮。
+- en: The note list
+  id: totrans-142
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 笔记列表
+- en: 'We will now lay the groundwork for the side pane containing the list of notes:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将为包含笔记列表的侧边栏奠定基础：
+- en: 'Add a new `aside` element with the `side-bar` class before the main section:'
+  id: totrans-144
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在主要部分之前添加一个带有`side-bar`类的新`aside`元素：
+- en: '[PRE29]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Add a new data property called `notes`--it will be the array containing all
+    of our notes:'
+  id: totrans-146
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加一个名为`notes`的新数据属性--它将是包含所有笔记的数组：
+- en: '[PRE30]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: A method to create a new note
+  id: totrans-148
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建一个新笔记的方法
+- en: 'Each of our notes will be an object with the following data:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的每个笔记将是一个具有以下数据的对象：
+- en: '`id`: This will be the note unique identifier'
+  id: totrans-150
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`id`：这将是笔记的唯一标识符'
+- en: '`title`: This ;will contain the name of the note displayed in the list'
+  id: totrans-151
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`title`：这将包含在列表中显示的笔记名称'
+- en: '`content`: This ;will be the note markdown content'
+  id: totrans-152
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`content`：这将是笔记的markdown内容'
+- en: '`created`: This ;will be the date the note was created'
+  id: totrans-153
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`created`：这将是笔记创建的日期'
+- en: '`favorite`: This ;will be a Boolean that allows for marking a note that will
+    be displayed at the top of the list as favorite'
+  id: totrans-154
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`favorite`：这将是一个布尔值，允许将要在列表顶部显示的笔记标记为收藏'
+- en: 'Let''s add a method that will create a new note and call it `addNote`, which
+    will create a new note object with a default value:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们添加一个方法，它将创建一个新的笔记并将其命名为`addNote`，它将创建一个具有默认值的新笔记对象：
+- en: '[PRE31]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: We take the current time (which means the number of milliseconds elapsed since
+    1 January 1970 00:00:00 UTC), which will be a perfect way to have a unique identifier
+    on each note. We also set default values, such as a title and some content, plus
+    the `created` date and the `favorite` ;Boolean. Finally, we add the note to the
+    notes array property.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们获取当前时间（这意味着自1970年1月1日00:00:00 UTC以来经过的毫秒数），这将是在每个笔记上具有唯一标识符的完美方式。我们还设置默认值，比如标题和一些内容，以及`created`日期和`favorite`布尔值。最后，我们将笔记添加到notes数组属性中。
+- en: Button and click events with v-on
+  id: totrans-158
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用v-on绑定按钮和点击事件
+- en: 'Now, we will need a button to call this method. Create a new button element
+    inside a `div` element with the toolbar class:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要一个按钮来调用这个方法。在具有toolbar类的`div`元素内创建一个新的按钮元素：
+- en: '[PRE32]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'To call the `addNote` method when the user clicks on the button, we will need
+    a new directive--`v-on`. The value will be the function called when the event
+    is caught, but it also expects an argument to know which event to listen to. However,
+    how do we pass the argument to the directive, you might ask? It''s quite simple!
+    Add a `:` character after the directive name, followed by the argument. Here is
+    an example:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当用户单击按钮时调用`addNote`方法时，我们将需要一个新的指令--`v-on`。值将是在捕获事件时调用的函数，但它还需要一个参数来知道要监听哪个事件。但是，你可能会问，我们如何将参数传递给指令呢？这很简单！在指令名称后添加一个`:`字符，然后是参数。这是一个例子：
+- en: '[PRE33]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'In our case, we are using the `v-on` directive with the event name as the argument,
+    and more specifically, the `click` event. It should look like this:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的情况下，我们正在使用`v-on`指令，事件名称作为参数，更具体地说，是`click`事件。它应该是这样的：
+- en: '[PRE34]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Our button should call the `addNote` method when it is clicked on, so go ahead
+    and modify the button we added earlier:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们点击按钮时，我们的按钮应该调用`addNote`方法，所以继续修改我们之前添加的按钮：
+- en: '[PRE35]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'There is an optional special shortcut for the `v-on` directive--the `@` character
+    that allows you to rewrite the preceding ;code to the following:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`v-on`指令还有一个可选的特殊快捷方式--`@`字符，允许你将前面的代码重写为以下内容：'
+- en: '[PRE36]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Now that our button is ready, try adding a few notes. We don''t see them in
+    the app yet, but you can open the devtools and note the note list change:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的按钮已经准备好了，试着添加一些笔记。我们还没有在应用程序中看到它们，但你可以打开开发工具并注意到笔记列表的变化：
+- en: '![](assets/d7a2f1ea-e8f8-436b-8699-5ec0629dcb6b.png)'
+  id: totrans-170
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/d7a2f1ea-e8f8-436b-8699-5ec0629dcb6b.png)'
+- en: Binding attributes with v-bind
+  id: totrans-171
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用v-bind绑定属性
+- en: It would be helpful if a tooltip showed the number of notes we already had on
+    the "Add note" button, wouldn't it? At least we can introduce another useful directive!
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果工具提示显示了我们在“添加笔记”按钮上已经有的笔记数量，那将会很有帮助，不是吗？至少我们可以介绍另一个有用的指令！
+- en: 'The tooltips are added with the title HTML attribute. Here is an example:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 工具提示是通过title HTML属性添加的。这是一个例子：
+- en: '[PRE37]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: Here, it is only a static text, though, and we would like to make it dynamic.
+    Thankfully, there is a directive that allows us to bind a JavaScript expression
+    to an attribute--`v-bind`. Like the `v-on` directive, it expects an argument,
+    which is the name of the target attribute.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，它只是一个静态文本，但我们希望使它动态。幸运的是，有一个指令允许我们将JavaScript表达式绑定到属性--`v-bind`。像`v-on`指令一样，它需要一个参数，这个参数是目标属性的名称。
+- en: 'We can rewrite the preceding example with a JavaScript expression as follows:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以用JavaScript表达式重写前面的例子如下：
+- en: '[PRE38]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'Now, if you leave the mouse cursor over the button, you will get the number
+    of notes:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你把鼠标光标放在按钮上，你会得到笔记的数量：
+- en: '![](assets/1629233d-8be8-4523-9296-3080cf6680f9.png)'
+  id: totrans-179
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/1629233d-8be8-4523-9296-3080cf6680f9.png)'
+- en: 'Like the `v-on` directive, `v-bind` has a special shortcut syntax (both are
+    the most used directives)--you can just skip the `v-bind` part and only put the
+    `:` character with the attribute name. The example would look like this:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像`v-on`指令一样，`v-bind`有一个特殊的快捷语法（两者都是最常用的指令）--你可以跳过`v-bind`部分，只放置带有属性名称的`:`字符。示例如下：
+- en: '[PRE39]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: JavaScript expressions bound with `v-bind` will re-evaluate automatically when
+    needed and update the value of the corresponding attribute.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`v-bind`绑定的JavaScript表达式将在需要时自动重新评估，并更新相应属性的值。
+- en: 'We could also move the expression to a computed property and use it instead.
+    The computed property could be as follows:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们也可以将表达式移到一个计算属性中并使用它。计算属性可以如下所示：
+- en: '[PRE40]'
+  id: totrans-184
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Then, we would rewrite the bound attribute, as follows:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们将重写绑定的属性，如下所示：
+- en: '[PRE41]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: Displaying a list with v-for
+  id: totrans-187
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用`v-for`显示列表
+- en: We will now display the list of notes below the toolbar.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将在工具栏下方显示笔记列表。
+- en: 'Just below the toolbar, add a new `div` element with the ;notes class:'
+  id: totrans-189
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在工具栏正下方，添加一个带有`notes`类的新的`div`元素：
+- en: '[PRE42]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'Now, we want to display a list of multiple div elements, one for each note.
+    To achieve this, we need the `v-for` directive. It takes a special expression
+    as the value, in the form of `item of items`, that will iterate over the `items`
+    array or object and expose an `item` value for this part of the template. Here
+    is an example:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们想要显示多个div元素的列表，每个笔记一个。为了实现这一点，我们需要`v-for`指令。它以`item of items`的形式接受一个特殊的表达式作为值，将迭代`items`数组或对象，并为模板的这一部分公开一个`item`值。以下是一个示例：
+- en: '[PRE43]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'You can also use the `in` keyword instead of `of`:'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你也可以使用`in`关键字代替`of`：
+- en: '[PRE44]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'Imagine that we have the following array:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们有以下数组：
+- en: '[PRE45]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'The final rendered DOM will look like this:'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终呈现的DOM将如下所示：
+- en: '[PRE46]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: As you can see, the element on which you put the `v-for` directive is repeated
+    in the DOM.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，放置`v-for`指令的元素在DOM中重复出现。
+- en: 'Let''s go back to our notebook and display the notes in the side pane. We store
+    them in the notes data property, so we need to iterate over it:'
+  id: totrans-200
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们回到我们的笔记本，并在侧边栏显示笔记。我们将它们存储在notes数据属性中，所以我们需要对它进行迭代：
+- en: '[PRE47]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'We should now have the notes list displayed below the button:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们应该在按钮下方看到笔记列表显示出来：
+- en: '![](assets/ee4871d5-a8b1-4345-8f7e-1b0d0acb7ba0.png)'
+  id: totrans-203
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ee4871d5-a8b1-4345-8f7e-1b0d0acb7ba0.png)'
+- en: Add a few more notes using the button, and you should see that the list is updating
+    automatically!
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用按钮添加几个笔记，你应该看到列表正在自动更新！
+- en: Selecting a note
+  id: totrans-205
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 选择一个笔记
+- en: When a note is selected, it becomes the context of the middle and right panes
+    of the app--the text editor modifies its content, and the preview pane displays
+    its formatted markdown. Let's implement this behavior!
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当选择一个笔记时，它将成为应用程序中间和右侧窗格的上下文--文本编辑器修改其内容，预览窗格显示其格式化的markdown。让我们实现这个行为！
+- en: 'Add a new data property called `selectedId` that will hold the ID of the selected
+    note:'
+  id: totrans-207
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加一个名为`selectedId`的新数据属性，它将保存所选笔记的ID：
+- en: '[PRE48]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: We could have created a `selectedNote` property instead, holding the note object,
+    but it would have made the saving logic more complex, with no benefit.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们也可以创建一个`selectedNote`属性，保存笔记对象，但这将使保存逻辑更复杂，没有任何好处。
+- en: 'We need a new method that will be called when we click on a note in the list
+    to select ID. Let''s call it `selectNote`:'
+  id: totrans-210
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们需要一个新的方法，当我们点击列表中的一个笔记时将被调用以选择ID。让我们称之为`selectNote`：
+- en: '[PRE49]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'Like we did for the add note button, we will listen for the `click` event with
+    the `v-on` directive on each note item in the list:'
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 就像我们为添加笔记按钮所做的那样，我们将使用`v-on`指令在列表中的每个笔记项上监听`click`事件：
+- en: '[PRE50]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Now, you should see the ;updated `selectedId` data property when you click on
+    a note.
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当你点击一个笔记时，你应该看到更新的`selectedId`数据属性。
+- en: The current note
+  id: totrans-215
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 当前的笔记
+- en: 'Now that we know which note is currently selected, we can replace the old `content`
+    data property we created at the beginning. It would be very useful to have a computed
+    property to easily access the selected note, so we will create one now:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道当前选中的笔记是哪一个，我们可以替换一开始创建的旧`content`数据属性。很有用的是，我们可以创建一个计算属性来轻松访问选中的笔记，所以我们现在将创建一个：
+- en: 'Add a new computed property called `selectedNote` that returns the note with
+    an ID that matches our `selectedId` property:'
+  id: totrans-217
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加一个新的计算属性叫做`selectedNote`，它返回与我们的`selectedId`属性匹配的笔记：
+- en: '[PRE51]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: '`note => note.id === this.selectedId` is an arrow function from the ES2015
+    JavaScript version. Here, it takes a `note` argument and returns the result of
+    the `note.id === this.selectedId` expression.'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`note => note.id === this.selectedId`是来自ES2015 JavaScript版本的箭头函数。在这里，它接受一个`note`参数，并返回`note.id
+    === this.selectedId`表达式的结果。'
+- en: We need to replace the old `content` data property with `selectedNote.content`
+    in our code.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要在我们的代码中用`selectedNote.content`替换旧的`content`数据属性。
+- en: 'Start by modifying the editor in the template:'
+  id: totrans-221
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先修改模板中的编辑器：
+- en: '[PRE52]'
+  id: totrans-222
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'Then, change the `notePreview` computed property to now use `selectedNote`:'
+  id: totrans-223
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，将`notePreview`计算属性改为现在使用`selectedNote`：
+- en: '[PRE53]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: Now, the text editor and the preview pane will display the selected note when
+    you click on it in the list.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当你在列表中点击一个笔记时，文本编辑器和预览窗格将显示所选的笔记。
+- en: You can safely remove the `content` data property, its watcher, and the `saveNote`
+    method, which are no longer used in the app.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以安全地移除不再在应用程序中使用的`content`数据属性、它的观察者和`saveNote`方法。
+- en: Dynamic CSS classes
+  id: totrans-227
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 动态CSS类
+- en: 'It would be nice to add a `selected` CSS class when a note is the selected
+    one in the note list (for example, to display a different background color). Thankfully,
+    Vue has a very useful trick to help us achieve this--the `v-bind` directive (the
+    `:` character being its shorthand) has some magic to make the manipulation of
+    CSS classes easier. Instead of passing a string, you can pass an array of strings:'
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当笔记在笔记列表中被选中时，添加一个`selected`CSS类会很好（例如，显示不同的背景颜色）。幸运的是，Vue有一个非常有用的技巧来帮助我们实现这一点--`v-bind`指令（`:`字符是它的简写）有一些魔法可以使CSS类的操作更容易。你可以传递一个字符串，也可以传递一个字符串数组：
+- en: '[PRE54]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'We will get the following in the DOM:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在DOM中得到以下内容：
+- en: '[PRE55]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'However, the most interesting feature is that you can pass an object whose
+    keys are the class names and whose values are Booleans that determine whether
+    or not each class should be applied. Here is an example:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，最有趣的特性是你可以传递一个对象，其键是类名，值是布尔值，用于确定是否应该应用每个类。以下是一个例子：
+- en: '[PRE56]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'This object notation will produce the following HTML:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个对象表示法将产生以下HTML：
+- en: '[PRE57]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'In our case, we want to apply the selected class only if the note is the selected
+    one. So, we will simply write as follows:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的情况下，我们只想在笔记被选中时应用选中的类。因此，我们将简单地写成如下形式：
+- en: '[PRE58]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'The note list should now look like this:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 笔记列表现在应该是这样的：
+- en: '[PRE59]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: You can combine a static `class` attribute with a dynamic one. It is recommended
+    that you put the nondynamic classes into the static attribute because Vue will
+    optimize the static values.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以将静态的`class`属性与动态的属性结合起来。建议将非动态类放入静态属性中，因为Vue会优化静态值。
+- en: 'Now, when you click on a note in the list to select it, its background will
+    change color:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当你点击列表中的一个笔记来选择它时，它的背景颜色会改变：
+- en: '![](assets/d0218a83-4367-4dad-9aa3-2973bbe607bd.png)'
+  id: totrans-242
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/d0218a83-4367-4dad-9aa3-2973bbe607bd.png)'
+- en: Conditional templates with v-if
+  id: totrans-243
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 带有v-if的条件模板
+- en: We need one last thing before testing our change; the main and preview panes
+    shouldn't be displayed if no note is selected--it would not make sense for the
+    user to have an empty editor and preview pane pointing to nothing, and it would
+    make our code crash since `selectedNote` would be `null`. Thankfully, the `v-if`
+    directive can dynamically take parts out of the template when we want. It works
+    just like the JavaScript `if` keyword, with a condition.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在测试我们的更改之前，我们还需要最后一件事；如果没有选择笔记，主窗格和预览窗格不应该显示--对用户来说没有意义，让用户拥有指向空白的编辑器和预览窗格，并且会使我们的代码崩溃，因为`selectedNote`将是`null`。幸运的是，`v-if`指令可以在我们希望时动态地从模板中取出部分。它的工作原理就像JavaScript的`if`关键字一样，有一个条件。
+- en: 'In this example, the `div` element will not be in the DOM at all while the
+    `loading` property is falsy:'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，只要`loading`属性为假，`div`元素根本不会出现在DOM中：
+- en: '[PRE60]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'There are also two other useful directives, `v-else` and `v-else-if`, that
+    will work as you might have expected:'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有另外两个有用的指令，`v-else`和`v-else-if`，它们将按照你的预期工作：
+- en: '[PRE61]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'Back in our app, add the `v-if="selectedNote"` condition to both the main and
+    preview panes so that they are not added to the DOM until a note is selected:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到我们的应用程序中，在主窗格和预览窗格中添加`v-if="selectedNote"`条件，以便它们在没有选择笔记时不会添加到DOM中：
+- en: '[PRE62]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'The repetition here is a bit unfortunate, but Vue has us covered. You can surround
+    both elements with a special `<template>` tag that acts like braces in JavaScript:'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里的重复有点不幸，但Vue已经为我们做好了准备。你可以用一个特殊的`<template>`标签将两个元素包围起来，它的作用就像JavaScript中的大括号：
+- en: '[PRE63]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'At this point, the app should look like this:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，应用程序应该看起来像这样：
+- en: '![](assets/7ba0db17-d712-407b-b3fd-5064e0d86990.png)The `<template>` tag will
+    not be present in the DOM; it is more like a ghost element that is useful to regroup
+    real elements together.'
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](assets/7ba0db17-d712-407b-b3fd-5064e0d86990.png)`<template>`标签不会出现在DOM中；它更像是一个幽灵元素，用于将真实元素聚集在一起。'
+- en: Saving the notes with the deep option
+  id: totrans-255
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用深度选项保存笔记
+- en: 'Now, we would like to save and restore the notes between sessions, just like
+    we did for the note content:'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们想要在会话之间保存和恢复笔记，就像我们为笔记内容所做的那样：
+- en: 'Let''s create a new `saveNotes` method. Since we can''t save an array of objects
+    directly into the `localStorage` API (it only accepts strings), we need to convert
+    it to JSON first with `JSON.stringify`:'
+  id: totrans-257
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们创建一个新的`saveNotes`方法。由于我们不能直接将对象数组保存到`localStorage` API中（它只接受字符串），我们需要先用`JSON.stringify`将其转换为JSON格式：
+- en: '[PRE64]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: '[PRE65]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: Like we did for the previous `content` property, we will watch the `notes` data
+    property for changes to trigger the `saveNotes` method.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像我们为之前的`content`属性所做的那样，我们将监视`notes`数据属性的更改来触发`saveNotes`方法。
+- en: 'Add a watcher in the watch option:'
+  id: totrans-261
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在观察选项中添加一个观察者：
+- en: '[PRE66]'
+  id: totrans-262
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'Now, if you try to add a few tasks, you should see something like this in your
+    console:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你尝试添加一些任务，你应该在控制台中看到类似这样的东西：
+- en: '[PRE67]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Change the initialization of the `notes` property in the `data` hook to load
+    the stored list from `localStorage`:'
+  id: totrans-265
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`data`钩子中更改`notes`属性的初始化，从`localStorage`中加载存储的列表：
+- en: '[PRE68]'
+  id: totrans-266
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'The newly added notes should be restored when you refresh the page. However,
+    if you try to change the content of one note, you will notice that it doesn''t
+    trigger the `notes` watcher, and thus, the notes are not saved. This is because,
+    by default, the watchers are only watching the direct changes to the target object--assignment
+    of a simple value, adding, removing, or moving an item in an array. For example,
+    the following operations will be detected by default:'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 刷新页面后，新添加的笔记应该被恢复。然而，如果你尝试更改一个笔记的内容，你会注意到它不会触发`notes`观察者，因此，笔记不会被保存。这是因为，默认情况下，观察者只观察目标对象的直接更改--分配简单值，向数组中添加、删除或移动项目。例如，以下操作将被默认检测到：
+- en: '[PRE69]'
+  id: totrans-268
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'However, all the other operations, like these, will not trigger the watcher:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，所有其他操作，比如这些，都不会触发观察者：
+- en: '[PRE70]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'In this case, you will need to add the `deep` option to the watcher:'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，您需要在观察者中添加`deep`选项：
+- en: '[PRE71]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: That way, Vue will also watch the objects and attributes recursively inside
+    our `notes` array. Now, if you type into the text editor, the notes list should
+    be saved--the `v-model` directive will modify the `content` property of the selected
+    note, and with the `deep` option, the watcher will be triggered.
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样，Vue也将递归地监视我们`notes`数组内部的对象和属性。现在，如果你在文本编辑器中输入，笔记列表应该被保存--`v-model`指令将修改所选笔记的`content`属性，并且使用`deep`选项，观察者将被触发。
+- en: Saving the selection
+  id: totrans-274
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 保存选择
+- en: 'It would be very handy if our app could select the note that was selected last
+    time. We just need to store and load the `selectedId` data property used to store
+    the ID of the selected note. That''s right! Once more, we will use a watcher to
+    trigger the save:'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们的应用程序能够选择上次选择的笔记，那将非常方便。我们只需要存储和加载`selectedId`数据属性，用于存储所选笔记的ID。没错！再一次，我们将使用一个观察者来触发保存：
+- en: '[PRE72]'
+  id: totrans-276
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'Also, we will restore the value when the property is initialized:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们将在属性初始化时恢复值：
+- en: '[PRE73]'
+  id: totrans-278
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: It's ready! Now, when you refresh the app, it should look exactly how you left
+    it, with the same note selected.
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了！现在，当你刷新应用程序时，它应该看起来和你上次离开时一样，选择的笔记也是一样的。
+- en: The note toolbar with extras inside
+  id: totrans-280
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 带有额外功能的笔记工具栏
+- en: 'Some features are still missing from our app, such as deleting or renaming
+    the selected note. We will add these in a new toolbar, just above the note text
+    editor. Go ahead and create a new `div` element with the `toolbar` class ;inside
+    the main section:'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序仍然缺少一些功能，比如删除或重命名所选笔记。我们将在一个新的工具栏中添加这些功能，就在笔记文本编辑器的上方。继续创建一个带有`toolbar`类的新的`div`元素；放在主要部分内部：
+- en: '[PRE74]'
+  id: totrans-282
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: 'We will add three new features in this toolbar:'
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在这个工具栏中添加三个新功能：
+- en: Renaming the note
+  id: totrans-284
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 重命名笔记
+- en: Deleting the note
+  id: totrans-285
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 删除笔记
+- en: Marking the note as favorite
+  id: totrans-286
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将笔记标记为收藏
+- en: Renaming the note
+  id: totrans-287
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 重命名笔记
+- en: This first toolbar feature is also the easiest. It only consists of a text input
+    bound to the `title` property of the selected note with the `v-model` directive.
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个第一个工具栏功能也是最简单的。它只包括一个与所选笔记的`title`属性绑定的文本输入，使用`v-model`指令。
+- en: 'In the toolbar `div` element we just created, add this `input` element with
+    the `v-model` directive and a `placeholder` to inform the user of its function:'
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们刚创建的工具栏`div`元素中，添加这个带有`v-model`指令和`placeholder`的`input`元素，以通知用户其功能：
+- en: '[PRE75]'
+  id: totrans-290
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'You should have a functional rename field above the text editor and see the
+    note name change automatically in the note list as you type:'
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该在文本编辑器上方有一个功能性的重命名字段，并且在输入时，你应该看到笔记名称在笔记列表中自动更改：
+- en: '![](assets/f0942004-709f-461e-bdec-e67bede061fe.png)Since we set the `deep`
+    option on the `notes` watcher, the note list will be saved whenever you change
+    the name of the selected note.'
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](assets/f0942004-709f-461e-bdec-e67bede061fe.png)由于我们在`notes`观察者上设置了`deep`选项，所以每当您更改所选笔记的名称时，笔记列表都将被保存。'
+- en: Deleting the note
+  id: totrans-293
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 删除笔记
+- en: 'This second feature is a bit more complicated because we need a new method:'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个第二个功能有点复杂，因为我们需要一个新的方法：
+- en: 'Add a `button` element after the rename text input:'
+  id: totrans-295
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在重命名文本输入框后添加一个`button`元素：
+- en: '[PRE76]'
+  id: totrans-296
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: As you can see, we listen to the `click` event with the `v-on` shorthand (the
+    `@` character) that calls the `removeNote` method that we will create very soon.
+    Also, we put an appropriate icon as the button content.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，我们使用`v-on`简写（`@`字符）来监听`click`事件，调用我们即将创建的`removeNote`方法。此外，我们将适当的图标放在按钮内容中。
+- en: 'Add a new `removeNote` method that asks the user for confirmation and then
+    removes the currently selected note from the `notes` array using the `splice`
+    standard array method:'
+  id: totrans-298
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加一个新的`removeNote`方法，询问用户确认，然后使用`splice`标准数组方法从`notes`数组中删除当前选择的笔记：
+- en: '[PRE77]'
+  id: totrans-299
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'Now, if you try deleting the current note, you should note that the following
+    three things happen:'
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您尝试删除当前笔记，您应该注意到以下三件事情发生了：
+- en: The note is removed from the note list on the left
+  id: totrans-301
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 笔记从左侧的笔记列表中删除
+- en: The text editor and the preview pane are hidden
+  id: totrans-302
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文本编辑器和预览窗格被隐藏
+- en: The note list has been saved according to the browser console
+  id: totrans-303
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 笔记列表已根据浏览器控制台保存
+- en: Favorite notes
+  id: totrans-304
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 收藏的笔记
+- en: 'The last toolbar feature is the most complex. We want to reorder the note list
+    with the favorite notes first. To do that, each note has a `favorite` Boolean
+    property that will be toggled with a button. In addition to that, a star icon
+    will be displayed in the note list to make it obvious which notes are favorite
+    and which ones are not:'
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后一个工具栏功能是最复杂的。我们希望重新排列笔记列表，使收藏的笔记首先显示出来。为此，每个笔记都有一个`favorite`布尔属性，可以通过按钮切换。除此之外，笔记列表中还会显示一个星形图标，以明确显示哪些笔记是收藏的，哪些不是：
+- en: 'Start by adding another button to the toolbar before the Remove note ;button:'
+  id: totrans-306
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，在删除笔记按钮之前的工具栏中添加另一个按钮：
+- en: '[PRE78]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: Once again, we use the `v-on` shorthand to call the `favoriteNote` method we
+    will create next. We will also display an icon, depending on the value of the
+    `favorite` property of the selected note--a full star if it is `true`, or an outlined
+    one if it is not.
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次使用`v-on`简写来调用我们将在下面创建的`favoriteNote`方法。我们还将根据所选笔记的`favorite`属性的值显示一个图标--如果为`true`，则显示一个实心星形图标，否则显示一个轮廓星形图标。
+- en: 'The final result will look like this:'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终结果将如下所示：
+- en: '![](assets/f4496b4b-718c-4f8b-a564-4bdc0e7441a2.png)'
+  id: totrans-310
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/f4496b4b-718c-4f8b-a564-4bdc0e7441a2.png)'
+- en: On the left, there is a button for when the note is not favorite, and on the
+    right, for when it is, after clicking on it.
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在左侧，有一个按钮，用于当笔记不是收藏时，右侧是当笔记是收藏时，点击它后。
+- en: 'Let''s create a very simple `favoriteNote` method that only invert the value
+    of the `favorite` ;Boolean property on the selected note:'
+  id: totrans-312
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们创建一个非常简单的`favoriteNote`方法，它只是反转所选笔记上的`favorite`布尔属性的值：
+- en: '[PRE79]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: 'We can rewrite this with the XOR operator:'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用异或运算符重写这个：
+- en: '[PRE80]'
+  id: totrans-315
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'This can be nicely shortened, as follows:'
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可以很好地简化，如下所示：
+- en: '[PRE81]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: Now, you should be able to toggle the favorite button, but it doesn't have any
+    real effect yet.
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您应该能够切换收藏按钮，但它目前还没有任何实际效果。
+- en: 'We need to sort the note list in two ways--first, we sort all the notes by
+    their creation date, then we sort them so that the favorite ones are put at the
+    start. Thankfully, we have a very convenient standard array method for that--`sort`.
+    It takes one argument, which is a function with two parameters--two items to be
+    compared. The result is a number, as follows:'
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要以两种方式对笔记列表进行排序--首先，我们按创建日期对所有笔记进行排序，然后对它们进行排序，使收藏的笔记排在最前面。幸运的是，我们有一个非常方便的标准数组方法--`sort`。它接受一个参数，即一个具有两个参数的函数--要比较的两个项目。结果是一个数字，如下所示：
+- en: '`0`, if the two items are in an equivalent position'
+  id: totrans-320
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`0`，如果两个项目处于等价位置'
+- en: '`-1`, if the first item should be before the second one'
+  id: totrans-321
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`-1`，如果第一个项目应该在第二个项目之前'
+- en: '`1`, if the first item should be after the second one'
+  id: totrans-322
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`1`，如果第一个项目应该在第二个项目之后'
+- en: You are not limited to the `1` number, since you can return any arbitrary number,
+    positive or negative. For example, if you return `-42`, it will be the same as
+    `-1`.
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您不仅限于`1`这个数字，因为您可以返回任意的数字，正数或负数。例如，如果您返回`-42`，它将与`-1`相同。
+- en: 'The first sorting operation will be achieved with this simple subtracting code:'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个排序操作将通过这个简单的减法代码实现：
+- en: '[PRE82]'
+  id: totrans-325
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: Here, we compare two notes on their creation date that we stored as a number
+    of milliseconds, thanks to `Date.now()`. We just subtract them so that we get
+    a negative number if `b` was created after `a`, or a positive number if `a` was
+    created after `b`.
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们比较了两个笔记的创建日期，我们将其存储为毫秒数，感谢`Date.now()`。我们只需将它们相减，这样如果`b`在`a`之后创建，我们就会得到一个负数，或者如果`a`在`b`之后创建，我们就会得到一个正数。
+- en: 'The second sort is done with two ternary operations:'
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二次排序是用两个三元操作符完成的：
+- en: '[PRE83]'
+  id: totrans-328
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: If both notes are favorite, we don't change their position. If `a` is favorite,
+    we return a negative number to put it before `b`. In the other case, we return
+    a positive number, so `b` is put before `a` in the list.
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果两个笔记都是收藏的，我们不改变它们的位置。如果`a`是收藏的，我们返回一个负数将其放在`b`之前。在另一种情况下，我们返回一个正数，所以`b`会在列表中放在`a`之前。
+- en: The best way is to create a computed property called `sortedNotes`, which will
+    get updated and cached automatically by Vue.
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最好的方法是创建一个名为`sortedNotes`的计算属性，它将被Vue自动更新和缓存。
+- en: 'Create the new `sortedNotes` computed property:'
+  id: totrans-331
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建新的`sortedNotes`计算属性：
+- en: '[PRE84]'
+  id: totrans-332
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: Since `sort` modifies the source array directly, we should create a copy of
+    it with the `slice` method. This will prevent unwanted triggers of the `notes`
+    watcher.
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于`sort`直接修改源数组，我们应该使用`slice`方法创建一个副本。这将防止`notes`观察者的不必要触发。
+- en: 'Now, we can simply swap `notes` with `sortedNotes` in the `v-for` directive
+    used to display the list--it will now sort the notes automatically as we expected:'
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以在用于显示列表的`v-for`指令中简单地将`notes`替换为`sortedNotes`--它现在会自动按我们的预期对笔记进行排序：
+- en: '[PRE85]'
+  id: totrans-335
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: 'We can also use the `v-if` directive we introduced earlier to display a star
+    icon only if the note is favorite:'
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以使用之前介绍的`v-if`指令，只有在笔记被收藏时才显示星标图标：
+- en: '[PRE86]'
+  id: totrans-337
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'Modify the note list with the preceding changes:'
+  id: totrans-338
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用上述更改修改笔记列表：
+- en: '[PRE87]'
+  id: totrans-339
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'The app should now look as follows:'
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用程序现在应该如下所示：
+- en: '![](assets/30ce8ce9-6cf9-45de-9ca1-4c05c0b7af68.png)'
+  id: totrans-341
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/30ce8ce9-6cf9-45de-9ca1-4c05c0b7af68.png)'
+- en: The status bar
+  id: totrans-342
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 状态栏
+- en: The last section we will add to our app is a status bar, displayed at the bottom
+    of the text editor, with some useful info--the date the note was created, with
+    the lines, words, and characters count.
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将添加到应用程序的最后一个部分是状态栏，在文本编辑器底部显示一些有用的信息--笔记创建日期，以及行数、单词数和字符数。
+- en: 'Create a new `div` element with the `toolbar` and `status-bar` classes and
+    place it after the `textarea` element:'
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个带有`toolbar`和`status-bar`类的新`div`元素，并将其放在`textarea`元素之后：
+- en: '[PRE88]'
+  id: totrans-345
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: Created date with a filter
+  id: totrans-346
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 带有过滤器的创建日期
+- en: We will now display the creation date of the selected note in the status bar.
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将在状态栏中显示所选笔记的创建日期。
+- en: 'In the status bar `div` element, create a new `span` element as follows:'
+  id: totrans-348
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在状态栏`div`元素中，创建一个新的`span`元素如下：
+- en: '[PRE89]'
+  id: totrans-349
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: 'Now, if you look at the result displayed in your browser, you should see the
+    number of milliseconds representing the date the note was created:'
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你在浏览器中查看结果，你应该看到表示笔记创建日期的毫秒数：
+- en: '![](assets/58a60c05-cdb9-4c97-951b-aa0a0b4aa28e.png)'
+  id: totrans-351
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/58a60c05-cdb9-4c97-951b-aa0a0b4aa28e.png)'
+- en: This is not user-friendly at all!
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一点一点也不用户友好！
+- en: We need a new library to help us format the date into a more readable result--`momentjs`,
+    which is a very popular time and date manipulation library.
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要一个新的库来帮助我们将日期格式化为更易读的结果--`momentjs`，这是一个非常流行的时间和日期处理库。
+- en: 'Include it in the page like we did for the `marked` library:'
+  id: totrans-354
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 像我们为`marked`库所做的那样将其包含在页面中：
+- en: '[PRE90]'
+  id: totrans-355
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: 'To format a date, we will first create a `moment` object, and then we will
+    use the `format` method like in the following:'
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要格式化日期，我们首先会创建一个`moment`对象，然后我们将使用`format`方法，就像下面这样：
+- en: '[PRE91]'
+  id: totrans-357
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: Now is the time to introduce one last feature of Vue for this chapter--the **filters**.
+    These are functions that are used inside templates to easily process data before
+    it is displayed or passed to an attribute. For example, we could have an uppercase
+    filter to transform a string into uppercase letters or a currency filter to convert
+    currencies on the fly in a template. The function takes one argument--the value
+    to be processed by the filter. It returns the processed value.
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是介绍本章最后一个Vue特性的时候--**过滤器**。这些是在模板内部使用的函数，用于在显示或传递给属性之前轻松处理数据。例如，我们可以有一个大写过滤器，将字符串转换为大写字母，或者一个货币过滤器，在模板中实时转换货币。该函数接受一个参数--要由过滤器处理的值。它返回处理后的值。
+- en: So, we will create a new `date` filter that will take a date time and will format
+    it to a human-readable format.
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们将创建一个新的`date`过滤器，它将接受一个日期时间并将其格式化为人类可读的格式。
+- en: 'Register this filter with the `Vue.filter` global method (outside of the Vue
+    instance creation code, for example, at the beginning of the file):'
+  id: totrans-360
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`Vue.filter`全局方法注册此过滤器（在Vue实例创建代码之外，例如在文件开头）：
+- en: '[PRE92]'
+  id: totrans-361
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: 'Now, we can use this `date` filter in our template to display dates. The syntax
+    is the JavaScript expression like we used before, followed by a pipe operator
+    and the name of the filter:'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以在模板中使用这个`date`过滤器来显示日期。语法是JavaScript表达式，后跟一个管道运算符和过滤器的名称，就像我们之前使用的那样：
+- en: '[PRE93]'
+  id: totrans-363
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: 'If `someDate` contains a date, it will output something like this in the DOM,
+    respecting the `DD/MM/YY, HH:mm` format we defined before:'
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果`someDate`包含一个日期，它将在DOM中输出类似于我们之前定义的`DD/MM/YY, HH:mm`格式的内容：
+- en: '[PRE94]'
+  id: totrans-365
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: 'Change the stat template into this:'
+  id: totrans-366
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将stat模板更改为这样：
+- en: '[PRE95]'
+  id: totrans-367
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: 'We should have the date nicely formatted and displayed in our app:'
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们应该在我们的应用程序中有一个格式良好的日期显示：
+- en: '![](assets/e5766d56-229f-4660-b907-65a8adcff067.png)'
+  id: totrans-369
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/e5766d56-229f-4660-b907-65a8adcff067.png)'
+- en: Text stats
+  id: totrans-370
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 文本统计
+- en: 'The last stats we can display are more "writer-oriented"--the lines, words,
+    and characters count:'
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以显示的最后统计数据更多地面向“写作者”--行数、单词数和字符数：
+- en: 'Let''s create three new computed properties for each counter, with some Regular
+    Expressions to get the job done:'
+  id: totrans-372
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们为每个计数器创建三个新的计算属性，使用一些正则表达式来完成工作：
+- en: '[PRE96]'
+  id: totrans-373
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: Here, we added some conditions to prevent the code from running if no note is
+    currently selected. This will avoid crashes if you use the Vue devtools to inspect
+    the app in this case, because it will try to compute all the properties.
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们添加了一些条件，以防止代码在当前未选择任何笔记时运行。这将避免在这种情况下使用Vue devtools检查应用程序时出现崩溃，因为它将尝试计算所有属性。
+- en: 'You can now add three new stat `span` elements with the corresponding computed
+    properties:'
+  id: totrans-375
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，您可以添加三个新的stat `span`元素，带有相应的计算属性：
+- en: '[PRE97]'
+  id: totrans-376
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: 'The final status bar should look like this:'
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终的状态栏应该是这样的：
+- en: '![](assets/54df01f4-25c9-4868-aac9-ad1edc8658d6.png)'
+  id: totrans-378
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/54df01f4-25c9-4868-aac9-ad1edc8658d6.png)'
+- en: Summary
+  id: totrans-379
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we created our first real Vue app, with several useful functions,
+    like a real-time markdown preview, a note list, and the local persistence of the
+    notes. We introduced different Vue features, such as the computed properties that
+    are automatically updated and cached as needed, the methods to reuse logic inside
+    functions, the watchers to trigger code when properties change, lifecycle hooks
+    to execute code when the Vue instance is created, and the filters to easily process
+    expressions in our template. We also used a lot of Vue directives inside our template,
+    such as ;`v-model` to bind form inputs, `v-html` to display dynamic HTML from
+    our JavaScript properties, `v-for` to repeat elements and display lists, `v-on`
+    (or `@`) to listen to events, `v-bind` (or `:`) to dynamically bind HTML attributes
+    to JavaScript expressions or to apply CSS classes dynamically, and `v-if` to include
+    or not template parts, depending on JavaScript expressions. We saw all of these
+    features come together to build a fully functional web application, with Vue superpower
+    helping us to get the work done without getting in the way.
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们创建了我们的第一个真正的Vue应用程序，具有几个有用的功能，如实时的Markdown预览，笔记列表以及笔记的本地持久化。我们介绍了不同的Vue功能，比如计算属性，它们会根据需要自动更新和缓存，方法可以在函数内重复使用逻辑，观察者可以在属性更改时触发代码，生命周期钩子可以在Vue实例创建时执行代码，过滤器可以轻松处理模板中的表达式。我们还在模板中使用了许多Vue指令，比如`v-model`来绑定表单输入，`v-html`来显示来自JavaScript属性的动态HTML，`v-for`来重复元素并显示列表，`v-on`（或`@`）来监听事件，`v-bind`（或`:`）来动态绑定HTML属性到JavaScript表达式或动态应用CSS类，以及`v-if`来根据JavaScript表达式包含或不包含模板部分。我们看到所有这些功能共同构建了一个完全功能的Web应用程序，Vue的超能力帮助我们完成工作而不会妨碍。
+- en: In the next chapter, we will start a new project--a card-based browser game.
+    We will introduce some new Vue features and will keep reusing all we know to continue
+    building better and prettier web apps.
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将开始一个新项目——基于卡片的浏览器游戏。我们将介绍一些新的Vue功能，并将继续重复利用我们所知道的一切，以继续构建更好、更漂亮的Web应用程序。

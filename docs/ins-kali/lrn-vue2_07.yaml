@@ -1,0 +1,1750 @@
+- en: Chapter 7. Testing – Time to Test What We Have Done So Far!
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第7章。测试-是时候测试我们到目前为止所做的了！
+- en: In the previous chapter, you learned how to use and create Vue plugins. We used
+    the existing `resource` plugin for Vue and created our own `NoiseGenerator` plugin.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，您学会了如何使用和创建Vue插件。我们使用现有的`resource`插件为Vue创建了自己的`NoiseGenerator`插件。
+- en: 'In this chapter, we will ensure the quality of both the Pomodoro and shopping
+    list applications. We will test these applications applying different testing
+    techniques. First, we will perform a classic unit test on Vue components and on
+    Vuex-related code such as actions, mutations, and getters. After that, we will
+    learn how to perform end-to-end testing using Nightwatch. So, in this chapter,
+    we will do the following:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将确保番茄钟和购物清单应用程序的质量。我们将使用不同的测试技术来测试这些应用程序。首先，我们将对Vue组件和与Vuex相关的代码（如actions、mutations和getters）执行经典的单元测试。之后，我们将学习如何使用Nightwatch执行端到端测试。因此，在本章中，我们将做以下事情：
+- en: Talk about the importance of unit and end-to-end tests
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 谈论单元测试和端到端测试的重要性
+- en: Implement unit tests for the Pomodoro and shopping list applications
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为番茄钟和购物清单应用程序实现单元测试
+- en: Learn how to mock server responses in unit tests
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 学习如何在单元测试中模拟服务器响应
+- en: Implement end-to-end tests for both applications using Nightwatch
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Nightwatch为两个应用程序实现端到端测试
+- en: Why unit tests?
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为什么单元测试？
+- en: Before we start writing unit tests, let's try to understand what we're trying
+    to achieve by writing them. Why is unit testing so important? Sometimes when I
+    write my tests, the only thing I can think about is my code coverage; I want to
+    achieve a level of 100%.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开始编写单元测试之前，让我们试着理解我们试图通过编写它们来实现什么。为什么单元测试如此重要？有时当我写我的测试时，我唯一能想到的就是我的代码覆盖率；我想要达到100%的水平。
+- en: 'Code coverage is a very important metric and helps a lot to understand the
+    code flow and what needs to be tested. But it is not a metric of unit test quality.
+    This is not a metric of a good code quality. You can have your code 100% covered
+    just because you call all your functions in your testing code, but if your assertions
+    are wrong, the code might be wrong as well. Writing good unit tests is an art
+    that requires time and patience. But when your unit tests are good enough and
+    when you are concentrating on making good assertions, with regard to corner cases
+    and branch coverage, they provide the following:'
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码覆盖率是一个非常重要的指标，对于理解代码流程和需要测试的内容有很大帮助。但这并不是单元测试质量的指标。这不是代码质量好坏的指标。你可以让你的代码100%覆盖，只是因为你在测试代码中调用了所有的函数，但如果你的断言是错误的，那么代码也可能是错误的。编写良好的单元测试是一门需要时间和耐心的艺术。但是当你的单元测试足够好，当你专注于做出良好的断言时，关于边界情况和分支覆盖，它们提供以下内容：
+- en: Help us to identify failures in algorithms and logic
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 帮助我们识别算法和逻辑中的失败
+- en: Help us to improve the code quality
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 帮助我们提高代码质量
+- en: Make us write code that is easy to test
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 让我们编写易于测试的代码
+- en: Prevent future changes from breaking the functionality
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 防止未来的更改破坏功能
+- en: Help us to have more predictable deadlines and estimations
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 帮助我们拥有更可预测的截止日期和估算
+- en: Code that is easy to cover with unit tests is at the same time code that is
+    easy to read. Code that is easy to read is less error-prone and more maintainable.
+    Maintainability is one of the main pillars of an application's quality.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 易于进行单元测试覆盖的代码同时也是易于阅读的代码。易于阅读的代码更不容易出错，更易于维护。可维护性是应用程序质量的主要支柱之一。
+- en: Note
+  id: totrans-16
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Check more about unit testing in the presentation at [https://chudaol.github.io/presentation-unit-testing](https://chudaol.github.io/presentation-unit-testing)
+    .
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[https://chudaol.github.io/presentation-unit-testing](https://chudaol.github.io/presentation-unit-testing)的演示中了解更多关于单元测试的内容。
+- en: Let's write some unit tests for our applications.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们为我们的应用程序编写一些单元测试。
+- en: We will use the Karma test runner, Mocha test framework, Chai expectations library,
+    and Sinon for mocks.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用Karma测试运行器，Mocha测试框架，Chai期望库和Sinon进行模拟。
+- en: 'For more information about these tools, refer to the following:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关这些工具的更多信息，请参考以下内容：
+- en: '**Karma**: [http://karma-runner.github.io/](http://karma-runner.github.io/)'
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Karma**: [http://karma-runner.github.io/](http://karma-runner.github.io/)'
+- en: '**Mocha**: [https://mochajs.org](https://mochajs.org)'
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Mocha**: [https://mochajs.org](https://mochajs.org)'
+- en: '**Chaijs**: [http://chaijs.com/](http://chaijs.com/)'
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Chaijs**: [http://chaijs.com/](http://chaijs.com/)'
+- en: '**Sinon**: [http://sinonjs.org/](http://sinonjs.org/)'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Sinon**: [http://sinonjs.org/](http://sinonjs.org/)'
+- en: 'If we hadn''t bootstrapped our application using `vue-cli webpack` scaffolding,
+    we would have to install all these tools via `npm`. But in our case, we don''t
+    need this installation. Check your `package.json` file and you can see that all
+    these things are already there:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们没有使用`vue-cli webpack`进行应用程序的引导，我们将不得不通过`npm`安装所有这些工具。但在我们的情况下，我们不需要进行这种安装。检查你的`package.json`文件，你会发现所有这些东西已经在那里：
+- en: '[PRE0]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: You certainly know how simple it is to write unit tests for simple functions.
+    It's almost like speaking human language. It (this function) should return *X*
+    if the input is *Y*. I expect it to be *X*.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你肯定知道为简单函数编写单元测试有多简单。这几乎就像说人类语言一样。它（这个函数）如果输入是*Y*，应该返回*X*。我期望它是*X*。
+- en: 'So if we have a module that exports, let''s say, a function that returns the
+    sum of two arguments, the unit test for this function must call the function with
+    different arguments and expect some output. So, let''s assume we have a function
+    such as the following:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，如果我们有一个模块导出了一个返回两个参数之和的函数，那么这个函数的单元测试必须使用不同的参数调用该函数并期望一些输出。因此，让我们假设我们有一个如下的函数：
+- en: '[PRE1]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Then our unit test might look like the following:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们的单元测试可能如下所示：
+- en: '[PRE2]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: We should never be shy when we think about the possible inputs to functions
+    that are being unit tested. Empty inputs, negative inputs, string inputs, everything
+    counts! Have you seen this famous tweet ( [https://twitter.com/sempf/status/514473420277694465](https://twitter.com/sempf/status/514473420277694465)
+    )?
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们考虑对正在进行单元测试的函数的可能输入时，我们绝不应该害羞。空输入，负输入，字符串输入，一切都重要！你看过这条著名的推文吗（[https://twitter.com/sempf/status/514473420277694465](https://twitter.com/sempf/status/514473420277694465)）？
+- en: '![Why unit tests?](../Images/image00303.jpeg)'
+  id: totrans-33
+  prefs: []
+  type: TYPE_IMG
+  zh: 为什么要进行单元测试？
+- en: Viral tweet about QA Engineer's mindset
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于QA工程师思维方式的病毒推文
+- en: Think about all the possible inputs and adequate outputs. Express this in expectations
+    and assertions. Run the tests. See what is failing. Fix your code.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑所有可能的输入和适当的输出。用期望和断言来表达这一点。运行测试。看看哪里出了问题。修复你的代码。
+- en: Unit tests for Vue application
+  id: totrans-36
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vue应用的单元测试
+- en: 'First, let''s check on some particularities of unit testing our Vue application
+    and its components. In order to be able to write tests for the component instance,
+    first of all, it should be instantiated! Quite logical, right? The thing is, how
+    do we instantiate the Vue component so that its methods become accessible and
+    easily testable? To test basic assertions of the initial state of the component,
+    you must just import them and assert their properties. If you want to test dynamic
+    properties—things that change once the component is bound to DOM—you must do just
+    the following three things:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们检查一些关于单元测试我们的Vue应用程序及其组件的特殊情况。为了能够为组件实例编写测试，首先必须实例化它！非常合乎逻辑，对吧？问题是，我们如何实例化Vue组件，以便其方法变得可访问和易于测试？要测试组件初始状态的基本断言，你只需导入它们并断言它们的属性。如果你想测试动态属性——一旦组件绑定到DOM后会发生变化的属性——你只需做以下三件事：
+- en: Import a component.
+  id: totrans-38
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导入一个组件。
+- en: Instantiate it by passing it to the `Vue` function.
+  id: totrans-39
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过将其传递给`Vue`函数来实例化它。
+- en: Mount it.
+  id: totrans-40
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 挂载它。
+- en: Tip
+  id: totrans-41
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: When the instance is bound to the physical DOM, once instantiated, the compilation
+    is started immediately. In our case, we are not binding the instance to any real
+    physical DOM element, and thus we have to explicitly make it compile it by invoking
+    manually the mount method (`$mount`).
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当实例绑定到物理DOM时，一旦实例化，编译立即开始。在我们的情况下，我们没有将实例绑定到任何真正的物理DOM元素，因此我们必须通过手动调用`mount`方法（`$mount`）来显式地使其编译。
+- en: Now you can use the created instance and access its methods. In pseudo-code,
+    it looks something like the following
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以使用创建的实例并访问它的方法。在伪代码中，它看起来像下面这样
+- en: '[PRE3]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Now we can access all `vm` instance methods and test them. The rest of the things,
+    such as `data`, `props`, and so on we can just fake. There is no problem with
+    faking things because it offers us the possibility of trying all sorts of input
+    easily and testing all the viable outputs for each of them.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以访问所有`vm`实例方法并测试它们。其余的东西，比如`data`，`props`等等，我们可以伪造。伪造东西没有问题，因为它为我们提供了轻松尝试各种输入并测试每种输入的所有可行输出的可能性。
+- en: 'If you want to have a more real scenario while testing components that use
+    `props`, which come bound to the component by its parent, or access to the `vuex`
+    store, and so on, you can use the `ref` attribute to bind the component to the
+    `Vue` instance. This `Vue` instance, in its turn, instantiates the store and data
+    and binds the data items to the component in a usual way. After that, you access
+    the component instance by using the `$refs` Vue property. This kind of binding
+    will look like the following:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想在测试使用`props`的组件时拥有更真实的场景，这些`props`是由其父组件绑定到组件的，或者访问`vuex`存储等等，你可以使用`ref`属性将组件绑定到`Vue`实例。这个`Vue`实例，反过来，实例化存储和数据，并以通常的方式将数据项绑定到组件。之后，你可以通过使用`$refs`
+    Vue属性访问组件实例。这种绑定看起来像下面这样：
+- en: '[PRE4]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Now you can test all the methods of `myComponent` without being worried about
+    overriding its `props`, `methods`, and other instance-related things. This is
+    a good part of this approach; however, as you can see, it is not the easiest setup
+    and you should think about everything. For example, if your component calls some
+    store's action that calls some API's methods, you should be ready to have to fake
+    the server responses.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以测试`myComponent`的所有方法，而不用担心覆盖它的`props`，`methods`和其他实例相关的东西。这是这种方法的一个好处；然而，正如你所看到的，这并不是最容易的设置，你应该考虑一切。例如，如果你的组件调用了一些存储的动作，这些动作调用了一些API的方法，你应该准备好伪造服务器的响应。
+- en: I personally like to keep things as simple as possible, fake all the data inputs,
+    and concentrate on testing the functions' possible outputs and all the possible
+    edge cases. But it is just my personal point of view, and also, we should try
+    everything in our lives, so in this chapter, we will try different approaches.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我个人喜欢尽可能简单地保持事情，伪造所有的数据输入，并集中在测试函数的可能输出和所有可能的边缘情况。但这只是我的个人观点，而且我们应该尝试生活中的一切，所以在这一章中，我们将尝试不同的方法。
+- en: Writing unit tests for the shopping list application
+  id: totrans-50
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 编写购物清单应用的单元测试
+- en: 'Before starting the actual writing of our unit tests, let''s establish some
+    rules. For each of our `.js` or `.vue` files, there will exist a corresponding
+    test spec file, which will have the same name and a `.spec.js` extension. The
+    structure of these specs will follow this approach:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在实际编写单元测试之前，让我们建立一些规则。对于我们的每个`.js`或`.vue`文件，都会存在一个相应的测试规范文件，它将具有相同的名称和一个`.spec.js`扩展名。这些规范的结构将遵循这种方法：
+- en: It will describe the file we are testing
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它将描述我们正在测试的文件
+- en: It will have a `describe` method for each of the methods that is being tested
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它将为正在测试的每个方法有一个`describe`方法
+- en: It will have an `it` method for each of the cases we are describing
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它将为我们描述的每种情况都有一个`it`方法
+- en: 'So, if we had a `myBeautifulThing.js` file and spec for it, it might look like
+    the following:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，如果我们有一个`myBeautifulThing.js`文件和它的规范，它可能看起来像下面这样：
+- en: '[PRE5]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Let's start by covering with unit tests all the things that are inside the `vuex`
+    folder.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从覆盖`vuex`文件夹中的所有内容开始进行单元测试。
+- en: Testing actions, getters, and mutations
+  id: totrans-58
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 测试操作、getter和mutations
+- en: 'For this section, use the code inside the [chapter7/shopping-list](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/shopping-list)
+    folder. Do not forget to run the `npm install` command. Note that there are two
+    new mutations: `ADD_SHOPPING_LIST` and `DELETE_SHOPPING_LIST`. These mutations
+    add new shopping list to the list and remove the list by its ID. They are used
+    inside the `createShoppingList` and `deleteShoppingList` actions inside the promise
+    failure handlers:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，请使用[chapter7/shopping-list](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/shopping-list)文件夹中的代码。不要忘记运行`npm
+    install`命令。请注意，有两个新的mutations：`ADD_SHOPPING_LIST`和`DELETE_SHOPPING_LIST`。这些mutations会将新的购物清单添加到列表中，并通过其ID删除列表。它们在`createShoppingList`和`deleteShoppingList`操作中被用于promise失败处理程序内：
+- en: '[PRE6]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Thus, even if our backend server is down, we still are not losing this functionality.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，即使我们的后端服务器宕机，我们仍然不会失去这个功能。
+- en: If you check your project's structure, you will see that there is already an
+    existing directory named `test`. Inside this directory, there are two directories,
+    `unit` and `e2e`. For now, we should go to the `unit` folder. Here, you will see
+    another directory called `specs`. This is where all our unit test specifications
+    will reside. Let's start by creating a directory called `vuex` inside `specs`.
+    Here is where all our specs for Vuex-related JavaScript files will live.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你再次检查你的项目结构，你会看到已经存在一个名为`test`的现有目录。在这个目录中，有两个目录，`unit`和`e2e`。现在，我们应该进入`unit`文件夹。在这里，你会看到另一个名为`specs`的目录。这是我们所有单元测试规范的所在地。让我们首先在`specs`内创建一个名为`vuex`的目录。这是我们所有与Vuex相关的JavaScript文件的规范所在地。
+- en: Let's start by testing the `mutations.js` method.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从测试`mutations.js`方法开始。
+- en: Create a `mutations.spec.js` file. In this file, we should import `mutations.js`
+    and mutation types so that we can easily invoke mutations. Have a look at mutations
+    declared in `mutations.js`. All of them receive `state` and some other parameters.
+    Let's also create a fake `state` object with the `shoppinglist` array inside it
+    so we can use it in our tests.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个`mutations.spec.js`文件。在这个文件中，我们应该导入`mutations.js`和mutation类型，以便我们可以轻松地调用mutations。看一下`mutations.js`中声明的mutations。它们都接收`state`和一些其他参数。让我们还创建一个带有`shoppinglist`数组的假`state`对象，这样我们就可以在我们的测试中使用它。
+- en: Let's also reset it before each test to an empty array.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在每次测试之前，让我们也将其重置为空数组。
+- en: 'So, after all the preparations, the bootstrapped spec for `mutations.js` looks
+    like the following:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在所有准备工作完成后，`mutations.js`的引导规范如下：
+- en: '[PRE7]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Let's now add tests for the `ADD_SHOPPING_LIST` mutation.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们为`ADD_SHOPPING_LIST`mutation添加测试。
+- en: 'Check again what it is doing:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次检查它在做什么：
+- en: '[PRE8]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: This mutation just pushes the received object to the `shoppinglists` array.
+    Pretty straightforward and easy to test.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个mutation只是将接收到的对象推送到`shoppinglists`数组中。非常直接和容易测试。
+- en: 'Start by creating a `describe` statement with the name of the function:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先创建一个带有函数名称的`describe`语句：
+- en: '[PRE9]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Now, inside this `describe` callback, we can add `it` statements with the needed
+    assertions. Let''s think what should happen when we add a new shopping list to
+    the `shoppinglists` array. First of all, the array''s length will increase, and
+    it will also contain the newly added shopping list object. This is the most basic
+    thing to test. Our `it` function with the needed assertions will look like the
+    following:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在这个`describe`回调中，我们可以添加带有所需断言的`it`语句。让我们想一想当我们将新的购物清单添加到`shoppinglists`数组时会发生什么。首先，数组的长度会增加，它还将包含新添加的购物清单对象。这是最基本的测试。我们的`it`函数与所需的断言将如下所示：
+- en: '[PRE10]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'After creating this function, the whole spec''s code should look like the following:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建完这个函数后，整个规范的代码应该如下所示：
+- en: '[PRE11]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Let''s run the tests! Open the console in the project''s directory and run
+    the following:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们运行测试！在项目目录中打开控制台，运行以下命令：
+- en: '[PRE12]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'You should see the following output:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该看到以下输出：
+- en: '![Testing actions, getters, and mutations](../Images/image00304.jpeg)'
+  id: totrans-81
+  prefs: []
+  type: TYPE_IMG
+  zh: '![测试操作、获取器和变异](../Images/image00304.jpeg)'
+- en: The output of running our test
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行我们的测试的输出
+- en: Remember the joke about a QA engineer? We can test the `add_shopping_list` function
+    for all possible inputs. What should happen, for example, if we call it without
+    passing any object? In theory, it should not add it to the shopping list array,
+    right? Let's test it. Create a new `it` statement and try to call the function
+    without the second parameter. Assert for an empty list.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还记得关于QA工程师的笑话吗？我们可以测试`add_shopping_list`函数的所有可能输入。例如，如果我们在不传递任何对象的情况下调用它，会发生什么？理论上，它不应该添加到购物清单数组中，对吧？让我们测试一下。创建一个新的`it`语句，尝试在不传递第二个参数的情况下调用该函数。断言为空列表。
+- en: 'This test will look something like the following:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个测试将看起来像下面这样：
+- en: '[PRE13]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Run the tests with the `npm run unit` command. Oh, snap! It failed! The error
+    is as follows:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`npm run unit`命令运行测试。哦，糟糕！它失败了！错误如下：
+- en: '[PRE14]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Why? Have a look at the corresponding mutation. It just pushes the received
+    parameter to the array without any checks. That''s why we are able to add any
+    garbage, any undefined, and any other inappropriate value! Do you remember when
+    I said that writing good unit tests helps us to create less error-prone code?
+    This is the case. Now we realize that we should probably run some checks before
+    pushing the new item to the array. Let''s add the check that the received item
+    is an object. Open the `ADD_SHOPPING_LIST` mutation in the `mutations.js` file
+    and rewrite it as follows:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么？看看相应的变异。它只是将接收到的参数推送到数组中，而没有任何检查。这就是为什么我们能够添加任何垃圾、任何未定义和任何其他不合适的值！你还记得我说过编写良好的单元测试可以帮助我们创建更少容易出错的代码吗？现在我们意识到在将新项目推送到数组之前，我们应该可能运行一些检查。让我们添加检查，确保接收到的项目是一个对象。打开`mutations.js`文件中的`ADD_SHOPPING_LIST`变异，并将其重写如下：
+- en: '[PRE15]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Run the tests now. They are all passing!
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在运行测试。它们都通过了！
+- en: Of course, we could be even more precise. We could check and test for empty
+    objects and we could also run some validations for this object to contain properties
+    such as `id`, `items`, and `title`. I will leave it to you as a small exercise.
+    Try to think about all possible inputs and all possible outputs, write all the
+    possible assertions, and make the code to correspond to them.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们可以更加精确。我们可以检查和测试空对象，还可以对该对象进行一些验证，以确保包含`id`、`items`和`title`等属性。我会把这个留给你作为一个小练习。尝试考虑所有可能的输入和所有可能的输出，编写所有可能的断言，并使代码与它们相对应。
+- en: Good test criteria
+  id: totrans-92
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 良好的测试标准
+- en: 'A good unit test is one that would fail when you change your code. Imagine,
+    for example, that we decide to assign a default title to the new shopping list
+    before pushing it to the array. So, the mutation would look like the following:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个好的单元测试是当你改变你的代码时会失败的测试。想象一下，例如，我们决定在将新的购物清单推送到数组之前为其分配一个默认标题。因此，变异看起来像下面这样：
+- en: '[PRE16]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'If you run the tests, they will fail:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你运行测试，它们会失败：
+- en: '![Good test criteria](../Images/image00305.jpeg)'
+  id: totrans-96
+  prefs: []
+  type: TYPE_IMG
+  zh: '![良好的测试标准](../Images/image00305.jpeg)'
+- en: Unit test fails when the code changes
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当代码发生变化时，单元测试失败
+- en: And this is very good. When your tests fail after the changes in the code, the
+    possible outcome is that you fix the test because the code is performing the intended
+    behavior, or you fix your code.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这非常好。当你的代码发生变化后测试失败，可能的结果是你修复测试，因为代码执行了预期的行为，或者你修复你的代码。
+- en: Code coverage
+  id: totrans-99
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 代码覆盖率
+- en: 'I am sure that you have noticed some test statistics in the console output
+    after running the tests. These statistics display different types of coverage
+    that our tests achieved at the time of running. Right now, it looks like the following:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我相信你在运行测试后的控制台输出中已经注意到了一些测试统计信息。这些统计数据显示了我们在运行时测试所达到的不同类型的覆盖率。现在看起来是这样的：
+- en: '![Code coverage](../Images/image00306.jpeg)'
+  id: totrans-101
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码覆盖率](../Images/image00306.jpeg)'
+- en: Code coverage of mutations.js after writing two tests for the ADD_SHOPPING_LIST
+    mutation
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在为ADD_SHOPPING_LIST mutation编写两个测试后的mutations.js的代码覆盖率
+- en: Do you remember when I said that good code coverage doesn't mean that our tests
+    and code are perfect? We actually have somewhat nice statements, branches, and
+    lines coverage, but we still just tested only one function of only one file, and
+    we haven't even covered all possible inputs of this function. But numbers do not
+    lie. We have almost 100% branches coverage because we almost do not have branches
+    in our code.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你还记得我说过良好的代码覆盖率并不意味着我们的测试和代码是完美的吗？我们实际上有相当不错的语句、分支和行覆盖率，但我们只测试了一个文件的一个函数，甚至没有覆盖这个函数的所有可能输入。但数字不会说谎。我们几乎有100%的分支覆盖率，因为我们的代码几乎没有分支。
+- en: 'If you want to see a more detailed report, just open the `index.html` file
+    from the `test/unit/coverage/lcov-report` directory in your browser. It will give
+    you a complete and full picture of your code and what exactly is covered and how.
+    Currently, it looks like the following:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想看到更详细的报告，只需在浏览器中打开`test/unit/coverage/lcov-report`目录下的`index.html`文件。它会给你一个完整的代码图片，显示出你的代码覆盖了什么，以及覆盖了什么。目前看起来是这样的：
+- en: '![Code coverage](../Images/image00307.jpeg)'
+  id: totrans-105
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码覆盖率](../Images/image00307.jpeg)'
+- en: The whole picture of our codebase coverage
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们代码库覆盖率的整体图片
+- en: 'You can drill down to the folders, open the files, and check how exactly our
+    code is covered. Let''s check `mutations.js`:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以深入到文件夹中，打开文件，检查我们的代码是如何被覆盖的。让我们来检查`mutations.js`：
+- en: '![Code coverage](../Images/image00308.jpeg)'
+  id: totrans-108
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码覆盖率](../Images/image00308.jpeg)'
+- en: Coverage report for actions.js show exactly which code was covered and which
+    was not
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: actions.js的覆盖率报告准确显示了哪些代码被覆盖了，哪些没有被覆盖
+- en: 'Now you see what still has to be tested. Do you want to see how it reports
+    the `if…else` missing branch coverage? Just skip our second test:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你知道还有什么需要测试。你想看看它如何报告`if…else`缺失的分支覆盖率吗？只需跳过我们的第二个测试：
+- en: '[PRE17]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Run the tests and refresh the report for `actions.js`. You will see an **`E`**
+    icon on the left of the `if` statement:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行测试并刷新`actions.js`的报告。你会在`if`语句左边看到一个**`E`**图标：
+- en: '![Code coverage](../Images/image00309.jpeg)'
+  id: totrans-113
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码覆盖率](../Images/image00309.jpeg)'
+- en: The E icon near the if statement indicates that the else branch was not covered
+    by tests
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在if语句附近的E图标表示else分支没有被测试覆盖
+- en: 'This indicates that we haven''t covered the `else` branch. If you skip the
+    first test and leave the one with the empty object, you will see the **`I`** icon
+    that is indicating that we have skipped the `if` branch:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这表明我们没有覆盖`else`分支。如果你跳过第一个测试，只留下一个空对象的测试，你会看到**`I`**图标，表示我们跳过了`if`分支：
+- en: '![Code coverage](../Images/image00310.jpeg)'
+  id: totrans-116
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码覆盖率](../Images/image00310.jpeg)'
+- en: The I icon near the if statement indicates that the if branch was not covered
+    by tests
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在if语句附近的I图标表示if分支没有被测试覆盖
+- en: 'Write tests for the rest of the mutations. Perform at least the following checks:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为其余的变异编写测试。至少执行以下检查：
+- en: For the `DELETE_SHOPPING_LIST` mutation, check that the list with the ID we
+    pass is actually deleted if it existed before in the list, and that calling the
+    mutation with the ID that doesn't exist in the list will not cause any change
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于`DELETE_SHOPPING_LIST`变异，检查我们传递的ID对应的列表是否实际上被删除，如果它之前存在于列表中，并且调用具有在列表中不存在的ID的变异不会引起任何改变
+- en: For the `POPULATE_SHOPPING_LISTS` mutation, check that the `shoppinglist` array
+    is overridden with the array we pass when call this mutation
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于`POPULATE_SHOPPING_LISTS`变异，检查当我们调用这个变异时，`shoppinglist`数组是否被我们传递的数组覆盖
+- en: For the `CHANGE_TITLE` mutation, check that when we pass the new title and the
+    ID, exactly this object's title is changed
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于`CHANGE_TITLE`变异，检查当我们传递新标题和ID时，确切地改变了这个对象的标题
+- en: In the end, your `mutation.spec.js` file will probably look like the gist at
+    [https://gist.github.com/chudaol/befd9fc5701ff72dff7fb68ef1c7f06a](https://gist.github.com/chudaol/befd9fc5701ff72dff7fb68ef1c7f06a)
+    .
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，你的`mutation.spec.js`文件可能看起来像这个[gist](https://gist.github.com/chudaol/befd9fc5701ff72dff7fb68ef1c7f06a)。
+- en: 'After these tests, the coverage of `mutation.js` looks pretty nice, actually:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 经过这些测试，`mutation.js`的覆盖率看起来相当不错：
+- en: '![Code coverage](../Images/image00311.jpeg)'
+  id: totrans-124
+  prefs: []
+  type: TYPE_IMG
+  zh: '![代码覆盖率](../Images/image00311.jpeg)'
+- en: 100% coverage for mutations.js after writing unit tests for all the mutations
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在为所有变异编写单元测试后，`mutations.js`的覆盖率为100%
+- en: In the exact same way, we can test our `getters.js`. Create a `getters.spec.js`
+    file and fill it with tests to test our two getters functions. In the end, it
+    might look like the gist at [https://gist.github.com/chudaol/e89dd0f77b1563366d5eec16bd6ae4a9](https://gist.github.com/chudaol/e89dd0f77b1563366d5eec16bd6ae4a9)
+    .
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以完全相同的方式，我们可以测试我们的`getters.js`。创建一个`getters.spec.js`文件，并填充它以测试我们的两个getter函数。最后，它可能看起来像这个[gist](https://gist.github.com/chudaol/e89dd0f77b1563366d5eec16bd6ae4a9)。
+- en: The only important store component that is missing in unit testing is `actions.js`.
+    But our `actions.js` uses extensively the API that, in turn, performs HTTP requests.
+    Its functions are also asynchronous. Can this kind of thing be unit tested in
+    the same flexible and easy way as we just tested getters and actions? Yes, it
+    can! Let's see how can we fake server responses using `sinon.js` and how can we
+    write asynchronous tests with `mocha.js`.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在单元测试中缺少的唯一重要的存储组件是`actions.js`。但是我们的`actions.js`广泛使用了API，而API又执行HTTP请求。它的函数也是异步的。这种类型的东西能像我们刚刚测试getter和action一样灵活和简单地进行单元测试吗？是的，可以！让我们看看如何使用`sinon.js`伪造服务器响应，以及如何使用`mocha.js`编写异步测试。
+- en: Faking server responses and writing asynchronous tests
+  id: totrans-128
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 伪造服务器响应和编写异步测试
+- en: 'Open the `actions.js` file and check the very first action method:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`actions.js`文件，检查第一个动作方法：
+- en: '[PRE18]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'First of all, let''s add a `return` statement to this function to make it return
+    a promise. We do it to enable us to call the `.then` method once the promise resolves
+    so that we can test everything that happens in the meantime. So, our function
+    looks like the following:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们给这个函数添加一个`return`语句，使其返回一个promise。我们这样做是为了让我们能够在promise解析后调用`.then`方法，以便我们可以测试期间发生的一切。因此，我们的函数看起来像下面这样：
+- en: '[PRE19]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Now, check what is happening here:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，检查这里发生了什么：
+- en: This function receives `store` with its `dispatch` method.
+  id: totrans-134
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 这个函数接收带有`dispatch`方法的`store`。
+- en: It performs a call to the API. The API, in turn, calls the resource `get` method
+    that just performs an HTTP request to our server.
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 它执行对API的调用。API又调用资源`get`方法，该方法只是向我们的服务器执行HTTP请求。
+- en: 'After the API''s `fetchShoppingLists` promise is resolved, our method is calling
+    the store''s `commit` method with two parameters: a `POPULATE_SHOPPING_LISTS`
+    string and the data that came in response.'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在API的`fetchShoppingLists`承诺解决后，我们的方法将使用两个参数调用存储的`commit`方法：一个`POPULATE_SHOPPING_LISTS`字符串和响应中传入的数据。
+- en: 'How can we unit test this workflow? If we were able to catch the request and
+    mock the response, we could check if the `commit` method (passed by us, which
+    means that it can also be mocked) is called with the response that we provide
+    in our server''s mock. Sounds confusing? Not at all! The steps are the following:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们如何对这个工作流进行单元测试？如果我们能够捕获请求并模拟响应，我们可以检查我们提供给服务器模拟的响应是否调用了`commit`方法（由我们传递，这意味着它也可以被模拟）。听起来混乱吗？一点也不！步骤如下：
+- en: Create a mock for the `store` and its `commit` method.
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为`store`及其`commit`方法创建一个模拟。
+- en: Create a mock for the hypothetical server response.
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为假设的服务器响应创建一个模拟。
+- en: Create a fake server that will intercept the GET request and return the mocked
+    response.
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个假服务器，它将拦截GET请求并返回模拟的响应。
+- en: Check the `commit` method is called with our mocked response and the `POPULATE_SHOPPING_LISTS`
+    string.
+  id: totrans-141
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`commit`方法是否以我们模拟的响应和`POPULATE_SHOPPING_LISTS`字符串被调用。
+- en: 'It means that our test could look something like the following:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着我们的测试可能看起来像下面这样：
+- en: '[PRE20]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'The problem here is that our tests are synchronous, meaning the code will never
+    reach what is inside our `.then` callback. Luckily for us, `mocha.js` provides
+    support for asynchronous testing. Check it out at [https://mochajs.org/#asynchronous-code](https://mochajs.org/#asynchronous-code)
+    . The only thing you have to do is to pass `done` callback to `it()` and call
+    it when the test is complete. In this way, our pseudo-code for this test would
+    look the following:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里的问题是我们的测试是同步的，这意味着代码永远不会达到我们`.then`回调中的内容。幸运的是，`mocha.js`提供了对异步测试的支持。在[https://mochajs.org/#asynchronous-code](https://mochajs.org/#asynchronous-code)查看。你所需要做的就是将`done`回调传递给`it()`，并在测试完成时调用它。这样，我们对这个测试的伪代码看起来如下：
+- en: '[PRE21]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Let''s code now! Create a test spec and call it `actions.spec.js`, and write
+    all the needed bootstrapping code:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们编码！创建一个测试规范并将其命名为`actions.spec.js`，并编写所有所需的引导代码：
+- en: '[PRE22]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Now let''s follow our steps. First of all, let''s mock the server response.
+    Just create the `lists` variable and initialize it in the `beforeEach` method:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们按步骤进行。首先，让我们模拟服务器响应。只需创建`lists`变量并在`beforeEach`方法中初始化它：
+- en: '[PRE23]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Now, let''s mock the store''s `commit` method:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们模拟存储的`commit`方法：
+- en: '[PRE24]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Now, we have to spy on this `commit` method in order to be able to assert that
+    it was called with the required parameters. We will use the `sinon.stub` method
+    for this. Check the documentation on `sinon.js` on this matter at [http://sinonjs.org/docs/#stubs](http://sinonjs.org/docs/#stubs)
+    . Creating a stub on a given function is very easy. Just call the `sinon.stub`
+    method and pass to it the object and its method that we want to spy on:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们必须对这个`commit`方法进行间谍活动，以便能够断言它是否以所需的参数被调用。我们将使用`sinon.stub`方法来实现这一点。在这个问题上查看`sinon.js`的文档：[http://sinonjs.org/docs/#stubs](http://sinonjs.org/docs/#stubs)。在给定函数上创建一个存根非常容易。只需调用`sinon.stub`方法，并将我们想要进行间谍活动的对象及其方法传递给它：
+- en: '[PRE25]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'So, our `beforeEach` function will look like the following:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们的`beforeEach`函数将如下所示：
+- en: '[PRE26]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'It''s very important that after each method, we *restore* the stub so that
+    each testing method runs in a clean environment that is not affected by other
+    tests. For this, create an `afterEach` method and add the following line:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常重要的是，在每个方法之后，我们*恢复*存根，以便每个测试方法在不受其他测试影响的干净环境中运行。为此，创建一个`afterEach`方法并添加以下行：
+- en: '[PRE27]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Now the only thing we need to do is fake our server response with our mocked
+    data. Let''s use Sinon''s `fakeServer` for this purpose. Check sinon''s documentation
+    at [http://sinonjs.org/docs/#fakeServer](http://sinonjs.org/docs/#fakeServer)
+    . We just need to create `fakeServer` and tell it to respond with our mocked response
+    to the GET request:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们唯一需要做的就是用我们模拟的数据伪造服务器响应。让我们使用Sinon的`fakeServer`来实现这个目的。在[http://sinonjs.org/docs/#fakeServer](http://sinonjs.org/docs/#fakeServer)查看sinon的文档。我们只需要创建`fakeServer`并告诉它响应我们模拟的GET请求的响应：
+- en: '[PRE28]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: After these preparations, each test that will somehow perform a request should
+    call the server's `respond` method in order to invoke the server's functionality.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在做好这些准备之后，每个进行请求的测试都应该调用服务器的`respond`方法来调用服务器的功能。
+- en: 'However, we can simplify this by just telling the server to auto-respond each
+    caught request:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，我们可以通过告诉服务器自动响应每个捕获的请求来简化这个过程：
+- en: '[PRE29]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'So, our code for mocking the server will look like the following:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们模拟服务器的代码将如下所示：
+- en: '[PRE30]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'It is very important that after each test, we restore our fake server so that
+    no other test is affected by our mocks in this test. So add the following line
+    to the `afterEach` method:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常重要的是，在每个测试之后，我们要恢复我们的伪造服务器，以便这个测试不会影响其他测试。因此，在`afterEach`方法中添加以下行：
+- en: '[PRE31]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Now that we have mocked everything that it was possible to mock, we can finally
+    write our test case! So, you remember, we create an `it()` statement with `done`
+    callback, call our `populateShoppingLists` method, and check that the resolved
+    response is the same as our mocked `list` object. Step into the `describe` method
+    and just translate into the code what we''ve just described:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经模拟了一切可能模拟的东西，我们终于可以编写我们的测试用例了！所以，你记得，我们创建一个带有`done`回调的`it()`语句，调用我们的`populateShoppingLists`方法，并检查解析后的响应是否与我们模拟的`list`对象相同。进入`describe`方法，只需将我们刚刚描述的内容翻译成代码：
+- en: '[PRE32]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Our whole test spec now looks like the gist at [https://gist.github.com/chudaol/addb6657095406234bc6f659970f3eb8](https://gist.github.com/chudaol/addb6657095406234bc6f659970f3eb8).
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们整个测试规范现在看起来像这个要点[https://gist.github.com/chudaol/addb6657095406234bc6f659970f3eb8](https://gist.github.com/chudaol/addb6657095406234bc6f659970f3eb8)。
+- en: Run the tests with `npm run unit`. It works!
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用`npm run unit`运行测试。它有效了！
+- en: 'Now we just have to mock the server''s responses for the PUT, POST, and DELETE
+    methods. These methods do not return any data; however, in order to be able to
+    test the responses, let''s return faked success messages, and in each test, check
+    that the returned data corresponds to these responses. Add the following variables
+    on top of the spec:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们只需要模拟PUT、POST和DELETE方法的服务器响应。这些方法不返回任何数据；然而，为了能够测试响应，让我们返回伪造的成功消息，并在每个测试中检查返回的数据是否对应这些响应。在规范的顶部添加以下变量：
+- en: '[PRE33]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'And add the following fake responses methods to our server:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并且在我们的服务器中添加以下伪造响应的方法：
+- en: '[PRE34]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Let''s see how it''ll work, for example, for the `changeTitle` method. In this
+    test, we want to test that the `commit` method will be called with the given ID and
+    title. Our test, therefore will look like the following:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看它将如何工作，例如，对于`changeTitle`方法。在这个测试中，我们想要测试`commit`方法是否会以给定的ID和标题被调用。因此，我们的测试将如下所示：
+- en: '[PRE35]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'For this to work properly, we should also mock the store''s `dispatch` method
+    since it''s being used inside the `changeTitle` action. Just add the `dispatch`
+    property to our store''s mock and return a resolved promise:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使这个工作正常，我们还应该模拟存储的`dispatch`方法，因为它被用在`changeTitle`动作中。只需将`dispatch`属性添加到我们存储的模拟中，并返回一个resolved
+    promise：
+- en: '[PRE36]'
+  id: totrans-178
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: Check the final code for unit tests at this moment at [https://gist.github.com/chudaol/1405dff6a46b84c284b0eae731974050](https://gist.github.com/chudaol/1405dff6a46b84c284b0eae731974050)
+    .
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一刻检查单元测试的最终代码[https://gist.github.com/chudaol/1405dff6a46b84c284b0eae731974050](https://gist.github.com/chudaol/1405dff6a46b84c284b0eae731974050)。
+- en: Finish the testing for `actions.js` by adding unit tests for the `updateList`,
+    `createShoppingList`, and `deleteShoppingList` methods. Check the whole code for
+    unit tests until now in the [chapter7/shopping-list2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/shopping-list2)
+    folder.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过为`updateList`、`createShoppingList`和`deleteShoppingList`方法添加单元测试来完成`actions.js`的测试。在[chapter7/shopping-list2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/shopping-list2)文件夹中检查到目前为止的所有单元测试代码。
+- en: Testing components
+  id: totrans-181
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 测试组件
+- en: Now that all our Vuex-related functions are unit tested, it is time to apply
+    specific Vue components testing techniques to test components of our shopping
+    list application.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们所有与Vuex相关的函数都经过了单元测试，是时候应用特定的Vue组件测试技术来测试我们购物清单应用程序的组件了。
+- en: 'You remember from the first section of this chapter that in order to prepare
+    the `Vue` instance to be unit tested, we must import, initiate (passing it to
+    new `Vue` instance), and mount it. Let''s do it! Create a `components` folder
+    inside the `test/unit/specs` directory. Let''s start by testing the `AddItemComponent`
+    component. Create an `AddItemComponent.spec.js` file and import `Vue` and `AddItemComponent`:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你还记得本章第一节中提到的，为了准备`Vue`实例进行单元测试，我们必须导入、初始化（将其传递给新的`Vue`实例）并挂载它。让我们开始吧！在`test/unit/specs`目录下创建一个`components`文件夹。让我们从测试`AddItemComponent`组件开始。创建一个`AddItemComponent.spec.js`文件并导入`Vue`和`AddItemComponent`：
+- en: '[PRE37]'
+  id: totrans-184
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'The variable `AddItemComponent` can be used to access directly all the component''s
+    initial data. So we can assert, for example, that the component data is initialized
+    with a `newItem` property that equals to empty string:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 变量`AddItemComponent`可以用来直接访问组件的初始数据。因此，我们可以断言，例如，组件数据初始化为一个等于空字符串的`newItem`属性：
+- en: '[PRE38]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Let's now check which methods of this component we can cover with unit tests.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们现在检查一下这个组件的哪些方法可以用单元测试来覆盖。
+- en: 'This component has only one method, which is `addItem` method. Let''s check
+    what this method does:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个组件只有一个方法，就是`addItem`方法。让我们来看看这个方法做了什么：
+- en: '[PRE39]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'This method access to the store, so, we have to use another strategy of initializing
+    the component rather than just directly using the imported value. In this case,
+    we should initialize Vue main component with `AddItemComponent` as a child, pass
+    all the necessary attributes to it, and access it using the `$refs` attribute.
+    So, the component''s initialization inside the test method will look like the
+    following:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个方法访问了存储，所以我们必须使用另一种初始化组件的策略，而不是直接使用导入的值。在这种情况下，我们应该将Vue主组件初始化为`AddItemComponent`的子组件，将所有必要的属性传递给它，并使用`$refs`属性访问它。因此，在测试方法中，组件的初始化将如下所示：
+- en: '[PRE40]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: Back to the method's functionality. So, the `addItem` method grabs the instance's
+    `newItem` property, trims it, checks if it's not falsy and, if not, emits the
+    custom event `add`, resets the `newItem` property, and dispatches the `updateList`
+    action on store. We can test this method by assigning different values `component.newItem`,
+    `component.id` and checking if the output corresponds to what we are expecting
+    of it.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到方法的功能。所以，`addItem`方法获取实例的`newItem`属性，修剪它，检查它是否为假，如果不是，则触发自定义事件`add`，重置`newItem`属性，并在存储上调度`updateList`操作。我们可以通过为`component.newItem`和`component.id`分配不同的值并检查输出是否符合我们的期望来测试这个方法。
+- en: Tip
+  id: totrans-193
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: '**Positive testing** means testing a system by giving it valid data. **Negative
+    testing** means testing a system by giving it invalid data.'
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**正面测试**意味着通过提供有效数据来测试系统。**负面测试**意味着通过提供无效数据来测试系统。'
+- en: 'In our positive test, we should initialize the `component.newItem` property
+    with a valid string. After calling the method, we should ensure various things:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的正面测试中，我们应该使用一个有效的字符串来初始化`component.newItem`属性。调用方法后，我们应该确保各种事情：
+- en: The `$emit` method of the component has been called with `add` and the text
+    we assigned to the `newItem` property
+  id: totrans-196
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 组件的`$emit`方法已经使用`add`和我们分配给`newItem`属性的文本进行了调用
+- en: '`component.newItem` was reset to the empty string'
+  id: totrans-197
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`component.newItem`已重置为空字符串'
+- en: The store's `dispatch` method has been called with the `id` property of the
+    component
+  id: totrans-198
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: store的`dispatch`方法已经使用组件的`id`属性调用了
+- en: 'Let''s go! Let''s start by adding the describe method for the `addItem` function:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 走吧！让我们从为`addItem`函数添加`describe`方法开始：
+- en: '[PRE41]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'Now we can add the `it()` method where we will assign a value to `component.newItem`,
+    call the `addItem` method, and check everything we need to check:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以添加`it()`方法，我们将为`component.newItem`分配一个值，调用`addItem`方法，并检查我们需要检查的一切：
+- en: '[PRE42]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: Run the tests and check that they are passing and everything is okay. Check
+    the final code for `AddItemComponent` in the [chapter7/shopping-list3](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/shopping-list3)
+    folder.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行测试并检查它们是否通过，一切都正常。检查[chapter7/shopping-list3](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/shopping-list3)文件夹中的`AddItemComponent`的最终代码。
+- en: Try to write unit tests for the rest of the components of the shopping list
+    application. Remember to write unit tests to cover your code so that it breaks
+    if you change it.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试为购物清单应用程序的其余组件编写单元测试。记得编写单元测试来覆盖你的代码，这样如果你改变了代码，它就会出错。
+- en: Writing unit tests for our Pomodoro application
+  id: totrans-205
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为我们的番茄钟应用程序编写单元测试
+- en: Ok! Let's move to our Pomodoro application! By the way, when was the last time
+    you took a break? Probably, it is time to open the application in your browser,
+    wait a few minutes of the Pomodoro working period timer, and check for some kittens.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的！让我们转到我们的番茄钟应用程序！顺便问一下，你上次休息是什么时候？也许，现在是时候在浏览器中打开应用程序，等待几分钟的番茄工作时间计时器，然后检查一些小猫。
+- en: 'I just did it and it made me feel really nice and cute:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我刚刚做了，这让我感觉真的很好，很可爱。
+- en: '![Writing unit tests for our Pomodoro application](../Images/image00312.jpeg)'
+  id: totrans-208
+  prefs: []
+  type: TYPE_IMG
+  zh: '![为我们的番茄钟应用程序编写单元测试](../Images/image00312.jpeg)'
+- en: I'm not your clothes... please have some rest
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我不是你的衣服...请休息一下
+- en: 'Let''s start with mutations. Open the code in the [chapter7/pomodoro](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/pomodoro)
+    folder. Open the `mutations.js` file and check what is happening out there. There
+    are four mutations happening: `START`, `STOP`, `PAUSE`, and `TOGGLE_SOUND`. Guess
+    which one we will start with. Yes, you are right, we will start with the `start`
+    method. Create a `vuex` subfolder inside the `test/unit/specs` folder and add
+    the `mutations.spec.js` file. Let''s bootstrap it to be ready for tests:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从mutations开始。打开[chapter7/pomodoro](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/pomodoro)文件夹中的代码。打开`mutations.js`文件并检查那里发生了什么。有四个mutations发生：`START`，`STOP`，`PAUSE`和`TOGGLE_SOUND`。猜猜我们将从哪一个开始。是的，你猜对了，我们将从`start`方法开始。在`test/unit/specs`文件夹内创建一个`vuex`子文件夹，并添加`mutations.spec.js`文件。让我们准备好进行测试：
+- en: '[PRE43]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Note that I mocked all the methods of the noise generator plugin. This is because
+    in this spec, we don't need to test the plugin's functionality (in fact, we must
+    do it in the scope of the plugin itself before publishing it). For the scope of
+    this test, we should test that the plugin's methods are called when they need
+    to be called.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我对噪音生成器插件的所有方法进行了模拟。这是因为在这个规范中，我们不需要测试插件的功能（实际上，在发布之前，我们必须在插件本身的范围内进行测试）。在这个测试范围内，我们应该测试插件的方法在需要调用时是否被调用。
+- en: 'In order to be able to test the `start` method, let''s think what should happen.
+    After the start button is clicked, we know that the application''s `started`,
+    `paused`, and `stopped` states must gain some specific values (actually, `true`,
+    `false`, and `false`, respectively). We also know the application''s interval
+    should be started. We also know that if the Pomodoro''s state is `working` and
+    if the sound is enabled, the `start` method of the noise generator plugin should
+    be called. In fact, this is what our method is actually doing:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了能够测试 `start` 方法，让我们思考应该发生什么。在点击开始按钮后，我们知道应用程序的 `started`、`paused` 和 `stopped`
+    状态必须获得一些特定的值（实际上分别是 `true`、`false` 和 `false`）。我们还知道应用程序的间隔应该启动。我们还知道如果番茄钟的状态是
+    `working`，并且声音已启用，噪音生成器插件的 `start` 方法应该被调用。实际上，这就是我们的方法实际在做的事情：
+- en: '[PRE44]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'But even if it didn''t do all these things and we have written the test to
+    test it, we would immediately understand that something is missing in our code
+    and fix it. Let''s then write our test. Let''s start by defining the `it()` method
+    that tests that all the properties were correctly set. In order to be sure that
+    they are not already set before calling the method, let''s also assert that all
+    these properties are not defined at the start of the test:'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但即使它没有做所有这些事情，我们已经编写了测试来测试它，我们会立即意识到我们的代码中缺少了一些东西，并加以修复。让我们写我们的测试。让我们首先定义 `it()`
+    方法，测试所有属性是否被正确设置。为了确保在调用方法之前它们没有被设置，让我们还断言在测试开始时这些属性都未被定义：
+- en: '[PRE45]'
+  id: totrans-216
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'Let''s now check on the `Vue.noise.start` method. We know that it should only
+    be called if `state.isWorking` is `true` and `state.soundEnabled` is `true`. Let''s
+    write a positive test. In this test, we would initialize both Boolean states to
+    `true` and check that the `noise.start` method is called:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们检查 `Vue.noise.start` 方法。我们知道只有当 `state.isWorking` 为 `true` 且 `state.soundEnabled`
+    为 `true` 时才应该调用它。让我们写一个正面测试。在这个测试中，我们会将两个布尔状态都初始化为 `true`，并检查 `noise.start` 方法是否被调用：
+- en: '[PRE46]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Let''s add two negative tests for each of the states, with `isWorking` and
+    `soundEnabled` being `false`:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们为每个状态添加两个负面测试，`isWorking` 和 `soundEnabled` 都设为 `false`：
+- en: '[PRE47]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: Our `start` mutation is nicely tested! Check the final state of the code in
+    the [chapter7/pomodoro2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/pomodoro2)
+    folder. I suggest that you now write the rest of the unit tests not only for the
+    mutations, but also for all the store-related functions that reside in getters
+    and actions. After that, apply the techniques to test Vue components that we just
+    learned and test some of the components of our Pomodoro application.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的 `start` 变异已经很好地测试了！在 [chapter7/pomodoro2](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/pomodoro2)
+    文件夹中检查代码的最终状态。我建议你现在写其余的单元测试，不仅测试变异，还要测试所有存储相关的函数，包括在 getters 和 actions 中的函数。之后，应用我们刚学到的技术来测试
+    Vue 组件，并测试我们番茄钟应用程序的一些组件。
+- en: At this point, we are done with unit testing!
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上，我们已经完成了单元测试！
+- en: What is end- to-end testing?
+  id: totrans-223
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 什么是端到端测试？
+- en: '**End-to-end** (**e2e**) testing is a technique in which the whole flow of
+    the application is being tested. In this kind of testing, neither mocks nor stubs
+    are used, and the real system is being under the test. Performing e2e testing
+    allows us to test all the aspects of the application—APIs, frontend, backend,
+    databases, server load, assuring thus the quality of the system integration.'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**端到端**（**e2e**）测试是一种技术，用于测试应用程序的整个流程。在这种测试中，既不使用模拟对象也不使用存根，而是对真实系统进行测试。进行端到端测试可以测试应用程序的所有方面——API、前端、后端、数据库、服务器负载，从而确保系统集成的质量。'
+- en: In the case of web applications, these tests are performed via UI testing. Each
+    test describes all the steps from opening the browser until closing it. All the
+    steps needed to perform in order to achieve some system's functionality must be
+    described. In fact, this is the same as you clicking and doing some operations
+    on your application's page, but is automated and fast. In this section, we will
+    see what a Selenium webdriver is, and what Nightwatch is, and how they can be
+    used to create e2e tests for our applications.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Web应用程序的情况下，这些测试是通过UI测试执行的。每个测试都描述了从打开浏览器到关闭浏览器的所有步骤。必须描述为实现某些系统功能而需要执行的所有步骤。实际上，这与您在应用程序页面上单击并执行一些操作的方式相同，但是是自动化和快速的。在本节中，我们将看到Selenium
+    webdriver是什么，Nightwatch是什么，以及它们如何用于为我们的应用程序创建端到端测试。
+- en: Nightwatch for e2e
+  id: totrans-226
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 端到端的Nightwatch
+- en: If you have already worked with test automation or if you have worked with someone
+    who has worked with test automation, for sure, you have already heard the magic
+    word Selenium—Selenium opens the browser, clicks, writes, does everything like
+    a human, in a parallel, nicely distributed, multiplatform, and cross-browser way.
+    In fact, Selenium is just a JAR file that contains an API to perform different
+    operations on a browser (click, type, scroll, and so on).
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您已经使用过测试自动化，或者与使用测试自动化的人一起工作过，那么肯定已经听说过Selenium这个神奇的词语——Selenium可以打开浏览器，点击，输入，像人一样做任何事情，以并行、良好分布、多平台和跨浏览器的方式。实际上，Selenium只是一个包含API的JAR文件，用于在浏览器上执行不同的操作（点击、输入、滚动等）。
+- en: Note
+  id: totrans-228
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Check out Selenium's documentation at [http://www.seleniumhq.org/](http://www.seleniumhq.org/)
+    .
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看Selenium的文档[http://www.seleniumhq.org/](http://www.seleniumhq.org/)。
+- en: When this JAR file is executed, it connects to the specified browser, opens
+    the API, and waits for the commands to be performed on the browser. The commands
+    sent to the Selenium server can be performed in tons of different ways and languages.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当执行这个JAR文件时，它会连接到指定的浏览器，打开API，并等待在浏览器上执行命令。发送到Selenium服务器的命令可以以各种不同的方式和语言执行。
+- en: 'There are a lot of existing implementations and frameworks that allow you to
+    call selenium commands with couple lines of code:'
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有很多现有的实现和框架可以让您用几行代码调用Selenium命令：
+- en: You can use the native Selenium's framework for Java ( [http://seleniumhq.github.io/selenium/docs/api/java/](http://seleniumhq.github.io/selenium/docs/api/java/)
+    )
+  id: totrans-232
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您可以使用Java的原生Selenium框架（[http://seleniumhq.github.io/selenium/docs/api/java/](http://seleniumhq.github.io/selenium/docs/api/java/)）
+- en: You can use the Firefox plugin for browsers ( [https://addons.mozilla.org/en-us/firefox/addon/selenium-ide/](https://addons.mozilla.org/en-us/firefox/addon/selenium-ide/)
+    )
+  id: totrans-233
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您可以使用浏览器的Firefox插件（[https://addons.mozilla.org/en-us/firefox/addon/selenium-ide/](https://addons.mozilla.org/en-us/firefox/addon/selenium-ide/)）
+- en: You can use **Selenide**, which is yet another implementation for Java but a
+    lot easier to use than Selenium's framework ( [http://selenide.org/](http://selenide.org/)
+    )
+  id: totrans-234
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您可以使用**Selenide**，这是Java的另一个实现，但比Selenium框架更容易使用（[http://selenide.org/](http://selenide.org/)）
+- en: If you are an AngularJS developer, you can use Protractor, which is a very nice
+    e2e test framework for AngularJS applications that also uses the Selenium webdriver
+    ( [http://www.protractortest.org/](http://www.protractortest.org/) )
+  id: totrans-235
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果您是AngularJS开发人员，可以使用Protractor，这是一个非常好的用于AngularJS应用程序的端到端测试框架，也使用Selenium
+    webdriver（[http://www.protractortest.org/](http://www.protractortest.org/)）
+- en: In our case, we will use Nightwatch, which is a nice and very easy-to-use testing
+    framework to call Selenium's commands using JavaScript.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的案例中，我们将使用Nightwatch，这是一个很好且非常易于使用的测试框架，可以使用JavaScript调用Selenium的命令。
+- en: Check Nightwatch's documentation at [http://nightwatchjs.org/](http://nightwatchjs.org/)
+    .
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看Nightwatch的文档[http://nightwatchjs.org/](http://nightwatchjs.org/)。
+- en: 'Vue applications, when bootstrapped using the `vue-cli webpack` method, already
+    contains support for writing Nightwatch tests right away without the need to install
+    anything. Basically, each test spec will look somewhat like the following:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue应用程序使用`vue-cli webpack`方法引导时，已经包含了对Nightwatch测试的支持，无需安装任何东西。基本上，每个测试规范看起来都有点像下面这样：
+- en: '[PRE48]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: The syntax is nice and easy to understand. Each of the highlighted methods is
+    a Nightwatch command that behind the scenes is transformed into the Selenium command
+    and invoked as such. Check the full list of the Nightwatch commands in the official
+    documentation page at [http://nightwatchjs.org/api#commands](http://nightwatchjs.org/api#commands)
+    .
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 语法很好，易于理解。每个突出显示的方法都是一个Nightwatch命令，其背后会被转换为Selenium命令并被调用。在官方文档页面[http://nightwatchjs.org/api#commands](http://nightwatchjs.org/api#commands)上检查Nightwatch命令的完整列表。
+- en: Writing e2e tests for the Pomodoro application
+  id: totrans-241
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为番茄钟应用编写端到端测试
+- en: So, now that we know all the theory behind the UI testing, we can create our
+    first end-to-end test for our Pomodoro application. Let's define the steps that
+    we will perform and the things that we should test. So, first of all, we should
+    open the browser. Then, we should probably check that our container (that has
+    the `#app` ID ) is on the page.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们知道了UI测试背后的所有理论，我们可以为我们的番茄钟应用创建我们的第一个端到端测试。让我们定义我们将执行的步骤和我们应该测试的事情。首先，我们应该打开浏览器。然后，我们可能应该检查我们的容器（具有`#app`
+    ID）是否在页面上。
+- en: We can also try to check that the pause and stop buttons are disabled and that
+    the sound toggle button does not exist on the page.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以尝试检查暂停和停止按钮是否禁用，以及页面上是否不存在声音切换按钮。
+- en: 'Then we can click on the start button and check that the sound toggle button
+    has appeared, the start button has become disabled, and the pause and stop buttons
+    have become enabled. There is an innumerous number of possibilities of further
+    clicking and checking, but let''s perform at least the described steps. Let''s
+    just write them in the form of bullet points:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们可以点击开始按钮，检查声音切换按钮是否出现，开始按钮是否变为禁用状态，暂停和停止按钮是否变为启用状态。还有无数种可能的点击和检查，但让我们至少执行描述的步骤。让我们用项目符号的形式写出来：
+- en: Open the browser at `http://localhost:8080`.
+  id: totrans-245
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`http://localhost:8080`上打开浏览器。
+- en: Check that the `#app` element is on the page.
+  id: totrans-246
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查页面上是否有`#app`元素。
+- en: Check that the `.toggle-volume` icon is not visible.
+  id: totrans-247
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`.toggle-volume`图标是否不可见。
+- en: Check that the `'[title=pause]'` and `'[title=stop]'` buttons are disabled and
+    the `'[title=start]'` button is enabled.
+  id: totrans-248
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`'[title=pause]'`和`'[title=stop]'`按钮是否禁用，`'[title=start]'`按钮是否启用。
+- en: Click on the `'[title=start]'` button.
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 点击`'[title=start]'`按钮。
+- en: Check that the `'[title=pause]'` and `'[title=stop]'` buttons are now enabled
+    and the `'[title=start]'` button is disabled.
+  id: totrans-250
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`'[title=pause]'`和`'[title=stop]'`按钮是否现在启用，`'[title=start]'`按钮是否禁用。
+- en: Check that the `.toggle-volume` icon is now visible.
+  id: totrans-251
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`.toggle-volume`图标现在是否可见。
+- en: 'Let''s do it! Just open the `test.js` file inside the `tests/e2e/specs` folder,
+    delete its content, and add the following code:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们开始吧！只需打开`tests/e2e/specs`文件夹中的`test.js`文件，删除其内容，并添加以下代码：
+- en: '[PRE49]'
+  id: totrans-253
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'Do you see how super human-friendly this language is? Let''s now perform a
+    check to see whether, after the period of working time, the kitten element appears
+    on the screen. In order to make the test shorter and not wait for a long time
+    for test to pass, let''s establish the working period as 6 seconds. Change this
+    value in our `config.js` file:'
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你看到这种语言是多么友好吗？现在让我们进行一项检查，看看在工作时间结束后，小猫元素是否出现在屏幕上。为了使测试更短，不必等待很长时间才能通过测试，让我们将工作时间设定为6秒。在我们的`config.js`文件中更改这个值：
+- en: '[PRE50]'
+  id: totrans-255
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'The element that contains the cat images has a `''div.well.kittens''` selector,
+    so we will check whether it is visible. Let''s also check in this test that after
+    the kitten element appears, the source of the image contains the `''thecatapi''`
+    string. This test will be as simple as the following:'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 包含猫图片的元素具有`'div.well.kittens'`选择器，因此我们将检查它是否可见。让我们在这个测试中检查，在小猫元素出现后，图像的来源是否包含`'thecatapi'`字符串。这个测试将如下所示：
+- en: '[PRE51]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Run the tests. In order to do that, invoke the `e2e` npm command:'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行测试。为了做到这一点，调用`e2e` npm命令：
+- en: '[PRE52]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: You will see how the browser opens and performs all the operations by itself.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你会看到浏览器自己打开并执行所有操作。
+- en: '*It''s a kind of magic!*'
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*这是一种魔法！*'
+- en: 'All our tests have passed and all expectations are fulfilled; check out the
+    console:'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们所有的测试都通过了，所有的期望都得到了满足；查看控制台：
+- en: '![Writing e2e tests for the Pomodoro application](../Images/image00313.jpeg)'
+  id: totrans-263
+  prefs: []
+  type: TYPE_IMG
+  zh: '![为番茄钟应用程序编写e2e测试](../Images/image00313.jpeg)'
+- en: All tests are passing!
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有测试都通过了！
+- en: 'Congratulations! You''ve just learned how to use Nightwatch to write e2e tests.
+    Check the code in the [chapter7/pomodoro3](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/pomodoro3)
+    folder. Write more test cases for our Pomodoro application. Do not forget about
+    our shopping list application, which might have even more scenarios for UI tests.
+    Write them all and check how Selenium does the work for you. If you decide to
+    enhance the code, not only is your code quality protected by unit tests, but it
+    also now has regression testing applied to it. Each time you change the code,
+    run both types of tests just with one command:'
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜！你刚刚学会了如何使用Nightwatch编写e2e测试。检查[chapter7/pomodoro3](https://github.com/PacktPublishing/Learning-Vue.js-2/tree/master/chapter7/pomodoro3)文件夹中的代码。为我们的番茄钟应用程序编写更多的测试用例。不要忘记我们的购物清单应用程序，它可能有更多的UI测试场景。编写它们并检查Selenium如何为你工作。如果你决定增强代码，你的代码质量不仅受到单元测试的保护，而且现在还应用了回归测试。每次更改代码时，只需运行一个命令来运行两种类型的测试：
+- en: '[PRE53]'
+  id: totrans-266
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'Now you certainly deserve some rest. Take a cup of coffee or tea, open your
+    browser on the Pomodoro application page, wait for 6 seconds, and appreciate our
+    little fluffy friends:'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你肯定值得休息一下。拿一杯咖啡或茶，打开番茄钟应用程序页面，等待6秒，欣赏我们的小毛绒朋友：
+- en: '![Writing e2e tests for the Pomodoro application](../Images/image00314.jpeg)'
+  id: totrans-268
+  prefs: []
+  type: TYPE_IMG
+  zh: '![为番茄钟应用程序编写e2e测试](../Images/image00314.jpeg)'
+- en: Actually, this is not a kitten from thecatapi. This is my cat Patuscas wishing
+    you all to have a good rest time!
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，这不是来自thecatapi的小猫。这是我的猫Patuscas祝愿大家有一个愉快的休息时间！
+- en: Summary
+  id: totrans-270
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we've tested both of our applications. We have written unit
+    tests for Vuex methods and Vue components. We have used simple unit tests and
+    asynchronous unit tests and we got familiar with Sinon mocking techniques such
+    as spying on methods and faking server responses. We also learned how to create
+    UI tests using Nightwatch. Our applications are now tested and prepared to be
+    deployed to production! We will discover how to deploy them in the next chapter,
+    which will be devoted to deploying applications using the Heroku cloud application
+    platform.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一章中，我们已经测试了我们的两个应用程序。我们为Vuex方法和Vue组件编写了单元测试。我们使用了简单的单元测试和异步单元测试，并熟悉了Sinon的模拟技术，比如对方法进行间谍操作和伪造服务器响应。我们还学会了如何使用Nightwatch创建UI测试。我们的应用程序现在经过了测试，准备部署到生产环境！我们将在下一章中了解如何部署它们，下一章将专门讨论使用Heroku云应用平台部署应用程序。

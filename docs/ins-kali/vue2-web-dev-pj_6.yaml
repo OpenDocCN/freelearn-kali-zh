@@ -1,0 +1,3786 @@
+- en: Project 4 - Geolocated Blog
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 项目4 - 地理定位博客
+- en: 'In this chapter, we will build our fourth app. We will cover new topics, such
+    as:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将构建我们的第四个应用程序。我们将涵盖新的主题，例如：
+- en: Managing the state of the app in a centralized store using the official Vuex
+    library
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用官方的Vuex库来管理应用程序的状态的集中式存储
+- en: Using the Google OAuth API to connect our users to the app
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Google OAuth API将我们的用户连接到应用程序
+- en: Integrating Google Maps to our app with the `vue-googlemaps` third-party library
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`vue-googlemaps`第三方库将Google地图集成到我们的应用程序中
+- en: Rendering functions and JSX
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 渲染函数和JSX
+- en: Functional components--making lighter and faster components
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 功能组件--制作更轻量和更快的组件
+- en: 'The app will be a Geolocated Blog that will mainly display a big map where
+    the user will add blog posts. Here are the main features of the app:'
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该应用程序将是一个地理定位博客，主要显示一个大地图，用户将在其中添加博客文章。以下是该应用程序的主要功能：
+- en: A login page will ask the user to authenticate using their Google account
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 登录页面将要求用户使用他们的Google帐户进行身份验证
+- en: The main view will be a Google map embeded in the app, with a marker for each
+    post
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 主视图将是嵌入应用程序中的Google地图，每个帖子都有一个标记
+- en: Clicking on the markers will display the content in a side panel to the right,
+    with the description of the location, the post, a like counter, and a list of
+    comments
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 单击标记将在右侧显示内容，包括位置描述、帖子、点赞计数和评论列表
+- en: Clicking anywhere else on the map will display a form in the side panel so the
+    user can create a new post at this location
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在地图的其他任何位置单击将在侧边栏中显示一个表单，以便用户可以在此位置创建新的帖子
+- en: The top bar of the application will display the current user's avatar and name,
+    with a button to center the map on their position and another to log out
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用程序的顶部栏将显示当前用户的头像和名称，以及一个按钮，用于将地图居中显示在他们的位置，并另一个按钮用于注销
+- en: 'The final application will look as follows:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终应用程序将如下所示：
+- en: '![](assets/4a34b78b-fc86-4bb3-b430-6072c71f2716.png)'
+  id: totrans-14
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/4a34b78b-fc86-4bb3-b430-6072c71f2716.png)'
+- en: Google Auth and state management
+  id: totrans-15
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Google身份验证和状态管理
+- en: In this first section, we will create our first Vuex store to help us manage
+    the state of our application. We will use it to store the current user logging
+    in through the Google OAuth API, which allows them to use their Google account
+    to connect to our app.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个第一部分中，我们将创建我们的第一个Vuex存储，以帮助我们管理应用程序的状态。我们将使用它来存储通过Google OAuth API登录的当前用户，这允许他们使用他们的Google帐户连接到我们的应用程序。
+- en: Project setup
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 项目设置
+- en: First, let's set up the basic structure of our new project. We will continue
+    using the router and a few parts of [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml),
+    *Project 3 - Support Center*.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们设置新项目的基本结构。我们将继续使用路由器和[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)的一些部分，*项目3
+    - 支持中心*。
+- en: Creating the app
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建应用程序
+- en: In this section, we will setup the base app structure for our Geolocated Blog.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将为我们的地理定位博客设置基本应用程序结构。
+- en: 'Like we did in [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml), *Project
+    3 - Support Center*, we will initialize a Vue project with `vue-init` and install
+    the babel, routing, and stylus packages:'
+  id: totrans-21
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 就像我们在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)中所做的那样，*项目3 - 支持中心*，我们将使用`vue-init`初始化一个Vue项目，并安装babel、routing和stylus包：
+- en: '[PRE0]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Don't forget to add the `"vue"` preset in the `.babelrc` file.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记在`.babelrc`文件中添加`"vue"`预设。
+- en: Then remove the content of the `src` directory.
+  id: totrans-24
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后删除`src`目录的内容。
+- en: We will reuse the `$fetch` plugin we made in [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml),
+    *Project 3 - Support Center*, so copy the `src/plugins/fetch.js` file too in the
+    new project.
+  id: totrans-25
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将重用我们在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)中制作的`$fetch`插件，因此也将`src/plugins/fetch.js`文件复制到新项目中。
+- en: 'In the `src` folder, add the `main.js` file that starts our app like we did
+    in [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml), *Project 3 - Support
+    Center*:'
+  id: totrans-26
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`src`文件夹中，添加启动我们应用程序的`main.js`文件，就像我们在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)，*项目3-支持中心*中所做的那样：
+- en: '[PRE1]'
+  id: totrans-27
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: '[PRE2]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'We will still use `moment.js` to display dates, so you can install it with
+    this command:'
+  id: totrans-29
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们仍然会使用`moment.js`来显示日期，所以您可以使用以下命令安装它：
+- en: '[PRE3]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: This shorter notation is equivalent to `npm install --save`. For development
+    dependencies, you can use `npm i -D` instead of `npm install --save-dev`.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种更短的表示法等同于`npm install --save`。对于开发依赖项，您可以使用`npm i -D`而不是`npm install --save-dev`。
+- en: 'Create the same simple date filter as before in a new `src/filters.js` file:'
+  id: totrans-32
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在新的`src/filters.js`文件中创建与之前相同的简单日期过滤器：
+- en: '[PRE4]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'In the `$fetch` plugin, you can remove the references to the `state.js` file
+    since we won''t have one this time:'
+  id: totrans-34
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`$fetch`插件中，您可以删除对`state.js`文件的引用，因为这次我们不会有这个文件：
+- en: '[PRE5]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Also the way we log out the user if a request receives a `403` HTTP code will
+    be different, so you can remove the relevant code too:'
+  id: totrans-36
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果请求收到`403` HTTP代码时登出用户的方式也将不同，因此您也可以删除相关代码：
+- en: '[PRE6]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Finally, download ([https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-full/client/src/styles](https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-download/styles))
+    and put them in a `src/styles` directory.
+  id: totrans-38
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，下载（[https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-full/client/src/styles](https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-download/styles)）并将它们放在`src/styles`目录中。
+- en: Some routing
+  id: totrans-39
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 一些路由
+- en: 'The app will have three pages:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用程序将有三个页面：
+- en: The login page with a Sign in with Google button
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 带有“使用Google登录”按钮的登录页面
+- en: The main Geolocated Blog page with the map
+  id: totrans-42
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 带有地图的主地理定位博客页面
+- en: A "not found" page
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个“未找到”页面
+- en: 'We will now create the main component and set up those pages with bare components:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将创建主组件并使用简单组件设置这些页面：
+- en: Create a new `src/components` folder and copy the `NotFound.vue` component from
+    [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml), *Project 3 - Support
+    Center* .
+  id: totrans-45
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个新的`src/components`文件夹，并从[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)，*项目3-支持中心*中复制`NotFound.vue`组件。
+- en: 'Then add the `App.vue` file with the `router-view` component and the main stylus
+    file:'
+  id: totrans-46
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后添加`App.vue`文件，其中包含`router-view`组件和主要的stylus文件：
+- en: '[PRE7]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Add the `GeoBlog.vue` file, which will be pretty bare for now:'
+  id: totrans-48
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加`GeoBlog.vue`文件，目前将非常简单：
+- en: '[PRE8]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Add the `Login.vue` file with the Sign in with Google button. The button calls
+    an `openGoogleSignin` method:'
+  id: totrans-50
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加带有“使用Google登录”按钮的`Login.vue`文件。按钮调用`openGoogleSignin`方法：
+- en: '[PRE9]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Create a `router.js` file similar to what we did in [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)
+    , *Project 3 - Support Center*. It will contain the three routes:'
+  id: totrans-52
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个类似于我们在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)中所做的`router.js`文件，*项目3-支持中心*。它将包含三个路由：
+- en: '[PRE10]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: '[PRE11]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: The router should be already imported in the main file and injected in the application.
+    We are now ready to continue!
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 路由应该已经在主文件中导入并注入到应用程序中。我们现在准备继续！
+- en: State management with Vuex
+  id: totrans-56
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Vuex进行状态管理
+- en: This is the exciting section of this chapter where we will use the second very
+    important official Vue library--Vuex!
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是本章的激动人心的部分，我们将使用第二个非常重要的官方Vue库--Vuex！
+- en: Vuex allows us to use a centralized store to manage the global state of our
+    app.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vuex允许我们使用集中式存储来管理应用程序的全局状态。
+- en: Why do I need this?
+  id: totrans-59
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 我为什么需要这个？
+- en: The big question is why we need a centralized state management solution in the
+    first place. You may have noticed in the previous projects that we have already
+    used a very simple `state.js` file with an object containing the global data we
+    needed across our components. Vuex is the next step in that direction. It introduce
+    a few new concepts to help us manage and debug the state of our application in
+    a formal and efficient way.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个重要的问题是为什么我们首先需要一个集中式状态管理解决方案。您可能已经注意到在以前的项目中，我们已经使用了一个非常简单的`state.js`文件，其中包含我们在组件之间需要的全局数据的对象。Vuex是朝着这个方向迈出的下一步。它引入了一些新概念，以帮助我们以正式和高效的方式管理和调试应用程序的状态。
+- en: When your application grows, you or your team will add many more features and
+    components (maybe well over a hundred). Lots of them will share data. With the
+    increasing complexity of the interconnections between your components, you will
+    end up with a mess, with too many components whose data you need to keep in sync.
+    At this point, the state of your app will no longer be predictable and understandable,
+    and your app will become very difficult to evolve or maintain. For example, imagine
+    that a button buried inside four or five components in the component tree needs
+    to open a side panel located in the far opposite-- you may have to use a lot of
+    events and props to pass the information up and down through many components.
+    You effectively have two sources of truth, which means the two components share
+    data that has to be somehow in sync or else your app breaks because you no longer
+    know which component is right.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您的应用程序增长时，您或您的团队将添加许多更多的功能和组件（可能超过一百个）。其中许多将共享数据。随着组件之间相互连接的复杂性增加，您最终会陷入一团糟，有太多组件需要保持同步的数据。在这一点上，您的应用程序状态将不再可预测和可理解，您的应用程序将变得非常难以发展或维护。例如，想象一下，在组件树中深藏的四五个组件中的一个按钮需要打开位于远处的侧边栏--您可能需要使用大量事件和props通过许多组件传递信息。您实际上有两个数据源，这意味着两个组件共享数据，必须以某种方式同步，否则您的应用程序将崩溃，因为您不再知道哪个组件是正确的。
+- en: '![](assets/144ef140-e938-4882-8d42-2b3a06745c72.jpg)'
+  id: totrans-62
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/144ef140-e938-4882-8d42-2b3a06745c72.jpg)'
+- en: The recommended solution to this problem is Vuex, from Veu. It is inspired by
+    the Flux concept that Facebook developed, which gave birth to the Redux library
+    (well known in the React community). Flux is a set of guiding principles that
+    emphasize the use of a one-way flux of information through the components with
+    a centralized store. The benefits are that your application logic and flow will
+    be easier to reason about, so it improves maintainability by a great margin. The
+    downside is that you may have to understand some new concepts and incidentally
+    write a little more code. Vuex effectively implements some of these principles
+    to help you improve the architecture of your applications.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个问题的推荐解决方案是来自Veu的Vuex。它受到了Facebook开发的Flux概念的启发，这一概念诞生了Redux库（在React社区中非常知名）。Flux是一组指导原则，强调通过集中式存储在组件之间使用单向信息流。好处是，您的应用逻辑和流程将更容易理解，因此大大提高了可维护性。缺点是您可能需要理解一些新概念，并且可能需要写更多的代码。Vuex有效地实现了这些原则中的一些，以帮助您改进应用程序的架构。
+- en: A real example of this was the Facebook notification system--the chat system
+    was complex enough that it was difficult to determine what message you had seen.
+    Sometimes, you might get a notification for a new message you already read, so
+    Facebook worked on this Flux concept to fix this issue by changing the application
+    architecture.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个真实的例子是Facebook的通知系统--聊天系统已经足够复杂，以至于很难确定您已经看过哪条消息。有时，您可能会收到一条您已经阅读过的新消息的通知，因此Facebook致力于通过改变应用程序架构来解决这个问题。
+- en: For our first example, the button and the side panel component don't need to
+    synchronize their state across the whole application. Instead, they use the centralized
+    store to get data and dispatch actions--this implies they don't need to know each
+    other and they don't rely on their ancestors or children components to synchronize
+    their data. It mean there is now a single source of truth, which is the centralized
+    store--you don't need to keep data in sync between components anymore.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于我们的第一个示例，按钮和侧面板组件不需要在整个应用程序中同步其状态。相反，它们使用集中式存储获取数据并分派操作--这意味着它们不需要彼此了解，也不依赖其祖先或子组件来同步其数据。这意味着现在有一个单一的真相来源，即集中式存储--您不再需要在组件之间同步数据。
+- en: '>![](assets/b543f062-f694-4f8b-b6a9-cfcb04216376.jpg)'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '>![](assets/b543f062-f694-4f8b-b6a9-cfcb04216376.jpg)'
+- en: We will now architect our applications around the Vuex library and its principles.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将围绕Vuex库及其原则来设计我们的应用程序。
+- en: Vuex is recommended for most applications, but you don't have to use it if it's
+    not necessary, in very small projects such as prototypes or simple widgets.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vuex建议用于大多数应用程序，但如果不必要，您不必使用它，例如原型或简单小部件等非常小的项目。
+- en: The Vuex Store
+  id: totrans-69
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vuex存储库
+- en: The central element of Vuex is the store. It is a special object that allows
+    you to centralize the data of your app into a model that follows good design-patterns
+    and helps prevent errors like we saw in the previous section. It will be the main
+    architecture of our data and what we do with it.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vuex的中心元素是存储库。它是一个特殊对象，允许您将应用程序的数据集中到遵循良好设计模式并有助于防止我们在上一节中看到的错误的模型中。它将是我们的数据的主要架构以及我们对其的处理方式。
+- en: 'The store contains the following:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 存储库包含以下内容：
+- en: The state, which is a reactive data object that holds the state of your app
+  id: totrans-72
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 状态，这是一个包含应用程序状态的响应式数据对象
+- en: Getters, which are the equivalent of computed properties for the store
+  id: totrans-73
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 获取器，这是存储库的计算属性等效物
+- en: Mutations, which are functions used to modify the application state
+  id: totrans-74
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 变异，用于修改应用程序状态的函数
+- en: Actions, which are functions that usually call asynchronous APIs and then mutations
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 操作，通常调用异步API，然后变异的函数
+- en: 'So a store should look like this:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，存储库应该如下所示：
+- en: '![](assets/0259bc16-604e-4ffa-b499-fef0bb82b39d.png)'
+  id: totrans-77
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/0259bc16-604e-4ffa-b499-fef0bb82b39d.png)'
+- en: 'That''s a lot of new vocabulary to understand, so let''s create a store while
+    walking through these new concepts. You will see that it''s not as difficult as
+    it might seem:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是很多新词汇需要理解的，所以让我们在学习这些新概念的同时创建一个存储库。您会发现这并不像看起来那么困难：
+- en: 'Download vuex with the ''npm i -S vuex'' command.Create a new `store` folder
+    and add a `index.js` file that installs the Vuex plugin:'
+  id: totrans-79
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用'npm i -S vuex'命令下载vuex。创建一个新的`store`文件夹，并添加一个安装Vuex插件的`index.js`文件：
+- en: '[PRE12]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Create the store with the `Vuex.Store` constructor:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`Vuex.Store`构造函数创建存储库：
+- en: '[PRE13]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Export it as default like we do for the router:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 像路由器一样将其默认导出：
+- en: '[PRE14]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'In the main `main.js` file, import the store:'
+  id: totrans-85
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在主`main.js`文件中，导入存储库：
+- en: '[PRE15]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Webpack will detect that `store` is a folder and will automatically import the
+    `index.js` file inside it.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Webpack将检测到`store`是一个文件夹，并将自动导入其中的`index.js`文件。
+- en: 'To enable the store in our application, we need to inject it just like the
+    router:'
+  id: totrans-88
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要在我们的应用程序中启用存储库，我们需要像路由器一样注入它：
+- en: '[PRE16]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'All the components now have access to the store with the `$store` special property,
+    similar to `vue-router` special objects such as `$router` and `$route`. For example,
+    you could write this inside a component:'
+  id: totrans-90
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 所有组件现在都可以通过`$store`特殊属性访问存储库，类似于`vue-router`特殊对象，如`$router`和`$route`。例如，您可以在组件内部编写以下内容：
+- en: '[PRE17]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: The state is the source of truth
+  id: totrans-92
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 状态是真相的来源
+- en: The main piece of the store is its state. It represents the data shared across
+    the components of your app. The first principle is--this is the **single source
+    of truth** for your shared data. Since components will all read data from it,
+    and it will always be right.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 存储的主要部分是它的状态。它代表了应用程序中组件之间共享的数据。第一个原则是--这是您共享数据的**唯一数据源**。由于组件将从中读取数据，并且它将始终是正确的。
+- en: 'For now, the state will only have a `user` property, which will contain the
+    logged user data:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，状态将只有一个`user`属性，其中包含已登录用户的数据：
+- en: 'In the store options, add to the state a function that returns an object:'
+  id: totrans-95
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在存储选项中，将一个返回对象的函数添加到状态中：
+- en: '[PRE18]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Also, the next very important principle is--the state is **read-only**. You
+    shouldn't modify the state directly, or else you lose the benefits of using Vuex
+    (which is to make the shared state easy to reason about). If you have lots of
+    components modifying the state as they wish anywhere in the app, it will be harder
+    to follow the flow of the data and debug it using the dev tools. The only valid
+    way of changing the state is through mutations, as we will see in a moment.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个非常重要的原则是--状态是**只读**的。您不应直接修改状态，否则将失去使用Vuex的好处（使共享状态易于理解）。如果有很多组件在应用程序的任何地方随意修改状态，那么将更难以跟踪数据流并使用开发工具进行调试。更改状态的唯一有效方式是通过mutations，我们将很快看到。
+- en: 'To try reading the state, let''s create the `AppMenu.vue` component in the
+    `components` folder. It will display user info, the `center-on-user` button, and
+    the `logout` button:'
+  id: totrans-98
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了尝试读取状态，让我们在`components`文件夹中创建`AppMenu.vue`组件。它将显示用户信息，`center-on-user`按钮和`logout`按钮：
+- en: '[PRE19]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: The `user` object will have a profile property from Google, with the display
+    name and the photo of the user.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`user`对象将具有来自Google的profile属性，其中包含用户的显示名称和照片。'
+- en: 'Add this new `AppMenu` component in `GeoBlog.vue` :'
+  id: totrans-101
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`GeoBlog.vue`中添加这个新的`AppMenu`组件：
+- en: '[PRE20]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: For now our user is not logged in, so nothing is displayed.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前我们的用户没有登录，所以什么也没有显示。
+- en: Mutations update the state
+  id: totrans-104
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Mutations更新状态
+- en: 'As we consider the state as read-only, the only way to modify it is through
+    mutations. A mutation is a synchronous function that takes the state as the first
+    argument and an optional payload argument, and then updates the state. It means
+    you are not allowed to do asynchronous operations (like a request to the server)
+    in a mutation:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们将状态视为只读，修改它的唯一方式是通过mutations。Mutation是一个同步函数，它以状态作为第一个参数和一个可选的有效负载参数，然后更新状态。这意味着您不允许在mutation中执行异步操作（比如向服务器发出请求）。
+- en: 'Let''s add our first mutation, of type `''user''`, which will update the user
+    in the state:'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们添加我们的第一个mutation，类型为`'user'`，它将更新状态中的用户：
+- en: '[PRE21]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Mutations are very similar to events--they have a type (here it's `'user'`)
+    and a handler function.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mutations非常类似于事件--它们有一个类型（这里是`'user'`）和一个处理程序函数。
+- en: The word used to indicate that we are calling a mutation is **commit**. We can't
+    directly call them--it's like events, we ask the store to trigger the mutations
+    corresponding to a specific type.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用于指示我们正在调用mutation的词是**commit**。我们不能直接调用它们--就像事件一样，我们要求存储触发与特定类型对应的mutations。
+- en: 'To invoke our mutation handler, we need to use the `commit` store method:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要调用我们的mutation处理程序，我们需要使用`commit`存储方法：
+- en: '[PRE22]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Let''s try this in the `logout` function in the `AppMenu` component so we can
+    test the mutation:'
+  id: totrans-112
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`AppMenu`组件的`logout`函数中尝试这样做，这样我们就可以测试mutation：
+- en: '[PRE23]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Now if you click on the logout button, you should see the user info being toggled.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您点击注销按钮，您应该看到用户信息被切换。
+- en: Strict mode
+  id: totrans-115
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 严格模式
+- en: 'Mutations are synchronous for debugging reasons. The way the state is handled
+    makes it easy to track it and debug faulty behavior in the application since the
+    dev tools can take snapshots of it. But if your mutations make asynchronous calls,
+    then the debugger has no way to tell what the state is before and after the mutation,
+    making it untraceable:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 出于调试原因，突变是同步的。状态处理方式使得很容易跟踪和调试应用程序中的故障行为，因为开发工具可以对其进行快照。但是，如果您的突变进行异步调用，那么调试器无法知道突变之前和之后的状态，使其无法追踪：
+- en: 'To help you avoid modifying the state outside synchronous mutations, you can
+    enable strict mode like this:'
+  id: totrans-117
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了帮助您避免在同步突变之外修改状态，您可以这样启用严格模式：
+- en: '[PRE24]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: This will throw an error when the state is modified outside of a synchronous
+    mutation preventing the debugging tools from working correctly.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当状态在同步突变之外被修改时，这将引发错误，阻止调试工具正常工作。
+- en: 'You shouldn''t enable strict mode in production, since it will have an impact
+    on performance. Use this expression to do that--`strict: process.env.NODE_ENV
+    !== ''production''`, which will ensure the `NODE_ENV` standard environment variable
+    tells you in which development mode you are (usually development, testing, or
+    production).'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '您不应该在生产中启用严格模式，因为它会影响性能。使用这个表达式来做到这一点--`strict: process.env.NODE_ENV !== ''production''`，这将确保`NODE_ENV`标准环境变量告诉您处于哪种开发模式（通常是开发、测试或生产）。'
+- en: 'Let''s try changing the state directly in the `logout` test method:'
+  id: totrans-121
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们尝试直接在“logout”测试方法中更改状态：
+- en: '[PRE25]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'Then click again on the logout button and open the browser console--you should
+    see that Vuex has thrown errors because you are modifying the state outside of
+    proper mutations:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后再次点击登出按钮并打开浏览器控制台--您应该看到Vuex抛出了错误，因为您正在修改状态而不是通过正确的突变：
+- en: '![](assets/8fb4e4be-c081-4d85-bf19-d87c4de3d609.png)'
+  id: totrans-124
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/8fb4e4be-c081-4d85-bf19-d87c4de3d609.png)'
+- en: Time-travel debugging
+  id: totrans-125
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 时间旅行调试
+- en: One of the benefits of using the Vuex approach is the debugging experience.
+    In more complex apps, this is very useful to track the state of the app mutation-by-mutation.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Vuex方法的一个好处是调试体验。在更复杂的应用程序中，这对于逐个突变跟踪应用程序状态非常有用。
+- en: 'Revert to the mutations call in the `logout` method. Click a few times on the
+    logout button, then open the Vue dev tools and open the Vuex tab. You should see
+    a list of mutations that were committed to the store:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到“logout”方法中的突变调用。点击几次登出按钮，然后打开Vue开发工具并打开Vuex选项卡。您应该看到一系列提交到存储的突变列表：
+- en: '![](assets/882a450b-d415-46d8-ae14-e2a973358052.png)'
+  id: totrans-128
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/882a450b-d415-46d8-ae14-e2a973358052.png)'
+- en: On the right, you can see the state that was recorded for the selected mutation
+    and its payload (the argument passed to it).
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在右侧，您可以看到为所选突变记录的状态及其有效负载（传递给它的参数）。
+- en: 'You can go back to any state snapshot by hovering over a mutation and clicking
+    on the Time Travel icon button:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过悬停在突变上并单击时间旅行图标按钮来返回任何状态快照：
+- en: '![](assets/f833a1fb-d016-4c38-a4e8-e8164f2ab673.png)'
+  id: totrans-131
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/f833a1fb-d016-4c38-a4e8-e8164f2ab673.png)'
+- en: Your app will be back in the state it was originally! You can now go step-by-step
+    and replay the evolution of the app state as the mutations are committed.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的应用程序将恢复到最初的状态！现在您可以逐步回放应用程序状态的演变，就像突变被提交一样。
+- en: Getters compute and return data
+  id: totrans-133
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Getter计算并返回数据
+- en: 'Getters work like computed properties for the store. They are functions that
+    take the state and the getters as arguments, and return some state data:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Getter就像计算属性一样工作。它们是接受状态和getter作为参数的函数，并返回一些状态数据：
+- en: 'Let''s create a `user` getter that returns the user held by the state:'
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们创建一个返回状态中保存的用户的`user` getter：
+- en: '[PRE26]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'In our `AppMenu` component, we can use this getter instead of accessing the
+    state directly:'
+  id: totrans-137
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在我们的`AppMenu`组件中，我们可以使用这个getter来代替直接访问状态：
+- en: '[PRE27]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: This doesn't seem to be different from before. But accessing the state directly
+    isn't recommended--you should always use getters since it allows you to modify
+    the way you get the data without having to change the components using it. For
+    example, you can change the structure of the state and adapt the corresponding
+    getters without having an impact on the component.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这似乎与以前没有什么不同。但直接访问状态并不推荐——你应该始终使用getter，因为它允许你修改获取数据的方式，而无需更改使用它的组件。例如，你可以更改状态的结构并调整相应的getter，而不会对组件产生影响。
+- en: 'Let''s also add a `userPicture` getter that we will implement later when we
+    have the real Google profile:'
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们还添加一个`userPicture` getter，我们将在有真实的Google个人资料时实现它：
+- en: '[PRE28]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'In the `AppMenu` component, we can already use it:'
+  id: totrans-142
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`AppMenu`组件中，我们已经可以使用它：
+- en: '[PRE29]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: Actions for store operations
+  id: totrans-144
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 存储操作的操作
+- en: 'The final element composing the store is actions. They are different from mutations,
+    because they don''t modify the state directly, but they can both **commit mutations**
+    and make **asynchronous operations**. Similar to the mutations, actions are declared
+    with a type and a handler. The handler can''t be called directly, you need to
+    dispatch an action type like this:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 组成存储的最终元素是动作。它们与突变不同，因为它们不直接修改状态，但它们可以**提交突变**并进行**异步操作**。与突变类似，动作是用类型和处理程序声明的。处理程序不能直接调用，你需要像这样调度一个动作类型：
+- en: '[PRE30]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'An action handler takes two arguments:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 动作处理程序需要两个参数：
+- en: '`context`, which provides the `commit`, `dispatch`, `state`, and `getters`
+    utilities linked to the store'
+  id: totrans-148
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`context`，它提供了与存储相关的`commit`、`dispatch`、`state`和`getters`实用程序'
+- en: '`payload`, which is the argument provided to the `dispatch` call'
+  id: totrans-149
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`有效负载`，这是提供给`dispatch`调用的参数'
+- en: 'Let''s add our first actions, of type `''login''` and `''logout''`, which don''t
+    expect a payload:'
+  id: totrans-150
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们添加我们的第一个动作，类型为'login'和'logout'，它们不需要有效负载：
+- en: '[PRE31]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'In the `AppMenu` component, we can test them by replacing the code of the methods
+    corresponding to the two buttons:'
+  id: totrans-152
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`AppMenu`组件中，我们可以通过替换与两个按钮对应的方法的代码来测试它们：
+- en: '[PRE32]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Now, if you click on the buttons in the menu, you should see the user profile
+    appear and disappear.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你点击菜单中的按钮，你应该看到用户资料出现和消失。
+- en: Similarly to getters, you should always use actions instead of mutations inside
+    your components. There is a good chance that the features of your app will evolve,
+    so it's a good idea to be able to change the action code rather than the component
+    code (for example, if you need to call a new additional mutation). Look at actions
+    as abstraction for your general application logic.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与getter类似，你应该始终在组件内部使用动作而不是突变。你的应用程序的功能很可能会发展，所以能够更改动作代码而不是组件代码是一个好主意（例如，如果你需要调用一个新的额外突变）。把动作看作是你的一般应用逻辑的抽象。
+- en: Mapping helpers
+  id: totrans-156
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 映射助手
+- en: Vuex provides a few helper functions to add state, getters, mutations, and actions.
+    Since we should only use getters and actions in our components to help separate
+    the state and related logic from the components, we will only use `mapGetters`
+    and `mapActions`.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vuex提供了一些辅助函数来添加状态、getter、mutation和action。由于我们应该只在组件中使用getter和action来帮助将状态和相关逻辑与组件分离，所以我们只会使用`mapGetters`和`mapActions`。
+- en: 'These functions generate appropriate computed properties and methods to the
+    components that rely on the corresponding getters and actions from the store,
+    so you don''t have to type `this.$store.getters` and `this.$store.dispatch` each
+    time. The argument is either:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些函数为依赖于存储中相应getter和动作的组件生成适当的计算属性和方法，因此您不必每次都输入`this.$store.getters`和`this.$store.dispatch`。参数要么是：
+- en: An array of types that are mapped with the same name as? the component
+  id: totrans-159
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 与组件相同名称的映射的类型数组
+- en: An object, whose keys are the aliases on the component and the value are the
+    types
+  id: totrans-160
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个对象，其键是组件上的别名，值是类型
+- en: 'For example, the following code using the array syntax:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，使用数组语法的以下代码：
+- en: '[PRE33]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'Is equivalent to this in the component:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在组件中相当于这个：
+- en: '[PRE34]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'And the following code using the object syntax:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并使用对象语法的以下代码：
+- en: '[PRE35]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Is equivalent to this:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 相当于这个：
+- en: '[PRE36]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Let''s refactor our `AppMenu` component to use those helpers:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们重构我们的`AppMenu`组件来使用这些帮助程序：
+- en: 'First import those in the component:'
+  id: totrans-170
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先在组件中导入这些：
+- en: '[PRE37]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'Then, we can rewrite the component like this:'
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，我们可以像这样重写组件：
+- en: '[PRE38]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Now, the component will have two computed properties that return the corresponding
+    store getters, and two methods that dispatch the `'login'` and `'logout'` action
+    types.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，组件将有两个计算属性，返回相应的存储器getter，并且两个方法分派`'login'`和`'logout'`动作类型。
+- en: User state
+  id: totrans-175
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 用户状态
+- en: In this section, we will add the user system to allow users to log in with their
+    Google account.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将添加用户系统，允许用户使用他们的Google账户登录。
+- en: Setting up Google OAuth
+  id: totrans-177
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置Google OAuth
+- en: 'Before we can use the Google API, we have to configure a new project in the
+    Google Developers Console:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们可以使用Google API之前，我们必须在Google开发者控制台中配置一个新项目：
+- en: Go to the Developer Console at [console.developers.google.com.](https://accounts.google.com/ServiceLogin/signinchooser?service=cloudconsole&passive=1209600&osid=1&continue=https%3A%2F%2Fconsole.developers.google.com%2F%3Fref%3Dhttps%3A%2F%2Fcdp.packtpub.com%2Fvue_js_2_project_guide%2Fwp-admin%2Fpost.php%3Fpost%253D366%2526post_type%253Dchapter%2526action%253Dedit&followup=https%3A%2F%2Fconsole.developers.google.com%2F%3Fref%3Dhttps%3A%2F%2Fcdp.packtpub.com%2Fvue_js_2_project_guide%2Fwp-admin%2Fpost.php%3Fpost%253D366%2526post_type%253Dchapter%2526action%253Dedit&flowName=GlifWebSignIn&flowEntry=ServiceLogin)
+  id: totrans-179
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 转到[console.developers.google.com](https://accounts.google.com/ServiceLogin/signinchooser?service=cloudconsole&passive=1209600&osid=1&continue=https%3A%2F%2Fconsole.developers.google.com%2F%3Fref%3Dhttps%3A%2F%2Fcdp.packtpub.com%2Fvue_js_2_project_guide%2Fwp-admin%2Fpost.php%3Fpost%253D366%2526post_type%253Dchapter%2526action%253Dedit&followup=https%3A%2F%2Fconsole.developers.google.com%2F%3Fref%3Dhttps%3A%2F%2Fcdp.packtpub.com%2Fvue_js_2_project_guide%2Fwp-admin%2Fpost.php%3Fpost%253D366%2526post_type%253Dchapter%2526action%253Dedit&flowName=GlifWebSignIn&flowEntry=ServiceLogin)的开发者控制台。
+- en: Create a new project using the Projects drop-down at the top of the page and
+    give it a name. When project creation is finished, select it.
+  id: totrans-180
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用页面顶部的项目下拉菜单创建一个新项目，并给它命名。项目创建完成后，选择它。
+- en: To retrieve the user profile, we need to enable the Google+ API. Go to APIs
+    & services | Library and click on Google+ API under the Social APIs section. On
+    the Google+ API page, click on the Enable button. You should then see a usage
+    dashboard with some empty graphs.
+  id: totrans-181
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要检索用户配置文件，我们需要启用Google+ API。转到API和服务 | 图书馆，然后在社交API部分下点击Google+ API。在Google+
+    API页面上，点击启用按钮。然后你应该看到一个带有一些空图表的使用仪表板。
+- en: Next we need to create application credentials to authenticate our server to
+    Google. Go to APIs & services | Credentials and select the OAuth consent screen
+    tab. Make sure you select an email address and enter a *Product name shown to
+    users*.
+  id: totrans-182
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要创建应用凭据，以便将我们的服务器验证到Google。转到API和服务 | 凭据，然后选择OAuth同意屏幕选项卡。确保你选择一个电子邮件地址，并输入一个*向用户显示的产品名称*。
+- en: Select the Credentials tab, click on the Create credentials drop-down, and then
+    select OAuth client ID. Select Web application as the application type, then enter
+    the URL where the server will be up in the Authorized JavaScript origins field.
+    For now, it will be `http://localhost:3000`. Press the *Enter* key to add it to
+    the list. Then add the URL to which Google will redirect the user after the Google
+    login screen into the Authorized redirect URIs--`http://localhost:3000/auth/google/callback`
+    and press the *Enter* key. This URL corresponds to a special route on the server.
+    When you are done, click on the Create client ID button.
+  id: totrans-183
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择凭证选项卡，点击创建凭证下拉菜单，然后选择OAuth客户端ID。选择Web应用程序作为应用程序类型，然后在授权的JavaScript起源字段中输入服务器将启动的URL。目前，它将是`http://localhost:3000`。按下*Enter*键将其添加到列表中。然后将Google登录屏幕后Google将重定向用户的URL添加到授权重定向URI--`http://localhost:3000/auth/google/callback`并按下*Enter*键。此URL对应服务器上的特殊路由。完成后，点击创建客户端ID按钮。
+- en: '![](assets/aaf1ebe9-cfb0-4497-8017-b8829913d19b.png)'
+  id: totrans-184
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/aaf1ebe9-cfb0-4497-8017-b8829913d19b.png)'
+- en: Then copy or download the credentials containing the client ID and a secret
+    that you shouldn't share with anybody outside of your team. These two keys will
+    allow the Google API to authenticate your application and will display its name
+    when the users log in through the Google login page.
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后复制或下载包含客户端ID和秘钥的凭证，这些信息不应该与团队外的任何人分享。这两个密钥将允许Google API对您的应用进行身份验证，并在用户通过Google登录页面登录时显示其名称。
+- en: 'Download the API server of the project ([https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-full/server](https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-full/server)),
+    and extract it outside of the `Vue app` directory. Open a new Terminal inside
+    this new folder, and install server dependencies with the usual command:'
+  id: totrans-186
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下载项目的API服务器（[https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-full/server](https://github.com/Akryum/packt-vue-project-guide/tree/master/chapter6-full/server)），并将其提取到`Vue
+    app`目录之外。在这个新文件夹中打开一个新的终端，并使用通常的命令安装服务器依赖项。
+- en: '[PRE39]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Next, you need to export the two `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+    environment variables with the corresponding values in the credentials file you
+    downloaded from the Google Developers Console. For example, on Linux:'
+  id: totrans-188
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，您需要导出两个`GOOGLE_CLIENT_ID`和`GOOGLE_CLIENT_SECRET`环境变量，并在从Google Developers
+    Console下载的凭证文件中使用相应的值。例如，在Linux上：
+- en: '[PRE40]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Or on Windows:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者在Windows上：
+- en: '[PRE41]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: You need to do that each time you want to start the server in a new Terminal
+    session.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每次您想要在新的终端会话中启动服务器时都需要这样做。
+- en: 'You can start the server with the `start` script:'
+  id: totrans-193
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您可以使用`start`脚本启动服务器：
+- en: '[PRE42]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: Login button
+  id: totrans-195
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 登录按钮
+- en: 'The `Login` component contains the button that should open a popup displaying
+    the Google login page. The popup will first load a route on the Node.js server,
+    which will redirect to the Google OAuth page. When the user is logged in and has
+    authorized our app, the popup is redirected to our nodejs server again and will
+    send a message to the main page before closing:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Login`组件包含应该打开弹出窗口显示Google登录页面的按钮。弹出窗口将首先加载Node.js服务器上的路由，然后将重定向到Google OAuth页面。当用户登录并授权我们的应用程序时，弹出窗口将再次重定向到我们的nodejs服务器，并在关闭之前向主页面发送消息：'
+- en: 'Edit the `openGoogleSignin` method to open the popup to the `/auth/google`
+    route on the server that will redirect the user to Google:'
+  id: totrans-197
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 编辑`openGoogleSignin`方法以在服务器上打开到`/auth/google`路由的弹出窗口，该路由将重定向用户到Google：
+- en: '[PRE43]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: After the user is successfully authenticated via Google, the callback page on
+    the server will send a message to the Vue app window using the standard postMessage
+    API.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户通过Google成功验证后，服务器上的回调页面将使用标准postMessage API向Vue应用窗口发送消息。
+- en: When we receive the message, we need to check that it comes from the right domain
+    (`localhost:3000` for our server).
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们收到消息时，我们需要检查它是否来自正确的域（我们服务器的`localhost:3000`）。
+- en: 'Create a new `handleMessage` method with a destructured message parameter:'
+  id: totrans-201
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个带有解构消息参数的新`handleMessage`方法：
+- en: '[PRE44]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'We will dispatch the `''login''` action type to the store, which will fetch
+    the user data soon. Map it to the component:'
+  id: totrans-203
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将向存储分发`'login'`动作类型，它将很快获取用户数据。将其映射到组件：
+- en: '[PRE45]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'Then we use the `mounted` lifecycle hook (outside of the methods) to add an
+    event listener to the window:'
+  id: totrans-205
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后我们使用`mounted`生命周期钩子（在方法之外）向窗口添加事件侦听器：
+- en: '[PRE46]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'And finally, we don''t forget to remove this listener when the component is
+    being destroyed:'
+  id: totrans-207
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，在组件被销毁时，不要忘记删除此侦听器：
+- en: '[PRE47]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: User in the store
+  id: totrans-209
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 存储中的用户
+- en: 'The store will have two actions related to the user--`login` and `logout`.
+    We already have them, we now need to implement what they will do. We will also
+    add some user-related features in this section, such as loading the user session
+    when the app starts and displaying its profile picture in the top bar:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 存储将有两个与用户相关的动作--`login`和`logout`。我们已经有了它们，现在我们需要实现它们将做什么。我们还将在本节中添加一些与用户相关的功能，例如在应用程序启动时加载用户会话并在顶部栏显示其个人资料图片：
+- en: 'Let''s implement the `login` action in the store. It will fetch user data,
+    just like we did in [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml), *Project
+    3 - Support Center*, and then `commit` the data to the state (don''t forget to
+    import ''$fetch''):'
+  id: totrans-211
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在存储中实现`login`动作。它将获取用户数据，就像我们在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)中的*项目3-支持中心*中所做的那样，然后将数据`commit`到状态中（不要忘记导入`$fetch`）：
+- en: '[PRE48]'
+  id: totrans-212
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: As you can see, an action can perform asynchronous operations, for example here
+    requesting data to the server. If the user is connected, we redirect them to the
+    page they wanted or the home page, like we did in [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml),
+    *Project 3 - Support Center*.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，动作可以执行异步操作，例如在此处向服务器请求数据。如果用户已连接，我们将重定向他们到他们想要的页面或主页，就像我们在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)中的*项目3-支持中心*中所做的那样。
+- en: 'The `''logout''` action needs to send the `/logout` request to the server and
+    redirect the user back to the login screen if the current route is private:'
+  id: totrans-214
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`''logout''`动作需要向服务器发送`/logout`请求，并且如果当前路由是私有的，则将用户重定向回登录页面：'
+- en: '[PRE49]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: According to the information we have put in the `router.js` file, if the user
+    was on the `'home'` route, it will be redirected to the login page.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据我们在`router.js`文件中放置的信息，如果用户在`'home'`路由上，将被重定向到登录页面。
+- en: Adapting the router
+  id: totrans-217
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 调整路由
+- en: 'We now have to restore the navigation guards to the router like in [Chapter
+    5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml), *Project 3 - Support Center*--that
+    way, the user won''t be able to enter the private route if they are not connected:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要像在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)中的*项目3-支持中心*一样，将导航守卫恢复到路由中，这样用户就无法在未连接时进入私有路由：
+- en: 'In the `router.js` file, restore the `beforeEach` navigation guard by using
+    the `user` store getter to check whether the user is connected or not. It should
+    be quite similar to the one we have already implemented:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`router.js`文件中，通过使用`user`存储获取器恢复`beforeEach`导航守卫，以检查用户是否已连接。这应该与我们已经实现的那个非常相似：
+- en: '[PRE50]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Adapting the fetch plugin
+  id: totrans-221
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 调整fetch插件
+- en: 'The `$fetch` plugin needs some changes as well, since we need to log the user
+    out if their session has expired:'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们需要在会话过期时注销用户，`$fetch`插件也需要一些更改：
+- en: 'In this case, we just need to dispatch the `''logout''` action:'
+  id: totrans-223
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在这种情况下，我们只需要分发`'logout'`动作：
+- en: '[PRE51]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Don''t forget to import the store:'
+  id: totrans-225
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 不要忘记导入存储：
+- en: '[PRE52]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: You can now try logging in through Google to your app!
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您现在可以尝试通过Google登录到您的应用程序！
+- en: Check the user session on start
+  id: totrans-228
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检查用户会话的开始
+- en: When the application starts, we want to check whether the user has an active
+    session like we did in [Chapter 5](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml),
+    *Project 3 - Support Center:*
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用程序启动时，我们希望检查用户是否有活动会话，就像我们在[第5章](2ec000b2-cfbd-4da5-af9c-974dec1813a2.xhtml)中所做的那样，*项目3
+    - 支持中心*：
+- en: 'For that, we will create a new generic `''init''` action in the store; this
+    will dispatch the `''login''` action, but could eventually dispatch more actions:'
+  id: totrans-230
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为此，我们将在存储中创建一个新的通用的`'init'`操作；这将分派`'login'`操作，但最终可能会分派更多操作：
+- en: '[PRE53]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'In the `main.js` file, we can now dispatch and wait for this action:'
+  id: totrans-232
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`main.js`文件中，我们现在可以分发并等待此操作：
+- en: '[PRE54]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: Now you can log in through Google and refresh the page without being brought
+    back to the login page.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以通过Google登录并在不被带回登录页面的情况下刷新页面。
+- en: The profile picture
+  id: totrans-235
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 个人资料图片
+- en: 'Finally, we can implement the `userPicture` getter to return the first value
+    contained in the `photos` array of the Google profile:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们可以实现`userPicture` getter，以返回Google个人资料的`photos`数组中包含的第一个值：
+- en: '[PRE55]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: As you can see, we can reuse existing getters inside other getters with the
+    second argument!
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，我们可以使用第二个参数在其他getter中重用现有的getter！
+- en: 'You should now have the complete toolbar displayed in the app when you are
+    connected:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您连接时，应用程序中应显示完整的工具栏：
+- en: '![](assets/ffc64515-9e15-4962-b75d-f009eee655cc.png)'
+  id: totrans-240
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ffc64515-9e15-4962-b75d-f009eee655cc.png)'
+- en: Synchronizing the store and the router
+  id: totrans-241
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 同步存储和路由器
+- en: 'We can integrate the router into the store with the official `vuex-router-sync`
+    package. It will expose the current route in the state (`state.route`) and will
+    commit a mutation each time the route changes:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用官方的`vuex-router-sync`包将路由器集成到存储中。它将在状态（`state.route`）中公开当前路由，并且每次路由更改时都会提交一个mutation：
+- en: 'Install it with the usual command:'
+  id: totrans-243
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用常规命令进行安装：
+- en: '[PRE56]'
+  id: totrans-244
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'To use it, we need the `sync` method in the main `main.js` file:'
+  id: totrans-245
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要使用它，我们需要在主`main.js`文件中使用`sync`方法：
+- en: '[PRE57]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: Now, you can access the `state.route` object and time-travel debugging will
+    apply to the router as well.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以访问`state.route`对象，并且时间旅行调试也将适用于路由器。
+- en: Embedding Google Maps
+  id: totrans-248
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 嵌入Google地图
+- en: In this second part, we are going to add a map to the home page and control
+    it through the Vuex store.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这第二部分中，我们将在主页上添加一个地图，并通过Vuex存储对其进行控制。
+- en: Installation
+  id: totrans-250
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装
+- en: To integrate Google Maps, we will need an API and a third-party package called
+    `vue-googlemaps`.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要集成Google地图，我们将需要一个API和一个名为`vue-googlemaps`的第三方包。
+- en: Getting the API key
+  id: totrans-252
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取API密钥
+- en: 'To use Google Maps in our app, we need to enable the corresponding API and
+    generate an API key:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在我们的应用程序中使用Google地图，我们需要启用相应的API并生成API密钥：
+- en: In the Google Developers Console, go back to the APIs & services *|* Library
+    and click on Google Maps JavaScript API under the Google Maps APIs section. On
+    the API page, click on the Enable button.
+  id: totrans-254
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Google开发者控制台中，返回到API和服务*|*库，然后单击Google地图API下的Google地图JavaScript API。在API页面上，单击启用按钮。
+- en: Then go to Credentials and create a new API key.
+  id: totrans-255
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后转到凭据并创建一个新的API密钥。
+- en: Installing the library
+  id: totrans-256
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装库
+- en: We will now install the `vue-googlemaps` library, which will help us integrate
+    Google Maps into our app.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将安装`vue-googlemaps`库，这将帮助我们将Google地图集成到我们的应用程序中。
+- en: 'In the app, install the `vue-googlemaps` package with the following command:'
+  id: totrans-258
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在应用程序中，使用以下命令安装`vue-googlemaps`包：
+- en: '[PRE58]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'In the main `main.js` file, you can enable it in the app with the API key from
+    Google:'
+  id: totrans-260
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在主`main.js`文件中，您可以使用来自Google的API密钥在应用程序中启用它：
+- en: '[PRE59]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: We also specify we want to load the Google Maps Places library, useful for showing
+    info on a location.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还指定要加载Google地图Places库，用于显示位置信息。
+- en: We now have access to the components of the library!
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以访问库的组件了！
+- en: 'In the `App.vue` component, add the style of the library:'
+  id: totrans-264
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`App.vue`组件中，添加库的样式：
+- en: '[PRE60]'
+  id: totrans-265
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: We use the `~` character because Stylus doesn't support absolute paths. Here
+    we want to access a npm module, so we add this to tell the `stylus-loader` that
+    this is an absolute path.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`~`字符，因为Stylus不支持绝对路径。在这里，我们想要访问一个npm模块，所以我们添加这个来告诉`stylus-loader`这是一个绝对路径。
+- en: Adding a map
+  id: totrans-267
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加地图
+- en: 'The map will be the main component of the app, and it will contain:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 地图将是应用程序的主要组件，它将包含：
+- en: The user position indicator
+  id: totrans-269
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户位置指示器
+- en: A marker for each post
+  id: totrans-270
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每个帖子的标记
+- en: The eventual "ghost" marker for the post being created
+  id: totrans-271
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最终正在创建的帖子的“幽灵”标记
+- en: 'We will now set up a simple map that will fill the main page:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将设置一个简单的地图，将填充主页面：
+- en: 'Create a new `BlogMap.vue` component with the `center` and `zoom` properties:'
+  id: totrans-273
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个新的`BlogMap.vue`组件，具有`center`和`zoom`属性：
+- en: '[PRE61]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'Then, you need to add it to the `GeoBlog.vue` component:'
+  id: totrans-275
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，您需要将其添加到`GeoBlog.vue`组件中：
+- en: '[PRE62]'
+  id: totrans-276
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: Don't forget to import it and to put it in the `components` option!
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记导入它并将其放入`components`选项中！
+- en: Connecting the BlogMap and the store
+  id: totrans-278
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 连接BlogMap和store
+- en: Right now the state related to the map is local to the `BlogMap` component--let's
+    move it to the store!
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前与地图相关的状态是局部的`BlogMap`组件--让我们将其移到store中！
+- en: Vuex modules
+  id: totrans-280
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Vuex模块
+- en: In the Vuex store, we can divide our state in modules, to have better organization.
+    A module contains a state, getters, mutations, and actions, just like the main
+    store. The store and each module can contain any number of modules, so the store
+    can have nested modules inside other modules--it's up to you to find the structure
+    that works best for your project.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Vuex store中，我们可以将我们的状态分成模块，以便更好地组织。一个模块包含一个状态、getter、mutation和action，就像主store一样。store和每个模块都可以包含任意数量的模块，因此store可以在其他模块内包含嵌套模块--这取决于您找到适合项目的最佳结构。
+- en: 'In this application, we will create two modules:'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此应用程序中，我们将创建两个模块：
+- en: '`maps` related to the map'
+  id: totrans-283
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 与地图相关的`maps`
+- en: '`posts` related to the blog posts and comments'
+  id: totrans-284
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 与博客帖子和评论相关的`posts`
+- en: 'For now, we will focus on the `maps` module. It''s best to at least separate
+    each module in a different file or directory:'
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将专注于`maps`模块。最好至少将每个模块分开放在不同的文件或目录中：
+- en: 'Create a new `maps.js` file in the `store` folder that exports as default a
+    module definition and the state of the map:'
+  id: totrans-286
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`store`文件夹中创建一个新的`maps.js`文件，将模块定义和地图的状态作为默认导出：
+- en: '[PRE63]'
+  id: totrans-287
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'Then to add the module to the store, put it in a new `modules` option in the
+    `store/index.js` file:'
+  id: totrans-288
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后将模块添加到store中，在`store/index.js`文件中的新`modules`选项中放置它：
+- en: '[PRE64]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: By default, the state in the getters, mutations, and actions of the module will
+    be the state of this module. Here it will be `store.state.maps`.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，模块的getter、mutation和action的状态将是此模块的状态。这里将是`store.state.maps`。
+- en: Namespaced module
+  id: totrans-291
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 命名空间模块
+- en: The `namespaced` option tells Vuex to also add the `'maps/'` namespace before
+    all the getter, mutation, and action types of the module. It will also add them
+    to the `commit` and `dispatch` calls inside the namespaced module.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`namespaced`选项告诉Vuex在模块的getter、mutation和action类型之前也添加`''maps/''`命名空间。它还会将它们添加到命名空间模块内的`commit`和`dispatch`调用中。'
+- en: 'Let''s add a few getters that will be used by the `BlogMap` component:'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们添加一些getter，这些getter将被`BlogMap`组件使用：
+- en: '[PRE65]'
+  id: totrans-294
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'The `maps/center` and the `maps/zoom` getters will be added to the store. To
+    read them, you could do:'
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`maps/center`和`maps/zoom` getter将被添加到store中。要读取它们，您可以这样做：'
+- en: '[PRE66]'
+  id: totrans-296
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'With the getter helper:'
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用getter帮助程序：
+- en: '[PRE67]'
+  id: totrans-298
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'You can also specify a namespace parameter:'
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以指定命名空间参数：
+- en: '[PRE68]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'The last way to do it is to generate helpers based on a specific namespace
+    with the `createNamespacedHelpers` method:'
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样做的最后一种方法是使用`createNamespacedHelpers`方法基于特定命名空间生成帮助程序：
+- en: '[PRE69]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: Accessing global elements
+  id: totrans-303
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 访问全局元素
+- en: 'In the namespaced module getters, you can access the root state and root getters
+    (which means any getter) like this:'
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在命名空间模块的getter中，你可以像这样访问根状态和根getter（也就是任何getter）：
+- en: '[PRE70]'
+  id: totrans-305
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'In the actions, you have access to `rootGetters` in the context and you can
+    use the `{ root: true }` option for the `commit` and `dispatch` calls:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '在动作中，你可以在上下文中访问`rootGetters`，并且你可以在`commit`和`dispatch`调用中使用`{ root: true }`选项：'
+- en: '[PRE71]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: BlogMap module and component
+  id: totrans-308
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: BlogMap模块和组件
+- en: In this section, we are going to wire the `BlogMap` component to the `maps`
+    namespaced module.
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将把`BlogMap`组件与`maps`命名空间模块连接起来。
+- en: Mutations
+  id: totrans-310
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 变化
+- en: 'Let''s add the `center` and `zoom` mutations in the `maps` module:'
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在`maps`模块中添加`center`和`zoom`的变化：
+- en: '[PRE72]'
+  id: totrans-312
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: Actions
+  id: totrans-313
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 动作
+- en: 'Then, we set up the actions that commit those mutations:'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们设置提交这些变化的动作：
+- en: '[PRE73]'
+  id: totrans-315
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: Mapping in the component
+  id: totrans-316
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 组件中的映射
+- en: 'Back to our `BlogMap` component; we can use the helpers to map the getters
+    and the actions:'
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到我们的`BlogMap`组件；我们可以使用辅助工具来映射getter和动作：
+- en: '[PRE74]'
+  id: totrans-318
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: Now the state of the map is managed in the Vuex store!
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在地图的状态是在Vuex存储中管理的！
+- en: User position
+  id: totrans-320
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 用户位置
+- en: 'Now, we will add the user position indicator, which will give us the position
+    so we can store it in the store:'
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将添加用户位置指示器，这样我们就可以获取位置并将其存储在存储中：
+- en: 'Add the `googlemaps-user-position` component inside the map:'
+  id: totrans-322
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在地图中添加`googlemaps-user-position`组件：
+- en: '[PRE75]'
+  id: totrans-323
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'Now we need to add this `userPosition` info in the `maps` module:'
+  id: totrans-324
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们需要在`maps`模块中添加`userPosition`信息：
+- en: '[PRE76]'
+  id: totrans-325
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: And then map the `setUserPosition` action in the `BlogMap` component using the
+    appropriate helper.
+  id: totrans-326
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后在`BlogMap`组件中映射`setUserPosition`的动作，使用适当的辅助工具。
+- en: Now we should have the user position committed in the store (assuming you have
+    given the browser the permission to access your position).
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们应该在存储中提交用户位置（假设你已经给予浏览器访问你位置的权限）。
+- en: Centering on the user
+  id: totrans-328
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 居中用户
+- en: 'This user position will be very useful to center the map on the user:'
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个用户位置将非常有用，可以把地图居中在用户位置上：
+- en: 'Let''s create a new `centerOnUser` action in the `maps` module:'
+  id: totrans-330
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`maps`模块中创建一个新的`centerOnUser`动作：
+- en: '[PRE77]'
+  id: totrans-331
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: With this, we can also change the `setUserPosition` action--if it's the first
+    time we get the user position (which means it's `null` in the state), we should
+    center the map on the user.
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这个，我们还可以改变`setUserPosition`的动作——如果这是我们第一次获取用户位置（也就是在状态中是`null`），我们应该把地图居中在用户位置上。
+- en: 'The `setUserPosition` action should now look like this:'
+  id: totrans-333
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`setUserPosition`动作现在应该是这样的：'
+- en: '[PRE78]'
+  id: totrans-334
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: You can try it now, and have the map centered on you with a little blue dot.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以尝试一下，地图会以一个小蓝点居中在你的位置上。
+- en: By default, the user indicator is disabled if the accuracy of your position
+    is more than 1,000 meters, so it's possible that this won't work depending on
+    your hardware. You can use a higher value with the `minmumAccuracy` prop of the
+    `googlemaps-user-position` component.
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，如果你的位置精度超过1,000米，用户指示器将被禁用，所以这取决于你的硬件，可能不起作用。你可以使用`googlemaps-user-position`组件的`minmumAccuracy`属性来使用更高的值。
+- en: 'We also have a `''center on user''` button in the toolbar, so we need to replace
+    the `centerOnUser` action mapping in the `AppMenu` component:'
+  id: totrans-337
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们在工具栏中还有一个“居中用户”按钮，所以我们需要替换`AppMenu`组件中的`centerOnUser`动作映射：
+- en: '[PRE79]'
+  id: totrans-338
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: Blog posts and comments
+  id: totrans-339
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 博客文章和评论
+- en: In this last part, we are going to add the blog content to the app. Each blog
+    post will have a position and an optional place ID from Google Maps (so the place
+    can be described, for example, as "Restaurant A"). We will load the posts that
+    fit in the visible bounds of the map and each one will appear as a marker with
+    a custom icon. When clicking on a marker, the right side panel will display the
+    post content and a list of comments. Clicking anywhere else on the map will create
+    a draft post at this location in the Vuex store and display a form to write its
+    content and save it in the right side panel.
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在最后一部分中，我们将把博客内容添加到应用程序中。每篇博客文章都将有一个位置和一个来自Google地图的可选地点ID（因此可以描述地点，例如“餐厅A”）。我们将加载适合地图可见范围的帖子，并且每个帖子都将显示为带有自定义图标的标记。单击标记时，右侧面板将显示帖子内容和评论列表。单击地图上的其他任何位置将在Vuex存储中创建一个草稿帖子，并显示一个表单来编写其内容并将其保存在右侧面板中。
+- en: Posts store module
+  id: totrans-341
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 帖子存储模块
+- en: 'Let''s start by creating a new `posts` namespaced Vuex module to manage shared
+    data related to the blog posts:'
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先创建一个新的`posts`命名空间的Vuex模块，以管理与博客帖子相关的共享数据：
+- en: 'Create a new `store/posts.js` file with those state properties:'
+  id: totrans-343
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个新的`store/posts.js`文件，其中包含以下状态属性：
+- en: '[PRE80]'
+  id: totrans-344
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'Next we need a few getters:'
+  id: totrans-345
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来我们需要一些getter：
+- en: '[PRE81]'
+  id: totrans-346
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: 'And some mutations (note that we mutate `posts` and `mapBounds` together so
+    they stay consistent):'
+  id: totrans-347
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 还有一些mutations（请注意，我们同时改变`posts`和`mapBounds`，以便它们保持一致）：
+- en: '[PRE82]'
+  id: totrans-348
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: 'Finally, add it to the store like we did for the `maps` module:'
+  id: totrans-349
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，像我们为`maps`模块做的那样将其添加到商店中：
+- en: '[PRE83]'
+  id: totrans-350
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: Rendering functions and JSX
+  id: totrans-351
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 渲染函数和JSX
+- en: In [Chapter 4](cb653442-5aaa-47b6-ad7b-d94ce15821b7.xhtml), *Advanced Project
+    Setup*, I already wrote about render functions and JSX, which are different ways
+    other than templates to write the view of the components. Before continuing, we
+    will go into more detail about those and then we will put them into practice.
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第4章](cb653442-5aaa-47b6-ad7b-d94ce15821b7.xhtml)中，*高级项目设置*，我已经写过关于渲染函数和JSX的内容，这些是除了模板之外编写组件视图的不同方式。在继续之前，我们将更详细地了解这些内容，然后将它们付诸实践。
+- en: Writing the view in JavaScript with render functions
+  id: totrans-353
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用渲染函数在JavaScript中编写视图
+- en: Vue compiles our templates into `render` functions. This means that all the
+    component views are JavaScript code in the end. Those render functions will compose
+    the Virtual DOM tree of elements to be displayed in the page real DOM.
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue将我们的模板编译成`render`函数。这意味着所有组件视图最终都是JavaScript代码。这些渲染函数将组成要在页面真实DOM中显示的虚拟DOM树。
+- en: 'Most of the time, templates are fine, but you may come across cases where you
+    need the full programmatic power of JavaScript to create a component view. Instead
+    of specifying a template, you write a `render` function to your component. For
+    example:'
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大多数情况下，模板都很好用，但您可能会遇到需要使用JavaScript的全部编程能力来创建组件视图的情况。您可以编写一个`render`函数来代替指定模板给您的组件。例如：
+- en: '[PRE84]'
+  id: totrans-356
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: 'The first argument is `createElement`, the function you need to call to create
+    elements (which can be either DOM elements or Vue components). It takes up to
+    three arguments:'
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个参数是`createElement`，这是您需要调用以创建元素（可以是DOM元素或Vue组件）的函数。它最多接受三个参数：
+- en: '`element` (required), which can be the name of an HTML tag, the ID of a registered
+    component, or directly a component definition object. It can be a function returning
+    one of these.'
+  id: totrans-358
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`element`（必需），可以是HTML标签的名称，已注册组件的ID，或者直接是组件定义对象。它可以是返回其中一个的函数。'
+- en: '`data` (optional) is the Data Object, which specifies things such as CSS classes,
+    props, events, and so on.'
+  id: totrans-359
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`data`（可选）是数据对象，用于指定诸如CSS类、props、事件等内容。'
+- en: '`children` (optional) is either a text string or an array of children constructed
+    with `createElement`.'
+  id: totrans-360
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`children`（可选）可以是文本字符串，也可以是使用`createElement`构建的子元素数组。'
+- en: We will use `h` as an alias of `createElement`, the argument of the `render`
+    function, since it's the common name used by everyone (and it's required by JSX
+    as we will see in a bit). `h` comes from the hyperscript term describing "writing
+    HTML using JavaScript".
+  id: totrans-361
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用`h`作为`createElement`的别名，`render`函数的参数，因为这是每个人都使用的常用名称（并且在稍后我们将看到，它是JSX所必需的）。`h`来自于描述“使用JavaScript编写HTML”的超文本术语。
+- en: 'The first example would be equivalent to this template:'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个示例将等同于此模板：
+- en: '[PRE85]'
+  id: totrans-363
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: Dynamic templates
+  id: totrans-364
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 动态模板
+- en: The main advantages of writing render functions directly are that they are closer
+    to compiler and you have the full power of JavaScript available to manipulate
+    the template. The obvious drawback is that it doesn't look like HTML anymore,
+    but this can be alleviated by JSX as we will see in the *What is JSX* section.
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 直接编写渲染函数的主要优势在于它们更接近编译器，并且您可以充分利用JavaScript的全部功能来操作模板。显而易见的缺点是它看起来不再像HTML，但这可以通过JSX来缓解，我们将在*什么是JSX*部分中看到。
+- en: 'For example, you could create a component that renders a title at any level
+    we want:'
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，您可以创建一个在任何级别渲染标题的组件：
+- en: '[PRE86]'
+  id: totrans-367
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: Here we skipped the data object argument since it is optional. We only passed
+    the tag name and the content.
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们省略了数据对象参数，因为它是可选的。我们只传递了标签名称和内容。
+- en: 'And then, for example, we would use it in our template to render an `<h2>`
+    title element:'
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，例如，我们可以在我们的模板中使用它来渲染一个`<h2>`标题元素：
+- en: '[PRE87]'
+  id: totrans-370
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'The equivalent in template would be quite tedious to write:'
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在模板中的等效写法将会相当冗长：
+- en: '[PRE88]'
+  id: totrans-372
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: Data objects
+  id: totrans-373
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 数据对象
+- en: The second optional argument is the data object, which allows you to pass additional
+    information about the element to `createElement` (or `h`). For example, you can
+    specify CSS classes in the same way we use the `v-bind:class` directive in our
+    classic templates, or we can add event listeners.
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个可选参数是数据对象，它允许您传递有关要传递给`createElement`（或`h`）的元素的其他信息。例如，您可以以与我们在经典模板中使用`v-bind:class`指令相同的方式指定CSS类，或者可以添加事件侦听器。
+- en: 'Here is an example of a data object that covers most features:'
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个覆盖大多数功能的数据对象的示例：
+- en: '[PRE89]'
+  id: totrans-376
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: 'For example, we can apply a special CSS class if the title level is below a
+    specific number:'
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，如果标题级别低于特定数字，我们可以应用特殊的CSS类：
+- en: '[PRE90]'
+  id: totrans-378
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: 'We could also put a click event listener that calls a method of the component:'
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以添加一个点击事件侦听器，调用组件的一个方法：
+- en: '[PRE91]'
+  id: totrans-380
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: You can find the full description of this object in the official documentation
+    ([https://vuejs.org/v2/guide/render-function.html#The-Data-Object-In-Depth](https://vuejs.org/v2/guide/render-function.html#The-Data-Object-In-Depth)).
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在官方文档中找到此对象的完整描述（[https://vuejs.org/v2/guide/render-function.html#The-Data-Object-In-Depth](https://vuejs.org/v2/guide/render-function.html#The-Data-Object-In-Depth)）。
+- en: As we have seen, Vue uses render functions in pure JavaScript under-the-hood
+    of our templates! We can even write our own render functions, using the `createElement`
+    (or `h`) function to construct the elements to be added to the Virtual-DOM.
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所见，Vue在我们的模板底层使用纯JavaScript的渲染函数！我们甚至可以编写自己的渲染函数，使用`createElement`（或`h`）函数来构造要添加到虚拟DOM中的元素。
+- en: This way of writing our views is more flexible and powerful than templates,
+    but is more complex and verbose. Use it when you feel comfortable with it!
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种编写视图的方式比模板更灵活、更强大，但也更复杂、更冗长。当您感到舒适时，请使用它！
+- en: Virtual DOM
+  id: totrans-384
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 虚拟DOM
+- en: 'The result of the `render` function is a tree of nodes created with the `createElement`
+    (or `h`) function; these are called **VNodes** in Vue. It represent the view of
+    the component in the Virtual DOM held by Vue. Every element in the DOM is a node--HTML
+    elements, text, even comments are nodes:'
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`render`函数的结果是使用`createElement`（或`h`）函数创建的节点树；在Vue中，这些被称为**VNodes**。它代表了Vue持有的虚拟DOM中组件的视图。DOM中的每个元素都是一个节点--HTML元素、文本，甚至注释都是节点：'
+- en: '![](assets/a1be10b7-445c-47b5-bb36-b8944629d491.png)'
+  id: totrans-386
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/a1be10b7-445c-47b5-bb36-b8944629d491.png)'
+- en: Vue doesn't directly replace the Real DOM tree with the new Virtual DOM tree,
+    because it may engender a lot of DOM operations (add or remove nodes), which are
+    costly. To be more performant, Vue will create a diff between the two trees, and
+    it will only do the DOM operations necessary to update the Real DOM to match the
+    Virtual DOM.
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue不会直接用新的虚拟DOM树替换真实的DOM树，因为这可能会产生大量的DOM操作（添加或删除节点），这是昂贵的。为了更高效，Vue将在两个树之间创建差异，并且只会执行必要的DOM操作，以使真实DOM与虚拟DOM匹配。
+- en: All of this happens automatically so that Vue keeps the Real DOM up-to-date
+    when data changes in your application.
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些都是自动发生的，这样Vue在应用程序中的数据发生变化时，就可以保持真实DOM的最新状态。
+- en: What is JSX?
+  id: totrans-389
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 什么是JSX？
+- en: 'JSX is a language created to write code that looks more like HTML inside the
+    `render` function''s JavaScript code. It is effectively an XML-like extension
+    to JavaScript. Our first previous example looks like this in JSX:'
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JSX是一种语言，用于在`render`函数的JavaScript代码中编写更像HTML的代码。它实际上是JavaScript的一种类似XML的扩展。我们之前的例子在JSX中看起来是这样的：
+- en: '[PRE92]'
+  id: totrans-391
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: This is possible thanks to Babel, the library that is in charge of compiling
+    our ES2015 JavaScript (or more recent) code into old ES5 JavaScript, which runs
+    in older browsers such as Internet Explorer. Babel can also be used to implement
+    new features into the JavaScript language (such as the proposed draft features
+    that may appear in later versions) or entirely new extensions such as JSX.
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这得益于Babel，这个库负责将我们的ES2015 JavaScript（或更高版本）代码编译成旧的ES5 JavaScript，这样就可以在旧浏览器（如Internet
+    Explorer）中运行。Babel还可以用来实现JavaScript语言的新功能（比如可能出现在以后版本中的草案功能）或者完全新的扩展，比如JSX。
+- en: 'The `babel-plugin-transform-vue-jsx` included in `babel-preset-vue` takes care
+    of transforming the JSX code into real JavaScript code that uses the `h` function.
+    So the previous JSX example will be transformed back into:'
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`babel-preset-vue`中包含的`babel-plugin-transform-vue-jsx`负责将JSX代码转换为使用`h`函数的真实JavaScript代码。因此，之前的JSX示例将被转换回：'
+- en: '[PRE93]'
+  id: totrans-394
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: That's why we need to use `h` instead of `createElement` when using JSX.
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是为什么在使用JSX时，我们需要使用`h`而不是`createElement`。
+- en: Thankfully, vue-cli already has this enabled, so we can write JSX code in our
+    `.vue` files!
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 感谢，vue-cli已经启用了这个功能，所以我们可以在`.vue`文件中编写JSX代码！
+- en: Blog content structure (in JSX!)
+  id: totrans-397
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 博客内容结构（在JSX中！）
+- en: 'Let''s create a new `src/components/content` folder and a new `BlogContent.vue`
+    file inside it. This component represents the right side panel and will be responsible
+    for displaying the right component:'
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个新的`src/components/content`文件夹，并在其中创建一个新的`BlogContent.vue`文件。这个组件代表右侧面板，负责显示右侧组件：
+- en: A `LocationInfo.vue` component that may display the location adress and name
+    if selected on the map
+  id: totrans-399
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果在地图上选择了位置，则可能会显示位置地址和名称的`LocationInfo.vue`组件
+- en: 'Below, it will display one of the following:'
+  id: totrans-400
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 下面，它将显示以下内容之一：
+- en: A `NoContent.vue` component if no location is selected, with a click on the
+    map hint
+  id: totrans-401
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果没有选择位置，则会出现`NoContent.vue`组件，点击地图提示
+- en: A `CreatePost.vue` component if there is a draft post, with a form
+  id: totrans-402
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果有草稿帖子，则会出现`CreatePost.vue`组件，带有表单
+- en: A `PostContent.vue` component if a real post is selected, with the content and
+    the comments list
+  id: totrans-403
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果选择了真实的帖子，则会出现`PostContent.vue`组件，带有内容和评论列表
+- en: 'Let''s create those components as well in the `content` directory, with an
+    empty template:'
+  id: totrans-404
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`content`目录中也创建这些组件，带有空模板：
+- en: '[PRE94]'
+  id: totrans-405
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: Back to our `BlogContent.vue` component! We will write this new component in
+    JSX to practice it.
+  id: totrans-406
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到我们的`BlogContent.vue`组件！我们将使用JSX编写这个新组件来练习它。
+- en: 'Start by creating the namespaced helpers:'
+  id: totrans-407
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先创建命名空间助手：
+- en: '[PRE95]'
+  id: totrans-408
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: It is good practice to rename the namespaced helpers because you may add helpers
+    for another module in the future. For example, if you don't, you may end up with
+    two `mapGetters`, which is impossible. Here we rename `mapGetters` to `postsGetters`
+    and `mapActions` to `postsActions`.
+  id: totrans-409
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最好将命名空间助手重命名，因为将来可能会为另一个模块添加助手。例如，如果不这样做，你可能会得到两个`mapGetters`，这是不可能的。在这里，我们将`mapGetters`重命名为`postsGetters`，将`mapActions`重命名为`postsActions`。
+- en: 'Then let''s write the component definition:'
+  id: totrans-410
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后让我们编写组件定义：
+- en: '[PRE96]'
+  id: totrans-411
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: The `has-content` CSS class will be used on a smartphone to hide the pane when
+    no post is selected or no draft is being edited (it will be full screen).
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`has-content` CSS类将在智能手机上使用，当没有选择帖子或没有编辑草稿时，它将隐藏面板（它将全屏显示）。'
+- en: 'Next, we need to write the render function with JSX:'
+  id: totrans-413
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要用JSX编写渲染函数：
+- en: '[PRE97]'
+  id: totrans-414
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: Don't forget to import the four other components as well!
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记也导入其他四个组件！
+- en: 'In JSX, the case of the first letter of a tag is important! If it starts with
+    a lowercase letter, it will be considered as a string parameter for the `createElement`
+    function and will resolve either to an HTML element or a registered component
+    (for example, `<div>`). On the other hand, if the first letter is uppercase, it
+    will be considered as a variable! In our preceding code, `LocationInfo` is directly
+    used from the import. For example:'
+  id: totrans-416
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在JSX中，标签的第一个字母的大小写很重要！如果以小写字母开头，它将被视为`createElement`函数的字符串参数，并将解析为HTML元素或已注册的组件（例如`<div>`）。另一方面，如果第一个字母是大写的，它将被视为变量！在我们之前的代码中，`LocationInfo`直接从导入中使用。例如：
+- en: '[PRE98]'
+  id: totrans-417
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE98]'
+- en: We also use this to dynamically choose which component will be displayed, thanks
+    to the `Component` local variable (note the uppercase `C`). It wouldn't work if
+    the first letter of the variable name was lowercase.
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还使用这个来动态选择将显示哪个组件，感谢`Component`本地变量（注意大写的`C`）。如果变量名的第一个字母是小写的话，它是行不通的。
+- en: 'Let''s rewrite our `GeoBlog.vue` component in JSX as well while adding the
+    `BlogContent` component:'
+  id: totrans-419
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们将`GeoBlog.vue`组件改写为JSX，并添加`BlogContent`组件：
+- en: '[PRE99]'
+  id: totrans-420
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE99]'
+- en: Don't forget to remove the `<template>` part in the file! You can't have both
+    a render function and a template.
+  id: totrans-421
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记在文件中删除`<template>`部分！你不能同时拥有渲染函数和模板。
+- en: No content
+  id: totrans-422
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 没有内容
+- en: 'Before continuing, let''s quickly add the template of the `NoContent.vue` component,
+    which just displays a hint when no post is selected:'
+  id: totrans-423
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在继续之前，让我们快速添加`NoContent.vue`组件的模板，它只在没有选择帖子时显示提示：
+- en: '[PRE100]'
+  id: totrans-424
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE100]'
+- en: Creating a post
+  id: totrans-425
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建帖子
+- en: When the user clicks on a location on the map with no marker, we create a draft
+    post; then the form in the right side panel will edit its content. When the user
+    clicks the Create button, we send the draft to the server and add the result (the
+    new post data) to the posts list.
+  id: totrans-426
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当用户在地图上点击没有标记的位置时，我们创建一个草稿帖子；然后右侧面板中的表单将编辑其内容。当用户点击创建按钮时，我们将草稿发送到服务器，并将结果（新帖子数据）添加到帖子列表中。
+- en: Draft store actions
+  id: totrans-427
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 草稿存储操作
+- en: 'In the `posts` namespaced store module, we will need a few new actions to create,
+    update, and clear the draft post:'
+  id: totrans-428
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`posts`命名空间存储模块中，我们将需要一些新的操作来创建、更新和清除草稿帖子：
+- en: 'Add the `clearDraft`, `createDraft`, `setDraftLocation`, and `updateDraft`
+    actions:'
+  id: totrans-429
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 添加`clearDraft`、`createDraft`、`setDraftLocation`和`updateDraft`操作：
+- en: '[PRE101]'
+  id: totrans-430
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE101]'
+- en: The action we call when the user clicks the map is `setDraftLocation`, which
+    will automatically create a new draft, if there isn't one, and update its location.
+  id: totrans-431
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户点击地图时，我们称之为`setDraftLocation`的操作将自动创建一个新的草稿，如果没有的话，并更新其位置。
+- en: Blog Map changes
+  id: totrans-432
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 博客地图变更
+- en: We need to make some changes to the `BlogMap` component to integrate our Vuex
+    store.
+  id: totrans-433
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要对`BlogMap`组件进行一些更改，以整合我们的Vuex存储。
+- en: 'In the `BlogMap.vue` component, we can add the Vuex helpers for the `posts`
+    namespaced module, while renaming the ones we already have for the `maps` module:'
+  id: totrans-434
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`BlogMap.vue`组件中，我们可以为`posts`命名空间模块添加Vuex助手，同时重命名我们已经为`maps`模块拥有的助手：
+- en: '[PRE102]'
+  id: totrans-435
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE102]'
+- en: 'Add the `draft` getter:'
+  id: totrans-436
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加`draft` getter：
+- en: '[PRE103]'
+  id: totrans-437
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE103]'
+- en: 'Add the `setDraftLocation` action as well:'
+  id: totrans-438
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 也添加`setDraftLocation`动作：
+- en: '[PRE104]'
+  id: totrans-439
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE104]'
+- en: Click handler
+  id: totrans-440
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 点击处理程序
+- en: We also need to handle the clicks on the map to create a new blog post.
+  id: totrans-441
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还需要处理地图上的点击，以创建新的博客帖子。
+- en: 'Add the `click` handler to the map:'
+  id: totrans-442
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在地图上添加`click`处理程序：
+- en: '[PRE105]'
+  id: totrans-443
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE105]'
+- en: 'Add the corresponding method that dispatches the `setDraftLocation` action
+    with the eventual `latLng` (the position) and `placeId` from Google Maps:'
+  id: totrans-444
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加相应的方法，调度`setDraftLocation`动作，并带有可能的`latLng`（位置）和来自Google Maps的`placeId`：
+- en: '[PRE106]'
+  id: totrans-445
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE106]'
+- en: You can now try to click on the map--two mutations (one to create the draft
+    and one to update its location) should be recorded in the dev tools.
+  id: totrans-446
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您可以尝试在地图上点击--两个变化（一个用于创建草稿，一个用于更新其位置）应该在开发工具中记录下来。
+- en: '![](assets/435f77ad-0ade-480b-8a5e-734329233d70.png)'
+  id: totrans-447
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/435f77ad-0ade-480b-8a5e-734329233d70.png)'
+- en: Ghost marker
+  id: totrans-448
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 幽灵标记
+- en: 'We would like to display a transparent marker on the position of the draft.
+    The component to use is `googlemaps-marker`:'
+  id: totrans-449
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们想在草稿的位置显示一个透明标记。要使用的组件是`googlemaps-marker`：
+- en: 'Add a new marker in the `googlemaps-map` component that uses the info from
+    the `draft` getter:'
+  id: totrans-450
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`googlemaps-map`组件中添加一个新的标记，该标记使用`draft` getter的信息：
+- en: '[PRE107]'
+  id: totrans-451
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE107]'
+- en: If you don't see the new marker, refresh the page.
+  id: totrans-452
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您看不到新的标记，请刷新页面。
+- en: 'Try clicking on the map to see the ghost marker in action:'
+  id: totrans-453
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试在地图上点击，看看幽灵标记的效果：
+- en: '![](assets/d375c3c2-a67a-4a0d-b825-ce6883bff7b8.png)'
+  id: totrans-454
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/d375c3c2-a67a-4a0d-b825-ce6883bff7b8.png)'
+- en: Post form
+  id: totrans-455
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 帖子表单
+- en: Onward to the `CreatePost.vue` component! This component will display a form
+    to enter the details of the new post like its title and content.
+  id: totrans-456
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 继续到`CreatePost.vue`组件！这个组件将显示一个表单，用于输入新帖子的详细信息，比如标题和内容。
+- en: 'Let''s first create its template with a simple form:'
+  id: totrans-457
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们首先用一个简单的表单创建它的模板：
+- en: '[PRE108]'
+  id: totrans-458
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE108]'
+- en: 'Then map the Vuex helpers from the `posts` module:'
+  id: totrans-459
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后映射来自`posts`模块的Vuex助手：
+- en: '[PRE109]'
+  id: totrans-460
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE109]'
+- en: 'Add the necessary getters and methods:'
+  id: totrans-461
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加必要的getter和方法：
+- en: '[PRE110]'
+  id: totrans-462
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE110]'
+- en: 'Then we will add a few computed properties bound to the form input elements
+    with the `v-model` directive:'
+  id: totrans-463
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后我们将添加一些计算属性，这些属性与表单输入元素绑定，使用`v-model`指令：
+- en: '[PRE111]'
+  id: totrans-464
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE111]'
+- en: 'As you can see, we can use computed properties in two ways with this object
+    notation: with a getter and with a setter! That way, we can use them to read a
+    value, but also to easily change it:'
+  id: totrans-465
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，我们可以用两种方式在此对象表示法中使用计算属性：使用getter和使用setter！这样，我们可以用它们来读取一个值，但也可以轻松地改变它：
+- en: '`get()` is called like before when the computed property is first read or if
+    it needs to be recomputed'
+  id: totrans-466
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`get()`在首次读取计算属性时或者需要重新计算时被调用'
+- en: '`set(value)` is called when the property is assigned a value, for example `this.a
+    = ''new value''`'
+  id: totrans-467
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当属性被赋值时调用`set(value)`，例如`this.a = 'new value'`
+- en: This is very useful when working with Vuex and forms, because it allow us to
+    use a Vuex getter for the `get` part, and a Vuex action for the `set` part!
+  id: totrans-468
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这在使用Vuex和表单时非常有用，因为它允许我们为`get`部分使用Vuex getter，为`set`部分使用Vuex动作！
+- en: 'We also need a `handleSubmit` method that dispatches the `createPost` action
+    that we will create very soon:'
+  id: totrans-469
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还需要一个`handleSubmit`方法，该方法调度`createPost`动作，我们很快将创建它：
+- en: '[PRE112]'
+  id: totrans-470
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE112]'
+- en: Making the request
+  id: totrans-471
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 发出请求
+- en: We will now implement an action to send a new Geolocated Blog post to the server.
+  id: totrans-472
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将实现一个动作，将新的地理位置博客帖子发送到服务器。
+- en: 'Let''s create the new `createPost` action in the `posts` Vuex module(don''t
+    forget to import ''$fetch'')):'
+  id: totrans-473
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`posts` Vuex模块中创建新的`createPost`动作（不要忘记导入`$fetch`）：
+- en: '[PRE113]'
+  id: totrans-474
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE113]'
+- en: This is our most complex action yet! It prepares the data (notice how we serialize
+    the Google Maps `position` object to a JSON-compatible plain object). Then we
+    send a POST request to the `/posts/new` path on our server, and retrieve the result,
+    which is the new real post object (with its `_id` field set). Finally, the draft
+    is cleared, and the new post is added to the store and selected.
+  id: totrans-475
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们迄今为止最复杂的操作！它准备数据（注意我们如何将Google Maps的`position`对象序列化为与JSON兼容的普通对象）。然后我们向服务器的`/posts/new`路径发送POST请求，并检索结果，这是新的真实帖子对象（其`_id`字段已设置）。最后，草稿被清除，新帖子被添加到存储并被选中。
+- en: 'We also need a new `selectPost` action so the new post will be automatically
+    selected:'
+  id: totrans-476
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还需要一个新的`selectPost`操作，这样新帖子将自动被选中：
+- en: '[PRE114]'
+  id: totrans-477
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE114]'
+- en: You can now create posts by clicking on the map!
+  id: totrans-478
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以通过点击地图来创建帖子！
+- en: '![](assets/3b59b9f1-15d7-400b-b937-534a89b0cb57.png)'
+  id: totrans-479
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/3b59b9f1-15d7-400b-b937-534a89b0cb57.png)'
+- en: Fetching posts
+  id: totrans-480
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取帖子
+- en: In this section, we will fetch the posts from the server and display them on
+    the map.
+  id: totrans-481
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将从服务器获取帖子并在地图上显示它们。
+- en: Store action
+  id: totrans-482
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 存储操作
+- en: We will fetch the posts each time the map bounds have changed due to the user
+    panning or zooming the map.
+  id: totrans-483
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每当地图边界由于用户平移或缩放地图而改变时，我们都会获取帖子。
+- en: Fetch posts action
+  id: totrans-484
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取帖子操作
+- en: 'Let''s create the posts-fetching action, but we need to tackle a problem first,
+    though. What the following happen:'
+  id: totrans-485
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建获取帖子的操作，但首先我们需要解决一个问题。以下会发生什么：
+- en: The user moves the map.
+  id: totrans-486
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 用户移动地图。
+- en: A request A is made to the server.
+  id: totrans-487
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 向服务器发出请求A。
+- en: The user moves the map again.
+  id: totrans-488
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 用户再次移动地图。
+- en: A request B is sent.
+  id: totrans-489
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 发送请求B。
+- en: For some reason, we receive the request B response before request A.
+  id: totrans-490
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 由于某种原因，我们在请求A之前收到了请求B的响应。
+- en: We set the list of posts from request B.
+  id: totrans-491
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们从请求B设置帖子列表。
+- en: The response of request A is received.
+  id: totrans-492
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 收到了请求A的响应。
+- en: The list of posts is replaced from a no longer up-to-date request.
+  id: totrans-493
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 帖子列表被替换为不再是最新的请求。
+- en: 'That''s why we need to abort the previous requests if a new one is made. To
+    do that, we will use a unique identifier for each request:'
+  id: totrans-494
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是为什么我们需要在发出新请求时中止先前的请求。为了做到这一点，我们将为每个请求使用一个唯一标识符：
+- en: 'Declare the unique identifier at the top of the `posts.js` file:'
+  id: totrans-495
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`posts.js`文件的顶部声明唯一标识符：
+- en: '[PRE115]'
+  id: totrans-496
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE115]'
+- en: 'Now we can add the new `fetchPosts` action, which fetches the posts in the
+    map bounds only if it''s different from last time (with an additional `force`
+    parameter in the payload):'
+  id: totrans-497
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们可以添加新的`fetchPosts`操作，它只在地图边界与上次不同的情况下获取帖子（在负载中有一个额外的`force`参数）：
+- en: '[PRE116]'
+  id: totrans-498
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE116]'
+- en: 'The `++fetchPostsUid` expression add 1 to `fetchPostsUid` and then returns
+    the new value.We encode the map bounds as two points: North-East and South-West.'
+  id: totrans-499
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`++fetchPostsUid`表达式将1添加到`fetchPostsUid`，然后返回新值。我们将地图边界编码为两个点：东北和西南。'
+- en: The way we abort the query is by comparing the unique ID we stored before making
+    the request (`requestId`) and the current ID counter (`fetchPostsUid`). If they
+    are different, we don't commit the result because it means another request was
+    made (since we increment the counter each time).
+  id: totrans-500
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们中止查询的方式是通过比较我们在发出请求之前存储的唯一ID（`requestId`）和当前ID计数器（`fetchPostsUid`）。如果它们不同，我们就不提交结果，因为这意味着另一个请求已经发出（因为我们每次增加计数器）。
+- en: Action dispatching
+  id: totrans-501
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作分派
+- en: 'In the `maps` store, let''s create a `setBounds` action that will be dispatched
+    when the maps is idle after being panned or zoomed. This action will dispatch
+    the `fetchPosts` from the `posts` module:'
+  id: totrans-502
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`maps`存储中，让我们创建一个`setBounds`操作，当地图在平移或缩放后处于空闲状态时将被分派。这个操作将从`posts`模块中分派`fetchPosts`：
+- en: 'Use the `{ root: true }` option to dispatch the action in a non-namespaced
+    way so you can reach the `posts` module one:'
+  id: totrans-503
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '使用`{ root: true }`选项以非命名空间方式分派操作，这样你就可以访问`posts`模块：'
+- en: '[PRE117]'
+  id: totrans-504
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE117]'
+- en: We have created another action in the `maps` module because it is related to
+    the map and it could do more in the future than just dispatching another action.
+  id: totrans-505
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`maps`模块中创建了另一个动作，因为它与地图有关，而且将来可能会做更多的事情，而不仅仅是分派另一个动作。
+- en: 'In the `BlogMap.vue` component, map the new `setBounds` action on the right
+    helper and add a `''map''` ref and an `''idle''` event listener to the map:'
+  id: totrans-506
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`BlogMap.vue`组件中，在右侧辅助器上映射新的`setBounds`动作，并在地图上添加一个`'map'`引用和一个`'idle'`事件监听器：
+- en: '[PRE118]'
+  id: totrans-507
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE118]'
+- en: 'And add the corresponding `onIdle` method to dispatch the `setBounds` action
+    and pass the map bounds:'
+  id: totrans-508
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 并添加相应的`onIdle`方法来分派`setBounds`动作并传递地图边界：
+- en: '[PRE119]'
+  id: totrans-509
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE119]'
+- en: Refresh the app and look for the `posts` mutations in the dev tools when you
+    pan or zoom the map.
+  id: totrans-510
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 刷新应用程序，并在您平移或缩放地图时查看开发工具中的`posts`突变。
+- en: Displaying markers
+  id: totrans-511
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 显示标记
+- en: 'Still in the `BlogMap` component, we will use the `googlemaps-marker` again
+    to loop through the posts and display a marker for each of them. Map the `posts`
+    and `currentPost` getters, plus the `selectPost` action, on the right helper and
+    add the markers loop inside the `googlemaps-map` component:'
+  id: totrans-512
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仍然在`BlogMap`组件中，我们将再次使用`googlemaps-marker`来循环遍历帖子并为每个帖子显示一个标记。在右侧辅助器上映射`posts`和`currentPost`获取器，以及`selectPost`动作，并在`googlemaps-map`组件内部添加标记循环：
+- en: '[PRE120]'
+  id: totrans-513
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE120]'
+- en: You can now refresh the app and see the posts you added earlier appear on the
+    map! If you click on a post marker, its icon should turn white too.
+  id: totrans-514
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您现在可以刷新应用程序，并看到您之前添加的帖子出现在地图上！如果您点击帖子标记，其图标也应该变成白色。
+- en: '![](assets/7d9e15e1-1cf4-4e0c-9ea0-ed7506a2f990.png)'
+  id: totrans-515
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/7d9e15e1-1cf4-4e0c-9ea0-ed7506a2f990.png)'
+- en: Login and logout
+  id: totrans-516
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 登录和注销
+- en: 'We are not done with the post-fetching yet--we need to react to a user logging
+    in or out:'
+  id: totrans-517
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还没有完成帖子获取--我们需要对用户登录或退出做出反应：
+- en: When the user log out, we will clear the posts list and the last registered
+    map bounds so the posts can be fetched again
+  id: totrans-518
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当用户注销时，我们将清除帖子列表和上次注册的地图边界，以便可以再次获取帖子
+- en: When the user log in, we will fetch the posts again and eventually re-select
+    the previously selected post
+  id: totrans-519
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户登录时，我们将再次获取帖子，并最终重新选择先前选择的帖子
+- en: Logout
+  id: totrans-520
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 注销
+- en: First, we will implement the logout action.
+  id: totrans-521
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将实现注销动作。
+- en: 'Let''s add a `logout` action in the `posts` Vuex module that clears the posts
+    fetching data:'
+  id: totrans-522
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`posts` Vuex模块中添加一个`logout`动作，清除帖子获取数据：
+- en: '[PRE121]'
+  id: totrans-523
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE121]'
+- en: 'We can call this from the `logout` action in the main store (in the `store/index.js`
+    file):'
+  id: totrans-524
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们可以从主存储中的`logout`动作（在`store/index.js`文件中）调用此动作：
+- en: '[PRE122]'
+  id: totrans-525
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE122]'
+- en: This is going to work, but we can improve this code--we could define the `logout`
+    action of the `posts` namespaced submodule as a root action. That way, when we
+    dispatch the `'logout'` action, both the `logout` and the `posts/logout` will
+    be called!
+  id: totrans-526
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将起作用，但我们可以改进这段代码--我们可以将`posts`命名空间子模块的`logout`动作定义为根动作。这样，当我们分派`'logout'`动作时，将同时调用`logout`和`posts/logout`！
+- en: 'Use this object notation in the `posts` module for the `logout` action:'
+  id: totrans-527
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`posts`模块中使用此对象表示法来进行`logout`动作：
+- en: '[PRE123]'
+  id: totrans-528
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE123]'
+- en: The `handler` property is the function called on this action, and the `root`60;Boolean
+    property indicates if this is a root action. Now the `logout` action is no longer
+    namespaced regarding the action dispatching system, and will be called if a non-namespaced
+    `'logout'` action is dispatched.
+  id: totrans-529
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`handler`属性是在此动作上调用的函数，`root`属性指示此是否为根动作。现在，`logout`动作在动作分派系统方面不再是命名空间的，并且如果分派了非命名空间的`''logout''`动作，将被调用。'
+- en: The state, getters, commit, and dispatch made inside this `logout` action are
+    still namespaced to the module. Only its invocation is no longer namespaced!
+  id: totrans-530
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此`logout`动作中进行的状态、获取器、提交和分派仍然是命名空间的。只有它的调用不再是命名空间的！
+- en: You can remove the `dispatch('posts/logout')` line from the `logout` action
+    on the main store.
+  id: totrans-531
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您可以从主存储中的`logout`动作中删除`dispatch('posts/logout')`行。
+- en: Login
+  id: totrans-532
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 登录
+- en: When the user is successfully logged in, we will dispatch a non-namespaced `'logged-in'`
+    action.
+  id: totrans-533
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当用户成功登录时，我们将调度一个非命名空间的`'logged-in'`动作。
+- en: 'Back in the `posts` module, add the `logged-in` action using the new object
+    notation:'
+  id: totrans-534
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 回到`posts`模块，在新对象表示法中添加`logged-in`动作：
+- en: '[PRE124]'
+  id: totrans-535
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE124]'
+- en: 'In the main store `login` action, dispatch this new `logged-in` action if the
+    user is successfully authenticated:'
+  id: totrans-536
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在主存储`login`动作中，如果用户成功验证，则调度这个新的`logged-in`动作：
+- en: '[PRE125]'
+  id: totrans-537
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE125]'
+- en: Selecting a post
+  id: totrans-538
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 选择一篇文章
+- en: This is the last section of this chapter! We will now create the post content
+    component that will display the title, content, location info, and the comment
+    list. A post details object is the same as a post object plus the author data,
+    the list of the comments, and the authors for each comment.
+  id: totrans-539
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是本章的最后一部分！我们现在将创建文章内容组件，它将显示标题、内容、位置信息和评论列表。文章详情对象与文章对象相同，还包括作者数据、评论列表和每条评论的作者。
+- en: Post details
+  id: totrans-540
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 文章详情
+- en: Let's first modify our `posts` Vuex module in preparation for the posts details.
+  id: totrans-541
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先修改我们的`posts` Vuex模块，为文章详情做准备。
+- en: Store changes for post selection and sending
+  id: totrans-542
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 文章选择和发送的存储更改
+- en: 'Add a `selectedPostDetails` data property in the state and add the corresponding
+    getter and mutation:'
+  id: totrans-543
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在状态中添加一个`selectedPostDetails`数据属性，并添加相应的getter和mutation：
+- en: '[PRE126]'
+  id: totrans-544
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE126]'
+- en: 'In the `selectPost`, fetch the details with a request to the `/post/<id>` route
+    on the server:'
+  id: totrans-545
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`selectPost`中，使用对服务器上`/post/<id>`路由的请求获取详情：
+- en: '[PRE127]'
+  id: totrans-546
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE127]'
+- en: 'Also add a new `unselectPost` action:'
+  id: totrans-547
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 还要添加一个新的`unselectPost`动作：
+- en: '[PRE128]'
+  id: totrans-548
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE128]'
+- en: Post Content component
+  id: totrans-549
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 文章内容组件
+- en: We the user clicks on a blog marker on the map, we need to display its content
+    in the side pane. We will do this in a dedicated `PostContent` component.
+  id: totrans-550
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当用户在地图上点击博客标记时，我们需要在侧边栏中显示其内容。我们将在一个专用的`PostContent`组件中实现这一点。
+- en: 'Let''s implement the `content/PostContent.vue` component by starting the initial
+    template:'
+  id: totrans-551
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们通过开始初始模板来实现`content/PostContent.vue`组件：
+- en: '[PRE129]'
+  id: totrans-552
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE129]'
+- en: The first part is the header with the author avatar, the title, author name,
+    and creation date. Then we display the post content, followed by the comment list,
+    and an action toolbar at the bottom. It will also display a loading animation
+    before we receive the post details response from the server.
+  id: totrans-553
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一部分是带有作者头像、标题、作者姓名和创建日期的标题。然后我们显示文章内容，接着是评论列表，以及底部的操作工具栏。在我们从服务器接收到文章详情响应之前，它还会显示一个加载动画。
+- en: 'Then we need a script section with the `details` getter and the `unselectPost`
+    action from the `posts` module:'
+  id: totrans-554
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后我们需要一个带有`details` getter和`posts`模块中的`unselectPost`动作的脚本部分：
+- en: '[PRE130]'
+  id: totrans-555
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE130]'
+- en: 'Now you can try selecting a post marker and see its content displayed in the
+    right side panel:'
+  id: totrans-556
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以尝试选择一篇文章标记，并在右侧面板中看到其内容显示出来：
+- en: '![](assets/ca28bb2a-f800-4cc5-92f9-bb56bd5d761b.png)'
+  id: totrans-557
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ca28bb2a-f800-4cc5-92f9-bb56bd5d761b.png)'
+- en: Location info and scoped slots
+  id: totrans-558
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 位置信息和作用域插槽
+- en: We are going to display information about the current post location at the top
+    of the right sidebar, with the name and the address. The components from `vue-googlemaps`
+    that we are going to use take advantage of a Vue feature called "scoped slots."
+  id: totrans-559
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在右侧边栏顶部显示关于当前文章位置的信息，包括名称和地址。我们将要使用`vue-googlemaps`中的组件来利用Vue的一个特性，叫做“作用域插槽”。
+- en: Scoped slots to pass data to the parent
+  id: totrans-560
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 作用域插槽以将数据传递给父组件
+- en: You should already know what slots are--they allow us to put elements or components
+    inside other components. With scoped slots, the component where the `<slot>` parts
+    are declared can pass down data to the view that is being embedded in the slot.
+  id: totrans-561
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该已经知道什么是插槽——它们允许我们将元素或组件放入其他组件中。有了作用域插槽，声明`<slot>`部分的组件可以将数据传递给嵌入在插槽中的视图。
+- en: 'For example, we could have this component with a default slot that has a list
+    of results in the `results` property:'
+  id: totrans-562
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们可以有一个带有默认插槽的组件，其中`results`属性中有一系列结果：
+- en: '[PRE131]'
+  id: totrans-563
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE131]'
+- en: 'We could pass this property to the external view that includes parts of templates
+    through the slot like this:'
+  id: totrans-564
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过插槽将此属性传递给包含模板部分的外部视图，就像这样：
+- en: '[PRE132]'
+  id: totrans-565
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE132]'
+- en: 'When using this component, you can retrieve the scoped data by wrapping your
+    code with a template with a `slot-scope` attribute. All the scoped data will be
+    available in this attribute object:'
+  id: totrans-566
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用此组件时，您可以通过在带有`slot-scope`属性的模板中包装代码来检索作用域数据。所有作用域数据将在此属性对象中可用：
+- en: '[PRE133]'
+  id: totrans-567
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE133]'
+- en: The `<template>` tag is not necessary if it has only one child.
+  id: totrans-568
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果只有一个子元素，则不需要`<template>`标签。
+- en: This is how the components of the `vue-googlemaps` library that we will use
+    shortly will give us back the data from Google Maps.
+  id: totrans-569
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是`vue-googlemaps`库的组件，我们很快将从中获取来自Google Maps的数据。
+- en: 'Scoped slots are very useful too when combined with a loop:'
+  id: totrans-570
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作用域插槽在与循环结合时也非常有用：
+- en: '[PRE134]'
+  id: totrans-571
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE134]'
+- en: 'When using it, the content of the slot will be repeated and will pass down
+    the current item:'
+  id: totrans-572
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用它时，插槽的内容将被重复，并将传递当前项目：
+- en: '[PRE135]'
+  id: totrans-573
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE135]'
+- en: In this example, if the `results` computed property returns three items, we
+    will have three `<div>` displaying the result labels.
+  id: totrans-574
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，如果“results”计算属性返回三个项目，我们将有三个显示结果标签的`<div>`。
+- en: Implementing of the component
+  id: totrans-575
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 组件的实现
+- en: We will now use this new Scoped slot concept to display the information about
+    the place associated with the Blog post.
+  id: totrans-576
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将使用这个新的作用域插槽概念来显示与博客帖子相关的地点信息。
+- en: 'Let''s create a small component named `PlaceDetails.vue` in the `components/content`
+    folder that displays the name and the address of a location:'
+  id: totrans-577
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们在`components/content`文件夹中创建一个名为`PlaceDetails.vue`的小组件，显示位置的名称和地址：
+- en: '[PRE136]'
+  id: totrans-578
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE136]'
+- en: Then we will implement the `LocationInfo.vue` component.
+  id: totrans-579
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们将实现`LocationInfo.vue`组件。
+- en: 'First the template, where we use either the `googlemaps-place-details` component,
+    if we have a Google Maps `placeId` stored on the post, or else the `googlemaps-geocoder`
+    component that will find the most relevant corresponding addresses from the position
+    of the post, and all by retrieving the results with scoped slots:'
+  id: totrans-580
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先是模板，我们在其中使用`googlemaps-place-details`组件，如果我们在帖子上存储了Google Maps的`placeId`，或者使用`googlemaps-geocoder`组件，它将从帖子的位置找到最相关的对应地址，并通过作用域插槽检索结果：
+- en: '[PRE137]'
+  id: totrans-581
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE137]'
+- en: 'In the script part map the `currentPost` getter from the `posts` module and
+    import the `PlaceDetails` component we just created:'
+  id: totrans-582
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在脚本部分，将`posts`模块中的`currentPost` getter映射到，并导入我们刚刚创建的`PlaceDetails`组件：
+- en: '[PRE138]'
+  id: totrans-583
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE138]'
+- en: 'Now, if you select or draft a post, you should see the location info display
+    at the top of the right side panel:'
+  id: totrans-584
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您选择或起草一篇帖子，您应该在右侧面板顶部看到位置信息显示：
+- en: '![](assets/4f709430-71bb-473d-898f-05052dfa5146.png)'
+  id: totrans-585
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/4f709430-71bb-473d-898f-05052dfa5146.png)'
+- en: Comments - functional components
+  id: totrans-586
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 评论 - 功能组件
+- en: This is the last section of the chapter, where we will implement post components
+    and learn more about faster functional components.
+  id: totrans-587
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是本章的最后一部分，我们将在其中实现帖子组件，并了解更多关于更快的功能组件的知识。
+- en: Store changes for comments
+  id: totrans-588
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 存储更改以供评论使用
+- en: Before going into functional components, we need to lay the groundwork in the
+    Vue
+  id: totrans-589
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在进入功能组件之前，我们需要在Vue中奠定基础
+- en: 'In the `posts` Vuex module, we need a new mutation that will add a comment
+    to a post directly:'
+  id: totrans-590
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`posts` Vuex模块中，我们需要一个新的mutation，它将直接向帖子添加评论：
+- en: '[PRE139]'
+  id: totrans-591
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE139]'
+- en: 'Add the new `sendComment` action too that sends a query to the server to the
+    `/posts/<id>/comment` route and adds it to the selected post:'
+  id: totrans-592
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 还要添加新的`sendComment`动作，它将向服务器发送查询到`/posts/<id>/comment`路由，并将其添加到所选的帖子中：
+- en: '[PRE140]'
+  id: totrans-593
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE140]'
+- en: '[PRE141]'
+  id: totrans-594
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE141]'
+- en: We use `rootGetters` from the action context to retrieve the user data, because
+    it is not in this namespaced module.
+  id: totrans-595
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从操作上下文中使用`rootGetters`来检索用户数据，因为它不在这个命名空间模块中。
+- en: Functional component
+  id: totrans-596
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 功能组件
+- en: Each component instance in Vue has to set up a few things when it is created,
+    such as the data reactivity system, component life cycles, and so on. There is
+    a lighter variant of components called functional components. They don't have
+    any state of their own (you can't use the `this` keyword) and can't be displayed
+    in dev tools, but they have a very nice advantage in some cases--they are much
+    faster and use less memory!
+  id: totrans-597
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue中的每个组件实例在创建时都必须设置一些内容，例如数据反应性系统、组件生命周期等。还有一种称为函数组件的轻量级组件。它们没有自己的状态（无法使用`this`关键字），也无法在开发工具中显示，但在某些情况下有一个非常好的优势——它们速度更快，占用的内存更少！
+- en: The Comments on our blog posts are good candidates for being functional because
+    we could have to display a lot of them.
+  id: totrans-598
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们博客文章上的评论是很好的函数组件候选，因为我们可能需要显示很多评论。
+- en: 'To create a function component, add the `functional: true` option to its definition
+    object:'
+  id: totrans-599
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '要创建一个函数组件，将`functional: true`选项添加到其定义对象中：'
+- en: '[PRE142]'
+  id: totrans-600
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE142]'
+- en: Since the component doesn't have a state and we don't have access to `this`,
+    the `render` function gets a new `context` parameter containing the props, event
+    listeners, children content, slots, and other data. You can find a full list on
+    the official documentation ([https://vuejs.org/v2/guide/render-function.html#Functional-Components](https://vuejs.org/v2/guide/render-function.html#Functional-Components)).
+  id: totrans-601
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于组件没有状态，我们无法访问`this`，`render`函数会得到一个新的`context`参数，其中包含props、事件监听器、子内容、插槽和其他数据。您可以在官方文档中找到完整的列表（[https://vuejs.org/v2/guide/render-function.html#Functional-Components](https://vuejs.org/v2/guide/render-function.html#Functional-Components)）。
+- en: When writing functional components, you don't always need to declare props.
+    You get everything as props, but they also get passed down in `context.data`.
+  id: totrans-602
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在编写函数组件时，您不总是需要声明props。您可以将所有内容作为props获取，但它们也会在`context.data`中传递下来。
+- en: 'Not that you can also use a template with the `functional` attribute instead
+    of the `functional: true` option:'
+  id: totrans-603
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '请注意，您还可以使用带有`functional`属性的模板，而不是`functional: true`选项：'
+- en: '[PRE143]'
+  id: totrans-604
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE143]'
+- en: 'Now create a new `Comment.vue` component alongside the `PostContent.vue` one:'
+  id: totrans-605
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在在`PostContent.vue`旁边创建一个新的`Comment.vue`组件：
+- en: '[PRE144]'
+  id: totrans-606
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE144]'
+- en: 'Back to our `PostContent` component; let''s add the comment list in the center
+    of the pane and the comment form to the bottom of the pane:'
+  id: totrans-607
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 回到我们的`PostContent`组件；让我们在窗格中央添加评论列表，并在窗格底部添加评论表单：
+- en: '[PRE145]'
+  id: totrans-608
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE145]'
+- en: 'Then add the `Comment` component, the `commentContent` data property, the `commentFormValid`
+    computed property, the `sendComment` Vuex action, and the `submitComment` method
+    in the script section:'
+  id: totrans-609
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后在脚本部分添加`Comment`组件、`commentContent`数据属性、`commentFormValid`计算属性、`sendComment`
+    Vuex动作和`submitComment`方法：
+- en: '[PRE146]'
+  id: totrans-610
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE146]'
+- en: 'You can now add comments to the selected post:'
+  id: totrans-611
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您现在可以向所选的帖子添加评论：
+- en: '![](assets/caf312a5-de5f-4fb8-bf99-92854abc262f.png)'
+  id: totrans-612
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/caf312a5-de5f-4fb8-bf99-92854abc262f.png)'
+- en: Summary
+  id: totrans-613
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we introduced the very important notion of state management
+    through the usage of the official Vuex library. This will help you build more
+    complex applications and improve their maintainability a lot. We used the Google
+    OAuth API to authenticate our users, embed Google Maps, and a whole Geolocated
+    Blog! All of this was achieved by using a Vuex store integrated into our application,
+    making our components simpler and our code easier to evolve.
+  id: totrans-614
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们介绍了通过使用官方的Vuex库来进行状态管理的非常重要的概念。这将帮助您构建更复杂的应用程序，并大大提高其可维护性。我们使用Google
+    OAuth API对用户进行身份验证，嵌入Google地图和整个地理定位博客！所有这些都是通过在我们的应用程序中集成Vuex存储来实现的，使我们的组件更简单，代码更易于演变。
+- en: 'Here are some ideas if you want to improve the app further:'
+  id: totrans-615
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想进一步改进应用程序，以下是一些想法：
+- en: Display the number of thumbs-up on the post markers
+  id: totrans-616
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 显示帖子标记上的点赞数
+- en: Allow editing or deletion of comments
+  id: totrans-617
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 允许编辑或删除评论
+- en: Add real-time updates with web-sockets
+  id: totrans-618
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Web-sockets添加实时更新
+- en: In the next chapter, we will learn more about server-side rendering, internationalization,
+    testing, and deployment.
+  id: totrans-619
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习更多关于服务器端渲染、国际化、测试和部署的知识。

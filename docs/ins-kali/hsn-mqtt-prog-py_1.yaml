@@ -1,0 +1,1678 @@
+- en: Installing an MQTT 3.1.1 Mosquitto Server
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装MQTT 3.1.1 Mosquitto服务器
+- en: In this chapter, we will start our journey toward using the preferred IoT publish-subscribe
+    lightweight messaging protocol in diverse IoT solutions, combined with mobile
+    apps and web applications. We will learn how MQTT and its lightweight messaging
+    system work.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将开始使用首选的物联网发布-订阅轻量级消息传递协议，在不同的物联网解决方案中与移动应用和Web应用程序相结合。我们将学习MQTT及其轻量级消息系统的工作原理。
+- en: 'We will understand the MQTT puzzle: clients, servers (formerly known as brokers),
+    and connections. We will learn the procedures to install an MQTT 3.1.1 Mosquitto
+    server in Linux, macOS, and Windows. We will learn special considerations for
+    running a Mosquitto server in the cloud (Azure, AWS, and other cloud providers).
+    We will gain an understanding of the following:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将理解MQTT谜题：客户端、服务器（以前称为经纪人）和连接。我们将学习在Linux、macOS和Windows上安装MQTT 3.1.1 Mosquitto服务器的程序。我们将学习在云中运行Mosquitto服务器（Azure、AWS和其他云提供商）的特殊注意事项。我们将了解以下内容：
+- en: Understanding convenient scenarios for the MQTT protocol
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解MQTT协议的便利场景
+- en: Working with the publish-subscribe pattern
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用发布-订阅模式
+- en: Working with message filtering
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用消息过滤
+- en: 'Understanding the MQTT puzzle: clients, servers, and connections'
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解MQTT谜题：客户端、服务器和连接
+- en: Installing a Mosquitto server on Linux
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Linux上安装Mosquitto服务器
+- en: Installing a Mosquitto server on macOS
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在macOS上安装Mosquitto服务器
+- en: Installing a Mosquitto server on Windows
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Windows上安装Mosquitto服务器
+- en: Considerations for running a Mosquitto server in the cloud
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在云中运行Mosquitto服务器的注意事项
+- en: Understanding convenient scenarios for the MQTT protocol
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解MQTT协议的便利场景
+- en: Imagine that we have dozens of different devices that must exchange data between
+    themselves. These devices have to request data from other devices, and the devices
+    that receive the requests must respond with that data. The devices that request
+    the data must process the data received from the devices that responded with the
+    required data.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 想象一下，我们有数十个不同的设备必须在它们之间交换数据。这些设备必须从其他设备请求数据，接收请求的设备必须用所需的数据做出响应。请求数据的设备必须处理来自响应所需数据的设备的数据。
+- en: 'The devices are **Internet of Things** (**IoT**) boards that have dozens of
+    sensors wired to them. We have the following IoT boards with different processing
+    powers:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些设备是物联网（IoT）板，上面连接了数十个传感器。我们有以下不同处理能力的物联网板：
+- en: Raspberry Pi 3 Model B+
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Raspberry Pi 3 Model B+
+- en: Qualcomm DragonBoard 410c
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Qualcomm DragonBoard 410c
+- en: Udoo Neo
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Udoo Neo
+- en: BeagleBone Black
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: BeagleBone Black
+- en: Phytec phyBoard-i.MX7-Zeta
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Phytec phyBoard-i.MX7-Zeta
+- en: e-con Systems eSOMiMX6-micro
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: e-con Systems eSOMiMX6-micro
+- en: MinnowBoard Turbot Quad-Core
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: MinnowBoard Turbot Quad-Core
+- en: 'Each of these boards has to be able to send and receive data. In addition,
+    we want a web application to be able to send and receive data. We want to send
+    and receive data in near-real time over the internet, and we might face some network
+    problems: our wireless networks are somewhat unreliable and we have some high-latency
+    environments. Some devices have low power, many of them are powered by batteries,
+    and their resources are scarce. In addition, we must be careful with the network
+    bandwidth usage because some of the devices use metered connections.'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个这些板都必须能够发送和接收数据。此外，我们希望Web应用程序能够发送和接收数据。我们希望能够在互联网上实时发送和接收数据，并且可能会遇到一些网络问题：我们的无线网络有些不可靠，而且有些高延迟的环境。一些设备功耗低，许多设备由电池供电，它们的资源有限。此外，我们必须小心网络带宽的使用，因为一些设备使用按流量计费的连接。
+- en: A metered connection is a network connection where we have a limited amount
+    of data usage per month. If we go over this amount of data, we get billed extra.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按流量计费的连接是指每月有限的数据使用量的网络连接。如果超出此数据量，将额外收费。
+- en: We can use HTTP requests and build a publish-subscribe model to exchange data
+    between different devices. However, there is a protocol that has been specifically
+    designed to be lighter than the HTTP 1.1 and HTTP/2 protocols. The **MQ Telemetry
+    Transport** (**MQTT**) is better suited for a scenario in which many devices have
+    to exchange data between themselves in near-real time over the internet and we
+    need to consume the least network bandwidth possible. This protocol works better
+    than HTTP 1.1 and HTTP/2 when unreliable networks are involved and connectivity
+    is intermittent.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用HTTP请求并构建发布-订阅模型来在不同设备之间交换数据。然而，有一个专门设计的协议比HTTP 1.1和HTTP/2协议更轻。MQ Telemetry
+    Transport（MQTT）更适合于许多设备在互联网上实时交换数据并且需要消耗尽可能少的网络带宽的场景。当涉及不可靠的网络和连接不稳定时，该协议比HTTP
+    1.1和HTTP/2更有效。
+- en: 'The MQTT protocol is a **machine-to-machine** (**M2M**) and IoT connectivity
+    protocol. MQTT is a lightweight messaging protocol that works with a server-based
+    publish-subscribe mechanism and runs on top of **TCP/IP** (**Transmission Control
+    Protocol**/**Internet Protocol**). The following diagram shows the MQTT protocol
+    on top of the TCP/IP stack:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MQTT协议是一种机器对机器（M2M）和物联网连接协议。MQTT是一种轻量级的消息传递协议，使用基于服务器的发布-订阅机制，并在TCP/IP（传输控制协议/互联网协议）之上运行。以下图表显示了MQTT协议在TCP/IP堆栈之上的情况：
+- en: '![](assets/2b55d99a-0dfd-49d7-8893-68b40101356c.png)The most popular versions
+    of MQTT are 3.1.1 and 3.1\. In this book, we will work with MQTT 3.1.1\. Whenever
+    we reference MQTT, we are talking about MQTT 3.1.1, the newest version of the
+    protocol. The MQTT 3.1.1 specification has been standardized by the OASIS consortium.
+    In addition, MQTT 3.1.1 became an ISO standard (ISO/IEC 20922) in 2016.'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](assets/2b55d99a-0dfd-49d7-8893-68b40101356c.png)MQTT最流行的版本是3.1.1和3.1。在本书中，我们将使用MQTT
+    3.1.1。每当我们提到MQTT时，我们指的是MQTT 3.1.1，这是协议的最新版本。MQTT 3.1.1规范已经由OASIS联盟标准化。此外，MQTT
+    3.1.1在2016年成为ISO标准（ISO/IEC 20922）。'
+- en: 'MQTT is lighter than the HTTP 1.1 and HTTP/2 protocols, and therefore it is
+    a very interesting option whenever we have to send and receive data in near-real
+    time with a publish-subscribe model, while requiring the lowest possible footprint.
+    MQTT is very popular in IoT, M2M, and embedded projects, but it is also gaining
+    presence in web applications and mobile apps that require assured messaging and
+    an efficient message distribution. As a summary, MQTT is suitable for the following
+    application domains in which data exchange is required:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MQTT比HTTP 1.1和HTTP/2协议更轻，因此在需要以发布-订阅模式实时发送和接收数据时，同时需要最小的占用空间时，它是一个非常有趣的选择。MQTT在物联网、M2M和嵌入式项目中非常受欢迎，但也在需要可靠消息传递和高效消息分发的Web应用和移动应用中占据一席之地。总之，MQTT适用于以下需要数据交换的应用领域：
+- en: Asset tracking and management
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 资产跟踪和管理
+- en: Automotive telematics
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 汽车远程监控
+- en: Chemical detection
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 化学检测
+- en: Environment and traffic monitoring
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 环境和交通监测
+- en: Field force automation
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 现场力量自动化
+- en: Fire and gas testing
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 火灾和气体测试
+- en: Home automation
+  id: totrans-33
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 家庭自动化
+- en: '**In-Vehicle Infotainment** (**IVI**)'
+  id: totrans-34
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**车载信息娱乐**（**IVI**）'
+- en: Medical
+  id: totrans-35
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 医疗
+- en: Messaging
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 消息传递
+- en: '**Point of Sale **(**POS**) kiosks'
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**销售点**（**POS**）自助服务亭'
+- en: Railway
+  id: totrans-38
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 铁路
+- en: '**Radio-Frequency Identification **(**RFID**)'
+  id: totrans-39
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**射频识别**（**RFID**）'
+- en: '**Supervisory Control and Data Acquisition **(**SCADA**)'
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**监控和数据采集**（**SCADA**）'
+- en: Slot machines
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 老虎机
+- en: 'As a summary, MQTT was designed to be suitable to support the following typical
+    challenges in IoT, M2M, embedded, and mobile applications:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总之，MQTT旨在支持物联网、M2M、嵌入式和移动应用中的以下典型挑战：
+- en: Be lightweight to make it possible to transmit high volumes of data without
+    huge overheads
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 轻量化，使得能够在没有巨大开销的情况下传输大量数据
+- en: Distribute minimal packets of data in huge volumes
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在大量数据中分发最小的数据包
+- en: Support an event-oriented paradigm with the asynchronous, bidirectional, low-latency
+    push delivery of messages
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 支持异步、双向、低延迟推送消息的事件驱动范式
+- en: Easily emit data from one client to many clients
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 轻松地从一个客户端向多个客户端发出数据
+- en: Make it possible to listen for events whenever they happen (event-oriented architecture)
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使得能够在事件发生时监听事件（面向事件的架构）
+- en: Support always-connected and sometimes-connected models
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 支持始终连接和有时连接的模式
+- en: Publish information over unreliable networks and provide reliable deliveries
+    over fragile connections
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在不可靠的网络上发布信息，并在脆弱的连接上提供可靠的传递
+- en: Work very well with battery-powered devices or require low power consumption
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 非常适合使用电池供电的设备或需要低功耗
+- en: Provide responsiveness to make it possible to achieve near-real-time delivery
+    of information
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 提供响应性，使得能够实现信息的准实时传递
+- en: Offer security and privacy for all the data
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为所有数据提供安全性和隐私
+- en: Be able to provide the necessary scalability to distribute data to hundreds
+    of thousands of clients
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 能够提供必要的可扩展性，将数据分发给数十万客户端
+- en: Working with the publish-subscribe pattern
+  id: totrans-54
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用发布-订阅模式工作
+- en: Before we dive deep into MQTT, we must understand the publish-subscribe pattern,
+    also known as the pub-sub pattern. In the publish-subscribe pattern, a client
+    that publishes a message is decoupled from the other client or clients that receive
+    the message. The clients don't know about the existence of the other clients.
+    A client can publish messages of a specific type and only the clients that are
+    interested in that specific type of message will receive the published messages.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入研究MQTT之前，我们必须了解发布-订阅模式，也称为发布-订阅模式。在发布-订阅模式中，发布消息的客户端与接收消息的其他客户端或客户端解耦。客户端不知道其他客户端的存在。客户端可以发布特定类型的消息，只有对该特定类型的消息感兴趣的客户端才会接收到发布的消息。
+- en: The publish-subscribe pattern requires a *server*, also known as a **broker**.
+    All the clients establish a connection with the server. A client that sends a
+    message through the server is known as the **publisher**. The server filters the
+    incoming messages and distributes them to the clients that are interested in that
+    type of received messages. Clients that register to the server as interested in
+    specific types of messages are known as **subscribers**. Hence, both publishers
+    and subscribers establish a connection with the server.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 发布-订阅模式需要一个*服务器*，也称为**代理**。所有客户端都与服务器建立连接。通过服务器发送消息的客户端称为**发布者**。服务器过滤传入的消息，并将其分发给对该类型接收消息感兴趣的客户端。向服务器注册对特定类型消息感兴趣的客户端称为**订阅者**。因此，发布者和订阅者都与服务器建立连接。
+- en: 'It is easy to understand how things work with a simple diagram. The following
+    diagram shows one publisher and two subscribers connected to a server:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过简单的图表很容易理解事物是如何工作的。以下图表显示了一个发布者和两个订阅者连接到服务器：
+- en: '![](assets/987de943-ac68-4a91-af30-20bcdb0cca5b.png)'
+  id: totrans-58
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/987de943-ac68-4a91-af30-20bcdb0cca5b.png)'
+- en: A **Raspberry Pi 3 Model B+** board with an altitude sensor wired to it is a
+    publisher that establishes a connection with the server. A **BeagleBone Black**
+    board and a **Udoo Neo** board are two subscribers that establish a connection
+    with the server.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接有高度传感器的**树莓派3型B+**板是一个发布者，它与服务器建立连接。**BeagleBone Black**板和**Udoo Neo**板是两个订阅者，它们与服务器建立连接。
+- en: The **BeagleBone Black** board indicates to the server that it wants to subscribe
+    to all messages that belong to the **sensors/drone01/altitude** topic. The **Udoo
+    Neo** board indicates the same to the server. Hence, both boards are subscribed
+    to the **sensors/drone01/altitude** topic.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**BeagleBone Black**板向服务器指示要订阅属于**传感器/无人机01/高度**主题的所有消息。**Udoo Neo**板也向服务器指示相同的内容。因此，两个板都订阅了**传感器/无人机01/高度**主题。'
+- en: A *topic* is a named logical channel, and it is also referred to as a channel
+    or subject. The server will send subscribers only messages published to topics
+    to which they are subscribed.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*主题*是一个命名的逻辑通道，也称为通道或主题。服务器只会向订阅了特定主题的订阅者发送消息。'
+- en: The **Raspberry Pi 3 Model B+** board publishes a message with **100 feet**
+    as the payload and **sensors/drone01/altitude** as the topic. This board, that
+    is, the publisher, sends the publish request to the server.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Raspberry Pi 3 Model B+**板发布了一个有效负载为**100英尺**，主题为**sensors/drone01/altitude**的消息。这个板，也就是发布者，向服务器发送了发布请求。'
+- en: The data for a message is known as the **payload**. A message includes the topic
+    to which it belongs and the payload.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 消息的数据称为**有效负载**。消息包括它所属的主题和有效负载。
+- en: 'The server distributes the message to the two clients that are subscribed to
+    the **sensors/drone01/altitude** topic: the **BeagleBone Black** and the **Udoo
+    Neo** boards.'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 服务器将消息分发给订阅了**sensors/drone01/altitude**主题的两个客户端：**BeagleBone Black**和**Udoo
+    Neo**板。
+- en: Publishers and subscribers are decoupled in space because they don't know each
+    other. Publishers and subscribers don't have to run at the same time. The publisher
+    can publish a message and the subscriber can receive it later. In addition, the
+    publish operation isn't synchronized with the receive operation.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 发布者和订阅者在空间上是解耦的，因为它们彼此不知道。发布者和订阅者不必同时运行。发布者可以发布一条消息，订阅者可以稍后接收。此外，发布操作与接收操作不是同步的。
+- en: A publisher requests the server to publish a message, and the different clients
+    that have subscribed to the appropriate topic can receive the message at different
+    times. The publisher can send a message as an asynchronous operation to avoid
+    being blocked until the server receives the message. However, it is also possible
+    to send a message to the server as a synchronous operation with the server and
+    to continue the execution only after the operation was successful. In most cases,
+    we will want to take advantage of asynchronous operations.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 发布者请求服务器发布一条消息，已订阅适当主题的不同客户端可以在不同时间接收消息。发布者可以将消息作为异步操作发送，以避免在服务器接收消息之前被阻塞。但是，也可以将消息作为同步操作发送到服务器，并且仅在操作成功后继续执行。在大多数情况下，我们将希望利用异步操作。
+- en: A publisher that requires sending a message to hundreds of clients can do it
+    with a single publish operation to a server. The server is responsible for sending
+    the published message to all the clients that have subscribed to the appropriate
+    topic. Because publishers and subscribers are decoupled, the publisher doesn't
+    know whether any subscriber is going to listen to the messages it is going to
+    send. Hence, sometimes it is necessary to make the subscriber become a publisher
+    too and to publish a message indicating that it has received and processed a message.
+    The specific requirements depend on the kind of solution we are building. MQTT
+    offers many features that make our lives easier in many of the scenarios we have
+    been analyzing. We will use these different features throughout the book.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个需要向数百个客户端发送消息的出版商可以通过向服务器进行单次发布操作来完成。服务器负责将发布的消息发送给所有已订阅适当主题的客户端。由于发布者和订阅者是解耦的，因此发布者不知道是否有任何订阅者会收听它即将发送的消息。因此，有时需要使订阅者也成为发布者，并发布一条消息，表明它已收到并处理了一条消息。具体要求取决于我们正在构建的解决方案的类型。MQTT提供了许多功能，使我们在分析的许多场景中更轻松。我们将在整本书中使用这些不同的功能。
+- en: Working with message filtering
+  id: totrans-68
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用消息过滤
+- en: The server has to make sure that subscribers only receive the messages they
+    are interested in. It is possible to filter messages based on different criteria
+    in a publish-subscribe pattern. We will focus on analyzing *topic-based* filtering,
+    also known as subject-based filtering.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 服务器必须确保订阅者只接收他们感兴趣的消息。在发布-订阅模式中，可以根据不同的标准过滤消息。我们将专注于分析*基于主题*的过滤，也称为基于主题的过滤。
+- en: Consider that each message belongs to a topic. When a publisher requests the
+    server to publish a message, it must specify both the topic and the message. The
+    server receives the message and delivers it to all the subscribers that have subscribed
+    to the topic to which the message belongs.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑到每条消息都属于一个主题。当发布者请求服务器发布一条消息时，它必须同时指定主题和消息。服务器接收消息并将其传递给所有已订阅消息所属主题的订阅者。
+- en: The server doesn't need to check the payload for the message to deliver it to
+    the corresponding subscribers; it just needs to check the topic for each message
+    that has arrived and needs to be filtered before publishing it to the corresponding
+    subscribers.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 服务器不需要检查消息的有效负载以将其传递给相应的订阅者；它只需要检查已到达的每条消息的主题，并在发布给相应订阅者之前进行过滤。
+- en: A subscriber can subscribe to more than one topic. In this case, the server
+    has to make sure that the subscriber receives messages that belong to all the
+    topics to which it has subscribed. It is easy to understand how things work with
+    another simple diagram.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 订阅者可以订阅多个主题。在这种情况下，服务器必须确保订阅者接收属于其订阅的所有主题的消息。通过另一个简单的图表，很容易理解事情是如何工作的。
+- en: 'The following diagram shows two future publishers that haven''t published any
+    messages yet, a server, and two subscribers connected to the server:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了两个尚未发布任何消息的未来发布者，一个服务器和两个连接到服务器的订阅者：
+- en: '![](assets/289669b0-5c2b-4519-9e17-0b795fb48fcd.png)'
+  id: totrans-74
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/289669b0-5c2b-4519-9e17-0b795fb48fcd.png)'
+- en: A **Raspberry Pi 3 Model B+** board with an altitude sensor wired to it and
+    a **Raspberry Pi 3** board with a temperature sensor wired to it will be the two
+    publishers. A **BeagleBone Black** board and a **Udoo Neo** board are the two
+    subscribers that establish a connection to the server.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个**Raspberry Pi 3 Model B+**板上连接了一个高度传感器，另一个**Raspberry Pi 3**板上连接了一个温度传感器，它们将成为两个发布者。一个**BeagleBone
+    Black**板和一个**Udoo Neo**板是两个订阅者，它们与服务器建立连接。
+- en: 'The **BeagleBone Black** board indicates to the server that it wants to subscribe
+    to all the messages that belong to the **sensors/drone01/altitude** topic. The
+    **Udoo Neo** board indicates to the server that it wants to subscribe to all the
+    messages that belong to either of the following two topics: **sensors/drone01/altitude**
+    and **sensors/drone40/temperature**. Hence, the **Udoo Neo** board is subscribed
+    to two topics while the **BeagleBone Black** board is subscribed to just one topic.'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**BeagleBone Black**板告诉服务器它想订阅属于**sensors/drone01/altitude**主题的所有消息。**Udoo
+    Neo**板告诉服务器它想订阅属于以下两个主题之一的所有消息：**sensors/drone01/altitude**和**sensors/drone40/temperature**。因此，**Udoo
+    Neo**板订阅了两个主题，而**BeagleBone Black**板只订阅了一个主题。'
+- en: 'The following diagram shows what happens after the two publishers connect and
+    publish messages to different topics through the server:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下图显示了两个发布者连接并通过服务器发布不同主题的消息后会发生什么：
+- en: '![](assets/eebaf448-c739-4e3b-a6fc-c9ca3002a393.png)'
+  id: totrans-78
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/eebaf448-c739-4e3b-a6fc-c9ca3002a393.png)'
+- en: 'The **Raspberry Pi 3 Model B+** board publishes a message with **120 feet**
+    as the payload and **sensors/drone01/altitude** as the topic. The board, that
+    is, the publisher, sends the publish request to the server. The server distributes
+    the message to the two clients that are subscribed to the **sensors/drone01/altitude**
+    topic: the **BeagleBone Black** and the **Udoo Neo** boards.'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Raspberry Pi 3 Model B+**板发布了一个以**120英尺**为有效载荷和**sensors/drone01/altitude**为主题的消息。即发布者的板发送发布请求到服务器。服务器将消息分发给订阅了**sensors/drone01/altitude**主题的两个客户端：**BeagleBone
+    Black**和**Udoo Neo**板。'
+- en: 'The **Raspberry Pi 3** board publishes a message with **75 F** as the payload
+    and **sensors/drone40/temperature** as the topic. The board, that is, the publisher,
+    sends the publish request to the server. The server distributes the message to
+    the only client that is subscribed to the **sensors/drone40/temperature** topic:
+    the **Udoo Neo** board. Thus, the **Udoo Neo** board receives two messages from
+    the server, one that belongs to the **sensors/drone01/altitude** topic and one
+    that belongs to the **sensors/drone40/temperature** topic.'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Raspberry Pi 3**板发布了一个以**75 F**为有效载荷和**sensors/drone40/temperature**为主题的消息。即发布者的板发送发布请求到服务器。服务器将消息分发给唯一订阅了**sensors/drone40/temperature**主题的客户端：**Udoo
+    Neo**板。因此，**Udoo Neo**板从服务器接收了两条消息，一条属于**sensors/drone01/altitude**主题，另一条属于**sensors/drone40/temperature**主题。'
+- en: 'The following diagram shows what happens after one publisher publishes a message
+    to a topic through the server, and this topic has only one subscriber:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下图显示了当一个发布者通过服务器发布消息到一个主题，而这个主题只有一个订阅者时会发生什么：
+- en: '![](assets/08bb62ae-cc96-4a44-8dfa-3bd68cbc61c3.png)'
+  id: totrans-82
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/08bb62ae-cc96-4a44-8dfa-3bd68cbc61c3.png)'
+- en: 'The **Raspberry Pi 3** board publishes a message with **76 F** as the payload
+    and **sensors/drone40/temperature** as the topic. The board, that is, the publisher,
+    sends the publish request to the server. The server distributes the message to
+    the only client that is subscribed to the **sensors/drone40/temperature** topic:
+    the **Udoo Neo** board.'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Raspberry Pi 3**板发布了一个以**76 F**为有效载荷和**sensors/drone40/temperature**为主题的消息。即发布者的板发送发布请求到服务器。服务器将消息分发给唯一订阅了**sensors/drone40/temperature**主题的客户端：**Udoo
+    Neo**板。'
+- en: Understanding the MQTT puzzle – clients, servers, and connections
+  id: totrans-84
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解MQTT谜题-客户端、服务器和连接
+- en: In versions of the MQTT protocol lower than 3.1.1, the MQTT server was known
+    as an MQTT broker. Starting in MQTT 3.1.1, the MQTT broker was renamed the MQTT
+    server, and therefore we will refer to it as the server. However, we must take
+    into account that the documentation for MQTT servers, tools, and client libraries
+    can use the old MQTT broker name to refer to the server. MQTT servers are also
+    known as message brokers.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在低于3.1.1版本的MQTT协议中，MQTT服务器被称为MQTT代理。从MQTT 3.1.1开始，MQTT代理被重命名为MQTT服务器，因此我们将称其为服务器。然而，我们必须考虑到MQTT服务器、工具和客户端库的文档可能会使用旧的MQTT代理名称来指代服务器。MQTT服务器也被称为消息代理。
+- en: The MQTT server uses the previously explained topic-based filtering to filter
+    and distribute messages to the appropriate subscribers. There are many MQTT server
+    implementations that provide additional message filtering features by providing
+    custom plugins. However, we will focus on the features that are part of the MQTT
+    protocol requirements.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MQTT服务器使用先前解释的基于主题的过滤器来过滤和分发消息给适当的订阅者。有许多MQTT服务器实现提供了通过提供自定义插件来提供额外的消息过滤功能。但是，我们将专注于作为MQTT协议要求一部分的功能。
+- en: As previously explained, in MQTT publishers and subscribers are completely decoupled.
+    Publishers and subscribers are MQTT clients that only establish a connection with
+    the MQTT server. An MQTT client can be both a publisher and a subscriber at the
+    same time, that is, the client can publish messages to specific topics and also
+    receive messages that belong to topics to which the client has subscribed.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，在MQTT中，发布者和订阅者是完全解耦的。发布者和订阅者都是仅与MQTT服务器建立连接的MQTT客户端。一个MQTT客户端可以同时是发布者和订阅者，也就是说，客户端可以向特定主题发布消息，同时接收订阅了的主题的消息。
+- en: There are MQTT client libraries available for the most popular programming languages
+    and platforms. One of the most important things that we must consider when we
+    select the MQTT client library is the list of MQTT features that they support
+    and the ones that we need for our solution. Sometimes, we can choose between many
+    libraries for a specific programming language and platform, and some of them might
+    not implement all the features. We will use the most complete libraries for modern
+    Python versions that support a wide range of platforms throughout the book.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 各种流行的编程语言和平台都有MQTT客户端库可用。在选择MQTT客户端库时，我们必须考虑的最重要的事情之一是它们支持的MQTT功能列表以及我们解决方案所需的功能。有时，我们可以在特定编程语言和平台之间选择多个库，其中一些可能不实现所有功能。在本书中，我们将使用支持各种平台的现代Python版本的最完整的库。
+- en: 'Any device that has a TCP/IP stack and is capable of using an MQTT library
+    can become an MQTT client, that is, a publisher, a subscriber, or both a publisher
+    and a subscriber. The MQTT library makes it possible for the device to talk to
+    MQTT on top of TCP/IP and to interact with specific types of MQTT server. For
+    example, any of the following can become an MQTT client, among other devices:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 任何具有TCP/IP协议栈并能够使用MQTT库的设备都可以成为MQTT客户端，即发布者、订阅者，或者既是发布者又是订阅者。MQTT库使设备能够在TCP/IP协议栈上与MQTT通信，并与特定类型的MQTT服务器进行交互。例如，以下设备都可以成为MQTT客户端，除其他设备外：
+- en: An Arduino board
+  id: totrans-90
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个Arduino板
+- en: A Raspberry Pi 3 Model B+ board
+  id: totrans-91
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个树莓派3 Model B+板
+- en: A BeagleBone Black board
+  id: totrans-92
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个BeagleBone Black板
+- en: A Udoo Neo board
+  id: totrans-93
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个Udoo Neo板
+- en: An iPhone
+  id: totrans-94
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个iPhone
+- en: An iPad
+  id: totrans-95
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个iPad
+- en: An Android tablet
+  id: totrans-96
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个安卓平板电脑
+- en: An Android smartphone
+  id: totrans-97
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个安卓智能手机
+- en: A laptop running Windows
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 运行Windows的笔记本电脑
+- en: A server running Linux
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 运行Linux的服务器
+- en: A MacBook running macOS
+  id: totrans-100
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 运行macOS的MacBook
+- en: There are many MQTT servers available for the most popular platforms, including
+    Linux, Windows, and macOS. Many of them are servers that can work as MQTT servers
+    and they also provide additional futures. An MQTT server might implement only
+    a subset of the MQTT capabilities and might have specific limitations. Hence,
+    it is very important to check all the capabilities we will require in our solution
+    before selecting an MQTT server. As happens with other middleware, we have open
+    source versions, free versions, and paid versions. Thus, we also have to make
+    sure we select the appropriate MQTT server based on our budget and our specific
+    needs.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多MQTT服务器适用于最流行的平台，包括Linux、Windows和macOS。其中许多是可以作为MQTT服务器工作并提供额外功能的服务器。MQTT服务器可能只实现MQTT功能的子集，并可能具有特定的限制。因此，在选择MQTT服务器之前，检查我们解决方案中所需的所有功能非常重要。与其他中间件一样，我们有开源版本、免费版本和付费版本。因此，我们还必须确保根据我们的预算和特定需求选择适当的MQTT服务器。
+- en: Throughout this book, we will work with the Eclipse Mosquitto MQTT server ([http://www.mosquitto.org](http://www.mosquitto.org)).
+    Mosquitto is an open source MQTT server with an EPL/EDL license that is compatible
+    with MQTT versions 3.1.1 and 3.1\. We can take advantage of everything we learn
+    with any other MQTT server, such as **Erlang MQTT Broker** (**EMQ**), also known
+    as Emqttd ([http://www.emqtt.io](http://www.emqtt.io)), and HiveMQ ([http://hivemq.com](http://hivemq.com)),
+    among others. In addition, we might use our knowledge to work with a cloud-based
+    MQTT server such as CloudMQTT ([http://www.cloudmqtt.com](http://www.cloudmqtt.com))
+    or the PubNub MQTT bridge ([http://pubnub.com](http://pubnub.com)). We will specifically
+    work with cloud-based MQTT providers too.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书中，我们将使用Eclipse Mosquitto MQTT服务器（[http://www.mosquitto.org](http://www.mosquitto.org)）。Mosquitto是一个开源的MQTT服务器，具有EPL/EDL许可证，与MQTT版本3.1.1和3.1兼容。我们可以利用我们学到的一切与其他MQTT服务器一起工作，比如**Erlang
+    MQTT Broker**（**EMQ**），也称为Emqttd（[http://www.emqtt.io](http://www.emqtt.io)），以及HiveMQ（[http://hivemq.com](http://hivemq.com)），等等。此外，我们可能会利用我们的知识与基于云的MQTT服务器一起工作，比如CloudMQTT（[http://www.cloudmqtt.com](http://www.cloudmqtt.com)）或PubNub
+    MQTT桥接器（[http://pubnub.com](http://pubnub.com)）。我们还将专门与基于云的MQTT提供商一起工作。
+- en: The MQTT server is the central hub of the publish-subscribe model we previously
+    analyzed. The MQTT server is responsible for the authentication and authorization
+    of the MQTT clients that will be able to become publishers and/or subscribers
+    after they are authenticated and authorized. So, the first thing that an MQTT
+    client must do is to establish a connection with the MQTT server.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MQTT服务器是我们之前分析的发布-订阅模型的中心枢纽。MQTT服务器负责对将能够成为发布者和/或订阅者的MQTT客户端进行身份验证和授权。因此，MQTT客户端必须做的第一件事就是与MQTT服务器建立连接。
+- en: In order to establish a connection, the MQTT client must send a `CONNECT` control
+    packet to the MQTT server with a payload that must include all the necessary information
+    to initiate the connection and proceed with the authentication and authorization.
+    The MQTT server will check the `CONNECT` packet, perform authentication and authorization,
+    and send a response to the client with a `CONNACK` control packet that we will
+    analyze in detail after understanding the `CONNECT` control packet. If the MQTT
+    client sends an invalid `CONNECT` control packet, the server will automatically
+    close the connection.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了建立连接，MQTT客户端必须向MQTT服务器发送一个带有有效载荷的`CONNECT`控制数据包，该有效载荷必须包括启动连接和进行身份验证和授权所需的所有必要信息。MQTT服务器将检查`CONNECT`数据包，执行身份验证和授权，并向客户端发送一个`CONNACK`控制数据包的响应，我们将在理解`CONNECT`控制数据包后详细分析。如果MQTT客户端发送了无效的`CONNECT`控制数据包，服务器将自动关闭连接。
+- en: 'The following diagram shows the interaction between an MQTT client and an MQTT
+    server to establish a connection:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图显示了MQTT客户端与MQTT服务器之间建立连接的交互：
+- en: '![](assets/38f3b9e7-aa98-49a9-8f4f-1eea5545a86f.png)'
+  id: totrans-106
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/38f3b9e7-aa98-49a9-8f4f-1eea5545a86f.png)'
+- en: After a successful connection has been established between an MQTT client and
+    an MQTT server, the server will keep the connection open until the client loses
+    the connection or sends a `DISCONNECT` control packet to the server to close the
+    connection.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在MQTT客户端和MQTT服务器之间建立成功连接后，服务器将保持连接开放，直到客户端失去连接或向服务器发送`DISCONNECT`控制数据包以关闭连接。
+- en: 'The `CONNECT` control packet must include values for the following fields in
+    the payload, and bits for a special flags byte that is included in the control
+    packet. We want to understand the meaning of these fields and flags because we
+    will be able to specify their values when we work with MQTT tools and MQTT client
+    libraries in Python:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`CONNECT`控制数据包的有效载荷必须包括以下字段的值，以及包含在控制数据包中的特殊标志字节的位。我们希望理解这些字段和标志的含义，因为当我们使用Python中的MQTT工具和MQTT客户端库时，我们将能够指定它们的值：'
+- en: '`ClientId`: The client identifier, also known as client ID, is a string that
+    identifies each MQTT client that connects to an MQTT server. Each client that
+    connects to the MQTT server must have a unique `ClientId`, and the server uses
+    it to identify the state that it holds related to the MQTT session between the
+    client and the server. If a client specifies an empty value as the `ClientId`,
+    the MQTT server must generate a unique `ClientId` to identify the client. However,
+    this behavior depends on the value specified for the `CleanSession` field.'
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`ClientId`：客户端标识符，也称为客户端ID，是一个字符串，用于标识连接到MQTT服务器的每个MQTT客户端。连接到MQTT服务器的每个客户端必须具有唯一的`ClientId`，服务器使用它来标识与客户端和服务器之间的MQTT会话相关的状态。如果客户端将空值指定为`ClientId`，MQTT服务器必须生成一个唯一的`ClientId`来标识客户端。但是，此行为取决于为`CleanSession`字段指定的值。'
+- en: '`CleanSession`: The clean session flag is a Boolean value that specifies what
+    happens after an MQTT client disconnects from the MQTT server and then reconnects.
+    If `CleanSession` is set to `1` or `True`, the client indicates to the MQTT server
+    that the session will only last as long as the network connection is alive. After
+    the MQTT client disconnects from the MQTT server, any information related to the
+    session is discarded. A new connection from the same MQTT client to the MQTT server
+    will not use the data from the previous session and will be a new clean session.
+    If `CleanSession` is set to `0` or `False`, we will work with a persistent session.
+    In this case, the MQTT server stores all the subscriptions for the MQTT client
+    and when the MQTT client disconnects, the MQTT server stores all the messages
+    that arrive with specific quality of service levels that match the subscriptions
+    that the MQTT client had at the time the disconnection occurred. This way, when
+    the same MQTT client establishes a new connection with the MQTT server, the MQTT
+    client will have the same subscriptions and will receive all the messages that
+    it couldn''t receive when it lost the connection. We will dive deep into quality
+    of service levels for messages and their relationship with the clean session flag
+    or the persistent session option later in [Chapter 2](790c1d9a-c895-481e-a1c1-94ea07694cb4.xhtml), *Using
+    Command-Line and GUI Tools to Learn How MQTT Works*.'
+  id: totrans-110
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`CleanSession`：清理会话标志是一个布尔值，指定MQTT客户端从MQTT服务器断开连接然后重新连接后会发生什么。如果`CleanSession`设置为`1`或`True`，客户端向MQTT服务器指示会话只会持续到网络连接保持活跃。MQTT客户端从MQTT服务器断开连接后，与会话相关的任何信息都会被丢弃。同一MQTT客户端重新连接到MQTT服务器时，不会使用上一个会话的数据，而会创建一个新的清理会话。如果`CleanSession`设置为`0`或`False`，我们将使用持久会话。在这种情况下，MQTT服务器会存储MQTT客户端的所有订阅，当MQTT客户端断开连接时，MQTT服务器会存储与订阅匹配的特定服务质量级别的所有消息。这样，当同一MQTT客户端与MQTT服务器建立新连接时，MQTT客户端将拥有相同的订阅，并接收在失去连接时无法接收的所有消息。我们将在后面的[第2章](790c1d9a-c895-481e-a1c1-94ea07694cb4.xhtml)中深入探讨消息的服务质量级别及其与清理会话标志或持久会话选项的关系。'
+- en: When the clean session flag is set to `0` or `False`, the client indicates to
+    the server that it wants a persistent session. We just have to remember a clean
+    session is the opposite of a persistent session.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当清理会话标志设置为`0`或`False`时，客户端向服务器指示它需要一个持久会话。我们只需要记住，清理会话是持久会话的相反。
+- en: '`UserName`: If the client wants to specify a username to request authentication
+    and authorization from the MQTT server, it must set the `UserName` flag to `1`
+    or `True` and specify a value for the `UserName` field'
+  id: totrans-112
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`UserName`：如果客户端想要指定一个用户名来请求MQTT服务器的认证和授权，它必须将`UserName`标志设置为`1`或`True`，并为`UserName`字段指定一个值。'
+- en: '`Password`: If the client wants to specify a password to request authentication
+    and authorization from the MQTT server, it must set the `Password` flag to `1`
+    or `True` and specify a value for the `Password` field'
+  id: totrans-113
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`Password`：如果客户端想要指定一个密码来请求MQTT服务器的认证和授权，它必须将`Password`标志设置为`1`或`True`，并为`Password`字段指定一个值。'
+- en: We will dedicate an entire chapter to MQTT security, and therefore we just mention
+    the fields and the flags that are included in the `CONNECT` control packet.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将专门为MQTT安全性撰写一整章，因此我们只提及`CONNECT`控制数据包中包含的字段和标志。
+- en: '`ProtocolLevel`: The protocol level value indicates the MQTT protocol version
+    that the MQTT client requests the MQTT server to use. Remember, we will always
+    work with MQTT version 3.1.1.'
+  id: totrans-115
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`ProtocolLevel`：协议级别值指示MQTT客户端请求MQTT服务器使用的MQTT协议版本。请记住，我们将始终使用MQTT版本3.1.1。'
+- en: '`KeepAlive`: `KeepAlive` is a time interval expressed in seconds. If the value
+    for `KeepAlive` is not equal to `0`, the MQTT client commits to send control packets
+    to the server within the time specified for `KeepAlive`. If the MQTT client doesn’t
+    have to send any control packets, it must send a `PINGREQ` control packet to the
+    MQTT server, a ping request to tell the MQTT server that the client connection
+    is alive. The MQTT server responds to the `PINGREQ` control packet with a `PINGRESP`
+    response to the MQTT client, a ping response to tell the MQTT client that the
+    connection with the MQTT server is alive. The connection is closed when there
+    is an absence of any of these control packets. If the value for `KeepAlive` is
+    `0`, the keep-alive mechanism is turned off.'
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`KeepAlive`：`KeepAlive`是以秒为单位表示的时间间隔。如果`KeepAlive`的值不等于`0`，MQTT客户端承诺在指定的`KeepAlive`时间内向服务器发送控制数据包。如果MQTT客户端不必发送任何控制数据包，它必须向MQTT服务器发送一个`PINGREQ`控制数据包，以告知MQTT服务器客户端连接仍然活跃。MQTT服务器会用`PINGRESP`响应控制数据包回应MQTT客户端，以告知MQTT客户端与MQTT服务器的连接仍然活跃。当缺少这些控制数据包时，连接将被关闭。如果`KeepAlive`的值为`0`，则保持活动机制将被关闭。'
+- en: '`Will`, `WillQoS`, `WillRetain`, `WillTopic`, and `WillMessage`: These flags
+    and fields allow the MQTT client to take advantage of the last will and testament
+    feature of MQTT. If the MQTT client sets the `Will` flag to `1` or `True`, it
+    specifies that it wants the MQTT server to store a last will message associated
+    with the session. The `WillQoS` flag specifies the desired quality of service
+    for the last will message, and the `WillRetain` flag indicates whether this message
+    must be retained when it is published. If the MQTT client sets the `Will` flag
+    to `1` or `True`, it must specify the topic for the `Will` message and the message
+    in the `WillTopic` and `WillMessage` fields. If the MQTT client is disconnected
+    or loses the connection with the MQTT server, the MQTT server will publish the
+    message specified in the `WillMessage` field to the topic indicated in the `WillTopic`
+    field with the chosen quality of service. We will analyze this feature in detail
+    later.'
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Will，WillQoS，WillRetain，WillTopic和WillMessage：这些标志和字段允许MQTT客户端利用MQTT的遗嘱功能。如果MQTT客户端将Will标志设置为1或True，则指定它希望MQTT服务器存储与会话关联的遗嘱消息。WillQoS标志指定了遗嘱消息的期望服务质量，而WillRetain标志指示发布此消息时是否必须保留。如果MQTT客户端将Will标志设置为1或True，则必须在WillTopic和WillMessage字段中指定Will消息的主题和消息。如果MQTT客户端断开连接或与MQTT服务器失去连接，MQTT服务器将使用WillTopic字段中指定的主题以所选的服务质量发布WillMessage字段中指定的消息。我们将稍后详细分析此功能。
+- en: 'The MQTT server will process a valid `CONNECT` control packet and it will respond
+    with a `CONNACK` control packet. This control packet will include values for the
+    following flags included in the header. We want to understand the meaning of these
+    flags because we will be able to retrieve their values when we work with MQTT
+    tools and MQTT client libraries:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: MQTT服务器将处理有效的CONNECT控制数据包，并将以CONNACK控制数据包作出响应。此控制数据包将包括标头中包含的以下标志的值。我们希望了解这些标志的含义，因为在使用MQTT工具和MQTT客户端库时，我们将能够检索它们的值：
+- en: '`SessionPresent`: If the MQTT server received a connection request with the
+    `CleanSession` flag set to `1` or `True`, the value for the `SessionPresent` flag
+    will be `0` or `False` because no stored session will be reused. If the `CleanSession`
+    flag was set to `0` or `False` in the connection request, the MQTT server will
+    work with a persistent session, and the value for the `SessionPresent` flag will
+    be `1` or `True` if the server had a persistent session for the client from a
+    previous connection and retrieves it. Otherwise, `SessionPresent` will be `0`
+    or `False`. The MQTT client that wanted to work with a persistent session can
+    use the value of this flag to determine whether it has to request subscription
+    to the desired topics, or whether the subscriptions have been restored from the
+    persisted session.'
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'SessionPresent: 如果MQTT服务器收到了一个将CleanSession标志设置为1或True的连接请求，SessionPresent标志的值将为0或False，因为不会重用任何存储的会话。如果连接请求中的CleanSession标志设置为0或False，MQTT服务器将使用持久会话，并且如果服务器从先前的连接中为客户端检索到持久会话，则SessionPresent标志的值将为1或True。否则，SessionPresent将为0或False。想要使用持久会话的MQTT客户端可以使用此标志的值来确定是否必须请求订阅所需主题，或者订阅是否已从持久会话中恢复。'
+- en: '`ReturnCode`: If the authorization and authentication passed and the connection
+    was successfully established, the value for `ReturnCode` will be `0`. Otherwise,
+    the return code will be different than `0` and the network connection between
+    the client and the server will be closed. The following table shows the possible
+    values for `ReturnCode` with their meanings:'
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'ReturnCode: 如果授权和认证通过，并且连接成功建立，ReturnCode的值将为0。否则，返回代码将不同于0，客户端和服务器之间的网络连接将被关闭。以下表格显示了ReturnCode的可能值及其含义：'
+- en: '| **ReturnCode value** | **Description** |'
+  id: totrans-121
+  prefs: []
+  type: TYPE_TB
+  zh: ReturnCode值 | 描述
+- en: '| `0` |  The connection was accepted |'
+  id: totrans-122
+  prefs: []
+  type: TYPE_TB
+  zh: 0 | 连接被接受
+- en: '| `1` | The connection was refused because the MQTT server doesn''t support
+    the MQTT protocol version requested by the MQTT client in the `CONNECT` control
+    packet |'
+  id: totrans-123
+  prefs: []
+  type: TYPE_TB
+  zh: 1 | 由于MQTT服务器不支持MQTT客户端在CONNECT控制数据包中请求的MQTT协议版本，连接被拒绝
+- en: '| `2` | The connection was refused because the `ClientId` (client identifier)
+    specified has been rejected |'
+  id: totrans-124
+  prefs: []
+  type: TYPE_TB
+  zh: 2 | 由于指定的ClientId（客户端标识符）已被拒绝，连接被拒绝
+- en: '| `3` | The connection was refused because the network connection was established
+    but the MQTT service isn''t available |'
+  id: totrans-125
+  prefs: []
+  type: TYPE_TB
+  zh: 3 | 由于网络连接已建立但MQTT服务不可用，连接被拒绝
+- en: '| `4` | The connection was refused because the username or password values
+    are malformed |'
+  id: totrans-126
+  prefs: []
+  type: TYPE_TB
+  zh: 4 | 由于用户名或密码数值格式不正确，连接被拒绝
+- en: '| `5` | The connection was refused because authorization failed |'
+  id: totrans-127
+  prefs: []
+  type: TYPE_TB
+  zh: 5 | 由于授权失败，连接被拒绝
+- en: Installing a Mosquitto server on Linux
+  id: totrans-128
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Linux上安装Mosquitto服务器
+- en: 'Now, we will learn the necessary steps to install a Mosquitto server on the
+    most popular operating systems: Linux, macOS, and Windows.'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将学习在最流行的操作系统上安装Mosquitto服务器所需的步骤：Linux，macOS和Windows。
+- en: It is extremely important to work with the latest available Mosquitto versions
+    to make sure that many security vulnerabilities discovered in previous versions
+    are addressed. For example, Mosquitto 1.4.15 addressed two important security
+    vulnerabilities that affected versions 1.0 to 1.4.14 inclusive.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用最新版本的Mosquitto非常重要，以确保解决了先前版本中发现的许多安全漏洞。例如，Mosquitto 1.4.15解决了影响版本1.0至1.4.14（含）的两个重要安全漏洞。
+- en: 'First, we will start with Linux; specifically, we will work with Ubuntu Linux.
+    If you want to work with a different Linux distribution, you can find details
+    about the installation procedure in the Mosquitto downloads section: [http://mosquitto.org/download](http://mosquitto.org/download).'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将从Linux开始；具体来说，我们将使用Ubuntu Linux。如果您想使用其他Linux发行版，您可以在Mosquitto下载部分找到有关安装过程的详细信息：[http://mosquitto.org/download](http://mosquitto.org/download)。
+- en: 'Follow these steps to install a Mosquitto server on Ubuntu Linux; take into
+    account that you will require root privileges:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤在Ubuntu Linux上安装Mosquitto服务器；请注意，您需要root权限：
+- en: 'Open a Terminal window or use a secure shell to access Ubuntu and run the following
+    command to add the Mosquitto repository:'
+  id: totrans-133
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端窗口或使用安全shell访问Ubuntu，并运行以下命令以添加Mosquitto存储库：
+- en: '[PRE0]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'You will see an output similar to the next lines (the temporary filenames will
+    be different):'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看到类似于下面的输出（临时文件名将不同）：
+- en: '[PRE1]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Run the following command to update the packages with the recently added Mosquitto
+    repository:'
+  id: totrans-137
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行以下命令以更新最近添加的Mosquitto存储库中的软件包：
+- en: '[PRE2]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'You will see an output similar to the next lines. Note that the next lines
+    show the output of an Ubuntu server running as a Windows Azure virtual machine,
+    and therefore the output will be similar:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看到类似于下面的输出。请注意，下面的行显示了作为Windows Azure虚拟机运行的Ubuntu服务器的输出，因此输出将类似：
+- en: '[PRE3]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Now, run the following command to install the package for the Mosquitto server:'
+  id: totrans-141
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，运行以下命令以安装Mosquitto服务器的软件包：
+- en: '[PRE4]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: You will see an output similar to the next lines.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看到类似于下面的输出。
+- en: 'Enter `Y` and press *Enter* to answer the question and complete the installation
+    process:'
+  id: totrans-144
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 输入`Y`并按*Enter*回答问题，完成安装过程：
+- en: '[PRE5]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'The last lines should include a line that says `Setting up mosquitto` followed
+    by the version number, as shown in the following lines:'
+  id: totrans-146
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后几行应包括一行，其中说`Setting up mosquitto`，后面跟着版本号，如下所示：
+- en: '[PRE6]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Now, run the following command to install the Mosquitto client packages that
+    will allow us to run commands to publish messages to topics and subscribe to topic
+    filters:'
+  id: totrans-148
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，运行以下命令以安装Mosquitto客户端软件包，这将允许我们运行命令以发布消息到主题和订阅主题过滤器：
+- en: '[PRE7]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: You will see an output similar to the next lines.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将看到类似于下面的输出。
+- en: 'Enter `Y` and press *Enter* to answer the question and complete the installation
+    process:'
+  id: totrans-151
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 输入`Y`并按*Enter*回答问题，完成安装过程：
+- en: '[PRE8]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'The last lines should include a line that says `Setting up mosquitto-clients` followed
+    by the version number, as shown in the following lines:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后几行应包括一行，其中说`Setting up mosquitto-clients`，后面跟着版本号，如下所示：
+- en: '[PRE9]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Finally, run the following command to check the status for the `mosquitto`
+    service that was recently installed:'
+  id: totrans-155
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，运行以下命令来检查最近安装的`mosquitto`服务的状态：
+- en: '[PRE10]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'The first lines of the output should be similar to the following lines with
+    an `active (running)` status displayed. The details after `CGroup` indicate the
+    command line that started the service. The `-c` option followed by `/etc/mosquitto/mosquitto.conf`
+    specifies that Mosquitto is using this configuration file:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出的前几行应类似于以下行，显示`active (running)`状态。`CGroup`后面的详细信息指示启动服务的命令行。`-c`选项后跟`/etc/mosquitto/mosquitto.conf`指定Mosquitto正在使用此配置文件：
+- en: '[PRE11]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'You can also run the following command to check whether the Mosquitto MQTT
+    server is listening at the default port, `1883`:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以运行以下命令来检查Mosquitto MQTT服务器是否在默认端口`1883`上监听：
+- en: '[PRE12]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'The following lines show the results of the previous command that indicate
+    the Mosquitto MQTT server has opened an IPv4 and an IPv6 listen socket on port
+    `1883`:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下行显示了上一个命令的结果，指示Mosquitto MQTT服务器已在端口`1883`上打开了IPv4和IPv6监听套接字：
+- en: '[PRE13]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Installing a Mosquitto server on macOS
+  id: totrans-163
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在macOS上安装Mosquitto服务器
+- en: 'Follow these steps to install a Mosquitto server on macOS, known as OS X prior
+    to macOS Sierra:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤在macOS上安装Mosquitto服务器，即macOS Sierra之前的OS X：
+- en: 'If you don''t have Homebrew installed, open a Terminal window and run the command
+    indicated on the Homebrew homepage, [http://brew.sh](http://brew.sh), to install
+    this popular package manager for macOS. The following command will do the job.
+    However, it is convenient to check the Homebrew homepage and check all the detailed
+    instructions that are always updated with the newest versions of macOS that become
+    available. If you already have Homebrew installed, move to the next step:'
+  id: totrans-165
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您尚未安装Homebrew，请打开终端窗口并运行Homebrew主页上指定的命令[http://brew.sh](http://brew.sh)，以安装macOS的这个流行软件包管理器。以下命令将完成工作。但是，最好检查Homebrew主页并查看所有始终更新为最新macOS版本的详细说明。如果您已经安装了Homebrew，请转到下一步：
+- en: '[PRE14]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Open a Terminal window and run the following command to request Homebrew to
+    install Mosquitto:'
+  id: totrans-167
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端窗口并运行以下命令以请求Homebrew安装Mosquitto：
+- en: '[PRE15]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Notice that in some cases, Homebrew might require additional software to be
+    installed on your computer before you can install Mosquitto. If it is necessary
+    to install additional software, such as Xcode command-line tools, Homebrew will
+    provide you with the necessary instructions.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在某些情况下，Homebrew可能需要在您安装Mosquitto之前在计算机上安装其他软件。如果需要安装其他软件，例如Xcode命令行工具，Homebrew将为您提供必要的说明。
+- en: 'The following lines show the last messages shown in Terminal that indicate
+    that Homebrew has installed Mosquitto and the instructions to start the MQTT server:'
+  id: totrans-170
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 以下行显示了在终端中显示的最后消息，指示Homebrew已安装Mosquitto并启动MQTT服务器的说明：
+- en: '[PRE16]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'After the Mosquitto installation has been completed, run the following command
+    in a new Terminal window to launch Mosquitto with the default configuration file.
+    The `-c` option followed by `/usr/local/etc/mosquitto/mosquitto.conf` specifies
+    that we want to use this configuration file:'
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Mosquitto安装完成后，在新的终端窗口中运行以下命令以使用默认配置文件启动Mosquitto。 `-c`选项后跟`/usr/local/etc/mosquitto/mosquitto.conf`指定我们要使用此配置文件：
+- en: '[PRE17]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'The following is the output after you run the previous command:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在运行上一个命令后，以下是输出结果：
+- en: '[PRE18]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: The last lines indicate the Mosquitto MQTT server has opened an IPv4 and an
+    IPv6 listen socket on the default TCP port, `1883`. Leave the Terminal window
+    opened, because we need Mosquitto running on the local computer to work with the
+    next examples.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后几行指示Mosquitto MQTT服务器已在默认TCP端口`1883`上打开了IPv4和IPv6监听套接字。保持终端窗口打开，因为我们需要在本地计算机上运行Mosquitto以使用下面的示例。
+- en: Installing a Mosquitto server on Windows
+  id: totrans-177
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Windows上安装Mosquitto服务器
+- en: 'Follow these steps to install a Mosquitto server on Windows. Take into account
+    that you will require Windows Vista or higher (Windows 7, 8, 8.1, 10, or greater).
+    The instructions also work on Windows Server 2008, 2012, 2016, or greater:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤在Windows上安装Mosquitto服务器。请注意，您需要Windows Vista或更高版本（Windows 7、8、8.1、10或更高版本）。这些说明也适用于Windows
+    Server 2008、2012、2016或更高版本：
+- en: 'Download the executable file listed under Binary Installation and Windows that
+    provides the native build on the Mosquitto downloads web page: [http://mosquitto.org/download](http://mosquitto.org/download).
+    For Mosquitto 1.4.15, the filename is `mosquitto-1.4.15-install-win32.exe`. You
+    must click or tap on the filename and you will be redirected to the Eclipse repository
+    with many mirror options, including a default recommendation, from which you can
+    download the executable file.'
+  id: totrans-179
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Mosquitto下载网页上下载提供本机构建的可执行文件，该网页列出了二进制安装和Windows下的文件：[http://mosquitto.org/download](http://mosquitto.org/download)。对于Mosquitto
+    1.4.15，文件名为`mosquitto-1.4.15-install-win32.exe`。您必须单击或点击文件名，然后将被重定向到Eclipse存储库，其中包括默认推荐的许多镜像选项，您可以从中下载可执行文件。
+- en: 'Run the previously downloaded executable file and the mosquitto Setup Wizard
+    will display its welcome dialog box. Click Next > to continue. The setup wizard
+    will display the dependencies that you must install: OpenSSL and pthreads. The
+    dialog box will display the links that you can use to download and run installers
+    for these two requirements, as shown in the following screenshot:'
+  id: totrans-180
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行先前下载的可执行文件，mosquitto设置向导将显示其欢迎对话框。单击“下一步>”继续。设置向导将显示您必须安装的依赖项：OpenSSL和pthreads。对话框将显示您可以使用的链接来下载和运行这两个要求的安装程序，如下面的屏幕截图所示：
+- en: '![](assets/2e12e15c-544b-484b-8719-da419fa7c04d.png)'
+  id: totrans-181
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/2e12e15c-544b-484b-8719-da419fa7c04d.png)'
+- en: If you don't have Win32 OpenSSL v1.0.2j Light installed on Windows, go to the
+    Win32 OpenSSL web page, [http://slproweb.com/products/Win32OpenSSL.html](http://slproweb.com/products/Win32OpenSSL.html),
+    and download the `Win32 OpenSSL v1.1.0g Light` file listed in a table under Download
+    Win32 OpenSSL. Do not download the Win64 version, because you will need the Win32
+    version to make it possible for Mosquitto to have its dependencies. If you already
+    have Win32 OpenSSL v1.1.0g Light installed, advance to step 7\. For Win32 OpenSSL
+    v1.1.0g Light, the filename is `Win32OpenSSL_Light-1_1_0g.exe`. Run the downloaded
+    executable file and OpenSSL Light (32-bit) will display its welcome dialog box.
+    Click Next > to continue.
+  id: totrans-182
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您在Windows上没有安装Win32 OpenSSL v1.0.2j Light，请转到Win32 OpenSSL网页，[http://slproweb.com/products/Win32OpenSSL.html](http://slproweb.com/products/Win32OpenSSL.html)，并下载“Win32
+    OpenSSL v1.1.0g Light”文件。不要下载Win64版本，因为您需要Win32版本才能使Mosquitto具有其依赖项。如果您已经安装了Win32
+    OpenSSL v1.1.0g Light，请转到第7步。对于Win32 OpenSSL v1.1.0g Light，文件名为“Win32OpenSSL_Light-1_1_0g.exe”。运行下载的可执行文件，OpenSSL
+    Light（32位）将显示其欢迎对话框。单击“下一步>”继续。
+- en: The setup wizard will display the License Agreement. Read it, select I Accept
+    the agreement, and click Next >. Select the folder in which you want to install
+    OpenSSL Light (32-bit) if you don't want to use the default folder. Remember the
+    folder you specify, because you will need to copy a few DLL files from this folder
+    later. The default folder is `C:\OpenSSL-Win32`.
+  id: totrans-183
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 设置向导将显示许可协议。阅读并选择“我接受协议”，然后单击“下一步>”。如果您不想使用默认文件夹，请选择要安装OpenSSL Light（32位）的文件夹。请记住您指定的文件夹，因为您稍后需要从此文件夹复制一些DLL文件。默认文件夹为`C:\OpenSSL-Win32`。
+- en: Click Next > to continue, specify a different Start Menu folder if necessary,
+    and click Next >. Select The OpenSSL binaries (/bin) directory as the desired
+    option for **Copy OpenSSL DLLs** to. This way, the installation will copy the
+    DLLs to a `bin` subfolder within the previously specified folder, by default `C:\OpenSSL-Win32\bin`.
+  id: totrans-184
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击“下一步>”继续，如有必要，指定不同的开始菜单文件夹，然后单击“下一步>”。选择OpenSSL二进制文件（/bin）目录作为“复制OpenSSL DLLs”的所需选项。这样，安装将把DLL复制到先前指定文件夹内的`bin`子文件夹中，默认为`C:\OpenSSL-Win32\bin`。
+- en: Click **Next >** to continue. Review the selected installation options and click
+    Install to complete the installation for OpenSSL Light (32-bit). Finally, consider
+    a donation to the Win32 OpenSSL project and click **Finish** to exit setup.
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击“下一步>”继续。查看所选的安装选项，然后单击“安装”以完成OpenSSL Light（32位）的安装。最后，考虑向Win32 OpenSSL项目捐赠，然后单击“完成”退出设置。
+- en: 'Go to the following address in your web browser: [ftp://sources.redhat.com/pub/pthreads-win32/dll-latest/dll/x86](ftp://sources.redhat.com/pub/pthreads-win32/dll-latest/dll/x86).
+    The browser will display many files for this FTP directory. Right-click on **pthreadVC2.dll**
+    and save the file in your `Downloads` folder. You will have to copy this DLL to
+    the Mosquitto installation folder later.'
+  id: totrans-186
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Web浏览器中转到以下地址：[ftp://sources.redhat.com/pub/pthreads-win32/dll-latest/dll/x86](ftp://sources.redhat.com/pub/pthreads-win32/dll-latest/dll/x86)。浏览器将显示此FTP目录的许多文件。右键单击**pthreadVC2.dll**，然后将文件保存在您的“Downloads”文件夹中。稍后您需要将此DLL复制到Mosquitto安装文件夹中。
+- en: Now, go back to the mosquitto Setup window and click **Next >** to continue.
+    By default, Mosquitto will install the files and the Mosquitto Service. Leave
+    the default components to install those selected and click **Next >** to continue.
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，返回到Mosquitto设置窗口，单击“下一步>”继续。默认情况下，Mosquitto将安装文件和Mosquitto服务。保留默认组件以安装所选内容，然后单击“下一步>”继续。
+- en: Select the folder in which you want to install Mosquitto if you don't want to
+    use the default folder. Remember the folder you specify, because you will need
+    to copy a few DLL files to this folder later. The default folder is `C:\Program
+    Files (x86)\mosquitto`. Click **Install** to complete the installation. Notice
+    that the mosquitto Setup Wizard might display errors related to missing DLLs.
+    We will fix this issue in the next steps. Once the installation has completed,
+    click Finish to close the mosquitto Setup Wizard.
+  id: totrans-188
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您不想使用默认文件夹，请选择要安装Mosquitto的文件夹。请记住您指定的文件夹，因为您稍后需要将一些DLL文件复制到此文件夹。默认文件夹为`C:\Program
+    Files (x86)\mosquitto`。单击“安装”以完成安装。请注意，mosquitto设置向导可能会显示与缺少DLL相关的错误。我们将在接下来的步骤中解决此问题。安装完成后，单击“完成”关闭mosquitto设置向导。
+- en: Open a File Explorer window and go to the `bin` subfolder within the folder
+    in which you installed OpenSSL Light (32-bit), by default `C:\OpenSSL-Win32\bin`.
+  id: totrans-189
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开文件资源管理器窗口，转到您安装OpenSSL Light（32位）的文件夹中的`bin`子文件夹，默认情况下为`C:\OpenSSL-Win32\bin`。
+- en: 'Copy the following four DLLs: `libcrypto-1_1.dll`, `libeay32.dll`, `ssleay32.dll`,
+    and `libssl-1_1.dll`. Now, go to the folder in which you installed Mosquitto and
+    paste these four DLLs. By default, the Mosquitto installation folder is `C:\Program
+    Files (x86)\mosquitto`. You will need to provide administrator permission to paste
+    the DLLs in the default folder.'
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 复制以下四个DLL文件：`libcrypto-1_1.dll`、`libeay32.dll`、`ssleay32.dll`和`libssl-1_1.dll`。现在，转到您安装Mosquitto的文件夹，并将这四个DLL粘贴进去。默认情况下，Mosquitto安装文件夹是`C:\Program
+    Files (x86)\mosquitto`。您需要提供管理员权限才能将DLL粘贴到默认文件夹中。
+- en: Open a File Explorer window and go to your Downloads folder. Copy the pthreads
+    DLL you downloaded in one of the previous steps, `pthreadVC2.dll`. Now, go to
+    the folder in which you installed Mosquitto and paste this DLL. You will need
+    to provide administrator permission to paste the DLL into the default Mosquitto
+    installation folder.
+  id: totrans-191
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开文件资源管理器窗口，转到您的下载文件夹。复制您在先前步骤中下载的pthreads DLL，`pthreadVC2.dll`。现在，转到您安装Mosquitto的文件夹，并将此DLL粘贴进去。您需要提供管理员权限才能将DLL粘贴到默认的Mosquitto安装文件夹中。
+- en: Now that all the dependencies are included in the Mosquitto installation folder,
+    it is necessary to run the installation again to make the Mosquitto setup configure
+    the Windows service. Run the previously downloaded Mosquitto installation executable
+    again. For Mosquitto 1.4.15, the filename is `mosquito-1.4.15-install-win32.exe`.
+    Make sure you specify the same installation folder as the folder in which you
+    copied the DLLs and that the `Service` component is activated. Click **Next >**
+    many times and click **Install** to complete the configuration for the Windows
+    service. Once the installation has completed, click Finish to close the mosquitto
+    Setup Wizard.
+  id: totrans-192
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，所有依赖项都包含在Mosquitto安装文件夹中，需要再次运行安装程序以使Mosquitto设置配置Windows服务。再次运行先前下载的Mosquitto安装可执行文件。对于Mosquitto
+    1.4.15，文件名是`mosquito-1.4.15-install-win32.exe`。确保指定与您复制DLL的文件夹相同的安装文件夹，并激活`Service`组件。点击**下一步**多次，然后点击**安装**以完成Windows服务的配置。安装完成后，点击完成以关闭Mosquitto设置向导。
+- en: 'Open the Services application in Windows and search for the service whose name
+    is **Mosquitto Broker**. Right-click on the service name and select **Start**.
+    The Status will change to **Running**. By default, the service is configured to
+    have its **Startup Type** set to **Automatic**. If you don''t want to automatically
+    start the Mosquitto Broker service, change the **Startup Type** to **Manual**.
+    You will have to repeat the step you just did to manually start the service before
+    working with Mosquitto on a Windows computer. Notice that the description for
+    the service is MQTT v3.1 broker, as shown in the following screenshot. The description
+    is outdated because the service provides an MQTT 3.1.1 server that is also compatible
+    with MQTT 3.1:'
+  id: totrans-193
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Windows中打开服务应用程序，并搜索服务名称为**Mosquitto Broker**的服务。右键单击服务名称，然后选择**启动**。状态将变为**运行**。默认情况下，服务配置为其**启动类型**设置为**自动**。如果您不想自动启动Mosquitto
+    Broker服务，请将**启动类型**更改为**手动**。在Windows计算机上使用Mosquitto之前，您必须重复手动启动服务的步骤。请注意，服务的描述为MQTT
+    v3.1代理，如下图所示。该描述已过时，因为该服务提供了一个与MQTT 3.1兼容的MQTT 3.1.1服务器。
+- en: '![](assets/99ddba70-39f6-4886-9c6f-3e195f5724b0.png)'
+  id: totrans-194
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/99ddba70-39f6-4886-9c6f-3e195f5724b0.png)'
+- en: 'Open a Windows PowerShell or a Command Prompt window and run the following
+    command to check whether the Mosquitto MQTT server is listening at the default
+    TCP port, `1883`:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开Windows PowerShell或命令提示符窗口，并运行以下命令以检查Mosquitto MQTT服务器是否在默认TCP端口`1883`上监听：
+- en: '[PRE19]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'The following lines show the results of the previous command that indicate
+    the Mosquitto MQTT server has opened an IPv4 and an IPv6 listen socket on port
+    `1883`:'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下行显示了先前命令的结果，表明Mosquitto MQTT服务器已在端口`1883`上打开了IPv4和IPv6监听套接字：
+- en: '[PRE20]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: Considerations for running a Mosquitto server in the cloud
+  id: totrans-199
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在云中运行Mosquitto服务器时需要考虑的事项
+- en: We have worked with the default configuration for a Mosquitto server in Linux,
+    macOS, and Windows. The Mosquitto server will work with TCP port `1883`. If you
+    want to interact with the Mosquitto server from a different device or computer,
+    you have to make sure that the firewall that is running on your computer has the
+    appropriate configuration for this port number.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经在Linux、macOS和Windows上使用了Mosquitto服务器的默认配置。Mosquitto服务器将使用TCP端口`1883`。如果您想从其他设备或计算机与Mosquitto服务器交互，您必须确保运行在您计算机上的防火墙对该端口号有适当的配置。
+- en: When you run a Mosquitto server on a Linux or Windows virtual machine in the
+    cloud, you also have to make sure that the virtual machine network filter that
+    controls both inbound and outbound traffic has the appropriate configuration to
+    allow inbound and outbound traffic on port `1883`. You must authorize inbound
+    and outbound traffic on port `1883.`
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您在云中的Linux或Windows虚拟机上运行Mosquitto服务器时，您还必须确保虚拟机网络过滤器对入站和出站流量都有适当的配置，以允许端口`1883`上的入站和出站流量。您必须授权端口`1883`上的入站和出站流量。
+- en: Test your knowledge
+  id: totrans-202
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试您的知识
+- en: 'Let''s see whether you can answer the following questions correctly:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看您是否能正确回答以下问题：
+- en: 'MQTT runs on top of:'
+  id: totrans-204
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: MQTT运行在以下之上：
+- en: The MQIP protocol
+  id: totrans-205
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: MQIP协议
+- en: The TCP/IP protocol
+  id: totrans-206
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: TCP/IP协议
+- en: The IoT protocol
+  id: totrans-207
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 物联网协议
+- en: 'The data for an MQTT message is known as:'
+  id: totrans-208
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: MQTT消息的数据称为：
+- en: Payload
+  id: totrans-209
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 有效载荷
+- en: Packet
+  id: totrans-210
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 数据包
+- en: Upload
+  id: totrans-211
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 上传
+- en: 'In MQTT version 3.1.1, the broker is named:'
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在MQTT 3.1.1版本中，代理被命名为：
+- en: MQTT agent
+  id: totrans-213
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: MQTT代理
+- en: MQTT client
+  id: totrans-214
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: MQTT客户端
+- en: MQTT server
+  id: totrans-215
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: MQTT服务器
+- en: 'Mosquitto is:'
+  id: totrans-216
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Mosquitto是：
+- en: A cloud-based MQTT server that is only available on Windows Azure
+  id: totrans-217
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 仅在Windows Azure上可用的基于云的MQTT服务器
+- en: A cloud-based MQTT server that is only available on Amazon Web Services
+  id: totrans-218
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 仅在亚马逊网络服务上可用的基于云的MQTT服务器
+- en: An open source MQTT server compatible with MQTT versions 3.1.1 and 3.1
+  id: totrans-219
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 与MQTT版本3.1.1和3.1兼容的开源MQTT服务器
+- en: 'The default TCP port that a Mosquitto server uses is:'
+  id: totrans-220
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Mosquitto服务器使用的默认TCP端口是：
+- en: '`22`'
+  id: totrans-221
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`22`'
+- en: '`1883`'
+  id: totrans-222
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`1883`'
+- en: '`9000`'
+  id: totrans-223
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`9000`'
+- en: The rights answers are included in the [Appendix](d9cf708f-f027-4bfa-a2d2-9fd3653165d9.xhtml), *Solutions*.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正确答案包含在[附录](d9cf708f-f027-4bfa-a2d2-9fd3653165d9.xhtml)的*Solutions*部分中。
+- en: Summary
+  id: totrans-225
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: 'In this chapter, we started our journey toward understanding the MQTT protocol.
+    We understood convenient scenarios for this protocol, the details of the publish-subscribe
+    pattern, and message filtering. We learned basic concepts related to MQTT and
+    understood the different components: clients, servers or brokers, and connections.'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们开始了解MQTT协议。我们了解了该协议的便利场景，发布-订阅模式的细节以及消息过滤。我们学习了与MQTT相关的基本概念，并了解了不同的组件：客户端、服务器或代理和连接。
+- en: We learned to install a Mosquitto server on Linux, macOS, and Windows. We used
+    the default configuration, as it allowed us to learn how everything works under
+    the hood while using Mosquitto. Then, we will secure the server. This way, it
+    will be easier for us to start using the client libraries in Python to publish
+    MQTT messages and subscribe to MQTT topic filters.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们学会了在Linux、macOS和Windows上安装Mosquitto服务器。我们使用了默认配置，因为这样可以让我们在使用Mosquitto的同时了解其内部工作原理。然后，我们将保护服务器。这样，我们就可以更容易地开始使用Python客户端库来发布MQTT消息和订阅MQTT主题过滤器。
+- en: Now that we have our environment ready to start working with a still-unsecured
+    Mosquitto server, we will work with command-line and GUI tools to learn how MQTT
+    works in detail. We will learn MQTT basics, the specific vocabulary for MQTT,
+    and its working modes, which are the topics that we are going to discuss in [Chapter
+    2](790c1d9a-c895-481e-a1c1-94ea07694cb4.xhtml), *Using Command-Line and GUI Tools
+    to Learn How MQTT Works*.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的环境已经准备好开始使用尚未安全保护的Mosquitto服务器进行工作，我们将使用命令行和图形界面工具来详细了解MQTT的工作原理。我们将学习MQTT的基础知识，MQTT的特定词汇以及其工作模式，这些都是我们将在[第2章](790c1d9a-c895-481e-a1c1-94ea07694cb4.xhtml)中讨论的主题，*使用命令行和图形界面工具来学习MQTT的工作原理*。

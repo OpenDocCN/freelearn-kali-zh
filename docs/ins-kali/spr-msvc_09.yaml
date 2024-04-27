@@ -1,0 +1,1971 @@
+- en: Chapter 9. Managing Dockerized Microservices with Mesos and Marathon
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第9章。使用Mesos和Marathon管理docker化的微服务
+- en: In an Internet-scale microservices deployment, it is not easy to manage thousands
+    of dockerized microservices. It is essential to have an infrastructure abstraction
+    layer and a strong cluster control platform to successfully manage Internet-scale
+    microservice deployments.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在互联网规模的微服务部署中，要管理成千上万个docker化的微服务并不容易。必须有一个基础设施抽象层和一个强大的集群控制平台，才能成功地管理互联网规模的微服务部署。
+- en: This chapter will explain the need and use of Mesos and Marathon as an infrastructure
+    abstraction layer and a cluster control system, respectively, to achieve optimized
+    resource usage in a cloud-like environment when deploying microservices at scale.
+    This chapter will also provide a step-by-step approach to setting up Mesos and
+    Marathon in a cloud environment. Finally, this chapter will demonstrate how to
+    manage dockerized microservices in the Mesos and Marathon environment.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将解释在云环境中部署大规模微服务时，需要使用Mesos和Marathon作为基础设施抽象层和集群控制系统，以实现优化的资源使用。本章还将提供在云环境中设置Mesos和Marathon的逐步方法。最后，本章将演示如何在Mesos和Marathon环境中管理docker化的微服务。
+- en: 'By the end of this chapter, you will have learned about:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章结束时，您将学到：
+- en: The need to have an abstraction layer and cluster control software
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 需要有一个抽象层和集群控制软件
+- en: Mesos and Marathon from the context of microservices
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从微服务的角度看Mesos和Marathon
+- en: Managing dockerized BrownField Airline's PSS microservices with Mesos and Marathon
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Mesos和Marathon管理docker化的BrownField航空公司PSS微服务
+- en: Reviewing the microservice capability model
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 审查微服务能力模型
+- en: 'In this chapter, we will explore the **Cluster Control & Provisioning** microservices
+    capability from the microservices capability model discussed in [Chapter 3](ch03.html
+    "Chapter 3. Applying Microservices Concepts"), *Applying Microservices Concepts*:'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将探讨微服务能力模型中的**集群控制和供应**微服务能力，该模型在[第3章](ch03.html "第3章。应用微服务概念")中讨论了*应用微服务概念*：
+- en: '![Reviewing the microservice capability model](img/B05447_09_01.jpg)'
+  id: totrans-9
+  prefs: []
+  type: TYPE_IMG
+  zh: '![审查微服务能力模型](img/B05447_09_01.jpg)'
+- en: The missing pieces
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 缺失的部分
+- en: In [Chapter 8](ch08.html "Chapter 8. Containerizing Microservices with Docker"),
+    *Containerizing Microservices with Docker*, we discussed how to dockerize BrownField
+    Airline's PSS microservices. Docker helped package the JVM runtime and OS parameters
+    along with the application so that there is no special consideration required
+    when moving dockerized microservices from one environment to another. The REST
+    APIs provided by Docker have simplified the life cycle manager's interaction with
+    the target machine in starting and stopping artifacts.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第8章](ch08.html "第8章。使用Docker容器化微服务")中，我们讨论了如何将BrownField航空公司的PSS微服务docker化。Docker帮助打包了JVM运行时和应用程序的OS参数，这样在将docker化的微服务从一个环境移动到另一个环境时就不需要特别考虑。Docker提供的REST
+    API简化了生命周期管理器与目标机器在启动和停止构件时的交互。
+- en: In a large-scale deployment, with hundreds and thousands of Docker containers,
+    we need to ensure that Docker containers run with their own resource constraints,
+    such as memory, CPU, and so on. In addition to this, there may be rules set for
+    Docker deployments, such as replicated copies of the container should not be run
+    on the same machine. Also, a mechanism needs to be in place to optimally use the
+    server infrastructure to avoid incurring extra cost.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大规模部署中，有数百甚至数千个Docker容器，我们需要确保Docker容器以自己的资源约束运行，例如内存、CPU等。除此之外，可能还会为Docker部署设置规则，例如不应在同一台机器上运行容器的复制副本。此外，需要建立一种机制，以最佳地利用服务器基础设施，避免产生额外成本。
+- en: 'There are organizations that deal with billions of containers. Managing them
+    manually is next to impossible. In the context of large-scale Docker deployments,
+    some of the key questions to be answered are:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有些组织处理数十亿个容器。手动管理它们几乎是不可能的。在大规模Docker部署的情况下，需要回答一些关键问题：
+- en: How do we manage thousands of containers?
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何管理成千上万的容器？
+- en: How do we monitor them?
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何监视它们？
+- en: How do we apply rules and constraints when deploying artifacts?
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在部署构件时，我们如何应用规则和约束？
+- en: How do we ensure that we utilize containers properly to gain resource efficiency?
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何确保我们正确利用容器以获得资源效率？
+- en: How do we ensure that at least a certain number of minimal instances are running
+    at any point in time?
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何确保至少在任何时候运行一定数量的最小实例？
+- en: How do we ensure dependent services are up and running?
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何确保依赖服务正在运行？
+- en: How do we do rolling upgrades and graceful migrations?
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何进行滚动升级和优雅迁移？
+- en: How do we roll back faulty deployments?
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何回滚故障部署？
+- en: 'All these questions point to the need to have a solution to address two key
+    capabilities, which are as follows:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些问题都指向了需要解决两个关键能力的需求，这两个能力如下：
+- en: A cluster abstraction layer that provides a uniform abstraction over many physical
+    or virtual machines
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 提供统一抽象的集群抽象层，覆盖许多物理或虚拟机器。
+- en: A cluster control and init system to manage deployments intelligently on top
+    of the cluster abstraction
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个集群控制和初始化系统，以智能地管理集群抽象之上的部署
+- en: The life cycle manager is ideally placed to deal with these situations. One
+    can add enough intelligence to the life cycle manager to solve these issues. However,
+    before attempting to modify the life cycle manager, it is important to understand
+    the role of cluster management solutions a bit more.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 生命周期管理器理想地处理这些情况。可以向生命周期管理器添加足够的智能来解决这些问题。但是，在尝试修改生命周期管理器之前，重要的是更深入地了解集群管理解决方案的作用。
+- en: Why cluster management is important
+  id: totrans-26
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为什么集群管理很重要
+- en: As microservices break applications into different micro-applications, many
+    developers request more server nodes for deployment. In order to manage microservices
+    properly, developers tend to deploy one microservice per VM, which further drives
+    down the resource utilization. In many cases, this results in an overallocation
+    of CPUs and memory.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于微服务将应用程序分解为不同的微应用程序，许多开发人员请求更多的服务器节点进行部署。为了正确管理微服务，开发人员倾向于每个VM部署一个微服务，这进一步降低了资源利用率。在许多情况下，这导致CPU和内存的过度分配。
+- en: In many deployments, the high-availability requirements of microservices force
+    engineers to add more and more service instances for redundancy. In reality, though
+    it provides the required high availability, this will result in underutilized
+    server instances.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在许多部署中，微服务的高可用性要求迫使工程师为冗余添加越来越多的服务实例。实际上，尽管它提供了所需的高可用性，但这将导致服务器实例的资源利用不足。
+- en: 'In general, microservice deployment requires more infrastructure compared to
+    monolithic application deployments. Due to the increase in cost of the infrastructure,
+    many organizations fail to see the value of microservices:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一般来说，与单片应用程序部署相比，微服务部署需要更多的基础设施。由于基础设施成本的增加，许多组织未能看到微服务的价值：
+- en: '![Why cluster management is important](img/B05447_09_02.jpg)'
+  id: totrans-30
+  prefs: []
+  type: TYPE_IMG
+  zh: '![为什么集群管理很重要](img/B05447_09_02.jpg)'
+- en: 'In order to address the issue stated before, we need a tool that is capable
+    of the following:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了解决之前提到的问题，我们需要一个具备以下功能的工具：
+- en: Automating a number of activities, such as the allocation of containers to the
+    infrastructure efficiently and keeping it transparent to developers and administrators
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自动化一系列活动，如高效地将容器分配给基础设施，并使开发人员和管理员对此保持透明
+- en: Providing a layer of abstraction for the developers so that they can deploy
+    their application against a data center without knowing which machine is to be
+    used to host their applications
+  id: totrans-33
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为开发人员提供一个抽象层，使他们可以在不知道要使用哪台机器来托管他们的应用程序的情况下，部署他们的应用程序到数据中心
+- en: Setting rules or constraints against deployment artifacts
+  id: totrans-34
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 针对部署工件设置规则或约束
+- en: Offering higher levels of agility with minimal management overheads for developers
+    and administrators, perhaps with minimal human interaction
+  id: totrans-35
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为开发人员和管理员提供更高级别的灵活性，同时减少管理开销，或许还能减少人为干预
+- en: Building, deploying, and managing the application's cost effectively by driving
+    a maximum utilization of the available resources
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过最大限度地利用可用资源来以成本效益的方式构建、部署和管理应用程序
+- en: Containers solve an important issue in this context. Any tool that we select
+    with these capabilities can handle containers in a uniform way, irrespective of
+    the underlying microservice technologies.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 容器在这个背景下解决了一个重要问题。我们选择的任何具备这些功能的工具都可以以统一的方式处理容器，而不考虑底层的微服务技术。
+- en: What does cluster management do?
+  id: totrans-38
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 集群管理的作用是什么？
+- en: Typical cluster management tools help virtualize a set of machines and manage
+    them as a single cluster. Cluster management tools also help move the workload
+    or containers across machines while being transparent to the consumer. Technology
+    evangelists and practitioners use different terminologies, such as cluster orchestration,
+    cluster management, data center virtualization, container schedulers, or container
+    life cycle management, container orchestration, data center operating system,
+    and so on.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 典型的集群管理工具帮助虚拟化一组机器，并将它们作为单个集群进行管理。集群管理工具还帮助在机器之间移动工作负载或容器，同时对消费者保持透明。技术布道者和实践者使用不同的术语，如集群编排、集群管理、数据中心虚拟化、容器调度器、容器生命周期管理、容器编排、数据中心操作系统等。
+- en: Many of these tools currently support both Docker-based containers as well as
+    noncontainerized binary artifact deployments, such as a standalone Spring Boot
+    application. The fundamental function of these cluster management tools is to
+    abstract the actual server instance from the application developers and administrators.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多这些工具目前既支持基于Docker的容器，也支持非容器化的二进制部署，比如独立的Spring Boot应用程序。这些集群管理工具的基本功能是将实际的服务器实例与应用程序开发人员和管理员抽象出来。
+- en: Cluster management tools help the self-service and provisioning of infrastructure
+    rather than requesting the infrastructure teams to allocate the required machines
+    with a predefined specification. In this automated cluster management approach,
+    machines are no longer provisioned upfront and preallocated to the applications.
+    Some of the cluster management tools also help virtualize data centers across
+    many heterogeneous machines or even across data centers, and create an elastic,
+    private cloud-like infrastructure. There is no standard reference model for cluster
+    management tools. Therefore, the capabilities vary between vendors.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 集群管理工具帮助自助服务和基础设施的预配，而不是要求基础设施团队分配所需的具有预定义规格的机器。在这种自动化的集群管理方法中，机器不再提前预配和预分配给应用程序。一些集群管理工具还帮助在许多异构机器或数据中心之间虚拟化数据中心，并创建一个弹性的、类似私有云的基础设施。集群管理工具没有标准的参考模型。因此，供应商之间的功能差异很大。
+- en: 'Some of the key capabilities of cluster management software are summarized
+    as follows:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 集群管理软件的一些关键功能总结如下：
+- en: '**Cluster management**: It manages a cluster of VMs and physical machines as
+    a single large machine. These machines could be heterogeneous in terms of resource
+    capabilities, but they are, by and large, machines with Linux as the operating
+    system. These virtual clusters can be formed on the cloud, on-premises, or a combination
+    of both.'
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**集群管理**：它将一组虚拟机和物理机作为单个大型机器进行管理。这些机器在资源能力方面可能是异构的，但它们基本上都是运行Linux操作系统的机器。这些虚拟集群可以在云上、本地或两者的组合上形成。'
+- en: '**Deployments**: It handles the automatic deployment of applications and containers
+    with a large set of machines. It supports multiple versions of the application
+    containers and also rolling upgrades across a large number of cluster machines.
+    These tools are also capable of handling the rollback of faulty promotes.'
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**部署**：它处理大量机器的应用程序和容器的自动部署。它支持应用程序容器的多个版本，还支持跨大量集群机器的滚动升级。这些工具还能够处理故障推广的回滚。'
+- en: '**Scalability**: It handles the automatic and manual scalability of application
+    instances as and when required, with optimized utilization as the primary goal.'
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**可扩展性**：它处理应用程序实例的自动和手动扩展，以优化利用率为主要目标。'
+- en: '**Health**: It manages the health of the cluster, nodes, and applications.
+    It removes faulty machines and application instances from the cluster.'
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**健康**：它管理集群、节点和应用程序的健康状况。它会从集群中删除故障机器和应用实例。'
+- en: '**Infrastructure abstraction**: It abstracts the developers from the actual
+    machine on which the applications are deployed. The developers need not worry
+    about the machine, its capacity, and so on. It is entirely the cluster management
+    software''s decision to decide how to schedule and run the applications. These
+    tools also abstract machine details, their capacity, utilization, and location
+    from the developers. For application owners, these are equivalent to a single
+    large machine with almost unlimited capacity.'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**基础设施抽象化**：它将开发人员与应用程序部署的实际机器抽象出来。开发人员不需要担心机器、其容量等等。完全由集群管理软件决定如何调度和运行应用程序。这些工具还将机器细节、其容量、利用率和位置从开发人员那里抽象出来。对于应用程序所有者来说，这些等同于一个具有几乎无限容量的单个大型机器。'
+- en: '**Resource optimization**: The inherent behavior of these tools is to allocate
+    container workloads across a set of available machines in an efficient way, thereby
+    reducing the cost of ownership. Simple to extremely complicated algorithms can
+    be used effectively to improve utilization.'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**资源优化**：这些工具的固有行为是以高效的方式在一组可用的机器上分配容器工作负载，从而降低所有权成本。可以有效地使用简单到极其复杂的算法来提高利用率。'
+- en: '**Resource allocation**: It allocates servers based on resource availability
+    and the constraints set by application developers. Resource allocation is based
+    on these constraints, affinity rules, port requirements, application dependencies,
+    health, and so on.'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**资源分配**：它根据资源可用性和应用程序开发人员设置的约束来分配服务器。资源分配基于这些约束、亲和规则、端口需求、应用程序依赖性、健康状况等。'
+- en: '**Service availability**: It ensures that the services are up and running somewhere
+    in the cluster. In case of a machine failure, cluster control tools automatically
+    handle failures by restarting these services on some other machine in the cluster.'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**服务可用性**：确保服务在集群中的某个地方正常运行。在发生机器故障时，集群控制工具会自动通过在集群中的其他机器上重新启动这些服务来处理故障。'
+- en: '**Agility**: These tools are capable of quickly allocating workloads to the
+    available resources or moving the workload across machines if there is change
+    in resource requirements. Also, constraints can be set to realign the resources
+    based on business criticality, business priority, and so on.'
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**灵活性**：这些工具能够快速地将工作负载分配给可用资源，或者在资源需求发生变化时将工作负载移动到其他机器上。还可以根据业务的关键性、业务优先级等设置约束，重新调整资源。'
+- en: '**Isolation**: Some of these tools provide resource isolation out of the box.
+    Hence, even if the application is not containerized, resource isolation can be
+    still achieved.'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**隔离**：其中一些工具可以直接提供资源隔离。因此，即使应用程序未经容器化，仍然可以实现资源隔离。'
+- en: 'A variety of algorithms are used for resource allocation, ranging from simple
+    algorithms to complex algorithms, with machine learning and artificial intelligence.
+    The common algorithms used are random, bin packing, and spread. Constraints set
+    against applications will override the default algorithms based on resource availability:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用于资源分配的算法种类繁多，从简单算法到复杂算法，再到机器学习和人工智能。常用的算法包括随机算法、装箱算法和分散算法。根据资源可用性设置的约束将覆盖默认算法：
+- en: '![What does cluster management do?](img/B05447_09_03.jpg)'
+  id: totrans-54
+  prefs: []
+  type: TYPE_IMG
+  zh: '![集群管理的作用是什么？](img/B05447_09_03.jpg)'
+- en: 'The preceding diagram shows how these algorithms fill the available machines
+    with deployments. In this case, it is demonstrated with two machines:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上图显示了这些算法如何填充可用的机器部署。在这种情况下，演示了两台机器：
+- en: '**Spread**: This algorithm performs the allocation of workload equally across
+    the available machines. This is showed in diagram **A**.'
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**分散**：此算法在可用的机器上均匀分配工作负载。这在图**A**中显示。'
+- en: '**Bin packing**: This algorithm tries to fill in data machine by machine and
+    ensures the maximum utilization of machines. Bin packing is especially good when
+    using cloud services in a pay-as-you-use style. This is shown in diagram **B**.'
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**装箱**：此算法尝试逐个填充数据机器，并确保最大限度地利用机器。在使用按需付费的云服务时，装箱算法尤其有效。这在图**B**中显示。'
+- en: '**Random**: This algorithm randomly chooses machines and deploys containers
+    on randomly selected machines. This is showed in diagram **C**.'
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**随机**：此算法随机选择机器，并在随机选择的机器上部署容器。这在图**C**中显示。'
+- en: There is a possibility of using cognitive computing algorithms such as machine
+    learning and collaborative filtering to improve efficiency. Techniques such as
+    **oversubscription** allow a better utilization of resources by allocating underutilized
+    resources for high-priority tasks—for example, revenue-generating services for
+    best-effort tasks such as analytics, video, image processing, and so on.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有可能使用认知计算算法，如机器学习和协同过滤来提高效率。诸如**超额分配**之类的技术允许通过为高优先级任务分配未充分利用的资源来更好地利用资源，例如为收入产生服务分配最佳努力任务，如分析、视频、图像处理等。
+- en: Relationship with microservices
+  id: totrans-60
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 与微服务的关系
+- en: The infrastructure of microservices, if not properly provisioned, can easily
+    result in oversized infrastructures and, essentially, a higher cost of ownership.
+    As discussed in the previous sections, a cloud-like environment with a cluster
+    management tool is essential to realize cost benefits when dealing with large-scale
+    microservices.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果微服务基础架构没有得到适当的配置，很容易导致过度的基础架构，从而增加拥有成本。正如前面所讨论的，具有集群管理工具的类似云的环境对于处理大规模微服务时实现成本效益至关重要。
+- en: The Spring Boot microservices turbocharged with the Spring Cloud project is
+    the ideal candidate workload to leverage cluster management tools. As Spring Cloud-based
+    microservices are location unaware, these services can be deployed anywhere in
+    the cluster. Whenever services come up, they automatically register to the service
+    registry and advertise their availability. On the other hand, consumers always
+    look for the registry to discover the available service instances. This way, the
+    application supports a full fluid structure without preassuming a deployment topology.
+    With Docker, we were able to abstract the runtime so that the services could run
+    on any Linux-based environments.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Spring Cloud项目进行加速的Spring Boot微服务是利用集群管理工具的理想候选工作负载。由于基于Spring Cloud的微服务不知道位置，这些服务可以在集群中的任何位置部署。每当服务启动时，它们会自动注册到服务注册表并宣布其可用性。另一方面，消费者始终在注册表中查找可用的服务实例。这样，应用程序支持完全流动的结构，而不预设部署拓扑。通过Docker，我们能够抽象运行时，使服务能够在任何基于Linux的环境中运行。
+- en: Relationship with virtualization
+  id: totrans-63
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 与虚拟化的关系
+- en: Cluster management solutions are different from server virtualization solutions
+    in many aspects. Cluster management solutions run on top of VMs or physical machines
+    as an application component.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 集群管理解决方案在许多方面与服务器虚拟化解决方案不同。集群管理解决方案作为应用程序组件运行在VM或物理机上。
+- en: Cluster management solutions
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 集群管理解决方案
+- en: There are many cluster management software tools available. It is unfair to
+    do an apple-to-apple comparison between them. Even though there are no one-to-one
+    components, there are many areas of overlap in capabilities between them. In many
+    situations, organizations use a combination of one or more of these tools to fulfill
+    their requirements.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 市场上有许多集群管理软件工具可用。对它们进行苹果对苹果的比较是不公平的。尽管没有一对一的组件，但它们之间在功能上有许多重叠的领域。在许多情况下，组织使用一个或多个这些工具的组合来满足他们的需求。
+- en: 'The following diagram shows the position of cluster management tools from the
+    microservices context:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了微服务环境下集群管理工具的位置：
+- en: '![Cluster management solutions](img/B05447_09_04.jpg)'
+  id: totrans-68
+  prefs: []
+  type: TYPE_IMG
+  zh: '![集群管理解决方案](img/B05447_09_04.jpg)'
+- en: In this section, we will explore some of the popular cluster management solutions
+    available on the market.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将探讨市场上可用的一些流行的集群管理解决方案。
+- en: Docker Swarm
+  id: totrans-70
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Docker Swarm
+- en: Docker Swarm is Docker's native cluster management solution. Swarm provides
+    a native and deeper integration with Docker and exposes APIs that are compatible
+    with Docker's remote APIs. Docker Swarm logically groups a pool of Docker hosts
+    and manages them as a single large Docker virtual host. Instead of application
+    administrators and developers deciding on which host the container is to be deployed
+    in, this decision making will be delegated to Docker Swarm. Docker Swarm will
+    decide which host to be used based on the bin packing and spread algorithms.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker Swarm是Docker的本地集群管理解决方案。Swarm与Docker有本地和更深层次的集成，并公开与Docker远程API兼容的API。Docker
+    Swarm在逻辑上将一组Docker主机分组，并将它们作为单个大型Docker虚拟主机进行管理。与应用程序管理员和开发人员决定将容器部署在哪个主机不同，这个决策将被委托给Docker
+    Swarm。Docker Swarm将根据装箱和扩展算法决定使用哪个主机。
+- en: As Docker Swarm is based on Docker's remote APIs, its learning curve for those
+    already using Docker is narrower compared to any other container orchestration
+    tools. However, Docker Swarm is a relatively new product on the market, and it
+    only supports Docker containers.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于Docker Swarm基于Docker的远程API，对于已经使用Docker的人来说，其学习曲线比任何其他容器编排工具都要窄。然而，Docker
+    Swarm是市场上相对较新的产品，它只支持Docker容器。
+- en: Docker Swarm works with the concepts of **manager** and **nodes**. A manager
+    is the single point for administrations to interact and schedule the Docker containers
+    for execution. Nodes are where Docker containers are deployed and run.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker Swarm使用**管理器**和**节点**的概念。管理器是管理人员与Docker容器进行交互和调度的单一点。节点是部署和运行Docker容器的地方。
+- en: Kubernetes
+  id: totrans-74
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Kubernetes
+- en: Kubernetes (k8s) comes from Google's engineering, is written in the Go language,
+    and is battle-tested for large-scale deployments at Google. Similar to Swarm,
+    Kubernetes helps manage containerized applications across a cluster of nodes.
+    Kubernetes helps automate container deployments, scheduling, and the scalability
+    of containers. Kubernetes supports a number of useful features out of the box,
+    such as automatic progressive rollouts, versioned deployments, and container resiliency
+    if containers fail due to some reason.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Kubernetes（k8s）来自谷歌的工程，使用Go语言编写，并在谷歌进行了大规模部署的实战测试。与Swarm类似，Kubernetes帮助管理跨节点集群的容器化应用程序。Kubernetes帮助自动化容器部署、调度和容器的可伸缩性。Kubernetes支持许多有用的功能，例如自动渐进式部署、版本化部署以及容器的弹性，如果容器由于某种原因失败。
+- en: The Kubernetes architecture has the concepts of **master**, **nodes**, and **pods**.
+    The master and nodes together form a Kubernetes cluster. The master node is responsible
+    for allocating and managing workload across a number of nodes. Nodes are nothing
+    but a VM or a physical machine. Nodes are further subsegmented as pods. A node
+    can host multiple pods. One or more containers are grouped and executed inside
+    a pod. Pods are also helpful in managing and deploying co-located services for
+    efficiency. Kubernetes also supports the concept of labels as key-value pairs
+    to query and find containers. Labels are user-defined parameters to tag certain
+    types of nodes that execute a common type of workloads, such as frontend web servers.
+    The services deployed on a cluster get a single IP/DNS to access the service.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Kubernetes架构具有**主节点**，**节点**和**Pods**的概念。主节点和节点一起形成一个Kubernetes集群。主节点负责在多个节点之间分配和管理工作负载。节点只是一个虚拟机或物理机。节点进一步细分为Pods。一个节点可以托管多个Pods。一个或多个容器被分组并在一个Pod内执行。Pods还有助于管理和部署共同服务以提高效率。Kubernetes还支持标签的概念，作为键值对来查询和找到容器。标签是用户定义的参数，用于标记执行共同类型工作负载的某些类型的节点，例如前端Web服务器。部署在集群上的服务获得一个单一的IP/DNS来访问该服务。
+- en: Kubernetes has out-of-the-box support for Docker; however, the Kubernetes learning
+    curve is steeper compared to Docker Swarm. RedHat offers commercial support for
+    Kubernetes as part of its OpenShift platform.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Kubernetes对Docker有开箱即用的支持；然而，与Docker Swarm相比，Kubernetes的学习曲线更陡峭。RedHat作为其OpenShift平台的一部分，为Kubernetes提供商业支持。
+- en: Apache Mesos
+  id: totrans-78
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Apache Mesos
+- en: Mesos is an open source framework originally developed by the University of
+    California at Berkeley and is used by Twitter at scale. Twitter uses Mesos primarily
+    to manage the large Hadoop ecosystem.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesos是由加州大学伯克利分校最初开发的开源框架，被Twitter大规模使用。Twitter主要使用Mesos来管理庞大的Hadoop生态系统。
+- en: Mesos is slightly different from the previous solutions. Mesos is more of a
+    resource manager that relays on other frameworks to manage workload execution.
+    Mesos sits between the operating system and the application, providing a logical
+    cluster of machines.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesos与之前的解决方案略有不同。Mesos更像是一个资源管理器，依赖其他框架来管理工作负载的执行。Mesos位于操作系统和应用程序之间，提供了一个逻辑机器集群。
+- en: Mesos is a distributed system kernel that logically groups and virtualizes many
+    computers to a single large machine. Mesos is capable of grouping a number of
+    heterogeneous resources to a uniform resource cluster on which applications can
+    be deployed. For these reasons, Mesos is also known as a tool to build a private
+    cloud in a data center.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesos是一个分布式系统内核，它将许多计算机逻辑分组和虚拟化为一个大型机器。Mesos能够将多种异构资源分组到一个统一的资源集群上，应用程序可以在其上部署。因此，Mesos也被称为在数据中心构建私有云的工具。
+- en: Mesos has the concepts of the **master** and **slave** nodes. Similar to the
+    earlier solutions, master nodes are responsible for managing the cluster, whereas
+    slaves run the workload. Mesos internally uses ZooKeeper for cluster coordination
+    and storage. Mesos supports the concept of frameworks. These frameworks are responsible
+    for scheduling and running noncontainerized applications and containers. Marathon,
+    Chronos, and Aurora are popular frameworks for the scheduling and execution of
+    applications. Netflix Fenzo is another open source Mesos framework. Interestingly,
+    Kubernetes also can be used as a Mesos framework.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesos具有**主节点**和**从节点**的概念。与之前的解决方案类似，主节点负责管理集群，而从节点运行工作负载。Mesos内部使用ZooKeeper进行集群协调和存储。Mesos支持框架的概念。这些框架负责调度和运行非容器化应用程序和容器。Marathon，Chronos和Aurora是用于调度和执行应用程序的流行框架。Netflix
+    Fenzo是另一个开源的Mesos框架。有趣的是，Kubernetes也可以用作Mesos框架。
+- en: Marathon supports the Docker container as well as noncontainerized applications.
+    Spring Boot can be directly configured in Marathon. Marathon provides a number
+    of capabilities out of the box, such as supporting application dependencies, grouping
+    applications to scale and upgrade services, starting and shutting down healthy
+    and unhealthy instances, rolling out promotes, rolling back failed promotes, and
+    so on.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Marathon支持Docker容器以及非容器化应用程序。Spring Boot可以直接在Marathon中配置。Marathon提供了许多开箱即用的功能，例如支持应用程序依赖关系，将应用程序分组以扩展和升级服务，启动和关闭健康和不健康的实例，推出推广，回滚失败的推广等。
+- en: Mesosphere offers commercial support for Mesos and Marathon as part of its DCOS
+    platform.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesosphere为Mesos和Marathon提供商业支持，作为其DCOS平台的一部分。
+- en: Nomad
+  id: totrans-85
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Nomad
+- en: Nomad from HashiCorp is another cluster management software. Nomad is a cluster
+    management system that abstracts lower-level machine details and their locations.
+    Nomad has a simpler architecture compared to the other solutions explored earlier.
+    Nomad is also lightweight. Similar to other cluster management solutions, Nomad
+    takes care of resource allocation and the execution of applications. Nomad also
+    accepts user-specific constraints and allocates resources based on this.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HashiCorp的Nomad是另一个集群管理软件。Nomad是一个集群管理系统，它抽象了较低级别的机器细节和它们的位置。Nomad的架构与之前探讨的其他解决方案相比更简单。Nomad也更轻量级。与其他集群管理解决方案类似，Nomad负责资源分配和应用程序的执行。Nomad还接受用户特定的约束，并根据此分配资源。
+- en: Nomad has the concept of **servers**, in which all jobs are managed. One server
+    acts as the **leader**, and others act as **followers**. Nomad has the concept
+    of **tasks**, which is the smallest unit of work. Tasks are grouped into **task
+    groups**. A task group has tasks that are to be executed in the same location.
+    One or more task groups or tasks are managed as **jobs**.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Nomad具有**服务器**的概念，所有作业都由其管理。一个服务器充当**领导者**，其他充当**跟随者**。Nomad具有**任务**的概念，这是最小的工作单位。任务被分组成**任务组**。一个任务组有在相同位置执行的任务。一个或多个任务组或任务被管理为**作业**。
+- en: Nomad supports many workloads, including Docker, out of the box. Nomad also
+    supports deployments across data centers and is region and data center aware.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Nomad支持许多工作负载，包括Docker，开箱即用。Nomad还支持跨数据中心的部署，并且具有区域和数据中心感知能力。
+- en: Fleet
+  id: totrans-89
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 舰队
+- en: Fleet is a cluster management system from CoreOS. It runs on a lower level and
+    works on top of systemd. Fleet can manage application dependencies and make sure
+    that all the required services are running somewhere in the cluster. If a service
+    fails, it restarts the service on another host. Affinity and constraint rules
+    are possible to supply when allocating resources.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Fleet是CoreOS的集群管理系统。它在较低级别上运行，并在systemd之上工作。Fleet可以管理应用程序依赖关系，并确保所有所需的服务在集群中的某个地方运行。如果服务失败，它会在另一个主机上重新启动服务。在分配资源时可以提供亲和性和约束规则。
+- en: Fleet has the concepts of **engine** and **agents**. There is only one engine
+    at any point in the cluster with multiple agents. Tasks are submitted to the engine
+    and agent run these tasks on a cluster machine.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Fleet具有**引擎**和**代理**的概念。在集群中任何时候只有一个引擎，但有多个代理。任务提交给引擎，代理在集群机器上运行这些任务。
+- en: Fleet also supports Docker out of the box.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Fleet也支持Docker。
+- en: Cluster management with Mesos and Marathon
+  id: totrans-93
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Mesos和Marathon进行集群管理
+- en: As we discussed in the previous section, there are many cluster management solutions
+    or container orchestration tools available. Different organizations choose different
+    solutions to address problems based on their environment. Many organizations choose
+    Kubernetes or Mesos with a framework such as Marathon. In most cases, Docker is
+    used as a default containerization method to package and deploy workloads.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在前一节中讨论的，有许多集群管理解决方案或容器编排工具可供选择。不同的组织根据其环境选择不同的解决方案来解决问题。许多组织选择Kubernetes或带有Marathon等框架的Mesos。在大多数情况下，Docker被用作默认的容器化方法来打包和部署工作负载。
+- en: For the rest of this chapter, we will show how Mesos works with Marathon to
+    provide the required cluster management capability. Mesos is used by many organizations,
+    including Twitter, Airbnb, Apple, eBay, Netflix, PayPal, Uber, Yelp, and many
+    others.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的其余部分，我们将展示Mesos如何与Marathon一起提供所需的集群管理能力。许多组织使用Mesos，包括Twitter、Airbnb、Apple、eBay、Netflix、PayPal、Uber、Yelp等。
+- en: Diving deep into Mesos
+  id: totrans-96
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 深入了解Mesos
+- en: 'Mesos can be treated as a data center kernel. DCOS is the commercial version
+    of Mesos supported by Mesosphere. In order to run multiple tasks on one node,
+    Mesos uses resource isolation concepts. Mesos relies on the Linux kernel''s **cgroups**
+    to achieve resource isolation similar to the container approach. It also supports
+    containerized isolation using Docker. Mesos supports both batch workload as well
+    as the OLTP kind of workloads:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesos可以被视为数据中心内核。DCOS是Mesos的商业版本，由Mesosphere支持。为了在一个节点上运行多个任务，Mesos使用资源隔离概念。Mesos依赖于Linux内核的**cgroups**来实现类似容器方法的资源隔离。它还支持使用Docker进行容器化隔离。Mesos支持批处理工作负载以及OLTP类型的工作负载：
+- en: '![Diving deep into Mesos](img/B05447_09_05.jpg)'
+  id: totrans-98
+  prefs: []
+  type: TYPE_IMG
+  zh: '![深入了解Mesos](img/B05447_09_05.jpg)'
+- en: Mesos is an open source top-level Apache project under the Apache license. Mesos
+    abstracts lower-level computing resources such as CPU, memory, and storage from
+    lower-level physical or virtual machines.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesos是一个在Apache许可下的开源顶级Apache项目。Mesos将CPU、内存和存储等较低级别的计算资源从较低级别的物理或虚拟机中抽象出来。
+- en: Before we examine why we need both Mesos and Marathon, let's understand the
+    Mesos architecture.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们研究为什么需要Mesos和Marathon之前，让我们先了解Mesos架构。
+- en: The Mesos architecture
+  id: totrans-101
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: Mesos架构
+- en: 'The following diagram shows the simplest architectural representation of Mesos.
+    The key components of Mesos includes a Mesos master node, a set of slave nodes,
+    a ZooKeeper service, and a Mesos framework. The Mesos framework is further subdivided
+    into two components: a scheduler and an executor:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了Mesos的最简单的架构表示。Mesos的关键组件包括一个Mesos主节点，一组从属节点，一个ZooKeeper服务和一个Mesos框架。Mesos框架进一步分为两个组件：调度程序和执行程序：
+- en: '![The Mesos architecture](img/B05447_09_06.jpg)'
+  id: totrans-103
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Mesos架构](img/B05447_09_06.jpg)'
+- en: 'The boxes in the preceding diagram are explained as follows:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面图表中的方框解释如下：
+- en: '**Master**: The Mesos master is responsible for managing all the Mesos slaves.
+    The Mesos master gets information on the resource availability from all slave
+    nodes and take the responsibility of filling the resources appropriately based
+    on certain resource policies and constraints. The Mesos master preempts available
+    resources from all slave machines and pools them as a single large machine. The
+    master offers resources to frameworks running on slave machines based on this
+    resource pool.'
+  id: totrans-105
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**主节点**：Mesos主节点负责管理所有Mesos从属节点。Mesos主节点从所有从属节点获取资源可用性信息，并负责根据特定资源策略和约束适当地填充资源。Mesos主节点从所有从属机器中抢占可用资源，并将它们汇集为一个单一的大型机器。主节点根据这个资源池向运行在从属机器上的框架提供资源。'
+- en: For high availability, the Mesos master is supported by the Mesos master's standby
+    components. Even if the master is not available, the existing tasks can still
+    be executed. However, new tasks cannot be scheduled in the absence of a master
+    node. The master standby nodes are nodes that wait for the failure of the active
+    master and take over the master's role in the case of a failure. It uses ZooKeeper
+    for the master leader election. A minimum quorum requirement must be met for leader
+    election.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了实现高可用性，Mesos主节点由Mesos主节点的备用组件支持。即使主节点不可用，现有任务仍然可以执行。但是，在没有主节点的情况下无法调度新任务。主节点备用节点是等待活动主节点故障并在故障发生时接管主节点角色的节点。它使用ZooKeeper进行主节点领导者选举。领导者选举必须满足最低法定人数要求。
+- en: '**Slave**: Mesos slaves are responsible for hosting task execution frameworks.
+    Tasks are executed on the slave nodes. Mesos slaves can be started with attributes
+    as key-value pairs, such as *data center = X*. This is used for constraint evaluations
+    when deploying workloads. Slave machines share resource availability with the
+    Mesos master.'
+  id: totrans-107
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**从属节点**：Mesos从属节点负责托管任务执行框架。任务在从属节点上执行。Mesos从属节点可以以键值对的形式启动，例如*数据中心=X*。这在部署工作负载时用于约束评估。从属机器与Mesos主节点共享资源可用性。'
+- en: '**ZooKeeper**: ZooKeeper is a centralized coordination server used in Mesos
+    to coordinate activities across the Mesos cluster. Mesos uses ZooKeeper for leader
+    election in case of a Mesos master failure.'
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ZooKeeper：ZooKeeper是Mesos中使用的集中协调服务器，用于协调Mesos集群中的活动。在Mesos主节点故障的情况下，Mesos使用ZooKeeper进行领导者选举。
+- en: '**Framework**: The Mesos framework is responsible for understanding the application''s
+    constraints, accepting resource offers from the master, and finally running tasks
+    on the slave resources offered by the master. The Mesos framework consists of
+    two components: the framework scheduler and the framework executor:'
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 框架：Mesos框架负责理解应用程序的约束，接受主节点的资源提供，并最终在主节点提供的从属资源上运行任务。Mesos框架由两个组件组成：框架调度程序和框架执行程序：
+- en: The scheduler is responsible for registering to Mesos and handling resource
+    offers
+  id: totrans-110
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 调度程序负责注册到Mesos并处理资源提供
+- en: The executor runs the actual program on Mesos slave nodes
+  id: totrans-111
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 执行程序在Mesos从属节点上运行实际程序
+- en: The framework is also responsible for enforcing certain policies and constraints.
+    For example, a constraint can be, let's say, that a minimum of 500 MB of RAM is
+    available for execution.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 框架还负责执行某些策略和约束。例如，一个约束可以是，假设最少有500MB的RAM可用于执行。
+- en: 'Frameworks are pluggable components and are replaceable with another framework.
+    The framework workflow is depicted in the following diagram:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 框架是可插拔组件，可以用另一个框架替换。框架工作流程如下图所示：
+- en: '![The Mesos architecture](img/B05447_09_07.jpg)'
+  id: totrans-114
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Mesos架构](img/B05447_09_07.jpg)'
+- en: 'The steps denoted in the preceding workflow diagram are elaborated as follows:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的工作流程图中表示的步骤如下所述：
+- en: The framework registers with the Mesos master and waits for resource offers.
+    The scheduler may have many tasks in its queue to be executed with different resource
+    constraints (tasks **A** to **D**, in this example). A task, in this case, is
+    a unit of work that is scheduled—for example, a Spring Boot microservice.
+  id: totrans-116
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 框架向Mesos主节点注册并等待资源提供。调度程序可能有许多任务在其队列中等待执行，具有不同的资源约束（例如，在此示例中为任务A到D）。在这种情况下，任务是安排的工作单元，例如Spring
+    Boot微服务。
+- en: The Mesos slave offers the available resources to the Mesos master. For example,
+    the slave advertises the CPU and memory available with the slave machine.
+  id: totrans-117
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Mesos从属将可用资源提供给Mesos主节点。例如，从属会广告其机器上可用的CPU和内存。
+- en: The Mesos master then creates a resource offer based on the allocation policies
+    set and offers it to the scheduler component of the framework. Allocation policies
+    determine which framework the resources are to be offered to and how many resources
+    are to be offered. The default policies can be customized by plugging additional
+    allocation policies.
+  id: totrans-118
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，Mesos主节点根据设置的分配策略创建资源提供，并将其提供给框架的调度组件。分配策略确定资源将提供给哪个框架以及将提供多少资源。可以通过插入额外的分配策略来自定义默认策略。
+- en: The scheduler framework component, based on the constraints, capabilities, and
+    policies, may accept or reject the resource offering. For example, a framework
+    rejects the resource offer if the resources are insufficient as per the constraints
+    and policies set.
+  id: totrans-119
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 基于约束、能力和策略的调度框架组件可能接受或拒绝资源提供。例如，如果资源不足，框架会拒绝资源提供，根据设置的约束和策略。
+- en: If the scheduler component accepts the resource offer, it submits the details
+    of one more task to the Mesos master with resource constraints per task. Let's
+    say, in this example, that it is ready to submit tasks **A** to **D**.
+  id: totrans-120
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果调度程序组件接受资源提供，它将提交一个或多个任务的详细信息给Mesos主节点，每个任务都有资源约束。例如，在这个例子中，它准备好提交任务A到D。
+- en: The Mesos master sends this list of tasks to the slave where the resources are
+    available. The framework executor component installed on the slave machines picks
+    up and runs these tasks.
+  id: totrans-121
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Mesos主节点将任务列表发送给资源可用的从属。安装在从属机器上的框架执行程序组件会接收并运行这些任务。
+- en: 'Mesos supports a number of frameworks, such as:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mesos支持许多框架，例如：
+- en: Marathon and Aurora for **long-running** processes, such as web applications
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用于长时间运行的进程（例如Web应用程序）的Marathon和Aurora
+- en: Hadoop, Spark, and Storm for **big data** processing
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用于大数据处理的Hadoop、Spark和Storm
+- en: Chronos and Jenkins for **batch scheduling**
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用于批处理调度的Chronos和Jenkins
+- en: Cassandra and Elasticsearch for **data management**
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用于数据管理的Cassandra和Elasticsearch
+- en: In this chapter, we will use Marathon to run dockerized microservices.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将使用Marathon来运行docker化的微服务。
+- en: Marathon
+  id: totrans-128
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: Marathon
+- en: Marathon is one of the Mesos framework implementations that can run both container
+    as well as noncontainer execution. Marathon is particularly designed for long-running
+    applications, such as a web server. Marathon ensures that the service started
+    with Marathon continues to be available even if the Mesos slave it is hosted on
+    fails. This will be done by starting another instance.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Marathon是Mesos框架实现之一，可以运行容器和非容器执行。Marathon特别设计用于长时间运行的应用程序，例如Web服务器。Marathon确保使用Marathon启动的服务即使Mesos上托管的从属失败也能继续可用。这将通过启动另一个实例来完成。
+- en: Marathon is written in Scala and is highly scalable. Marathon offers a UI as
+    well as REST APIs to interact with Marathon, such as the start, stop, scale, and
+    monitoring applications.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Marathon是用Scala编写的，具有高度可扩展性。Marathon提供UI以及REST API与Marathon交互，例如启动、停止、扩展和监视应用程序。
+- en: Similar to Mesos, Marathon's high availability is achieved by running multiple
+    Marathon instances pointing to a ZooKeeper instance. One of the Marathon instances
+    acts as a leader, and others are in standby mode. In case the leading master fails,
+    a leader election will take place, and the next active master will be determined.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与Mesos类似，Marathon的高可用性是通过运行指向ZooKeeper实例的多个Marathon实例来实现的。其中一个Marathon实例充当领导者，其他实例处于待机模式。如果领先的主节点失败，将进行领导者选举，并确定下一个活动主节点。
+- en: 'Some of the basic features of Marathon include:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Marathon的一些基本特性包括：
+- en: Setting resource constraints
+  id: totrans-133
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设置资源约束
+- en: Scaling up, scaling down, and the instance management of applications
+  id: totrans-134
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用程序的扩展、缩减和实例管理
+- en: Application version management
+  id: totrans-135
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用程序版本管理
+- en: Starting and killing applications
+  id: totrans-136
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 启动和关闭应用程序
+- en: 'Some of the advanced features of Marathon include:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Marathon的一些高级功能包括：
+- en: Rolling upgrades, rolling restarts, and rollbacks
+  id: totrans-138
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 滚动升级、滚动重启和回滚
+- en: Blue-green deployments
+  id: totrans-139
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 蓝绿部署
+- en: Implementing Mesos and Marathon for BrownField microservices
+  id: totrans-140
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为BrownField微服务实现Mesos和Marathon
+- en: In this section, the dockerized Brownfield microservice developed in [Chapter
+    8](ch08.html "Chapter 8. Containerizing Microservices with Docker"), *Containerizing
+    Microservices with Docker*, will be deployed into the AWS cloud and managed with
+    Mesos and Marathon.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，将部署在AWS云中并使用Mesos和Marathon进行管理的docker化的Brownfield微服务，该微服务在[第8章](ch08.html
+    "第8章。使用Docker对微服务进行容器化")中开发。
+- en: 'For the purposes of demonstration, only three of the services (**Search**,
+    **Search API Gateway**, and **Website**) are covered in the explanations:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了演示目的，解释中只涵盖了三个服务（**搜索**、**搜索API网关**和**网站**）：
+- en: '![Implementing Mesos and Marathon for BrownField microservices](img/B05447_09_08.jpg)'
+  id: totrans-143
+  prefs: []
+  type: TYPE_IMG
+  zh: '![为BrownField微服务实现Mesos和Marathon](img/B05447_09_08.jpg)'
+- en: The logical architecture of the target state implementation is shown in the
+    preceding diagram. The implementation uses multiple Mesos slaves to execute dockerized
+    microservices with a single Mesos master. The Marathon scheduler component is
+    used to schedule dockerized microservices. Dockerized microservices are hosted
+    on the Docker Hub registry. Dockerized microservices are implemented using Spring
+    Boot and Spring Cloud.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目标状态实现的逻辑架构如上图所示。该实现使用多个Mesos从属实例来执行docker化的微服务，其中包括一个Mesos主节点。使用Marathon调度程序组件来调度docker化的微服务。docker化的微服务托管在Docker
+    Hub注册表上。docker化的微服务使用Spring Boot和Spring Cloud实现。
+- en: 'The following diagram shows the physical deployment architecture:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了物理部署架构：
+- en: '![Implementing Mesos and Marathon for BrownField microservices](img/B05447_09_09.jpg)'
+  id: totrans-146
+  prefs: []
+  type: TYPE_IMG
+  zh: '![为BrownField微服务实现Mesos和Marathon](img/B05447_09_09.jpg)'
+- en: 'As shown in the preceding diagram, in this example, we will use four EC2 instances:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如上图所示，在本示例中，我们将使用四个EC2实例：
+- en: '**EC2-M1**: This hosts the Mesos master, ZooKeeper, the Marathon scheduler,
+    and one Mesos slave instance'
+  id: totrans-148
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**EC2-M1**：这个托管了Mesos主节点、ZooKeeper、Marathon调度程序和一个Mesos从属实例'
+- en: '**EC2-M2**: This hosts one Mesos slave instance'
+  id: totrans-149
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**EC2-M2**：这个托管了一个Mesos从属实例'
+- en: '**EC2-M3**: This hosts another Mesos slave instance'
+  id: totrans-150
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**EC2-M3**：这个托管了另一个Mesos从属实例'
+- en: '**EC2-M4**: This hosts Eureka, Config server, and RabbitMQ'
+  id: totrans-151
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**EC2-M4**：这个托管了Eureka、配置服务器和RabbitMQ'
+- en: For a real production setup, multiple Mesos masters as well as multiple instances
+    of Marathon are required for fault tolerance.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于真正的生产设置，需要多个Mesos主节点以及多个Marathon实例来实现容错。
+- en: Setting up AWS
+  id: totrans-153
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设置AWS
+- en: Launch the four **t2.micro** EC2 instances that will be used for this deployment.
+    All four instances have to be on the same security group so that the instances
+    can see each other using their local IP addresses.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启动四个将用于此部署的**t2.micro** EC2实例。所有四个实例必须在同一个安全组中，以便实例可以使用它们的本地IP地址相互看到。
+- en: 'The following tables show the machine details and IP addresses for indicative
+    purposes and to link subsequent instructions:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下表格显示了机器详细信息和IP地址，仅供参考和链接后续指令：
+- en: '![Setting up AWS](img/B05447_09_10.jpg)'
+  id: totrans-156
+  prefs: []
+  type: TYPE_IMG
+  zh: '![设置AWS](img/B05447_09_10.jpg)'
+- en: '| Instance ID | Private DNS/IP | Public DNS/IP |'
+  id: totrans-157
+  prefs: []
+  type: TYPE_TB
+  zh: '| 实例ID | 私有DNS/IP | 公有DNS/IP |'
+- en: '| --- | --- | --- |'
+  id: totrans-158
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- |'
+- en: '| `i-06100786` | `ip-172-31-54-69.ec2.internal``172.31.54.69` | `ec2-54-85-107-37.compute-1.amazonaws.com``54.85.107.37`
+    |'
+  id: totrans-159
+  prefs: []
+  type: TYPE_TB
+  zh: '| `i-06100786` | `ip-172-31-54-69.ec2.internal``172.31.54.69` | `ec2-54-85-107-37.compute-1.amazonaws.com``54.85.107.37`
+    |'
+- en: '| `i-2404e5a7` | `ip-172-31-62-44.ec2.internal``172.31.62.44` | `ec2-52-205-251-150.compute-1.amazonaws.com``52.205.251.150`
+    |'
+  id: totrans-160
+  prefs: []
+  type: TYPE_TB
+  zh: '| `i-2404e5a7` | `ip-172-31-62-44.ec2.internal``172.31.62.44` | `ec2-52-205-251-150.compute-1.amazonaws.com``52.205.251.150`
+    |'
+- en: '| `i-a7df2b3a` | `ip-172-31-49-55.ec2.internal``172.31.49.55` | `ec2-54-172-213-51.compute-1.amazonaws.com``54.172.213.51`
+    |'
+  id: totrans-161
+  prefs: []
+  type: TYPE_TB
+  zh: '| `i-a7df2b3a` | `ip-172-31-49-55.ec2.internal``172.31.49.55` | `ec2-54-172-213-51.compute-1.amazonaws.com``54.172.213.51`
+    |'
+- en: '| `i-b0eb1f2d` | `ip-172-31-53-109.ec2.internal``172.31.53.109` | `ec2-54-86-31-240.compute-1.amazonaws.com``54.86.31.240`
+    |'
+  id: totrans-162
+  prefs: []
+  type: TYPE_TB
+  zh: '| `i-b0eb1f2d` | `ip-172-31-53-109.ec2.internal``172.31.53.109` | `ec2-54-86-31-240.compute-1.amazonaws.com``54.86.31.240`
+    |'
+- en: Replace the IP and DNS addresses based on your AWS EC2 configuration.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据您的AWS EC2配置替换IP和DNS地址。
+- en: Installing ZooKeeper, Mesos, and Marathon
+  id: totrans-164
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装ZooKeeper、Mesos和Marathon
+- en: 'The following software versions will be used for the deployment. The deployment
+    in this section follows the physical deployment architecture explained in the
+    earlier section:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在部署中将使用以下软件版本。本节中的部署遵循前一节中解释的物理部署架构：
+- en: Mesos version 0.27.1
+  id: totrans-166
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Mesos版本0.27.1
+- en: Docker version 1.6.2, build 7c8fca2
+  id: totrans-167
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Docker版本1.6.2，构建7c8fca2
+- en: Marathon version 0.15.3
+  id: totrans-168
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Marathon版本0.15.3
+- en: Note
+  id: totrans-169
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The detailed instructions to set up ZooKeeper, Mesos, and Marathon are available
+    at [https://open.mesosphere.com/getting-started/install/](https://open.mesosphere.com/getting-started/install/).
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关设置ZooKeeper、Mesos和Marathon的详细说明，请参阅[https://open.mesosphere.com/getting-started/install/](https://open.mesosphere.com/getting-started/install/)。
+- en: 'Perform the following steps for a minimal installation of ZooKeeper, Mesos,
+    and Marathon to deploy the BrownField microservice:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行以下步骤进行最小化安装ZooKeeper、Mesos和Marathon以部署BrownField微服务：
+- en: 'As a prerequisite, JRE 8 must be installed on all the machines. Execute the
+    following command:'
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 作为先决条件，所有机器上必须安装JRE 8。执行以下命令：
+- en: '[PRE0]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Install Docker on all machines earmarked for the Mesos slave via the following
+    command:'
+  id: totrans-174
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过以下命令在所有标记为Mesos从属实例的机器上安装Docker：
+- en: '[PRE1]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Open a terminal window and execute the following commands. These commands set
+    up the repository for installation:'
+  id: totrans-176
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开终端窗口并执行以下命令。这些命令设置了用于安装的存储库：
+- en: '[PRE2]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Execute the following command to install Mesos and Marathon. This will also
+    install Zookeeper as a dependency:'
+  id: totrans-178
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 执行以下命令安装Mesos和Marathon。这也将安装Zookeeper作为依赖项：
+- en: '[PRE3]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Repeat the preceding steps on all the three EC2 instances reserved for the Mesos
+    slave execution. As the next step, ZooKeeper and Mesos have to be configured on
+    the machine identified for the Mesos master.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在为Mesos slave执行保留的三个EC2实例上重复上述步骤。作为下一步，必须在为Mesos主节点标识的机器上配置ZooKeeper和Mesos。
+- en: Configuring ZooKeeper
+  id: totrans-181
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 配置ZooKeeper
+- en: Connect to the machine reserved for the Mesos master and Marathon scheduler.
+    In this case, `172.31.54.69` will be used to set up ZooKeeper, the Mesos master,
+    and Marathon.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到为Mesos主节点和Marathon调度器保留的机器。在这种情况下，`172.31.54.69`将用于设置ZooKeeper、Mesos主节点和Marathon。
+- en: 'There are two configuration changes required in ZooKeeper, as follows:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ZooKeeper需要进行两个配置更改，如下：
+- en: 'The first step is to set `/etc/zookeeper/conf/myid` to a unique integer between
+    `1` and `255`, as follows:'
+  id: totrans-184
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 第一步是将`/etc/zookeeper/conf/myid`设置为介于`1`和`255`之间的唯一整数，如下所示：
+- en: '[PRE4]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'The next step is to edit `/etc/zookeeper/conf/zoo.cfg`. Update the file to
+    reflect the following changes:'
+  id: totrans-186
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下一步是编辑`/etc/zookeeper/conf/zoo.cfg`。更新文件以反映以下更改：
+- en: '[PRE5]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Replace the IP addresses with the relevant private IP address. In this case,
+    we will use only one ZooKeeper server, but in a production scenario, multiple
+    servers are required for high availability.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用相关的私有IP地址替换IP地址。在这种情况下，我们将只使用一个ZooKeeper服务器，但在生产场景中，需要多个服务器以实现高可用性。
+- en: Configuring Mesos
+  id: totrans-189
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 配置Mesos
+- en: 'Make changes to the Mesos configuration to point to ZooKeeper, set up a quorum,
+    and enable Docker support via the following steps:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对Mesos配置进行更改，以指向ZooKeeper，设置仲裁，并通过以下步骤启用Docker支持：
+- en: 'Edit `/etc/mesos/zk` to set the following value. This is to point Mesos to
+    a ZooKeeper instance for quorum and leader election:'
+  id: totrans-191
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 编辑`/etc/mesos/zk`以设置以下值。这是为了将Mesos指向ZooKeeper实例进行仲裁和领导者选举：
+- en: '[PRE6]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Edit the `/etc/mesos-master/quorum` file and set the value as `1`. In a production
+    scenario, we may need a minimum quorum of three:'
+  id: totrans-193
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 编辑`/etc/mesos-master/quorum`文件，并将值设置为`1`。在生产场景中，可能需要最少三个仲裁：
+- en: '[PRE7]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'The default Mesos installation does not support Docker on Mesos slaves. In
+    order to enable Docker, update the following `mesos-slave` configuration:'
+  id: totrans-195
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 默认的Mesos安装不支持Mesos slave上的Docker。为了启用Docker，更新以下`mesos-slave`配置：
+- en: '[PRE8]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Running Mesos, Marathon, and ZooKeeper as services
+  id: totrans-197
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 作为服务运行Mesos、Marathon和ZooKeeper
+- en: 'All the required configuration changes are implemented. The easiest way to
+    start Mesos, Marathon, and Zookeeper is to run them as services, as follows:'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有必需的配置更改都已实施。启动Mesos、Marathon和Zookeeper的最简单方法是将它们作为服务运行，如下所示：
+- en: 'The following commands start services. The services need to be started in the
+    following order:'
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 以下命令启动服务。服务需要按以下顺序启动：
+- en: '[PRE9]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'At any point, the following commands can be used to stop these services:'
+  id: totrans-201
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在任何时候，可以使用以下命令来停止这些服务：
+- en: '[PRE10]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Once the services are up and running, use a terminal window to verify whether
+    the services are running:![Running Mesos, Marathon, and ZooKeeper as services](img/B05447_09_11.jpg)
+  id: totrans-203
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一旦服务启动并运行，使用终端窗口验证服务是否正在运行：![作为服务运行的Mesos、Marathon和ZooKeeper](img/B05447_09_11.jpg)
+- en: Running the Mesos slave in the command line
+  id: totrans-204
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 在命令行中运行Mesos slave
+- en: 'In this example, instead of using the Mesos slave service, we will use a command-line
+    version to invoke the Mesos slave to showcase additional input parameters. Stop
+    the Mesos slave and use the command line as mentioned here to start the slave
+    again:'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们将使用命令行版本来调用Mesos slave，以展示额外的输入参数，而不是使用Mesos slave服务。停止Mesos slave，并使用此处提到的命令行来重新启动slave：
+- en: '[PRE11]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'The command-line parameters used are explained as follows:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所使用的命令行参数解释如下：
+- en: '`--master=172.31.54.69:5050`: This parameter is to tell the Mesos slave to
+    connect to the correct Mesos master. In this case, there is only one master running
+    at `172.31.54.69:5050`. All the slaves connect to the same Mesos master.'
+  id: totrans-208
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`--master=172.31.54.69:5050`：此参数用于告诉Mesos slave连接到正确的Mesos主节点。在这种情况下，只有一个主节点在`172.31.54.69:5050`运行。所有的slave都连接到同一个Mesos主节点。'
+- en: '`--containerizers=mesos,docker`: This parameter is to enable support for Docker
+    container execution as well as noncontainerized executions on the Mesos slave
+    instances.'
+  id: totrans-209
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`--containerizers=mesos,docker`：此参数用于启用对Docker容器执行以及在Mesos slave实例上的非容器化执行的支持。'
+- en: '`--resources="ports(*):[8000-9000, 31000-32000]`: This parameter indicates
+    that the slave can offer both ranges of ports when binding resources. `31000`
+    to `32000` is the default range. As we are using port numbers starting with `8000`,
+    it is important to tell the Mesos slave to allow exposing ports starting from
+    `8000` as well.'
+  id: totrans-210
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`--resources="ports(*):[8000-9000, 31000-32000]`：此参数表示slave在绑定资源时可以提供两个端口范围。`31000`到`32000`是默认范围。由于我们使用以`8000`开头的端口号，因此很重要告诉Mesos
+    slave也允许从`8000`开始暴露端口。'
+- en: 'Perform the following steps to verify the installation of Mesos and Marathon:'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行以下步骤来验证Mesos和Marathon的安装：
+- en: Execute the command mentioned in the previous step to start the Mesos slave
+    on all the three instances designated for the slave. The same command can be used
+    across all three instances as all of them connect to the same master.
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在所有为slave指定的三个实例上执行前面步骤中提到的命令来启动Mesos slave。由于它们都连接到同一个主节点，因此可以在所有三个实例上使用相同的命令。
+- en: 'If the Mesos slave is successfully started, a message similar to the following
+    will appear in the console:'
+  id: totrans-213
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果Mesos slave成功启动，控制台中将出现类似以下的消息：
+- en: '[PRE12]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: The preceding message indicates that the Mesos slave started sending the current
+    state of resource availability periodically to the Mesos master.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述消息表明Mesos slave开始定期向Mesos主节点发送资源可用性的当前状态。
+- en: Open `http://54.85.107.37:8080` to inspect the Marathon UI. Replace the IP address
+    with the public IP address of the EC2 instance:![Running the Mesos slave in the
+    command line](img/B05447_09_12.jpg)
+  id: totrans-216
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开`http://54.85.107.37:8080`来检查Marathon UI。用EC2实例的公共IP地址替换IP地址：![在命令行中运行Mesos
+    slave](img/B05447_09_12.jpg)
+- en: As there are no applications deployed so far, the **Applications** section of
+    the UI is empty.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于目前尚未部署任何应用程序，因此UI的**应用程序**部分为空。
+- en: Open the Mesos UI, which runs on port `5050`, by going to `http://54.85.107.37:5050`:![Running
+    the Mesos slave in the command line](img/B05447_09_13.jpg)
+  id: totrans-218
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开运行在端口`5050`上的Mesos UI，访问`http://54.85.107.37:5050`：![在命令行中运行Mesos从属](img/B05447_09_13.jpg)
+- en: The **Slaves** section of the console shows that there are three activated Mesos
+    slaves available for execution. It also indicates that there is no active task.
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 控制台的**从属**部分显示有三个已激活的Mesos从属可用于执行。它还表明没有活动任务。
+- en: Preparing BrownField PSS services
+  id: totrans-220
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 准备BrownField PSS服务
+- en: In the previous section, we successfully set up Mesos and Marathon. In this
+    section, we will take a look at how to deploy the BrownField PSS application previously
+    developed using Mesos and Marathon.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节中，我们成功地设置了Mesos和Marathon。在本节中，我们将看看如何部署之前使用Mesos和Marathon开发的BrownField PSS应用程序。
+- en: Note
+  id: totrans-222
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The full source code of this chapter is available under the `Chapter 9` project
+    in the code files. Copy `chapter8.configserver`, `chapter8.eurekaserver`, `chapter8.search`,
+    `chapter8.search-apigateway`, and `chapter8.website` into a new STS workspace
+    and rename them `chapter9.*`.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的完整源代码可在代码文件的`第9章`项目中找到。将`chapter8.configserver`、`chapter8.eurekaserver`、`chapter8.search`、`chapter8.search-apigateway`和`chapter8.website`复制到一个新的STS工作区，并将它们重命名为`chapter9.*`。
+- en: Before we deploy any application, we have to set up the Config server, Eureka
+    server, and RabbitMQ in one of the servers. Follow the steps described in the
+    *Running BrownField services on EC2* section in [Chapter 8](ch08.html "Chapter 8. Containerizing
+    Microservices with Docker"), *Containerizing Microservices with Docker*. Alternately,
+    we can use the same instance as used in the previous chapter for this purpose.
+  id: totrans-224
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在部署任何应用程序之前，我们必须在其中一个服务器上设置配置服务器、Eureka服务器和RabbitMQ。按照[第8章](ch08.html "第8章。使用Docker容器化微服务")中描述的*在EC2上运行BrownField服务*部分中描述的步骤，使用Docker容器化微服务。或者，我们可以在前一章中用于此目的的相同实例上使用。
+- en: Change all `bootstrap.properties` files to reflect the Config server IP address.
+  id: totrans-225
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将所有`bootstrap.properties`文件更改为反映配置服务器的IP地址。
+- en: Before we deploy our services, there are a few specific changes required on
+    the microservices. When running dockerized microservices with the BRIDGE mode
+    on, we need to tell the Eureka client the hostname to be used to bind. By default,
+    Eureka uses the **instance ID** to register. However, this is not helpful as Eureka
+    clients won't be able to look up these services using the instance ID. In the
+    previous chapter, the HOST mode was used instead of the BRIDGE mode.
+  id: totrans-226
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在部署我们的服务之前，微服务需要进行一些特定的更改。当在BRIDGE模式下运行docker化的微服务时，我们需要告诉Eureka客户端要使用的主机名。默认情况下，Eureka使用**实例ID**进行注册。然而，这并不有用，因为Eureka客户端将无法使用实例ID查找这些服务。在上一章中，使用了HOST模式而不是BRIDGE模式。
+- en: 'The hostname setup can be done using the `eureka.instance.hostname` property.
+    However, when running on AWS specifically, an alternate approach is to define
+    a bean in the microservices to pick up AWS-specific information, as follows:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主机名设置可以使用`eureka.instance.hostname`属性来完成。然而，在特定情况下在AWS上运行时，另一种方法是在微服务中定义一个bean来获取AWS特定的信息，如下所示：
+- en: '[PRE13]'
+  id: totrans-228
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: The preceding code provides a custom Eureka server configuration using the Amazon
+    host information using Netflix APIs. The code overrides the hostname and instance
+    ID with the private DNS. The port is read from the Config server. This code also
+    assumes one host per service so that the port number stays constant across multiple
+    deployments. This can also be overridden by dynamically reading the port binding
+    information at runtime.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述代码使用亚马逊主机信息使用Netflix API提供了自定义的Eureka服务器配置。该代码使用私有DNS覆盖了主机名和实例ID。端口从配置服务器中读取。该代码还假定每个服务一个主机，以便端口号在多次部署中保持不变。这也可以通过在运行时动态读取端口绑定信息来覆盖。
+- en: The previous code has to be applied in all microservices.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述代码必须应用于所有微服务。
+- en: 'Rebuild all the microservices using Maven. Build and push the Docker images
+    to the Docker Hub. The steps for the three services are shown as follows. Repeat
+    the same steps for all the other services. The working directory needs to be switched
+    to the respective directories before executing these commands:'
+  id: totrans-231
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用Maven重新构建所有微服务。构建并推送Docker镜像到Docker Hub。三个服务的步骤如下所示。对所有其他服务重复相同的步骤。在执行这些命令之前，工作目录需要切换到相应的目录：
+- en: '[PRE14]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: Deploying BrownField PSS services
+  id: totrans-233
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 部署BrownField PSS服务
+- en: 'The Docker images are now published to the Docker Hub registry. Perform the
+    following steps to deploy and run BrownField PSS services:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker镜像现在已发布到Docker Hub注册表。执行以下步骤来部署和运行BrownField PSS服务：
+- en: Start the Config server, Eureka server, and RabbitMQ on its dedicated instance.
+  id: totrans-235
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在专用实例上启动配置服务器、Eureka服务器和RabbitMQ。
+- en: Make sure that the Mesos server and Marathon are running on the machine where
+    the Mesos master is configured.
+  id: totrans-236
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 确保Mesos服务器和Marathon正在配置Mesos主服务器的机器上运行。
+- en: Run the Mesos slave on all the machines as described earlier using the command
+    line.
+  id: totrans-237
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 按照之前描述的在所有机器上运行Mesos从属的命令行来运行Mesos从属。
+- en: 'At this point, the Mesos Marathon cluster is up and running and is ready to
+    accept deployments. The deployment can be done by creating one JSON file per service,
+    as shown here:'
+  id: totrans-238
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 此时，Mesos Marathon集群已经启动并准备好接受部署。可以通过为每个服务创建一个JSON文件来进行部署，如下所示：
+- en: '[PRE15]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: The preceding JSON code will be stored in the `search.json` file. Similarly,
+    create a JSON file for other services as well.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述JSON代码将存储在`search.json`文件中。同样，也为其他服务创建一个JSON文件。
+- en: 'The JSON structure is explained as follows:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JSON结构解释如下：
+- en: '`id`: This is the unique ID of the application. This can be a logical name.'
+  id: totrans-242
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`id`：这是应用程序的唯一ID。这可以是一个逻辑名称。'
+- en: '`cpus` and `mem`: This sets the resource constraints for this application.
+    If the resource offer does not satisfy this resource constraint, Marathon will
+    reject this resource offer from the Mesos master.'
+  id: totrans-243
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`cpus`和`mem`：这为应用程序设置了资源约束。如果资源提供不满足这个资源约束，Marathon将拒绝来自Mesos主服务器的资源提供。'
+- en: '`instances`: This decides how many instances of this application to start with.
+    In the preceding configuration, by default, it starts one instance as soon as
+    it gets deployed. Marathon maintains the number of instances mentioned at any
+    point.'
+  id: totrans-244
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`instances`：这决定了要启动多少个此应用程序的实例。在前面的配置中，默认情况下，一旦部署，它就会启动一个实例。Marathon在任何时候都会保持所述实例的数量。'
+- en: '`container`: This parameter tells the Marathon executor to use a Docker container
+    for execution.'
+  id: totrans-245
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`container`：此参数告诉Marathon执行器使用Docker容器进行执行。'
+- en: '`image`: This tells the Marathon scheduler which Docker image has to be used
+    for deployment. In this case, this will download the `search-service:1.0` image
+    from the Docker Hub repository `rajeshrv`.'
+  id: totrans-246
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`image`：这告诉Marathon调度器要使用哪个Docker镜像进行部署。在这种情况下，它将从Docker Hub仓库`rajeshrv`下载`search-service:1.0`镜像。'
+- en: '`network`: This value is used for Docker runtime to advise on the network mode
+    to be used when starting the new docker container. This can be BRIDGE or HOST.
+    In this case, the BRIDGE mode will be used.'
+  id: totrans-247
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`network`：此值用于Docker运行时建议在启动新的Docker容器时使用的网络模式。这可以是BRIDGE或HOST。在这种情况下，将使用BRIDGE模式。'
+- en: '`portMappings`: The port mapping provides information on how to map the internal
+    and external ports. In the preceding configuration, the host port is set as `8090`,
+    which tells the Marathon executor to use `8090` when starting the service. As
+    the container port is set as `0`, the same host port will be assigned to the container.
+    Marathon picks up random ports if the host port value is `0`.'
+  id: totrans-248
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`portMappings`：端口映射提供了如何映射内部和外部端口的信息。在前面的配置中，主机端口设置为`8090`，这告诉Marathon执行器在启动服务时使用`8090`。由于容器端口设置为`0`，相同的主机端口将分配给容器。如果主机端口值为`0`，Marathon会选择随机端口。'
+- en: 'Additional health checks are also possible with the JSON descriptor, as shown
+    here:'
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 还可以使用JSON描述符进行额外的健康检查，如下所示：
+- en: '[PRE16]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Once this JSON code is created and saved, deploy it to Marathon using the Marathon
+    REST APIs as follows:'
+  id: totrans-251
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建并保存此JSON代码后，使用Marathon的REST API将其部署到Marathon：
+- en: '[PRE17]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Repeat this step for all the other services as well.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对所有其他服务也重复此步骤。
+- en: The preceding step will automatically deploy the Docker container to the Mesos
+    cluster and start one instance of the service.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述步骤将自动将Docker容器部署到Mesos集群，并启动服务的一个实例。
+- en: Reviewing the deployment
+  id: totrans-255
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 审查部署
+- en: 'The steps for this are as follows:'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 具体步骤如下：
+- en: Open the Marathon UI. As shown in the following screenshot, the UI shows that
+    all the three applications are deployed and are in the **Running** state. It also
+    indicates that **1 of 1** instance is in the **Running** state:![Reviewing the
+    deployment](img/B05447_09_14.jpg)
+  id: totrans-257
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开Marathon UI。如下图所示，UI显示所有三个应用程序都已部署，并处于**运行**状态。它还指示**1个1**实例处于**运行**状态：![审查部署](img/B05447_09_14.jpg)
+- en: Visit the Mesos UI. As shown in the following screenshot, there are three **Active
+    Tasks**, all of them in the **Running** state. It also shows the host in which
+    these services run:![Reviewing the deployment](img/B05447_09_15.jpg)
+  id: totrans-258
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 访问Mesos UI。如下图所示，有三个**活动任务**，全部处于**运行**状态。它还显示了这些服务运行的主机：![审查部署](img/B05447_09_15.jpg)
+- en: In the Marathon UI, click on a running application. The following screenshot
+    shows the **search-apigateway-1.0** application. In the **Instances** tab, the
+    IP address and port in which the service is bound is indicated:![Reviewing the
+    deployment](img/B05447_09_16.jpg)
+  id: totrans-259
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在Marathon UI中，点击正在运行的应用程序。以下屏幕截图显示了**search-apigateway-1.0**应用程序。在**实例**选项卡中，显示了服务绑定的IP地址和端口：![审查部署](img/B05447_09_16.jpg)
+- en: The **Scale Application** button allows administrators to specify how many instances
+    of the service are required. This can be used to scale up as well as scale down
+    instances.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**扩展应用程序**按钮允许管理员指定需要多少个服务实例。这可用于扩展和缩减实例。'
+- en: Open the Eureka server console to take a look at how the services are bound.
+    As shown in the screenshot, **AMIs** and **Availability Zones** are reflected
+    when services are registered. Follow `http://52.205.251.150:8761`:![Reviewing
+    the deployment](img/B05447_09_17.jpg)
+  id: totrans-261
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开Eureka服务器控制台，查看服务的绑定情况。如屏幕截图所示，当服务注册时，**AMI**和**可用区**会反映出来。访问`http://52.205.251.150:8761`：![审查部署](img/B05447_09_17.jpg)
+- en: Open `http://54.172.213.51:8001` in a browser to verify the **Website** application.
+  id: totrans-262
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在浏览器中打开`http://54.172.213.51:8001`，验证**Website**应用程序。
+- en: A place for the life cycle manager
+  id: totrans-263
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 生命周期管理器的位置
+- en: 'The life cycle manager introduced in [Chapter 6](ch06.html "Chapter 6. Autoscaling
+    Microservices"), *Autoscaling Microservices*, has the capability of autoscaling
+    up or down instances based on demand. It also has the ability to take decisions
+    on where to deploy and how to deploy applications on a cluster of machines based
+    on polices and constraints. The life cycle manager''s capabilities are shown in
+    the following figure:'
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 生命周期管理器在[第6章](ch06.html "第6章。自动缩放微服务")中介绍，具有根据需求自动扩展或缩减实例的能力。它还具有根据策略和约束条件在一组机器上决定部署何处和如何部署应用程序的能力。生命周期管理器的能力如下图所示：
+- en: '![A place for the life cycle manager](img/B05447_09_18.jpg)'
+  id: totrans-265
+  prefs: []
+  type: TYPE_IMG
+  zh: '![生命周期管理器的位置](img/B05447_09_18.jpg)'
+- en: Marathon has the capability to manage clusters and deployments to clusters based
+    on policies and constraints. The number of instances can be altered using the
+    Marathon UI.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Marathon具有根据策略和约束条件管理集群和集群部署的能力。可以使用Marathon UI更改实例的数量。
+- en: There are redundant capabilities between our life cycle manager and Marathon.
+    With Marathon in place, SSH work or machine-level scripting is no longer required.
+    Moreover, deployment policies and constraints can be delegated to Marathon. The
+    REST APIs exposed by Marathon can be used to initiate scaling functions.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的生命周期管理器和Marathon之间存在冗余的能力。有了Marathon，就不再需要SSH工作或机器级脚本。此外，部署策略和约束条件可以委托给Marathon。Marathon提供的REST
+    API可以用于启动扩展功能。
+- en: '**Marathon autoscale** is a proof-of-concept project from Mesosphere for autoscaling.
+    The Marathon autoscale provides basic autoscale features such as the CPU, memory,
+    and rate of request.'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Marathon自动缩放**是Mesosphere的一个自动缩放的概念验证项目。Marathon自动缩放提供基本的自动缩放功能，如CPU、内存和请求速率。'
+- en: Rewriting the life cycle manager with Mesos and Marathon
+  id: totrans-269
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 重写生命周期管理器与Mesos和Marathon
+- en: We still need a custom life cycle manager to collect metrics from the Spring
+    Boot actuator endpoints. A custom life cycle manager is also handy if the scaling
+    rules are beyond the CPU, memory, and rate of scaling.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们仍然需要一个定制的生命周期管理器来收集来自Spring Boot执行器端点的指标。如果缩放规则超出了CPU、内存和缩放速率，定制的生命周期管理器也很方便。
+- en: 'The following diagram shows the updated life cycle manager using the Marathon
+    framework:'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了使用Marathon框架更新的生命周期管理器：
+- en: '![Rewriting the life cycle manager with Mesos and Marathon](img/B05447_09_19.jpg)'
+  id: totrans-272
+  prefs: []
+  type: TYPE_IMG
+  zh: '![重写生命周期管理器与Mesos和Marathon](img/B05447_09_19.jpg)'
+- en: The life cycle manager, in this case, collects actuator metrics from different
+    Spring Boot applications, combines them with other metrics, and checks for certain
+    thresholds. Based on the scaling policies, the decision engine informs the scaling
+    engine to either scale down or scale up. In this case, the scaling engine is nothing
+    but a Marathon REST client. This approach is cleaner and neater than our earlier
+    primitive life cycle manager implementation using SSH and Unix scripts.
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，生命周期管理器收集来自不同Spring Boot应用程序的执行器指标，将它们与其他指标结合起来，并检查特定的阈值。根据缩放策略，决策引擎通知缩放引擎是缩小还是扩大。在这种情况下，缩放引擎只是一个Marathon
+    REST客户端。这种方法比我们早期使用SSH和Unix脚本的原始生命周期管理器实现更清洁、更整洁。
+- en: The technology metamodel
+  id: totrans-274
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术元模型
+- en: 'We have covered a lot of ground on microservices with the BrownField PSS microservices.
+    The following diagram sums it up by bringing together all the technologies used
+    into a technology metamodel:'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经涵盖了使用BrownField PSS微服务的许多内容。以下图表通过将所有使用的技术汇总到技术元模型中来总结了这一点。
+- en: '![The technology metamodel](img/B05447_09_20.jpg)'
+  id: totrans-276
+  prefs: []
+  type: TYPE_IMG
+  zh: '![技术元模型](img/B05447_09_20.jpg)'
+- en: Summary
+  id: totrans-277
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, you learned the importance of a cluster management and init
+    system to efficiently manage dockerized microservices at scale.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您了解了集群管理和初始化系统在大规模高效管理docker化微服务的重要性。
+- en: We explored the different cluster control or cluster orchestration tools before
+    diving deep into Mesos and Marathon. We also implemented Mesos and Marathon in
+    the AWS cloud environment to demonstrate how to manage dockerized microservices
+    developed for BrownField PSS.
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在深入研究Mesos和Marathon之前，我们探讨了不同的集群控制或集群编排工具。我们还在AWS云环境中实施了Mesos和Marathon，以演示如何管理为BrownField
+    PSS开发的docker化微服务。
+- en: At the end of this chapter, we also explored the position of the life cycle
+    manager in conjunction with Mesos and Marathon. Finally, we concluded this chapter
+    with a technology metamodel based on the BrownField PSS microservices implementation.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章末尾，我们还探讨了生命周期管理器在Mesos和Marathon中的位置。最后，我们基于BrownField PSS微服务实现，总结了本章的技术元模型。
+- en: So far, we have discussed all the core and supporting technology capabilities
+    required for a successful microservices implementation. A successful microservice
+    implementation also requires processes and practices beyond technology. The next
+    chapter, the last in the book, will cover the process and practice perspectives
+    of microservices.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经讨论了成功实施微服务所需的所有核心和支持技术能力。成功的微服务实施还需要超越技术的流程和实践。下一章，也是本书的最后一章，将涵盖微服务的流程和实践视角。

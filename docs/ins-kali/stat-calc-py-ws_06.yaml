@@ -1,0 +1,2650 @@
+- en: 6\. Matrices and Markov Chains with Python
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 6. 使用Python进行矩阵和马尔可夫链
+- en: Overview
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 概述
+- en: In this chapter, we intend to foray into matrices and their applications using
+    Python. We will look at different matrix manipulation techniques that will help
+    us use them efficiently to build useful tools in real-world applications.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们打算使用Python深入研究矩阵及其应用。我们将探讨不同的矩阵操作技术，这将帮助我们有效地在实际应用中使用它们来构建有用的工具。
+- en: By the end of this chapter, you will understand matrices and be able to perform
+    operations on them. You will implement one of the applications of matrices, known
+    as Markov chains, using transition matrices and then use Markov chains and the
+    Markov property to solve real-world problems.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章结束时，您将了解矩阵并能对其进行操作。您将使用转移矩阵实现矩阵的一种应用，称为马尔可夫链，然后使用马尔可夫链和马尔可夫性质来解决现实世界问题。
+- en: Introduction
+  id: totrans-4
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍
+- en: 'A matrix is a rectangular array of numbers or expressions arranged in rows
+    and columns and considered as a single entity. As we are considering a matrix
+    as a single object, if we perform an operation on it, it will apply to each of
+    the elements within it:'
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 矩阵是数字或表达式按行和列排列并被视为单个实体的矩形数组。由于我们将矩阵视为单个对象，如果我们对其进行操作，它将应用于其中的每个元素：
+- en: '![Figure 6.1: A simple m × n matrix with m rows and n columns'
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.1：一个简单的m×n矩阵，其中m行n列'
+- en: '](image/B15968_06_01.jpg)'
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_01.jpg)'
+- en: 'Figure 6.1: A simple m × n matrix with m rows and n columns'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.1：一个简单的m×n矩阵，其中m行n列
+- en: A simple linear single-dimension array rarely suffices for the physical world
+    we live in, and almost all attributes related to space and time require more than
+    one dimension. Compactness is one of the main reasons for the use of matrices.
+    A matrix is compact when it is closed and bounded or simply has its points within
+    a fixed distance of one another. Primarily for these two reasons, matrices find
+    applications in practically every field, including fundamental mathematical concepts,
+    ranging from graph theory, linear transformations, and probability theory, to
+    different branches of physics, such as quantum mechanics and electromagnetism.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个简单的线性单维数组很少能满足我们生活中与空间和时间相关的几乎所有属性都需要超过一个维度。紧凑性是使用矩阵的主要原因之一。当矩阵是封闭和有界的，或者简单地其点彼此之间的距离固定时，矩阵是紧凑的。主要基于这两个原因，矩阵在几乎每个领域都有应用，包括从图论、线性变换和概率论到物理学的不同分支，如量子力学和电磁学等基本数学概念。
+- en: The Markov chain model and its variations are one such application, tying concepts
+    of matrices, limits, and probability together to produce results in real-world
+    problems where uncertainty is predominant. In a mathematical space, whenever there
+    is uncertainty, decisions are based on probability; this forms the basis of Markov
+    chains. These use a specific type of matrix, called a transition matrix, to build
+    state diagrams. A Markov chain is effectively a memoryless process that is primarily
+    based on the current state to decide the outcome of the next state. We find their
+    application in some very important use cases, including page-rank algorithms,
+    autocomplete applications, and text generators. We will be studying these concepts
+    in more detail later in the chapter, and for that, we need to first understand
+    matrices.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 马尔可夫链模型及其变体是这样一个应用，将矩阵、极限和概率的概念联系在一起，以产生在不确定性占主导地位的现实世界问题中的结果。在数学空间中，每当存在不确定性时，决策都是基于概率的；这构成了马尔可夫链的基础。这些使用一种特定类型的矩阵，称为转移矩阵，来构建状态图。马尔可夫链实际上是一个无记忆过程，主要基于当前状态来决定下一个状态的结果。我们在一些非常重要的用例中发现它们的应用，包括页面排名算法、自动完成应用程序和文本生成器。我们将在本章后面更详细地研究这些概念，为此，我们首先需要了解矩阵。
+- en: Matrix Operations on a Single Matrix
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 单矩阵上的矩阵操作
+- en: In this chapter, we will study the different ways of manipulating matrices and
+    how to implement them in Python. Understanding how a matrix works broadly means
+    understanding the fundamentals of how 2D or multidimensional arrays work. Once
+    we have a good understanding of the basics of 2D matrices, those interested can
+    delve into advanced studies of matrices, which includes special types of matrices
+    such as sparse matrices, vector spaces, eigenvalues, and eigenvectors, which can
+    involve more than two dimensions.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习不同的矩阵操作方式以及如何在Python中实现它们。广义上理解矩阵的工作意味着理解二维或多维数组的基本原理。一旦我们对二维矩阵的基础有了很好的理解，有兴趣的人可以深入研究矩阵的高级研究，其中包括稀疏矩阵、向量空间、特征值和特征向量等特殊类型的矩阵，这可能涉及超过两个维度。
+- en: Matrices in Python can be implemented using either lists or arrays. Nested lists
+    in Python work perfectly fine, but Python has a powerful package that makes matrix
+    implementation much easier called NumPy. SciPy is another package that helps in
+    matrix manipulation, but it is usually more suitable for larger matrix computations.
+    We will be using both of these modules throughout this chapter.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Python中的矩阵可以使用列表或数组来实现。在Python中，嵌套列表可以很好地工作，但Python有一个强大的包，使矩阵实现变得更容易，称为NumPy。SciPy是另一个帮助进行矩阵操作的包，但通常更适合于更大的矩阵计算。在本章中，我们将在整个章节中使用这两个模块。
+- en: Basic Operations on a Matrix
+  id: totrans-14
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 矩阵的基本操作
+- en: It is assumed at this point that you have the Python and its default libraries
+    installed for running a basic Python program.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上，假设您已经安装了Python及其默认库以运行基本的Python程序。
+- en: 'Once you have the package in place, let''s define our first matrix:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您安装好了这个包，让我们定义我们的第一个矩阵：
+- en: '[PRE0]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'This matrix is the same as the following matrix, `z`, which is simply better
+    represented and, as a good practice, is advisable whenever possible:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个矩阵与下面的矩阵`z`相同，只是更好地表示，并且在可能的情况下，作为一个良好的实践是可取的：
+- en: '[PRE1]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Note that in the preceding code, we have printed the type of the variable `z`.
+    Can you guess the output? The output should be as follows:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在前面的代码中，我们已经打印了变量`z`的类型。你能猜到输出是什么吗？输出应该如下所示：
+- en: '[PRE2]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: The `ndarray` is the standard array format used by NumPy. The array object is
+    homogenous, multidimensional, and has a data type object that is associated with
+    it internally depending on its assignment.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ndarray`是NumPy使用的标准数组格式。数组对象是同质的、多维的，并且具有与其分配相关联的数据类型对象。'
+- en: 'For example, let''s take an element in matrix `z`, which we defined previously:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，让我们取矩阵`z`中的一个元素，这个矩阵我们之前定义过：
+- en: '[PRE3]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'This produces the following output:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE4]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: We find that the elements of the given matrix are of the `int64` type, that
+    is, the 64-bit integer type. Other data types include `np.float32`, `np.complex`,
+    `np.bool`, `np.object`, `np.string_`, and `np.unicode_`.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们发现给定矩阵的元素是`int64`类型，即64位整数类型。其他数据类型包括`np.float32`、`np.complex`、`np.bool`、`np.object`、`np.string_`和`np.unicode_`。
+- en: For now, it is enough to know that pretty much every data structure that we
+    build uses Python version 3.8 and NumPy version 1.17\. As of the date of publication,
+    NumPy has a special class called a `matrix` class that does pretty much the same
+    things that `ndarray` does. The only difference is that the `matrix` class maintains
+    its 2D nature and has some operators built in, such as `*` for multiplication
+    and `**` for power. Although the `matrix` class might come in handy and can be
+    explored, the official NumPy documentation advises using a regular `ndarray` instead
+    of `np.matrix` as it may be removed in the future. So, it is good to note here
+    that the term `ndarray` in this context can be considered synonymous with the
+    term `matrix` and will be used interchangeably in this chapter.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，知道我们几乎每个数据结构都是使用Python版本3.8和NumPy版本1.17就足够了。截至出版日期，NumPy有一个特殊的类叫做`matrix`类，它几乎做了与`ndarray`相同的事情。唯一的区别是`matrix`类保持其2D性质，并且内置了一些操作符，比如`*`表示乘法，`**`表示幂。虽然`matrix`类可能会派上用场并且可以被探索，但官方的NumPy文档建议使用普通的`ndarray`而不是`np.matrix`，因为后者可能会在将来被移除。因此，值得注意的是，在这个上下文中，术语`ndarray`可以被视为与术语`matrix`同义，并且在本章中可以互换使用。
+- en: Let's continue working with `ndarray`. Assuming we have a single matrix, we
+    will see some of the simple operations that we can do with it. We can use the
+    same matrix, `z`, that we defined previously.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续使用`ndarray`。假设我们有一个单独的矩阵，我们将看到一些我们可以对其进行的简单操作。我们可以使用之前定义的相同矩阵`z`。
+- en: 'Let''s print the sum of the elements:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们打印元素的总和：
+- en: '[PRE5]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'This produces the following output:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE6]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: This is pretty straightforward. Let's now look at some other things that we
+    can do.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这很简单。现在让我们看看我们可以做的其他事情。
+- en: 'Let''s find the maximum, minimum, mean, and standard deviation of the `z` matrix:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们找到`z`矩阵的最大值、最小值、平均值和标准差：
+- en: '[PRE7]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'This produces the following output:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE8]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: There are a number of other operations that can be performed on an `ndarray`,
+    including common mathematical functions such as sin, cos, log, and square root,
+    and statistical functions, such as finding correlation coefficients and the cumulative
+    sum, some of which we will be using shortly.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有许多其他操作可以在`ndarray`上执行，包括常见的数学函数，如sin、cos、log和平方根，以及统计函数，如寻找相关系数和累积和，我们很快将使用其中一些。
+- en: Inspecting a Matrix
+  id: totrans-40
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 检查矩阵
+- en: 'Now, we will deal with some useful functions that can help us learn more about
+    any array that we are working with. Let''s continue to use the same matrix/`ndarray`,
+    `z`, that we have been using so far:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将处理一些有用的函数，这些函数可以帮助我们更多地了解我们正在使用的任何数组。让我们继续使用到目前为止一直在使用的相同矩阵/`ndarray`
+    `z`：
+- en: 'Let''s print the information of a matrix:'
+  id: totrans-42
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们打印一个矩阵的信息：
+- en: '[PRE9]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'The output will be as follows:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE10]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Now, to ascertain the shape of the matrix, write the following code:'
+  id: totrans-46
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，为了确定矩阵的形状，请写下以下代码：
+- en: '[PRE11]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'The output will be as follows:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE12]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'To check whether the matrix is a 2D or 3D matrix, write the following code:'
+  id: totrans-50
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要检查矩阵是2D还是3D矩阵，请写下以下代码：
+- en: '[PRE13]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'The output will be as follows:'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE14]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'To print the data type of the matrix, use the following code:'
+  id: totrans-54
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要打印矩阵的数据类型，请使用以下代码：
+- en: '[PRE15]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'The output will be as follows:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE16]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'To print the length of the matrix, use the following code:'
+  id: totrans-58
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要打印矩阵的长度，请使用以下代码：
+- en: '[PRE17]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'The output will be as follows:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE18]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: As we can see, the `info` function already displays the values of the other
+    two functions we have called, namely, shape and type. Nevertheless, these functions
+    serve a limited purpose, and that is all that is required sometimes. The multidimensional
+    `ndarray`, as we know, is an array of arrays, and the `len` function of the NumPy
+    array will always be the length of the first dimension. If `z` is a 2D matrix,
+    then `len(z)` will be the number of rows in `z`.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，`info`函数已经显示了我们调用的另外两个函数的值，即shape和type。然而，这些函数只能起到有限的作用，有时这就是所需的。正如我们所知，多维`ndarray`是一个数组的数组，而NumPy数组的`len`函数将始终是第一维的长度。如果`z`是一个2D矩阵，那么`len(z)`将是`z`中的行数。
+- en: In the following exercise, we will create a matrix. We can pretty much create
+    a matrix with a nested list, but this problem will elaborate on how matrices are
+    packaged and utilized in the real world.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的练习中，我们将创建一个矩阵。我们可以用嵌套列表创建一个矩阵，但是这个问题将详细说明矩阵在现实世界中是如何打包和利用的。
+- en: 'Exercise 6.01: Calculating the Time Taken for Sunlight to Reach Earth Each
+    Day'
+  id: totrans-64
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习6.01：计算阳光到达地球所需的时间
+- en: In this exercise, we will calculate the time it takes for sunlight to reach
+    the Earth each day of the year.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个练习中，我们将计算阳光到达地球所需的时间。
+- en: As we know, the Earth revolves around the Sun in an elliptical orbit. As such,
+    the distance between the Earth and the Sun changes, which will change the amount
+    of time it takes for light to reach the Earth. There are three main equations
+    that we can use to deal with this.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所知，地球围绕太阳在椭圆轨道上运行。因此，地球和太阳之间的距离会发生变化，这将改变光到达地球所需的时间。我们可以使用三个主要方程来处理这个问题。
+- en: 'The mathematical formula to calculate time is as follows:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 计算时间的数学公式如下：
+- en: '![Figure 6.2: Formula to calculate time'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.2：计算时间的公式'
+- en: '](image/B15968_06_02.jpg)'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_02.jpg)'
+- en: 'Figure 6.2: Formula to calculate time'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.2：计算时间的公式
+- en: 'We need to calculate the distance, *r*, between the Earth and the Sun:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要计算地球和太阳之间的距离*r*：
+- en: '![Figure 6.3: Formula to calculate distance'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.3：计算距离的公式'
+- en: '](image/B15968_06_03.jpg)'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_03.jpg)'
+- en: 'Figure 6.3: Formula to calculate distance'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.3：计算距离的公式
+- en: In the preceding equation, the value of *a* is 149,600,000 km, which is the
+    semi-major axis distance, *e* is 0.0167, which is the eccentricity of Earth's
+    orbit, and *θ* is the angle from perihelion.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前述方程中，*a*的值为149,600,000千米，这是半长轴距离，*e*为0.0167，这是地球轨道的离心率，*θ*是从近日点开始的角度。
+- en: 'The dependent variable *θ* that will be required in the preceding equation
+    is calculated as follows:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 需要计算前述方程中所需的因变量*θ*，计算如下：
+- en: '![Figure 6.4: Formula for calculating the dependent variable'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.4：计算因变量的公式'
+- en: '](image/B15968_06_04.jpg)'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_04.jpg)'
+- en: 'Figure 6.4: Formula for calculating the dependent variable'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.4：计算因变量的公式
+- en: Note here that *n* is the number of days from the perihelion that occurs on
+    January 3rd. To keep things simple, we will take this to be the beginning of the
+    year.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意这里*n*是从1月3日近日点开始的天数。为了简化问题，我们将其视为一年的开始。
+- en: Do not get bogged down by these equations as they are nothing but simple mathematical
+    multiplications of constants and can be easily solved by a nifty Python library
+    called `math`.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要被这些方程式所困扰，它们只是简单的常数数学乘法，可以轻松通过一个称为`math`的巧妙Python库解决。
+- en: 'Let''s now get started with the exercise:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们开始练习：
+- en: 'First, import the `math` and `numpy` libraries:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，导入`math`和`numpy`库：
+- en: '[PRE19]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: We will be using these libraries later.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们稍后将使用这些库。
+- en: 'Next, define the two constants and use capitalization, which is the standard
+    Python practice for naming these constants:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，定义两个常数并使用大写字母，这是命名这些常数的标准Python做法：
+- en: '[PRE20]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: '`A` here is the semi-major axis distance between the Earth and the Sun.'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`A`在这里是地球和太阳之间的半长轴距离。'
+- en: '`E` is known as the eccentricity of the Earth.'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`E`被称为地球的离心率。'
+- en: '`l` is a list that we have initialized for storing the values later.'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`l`是我们初始化用于存储值的列表。'
+- en: 'Let''s jump into the main part of the code. For each of the `365` days, calculate
+    `theta`, as it is different for each day of the year. Then, calculate the distance
+    of the Earth from the Sun, and finally append that distance to a list:'
+  id: totrans-91
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们跳到代码的主要部分。对于365天中的每一天，计算`theta`，因为每年的每一天它都不同。然后，计算地球到太阳的距离，最后将该距离附加到列表中：
+- en: '[PRE21]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Note the use of the `math.pi` and `math.cos` functions from the `math` library
+    that we imported previously.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意我们之前导入的`math`库中的`math.pi`和`math.cos`函数的使用。
+- en: 'Calculate the time required in seconds, assuming the speed of light to be a
+    constant value of 299,792 km/s:'
+  id: totrans-94
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 计算所需的时间（以秒为单位），假设光速为恒定值299,792千米/秒：
+- en: '[PRE22]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Here, we first harness the power of NumPy arrays by using the `divide` function,
+    which applies the values to all members of the list without having to use a loop.
+    We store its values in `t`, which is type-casted automatically into a NumPy array.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们首先利用NumPy数组的功能，使用`divide`函数，它将值应用于列表的所有成员，而无需使用循环。我们将其值存储在`t`中，它会自动转换为NumPy数组。
+- en: 'Finally, we do two things here. First, we use another useful Python function
+    called `zip()`, which binds the respective elements of two lists together, and
+    then we use the `np.asarray()` function, which converts the list of tuples into
+    a NumPy array:'
+  id: totrans-97
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，我们在这里做了两件事。首先，我们使用另一个有用的Python函数`zip()`，它将两个列表的相应元素绑在一起，然后我们使用`np.asarray()`函数，将元组列表转换为NumPy数组：
+- en: '[PRE23]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Run the program to see the output:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行程序以查看输出：
+- en: '[PRE24]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: We now have in systematic tabular format the values of distance between the
+    Earth and the Sun and the time taken for light to reach the Earth. We can go on
+    adding other parameters to our matrix, and that is the flexibility that comes
+    with using matrices and NumPy arrays.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们以系统化的表格格式拥有了地球和太阳之间的距离值以及光线到达地球所需的时间。我们可以继续向我们的矩阵添加其他参数，这就是使用矩阵和NumPy数组的灵活性。
+- en: Please note here that these values are by no means accurate, and we have made
+    a few safe assumptions for simplicity, but it is nevertheless a good illustration
+    of how matrices can be utilized for practically anything. Also, note that the
+    values reflected here are in scientific notation format used in Python and can
+    easily be converted to float or any other type as required. The values on the
+    left are in km, and the ones on the right are in the form 507.346... seconds.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，这些值绝不准确，我们为简单起见做了一些安全假设，但这仍然是矩阵可以用于几乎任何事情的很好的例证。还要注意，这里反映的值是Python中使用的科学计数法格式，并且可以根据需要轻松转换为浮点数或其他类型。左边的值是以千米为单位，右边的值是以507.346...秒的形式。
+- en: 'Append the results as follows:'
+  id: totrans-103
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将结果附加如下：
+- en: '[PRE25]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'A section of the output is as follows:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出的一部分如下：
+- en: '[PRE26]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Note
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: To access the source code for this specific section, please refer to [https://packt.live/3irS3Bk.](https://packt.live/3irS3Bk
+    )
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要访问此特定部分的源代码，请参阅[https://packt.live/3irS3Bk.](https://packt.live/3irS3Bk )
+- en: You can also run this example online at [https://packt.live/3abV9pe](https://packt.live/3abV9pe).
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您也可以在[https://packt.live/3abV9pe](https://packt.live/3abV9pe)上在线运行此示例。
+- en: Operations and Multiplication in Matrices
+  id: totrans-110
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 矩阵中的运算和乘法
+- en: Now that we understand how to perform simple operations, let's perform a number
+    of operations, such as resize, reshape, and transpose, over a matrix that results
+    in the formation of a new matrix.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们了解了如何执行简单的操作，让我们执行一系列操作，例如调整大小、重塑和转置，形成一个新的矩阵。
+- en: 'When indices of rows and columns in a matrix are exchanged, flipping them along
+    the diagonal, this is known as the transpose of a matrix. Let''s now examine how
+    to transpose a matrix. This can be done in three different ways, as follows:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当矩阵中的行和列的索引交换时，沿对角线翻转它们，这被称为矩阵的转置。现在让我们来看看如何转置矩阵。这可以通过三种不同的方式完成，如下所示：
+- en: '[PRE27]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'If you run this code, the output will be as follows:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您运行此代码，输出将如下所示：
+- en: '[PRE28]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: In method 3, we assign the value of the transpose matrix to a new variable that
+    will hold the value.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在方法3中，我们将转置矩阵的值分配给一个新变量。
+- en: The functions that we will now see are among the most widely used while you
+    are performing matrix manipulation.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将看到的函数是在执行矩阵操作时最常用的函数之一。
+- en: 'The first function we will be dealing with is flattening. The process of converting
+    a matrix into a single row is known as the **flattening of a matrix**:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将处理的第一个函数是展平。将矩阵转换为单行的过程称为**矩阵的展平**：
+- en: '[PRE29]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'This produces the following output:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE30]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Let''s now have a look at the various comparison operators:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们看一下各种比较运算符：
+- en: '[PRE31]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'In this case, all the values inside a matrix are compared to a base value (in
+    this case, `3`) and Boolean results are displayed against the corresponding indices
+    in a matrix. The output is as follows:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，矩阵中的所有值都与基本值（在本例中为`3`）进行比较，并且布尔结果针对矩阵中的相应索引显示。输出如下：
+- en: '[PRE32]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'To check whether the value of `z` is less than `3`, use the following code:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要检查`z`的值是否小于`3`，请使用以下代码：
+- en: '[PRE33]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'The output is as follows:'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '[PRE34]'
+  id: totrans-129
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: '`reshape` is a function used to change the dimensions of a matrix according
+    to the values passed for row and column inside the function. To reshape the matrix,
+    use the following code:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`reshape`是一个函数，用于根据函数内部传递的行和列的值来改变矩阵的维度。要重塑矩阵，请使用以下代码：'
+- en: '[PRE35]'
+  id: totrans-131
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'This produces the following output:'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE36]'
+  id: totrans-133
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'To resize the matrix, use the following code:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要调整矩阵的大小，请使用以下代码：
+- en: '[PRE37]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'This produces the following output:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE38]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Note here how, when we use the `resize` function, the values are iteratively
+    repeated until the size is met, even though all values from the original matrix
+    may not be added. Also, note that the `reshape` function is often used instead
+    of the `ravel` function to flatten the matrix.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，当我们使用`resize`函数时，值会被迭代重复，直到满足大小，即使可能并未添加原始矩阵中的所有值。还要注意，通常使用`reshape`函数代替`ravel`函数来展平矩阵。
+- en: Axes in a Matrix
+  id: totrans-139
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 矩阵中的轴
+- en: This relatively simple topic is easy to understand and equally easy to misunderstand
+    and, hence, we need to deal with it independently. For arrays in Python, axes
+    are defined for any matrix or array that has more than one dimension. When dealing
+    with complex data science and data manipulation problems, oftentimes, we will
+    need to deal with more than two dimensions, which is difficult to visualize and
+    can be confusing. To simplify this, the dimensions in matrices are represented
+    by axes.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个相对简单的主题易于理解，但同样容易误解，因此我们需要独立处理它。对于Python中的数组，为具有多个维度的任何矩阵或数组定义轴。在处理复杂的数据科学和数据操作问题时，我们经常需要处理超过两个维度的数据，这很难可视化并且容易混淆。为了简化这一点，矩阵中的维度由轴表示。
+- en: Simply speaking, a 2D matrix will have two axes, horizontal and vertical, but
+    in this case, they will be represented or named numerically. The first axis, called
+    *axis 0*, runs vertically downward across rows, and the second, called *axis 1*,
+    runs horizontally across columns.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简单地说，2D矩阵将有两个轴，水平和垂直，但在这种情况下，它们将以数字形式表示或命名。第一个轴称为*轴0*，沿着行向下垂直运行，第二个称为*轴1*，沿着列水平运行。
+- en: 'The same set of functions that we used earlier can be used to run along a single
+    axis, which, in the case of large datasets, reduces the overhead of calculations.
+    Let''s deal with some examples. For clarity, we will be creating a slightly larger
+    matrix:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们之前使用的一组函数可以用于沿着单个轴运行，这在大型数据集的情况下减少了计算的开销。让我们处理一些例子。为了清晰起见，我们将创建一个稍大一些的矩阵：
+- en: '[PRE39]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'This produces the following output:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE40]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: What happened here is that the maximum value is calculated along *each* of the
+    axes. In the first array that is returned, the comparison is between `1` and `8`,
+    `5` and `3`, `9` and `7`, and `4` and `6`, as those are the only two elements
+    along axis 0\. Similarly, in the case of axis 1, the comparison is between the
+    four elements along the subarrays and the maximum element is returned.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里发生的是沿着*每个*轴计算最大值。在返回的第一个数组中，比较是`1`和`8`，`5`和`3`，`9`和`7`，以及`4`和`6`，因为这些是沿着轴0的唯一两个元素。类似地，在轴1的情况下，比较是沿着子数组的四个元素进行的，并返回最大元素。
+- en: 'Let''s take another example:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们再举一个例子：
+- en: '[PRE41]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'Can you guess the result? Let''s have a look at the output:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你能猜到结果吗？让我们看一下输出：
+- en: '[PRE42]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'Let''s now look at one last, more complex, example:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们看一个最后的、更复杂的例子：
+- en: '[PRE43]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'This produces the following output:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE44]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'What we have done is firstly use a concatenation function that accepts two
+    arrays. The two arrays taken are simply the first and second elements of the array
+    `z`, which are `[8 3 7 6]` and `[1 5 9 4]`, respectively. Since the two arrays
+    each have a single dimension, we have taken them along axis 0\. If we had entered
+    axis 1 here, NumPy would throw `AxisError`, as shown here:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们所做的首先是使用一个接受两个数组的连接函数。取出的两个数组分别是数组`z`的第一个和第二个元素，分别是`[8 3 7 6]`和`[1 5 9 4]`。由于这两个数组各自具有单个维度，我们沿着轴0取它们。如果我们在这里输入轴1，NumPy将抛出`AxisError`，如下所示：
+- en: '[PRE45]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'This produces the following output:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE46]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: 'Exercise 6.02: Matrix Search'
+  id: totrans-159
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习6.02：矩阵搜索
+- en: In this exercise, we will be searching for a given input value in a matrix that
+    is sorted in ascending order, both row- and column-wise. This will help us understand
+    the general rules of traversal inside a matrix, especially if we are not using
+    a NumPy array.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个练习中，我们将在按升序排序的矩阵中搜索给定的输入值，无论是按行还是按列。这将帮助我们理解在矩阵内部遍历的一般规则，特别是如果我们不使用NumPy数组。
+- en: To give a spoiler, we will be implementing a binary search over a matrix. Even
+    if you have not dealt with a binary search before, this will be easy enough to
+    follow.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了给出一个提示，我们将在矩阵上实现二分搜索。即使您以前没有处理过二分搜索，这也足够容易理解。
+- en: 'The aim is to return a `True` or `False` value, depending on whether the value
+    is present inside the matrix:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目标是根据值是否存在于矩阵中返回`True`或`False`值：
+- en: 'Let''s define the input matrix that we are going to search:'
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们定义我们要搜索的输入矩阵：
+- en: '[PRE47]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'Now, let''s define and write a function, `matrixsearch()`, that will take this
+    matrix as an input along with the value we have to search. We will first be covering
+    the edge cases, which, in this instance, means where a matrix is empty or the
+    target value is non-zero:'
+  id: totrans-165
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们定义并编写一个名为`matrixsearch()`的函数，它将以此矩阵作为输入，以及我们要搜索的值。我们首先将处理边缘情况，即矩阵为空或目标值为非零的情况：
+- en: '[PRE48]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'Next, we will be defining four variables:'
+  id: totrans-167
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们将定义四个变量：
+- en: '[PRE49]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: Please note here how `row` and `column` variables are initialized. In any matrix,
+    this is exactly how they will be initialized, and it is worth understanding. The
+    `start` and `end` variables are initialized as the first and last values in a
+    matrix as the matrix is already sorted and can be treated as a single list, from
+    starting to the diagonally opposite end.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意这里`row`和`column`变量的初始化方式。在任何矩阵中，它们的初始化方式都是一样的，值得理解。`start`和`end`变量被初始化为矩阵中的第一个和最后一个值，因为矩阵已经排序，可以被视为一个单一的列表，从起始到对角线的另一端。
+- en: 'Now comes the actual logic of the program that we will be breaking down into
+    a couple of steps to aid understanding. While looping from start to end, first
+    we find the midpoint of the matrix (treating the matrix as a list):'
+  id: totrans-170
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在是程序的实际逻辑，我们将把它分解成几个步骤来帮助理解。在从起始到结束的循环中，首先我们找到矩阵的中点（将矩阵视为一个列表）：
+- en: '[PRE50]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Then, we define a variable named `pointer`, which is initialized by the value
+    of this middle value that we have found:'
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，我们定义一个名为`pointer`的变量，它由我们找到的这个中间值的值初始化：
+- en: '[PRE51]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: Please note that `/` is used for division, and `%` is used as a modulus here.
+    Hence, in the first iteration, their values will be (1,1), respectively.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`/`用于除法，`%`在这里用作模数。因此，在第一次迭代中，它们的值将分别为（1,1）。
+- en: 'Now, we go to the heart of the binary search, where we increment or decrement
+    our pointer by comparison with the value that we have. If we find the value, we
+    return `True`, or else we keep looping until we can find or return `False` at
+    the end if we cannot find anything:'
+  id: totrans-175
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们来到二分查找的核心部分，我们通过与我们拥有的值进行比较来增加或减少我们的指针。如果我们找到该值，我们返回`True`，否则我们将继续循环，直到我们找到或者在最后找不到任何东西时返回`False`：
+- en: '[PRE52]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'The output will be as follows:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE53]'
+  id: totrans-178
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: In this exercise, we implemented a binary search over a matrix using NumPy and,
+    as per the values of the matrix, our code has returned `True`.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个练习中，我们使用NumPy实现了对矩阵的二分查找，并且根据矩阵的值，我们的代码返回了`True`。
+- en: Note
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: To access the source code for this specific section, please refer to [https://packt.live/3eVd0Ch.](https://packt.live/3eVd0Ch
+    )
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要访问此特定部分的源代码，请参阅[https://packt.live/3eVd0Ch](https://packt.live/3eVd0Ch)。
+- en: You can also run this example online at [https://packt.live/2ZusZkj.](https://packt.live/2ZusZkj
+    )
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您也可以在[https://packt.live/2ZusZkj](https://packt.live/2ZusZkj)上在线运行此示例。
+- en: Multiple Matrices
+  id: totrans-183
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 多个矩阵
+- en: 'So far, we have learned how to perform operations and manipulations when we
+    have a single matrix. Next, we will be dealing with multiple matrices. The combination
+    of matrices with Python is most commonly used today in data science as it requires
+    the storage and processing of large arrays. Let''s start with a simple example.
+    We will take two matrices, `z` and `x`, and multiply the values as follows:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经学会了在拥有单个矩阵时执行操作和操作。接下来，我们将处理多个矩阵。Python中矩阵的组合在当今的数据科学中最常用，因为它需要存储和处理大型数组。让我们从一个简单的例子开始。我们将取两个矩阵`z`和`x`，并将值相乘如下：
+- en: '[PRE54]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'If you run the preceding code, you''ll see the following output:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果运行上述代码，您将看到以下输出：
+- en: '[PRE55]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: The output shows that intuitively, the respective elements of the two matrices
+    multiply to give a product value. This is simply the element-wise multiplication
+    or, as it is known in mathematics, the Hadamard product.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出显示，直观地，两个矩阵的相应元素相乘得到一个乘积值。这只是元素级的乘法，或者在数学上称为Hadamard乘积。
+- en: 'Let''s now change matrix `x` slightly:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们稍微改变矩阵`x`：
+- en: '[PRE56]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Now, the output will be as follows:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，输出将如下所示：
+- en: '[PRE57]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: What we get here is `ValueError`, due to the property of arrays in NumPy known
+    as broadcasting.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们得到的是`ValueError`，这是由于NumPy中数组的广播属性导致的。
+- en: Broadcasting
+  id: totrans-194
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 广播
+- en: It is important to understand the concept of broadcasting so that we know what
+    is allowed and not allowed while using arrays for matrix operations.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要的是要理解广播的概念，以便我们知道在使用数组进行矩阵运算时允许什么，不允许什么。
+- en: 'In simple terms, broadcasting is the NumPy way of handling two arrays that
+    have different shapes. As a general rule, the array that is smaller among the
+    two will be broadcasted across the larger array in a certain way to make them
+    compatible. The general rules for broadcasting as per the official documentation
+    are as follows:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，广播是NumPy处理两个具有不同形状的数组的方式。一般规则是，在两者中较小的数组将以某种方式在较大的数组上进行广播，使它们兼容。根据官方文档，广播的一般规则如下：
+- en: It starts with trailing dimensions working their way forward.
+  id: totrans-197
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它从尾部维度开始向前工作。
+- en: The two dimensions of comparison are equal when one of them is 1, or when they
+    both are equal.
+  id: totrans-198
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当它们中的一个为1时，或者当它们两个相等时，比较的两个维度是相等的。
+- en: Note
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: You can also refer to the official documentation at [https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html](https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html).
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您也可以参考官方文档[https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html](https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html)。
+- en: 'So, as we saw in the earlier examples, when multiplied by matrices of equal
+    dimensions and by a scalar variable, multiplication works perfectly. On the other
+    hand, if the dimensions of the two matrices are different, `ValueError` will be
+    thrown as NumPy was not efficiently able to broadcast the values of a smaller
+    matrix across the larger matrix. This broadcasting is primarily done internally
+    to make the arrays faster and more memory efficient. It provides a way to vectorize
+    the array to implement the looping in C instead of Python, which effectively makes
+    it faster. An important thing to remember here is in the case of a pair of NumPy
+    arrays, the operations are done on an element-by-element basis. To help overcome
+    the problem with the dimensions, the two main methods employed are `reshape` and
+    `newaxis`. Before we wrap this up, let''s look at one more variation to the concept
+    of broadcasting:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，正如我们在前面的例子中看到的，当乘以相同维度的矩阵和标量变量时，乘法运算完美地进行。另一方面，如果两个矩阵的维度不同，将抛出`ValueError`，因为NumPy无法有效地将较小矩阵的值广播到较大矩阵上。这种广播主要是在内部完成的，以使数组更快速和更节省内存。它提供了一种将数组向量化以在C中实现循环而不是Python的方法，这有效地使其更快。在这里需要记住的一件重要的事情是，在一对NumPy数组的情况下，操作是基于逐元素的。为了克服维度的问题，采用的两种主要方法是`reshape`和`newaxis`。在我们结束之前，让我们看一下广播概念的另一个变化：
+- en: '[PRE58]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'Any guesses what the output will look like? Let''s have a look:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 猜猜输出会是什么样子？让我们来看看：
+- en: '[PRE59]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Since the array `z` here is not a regular square-shaped array, NumPy internally
+    does not interpret it as a matrix, treating it as a regular row of objects and
+    performing element-by-element multiplication on it. So, `z[0]` is multiplied by
+    `x[0]`, and `z[1]` is multiplied by `x[1]` to produce objects that happen to be
+    a list in this case.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于这里的数组`z`不是一个常规的方形数组，NumPy在内部不将其解释为矩阵，而是将其视为常规对象行，并对其进行逐元素乘法。因此，`z[0]`乘以`x[0]`，`z[1]`乘以`x[1]`，以产生在这种情况下恰好是一个列表的对象。
+- en: Operations on Multiple Matrices
+  id: totrans-206
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 多个矩阵的操作
+- en: We will now be performing operations between two or more matrices and see the
+    functions that will help us to achieve that. We will be covering how to write
+    an inverse of a matrix, logical operators, dot products, eigenvalues and eigenvectors,
+    outer products, and the determinates of a matrix.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将执行两个或多个矩阵之间的操作，并查看将帮助我们实现这一目标的函数。我们将涵盖如何编写矩阵的逆、逻辑运算符、点积、特征值和特征向量、外积以及矩阵的行列式。
+- en: It should be noted that there are plenty of other things you can do with matrices,
+    and the official NumPy documentation is a really good resource for referencing
+    information according to the requirements of the user. Most of the topics that
+    we are going to cover are part of the linear algebra package of the NumPy library.
+    There are far wider applications in physics and mathematics that are beyond the
+    scope of this chapter for each of the topics we are going to cover, but it should
+    suffice to know that they all play a very important role in understanding matrices.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应该注意到，矩阵还有许多其他用途，官方的NumPy文档是一个非常好的资源，可以根据用户的需求引用信息。我们将要涵盖的大部分主题都是NumPy库的线性代数包的一部分。对于我们将要涵盖的每个主题，物理学和数学中都有更广泛的应用，但应该足够了解它们在理解矩阵方面起着非常重要的作用。
+- en: Note
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: For more information about the NumPy library, refer to [https://docs.scipy.org/doc/numpy/reference/](https://docs.scipy.org/doc/numpy/reference/).
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关NumPy库的更多信息，请参阅[https://docs.scipy.org/doc/numpy/reference/](https://docs.scipy.org/doc/numpy/reference/)。
+- en: Identity Matrix
+  id: totrans-211
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 单位矩阵
+- en: 'Identity matrices have ones along the diagonal, and zeros everywhere else.
+    We will be creating identity matrices using the `linalg` function of NumPy:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单位矩阵在对角线上有1，在其他地方都是0。我们将使用NumPy的`linalg`函数创建单位矩阵：
+- en: '[PRE60]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'The output will be as follows:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE61]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: The eye Function
+  id: totrans-216
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 单位矩阵
+- en: 'An `eye` function is similar to an identity matrix, except for one difference,
+    which is that you can offset the value of the matrix. This means that it will
+    create an identity matrix starting from the kth row, as you can see here:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`eye`函数类似于单位矩阵，唯一的区别是可以偏移矩阵的值。这意味着它将从第k行开始创建一个单位矩阵，如下所示：'
+- en: '[PRE62]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'The output will be as follows:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE63]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: Inverse of a Matrix
+  id: totrans-221
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 矩阵的逆
+- en: 'Inverse or multiplicative inverse is the matrix that produces an identity matrix
+    when you multiply it by the original matrix. The inverse of a matrix is most commonly
+    used when applied in 3D geometry and graphics:'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 逆或乘法逆是当你将其与原始矩阵相乘时产生单位矩阵的矩阵。矩阵的逆在应用于3D几何和图形时最常用：
+- en: '[PRE64]'
+  id: totrans-223
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: 'This produces the following output:'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE65]'
+  id: totrans-225
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: We have two outputs here. The first one is what is called the inverse of the
+    matrix, and the second one is where we have multiplied the inverse by the original
+    matrix using the `dot` function to produce the identity matrix. The values displayed
+    are floats and should not be a point of concern.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们这里有两个输出。第一个是所谓的矩阵的逆，第二个是我们将逆乘以原始矩阵，使用`dot`函数产生单位矩阵。显示的值是浮点数，不应该成为一个问题。
+- en: Logical Operators
+  id: totrans-227
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 逻辑运算符
+- en: 'We will be creating two lists here, containing binary `True` (1) or `False`
+    (0) values. We will see the output of using the `AND` operation on them by using
+    the built-in `logical_and()` function of NumPy:'
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在这里创建两个列表，包含二进制的`True`（1）或`False`（0）值。我们将使用NumPy的内置`logical_and()`函数对它们进行`AND`操作的输出：
+- en: '[PRE66]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'The output will be as follows:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE67]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Pretty straightforward. You can similarly use 1s and 0s instead of `True` and
+    `False` and it still gives the results. In fact, as long as it is not 0, it is
+    considered to be `True`. Let''s see an example with 1s and 0s:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常简单。你也可以使用1和0代替`True`和`False`，它仍然会给出相同的结果。实际上，只要不是0，它就被视为`True`。让我们看一个使用1和0的例子：
+- en: '[PRE68]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'This output will be as follows:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出将如下所示：
+- en: '[PRE69]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: The same thing can be done for other logical functions using the `logical_or`,
+    `logical_not`, and `logical_xor` functions.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`logical_or`、`logical_not`和`logical_xor`函数也可以对其他逻辑函数进行同样的操作。
+- en: Outer Function or Vector Product
+  id: totrans-237
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 外函数或向量积
+- en: '`np.outer` is the function that is used to produce a vector or the cross product
+    of two matrices:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`np.outer`是用于生成向量或两个矩阵的叉积的函数：'
+- en: '[PRE70]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'This produces the following output:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '[PRE71]'
+  id: totrans-241
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: So far, we have learned all the different ways in which we can use matrices.
+    By no means can the list of methods we use be considered restrictive, and it is
+    always a good practice to explore the libraries in detail as and when a certain
+    manipulation needs to be done. It is also worth mentioning again that there are
+    several specific types of matrices that have a limited use case depending on the
+    requirements of the field in which the work is done.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经学会了使用矩阵的各种方法。我们使用的方法列表绝对不是限制性的，随时需要进行某种操作时，深入探索库始终是一个好习惯。值得再次提到的是，根据工作领域的要求，有几种特定类型的矩阵具有有限的使用情况。
+- en: Solving Linear Equations Using Matrices
+  id: totrans-243
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用矩阵解决线性方程
+- en: Linear equations are the foundational blocks of algebra, and anyone who has
+    studied basic elementary mathematics knows how they work. Let's cover them briefly,
+    and we can then see how easily they can be solved using matrices in Python.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 线性方程是代数的基本组成部分，任何学过基本初等数学的人都知道它们是如何工作的。让我们简要地介绍一下它们，然后我们可以看看如何在Python中使用矩阵轻松解决它们。
+- en: 'Linear equations are typically in the form:'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 线性方程通常以以下形式出现：
+- en: '![Figure 6.5: Formula for calculating linear equations'
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.5：计算线性方程的公式'
+- en: '](image/B15968_06_05.jpg)'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_05.jpg)'
+- en: 'Figure 6.5: Formula for calculating linear equations'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.5：计算线性方程的公式
+- en: Here, *a*1, *a*2,.., *a*n are the coefficients, and *x*1, *x*2,.. *x*n are variables.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里，*a*1、*a*2、..、*a*n是系数，*x*1、*x*2、.. *x*n是变量。
+- en: These linear equations with two variables can be represented in a two-dimensional
+    space graph where *x* is the horizontal dimension and *y* is the vertical dimension.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些具有两个变量的线性方程可以在二维空间图中表示，其中*x*是水平维度，*y*是垂直维度。
+- en: Let's take a quick example of a linear equation with two variables. Suppose
+    the equation is *y = 2x + 6*. This representation is known as the **slope-intercept**
+    form and has the format *y = mx + c*, where *m* is the slope and *c* is the *y*
+    intercept of the equation.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们快速举一个具有两个变量的线性方程的例子。假设方程是*y = 2x + 6*。这种表示被称为**斜率-截距**形式，格式为*y = mx + c*，其中*m*是斜率，*c*是方程的*y*截距。
+- en: 'Here, *m=2* and *c=6*, and the line can be drawn on a graph by plotting different
+    values of *x* and *y*:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里，*m=2*，*c=6*，并且可以通过绘制不同的*x*和*y*值在图表上画出一条线：
+- en: '![Figure 6.6: Representation of y = 2x + 6 in a 2D space'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.6：在二维空间中表示y = 2x + 6'
+- en: '](image/B15968_06_06.jpg)'
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_06.jpg)'
+- en: 'Figure 6.6: Representation of y = 2x + 6 in a 2D space'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.6：在二维空间中表示y = 2x + 6
+- en: Without getting into much detail, we can imagine that there may be another line
+    in the plane that will either be parallel to the line or will intersect this line.
+    The linear equations intend to find the intersecting point of these lines and,
+    based on the value of the intersecting common point, find the values of the variables
+    *x* and *y*. As the number of dimensions increase, it becomes difficult to visualize,
+    but fundamentally, the concept remains the same. Matrices greatly simplify the
+    process of solving these equations. There are typically two matrices, one that
+    contains the coefficient of *x* and *y*, and the other containing the variables
+    *x* and *y*. Their dot product yields the resultant matrix, which is the constant
+    or the *y* intercept mentioned previously. It is fairly easy to understand once
+    we look at a quick exercise.
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不详细讨论，我们可以想象平面上可能有另一条线，它要么与该线平行，要么与该线相交。线性方程的目的是找到这些线的交点，并根据交点的值找到变量*x*和*y*的值。随着维度的增加，可视化变得困难，但基本上概念是相同的。矩阵极大地简化了解这些方程的过程。通常有两个矩阵，一个包含*x*和*y*的系数，另一个包含变量*x*和*y*。它们的点积产生了结果矩阵，即先前提到的常数或*y*截距。一旦我们快速进行了一次练习，就很容易理解。
+- en: 'Exercise 6.03: Use of Matrices in Performing Linear Equations'
+  id: totrans-257
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习6.03：使用矩阵执行线性方程
+- en: We will now solve a linear equation problem using matrices.
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将使用矩阵来解决一个线性方程问题。
+- en: John is out of town for three days and in a mood to spend until he exhausts
+    his resources. He has three denominations of currency with him. On the first day,
+    John spends $435 on the latest electronic tablet that he likes, on which he spends
+    `37` of type *a* denomination, `20` of type *b*, and `12` of type *c*. On the
+    second day, he goes skydiving and spends `15`, `32`, and `4` of denominations
+    *a*, *b*, and *c*, respectively, a total of $178\. On the third day, with whatever
+    amount he is left with, he decides to go to the theatre, which costs $70, and
+    he shells out `5`, `40`, and `2` of the *a*, *b*, and *c* denominations, respectively.
+    Can you tell what the values of the respective denominations are?
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 约翰出差三天，心情不错，准备花光所有的钱。他随身携带了三种货币面额。第一天，约翰在他喜欢的最新电子平板上花了435美元，其中*a*面额的`37`，*b*面额的`20`，*c*面额的`12`。第二天，他去跳伞，分别花了*a*、*b*和*c*面额的`15`、`32`和`4`，总共178美元。第三天，他决定去看戏，花了70美元，分别是*a*、*b*和*c*面额的`5`、`40`和`2`。你能告诉各个面额的值是多少吗？
+- en: Looking at the problem, we can tell that there are three equations and three
+    unknown variables that we need to calculate.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从问题中我们可以看出，有三个方程和三个未知变量需要计算。
+- en: 'Let''s put the values we know for three days in a matrix using NumPy arrays:'
+  id: totrans-261
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们使用NumPy数组将三天的已知值放入矩阵中：
+- en: '[PRE72]'
+  id: totrans-262
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'We now have the matrix that we need to work with. There are a few ways to solve
+    this. In essence, this is what we need to do:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在有了需要处理的矩阵。有几种方法可以解决这个问题。本质上，这就是我们需要做的：
+- en: '*Ax = b*'
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*Ax = b*'
+- en: Where *A* is the matrix whose values we know, *x* is the matrix with unknown
+    variables, and *b* is the resultant matrix.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中*A*是我们知道值的矩阵，*x*是具有未知变量的矩阵，*b*是结果矩阵。
+- en: 'The resultant *b* matrix will be as follows. These are the amounts that John
+    spent on the three given days:'
+  id: totrans-266
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 结果的*b*矩阵如下。这些是约翰在三天内的花费金额：
+- en: '[PRE73]'
+  id: totrans-267
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'There are a couple of ways to solve this problem in Python:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有几种方法可以在Python中解决这个问题：
+- en: '**Method 1**: Finding *x* by doing x = A-1b:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**方法1**：通过计算x = A-1b来找到*x*：'
+- en: 'Let''s first calculate the inverse of matrix A with the help of the function
+    we learned earlier:'
+  id: totrans-270
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们首先使用我们之前学到的函数来计算矩阵A的逆：
+- en: '[PRE74]'
+  id: totrans-271
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: Note
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: We will be using a dot product of the matrix and not pure multiplication, as
+    these are not scalar variables.
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用矩阵的点积而不是纯乘法，因为这些不是标量变量。
+- en: 'The output is as follows:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '[PRE75]'
+  id: totrans-275
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: It is not necessary here to understand this matrix as it is just an intermediary
+    step.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里不需要理解这个矩阵，因为这只是一个中间步骤。
+- en: 'Then, we take the dot product of the two matrices to produce a matrix, `X`,
+    which is our output:'
+  id: totrans-277
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，我们取两个矩阵的点积来产生一个矩阵`X`，这是我们的输出：
+- en: '[PRE76]'
+  id: totrans-278
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: 'The output will be as follows:'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '[PRE77]'
+  id: totrans-280
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: '**Method 2**: Using in-built methods in the `linalg` package:'
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**方法2**：使用`linalg`包中的内置方法：'
+- en: This same thing can be done even more easily with the help of another NumPy
+    function called `solve()`. Let's name the output variable here as `y`.
+  id: totrans-282
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 甚至可以使用另一个名为`solve()`的NumPy函数更轻松地完成相同的事情。让我们在这里将输出变量命名为`y`。
+- en: '[PRE78]'
+  id: totrans-283
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: 'This produces the following output:'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这产生了以下输出：
+- en: '[PRE79]'
+  id: totrans-285
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: And in a single line, we were able to solve the linear equation in Python. We
+    can extrapolate and comprehend how similar equations with a large number of unknown
+    variables can be easily solved using Python.
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 而且在一行代码中，我们就能够用Python解决线性方程。我们可以推断和理解，使用Python可以轻松解决具有大量未知变量的类似方程。
+- en: Thus, we can see that the output after using both methods 1 and 2 is the same,
+    which is $10, 25 cents, and $5, which are the respective denominations that we
+    were trying to establish.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们可以看到使用方法1和方法2后的输出是相同的，即$10、25美分和$5，这些是我们试图确定的相应面额。
+- en: What if we were receiving the information about John's expenses iteratively
+    instead of in one go?
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们接收约翰的开销信息是迭代的而不是一次性的呢？
+- en: 'Let''s first add the information that we received about John''s expenses:'
+  id: totrans-289
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们首先添加我们收到的有关约翰开销的信息：
+- en: '[PRE80]'
+  id: totrans-290
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: 'Then, let''s also add the information received relating to John''s other two
+    expenses:'
+  id: totrans-291
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，让我们也添加有关约翰其他两笔开销的信息：
+- en: '[PRE81]'
+  id: totrans-292
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: 'We can easily bind these arrays together to form a matrix using the `concat()`
+    function:'
+  id: totrans-293
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们可以轻松地使用`concat()`函数将这些数组绑定在一起形成一个矩阵：
+- en: '[PRE82]'
+  id: totrans-294
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: 'This produces the following output:'
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这产生了以下输出：
+- en: '[PRE83]'
+  id: totrans-296
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: This was the same input that we used for the preceding program.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们用于前面程序的相同输入。
+- en: Again, if we have a lot more of these, we might apply loops to form a larger
+    matrix, which we can then use to solve the problem.
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，如果我们有更多这样的数据，我们可以应用循环来形成一个更大的矩阵，然后用它来解决问题。
+- en: Note
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: To access the source code for this specific section, please refer to [https://packt.live/3eStF9N.](https://packt.live/3eStF9N
+    )
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要访问此特定部分的源代码，请参考[https://packt.live/3eStF9N.](https://packt.live/3eStF9N )
+- en: You can also run this example online at [https://packt.live/38rZ6Fl.](https://packt.live/38rZ6Fl
+    )
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您也可以在[https://packt.live/38rZ6Fl](https://packt.live/38rZ6Fl)上在线运行此示例。
+- en: Transition Matrix and Markov Chains
+  id: totrans-302
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 转移矩阵和马尔可夫链
+- en: Now, we will be looking at one of the applications of matrices, which is a field
+    of study all by itself. Markov chains make use of transition matrices, probability,
+    and limits to solve real-world problems. The real world is rarely as perfect as
+    the mathematical models we create to solve them. A car may want to travel from
+    point A to B, but distance and speed prove insufficient parameters in reality.
+    A cat crossing the street may completely alter all the calculations that were
+    made to calculate the time traveled by the car. A stock market may seem to be
+    following a predictable pattern for a few days, but overnight, an event occurs
+    that completely crashes it. That event may be some global event, a political statement,
+    or the release of company reports. Of course, our development in mathematical
+    and computational models has still not reached the place where we can predict
+    the outcome of each of these events, but we can try and determine the probability
+    of some event happening more than others. Taking one of the previous examples,
+    if the company reports are to be released on a particular date, then we can expect
+    that a particular stock will be affected, and we can model this according to market
+    analysis done on the company.
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将看一下矩阵的一个应用，这是一个独立的研究领域。马尔可夫链利用转移矩阵、概率和极限来解决现实世界的问题。现实世界很少像我们为解决它们创建的数学模型那样完美。一辆汽车可能想要从A点到B点，但在现实中，距离和速度可能是不够的参数。一只过马路的猫可能会完全改变计算出的汽车行驶时间。股市可能在几天内似乎遵循可预测的模式，但在夜间发生了一个事件，完全崩溃了。这个事件可能是一些全球性事件、政治声明或公司报告的发布。当然，我们在数学和计算模型方面的发展还没有达到我们可以预测每一个这些事件结果的地步，但我们可以尝试并确定某些事件发生的概率比其他事件更高。以前面的例子为例，如果公司报告将在特定日期发布，那么我们可以预期某只股票会受到影响，并且我们可以根据对公司进行的市场分析来对此进行建模。
+- en: Markov chains are one such model, in which the variable depending on the Markov
+    property takes into account only the *current state* to predict the outcome of
+    the next state. So, in essence, Markov chains are a memoryless process. They make
+    use of transition state diagrams and transition matrices for their representations,
+    which are used to map the probability of a certain event occurring given the current
+    event. When we call it a memoryless process, it is easy to confuse it with something
+    that has no relation to past events, but that is not actually the case. Things
+    are much easier to understand when we take an example to illustrate how they work.
+    Before we jump into using Markov chains, let's first take a deeper look at how
+    transition states and matrices work and why exactly they are used.
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 马尔可夫链就是这样一种模型，其中依赖于马尔可夫性质的变量只考虑*当前状态*来预测下一个状态的结果。因此，从本质上讲，马尔可夫链是一个无记忆过程。它们利用转换状态图和转换矩阵进行表示，用于映射在给定当前事件的情况下发生某一事件的概率。当我们称之为无记忆过程时，很容易将其与与过去事件无关的东西混淆，但实际情况并非如此。当我们举例说明它们是如何工作时，事情就容易理解得多了。在我们开始使用马尔可夫链之前，让我们首先深入了解转换状态和矩阵的工作原理，以及它们为什么被使用。
+- en: Fundamentals of Markov Chains
+  id: totrans-305
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 马尔可夫链的基础知识
+- en: To keep things simple, let's break the concepts down into pieces and learn about
+    them iteratively from the information that we have before we can put them together
+    to understand the concepts.
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了保持简单，让我们将概念分解成片段，并从我们已有的信息中逐步学习它们，然后才能将它们放在一起理解这些概念。
+- en: Stochastic versus Deterministic Models
+  id: totrans-307
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 随机模型与确定性模型
+- en: When we are trying to solve real-world problems, we often encounter situations
+    that are beyond our control and that are hard to formulate. Models are designed
+    to emulate the way a given system functions. While we can factor in most of the
+    elements of the system in our model, many aspects cannot be *determined* and are
+    then emulated based on their likelihood of happening. This is where probability
+    comes into the picture. We try and find the probability of a particular event
+    happening given a set of circumstances. There are two main types of models that
+    we use, deterministic and stochastic. Deterministic models are those that have
+    a set of parameter values and functions and can form a predictable mathematical
+    equation and will provide a predictable output. Stochastic models are inclusive
+    of randomness, and even though they have initial values and equations, they provide
+    quantitative values of outcomes possible with some probability. In stochastic
+    models, there will not be a fixed answer, but the likelihood of some event happening
+    more than others. Linear programming is a good example of deterministic models,
+    while weather prediction is a stochastic model.
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们试图解决现实世界中的问题时，我们经常遇到超出我们控制范围的情况，很难制定。模型旨在模拟给定系统的功能方式。虽然我们可以在我们的模型中考虑系统的大部分元素，但许多方面无法被*确定*，因此根据它们发生的可能性进行模拟。这就是概率介入的地方。我们试图找到在一组情况下发生特定事件的概率。我们使用的模型有两种主要类型，确定性和随机性。确定性模型是具有一组参数值和函数的模型，并且可以形成可预测的数学方程，并提供可预测的输出。随机模型包括随机性，即使它们具有初始值和方程，它们也提供可能性的定量值。在随机模型中，不会有固定的答案，而是某些事件发生的可能性大于其他事件。线性规划是确定性模型的一个很好的例子，而天气预测是一个随机模型。
+- en: Transition State Diagrams
+  id: totrans-309
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 过渡状态图
+- en: 'Broadly, these form the basis for object-oriented programming, where you can
+    describe all possible states that object can have based on given events and conditions.
+    The *state* is that of the object at a given moment in time when a certain previous
+    condition is met. Let''s illustrate this with an example:'
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 广义上，这些构成了面向对象编程的基础，您可以根据给定的事件和条件描述对象可能具有的所有可能状态。*状态*是在满足某个先前条件时对象在某一特定时刻的状态。让我们举个例子来说明这一点：
+- en: '![Figure 6.7: State transition diagram for a fan'
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.7：风扇的状态转移图'
+- en: '](image/B15968_06_07.jpg)'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_07.jpg)'
+- en: 'Figure 6.7: State transition diagram for a fan'
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.7：风扇的状态转移图
+- en: This is the state transition diagram for the regulator of a table fan, which
+    usually changes state every time we turn it clockwise until it turns back to the
+    `Off` position.
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是台式风扇调节器的状态转移图，通常情况下，每次我们顺时针旋转它，它都会改变状态，直到它转回“关闭”位置。
+- en: Here, the state of the table fan is changing in terms of the speed, while the
+    action is that of twisting. In this case, it is based on events, while in some
+    other cases it will be based on a condition being met.
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，台式风扇的状态在速度方面发生变化，而动作是扭转。在这种情况下，它是基于事件的，而在其他一些情况下，它将基于满足的条件。
+- en: 'Let''s take an example in text generation using the Markov chain that is in
+    line with what we are going to implement. We will recall the first two lines of
+    a nursery rhyme:'
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们以使用与我们将要实施的内容一致的马尔可夫链进行文本生成的示例。我们将回顾一个儿歌的前两行：
+- en: '*Humpty Dumpty sat on a wall,*'
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*汉普蒂·韦尔壁上坐着，*'
+- en: '*Humpty Dumpty had a great fall.*'
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*汉普蒂·韦尔摔了个大跟头。*'
+- en: 'First, let''s prepare a frequency table of all the words present in the sentence:'
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们准备一个包含句子中所有单词频率的频率表：
+- en: '![Figure 6.8: Frequency table of words in the rhyme'
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.8：韵文中单词的频率表'
+- en: '](image/B15968_06_08.jpg)'
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_08.jpg)'
+- en: 'Figure 6.8: Frequency table of words in the rhyme'
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.8：韵文中单词的频率表
+- en: 'Tokens are the number of words present, while keys are unique words. Hence,
+    the values will be as follows:'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 标记是存在的单词数，而键是唯一单词。因此，值将如下所示：
+- en: '*Tokens = 12*'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*标记 = 12*'
+- en: '*Keys = 9*'
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*键=9*'
+- en: 'We may not even require everything we learn here, but it will be important
+    once you decide to implement more complicated problems. Every transition diagram
+    has a start and end state, and so we will add these two states here as keys:'
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们甚至可能不需要我们在这里学到的一切，但一旦您决定实施更复杂的问题，这将是重要的。每个转换图都有一个起始状态和结束状态，因此我们将在这里添加这两个状态作为关键：
+- en: '![Figure 6.9: Frequency table of start and end states'
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.9：起始和结束状态的频率表'
+- en: '](image/B15968_06_09.jpg)'
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_09.jpg)'
+- en: 'Figure 6.9: Frequency table of start and end states'
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.9：起始和结束状态的频率表
+- en: 'We then prepare a state chart to show the transition from one state to the
+    next. In this case, it requires showing which word will follow the current word.
+    So, we will be forming pairs as follows:'
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们准备一个状态图表来显示从一个状态到下一个状态的转换。在这种情况下，需要显示哪个词将跟随当前词。因此，我们将形成如下的成对关系：
+- en: '![Figure 6.10: Word pairs'
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.10：词对'
+- en: '](image/B15968_06_10.jpg)'
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_10.jpg)'
+- en: 'Figure 6.10: Word pairs'
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.10：词对
+- en: 'If we condense this according to keys instead of tokens, we will see that there
+    is more than one transition for some keywords, as follows:'
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们按照关键词而不是标记来压缩这个，我们会看到一些关键词有多个转换，如下所示：
+- en: '![Figure 6.11: More than one transition for some keywords'
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.11：一些关键词有多个转换'
+- en: '](image/B15968_06_11.jpg)'
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_11.jpg)'
+- en: 'Figure 6.11: More than one transition for some keywords'
+  id: totrans-337
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.11：一些关键词有多个转换
+- en: This is done not only to reduce the state transitions, but also to add meaning
+    to what we are doing, which we will see shortly. The whole purpose of this is
+    to determine words that can pair with other words. We are now ready to draw our
+    state transition diagram.
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不仅是为了减少状态转换，还为我们正在做的事情增加意义，我们很快就会看到。整个目的是确定哪些词可以与其他词配对。我们现在准备绘制我们的状态转换图。
+- en: 'We add all the unique keys as states, and show which states these words can
+    transition to:'
+  id: totrans-339
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将所有唯一的关键字添加为状态，并显示这些单词可以转换到哪些状态：
+- en: '![Figure 6.12: State transition diagram'
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.12：状态转换图'
+- en: '](image/B15968_06_12.jpg)'
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_12.jpg)'
+- en: 'Figure 6.12: State transition diagram'
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.12：状态转换图
+- en: 'If we look at the preceding diagram, we can follow any word to complete the
+    rhyme from the set of conditions given. What remains is the probability of the
+    keywords occurring after the given word. For that, look at the following diagram,
+    and we can see in a fairly straightforward manner how the probability is divided
+    between keywords according to their frequency. Note that Humpty is always followed
+    by Dumpty, and so will have a probability of `1`:'
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们看前面的图表，我们可以根据给定的条件跟随任何单词来完成韵脚。剩下的是关键词在给定单词之后出现的概率。为此，请看下面的图表，我们可以很直观地看到概率如何根据它们的频率在关键词之间分配。请注意，Humpty总是跟在Dumpty后面，因此概率为1：
+- en: '![Figure 6.13: State transition diagram with probability'
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.13：带概率的状态转换图'
+- en: '](image/B15968_06_13.jpg)'
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_13.jpg)'
+- en: 'Figure 6.13: State transition diagram with probability'
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.13：带概率的状态转换图
+- en: Now that we have discussed the state transition diagrams, we will move on to
+    drawing transition matrices.
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经讨论了状态转换图，我们将继续绘制转换矩阵。
+- en: Transition Matrices
+  id: totrans-348
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 转换矩阵
+- en: 'In the Markov process, we need to show the probability of state transitions
+    in mathematical format for which transition matrices are used. The rows and columns
+    are simply the states of the transition diagram. Each value in the transition
+    matrix shows the probability of transition from one state to another. As you can
+    imagine, many of the values in such matrices will be 0\. For the problem discussed
+    earlier, the transition matrix will have 9 states and lots of 0s. We will take
+    a simpler example of a transition diagram and find its corresponding matrix:'
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在马尔可夫过程中，我们需要以数学格式显示状态转换的概率，为此使用转换矩阵。行和列简单地是转换图的状态。转换矩阵中的每个值显示从一个状态到另一个状态的转换概率。可以想象，这种矩阵中的许多值将为0。对于前面讨论的问题，转换矩阵将有9个状态和许多0。我们将以一个更简单的转换图为例，并找到其相应的矩阵：
+- en: '![Figure 6.14: State diagram with states 1, 2, and 3'
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.14：具有状态1、2和3的状态图'
+- en: '](image/B15968_06_14.jpg)'
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_14.jpg)'
+- en: 'Figure 6.14: State diagram with states 1, 2, and 3'
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.14：具有状态1、2和3的状态图
+- en: When we look at this diagram, we see the three transition states. Note that
+    we have not included the start and end states explicitly here, but they can be
+    necessary in certain cases. The outward arrows represent the transition from one
+    state to the next. Once we have the diagram, it is easy to draw the matrix. Write
+    rows and columns equal to the states of the diagram. In this case, it will be
+    3\. Then, the 0th row will show the transition for the 1st state, the 1st row
+    will show the second state, and so on. To generalize, each row in the matrix represents
+    the transition probabilities of one state.
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们看这个图表时，我们看到了三个转换状态。请注意，我们在这里没有明确包括起始和结束状态，但在某些情况下可能是必要的。外向箭头表示从一个状态到下一个状态的转换。一旦我们有了图表，就很容易绘制矩阵。写行和列等于图表的状态。在这种情况下，将是3。然后，第0行将显示第1个状态的转换，第1行将显示第二个状态，依此类推。一般来说，矩阵中的每一行表示一个状态的转换概率。
+- en: 'Let''s first look at the matrix, and we can then discuss a couple more things:'
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们先看矩阵，然后我们可以讨论一些其他事情：
+- en: '![Figure 6.15: Transition matrix'
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图6.15：转换矩阵'
+- en: '](image/B15968_06_15.jpg)'
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](image/B15968_06_15.jpg)'
+- en: 'Figure 6.15: Transition matrix'
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6.15：转换矩阵
+- en: In addition to the property of rows, we can observe one more thing. The sum
+    of all probabilities in a given row will always be equal to 1\. In the first row
+    here, the sum will be *1/5 + 2/5 + 2/5 = 5/5 = 1*. This is because these states
+    are exhaustive.
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了行的属性，我们还可以观察到另一件事。给定行中所有概率的总和将始终等于1。在这里，第一行的总和将是1/5 + 2/5 + 2/5 = 5/5 = 1。这是因为这些状态是穷尽的。
+- en: If there is no transition between two given states, the value of the states
+    in that matrix will be 0\. We can verify this by comparing the number of values
+    present in the matrix with the number of state transitions we can see in the diagram.
+    In this case, they are both equal to 7.
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果两个给定状态之间没有转换，那么矩阵中的状态值将为0。我们可以通过比较矩阵中的值的数量和图表中可以看到的状态转换的数量来验证这一点。在这种情况下，它们都等于7。
+- en: 'Exercise 6.04: Finding the Probability of State Transitions'
+  id: totrans-360
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习6.04：查找状态转换的概率
+- en: Given an array containing four states, `A`, `B`, `C`, and `D`, that are randomly
+    generated, let's find the probability of transition between these four states.
+    We will be finding the probability of each state transition and form a transition
+    matrix from it.
+  id: totrans-361
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 给定一个包含四个状态`A`、`B`、`C`和`D`的数组，这些状态是随机生成的，让我们找到这四个状态之间的转移概率。我们将找到每个状态转移的概率，并从中形成一个转移矩阵。
+- en: Let's generate a transition matrix in Python from a given array of inputs. We
+    will extrapolate the same concept in the future while creating Markov chains.
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从给定的输入数组在Python中生成一个转移矩阵。我们将在未来推断相同的概念，用于创建马尔可夫链。
+- en: 'Generate an array of random states out of the characters `A`, `B`, `C`, and
+    `D` using the `random` package in Python. We will then define how many elements
+    we want by creating a constant, `LEN_STR`, which, in this case, we will set to
+    `50`:'
+  id: totrans-363
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用Python中的`random`包生成一个包含字符`A`、`B`、`C`和`D`的随机状态数组。然后，我们将通过创建一个名为`LEN_STR`的常量来定义我们想要的元素数量，在这种情况下，我们将其设置为`50`：
+- en: '[PRE84]'
+  id: totrans-364
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: 'This produces the following output:'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这产生了以下输出：
+- en: '[PRE85]'
+  id: totrans-366
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: Note
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The use of another constant, `LEN_TOKENS`, which we created from the length
+    of the string, will indicate the number of states that will be present in the
+    problem.
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从字符串的长度生成的另一个常量`LEN_TOKENS`的使用将指示问题中将存在的状态的数量。
+- en: 'Next, we will be finding the relative values of letters and converting them
+    into integers, primarily because integers are easier for calculations:'
+  id: totrans-369
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们将找到字母的相对值并将它们转换为整数，主要是因为整数更容易进行计算：
+- en: '[PRE86]'
+  id: totrans-370
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'This produces the following output:'
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这产生了以下输出：
+- en: '[PRE87]'
+  id: totrans-372
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: We have used cardinal values here for convenience, but we could have also done
+    this by using a dictionary or some other method. If you are not aware, the `ord()`
+    function here returns the ASCII value of characters in the string. For example,
+    the ASCII values for `A` and `D` are `65` and `68`, respectively.
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里我们使用基数值是为了方便，但我们也可以使用字典或其他方法来做到这一点。如果你不知道，`ord()`函数在这里返回字符串中字符的ASCII值。例如，`A`和`D`的ASCII值分别为`65`和`68`。
+- en: 'Now, find the difference between these ASCII values and put them in a list,
+    `ti`. We could have also updated the token list in situ, but we are keeping them
+    separate simply for clarity:'
+  id: totrans-374
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，找到这些ASCII值之间的差异，并将它们放入一个名为`ti`的列表中。我们也可以直接更新令牌列表，但为了清晰起见，我们将它们分开保持在不同的列表中：
+- en: '[PRE88]'
+  id: totrans-375
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: 'This produces the following output:'
+  id: totrans-376
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这产生了以下输出：
+- en: '[PRE89]'
+  id: totrans-377
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: We have now initialized a matrix of zeros depending on the size of the `LEN_TOKENS`
+    constant we generated earlier and used that to build a zero matrix.
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在根据我们之前生成的`LEN_TOKENS`常量的大小初始化了一个零矩阵，并用它来构建一个零矩阵。
+- en: In the second part, we are creating tuples of pairs, as we did in the earlier
+    problem, and updating the frequency of the transition matrix according to the
+    number of transitions between two states. The output of this is the last line
+    in the preceding code.
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第二部分中，我们正在创建成对的元组，就像我们在之前的问题中所做的那样，并根据两个状态之间的转换次数更新转移矩阵的频率。这个的输出是前面代码中的最后一行。
+- en: Note
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: We are iteratively choosing to update the value of matrix *m* in each step instead
+    of creating new matrices.
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们选择迭代地更新矩阵*m*的值，而不是创建新的矩阵。
+- en: 'We will now be generating the probability, which is merely the relative frequency
+    in a given row. As in the first row, the transition from A to A is 8, and the
+    total transitions from A to any state are 20\. So, in this case, the probability
+    will be *8/20 = 0.4*:'
+  id: totrans-382
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们现在将生成概率，这仅仅是给定行中的相对频率。就像在第一行中，从A到A的转换是8，从A到任何状态的总转换次数是20。所以，在这种情况下，概率将是*8/20
+    = 0.4*：
+- en: '[PRE90]'
+  id: totrans-383
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: The code goes like that for every row and, if the `sum` function is greater
+    than `0`, we find the probability. Note here that the `float` function is used
+    to avoid type conversion to `int` in some versions of Python. Also, note the use
+    of `state[:]`, which creates a shallow copy and thereby prevents conflicts of
+    type conversions internally.
+  id: totrans-384
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码对每一行都是这样的，如果`sum`函数大于`0`，我们就找到概率。请注意这里使用`float`函数是为了避免在某些Python版本中进行类型转换为`int`。另外，请注意使用`state[:]`，它创建了一个浅拷贝，从而防止内部类型转换冲突。
+- en: 'Now, let''s print the `state` object by adding the following code:'
+  id: totrans-385
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们通过添加以下代码来打印`state`对象：
+- en: '[PRE91]'
+  id: totrans-386
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: Here, we iterate through the rows in a matrix and print out the values, and
+    this is our transition matrix.
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们遍历矩阵中的行并打印出值，这就是我们的转移矩阵。
+- en: 'This produces the following output:'
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这产生了以下输出：
+- en: '[PRE92]'
+  id: totrans-389
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: Thus, we are able to construct a transition matrix for describing state transitions,
+    which shows us the probability of transition from one state to the next. Hence,
+    the likelihood of `A` finding `A` as the next letter is `0.4`, `A` going to `B`
+    will be `0.15`, and so on.
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们能够构建一个描述状态转移的转移矩阵，它显示了从一个状态转移到下一个状态的概率。因此，`A`找到`A`作为下一个字母的可能性是`0.4`，`A`转到`B`的概率是`0.15`，依此类推。
+- en: Note
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: To access the source code for this specific section, please refer to [https://packt.live/31Ejr9c.](https://packt.live/31Ejr9c
+    )
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要访问此特定部分的源代码，请参阅[https://packt.live/31Ejr9c.](https://packt.live/31Ejr9c )
+- en: You can also run this example online at [https://packt.live/3imNsAb.](https://packt.live/3imNsAb
+    )
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您也可以在[https://packt.live/3imNsAb.](https://packt.live/3imNsAb )上在线运行此示例。
+- en: Markov Chains and Markov Property
+  id: totrans-394
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 马尔可夫链和马尔可夫性质
+- en: Transition states and matrices essentially cover the majority of Markov chains.
+    Additionally, there are a few more things worth understanding. As mentioned earlier,
+    the Markov property applies when variables are dependent on just the current state
+    for their next state. The probabilistic model formed may determine the likelihood
+    of the outcome from the current state, but the past state is seen as independent
+    and will not affect the result. Take a coin toss; we may create a chart of probabilities
+    of heads or tails, but that will not determine the outcome.
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 转换状态和矩阵基本上涵盖了大部分马尔可夫链。此外，还有一些值得理解的东西。如前所述，当变量仅依赖于当前状态来确定其下一个状态时，马尔可夫性质适用。形成的概率模型可能确定当前状态的结果的可能性，但过去的状态被视为独立的，不会影响结果。以抛硬币为例；我们可以创建一个关于正面或反面概率的图表，但这不会决定结果。
+- en: 'The Markov property should essentially meet two criteria:'
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 马尔可夫性质本质上应该满足两个标准：
+- en: It should only be dependent on the current state.
+  id: totrans-397
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它应该只依赖于当前状态。
+- en: It should be specific for a discrete time.
+  id: totrans-398
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它应该是特定的离散时间。
+- en: Without getting too confused, the time considered in models is either discrete
+    or continuous. The flipping of a coin can be considered a discrete-time event
+    because it has a definite outcome, such as heads or tails. On the other hand,
+    weather patterns or stock markets are continuous-time events; weather, for example,
+    is variable throughout the day and does not have a start and end time to measure
+    when it changes. To deal with such continuous events, we require techniques such
+    as binning to make them discrete. Binning, in simple terms, means grouping data
+    in fixed amounts based on quantity or time. As a Markov chain is memoryless, it
+    essentially becomes a discrete-time and state-space process.
+  id: totrans-399
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在不至于混淆的情况下，模型中考虑的时间要么是离散的，要么是连续的。抛硬币可以被视为离散时间事件，因为它有明确的结果，比如正面或反面。另一方面，天气模式或股票市场是连续时间事件；例如，天气在一天中是变化的，没有开始和结束时间来衡量其变化。为了处理这样的连续事件，我们需要使用分箱等技术使它们变得离散。简而言之，分箱意味着根据数量或时间将数据分组成固定数量。由于马尔可夫链是无记忆的，它本质上成为了一个离散时间和状态空间过程。
+- en: There are special matrices that are built for specific purposes. For example,
+    sparse matrices are extensively used in data science as they are memory- and computationally-efficient.
+    We did not deal too much with the manipulation of elements within the matrix as
+    that is essentially like dealing with a list of lists, but it is worthwhile spending
+    some time on this in the future.
+  id: totrans-400
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一些专门用于特定目的的特殊矩阵。例如，稀疏矩阵在数据科学中被广泛使用，因为它们在内存和计算上都很高效。我们没有过多地处理矩阵内的元素操作，因为这本质上就像处理一个列表的列表，但在未来花一些时间进行这方面的工作是值得的。
+- en: Other than Markov chains, there are a few more models for random processes.
+    These include autoregressive models, Poisson models, Gaussian models, moving-average
+    models, and so on. Each deals with the aspect of randomness differently, and there
+    are supporting libraries in Python for almost all of them. Even within Markov
+    chains, there are complicated topics involving multidimensional matrices or second-order
+    matrices, Hidden Markov models, MCMC or Markov chain Monte Carlo methods, and
+    so on. You have to make your own choice of how deep you want to go down the rabbit
+    hole.
+  id: totrans-401
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了马尔可夫链，还有一些随机过程的模型。这些包括自回归模型、泊松模型、高斯模型、移动平均模型等。每种模型都以不同的方式处理随机性，Python中几乎所有模型都有支持库。即使在马尔可夫链中，还涉及到涉及多维矩阵或二阶矩阵、隐马尔可夫模型、MCMC或马尔可夫链蒙特卡洛方法等复杂的主题。你必须自己决定你想深入研究的程度。
+- en: 'Activity 6.01: Building a Text Predictor Using a Markov Chain'
+  id: totrans-402
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 活动6.01：使用马尔可夫链构建文本预测器
+- en: 'The aim of this activity is to build our very own text predictor based on what
+    we have learned. We will take the transcripts of a speech from a famous leader
+    and build a text predictor based on the content of the speech using a Markov chain
+    model and state transitions. Perform these steps to achieve the goal:'
+  id: totrans-403
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这项活动的目标是基于我们所学的知识构建我们自己的文本预测器。我们将获取一位著名领导人的演讲文本，并基于演讲内容使用马尔可夫链模型和状态转换构建文本预测器。执行以下步骤来实现这个目标：
+- en: First, find a suitable, sufficiently large transcript of a speech given by a
+    famous person, such as a scientist or a political or spiritual leader of your
+    choice. To get you started, a sample text with the filename `churchill.txt` is
+    added to the GitHub repository at [https://packt.live/38rZy6v](https://packt.live/38rZy6v).
+  id: totrans-404
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，找到一位著名人物的演讲的合适且足够大的文本，比如科学家或政治或精神领袖。为了开始，样本文本文件`churchill.txt`已经添加到GitHub仓库中，网址为[https://packt.live/38rZy6v](https://packt.live/38rZy6v)。
+- en: Generate a list that describes state transition by showing a correlation between
+    a given word and the words that follow it.
+  id: totrans-405
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 生成一个描述状态转换的列表，显示给定单词与其后跟随的单词之间的相关性。
+- en: 'Sort through the list you have made and make a hash table by grouping the words
+    that follow a given word in different positions. For example, these follow-up
+    words will group to form *John: [cannot, completely, thought, …]*:'
+  id: totrans-406
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '整理你制作的列表，并通过将跟随给定单词的单词分组在不同位置形成哈希表。例如，这些后续单词将分组形成*John: [cannot, completely,
+    thought, …]*：'
+- en: '*John cannot…, John completely…, and John thought ..,*'
+  id: totrans-407
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*John cannot…, John completely…, and John thought ..,*'
+- en: Use a random word generator to generate and assign a value to the first word.
+  id: totrans-408
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用随机单词生成器生成并为第一个单词分配一个值。
+- en: Finally, create a random generator that will create a sentence based on the
+    transition states that we have declared.
+  id: totrans-409
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，创建一个随机生成器，根据我们声明的转换状态创建一个句子。
+- en: Hints
+  id: totrans-410
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提示
+- en: This activity requires a few Python methods that you should be familiar with.
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这项活动需要一些你应该熟悉的Python方法。
+- en: To get you started, you can read in the transcript from a text file using `open('churchill.txt').read()`,
+    and then split it into a list of words using `split()`.
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了开始，你可以使用`open('churchill.txt').read()`从文本文件中读取演讲文本，然后使用`split()`将其分割成单词列表。
+- en: You can then iterate through the list and append the elements to a new list,
+    which will store the keyword and the word following it.
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您可以遍历列表，并将元素附加到新列表中，该列表将存储关键字和其后的单词。
+- en: Then, use a dictionary to form a key-value pair for each tuple in your new list.
+  id: totrans-414
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，使用字典为新列表中的每个元组形成键值对。
+- en: A random word corpus can be generated using the `np.random()` function.
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以使用`np.random()`函数生成随机词语语料库。
+- en: The sentence formation comes from joining together the elements of the list
+    that we generated.
+  id: totrans-416
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 句子的形成来自于连接我们生成的列表的元素。
+- en: Note
+  id: totrans-417
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The solution to this activity can be found on page 677.
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此活动的解决方案可在第677页找到。
+- en: 'This way, we have made our own text predictor. Such a text predictor can be
+    considered a foundational step in terms of the vast and fast-growing field of
+    text generators. It is far from perfect; there are several reasons for this, some
+    of which are as follows:'
+  id: totrans-419
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这种方式，我们制作了自己的文本预测器。这样的文本预测器可以被认为是在文本生成领域的广阔和快速增长的领域中的基础步骤。它远非完美；这有几个原因，其中一些如下：
+- en: The text sample that we have chosen is usually many times larger than the one
+    we have chosen. Our text contains about 22,000 words while, in practice, millions
+    of words are fed as data.
+  id: totrans-420
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们选择的文本样本通常比我们选择的文本大得多。我们的文本包含约22,000个单词，而在实践中，数百万个单词被作为数据输入。
+- en: There is a lot better moderation in terms of the stop words, punctuation, and
+    beginning/ending of sentence formations using the proper rules of NLP that is
+    not applied here.
+  id: totrans-421
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在停用词、标点和句子的开头/结尾方面，使用NLP的适当规则进行了更好的调节。
+- en: We have used a simple random generator to select our words, while actual models
+    use probability and statistical models to generate significantly more accurate
+    outputs.
+  id: totrans-422
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们使用简单的随机生成器来选择我们的单词，而实际模型使用概率和统计模型来生成更准确的输出。
+- en: Having said that, we have completed our first text predictor, and more complicated
+    text predictors are fundamentally based on the way we have described them.
+  id: totrans-423
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 话虽如此，我们已经完成了我们的第一个文本预测器，更复杂的文本预测器基本上是基于我们所描述的方式。
+- en: Though by no means can this be considered smooth, we have still written our
+    first text predictor with just a few lines of code, and that is a great start.
+  id: totrans-424
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管这绝对不能被认为是流畅的，但我们仍然只用了几行代码编写了我们的第一个文本预测器，这是一个很好的开始。
+- en: Summary
+  id: totrans-425
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, we were able to cover the topic of matrices, which is fundamental
+    to a number of topics, both in mathematics and in using Python. Data science today
+    is primarily based on the efficient use of matrices. We studied their application
+    in the form of Markov chains and, although an important topic, there is no dearth
+    of topics to explore that come under the umbrella of applications using matrices.
+  id: totrans-426
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们能够涵盖矩阵的主题，这对于许多主题都是基础，无论是在数学中还是在使用Python中。今天的数据科学主要基于矩阵的有效使用。我们研究了它们在马尔可夫链的形式中的应用，尽管这是一个重要的主题，但在应用矩阵的领域下，还有许多可以探索的主题。
+- en: Next, we will delve into the world of statistics. We will use a more formal
+    and systematic approach in first understanding the building blocks of statistics,
+    then understanding the role of probability and variables, and finally tying these
+    concepts together to implement statistical modeling.
+  id: totrans-427
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将深入了解统计学的世界。我们将首先使用更正式和系统化的方法来理解统计学的基本知识，然后理解概率和变量的作用，最后将这些概念联系起来以实施统计建模。
+- en: YKA34
+  id: totrans-428
+  prefs: []
+  type: TYPE_NORMAL
+  zh: YKA34
+- en: LHL39
+  id: totrans-429
+  prefs: []
+  type: TYPE_NORMAL
+  zh: LHL39

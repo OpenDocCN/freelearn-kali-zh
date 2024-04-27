@@ -1,0 +1,771 @@
+- en: Chapter 6. Accessing and Using Web Services in Go
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第6章。在Go中访问和使用网络服务
+- en: In the previous chapter, we briefly touched on the OAuth 2.0 process and emulated
+    this process within our own API.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们简要涉及了OAuth 2.0过程，并在我们自己的API中模拟了这个过程。
+- en: We're going to explore this process a bit further in this chapter by connecting
+    our users to a few existing ubiquitous services that offer OAuth 2.0 connectivity
+    and allowing actions in our application to create actions in their applications.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过将我们的用户连接到一些提供OAuth 2.0连接的现有普遍服务来进一步探索这个过程，并允许我们的应用程序中的操作在他们的应用程序中创建操作。
+- en: An example of this is when you post something on one social network and are
+    given the option to similarly post or cross-post it on another one. This is precisely
+    the type of flow with which we'll be experimenting here.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个例子是当您在一个社交网络上发布内容并被给予类似地在另一个社交网络上发布或交叉发布的选项。这正是我们将在这里进行实验的流程类型。
+- en: In order to really wrap our heads around this, we'll connect existing users
+    in our application to another one that utilizes OAuth 2.0 (such as Facebook, Google+,
+    and LinkedIn) and then share resources between our system and the others.
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了真正理解这一点，我们将在我们的应用程序中连接现有用户到另一个使用OAuth 2.0的应用程序（如Facebook、Google+和LinkedIn），然后在我们的系统和其他系统之间共享资源。
+- en: While we can't make these systems return the favor, we'll continue down the
+    road and simulate another application that is attempting to work within the infrastructure
+    of our application.
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然我们无法让这些系统回报，但我们将继续前进，并模拟另一个试图在我们的应用程序基础设施内工作的应用程序。
+- en: 'In this chapter, we''ll look at:'
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将探讨：
+- en: Connecting to other services via OAuth 2.0 as a client
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 作为客户端通过OAuth 2.0连接到其他服务
+- en: Letting our users share information from our application to another web application
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 让我们的用户从我们的应用程序分享信息到另一个网络应用程序
+- en: Allowing our API consumers to make requests on behalf of our users
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 允许我们的API消费者代表我们的用户发出请求
+- en: How to ensure that we are making safe connections outside of OAuth requests
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如何确保我们在OAuth请求之外建立安全连接
+- en: By the end of this chapter, as a client, you should be comfortable using OAuth
+    to connect user accounts to other services. You should also be comfortable at
+    making secure requests, creating ways to allow other services to connect to your
+    services, and making third-party requests on behalf of your users.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章结束时，作为客户端，您应该能够使用OAuth将用户帐户连接到其他服务。您还应该能够进行安全请求，创建允许其他服务连接到您的服务的方式，并代表您的用户进行第三方请求。
+- en: Connecting our users to other services
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将我们的用户连接到其他服务
+- en: To get a better understanding of how the OAuth 2.0 process works in practice,
+    let's connect to a few popular social networks, specifically Facebook and Google+.
+    This isn't merely a project for experimentation; it's how a great deal of modern
+    social networks operate by allowing intercommunication and sharing among services.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了更好地理解OAuth 2.0过程在实践中是如何工作的，让我们连接到一些流行的社交网络，特别是Facebook和Google+。这不仅仅是一个实验项目；这是现代社交网络运作的方式，通过允许服务之间的互联和共享。
+- en: Not only is this common, but it also tends to induce a higher degree of adoption
+    when you allow seamless connections between dissonant applications. The ability
+    to share from such sources on services such as Twitter and Facebook has helped
+    to expedite their popularity.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不仅是常见的，而且当您允许不协调的应用程序之间无缝连接时，还往往会引起更高程度的采用。从诸如Twitter和Facebook之类的服务共享的能力有助于加速它们的流行。
+- en: As we explore the client side of things, we'll get a good grasp of how a web
+    service like ours can allow third-party applications and vendors to work within
+    our ecosystem and broaden the depth of our application.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们探索客户端方面时，我们将深入了解像我们这样的网络服务如何允许第三方应用程序和供应商在我们的生态系统内工作，并扩大我们应用程序的深度。
+- en: 'To start this process, we''re going to get an existing OAuth 2.0 client for
+    Go. There are a few that are available, but to install Goauth2, run a `go get`
+    command as follows:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要开始这个过程，我们将获取一个现有的Go OAuth 2.0客户端。有一些可用的，但要安装Goauth2，运行`go get`命令如下：
+- en: '[PRE0]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: If we want to compartmentalize this access to OAuth 2.0 services, we can create
+    a standalone file in our imports directory that lets us create a connection to
+    our OAuth provider and get the relevant details from it.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们想将对OAuth 2.0服务的访问分隔开，我们可以在我们的导入目录中创建一个独立的文件，让我们创建一个连接到我们的OAuth提供者并从中获取相关详细信息。
+- en: 'In this brief example, we''ll connect a Facebook service and request an authentication
+    token from Facebook. After this, we''ll return to our web service to grab and
+    likely store the token:'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个简短的例子中，我们将连接一个Facebook服务，并从Facebook请求一个身份验证令牌。之后，我们将返回到我们的网络服务，获取并可能存储令牌：
+- en: '[PRE1]'
+  id: totrans-20
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'This is all we''ll need to create a standalone package that we can call from
+    elsewhere. In this case, we have just one service; so, we''ll create the following
+    variables as global variables:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是我们需要创建一个独立的包，我们可以从其他地方调用。在这种情况下，我们只有一个服务；因此，我们将创建以下变量作为全局变量：
+- en: '[PRE2]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: You will get these endpoints and variables from the provider, but they're obviously
+    obscured here.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将从提供者那里获得这些端点和变量，但它们在这里显然是模糊的。
+- en: 'The `redirectURL` variable represents a place where you''ll catch the sent
+    token after a user logs in. We''ll look closely at the general flow shortly. The
+    `main` function is written as follows:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`redirectURL`变量表示用户登录后您将捕获到的发送令牌的位置。我们将很快仔细研究一般流程。`main`函数编写如下：'
+- en: '[PRE3]'
+  id: totrans-25
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'If we take the URL that''s generated and visit it directly, it''ll take us
+    to the login page that is similar to the rough version that we built on the last
+    page. Here''s an authentication page that is presented by Facebook:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们获取生成的URL并直接访问它，它将带我们到类似于我们在上一页上构建的粗略版本的登录页面。这是Facebook呈现的身份验证页面：
+- en: '![Connecting our users to other services](img/1304OS_06_01.jpg)'
+  id: totrans-27
+  prefs: []
+  type: TYPE_IMG
+  zh: '![将我们的用户连接到其他服务](img/1304OS_06_01.jpg)'
+- en: 'If the user (in this case, me) accepts this authentication and clicks on **Okay**,
+    the page will redirect back to our URL and pass an OAuth code along with it, which
+    will be something like this:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果用户（在这种情况下是我）接受此身份验证并点击**好**，页面将重定向回我们的URL并传递一个OAuth代码，类似于这样：
+- en: '[http://www.mastergoco.com/codepass?code=h9U1_YNL1paTy-IsvQIor6u2jONwtipxqSbFMCo3wzYsSK7BxEVLsJ7ujtoDc](http://www.mastergoco.com/codepass?code=h9U1_YNL1paTy-IsvQIor6u2jONwtipxqSbFMCo3wzYsSK7BxEVLsJ7ujtoDc)'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[http://www.mastergoco.com/codepass?code=h9U1_YNL1paTy-IsvQIor6u2jONwtipxqSbFMCo3wzYsSK7BxEVLsJ7ujtoDc](http://www.mastergoco.com/codepass?code=h9U1_YNL1paTy-IsvQIor6u2jONwtipxqSbFMCo3wzYsSK7BxEVLsJ7ujtoDc)'
+- en: We can use this code as a semipermanent user acceptance code for future requests.
+    This will not work if a user rescinds access to our application or if we choose
+    to change the permissions that our application wishes to use in a third-party
+    service.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将此代码用作将来请求的半永久用户接受代码。如果用户撤销对我们应用程序的访问权限，或者我们选择更改应用程序希望在第三方服务中使用的权限，这将无效。
+- en: You can start to see the possibilities of a very connected application and why
+    third-party authentication systems that has the ability to sign up and sign in
+    via Twitter, Facebook, Google+, and so on, have become viable and appealing prospects
+    in recent years.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以开始看到一个非常连接的应用程序的可能性，以及为什么第三方身份验证系统，例如通过Twitter、Facebook、Google+等进行注册和登录的能力，近年来已成为可行和吸引人的前景。
+- en: 'In order to do anything useful with this as a tie-on to our API (assuming that
+    the terms of services of each social network allow it), we need to do three things:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了将其作为我们API的附加部分做任何有用的事情（假设每个社交网络的服务条款允许），我们需要做三件事：
+- en: 'First, we need to make this less restrictive than just one service. To do this,
+    we''ll create a map of the `OauthService` struct:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要使其不再仅限于一个服务。为此，我们将创建一个`OauthService`结构的映射：
+- en: '[PRE4]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'We can then add this as per our need:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以根据需要添加这个：
+- en: '[PRE5]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'The next thing that we''ll need to do is make this an actual redirect instead
+    of something that spits the code into our console. With this in mind, it''s time
+    to integrate this code into the `api.go` file. This will allow our registered
+    users to connect their user information on our social network to others, so that
+    they can broadcast their activity on our app more globally. This brings us to
+    our following last step, which is to accept the code that each respective web
+    service returns:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要做的是将其变成一个实际的重定向，而不是将代码输出到我们的控制台。考虑到这一点，现在是将此代码集成到`api.go`文件中的时候了。这将允许我们注册的用户将他们在我们社交网络上的用户信息连接到其他人，以便他们可以在我们的应用程序上更广泛地广播他们的活动。这将带我们到我们的下一个最后一步，即接受每个相应的网络服务返回的代码：
+- en: '[PRE6]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'We''ll add two endpoint routes to our `Init()` function; one allows a service
+    to authorize (that is, send off to that site''s OAuth authentication) and the
+    other allows us to keep the resulting information as follows:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在`Init()`函数中添加两个端点路由；一个允许服务进行授权（即，发送到该站点的OAuth身份验证），另一个允许我们保留以下结果信息：
+- en: '[PRE7]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Here, we''ll set up a Google+ authentication conduit. It goes without saying,
+    but don''t forget to replace your `clientID`, `clientSecret`, and `redirectURL`
+    variables with your values:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们将建立一个Google+认证通道。毋庸置疑，但不要忘记用您的值替换您的`clientID`，`clientSecret`和`redirectURL`变量：
+- en: '[PRE8]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'By visiting `http://localhost/authorize/google`, we''ll get kicked to the interstitial
+    authentication page of Google+. Here''s an example that is fundamentally similar
+    to the Facebook authentication that we saw earlier:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过访问`http://localhost/authorize/google`，我们将被踢到Google+的中间身份验证页面。以下是一个基本上与我们之前看到的Facebook身份验证基本相似的示例：
+- en: '![Connecting our users to other services](img/1304OS_06_02.jpg)'
+  id: totrans-44
+  prefs: []
+  type: TYPE_IMG
+  zh: '![将我们的用户连接到其他服务](img/1304OS_06_02.jpg)'
+- en: When a user clicks on **Accept**, we'll be returned to our redirect URL with
+    the code that we're looking for.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当用户点击**接受**时，我们将返回到我们的重定向URL，并获得我们正在寻找的代码。
+- en: Tip
+  id: totrans-46
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: For most OAuth providers, a client ID and a client secret will be provided from
+    a dashboard.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于大多数OAuth提供商，将从仪表板提供客户端ID和客户端密钥。
+- en: 'However, on Google+, you''ll retrieve your client ID from their Developers
+    console, which allows you to sign up new apps and request access to different
+    services. They don''t openly present a client secret though, so you''ll need to
+    download a JSON file that contains not only the secret, but also other relevant
+    data that you might need to access the service in a format similar to this:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，在Google+上，您将从他们的开发者控制台中检索您的客户端ID，这允许您注册新应用程序并请求访问不同的服务。但他们并不公开提供客户端密钥，因此您需要下载一个包含不仅密钥，还包括其他相关数据的JSON文件，这些数据可能是您访问服务所需的格式类似于这样：
+- en: '`{"web":{"auth_uri":"https://accounts.google.com/o/oauth2/auth","client_secret":"***","token_uri":"https://accounts.google.com/o/oauth2/token","client_email":"***@developer.gserviceaccount.com","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/***@developer.gserviceaccount.com","client_id":"***.apps.googleusercontent.com","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs"}}`'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`{"web":{"auth_uri":"https://accounts.google.com/o/oauth2/auth","client_secret":"***","token_uri":"https://accounts.google.com/o/oauth2/token","client_email":"***@developer.gserviceaccount.com","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/***@developer.gserviceaccount.com","client_id":"***.apps.googleusercontent.com","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs"}}`'
+- en: You can grab the pertinent details directly from this file.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以直接从此文件中获取相关详细信息。
+- en: Of course, to ensure that we know who made the request and how to store it,
+    we'll need some sense of state.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，为了确保我们知道是谁发出了请求以及如何存储它，我们需要一些状态。
+- en: Saving the state with a web service
+  id: totrans-52
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Web服务保存状态
+- en: There are quite a few ways to save state within a single web request. However,
+    things tend to get more complicated in a situation like this wherein our client
+    makes one request, he or she is then redirected to another URL, and then comes
+    back to our.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在单个Web请求中有很多保存状态的方法。然而，在这种情况下，当我们的客户端发出一个请求，然后被重定向到另一个URL，然后回到我们的时候，情况往往会变得更加复杂。
+- en: We can pass some information about the user in our redirect URL, for example,
+    [http://mastergoco.com/connect/google?uid=1](http://mastergoco.com/connect/google?uid=1);
+    but this is somewhat inelegant and opens a small security loophole wherein a man-in-the-middle
+    attacker could find out about a user and an external OAuth code.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以在重定向的URL中传递关于用户的一些信息，例如，[http://mastergoco.com/connect/google?uid=1](http://mastergoco.com/connect/google?uid=1)；但这有点不够优雅，并且存在一个小的安全漏洞，中间人攻击者可以了解用户和外部OAuth代码。
+- en: The risk here is small but real enough; therefore, we should look elsewhere.
+    Luckily, Gorilla also provides a nice library for secure sessions. We can use
+    these whenever we've verified the identity of a user or client and store the information
+    in a cookie store.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里的风险很小，但确实存在；因此，我们应该寻找其他地方。幸运的是，Gorilla还提供了一个用于安全会话的不错的库。每当我们验证了用户或客户端的身份并将信息存储在cookie存储中时，我们可以使用这些。
+- en: 'To get started, let''s create a `sessions` table:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们创建一个`sessions`表：
+- en: '[PRE9]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Next, include the `sessions` package:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，包括`sessions`包：
+- en: '[PRE10]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Then, move it into the `import` section of our `api.go` file:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，将其移入我们的`api.go`文件的`import`部分：
+- en: '[PRE11]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Right now we''re not authenticating the service, so we''ll enforce that on
+    our `ApplicationAuthorize` (`GET`) handler:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们还没有对服务进行身份验证，所以我们将在我们的`ApplicationAuthorize`(`GET`)处理程序上强制执行：
+- en: '[PRE12]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now, if a user attempts to connect to a service, we''ll check for an existing
+    login and if it does not exist, redirect the user to our login page. Here''s the
+    test code to check this:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果用户尝试连接到一个服务，我们将检查是否存在登录，如果不存在，将用户重定向到我们的登录页面。以下是检查这一点的测试代码：
+- en: '[PRE13]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: This is a pretty standard test that looks for a cookie. If it doesn't exist,
+    create a `Session` struct and save a cookie, and return false. Otherwise, return
+    true if the cookie has been saved in the database already after a successful login.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个相当标准的测试，查找一个cookie。如果不存在，创建一个`Session`结构并保存一个cookie，并返回false。否则，如果在成功登录后cookie已保存在数据库中，则返回true。
+- en: 'This also relies on a new global variable, `Session`, which is of the new struct
+    type `UserSession`:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这也依赖于一个新的全局变量，`Session`，它是新的结构类型`UserSession`：
+- en: '[PRE14]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'At the moment, there is an issue with our login page and this exists only to
+    allow a third-party application to allow our users to authorize its use. We can
+    fix this by simply changing our authentication page to set an `auth_type` variable
+    based on whether we see `consumer_key` or `redirect_url` in the URL. In our `authorize.html`
+    file, make the following change:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，我们的登录页面存在问题，这只是为了允许第三方应用程序允许我们的用户授权其使用。我们可以通过简单地根据URL中是否看到`consumer_key`或`redirect_url`来设置`auth_type`变量来解决这个问题。在我们的`authorize.html`文件中，进行以下更改：
+- en: '[PRE15]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'And in our `ApplicationAuthenticate()` handler, make the following change:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的`ApplicationAuthenticate()`处理程序中，进行以下更改：
+- en: '[PRE16]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'This also requires a modification of our `Page{}` struct:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这还需要修改我们的`Page{}`结构：
+- en: '[PRE17]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: If we receive an authorization request from a `Page` type of user, we'll know
+    that this is just a login attempt. If, instead, it comes from a client, we'll
+    know it's another application attempting to make a request for our user.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们收到来自`Page`类型用户的授权请求，我们将知道这只是一个登录尝试。如果来自客户端，我们将知道这是另一个应用程序尝试为我们的用户发出请求。
+- en: In the former scenario, we'll utilize a redirect URL to pass the user back around
+    after a successful authentication, assuming that the login is successful.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前一种情况下，我们将利用重定向URL在成功认证后将用户带回来，假设登录成功。
+- en: Gorilla offers a flash message; this is essentially a single-use session variable
+    that will be removed as soon as it's read. You can probably see how this is valuable
+    here. We'll set the flash message before redirecting it to our connecting service
+    and then read that value on return, at which point it will be disposed of. Within
+    our `ApplicationAuthorize()` handler function, we delineate between client and
+    user logins. If the user logs in, we'll set a flash variable that can be retrieved.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Gorilla提供了一个闪存消息；这本质上是一个一次性的会话变量，一旦被读取就会被删除。你可能能看到这在这里是有价值的。我们将在重定向到我们的连接服务之前设置闪存消息，然后在返回时读取该值，此时它将被处理掉。在我们的`ApplicationAuthorize()`处理程序函数中，我们区分客户端和用户登录。如果用户登录，我们将设置一个可以检索的闪存变量。
+- en: '[PRE18]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: But this alone will not keep a persistent session, so we'll integrate this now.
+    When a successful login happens in the `ApplicationAuthorize()` method, we'll
+    save the session in our database and allow some persistent connection for our
+    users.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但这样仅仅不能保持一个持久的会话，所以我们现在要整合这个。当在`ApplicationAuthorize()`方法中发生成功的登录时，我们将在我们的数据库中保存会话，并允许一些持久连接给我们的用户。
+- en: Using data from other OAuth services
+  id: totrans-80
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用其他OAuth服务的数据
+- en: Having successfully connected to another service (or services, depending on
+    which OAuth providers you've brought in), we can now cross-pollinate multiple
+    services against ours.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 成功连接到另一个服务（或多个服务，取决于您引入了哪些OAuth提供程序），我们现在可以相互交叉使用多个服务。
+- en: For example, posting a status update within our social network may also warrant
+    posting a status update on, say, Facebook.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，在我们的社交网络中发布状态更新也可能需要在Facebook上发布状态更新。
+- en: 'To do this, let''s first set up a table for statuses:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，让我们首先设置一个状态表：
+- en: '[PRE19]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Our statuses will consist of the user's information, a timestamp, and the text
+    of the status message. Nothing too fancy for now!
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的状态将包括用户的信息、时间戳和状态消息的文本。现在还没有太复杂的东西！
+- en: 'Next, we''ll need to add API endpoints for creating, reading, updating, and
+    deleting the statuses. So, in our `api.go` file, let''s add these:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们需要为创建、读取、更新和删除状态添加API端点。因此，在我们的`api.go`文件中，让我们添加这些：
+- en: '[PRE20]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'For now, we''ll create some dummy handlers for the `PUT`/`Update` and `DELETE`
+    methods:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将为`PUT`/`Update`和`DELETE`方法创建一些虚拟处理程序：
+- en: '[PRE21]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Remember, without these we''ll be unable to test without receiving compiler
+    errors in the meantime. In the following code, you''ll find the `StatusCreate`
+    method that allows us to make requests for users who have granted us a token.
+    Since we already have one of the users, let''s create a status:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，如果没有这些，我们将无法进行测试，同时还会收到编译器错误。在下面的代码中，您将找到`StatusCreate`方法，该方法允许我们为已授予我们令牌的用户发出请求。由于我们已经有了一个用户，让我们创建一个状态：
+- en: '[PRE22]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'We''ll use a test of the key and the token to get a valid user who is allowed
+    to make these types of requests:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用密钥和令牌的测试来获取一个有效的用户，该用户被允许进行这些类型的请求：
+- en: '[PRE23]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: If a user is confirmed as valid through the key and token, the status will be
+    created.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果用户通过密钥和令牌确认为有效，则将创建状态。
+- en: '![Using data from other OAuth services](img/1304OS_06_03.jpg)'
+  id: totrans-95
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用其他OAuth服务的数据](img/1304OS_06_03.jpg)'
+- en: With a knowledge of how OAuth works in general and by having an approximate,
+    lower-barrier version baked into our API presently, we can start allowing external
+    services to request access to our users' accounts to execute within our services
+    on behalf of individual users.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过对OAuth的一般工作原理有所了解，并且在我们的API中已经有了一个近似的、低门槛版本，我们可以开始允许外部服务请求访问我们的用户帐户，以代表个别用户在我们的服务中执行。
+- en: We touched on this briefly in the last chapter, but let's do something usable
+    with it.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在上一章中简要提到了这一点，但让我们用它做一些有用的事情。
+- en: We're going to allow another application from another domain make a request
+    to our API that will create a status update for our user. If you use a separate
+    HTML interface, either like the one that we used in earlier chapters or something
+    else, you can avoid the cross-domain policy issues that you'll encounter when
+    you return a cross-origin resource sharing header.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将允许来自另一个域的另一个应用程序向我们的API发出请求，以为我们的用户创建一个状态更新。如果您使用单独的HTML界面，类似于我们在早期章节中使用的界面或其他内容，您可以避免返回跨域资源共享头部时遇到的跨域策略问题。
+- en: 'To do this, we can return the `Access-Control-Allow-Origin` header with the
+    domains that we wish to allow to access to our API. If, for example, we want to
+    allow `http://www.example.com` to access our API directly through the client side,
+    we can create a slice of allowed domains at the top of our `api.go` file:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，我们可以在我们的`api.go`文件顶部创建一个允许访问我们的API的域的切片，并返回`Access-Control-Allow-Origin`头部。
+- en: '[PRE24]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Then, we can add these on the `Init()` function of our `api.go` file:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以在我们的`api.go`文件的`Init()`函数中添加这些：
+- en: '[PRE25]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'And then, we can call them from our present version of the API, currently at
+    `v1`. So, in `v1.go`, we need to invoke the list of domains when calling `api.Init()`:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们可以从我们当前的`v1`版本的API中调用它们。因此，在`v1.go`中，在调用`api.Init()`时，我们需要调用域列表：
+- en: '[PRE26]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'And finally, within any handler where you wish to observe these domain rules,
+    add a loop through those domains with the pertinent header set:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在任何处理程序中，您希望遵守这些域规则，都可以通过循环遍历这些域并设置相关的头部来添加：
+- en: '[PRE27]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'To start with, let''s create a new user, Bill Johnson, through either of the
+    aforementioned methods. In this case, we''ll go back to Postman and just do a
+    direct request to the API:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们通过上述任一方法创建一个新用户Bill Johnson。在这种情况下，我们将回到Postman，直接向API发送请求：
+- en: '![Using data from other OAuth services](img/1304OS_06_04.jpg)'
+  id: totrans-108
+  prefs: []
+  type: TYPE_IMG
+  zh: '![使用其他OAuth服务的数据](img/1304OS_06_04.jpg)'
+- en: After the creation of the new user, we can follow our pseudo-OAuth process to
+    allow Bill Johnson to give our application access and generate a status.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建新用户后，我们可以按照伪OAuth流程，允许Bill Johnson访问我们的应用程序并生成状态。
+- en: First, we pass the user to `/authorize` with our `consumer_key` value. On successful
+    login and after agreeing to allow the application to access the user's data, we'll
+    create a `token_key` value and pass it to the redirect URL.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们使用我们的`consumer_key`值将用户传递给`/authorize`。在成功登录并同意允许应用程序访问用户数据后，我们将创建一个`token_key`值并将其传递到重定向URL。
+- en: With this key, we can make a status request programmatically as before by posting
+    to the `/api/statuses` endpoint with our key, the user, and the status.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这个密钥，我们可以像以前一样通过向`/api/statuses`端点发布我们的密钥、用户和状态来以编程方式发出状态请求。
+- en: Connecting securely as a client in Go
+  id: totrans-112
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Go中作为客户端进行安全连接
+- en: You may encounter situations when instead of using an OAuth client; you're forced
+    to make requests securely on your own. Normally, the `http` package in Go will
+    ensure that the certificates included are valid and it will prevent you from testing.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会遇到这样的情况，即不得不自行进行安全请求，而不是使用OAuth客户端。通常，Go中的`http`包将确保包含的证书是有效的，并且会阻止您进行测试。
+- en: '[PRE28]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: This allows us to inject a custom `Transport` client and thus override error
+    handling; in the interactions with our (or any) API via the browser, this is not
+    suggested beyond testing and it can introduce security issues with untrusted sources.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这使我们能够注入自定义的`Transport`客户端，从而覆盖错误处理；在通过浏览器与我们（或任何）API的交互中，这不建议超出测试，并且可能会引入来自不受信任来源的安全问题。
+- en: '[PRE29]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'We then get a valid response (with header, in struct):'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们会得到一个有效的响应（带有头部，在结构体中）：
+- en: '[PRE30]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: This is something that is best employed solely in testing, as the security of
+    the connection can clearly be a dubious matter when a certificate is ignored.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这只是在测试中最好使用的东西，因为当忽略证书时，连接的安全性显然可能是一个可疑的问题。
+- en: Summary
+  id: totrans-120
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: We took our initial steps for third-party integration of our application in
+    the last chapter. In this chapter, we looked a bit at the client side to see how
+    we can incorporate a clean and simple flow.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们已经开始了第三方集成应用程序的初始步骤。在本章中，我们稍微看了一下客户端，以了解如何将一个干净简单的流程整合进去。
+- en: We authenticated our users with other OAuth 2.0 services, which allowed us to
+    share information from our social network with others. This is the basis of what
+    makes social networks so developer friendly. Permitting other services to play
+    with the data of our users and other users also creates a more immersive experience
+    for users in general.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用其他OAuth 2.0服务对用户进行身份验证，这使我们能够与其他社交网络共享信息。这是使社交网络对开发人员友好的基础。允许其他服务使用我们用户和其他用户的数据也为用户创造了更沉浸式的体验。
+- en: In the next chapter, we'll look at integrating Go with web servers and caching
+    systems to construct a platform for a performant and scalable architecture.
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将探讨将Go与Web服务器和缓存系统集成，构建一个高性能和可扩展架构的平台。
+- en: We'll also push the functionality of our API in the process, which will allow
+    more connections and functionality.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个过程中，我们还将推动API的功能，这将允许更多的连接和功能。

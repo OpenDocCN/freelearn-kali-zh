@@ -1,0 +1,1423 @@
+- en: Testing and Profiling
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试和分析
+- en: If there was only one reason to choose Android Studio over other IDEs, it could
+    easily be claimed that it was due to its powerful debugging and testing tools.
+    These tools range from a simple Logcat reporting to complex testing mechanisms
+    based on the JUnit framework. In addition to tools to help us identify bugs in
+    our code, Android Studio also has a host of very smart, performance monitoring
+    tools that allow developers to fine-tune projects and maximize their efficiency.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果有一个理由选择Android Studio而不是其他IDE，那很容易可以说是因为它强大的调试和测试工具。这些工具从简单的Logcat报告到基于JUnit框架的复杂测试机制。除了帮助我们识别代码中的错误的工具之外，Android
+    Studio还拥有一系列非常智能的性能监控工具，允许开发人员对项目进行微调并最大化其效率。
+- en: This chapter will explore each of these processes in turn, beginning with simple
+    inline debug calls and then moving on to the different types of JUnit tests and
+    concluding by taking a look at how to monitor the performance of our apps under
+    a variety of conditions.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将依次探讨这些过程，从简单的内联调试调用开始，然后转向不同类型的JUnit测试，最后看一下如何在各种条件下监视我们应用程序的性能。
+- en: 'In this chapter, you will learn how to:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您将学习如何：
+- en: Configure a Logcat debug filter
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 配置Logcat调试过滤器
+- en: Create local unit tests
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建本地单元测试
+- en: Build instrumented tests
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 构建插桩测试
+- en: Record Espresso tests
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 记录Espresso测试
+- en: Test UIs
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试UI
+- en: Perform remote testing
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 执行远程测试
+- en: Stress testapps
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 压力测试应用程序
+- en: Enable advanced profiling
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 启用高级分析
+- en: Record method traces
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 记录方法跟踪
+- en: Record memory allocation
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 记录内存分配
+- en: Inspect Java heap dumps
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查Java堆转储
+- en: Inspect network traffic
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查网络流量
+- en: Logcat filters
+  id: totrans-16
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Logcat过滤器
+- en: One of the simplest, but nevertheless the most useful debugging, techniques
+    is the simple inclusion of a Logcat filter. This can be used to report variable
+    values or simply keep track of which methods are being called. This is of particular
+    use when keeping track of processes that are not visibly apparent, such as services,
+    broadcast receivers and callbacks that have no obvious impact on the UI.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最简单但也最有用的调试技术之一是简单地包含Logcat过滤器。这可以用于报告变量值或简单跟踪调用了哪些方法。当跟踪不明显的进程时特别有用，例如对UI没有明显影响的服务、广播接收器和回调。
+- en: 'Perhaps the very simplest debug tool available, and useful when we are in a
+    hurry and just want to check for a single value or event, is to include a line
+    like:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也许最简单的调试工具之一，当我们匆忙时只想检查单个值或事件时非常有用，就是包含一行类似于：
+- en: '[PRE0]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'This is only an on the fly solution as the output will be buried in among the
+    rest of the Logcat text. Far easier to manage is to configure a Logcat filter.
+    The following short exercise demonstrates how this is done:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这只是一个临时解决方案，因为输出将被埋在其他Logcat文本中。更容易管理的方法是配置Logcat过滤器。以下简短的练习演示了如何做到这一点：
+- en: Start a new project, or open a new one.
+  id: totrans-21
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 开始一个新项目，或打开一个新项目。
+- en: 'Select an activity or fragment and include the following field:'
+  id: totrans-22
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择一个活动或片段，并包括以下字段：
+- en: '[PRE1]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Select a method that you wish to examine, and add a line resembling the one
+    here:'
+  id: totrans-24
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择您想要检查的方法，并添加一行类似于这里的行：
+- en: '[PRE2]'
+  id: totrans-25
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Open the Logcat tool using *Alt* + *6*.
+  id: totrans-26
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用*Alt* + *6*打开Logcat工具。
+- en: 'Select Edit Filter Configuration from the dropdown in the top-right corner,
+    and complete the resultant dialog, as follows:'
+  id: totrans-27
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从右上角的下拉菜单中选择编辑过滤器配置，并完成结果对话框，如下所示：
+- en: '![](img/63c23fbd-c557-4978-8be9-e7ab5c431338.png)'
+  id: totrans-28
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/63c23fbd-c557-4978-8be9-e7ab5c431338.png)'
+- en: Filter configuration
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 过滤器配置
+- en: Run the app.
+  id: totrans-30
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行应用程序。
+- en: The Logcat tool can now be used to track any value, activity, or event in the
+    same fashion.
+  id: totrans-31
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在可以使用Logcat工具以同样的方式跟踪任何值、活动或事件。
+- en: 'This is, by far, the least sophisticated manner to interrogate code as it is
+    running, but it has its uses: it can be applied at any time and very quickly.
+    This approach is fine for combating individual errors; once we have working code,
+    we will need to test them under some well-defined conditions. This is where Android
+    Studio''s JUnit-based testing system comes into its own.'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是迄今为止最不复杂的方式来在代码运行时进行询问，但它有其用途：它可以随时快速应用。这种方法适用于对抗单个错误；一旦我们有了可工作的代码，我们将需要在一些明确定义的条件下进行测试。这就是Android
+    Studio基于JUnit的测试系统发挥作用的地方。
+- en: JUnit testing
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: JUnit测试
+- en: No development project is complete until it has been thoroughly and rigorously
+    tested, and Android Studio incorporates JUnit testing directly into the workspace.
+    As the name suggests, the framework allows the testing of individual units of
+    code. These are often individual modules but can just as likely be a single class
+    or method.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有开发项目可以完整，直到它经过彻底和严格的测试，而Android Studio直接将JUnit测试整合到工作区中。正如其名称所示，该框架允许测试单个代码单元。这些通常是单独的模块，但也可能是单个类或方法。
+- en: 'The Android Studio JUnit test framework provides for two distinct types of
+    test. They are as follows:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Android Studio JUnit测试框架提供了两种不同类型的测试。它们如下：
+- en: Local unit tests are used to test business logic in an isolated environment
+    that is not dependent on Android components or other code, although it is possible
+    to mock some dependencies. These tests run on the local Java virtual machine and
+    are consequently considerably faster than testing on a hardware device or emulator.
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 本地单元测试用于在不依赖于Android组件或其他代码的隔离环境中测试业务逻辑，尽管可能会模拟一些依赖关系。这些测试在本地Java虚拟机上运行，因此比在硬件设备或模拟器上进行测试要快得多。
+- en: Instrumented tests are used when we want to test elements of the Android framework
+    itself, such as how our UIs behave. These tests generate an APK file and are,
+    therefore, slower to build.
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 插桩测试用于测试Android框架本身的元素，例如我们的UI的行为。这些测试生成一个APK文件，因此构建速度较慢。
+- en: During the course of most development life cycles, we will need to employ both
+    these techniques, and we will take a look at each in turn next.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大多数开发周期中，我们需要同时使用这两种技术，接下来我们将依次看看每种。
+- en: For nearly all projects, we can expect to spend around twice the time testing
+    code stability than we will testing a functionality, and we will take a look at
+    both of these in the next section.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于几乎所有的项目，我们可以预计将花费大约两倍的时间来测试代码的稳定性，而不是测试功能，我们将在下一节中看到这两者。
+- en: Local unit tests
+  id: totrans-40
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 本地单元测试
+- en: 'If you have created an Android Studio project using the project wizard, then
+    the basic test case for both test types will have been created automatically.
+    The wizard will also include the necessary Gradle dependencies. If you are using
+    a project created any other way, you will need to create a test directory structure
+    and include Gradle dependencies by hand. These steps are outlined as follows:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您使用项目向导创建了一个Android Studio项目，那么两种测试类型的基本测试用例将会自动创建。向导还将包括必要的Gradle依赖项。如果您是以其他方式创建的项目，您将需要手动创建测试目录结构并包含Gradle依赖项。这些步骤如下所述：
+- en: Inside your `module/src` directory, create a new folder alongside `src/main`
+    called `src/test`.
+  id: totrans-42
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在您的`module/src`目录中，创建一个新文件夹，与`src/main`旁边叫做`src/test`。
+- en: 'Inside this `test` directory, recreate the folder structure inside your `main`
+    directory, for example:'
+  id: totrans-43
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在这个`test`目录中，重新创建`main`目录内的文件夹结构，例如：
+- en: '[PRE3]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: This directory is where you will place your test classes, and it will now be
+    accessible from the IDE's project explorer.
+  id: totrans-45
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 这个目录是您将放置测试类的地方，现在可以从IDE的项目资源管理器中访问。
+- en: 'Finally, add the following dependency to your `build.gradle` file if it is
+    not already included:'
+  id: totrans-46
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，如果尚未包含，将以下依赖项添加到您的`build.gradle`文件中：
+- en: '[PRE4]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'If you have created your project using the wizard, then it will have included
+    an example test class, `ExampleUnitTest.Java`. This class contains a single method
+    for testing arithmetic:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您使用向导创建项目，那么它将包括一个示例测试类`ExampleUnitTest.Java`。这个类包含一个用于测试算术的方法：
+- en: '[PRE5]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: This is a very simple example, but it is nevertheless a good way to take a first
+    look at how unit testing works in this setting. The best way to see this, is to
+    create a project using the project setup wizard or open one that was created that
+    way, so that it contains the test class.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个非常简单的例子，但它仍然是一个很好的方式来初步了解单元测试在这种环境中是如何工作的。最好的方法是使用项目设置向导创建一个项目，或者打开一个以这种方式创建的项目，以便它包含测试类。
+- en: Despite their actual location on disk, test modules can be found alongside your
+    regular Java modules in the IDE's project explorer.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管它们实际上位于磁盘上，但测试模块可以在IDE的项目资源管理器中与常规的Java模块一起找到。
+- en: '![](img/b7261c9a-0dbd-4f2b-bb5c-b2324f2cf68e.png)'
+  id: totrans-52
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/b7261c9a-0dbd-4f2b-bb5c-b2324f2cf68e.png)'
+- en: Accessing tests from the IDE
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从IDE访问测试
+- en: 'The simplest way to see these tests in action and explore other test features
+    is to doctor the `addition_isCorrect()` method so that it fails. The `assertEquals()`
+    method simply compares two expressions and can be set up to fail, as follows:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看到这些测试的最简单方法并探索其他测试功能，就是修改`addition_isCorrect()`方法，使其失败。`assertEquals()`方法只是比较两个表达式，并可以设置为失败，如下所示：
+- en: '[PRE6]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'This produces the predictable output shown here:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生如下所示的可预测的输出：
+- en: '![](img/07cda69c-e4ba-4462-bbcf-14e5e586d632.png)'
+  id: totrans-57
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/07cda69c-e4ba-4462-bbcf-14e5e586d632.png)'
+- en: Unit test output
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单元测试输出
+- en: The preceding run tool shown has a number of useful features that can be found
+    in the toolbars. In particular, the third icon down on the left allows us to automatically
+    rerun a test whenever we make any changes. The main toolbar allows us to filter
+    and sort passed and ignored tests as well as import and export results, which
+    can be saved as HTML, XML, or a custom format.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上面显示的运行工具具有许多有用的功能，可以在工具栏中找到。特别是左侧第三个图标允许我们在进行任何更改时自动重新运行测试。主工具栏允许我们过滤和排序通过和忽略的测试，以及导入和导出结果，可以保存为HTML、XML或自定义格式。
+- en: The Click to see differences link will open a failure comparison table that
+    is very useful when multiple tests fail.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单击“单击以查看差异”链接将打开一个非常有用的失败比较表格，当多个测试失败时非常有用。
+- en: Tests can be run just as other code, mostly simply with the run icon in the
+    main toolbar, but the Run menu and the Run Test icons in the left gutter of the
+    code editor include the option to debug and also to display a class coverage window.
+    These editor icons are particularly useful, as they can be used to run individual
+    methods.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试可以像其他代码一样运行，通常只需在主工具栏中点击运行图标，但运行菜单和代码编辑器左侧的运行测试图标包括调试选项和显示类覆盖窗口的选项。这些编辑器图标特别有用，因为它们可以用来运行单独的方法。
+- en: The example provided uses the JUnit `assertEquals()` assertion. There are many
+    similar JUnit assertions and other structures available to us, and the complete
+    documentation is available at [junit.org](http://junit.org/junit4/).
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提供的示例使用了JUnit的`assertEquals()`断言。我们有许多类似的JUnit断言和其他可用的结构，完整的文档可以在[junit.org](http://junit.org/junit4/)上找到。
+- en: 'The preceding example is self-contained and tells us nothing about how to use
+    such classes to test our application code. The following example demonstrates
+    how this can be done:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上面的例子是自包含的，并没有告诉我们如何使用这些类来测试我们的应用程序代码。下面的例子演示了如何做到这一点：
+- en: 'Create a Java class in the default package, with a single function, like the
+    one here:'
+  id: totrans-64
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在默认包中创建一个Java类，其中包含一个函数，就像这里的一个函数：
+- en: '[PRE7]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Create a new class in the `test` package along these lines:'
+  id: totrans-66
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 按照以下方式在`test`包中创建一个新类：
+- en: '[PRE8]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Unlike the first example, the preceding code demonstrates how we can incorporate
+    our business logic within test code.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与第一个例子不同，上面的代码演示了如何在测试代码中整合业务逻辑。
+- en: 'Once we find ourselves with several tests, it can become useful to have some
+    control over the order in which these tests run, and particularly if we wish to
+    run preparatory code at the beginning of every test run. This can be achieved
+    with a series of JUnit annotations, as follows:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们有了几个测试，有时有必要控制这些测试运行的顺序，特别是如果我们希望在每次测试运行开始时运行准备代码。这可以通过一系列JUnit注释来实现，如下所示：
+- en: '[PRE9]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: The preceding configuration annotation will cause the method to run once only,
+    before all the other methods in the class are called as well as failing after
+    50 ms. `@Before` can be used to cause a method to execute before every other test,
+    and there are equivalent `@After` and `@AfterClass` annotations.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的配置注解将导致该方法仅运行一次，在调用类中的所有其他方法之前运行，并且在50毫秒后失败。`@Before`可以用来导致一个方法在每次其他测试之前执行，还有相应的`@After`和`@AfterClass`注解。
+- en: 'There are many other assertions and other classes available in the `org.junit`
+    package and full documentation can be found at the following link:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`org.junit`包中还有许多其他断言和其他类，完整的文档可以在以下链接找到：'
+- en: '[junit.sourceforge.net/javadoc/org/junit/package-summary.html#package_description](http://junit.sourceforge.net/javadoc/org/junit/package-summary.html#package_description)'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[junit.sourceforge.net/javadoc/org/junit/package-summary.html#package_description](http://junit.sourceforge.net/javadoc/org/junit/package-summary.html#package_description)'
+- en: 'Often, you will want to run the same group of test classes together. Rather
+    than running each of these separately each time, a suite of tests can be recreated
+    and run as one, with code similar to the following one:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，您会希望一起运行相同的一组测试类。与其每次分别运行它们，不如重新创建一组测试并作为一个运行，类似以下代码：
+- en: '`@RunWith(Suite.class)`'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`@RunWith(Suite.class)`'
+- en: '`@SuiteClasses({`'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`@SuiteClasses({`'
+- en: '`        someClassTest.class,`'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`        someClassTest.class,`'
+- en: '`          someOtherClassTest.class })`'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`          someOtherClassTest.class })`'
+- en: It is not always possible, or desirable, to test every unit in complete isolation.
+    Often, we will need to test a unit's interaction with Android and other Java interfaces
+    and classes. This is generally achieved by creating mock dependencies.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并不总是可能或者希望完全隔离地测试每个单元。通常，我们需要测试一个单元与Android和其他Java接口和类的交互。这通常是通过创建模拟依赖来实现的。
+- en: As the reader will know, there are many ways to create mock objects and classes,
+    from the painstaking task of building them from scratch to using ready-made third-party
+    frameworks. In most cases, this second option is preferable, perhaps the only
+    exception being some full-screen games that completely redefine the UI. Otherwise,
+    the easiest and, probably, the best option for Android Studio users would be Mockito.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如读者所知，有许多种方法可以创建模拟对象和类，从从头开始构建它们的繁琐任务到使用现成的第三方框架。在大多数情况下，这第二个选项更可取，也许唯一的例外是一些完全重新定义UI的全屏游戏。否则，对于Android
+    Studio用户来说，最简单，也可能是最好的选择是Mockito。
+- en: 'Mockito is a powerful Java framework, and although it is easily incorporated
+    into Android Studio, it is by no means particular to it, and many readers will
+    already be familiar with it from other IDEs. There is a great deal that could
+    be covered on the subject, but this would be beyond the scope of this book. Naturally,
+    Mockito needs to be declared as a dependency in our `build.gradle` files, and
+    this is done as follows:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mockito是一个强大的Java框架，虽然它很容易集成到Android Studio中，但它并不特定于它，许多读者可能已经从其他IDE中熟悉它。关于这个主题可以涵盖很多内容，但这超出了本书的范围。当然，Mockito需要在我们的`build.gradle`文件中声明为依赖项，方法如下：
+- en: '[PRE10]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Fortunately, it is not necessary to create mock dependencies to be able to
+    make calls to the Android API. If the default return values from any `android.jar`
+    method are sufficient, then we can instruct Gradle to do this by adding the following
+    snippet to theAndroid section of the `build.gradle` file:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，不需要创建模拟依赖来能够调用Android API。如果`android.jar`方法的默认返回值足够，那么我们可以通过将以下片段添加到`build.gradle`文件的Android部分来指示Gradle执行此操作：
+- en: '[PRE11]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: Mockito provides structures to mock up most of the Java classes we might need
+    to test our business logic, but, at the end of the day, we are developing an Android
+    application and will need to test it on real devices and emulators. Once we are
+    satisfied that our model works well in isolation, we need to see how it performs
+    in the real world.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Mockito提供了结构来模拟我们可能需要测试业务逻辑的大多数Java类，但归根结底，我们正在开发一个Android应用程序，并且需要在真实设备和模拟器上进行测试。一旦我们确信我们的模型在隔离状态下运行良好，我们需要看看它在现实世界中的表现如何。
+- en: Testing a UI
+  id: totrans-86
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试UI
+- en: Although considered separately here, instrumented tests can also be unit tests.
+    There are many non-UI Android classes that we need to test against, and although
+    these can be mocked up, this can be a time-consuming process, particularly when
+    we know these classes are sitting there, already fully implemented on our devices
+    and emulators. If we are prepared to sacrifice the fast build times of mock testing,
+    then we might as well plug in our devices and boot up our emulators.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管在这里分开考虑，仪器化测试也可以是单元测试。有许多非UI Android类需要我们进行测试，尽管这些可以被模拟，但这可能是一个耗时的过程，特别是当我们知道这些类已经完全实现在我们的设备和模拟器上时。如果我们愿意牺牲模拟测试的快速构建时间，那么我们可能会插入我们的设备并启动我们的模拟器。
+- en: One aspect of development that is difficult to mock is UI simulation and interaction,
+    and generally speaking, when we want to test our layouts against physical gestures.
+    Fortunately, there are some very handy tools and features at our disposal that
+    help test and optimize our designs.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 开发中难以模拟的一个方面是UI模拟和交互，一般来说，当我们想要测试我们的布局与物理手势时。幸运的是，我们有一些非常方便的工具和功能可供使用，帮助测试和优化我们的设计。
+- en: Testing views
+  id: totrans-89
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试视图
+- en: 'At the heart of instrumented UI testing lies the Android Testing Support Library.
+    This includes the JUnit APIs, a UI Automator and the Espresso testing framework.
+    There is virtually nothing involved in setting Espresso up on Android Studio,
+    as it is included as a dependency by default if you are working on a project generated
+    by the project setup wizard. If not, you will need to add the following to your
+    `build.gradle` file:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在仪器化UI测试的核心是Android测试支持库。这包括JUnit API，UI Automator和Espresso测试框架。在Android Studio上设置Espresso几乎没有任何难度，因为如果您是通过项目设置向导生成的项目，它会默认作为依赖项包含在内。如果不是，您需要将以下内容添加到您的`build.gradle`文件中：
+- en: '[PRE12]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: If you have developer animation options, such as window and transition animation
+    scales set on your test device, you will need to disable them for the duration
+    of your tests for Espresso to work smoothly.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您的测试设备上设置了开发人员动画选项，例如窗口和转换动画比例，您需要在测试期间禁用它们，以使Espresso能够顺利工作。
+- en: 'Put simply, Espresso allows us to perform three essential tasks:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，Espresso允许我们执行三项基本任务：
+- en: Identify and access views and other UI elements.
+  id: totrans-94
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 识别和访问视图和其他UI元素。
+- en: Perform an activity, such as clicks and swipes.
+  id: totrans-95
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 执行活动，如点击和滑动。
+- en: Validate assertions to test code.
+  id: totrans-96
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 验证断言以测试代码。
+- en: 'The best way to see how this works is with a simple example. Similarly to unit
+    tests, instrumented tests need to be placed in the correct disk location to be
+    recognized by Android Studio, as follows:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最好的方法是通过一个简单的例子来看看它是如何工作的。与单元测试类似，插装测试需要放置在正确的磁盘位置才能被Android Studio识别，如下所示：
+- en: '`\SomeApp\app\src\androidTest`'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`\SomeApp\app\src\androidTest`'
+- en: '![](img/1734add4-c0ee-47f9-9762-3fb3686cf7e7.png)'
+  id: totrans-99
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/1734add4-c0ee-47f9-9762-3fb3686cf7e7.png)'
+- en: Instrumented test location
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 插装测试位置
+- en: 'The following steps demonstrate how we can carry out the three tasks referred
+    to a moment ago:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下步骤演示了我们如何执行刚才提到的三项任务：
+- en: 'Create two views, as shown in the following code, in an activity; here, the
+    main activity is used:'
+  id: totrans-102
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在活动中创建两个视图，如下所示的代码；这里使用主活动：
+- en: '[PRE13]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Create a test class in the `androidTest` directory along these lines:'
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`androidTest`目录中创建一个测试类，如下所示：
+- en: '[PRE14]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Note that the IDE identifies Espresso term in italics:'
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 请注意，IDE将Espresso术语标识为斜体：
+- en: '![](img/63090807-fe26-4bc8-b3f7-9dfd947a268b.png)'
+  id: totrans-107
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/63090807-fe26-4bc8-b3f7-9dfd947a268b.png)'
+- en: Italicized Espresso terms
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 斜体的Espresso术语
+- en: Run the test, either from the editor's left gutter or the Run menu.
+  id: totrans-109
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行测试，可以从编辑器的左边栏或运行菜单中运行。
+- en: The application will open on the test device, `string` will be typed into the
+    edit box, the button will be clicked, and the activity will be finished and closed.
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 应用程序将在测试设备上打开，`string`将被输入到编辑框中，按钮将被点击，活动将被完成并关闭。
+- en: The test results can then be viewed in the IDE.
+  id: totrans-111
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后可以在IDE中查看测试结果。
+- en: There are one or two items that could do with pointing out in the preceding
+    code, especially if one is new to Espresso. `ActivityTestRule` is used to access
+    the widgets in our activity, and the call to `closeSoftKeyboard()`; the latter
+    is not strictly necessary, but, as you will see if you run the test, it does precisely
+    as one might imagine and closes the soft keyboard.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码中有一两个需要指出的地方，特别是对于新手来说。`ActivityTestRule`用于访问我们活动中的小部件，调用`closeSoftKeyboard()`；后者并不是严格必要的，但是，如果您运行测试，您会看到它确实像人们想象的那样关闭软键盘。
+- en: When running instrumented tests, the platform makes use of a test manifest,
+    which, if you have created your project from a template or are working on a sample,
+    will already be included. This will be located in the following directory on disk: `\SomeApplication\app\build\intermediates\manifest\androidTest\debug`
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在运行插装测试时，平台会使用一个测试清单，如果您从模板创建了项目或者正在处理一个示例，它将已经包含在内。这将位于磁盘上的以下目录中：`\SomeApplication\app\build\intermediates\manifest\androidTest\debug`
+- en: 'Nearly all of the libraries used in these tests will need to be imported, and
+    although the code editor is good at picking up on missing imports, it is also
+    good to know which libraries are needed. The following is a list of those required
+    for the preceding test:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些测试中使用的几乎所有库都需要导入，尽管代码编辑器擅长发现缺少的导入，但也了解需要哪些库是很好的。以下是前面测试所需的库列表：
+- en: '[PRE15]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Hamcrest assertion matchers can be included in JUnit tests by including the
+    following dependency in the `build.gradle` file:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以通过在`build.gradle`文件中包含以下依赖项来在JUnit测试中包含Hamcrest断言匹配器：
+- en: '`Implementation ''org.hamcrest:hamcrest-library:1.3''`'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Implementation ''org.hamcrest:hamcrest-library:1.3''`'
+- en: 'Espresso provides many other actions along with typing and clicking, such as
+    scrolling and clearing text. Comprehensive documentation on Espresso can be found
+    at the following link:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Espresso提供了许多其他操作，例如滚动和清除文本，以及输入和点击。Espresso的详细文档可以在以下链接找到：
+- en: '[google.github.io/android-testing-support-library/docs/](http://google.github.io/android-testing-support-library/docs/)'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[google.github.io/android-testing-support-library/docs/](http://google.github.io/android-testing-support-library/docs/)'
+- en: Testing lists and data
+  id: totrans-120
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试列表和数据
+- en: The preceding example uses `onView()` to identify the views we want to test
+    using their ID, and this is fine for components we have already named; however,
+    items in lists cannot be identified so explicitly, and, for this, we will need
+    another approach. When dealing with lists, such as recycler views and spinners,
+    Espresso provides the `onData()` method to identify list items.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的示例使用`onView()`来识别我们想要使用其ID进行测试的视图，对于我们已经命名的组件来说这是可以的；然而，列表中的项目不能如此明确地识别，因此我们需要另一种方法。在处理列表时，例如可回收视图和下拉列表框时，Espresso提供了`onData()`方法来识别列表项。
+- en: 'To see this in action, add a spinner as shown in the following one of your
+    app activities:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要查看此操作，请在应用程序活动中添加一个下拉列表框，如下所示：
+- en: '[PRE16]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'We can now write a test using `onData()` to interrogate the widget:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以使用`onData()`编写一个测试来询问小部件：
+- en: '[PRE17]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Even though you have included Hamcrest as a Gradle dependency, the studio''s
+    quick-fix feature will not kick in, and the following imports will need to be
+    included in the test code:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 即使您已将Hamcrest作为Gradle依赖项包含在内，但是工作室的快速修复功能不会启动，测试代码中需要包含以下导入：
+- en: '`import static org.hamcrest.Matchers.allOf;` `import static org.hamcrest.Matchers.containsString;`'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`import static org.hamcrest.Matchers.allOf;` `import static org.hamcrest.Matchers.containsString;`'
+- en: '`import static org.hamcrest.Matchers.instanceOf;` `import static org.hamcrest.Matchers.is;`'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`import static org.hamcrest.Matchers.instanceOf;` `import static org.hamcrest.Matchers.is;`'
+- en: Recording tests
+  id: totrans-129
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 记录测试
+- en: In the preceding section we saw how Android Studio provides a comprehensive
+    set of tools for testing our code, but writing these tests is time consuming,
+    and with anything other than the most trivial of projects will require many individual
+    tests. Fortunately, Android Studio provides a semi-automated way to construct
+    tests, using our own UI interactions to create, identify, and perform code elements
+    of the test.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的部分中，我们看到Android Studio为测试我们的代码提供了一套全面的工具，但编写这些测试是耗时的，除了最琐碎的项目之外，还需要许多单独的测试。幸运的是，Android
+    Studio提供了一种半自动化的方式来构建测试，使用我们自己的UI交互来创建、识别和执行测试的代码元素。
+- en: 'The following simple exercise shows how this is done to perform the preceding
+    test we just wrote by hand:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下简单的练习展示了如何通过手动编写之前的测试来执行测试：
+- en: Open the project with the spinner we created in the previous exercise, or create
+    a new one.
+  id: totrans-132
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开在上一个练习中创建的下拉菜单项目，或者创建一个新的项目。
+- en: Select Record Espresso Test from the Run menu.
+  id: totrans-133
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从“运行”菜单中选择“记录Espresso测试”。
+- en: Select an item from the spinner. This will be reflected in the Record Your Test
+    dialog.
+  id: totrans-134
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从下拉菜单中选择一个项目。这将在“记录您的测试”对话框中反映出来。
+- en: Click on the Add Assertion button.
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 点击“添加断言”按钮。
+- en: 'Select the spinner by clicking on it, and complete the dialog, as shown here:'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 点击下拉菜单，完成对话框，如下所示：
+- en: '![](img/6de46e02-8ab1-43af-8cff-d7766132b123.png)'
+  id: totrans-137
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6de46e02-8ab1-43af-8cff-d7766132b123.png)'
+- en: The Record Your Test dialog
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记录您的测试对话框
+- en: Save and run the test.
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 保存并运行测试。
+- en: 'As you can see, the IDE has taken our screen gestures and converted them into
+    code:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，IDE已经接受了我们的屏幕手势并将它们转换为代码：
+- en: '[PRE18]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: This code is perhaps not as efficient or as user friendly as it might be, but
+    the time saved is probably worth it, and, at the end of the day, all our tests
+    are temporary and will be done away with once we are happy with our code.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码可能不够高效或用户友好，但节省的时间可能是值得的，而且归根结底，所有的测试都是临时的，一旦我们对代码满意，就会被取消。
+- en: It will not have escaped the reader's notice that when running tests from the
+    Select Deployment Target dialog, there is also a Cloud Testing tab. This feature
+    allows us access to the Firebase Test Lab directly from the IDE.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '读者可能已经注意到，当从“选择部署目标”对话框运行测试时，还有一个“云测试”选项卡。这个功能允许我们直接从IDE访问Firebase测试实验室。 '
+- en: Remote testing
+  id: totrans-144
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 远程测试
+- en: When developing an Android application for a general release, it is desirable
+    to test it on as many different device configurations and platform versions as
+    possible. Testing on a large number of real devices is impractical, and it would
+    seem that virtual devices offer the only other option. Fortunately, Firebase provides
+    a cloud-based test lab that allows us to test our apps on a wide range of real
+    devices and emulators across all platform versions.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在为Android应用程序进行一般发布时，希望尽可能在许多不同的设备配置和平台版本上进行测试。在大量真实设备上进行测试是不切实际的，虚拟设备似乎是唯一的选择。幸运的是，Firebase提供了一个基于云的测试实验室，允许我们在各种真实设备和模拟器上测试我们的应用程序。
+- en: Firebase is a powerful and fully formed, cloud-based application development
+    suite with many useful features, such as file hosting and real-time crash reporting.
+    For the purpose of this chapter, we will focus on just one Firebase product, the
+    test lab.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Firebase是一个功能强大、完整的基于云的应用开发套件，具有许多有用的功能，如文件托管和实时崩溃报告。在本章中，我们将专注于Firebase产品之一，即测试实验室。
+- en: 'Firebase is well catered for within the IDE, and the simplest way to get started
+    is the Firebase Assistant, which can be found in the Tools menu:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IDE中有Firebase助手，这是开始的最简单方式，可以在“工具”菜单中找到：
+- en: '![](img/c576bfbe-3ddf-457e-bdf3-136e6e2dd4b7.png)'
+  id: totrans-148
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/c576bfbe-3ddf-457e-bdf3-136e6e2dd4b7.png)'
+- en: The Firebase assistant
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Firebase助手
+- en: Before connecting Android Studio to Firebase, first log in using your Google
+    account at [https://firebase.google.com/.](https://firebase.google.com/)
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在将Android Studio连接到Firebase之前，请使用您的Google帐户登录[https://firebase.google.com/.](https://firebase.google.com/)
+- en: Clicking on the Learn more link will allow you to connect to Firebase directly
+    from the IDE. This will take you through a quick wizard/tutorial, culminating
+    in the clicking of a Connect to Firebase button.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 点击“了解更多”链接将允许您直接从IDE连接到Firebase。这将带您完成一个快速向导/教程，最终点击“连接到Firebase”按钮。
+- en: 'We can now configure our cloud-based test by opening the Run/Debug Configurations...
+    dialog from the Run | Edit Configurations... menu:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以通过从“运行”|“编辑配置...”菜单中打开“运行/调试配置...”对话框来配置我们的基于云的测试：
+- en: '![](img/7075bf1c-e635-40d4-8382-0c72eb078e45.png)'
+  id: totrans-153
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/7075bf1c-e635-40d4-8382-0c72eb078e45.png)'
+- en: Test configuration
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试配置
+- en: 'These tests can now be started in the same way as any other project, with the
+    Run icon or menu item, and you will see from the test output a link to view an
+    HTML version of the results, as follows:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些测试现在可以像任何其他项目一样启动，使用运行图标或菜单项，您将从测试输出中看到一个链接，可以查看结果的HTML版本，如下所示：
+- en: '![](img/a0d327e3-b6f8-4344-946f-4d467aa7cfe3.png)'
+  id: totrans-156
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a0d327e3-b6f8-4344-946f-4d467aa7cfe3.png)'
+- en: The Firebase output
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Firebase输出
+- en: It is worth noting at this point that, although many prefer it, Firebase is
+    not the only cloud available device to test Android apps, and interested readers
+    should look up **Amazon Web Service** (**AWS**) Device Farm, Xamarin Test Cloud,
+    Sauce Labs, Perfecto, and several others.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 值得注意的是，尽管许多人更喜欢它，但Firebase并不是测试Android应用程序的唯一云设备，感兴趣的读者应该查找**亚马逊网络服务**（**AWS**）设备农场、Xamarin测试云、Sauce
+    Labs、Perfecto等其他设备。
+- en: The preceding methods outlined demonstrate a variety of testing techniques that
+    we can apply to our code and ways that Android Studio can speed up and automate
+    much of this essential, but often unexciting, aspect of development. Before moving
+    on to more interesting topics, there is one other form of testing that needs a
+    little explanation, and although not strictly a part of the IDE, the Application
+    Exerciser Monkey is nevertheless a very useful little tool.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面概述的方法演示了我们可以应用于我们的代码的各种测试技术，以及Android Studio可以加快和自动化这一重要但常常令人沮丧的开发方面。在转向更有趣的主题之前，还有一种测试需要一点解释，尽管不严格属于IDE的一部分，但应用程序Exerciser
+    Monkey仍然是一个非常有用的小工具。
+- en: Stress testing
+  id: totrans-160
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 压力测试
+- en: The Android Application Exerciser Monkey is a handy command line, application
+    stress tester. It works by performing (or injecting) a stream of random input
+    actions, such as clicking, typing, and swiping. It is akin to handing your app
+    to a toddler and seeing if they can break it. All developers understand that the
+    user can, and will, attempt to do utterly ridiculous and unpredictable things
+    with their app, and short of sitting there trying to replicate every possible
+    combination of gestures, the exerciser Monkey is as close as we can get to predict
+    the unpredictable.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Android应用程序Exerciser Monkey是一个方便的命令行应用程序压力测试工具。它通过执行（或注入）一系列随机输入操作，如点击、输入和滑动来工作。这就像把你的应用交给一个孩子，看看他们能不能把它弄坏。所有开发人员都明白，用户可以，也会尝试用他们的应用做出绝对荒谬和不可预测的事情，而除了坐在那里尝试复制每种可能的手势组合之外，Exerciser
+    Monkey是我们能够预测不可预测的最接近的方法。
+- en: 'The Monkey is very simple to run: simply open the command prompt in your `sdk/platform-tools`
+    directory and enter the following command:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Monkey非常简单易行：只需在`sdk/platform-tools`目录中打开命令提示符，然后输入以下命令：
+- en: '[PRE19]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Where 5000 is the number of random actions you want carried out, the output
+    will resemble the following snippet:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里5000是您想要执行的随机操作的数量，输出将类似于以下片段：
+- en: '[PRE20]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: A table with all Monkey command-line options can be found at [https://developer.android.com/studio/test/monkey.html.](https://developer.android.com/studio/test/monkey.html)
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以在[https://developer.android.com/studio/test/monkey.html](https://developer.android.com/studio/test/monkey.html)找到包含所有Monkey命令行选项的表格。
+- en: Testing our business logic, how it incorporates itself with the rest of the
+    system, and how it behaves on a wide range of devices under numerous conditions,
+    is a vital part of any development life cycle. Once we are certain, however, that
+    our code behaves as we intend, we can move on and interrogate how well it performs
+    these tasks. We need to ask how efficient our work is, whether it contains memory
+    or resource bottlenecks, or drains the battery unnecessarily. To do this, we will
+    need to turn to the Android Profiler.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测试我们的业务逻辑，它如何与系统的其余部分结合，以及在各种条件下在各种设备上的行为，是任何开发生命周期的重要部分。然而，一旦我们确信我们的代码表现如我们所愿，我们就可以继续审查它执行这些任务的效率。我们需要问问我们的工作有多有效，它是否包含内存或资源瓶颈，或者是否不必要地耗尽电池。为了做到这一点，我们需要求助于Android
+    Profiler。
+- en: Performance monitoring
+  id: totrans-168
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 性能监控
+- en: We may have ironed out all the glitches in our code, but there is still plenty
+    of fine-tuning to do, and one of Android Studio's most innovative features, the
+    Android Profiler, allows us to do just that.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可能已经消除了代码中的所有问题，但仍然有很多微调要做，而Android Studio最具创新性的功能之一——Android Profiler，正是让我们能够做到这一点。
+- en: The Android Profiler is not available for modules developed using C++.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Android Profiler不适用于使用C++开发的模块。
+- en: The Android Profiler was introduced in Android Studio 3.0 and replaced the previous
+    Android Monitor. At the most basic level, it monitors live CPU, memory, and network
+    usage. This allows us to test our app under different conditions and configurations
+    and improve its performance. It can be accessed from the View | Tool Windows menu
+    or the tool window bar.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Android Profiler是在Android Studio 3.0中引入的，取代了以前的Android Monitor。在最基本的级别上，它监视实时CPU、内存和网络使用情况。这使我们能够在不同条件和配置下测试我们的应用，并改善其性能。它可以从View
+    | Tool Windows菜单或工具窗口栏中访问。
+- en: '![](img/6db1efeb-99e2-4faf-b033-5311c8a466c9.png)'
+  id: totrans-172
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6db1efeb-99e2-4faf-b033-5311c8a466c9.png)'
+- en: Performance monitoring
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 性能监控
+- en: This basic monitoring is no different from the Android Monitor of previous incarnations.
+    This is because features such as method tracing and memory allocation inspection
+    have a negative impact on build times. Advanced profiling can easily be enabled
+    from the Run/Debug Configurations dialog, found via the Run | Edit Configurations...
+    menu.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种基本监控与以前版本的Android Monitor没有什么不同。这是因为诸如方法跟踪和内存分配检查之类的功能对构建时间有负面影响。可以通过Run/Debug
+    Configurations对话框轻松启用高级分析，该对话框可以通过Run | Edit Configurations...菜单找到。
+- en: '![](img/a45e9025-0f2a-4a30-b747-5f12f263cac0.png)'
+  id: totrans-175
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a45e9025-0f2a-4a30-b747-5f12f263cac0.png)'
+- en: Advanced performance monitoring
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 高级性能监控
+- en: The profiler now displays a specific event information, along with a host of
+    other features that we will explore now.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 分析器现在显示特定事件信息，以及我们将在下面探讨的其他一系列功能。
+- en: CPU profiling
+  id: totrans-178
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: CPU分析
+- en: The Android Profiler provides far deeper inspection than its predecessor, the
+    Android Monitor, and allows detailed inspection of thread activity, UI events,
+    and individual method performance. The CPU profiler also allows us to record method
+    traces along with some sophisticated inspection tools to help us make our programs
+    more efficient.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Android Profiler提供的检查比其前身Android Monitor更深入，允许详细检查线程活动、UI事件和单个方法的性能。CPU分析器还允许我们记录方法跟踪，以及一些复杂的检查工具，帮助我们使程序更有效率。
+- en: The CPU advanced profiling features can be seen by clicking anywhere in the
+    CPU timeline. This will then display the thread activity timeline in the lower
+    portion of the display.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过单击CPU时间轴中的任何位置，可以看到CPU高级分析功能。然后，它将在显示的底部显示线程活动时间轴。
+- en: Observing our app's behavior live like this can be very revealing, but, to best
+    see what is going on, we need to record a period of activity. This way, we can
+    inspect individual threads.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像这样实时观察我们应用的行为可以非常有启发性，但是，为了最好地看到发生了什么，我们需要记录一段活动时间。这样，我们就可以检查单个线程。
+- en: 'The following short exercise demonstrates how to record such a method trace:'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下简短的练习演示了如何记录这样的方法跟踪：
+- en: Click anywhere in the CPU timeline to open the advanced CPU profiler.
+  id: totrans-183
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击CPU时间线中的任何位置以打开高级CPU分析器。
+- en: Decide which actions you want to record.
+  id: totrans-184
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 决定要记录哪些操作。
+- en: There are two new dropdowns at the top of this pane. Select Instrumented over
+    Sampled and leave the other as is.
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 此窗格顶部有两个新的下拉菜单。选择插装而不是采样，并保持其他设置不变。
+- en: If you are planning a long recording, zoom out.
+  id: totrans-186
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您计划进行长时间的记录，请缩小视图。
+- en: Click on the record icon and perform your planned actions.
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击记录图标并执行您计划的操作。
+- en: Click on the same icon again to stop.
+  id: totrans-188
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 再次单击相同的图标以停止。
+- en: '![](img/4f086260-e4c6-4df1-b954-9d8a8917fa87.png)'
+  id: totrans-189
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/4f086260-e4c6-4df1-b954-9d8a8917fa87.png)'
+- en: A recorded CPU method trace
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记录的CPU方法跟踪
+- en: The ears on either side of the recorded sample can be dragged to adjust the
+    length of the recording.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记录样本两侧的耳朵可以拖动以调整记录的长度。
+- en: 'As the exercise demonstrates, there are two kinds of recording, instrumented
+    and sampled; their difference is as follows:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如练习所示，有两种记录方式，即插装和采样；它们的区别如下：
+- en: Instrumented recordings take exact timings from when methods are called.
+  id: totrans-193
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 插装记录会精确记录方法调用的时间。
+- en: Sampled recordings take samples of memory usage at regular intervals.
+  id: totrans-194
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 采样记录会定期对内存使用情况进行采样。
+- en: As you will see, there is a choice of how to represent these data, in the four
+    tabs at the bottom of the tool window. Call chart and Flame chart present a graphical
+    view of the method hierarchy, whereas Top down and Bottom up display this information
+    as lists.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您将看到的，有四个选项卡可以表示这些数据，位于工具窗口底部。调用图和火焰图以图形方式显示方法层次结构，而自上而下和自下而上则将此信息显示为列表。
+- en: Clicking on any method in these charts will open the source code for that method.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单击这些图表中的任何方法将打开该方法的源代码。
+- en: Being able to inspect program flow in detail like this is immensely helpful
+    and can save a lot of unnecessary debugging, but it is not just processor time
+    we need to consider; we also need to keep a close eye on just how much memory
+    our apps are consuming.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 能够详细检查程序流程非常有帮助，可以节省大量不必要的调试，但我们需要考虑的不仅仅是处理器时间；我们还需要密切关注我们的应用程序消耗了多少内存。
+- en: Memory profiler
+  id: totrans-198
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 内存分析器
+- en: Fully understanding the impact our app has on a device's CPU is just one consideration.
+    As developers, we have to create apps without knowing what the memory capabilities
+    of our target devices are, and, furthermore, we have no way of knowing what other
+    uses these devices are making of their memory at the time our app is running.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 充分了解我们的应用对设备CPU的影响只是一个考虑因素。作为开发人员，我们必须在不知道目标设备的内存能力的情况下创建应用，并且，此外，我们无法知道这些设备在我们的应用运行时正在使用内存的其他用途。
+- en: To assist us in planning memory use and avoiding leaks, Android Studio comes
+    equipped with a powerful memory profiler. This allows us to view the Java heap
+    and record memory allocation. Provided you have advanced profiling enabled, the
+    advanced memory profiler can be opened in the same fashion as the processor profiler
+    by clicking anywhere on the live timeline.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了帮助我们规划内存使用并避免泄漏，Android Studio配备了强大的内存分析器。这使我们能够查看Java堆并记录内存分配。只要启用了高级分析功能，高级内存分析器就可以通过单击实时时间线上的任何位置以与处理器分析器相同的方式打开。
+- en: '![](img/4f1c6da6-be74-40e2-90cb-a5747490dcbe.png)'
+  id: totrans-201
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/4f1c6da6-be74-40e2-90cb-a5747490dcbe.png)'
+- en: The advanced memory profiler
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 高级内存分析器
+- en: As the preceding image shows, the profiler also displays automatic garbage collections.
+    Such clearing up can also be performed manually with the bin icon in the profiler's
+    toolbar. This also contains buttons for recording memory allocation and capturing
+    a Java heap dump (the download icon).
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前图所示，分析器还显示自动垃圾收集。这样的清理也可以通过分析器工具栏中的垃圾桶图标手动执行。这还包括用于记录内存分配和捕获Java堆转储（下载图标）的按钮。
+- en: Obtaining a memory dump is as simple as clicking the icon and waiting a moment
+    for the data to be collected. A heap dump displays the objects in use at the time
+    the heap was dumped and is a great way to identify memory leaks. The best time
+    to explore a heap dump is after an extended UI test by looking for objects that
+    should have been discarded that still take up memory.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 获取内存转储就像单击图标并等待一会儿收集数据一样简单。堆转储显示了在转储堆时正在使用的对象，并且是识别内存泄漏的好方法。探索堆转储的最佳时间是在进行了长时间UI测试后，查找应该已经被丢弃但仍占用内存的对象。
+- en: '![](img/02b77b9c-d9ca-4f6a-99c7-d0ac3917862e.png)'
+  id: totrans-205
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/02b77b9c-d9ca-4f6a-99c7-d0ac3917862e.png)'
+- en: A Java heap dump
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java堆转储
+- en: Clicking on classes in the dump list will open the appropriate source code in
+    the editor.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单击转储列表中的类将在编辑器中打开相应的源代码。
+- en: Memory dumps like this are very useful for observing how much memory our objects
+    are consuming, but they do not tell us what they are doing with this memory. To
+    see that, we need to record memory allocation. This is accomplished in the same
+    way that CPU recordings were taken, that is, by clicking the record icon. This
+    handy memory inspection tool needs little more explanation, leading us to the
+    third and final profiling tool, the network profile.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样的内存转储非常有用，可以观察我们的对象消耗了多少内存，但它们并没有告诉我们他们如何使用这些内存。要查看这一点，我们需要记录内存分配。这是通过与CPU记录相同的方式完成的，即通过单击记录图标。这个方便的内存检查工具需要更多解释，引导我们到第三个和最后一个分析工具，网络分析。
+- en: Network profiler
+  id: totrans-209
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 网络分析器
+- en: 'There is not much in the way of a difference between the way that this profiler
+    and the previous two operate. Rather than record network activity, simply click
+    and drag over the area of the timeline that interests you. The files involved
+    are then listed in the following pane, with details available when you select
+    them:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个分析器和前两个操作的方式没有太大的区别。与记录网络活动不同，只需单击并拖动到您感兴趣的时间线区域。然后在下面的窗格中列出涉及的文件，并在选择它们时提供详细信息：
+- en: '![](img/5bd57470-bbf1-401e-a161-bb2b5510b43d.png)'
+  id: totrans-211
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/5bd57470-bbf1-401e-a161-bb2b5510b43d.png)'
+- en: The advanced network profiler
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 高级网络分析器
+- en: The advanced network profiler provides a great way to identify inefficient network
+    usage. Situations where the network controller has to switch the radios on and
+    off often for small files should be avoided in preference of downloading several
+    small files at once.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 高级网络分析器提供了一种很好的方式来识别低效的网络使用。在需要网络控制器经常打开和关闭无线电以下载小文件的情况下，最好避免这种情况，而是优先下载多个小文件。
+- en: The network profiler along with the other two profilers are great examples of
+    a time-saving tool that makes Android Studio such a good choice for developing
+    mobile apps. Thorough testing and fine-tuning of an application can often make
+    all the difference between a mediocre app and a successful one.
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 网络分析器以及其他两个分析器都是节省时间的工具的绝佳示例，这使得Android Studio成为开发移动应用程序的不错选择。对应用程序进行彻底测试和微调往往可以决定一个平庸的应用程序和一个成功的应用程序之间的差异。
+- en: Summary
+  id: totrans-215
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we took a look at the process of testing and profiling our
+    apps. Not only did we see how to take advantage of JUnit integration to test the
+    integrity of our own business logic, but also how to incorporate tools such as
+    Mockito and Espresso to test the platform itself, and resources such as Firebase
+    to test on a wider range of devices.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们看了一下测试和分析我们的应用程序的过程。我们不仅了解了如何利用JUnit集成来测试自己的业务逻辑的完整性，还了解了如何整合诸如Mockito和Espresso之类的工具来测试平台本身，以及诸如Firebase之类的资源来在更广泛的设备范围内进行测试。
+- en: Besides testing our code and UIs, we need a way of testing our apps, hardware
+    performance and whether there are issues with CPU, memory, or network usage. This
+    is where Android Studio's built-in profiler, which allows us to inspect and record
+    our app performance in great detail, comes in handy.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了测试我们的代码和用户界面之外，我们还需要一种测试我们的应用程序，硬件性能以及CPU，内存或网络使用是否存在问题的方法。这就是Android Studio内置的分析器派上用场的地方，它允许我们详细检查和记录我们应用程序的性能。
+- en: With our apps now running smoothly and fine-tuned for performance, we can take
+    a look at the final stages of development, building, packaging, and deployment.
+    Android Studio allows us to use the Gradle build system to simply create signed
+    APKs, including those of different flavors as well as simplifying signing and
+    security.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序现在运行顺畅，并经过性能调整，我们可以看看开发的最后阶段，构建，打包和部署。Android Studio允许我们使用Gradle构建系统简单地创建签名APK，包括不同风味的APK，并简化签名和安全性。

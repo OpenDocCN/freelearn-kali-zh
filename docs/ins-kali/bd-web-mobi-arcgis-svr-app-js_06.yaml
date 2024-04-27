@@ -1,0 +1,663 @@
+- en: Chapter 6. Performing Spatial and Attribute Queries
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第6章。执行空间和属性查询
+- en: Using ArcGIS Server Query tasks, you can perform attribute and spatial queries
+    against data layers in a map service that has been exposed. You can also combine
+    these query types to perform combined attribute and spatial queries. For example,
+    you might need to find all land parcels with an appraised value greater than $100,000
+    and that intersect the 100-year floodplain. This would be an example of a combined
+    query that includes both spatial and attribute components. In this chapter, you
+    will learn how to perform attribute and spatial queries using the `Query`, `QueryTask`,
+    and `FeatureSet` objects in the ArcGIS API for JavaScript.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用ArcGIS Server查询任务，您可以对地图服务中已公开的数据图层执行属性和空间查询。您还可以组合这些查询类型以执行组合的属性和空间查询。例如，您可能需要找到所有土地地块的评估价值大于10万美元并与百年洪水平面相交的情况。这将是一个包含空间和属性组件的组合查询的示例。在本章中，您将学习如何使用ArcGIS
+    API for JavaScript中的`Query`、`QueryTask`和`FeatureSet`对象执行属性和空间查询。
+- en: 'We will cover the following topics in this chapter:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下主题：
+- en: Introducing tasks in ArcGIS Server
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在ArcGIS Server中引入任务
+- en: An overview of attribute and spatial queries
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 属性和空间查询概述
+- en: The Query object
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 查询对象
+- en: Executing the query with QueryTask
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用QueryTask执行查询
+- en: Time to practice with spatial queries
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 是时候练习空间查询了
+- en: Introducing tasks in ArcGIS Server
+  id: totrans-8
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在ArcGIS Server中引入任务
+- en: In the next few chapters of the book, we will discuss the many types of tasks
+    that can be performed with the ArcGIS API for JavaScript. Tasks give you the ability
+    to perform spatial and attribute queries, find features based on text searches,
+    geocode addresses, identify features, and perform various geometry operations
+    including buffering and distance measurements. All tasks are accessed through
+    the `esri/tasks` resource.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书的接下来的几章中，我们将讨论可以使用ArcGIS API for JavaScript执行的许多类型的任务。任务使您能够执行空间和属性查询，基于文本搜索查找要素，对地址进行地理编码，识别要素，并执行包括缓冲和距离测量在内的各种几何操作。所有任务都可以通过`esri/tasks`资源访问。
+- en: All tasks in the ArcGIS API for JavaScript follow the same pattern. This pattern
+    is easily recognizable once you've worked with one or more tasks for any length
+    of time. An input object is used to supply input parameters to the task. Using
+    these input parameters, the task performs its specific function and then an output
+    object is returned containing the results of the task.The following diagram illustrates
+    how each task accepts an input parameter object and returns an output object that
+    can be used in your application.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: ArcGIS API for JavaScript中的所有任务都遵循相同的模式。一旦您使用了一个或多个任务一段时间后，这种模式就很容易识别。输入对象用于向任务提供输入参数。使用这些输入参数，任务执行其特定功能，然后返回一个包含任务结果的输出对象。下图说明了每个任务如何接受输入参数对象并返回可在您的应用程序中使用的输出对象。
+- en: '![Introducing tasks in ArcGIS Server](graphics/7965_06_01.jpg)'
+  id: totrans-11
+  prefs: []
+  type: TYPE_IMG
+  zh: '![在ArcGIS Server中引入任务](graphics/7965_06_01.jpg)'
+- en: An overview of attribute and spatial queries
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 属性和空间查询概述
+- en: As you'll see with other tasks, queries are performed using a sequence of objects
+    that typically include the input to the task, execution of the task, and a result
+    set returned from the task. The input parameters for an attribute or spatial query
+    are stored in a `Query` object which contains various parameters that can be set
+    for the query. The `QueryTask` object executes the task using the input provided
+    in the `Query` object, and a result set is returned in the form of a `FeatureSet`
+    object, which contains an array of `Graphic` features that you can then plot on
+    the map.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您将在其他任务中看到的那样，查询是使用一系列对象执行的，这些对象通常包括任务的输入、任务的执行以及从任务返回的结果集。属性或空间查询的输入参数存储在一个包含可以为查询设置的各种参数的`Query`对象中。`QueryTask`对象使用`Query`对象中提供的输入执行任务，并以`FeatureSet`对象的形式返回结果集，其中包含一系列`Graphic`要素，然后您可以在地图上绘制这些要素。
+- en: The `Query` object, used as input to a `QueryTask`, is defined by properties
+    that include `geometry`, `where`, and `text`. The `geometry` property is used
+    to input a geometry that will be used in a spatial query and will be a point,
+    line, or polygon geometry. The `where` property is used to define an attribute
+    query, while the `text` property is used to perform a `where` clause containing
+    a `like` operator. The `Query` object can also contain a number of optional properties
+    including the ability to define the fields that will be returned as a result of
+    the query, the output spatial reference for the returned geometry, and the actual
+    geometry of the features that meet the query conditions.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Query`对象作为`QueryTask`的输入，由包括`geometry`、`where`和`text`在内的属性定义。`geometry`属性用于输入将在空间查询中使用的几何，可以是点、线或多边形几何。`where`属性用于定义属性查询，而`text`属性用于执行包含`like`运算符的`where`子句。`Query`对象还可以包含许多可选属性，包括定义作为查询结果返回的字段、返回几何的输出空间参考以及满足查询条件的要素的实际几何。'
+- en: '![An overview of attribute and spatial queries](graphics/7965_06_02.jpg)'
+  id: totrans-15
+  prefs: []
+  type: TYPE_IMG
+  zh: '![属性和空间查询概述](graphics/7965_06_02.jpg)'
+- en: The preceding diagram defines the object sequence you will use when creating
+    attribute and spatial queries.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上图定义了创建属性和空间查询时将使用的对象序列。
+- en: The Query object
+  id: totrans-17
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 查询对象
+- en: In order for the `QueryTask` object to execute a query against a layer in a
+    map service, it needs input parameters that are defined with a `Query` object.
+    Input parameters define whether the query will be spatial, attribute, or a combination
+    of the two. Attribute queries can be defined by either the `where` or `text` properties.
+    These properties are used to define a SQL attribute query. We'll look at the difference
+    between `Query.where` and `Query.text` in a later section.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使`QueryTask`对象对地图服务中的图层执行查询，它需要使用`Query`对象定义的输入参数。输入参数定义查询是空间、属性还是两者的组合。属性查询可以由`where`或`text`属性定义。这些属性用于定义SQL属性查询。我们将在后面的部分中查看`Query.where`和`Query.text`之间的区别。
+- en: Spatial queries require that you set the `Query.geometry` property to define
+    the input geometric shape to be used in a spatial query.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 空间查询要求您设置`Query.geometry`属性以定义要在空间查询中使用的输入几何形状。
+- en: 'A new instance of the `Query` object can be created through the use of a constructor
+    as seen in the following code example:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以通过构造函数创建`Query`对象的新实例，如下面的代码示例所示：
+- en: '[PRE0]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Defining the query properties
+  id: totrans-22
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 定义查询属性
+- en: As I mentioned in the introduction to this section, you can set various parameters
+    on the `Query` object. It is required that you either define the properties for
+    an attribute query (`Query.where` or `Query.text`) or the `Query.geometry` property
+    for a spatial query. You can also use a combination of attribute and spatial query
+    properties.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我在本节的介绍中提到的，您可以在`Query`对象上设置各种参数。必须要么为属性查询（`Query.where`或`Query.text`）定义属性，要么为空间查询定义`Query.geometry`属性。您还可以同时使用属性和空间查询属性。
+- en: Attribute queries
+  id: totrans-24
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 属性查询
+- en: 'The `Query` object provides two properties that can be used in an attribute
+    query: `Query.where` and `Query.text`. In the following code example, I''m setting
+    the `Query.where` property so that only records where the `STATE_NAME` field equal
+    to `''Texas''` are returned. This is just a standard SQL query. Notice that I''ve
+    enclosed the word Texas with quotes. When performing an attribute query against
+    a text column, you need to enclose the text being evaluated with either single
+    or double quotes. This isn''t needed if you are performing an attribute query
+    against a column containing other data types such as numbers or Booleans:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Query`对象提供了两个属性，可以在属性查询中使用：`Query.where`和`Query.text`。在下面的代码示例中，我设置了`Query.where`属性，以便只返回`STATE_NAME`字段等于`''Texas''`的记录。这只是一个标准的SQL查询。请注意，我用引号括起了Texas这个词。在对文本列执行属性查询时，您需要用单引号或双引号括起要评估的文本。如果您对包含其他数据类型（如数字或布尔值）的列执行属性查询，则不需要这样做：'
+- en: '[PRE1]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: You can also use the `Query.text` property to perform an attribute query. This
+    is a shorthand way for creating a `where` clause using `like`. The field used
+    in the query is the display field for the layer defined in the map document. You
+    can determine the display field for a layer in the services directory. This is
+    illustrated in the following screenshot where `ZONING_NAME` is the display field.
+    It is this display field that is queried using the `Query.text` property.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以使用`Query.text`属性执行属性查询。这是一种使用`like`创建`where`子句的简便方法。查询中使用的字段是地图文档中定义的图层的显示字段。您可以在服务目录中确定图层的显示字段。下面的屏幕截图中说明了`ZONING_NAME`是显示字段。使用`Query.text`属性查询的就是这个显示字段。
+- en: '![Attribute queries](graphics/7965_06_06.jpg)'
+  id: totrans-28
+  prefs: []
+  type: TYPE_IMG
+  zh: '![属性查询](graphics/7965_06_06.jpg)'
+- en: '[PRE2]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'In the following code example, we use `query.text` to perform an attribute
+    query that returns all fields where the state name is entered by the user in a
+    form field on the web page:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下面的代码示例中，我们使用`query.text`执行属性查询，返回用户在网页上的表单字段中输入的州名的所有字段：
+- en: '[PRE3]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Spatial queries
+  id: totrans-32
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 空间查询
+- en: 'To perform a spatial query against a layer, you''ll need to pass in a valid
+    geometry object to be used in the spatial filter along with a spatial relationship.
+    Valid geometries include instances of `Extent`, `Point`, `Polyline`, and `Polygon`.
+    The spatial relationship is set through the `Query.spatialRelationship` property
+    and is applied during the query. The spatial relationship is defined through the
+    use of one of the following constant values: `SPATIAL_REL_INTERESECTS`, `SPATIAL_REL_CONTAINS`,
+    `SPATIAL_REL_CROSSES`, `SPATIAL_REL_ENVELOPE_INTERSECTS`, `SPATIAL_REL_OVERLAPS`,
+    `SPATIAL_REL_TOUCHES`, `SPATIAL_REL_WITHIN`, and `SPATIAL_REL_RELATION`. The table
+    in the following screenshot describes each of the spatial relationship values:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要对图层执行空间查询，您需要传递一个有效的几何对象用于空间过滤器，以及空间关系。有效的几何包括`Extent`、`Point`、`Polyline`和`Polygon`的实例。空间关系通过`Query.spatialRelationship`属性设置，并在查询期间应用。空间关系是通过以下常量值之一来定义的：`SPATIAL_REL_INTERESECTS`、`SPATIAL_REL_CONTAINS`、`SPATIAL_REL_CROSSES`、`SPATIAL_REL_ENVELOPE_INTERSECTS`、`SPATIAL_REL_OVERLAPS`、`SPATIAL_REL_TOUCHES`、`SPATIAL_REL_WITHIN`和`SPATIAL_REL_RELATION`。以下屏幕截图中的表描述了每个空间关系值：
+- en: '![Spatial queries](graphics/7965_06_10.jpg)'
+  id: totrans-34
+  prefs: []
+  type: TYPE_IMG
+  zh: '![空间查询](graphics/7965_06_10.jpg)'
+- en: 'The following code example sets a `Point` object as the geometry passed into
+    the spatial filter in addition to setting the spatial relationship:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下代码示例将`Point`对象设置为传递到空间过滤器中的几何体，并设置空间关系：
+- en: '[PRE4]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Limiting the fields returned
+  id: totrans-37
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 限制返回的字段
+- en: For performance reasons, you should limit the fields that are returned in the
+    `FeatureSet` object to only those fields that are needed in your application.
+    Every column of information attached to the `FeatureSet` object is additional
+    data that must be passed from the server to the browser, which can cause your
+    application to perform slower than it should. To limit the returned fields, you
+    assign an array containing a list of fields that should be returned to the `Query.outFields`
+    property as seen in the following code example. To return all fields you can use
+    `outFields = ['*']`.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 出于性能原因，您应该限制在`FeatureSet`对象中返回的字段，只返回应用程序中需要的字段。附加到`FeatureSet`对象的每一列信息都是必须从服务器传递到浏览器的额外数据，这可能导致您的应用程序执行速度比应该慢。要限制返回的字段，您可以将包含应该返回的字段列表的数组分配给`Query.outFields`属性，如下面的代码示例所示。要返回所有字段，可以使用`outFields
+    = ['*']`。
+- en: 'In addition, you can control the return of the geometry for each feature through
+    the `Query.returnGeometry` property. By default, the geometry will be returned;
+    however, in some cases, your application may not need the geometry. For example,
+    if you need to populate a table with the attribute information from a layer, you
+    don''t necessarily need the geometry. In this case, you can set `Query.returnGeometry
+    = false`:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，您可以通过`Query.returnGeometry`属性控制每个要素的几何返回。默认情况下，将返回几何；但是，在某些情况下，您的应用程序可能不需要几何。例如，如果您需要使用图层的属性信息填充表格，则不一定需要几何。在这种情况下，您可以设置`Query.returnGeometry
+    = false`：
+- en: '[PRE5]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Executing the query with QueryTask
+  id: totrans-41
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用QueryTask执行查询
+- en: 'Once you''ve defined the input properties in a `Query` object, you can use
+    `QueryTask` to execute the query. Before the query can be executed, you must first
+    create an instance of the `QueryTask` object. A `QueryTask` object is created
+    by passing a URL to the layer against which the query will be executed inside
+    the constructor for the object. The following code example shows how a `QueryTask`
+    object is created. Notice that it includes an index number at the end of the URL
+    that references a specific layer in the map service to be queried:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您在`Query`对象中定义了输入属性，就可以使用`QueryTask`执行查询。在执行查询之前，必须首先创建`QueryTask`对象的实例。通过在对象的构造函数中传递要对其执行查询的图层的URL来创建`QueryTask`对象。以下代码示例显示了如何创建`QueryTask`对象。请注意，它在URL的末尾包含一个索引编号，该索引编号引用地图服务中的特定图层进行查询：
+- en: '[PRE6]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'After creation, the `QueryTask` object can be used to execute a query against
+    the layer with an input `Query` object using the `QueryTask.execute()` method.
+    `QueryTask.execute()` accepts three parameters including an input `Query` object
+    along with success and error callback functions. The syntax for `QueryTask.execute()`
+    is provided in the following code. The input `Query` object is passed as the first
+    parameter:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建后，`QueryTask`对象可用于使用`QueryTask.execute()`方法对具有输入`Query`对象的图层执行查询。`QueryTask.execute()`接受三个参数，包括输入的`Query`对象以及成功和错误回调函数。`QueryTask.execute()`的语法在以下代码中提供。输入的`Query`对象作为第一个参数传递：
+- en: '[PRE7]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Assuming that the query executes without any error, the success callback function
+    will be called and a `FeatureSet` object is passed into the function. If an error
+    occurs during the execution of the query, then an error callback function is executed.
+    Both the success and error callback functions are optional; however, you should
+    always define functions to handle both cases.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设查询在没有任何错误的情况下执行，将调用成功的回调函数，并将`FeatureSet`对象传递到函数中。如果在执行查询期间发生错误，则会执行错误回调函数。成功和错误回调函数都是可选的；但是，您应该始终定义函数来处理这两种情况。
+- en: At this point, you may be wondering about these `callback` and `errback` functions.
+    Most tasks in ArcGIS Server return an instance of `dojo/Deferred`. A `Deferred`
+    object is a class that is used as the foundation for managing asynchronous threads
+    in `Dojo`. Tasks in ArcGIS Server can be either synchronous or asynchronous.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，您可能想知道这些`callback`和`errback`函数。ArcGIS Server中的大多数任务返回`dojo/Deferred`的实例。`Deferred`对象是一个类，用作在`Dojo`中管理异步线程的基础。ArcGIS
+    Server中的任务可以是同步的，也可以是异步的。
+- en: Asynchronous and synchronous define how the client (the application using the
+    task) interacts with the server and gets the result from the task. When a service
+    is set to synchronous, the client waits for the task to complete. Typically, a
+    synchronous task executes quickly (several seconds or lesser). An asynchronous
+    task typically takes longer to execute, and the client doesn't wait for the task
+    to complete. The end user is free to continue using the application while the
+    task executes. When a task completes on the server, it calls the callback function
+    and passes the results into this function where they can then be used in some
+    way. They are often displayed on the map.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 异步和同步定义了客户端（使用任务的应用程序）与服务器交互并从任务中获取结果的方式。当服务设置为同步时，客户端等待任务完成。通常，同步任务执行速度快（几秒钟或更短）。异步任务通常需要更长时间来执行，客户端不等待任务完成。用户可以在任务执行时继续使用应用程序。当服务器上的任务完成时，它调用回调函数并将结果传递到该函数中，然后可以以某种方式使用这些结果。它们通常显示在地图上。
+- en: 'Let''s take a look at a more complete code example. In the following code example,
+    notice that we first create a new variable called `myQueryTask`, which points
+    to layer 6 (the index numbers are `0` based) in the `ESRI_CENSUS_USA` map service.
+    We then create the `Query` object containing the input properties of the query
+    and finally, we use the `execute()` method on `QueryTask` to perform the query.
+    The `execute()` method returns a `FeatureSet` object that contains the results
+    of the query and these features are processed through a callback function called
+    `showResults`, which is specified in the `execute()` method. If an error occurs
+    during the execution of the task, the `errorCallback()` function will be called:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看一个更完整的代码示例。在以下代码示例中，请注意我们首先创建一个名为`myQueryTask`的新变量，它指向`ESRI_CENSUS_USA`地图服务中的第6层（索引编号基于`0`）。然后，我们创建包含查询输入属性的`Query`对象，最后，我们使用`QueryTask`上的`execute()`方法执行查询。`execute()`方法返回一个包含查询结果的`FeatureSet`对象，并且这些要素通过在`execute()`方法中指定的`showResults`回调函数进行处理。如果在执行任务期间发生错误，则将调用`errorCallback()`函数：
+- en: '[PRE8]'
+  id: totrans-50
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Getting query results
+  id: totrans-51
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 获取查询结果
+- en: As I mentioned earlier, the results of a query are stored in a `FeatureSet`
+    object that includes an array of graphics, which you can then plot on your map
+    if you wish.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我之前提到的，查询的结果存储在包含图形数组的`FeatureSet`对象中，如果需要，您可以在地图上绘制这些图形。
+- en: 'Each feature (graphic) in the array can contain geometry, attributes, symbology,
+    and an InfoTemplate as described in [Chapter 3](ch03.html "Chapter 3. Adding Graphics
+    to the Map"), *Adding Graphics to the Map*. Typically, these features are plotted
+    on the map as graphics. The following code example shows a callback function that
+    is executed when a query has completed execution. A `FeatureSet` object is passed
+    into the callback function and the graphics are drawn on the map:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数组中的每个要素（图形）都可以包含几何、属性、符号和信息模板，如[第3章](ch03.html "第3章。将图形添加到地图")中所述，“将图形添加到地图”。通常，这些要素被绘制在地图上作为图形。以下代码示例显示了在查询完成执行时执行的回调函数。`FeatureSet`对象被传递到回调函数中，并在地图上绘制图形：
+- en: '[PRE9]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Time to practice with spatial queries
+  id: totrans-55
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 练习空间查询的时间
+- en: In this exercise, you will learn how to perform spatial queries using the `Query`,
+    `QueryTask`, and `FeatureSet` objects in the ArcGIS API for JavaScript. Using
+    a Zoning layer from the City of Portland, you will query parcel records and display
+    the results on a map.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个练习中，您将学习如何使用ArcGIS API for JavaScript中的`Query`、`QueryTask`和`FeatureSet`对象执行空间查询。使用波特兰市的Zoning图层，您将查询地块记录并在地图上显示结果。
+- en: 'Perform the following steps to complete the exercise:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行以下步骤完成练习：
+- en: Open the JavaScript Sandbox at [http://developers.arcgis.com/en/javascript/sandbox/sandbox.html](http://developers.arcgis.com/en/javascript/sandbox/sandbox.html).
+  id: totrans-58
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在[http://developers.arcgis.com/en/javascript/sandbox/sandbox.html](http://developers.arcgis.com/en/javascript/sandbox/sandbox.html)上打开JavaScript沙盒。
+- en: 'Remove the JavaScript content from the `<script>` tag that I have highlighted
+    in the following code snippet:'
+  id: totrans-59
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从以下代码片段中我标记的`<script>`标签中删除JavaScript内容：
+- en: '[PRE10]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Create the variables that you'll use in the application.
+  id: totrans-61
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建应用程序中将使用的变量。
+- en: '[PRE11]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Add the `require()` function as seen in the following highlighted code:'
+  id: totrans-63
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加如下标记的`require()`函数：
+- en: '[PRE12]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Inside the `require()` function, create the `Map` object that you''ll use in
+    the application. The map will be centered on the Louisville, KY, area:'
+  id: totrans-65
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`require()`函数内部，创建将在应用程序中使用的`Map`对象。地图将以肯塔基州路易斯维尔市为中心：
+- en: '[PRE13]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Create the symbol that will be used to display the results of the query:'
+  id: totrans-67
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建将用于显示查询结果的符号：
+- en: '[PRE14]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Now, inside the `require()` function, we are going to initialize the `queryTask`
+    variable and then register the `QueryTask.complete` event. Add the following highlighted
+    lines of code:'
+  id: totrans-69
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，在`require()`函数内部，我们将初始化`queryTask`变量，然后注册`QueryTask.complete`事件。添加以下标记的代码行：
+- en: '[PRE15]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: The constructor for `QueryTask` must be a valid URL pointer to a data layer
+    exposed through a map service. In this case, we are creating a reference to the
+    Zoning layer in the LOJIC_LandRecords_Louisville map service. What this indicates
+    is that we are going to perform a query against this layer. If you will remember
+    from a previous chapter, `dojo.on()` is used to register events. In this case,
+    we are registering the `complete` event for our new `QueryTask` object. This event
+    fires when the query has been completed, and in this case will call the `addToMap()`
+    function specified as a parameter to `on()`.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`QueryTask`的构造函数必须是指向通过地图服务公开的数据图层的有效URL指针。在这种情况下，我们正在创建对LOJIC_LandRecords_Louisville地图服务中的Zoning图层的引用。这表明我们将对该图层执行查询。如果您还记得之前的章节，`dojo.on()`用于注册事件。在这种情况下，我们正在为我们的新`QueryTask`对象注册`complete`事件。当查询完成时，此事件将触发，并且在这种情况下将调用作为`on()`参数指定的`addToMap()`函数。'
+- en: 'Now we''ll define the input parameters for the task by creating a `Query` object.
+    In the first line, we create a new `Query` instance, and then we set the `Query.returnGeometry`
+    and `Query.outFields` properties. Setting `Query.returnGeometry` equal to `true`
+    indicates that ArcGIS Server should return the geometric definition of the features
+    that matched the query, while in `Query.outFields` we''ve specified a wildcard
+    indicating that all fields associated with the Zoning layer should be returned
+    for the features returned as a result of the query. Add the following highlighted
+    lines of code just below the code you entered in the previous step:'
+  id: totrans-72
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们将通过创建`Query`对象来定义任务的输入参数。在第一行中，我们创建一个新的`Query`实例，然后设置`Query.returnGeometry`和`Query.outFields`属性。将`Query.returnGeometry`设置为`true`表示ArcGIS
+    Server应返回与查询匹配的要素的几何定义，而在`Query.outFields`中，我们指定了一个通配符，表示应返回与查询结果相关的Zoning图层的所有字段。在上一步中输入的代码下面添加以下标记的代码行：
+- en: '[PRE16]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Add a line of code that registers the `Map.click` event to a `doQuery` function.
+    The `doQuery` function will be passed the point on the map that was clicked by
+    the user. This map point will be used as the geometry in the spatial query. In
+    the next step, we will create the `doQuery` function that will accept the point
+    clicked on the map:'
+  id: totrans-74
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加一行代码，将`Map.click`事件注册到`doQuery`函数。`doQuery`函数将接收用户在地图上点击的点。这个地图点将被用作空间查询中的几何体。在下一步中，我们将创建`doQuery`函数，该函数将接受地图上点击的点：
+- en: '[PRE17]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Now we''ll create the `doQuery` function that executes the `QueryTask` using
+    the `Query` properties we set in the `require( )` function along with the map
+    point clicked by the user, which is used in the `Query.geometry` function. The
+    `doQuery` function accepts a point that was clicked on the map, which can be retrieved
+    using the `mapPoint` property. The `mapPoint` property returns a `Point` object,
+    which is then used to set the `Query.geometry` property that will be used to find
+    the zoning parcel the user has clicked on the map. Finally, the `QueryTask.execute()`
+    method is executed. After the task has executed, a `FeatureSet` object containing
+    the records that match the query will be returned. The question now is where are
+    the results returned? Add the following code block just below the closing brace
+    for the `require()` function:'
+  id: totrans-76
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们将创建`doQuery`函数，该函数使用在`require()`函数中设置的`Query`属性以及用户在地图上点击的地图点执行`QueryTask`。`doQuery`函数接受在地图上点击的点，可以使用`mapPoint`属性检索。`mapPoint`属性返回一个`Point`对象，然后用于设置`Query.geometry`属性，该属性将用于查找用户在地图上点击的分区地块。最后，执行`QueryTask.execute()`方法。任务执行后，将返回包含与查询匹配的记录的`FeatureSet`对象。现在的问题是结果返回在哪里？在`require()`函数的闭合大括号下面添加以下代码块：
+- en: '[PRE18]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Remember that we registered the `QueryTask.complete` event to run the `addToMap()`
+    function. We haven''t created this function yet. Add the following code to create
+    the `addToMap()` function. This function will accept a `FeatureSet` object returned
+    as a result of the query and plot the features on the map. Also notice that an
+    info template is defined for the feature. This will create an `InfoWindow` object
+    to display the attributes of the returned feature:'
+  id: totrans-78
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 记住，我们注册了`QueryTask.complete`事件来运行`addToMap()`函数。我们还没有创建这个函数。添加以下代码来创建`addToMap()`函数。此函数将接受作为查询结果返回的`FeatureSet`对象，并在地图上绘制要素。还要注意为要素定义了信息模板。这将创建一个`InfoWindow`对象来显示返回要素的属性：
+- en: '[PRE19]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: You can view the solution code for this exercise in the `spatialquery.html`
+    file.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在`spatialquery.html`文件中查看此练习的解决方案代码。
+- en: Click on the **Run** button to execute the code. You should see the map in the
+    following screenshot. If not, you may need to recheck your code for accuracy.![Time
+    to practice with spatial queries](graphics/7965_06_07.jpg)
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击**运行**按钮来执行代码。您应该会看到以下截图中的地图。如果没有，请检查您的代码是否准确。
+- en: 'Click anywhere on the map to run the query. You should see the highlighted
+    zoning polygon there, similar to what you can see in the following screenshot:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单击地图上的任意位置来运行查询。您应该会看到高亮显示的分区多边形，类似于您在以下截图中看到的：
+- en: '![Time to practice with spatial queries](graphics/7965_06_08.jpg)'
+  id: totrans-83
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Time to practice with spatial queries](graphics/7965_06_08.jpg)'
+- en: Now, click on the highlighted zoning polygon to display an Info Window that
+    details the attributes associated with the polygon.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，单击高亮显示的分区多边形以显示详细的信息窗口，其中包含与多边形相关联的属性。
+- en: '![Time to practice with spatial queries](graphics/7965_06_09.jpg)'
+  id: totrans-85
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Time to practice with spatial queries](graphics/7965_06_09.jpg)'
+- en: In the task just completed, you learned how to use the `Query` and `QueryTask`
+    objects to create a spatial query that locates the zoning polygon that intersects
+    the point the user has clicked on the map.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在刚刚完成的任务中，您学会了如何使用`Query`和`QueryTask`对象创建一个空间查询，以定位用户在地图上点击的点所相交的分区多边形。
+- en: Summary
+  id: totrans-87
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: 'In this chapter, we introduced the concept of tasks in ArcGIS Server. ArcGIS
+    Server provides a number of tasks for commonly used operations in a web mapping
+    application. Attribute and spatial queries are common operations in web mapping
+    applications. To support these queries, the ArcGIS API for JavaScript provides
+    a `QueryTask` object that can be used to execute these queries on the server.
+    When created, the `QueryTask` object accepts a URL that points to a layer that
+    will be queried in a map server. Various input parameters to the `QueryTask` are
+    provided through the `Query` object. Input parameters can include a `where` property
+    to perform attribute queries, a `geometry` property to perform spatial queries,
+    an `outFields` property to define the set of fields that should be returned, and
+    several other supporting properties. After the query has completed on the server,
+    a `FeatureSet` object is returned to a callback function defined in the application.
+    The callback function can then display the `FeatureSet` (which is just an array
+    of `Graphic` objects) on the map. In the next chapter, you will learn how to use
+    two additional tasks: `IdentifyTask` and `FindTask`. Both can be used to return
+    the attributes of features.'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一章中，我们介绍了ArcGIS Server中任务的概念。ArcGIS Server为Web地图应用程序中常用操作提供了许多任务。属性和空间查询是Web地图应用程序中常见的操作。为了支持这些查询，ArcGIS
+    API for JavaScript提供了一个`QueryTask`对象，可以用来在服务器上执行这些查询。创建时，`QueryTask`对象接受一个指向地图服务器中将被查询的图层的URL。通过`Query`对象提供了`QueryTask`的各种输入参数。输入参数可以包括`where`属性来执行属性查询，`geometry`属性来执行空间查询，`outFields`属性来定义应该返回的字段集，以及其他一些支持属性。在服务器上完成查询后，将`FeatureSet`对象返回给应用程序中定义的回调函数。回调函数可以显示`FeatureSet`（它只是一个`Graphic`对象数组）在地图上。在下一章中，您将学习如何使用另外两个任务：`IdentifyTask`和`FindTask`。两者都可以用来返回要素的属性。

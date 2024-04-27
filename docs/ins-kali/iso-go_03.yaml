@@ -1,0 +1,2688 @@
+- en: Go on the Front-End with GopherJS
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用GopherJS在前端进行Go编程
+- en: Ever since its creation, JavaScript has been the de facto programming language
+    of the web browser. Accordingly, it has had a monopoly over front-end web development
+    for a very long period of time. It's been the only game in town that comes with
+    the capability to manipulate a web page's **Document Object Model** (**DOM**)
+    and access various **application programming interfaces** (**APIs**) implemented
+    in modern web browsers.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 自创建以来，JavaScript一直是Web浏览器的事实标准编程语言。因此，它在前端Web开发领域长期占据主导地位。它一直是唯一具备操纵网页的**文档对象模型**（**DOM**）和访问现代Web浏览器中实现的各种**应用程序编程接口**（**API**）能力的工具。
+- en: Due to this exclusivity, JavaScript has been the only viable option for isomorphic
+    web application development. With the introduction of GopherJS, we now have the
+    ability to create Go programs in the web browser, which also makes it possible
+    to develop isomorphic web applications using Go.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于这种独占性，JavaScript一直是同构Web应用程序开发的唯一可行选项。随着GopherJS的推出，我们现在可以在Web浏览器中创建Go程序，这也使得使用Go开发同构Web应用程序成为可能。
+- en: GopherJS allows us to write programs, in Go, that get converted into an equivalent
+    JavaScript representation, which is suitable to run in any JavaScript-enabled
+    web browser. GopherJS provides us with a viable and attractive alternative to
+    using JavaScript, especially if we are using Go on the server side. With Go on
+    both ends of the spectrum (front-end and back-end), we have new opportunities
+    to share code and eliminate the mental context shifts that come with having to
+    juggle different programming languages across environments.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GopherJS允许我们使用Go编写程序，这些程序会转换为等效的JavaScript表示形式，适合在任何支持JavaScript的Web浏览器中运行。特别是在服务器端使用Go时，GopherJS为我们提供了一种可行且有吸引力的替代方案，尤其是如果我们在前端和后端都使用Go。有了Go覆盖前后端的情况，我们有了新的机会来共享代码，并消除在不同环境中使用不同编程语言时产生的心理上下文转换。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: The Document Object Model
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文档对象模型
+- en: Basic DOM operations
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 基本的DOM操作
+- en: GopherJS overview
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: GopherJS概述
+- en: GopherJS examples
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: GopherJS示例
+- en: Inline template rendering
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 内联模板渲染
+- en: Local storage
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 本地存储
+- en: The Document Object Model
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 文档对象模型
+- en: Before we dive deeper into GopherJS, it's important for us to get an appreciation
+    of what JavaScript, and by extension—GopherJS, does for us. One of the major capabilities
+    that JavaScript has is its ability to access and manipulate the **DOM** (short
+    for **Document Object Model**). The DOM is a tree data structure that represents
+    the structure of a web page and all of the nodes (elements) that exist within
+    it.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们深入研究GopherJS之前，重要的是让我们了解JavaScript以及扩展—GopherJS为我们做了什么。JavaScript具有的主要功能之一是其能够访问和操作**DOM**（**文档对象模型**的缩写）。DOM是表示Web页面结构及其中存在的所有节点（元素）的树形数据结构。
+- en: The significance of the DOM is that it acts as a programming interface for HTML
+    documents, whereby programs that have access to the DOM can change a web page's
+    style, structure, and content. Since each node in a DOM tree is an object, the
+    DOM can be considered the object-oriented representation of a given web page.
+    As such, the objects and their given properties can be accessed and changed using
+    JavaScript.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: DOM的重要性在于它充当HTML文档的编程接口，具有访问Web页面样式、结构和内容的能力。由于DOM树中的每个节点都是一个对象，因此DOM可以被视为给定Web页面的面向对象表示。因此，可以使用JavaScript访问和更改对象及其属性。
+- en: '*Figure 3.1* depicts the DOM hierarchy for a given web page. All elements on
+    the web page are children of the **html** node, which is represented by the `<html>` tag
+    in the web page''s HTML source code:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*图3.1*描述了给定Web页面的DOM层次结构。Web页面上的所有元素都是**html**节点的子节点，由Web页面的HTML源代码中的`<html>`标签表示：'
+- en: '![](img/8cae7934-c0ad-4bab-96d3-ff260b9d3422.png)'
+  id: totrans-15
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/8cae7934-c0ad-4bab-96d3-ff260b9d3422.png)'
+- en: 'Figure 3.1: A web page''s DOM hierarchy'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.1：Web页面的DOM层次结构
+- en: The **head** node is a child of the **html** node and contains two children—meta
+    (defined, in HTML, using the `<meta>` tag) and a script node (for an external
+    CSS or JavaScript source file). At the same level of the head node exists the
+    body node, which is defined using the `<body>` tag.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**head**节点是**html**节点的子节点，包含两个子节点—meta（在HTML中使用`<meta>`标签定义）和一个脚本节点（用于外部CSS或JavaScript源文件）。与head节点处于同一级别的是body节点，使用`<body>`标签定义。'
+- en: The body node contains all the elements that are to be rendered on the web page.
+    Directly under the body node, we have a child, which is a heading node (defined
+    using the `<h1>` tag), that is, the title of the web page. This node has no child
+    elements.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: body节点包含要在Web页面上呈现的所有元素。在body节点下面，我们有一个子节点，即标题节点（使用`<h1>`标签定义），即Web页面的标题。此节点没有子元素。
+- en: At the same level of the heading node, we also have a div node (defined using
+    a `<div>` tag). This node contains a div child node, which has two children—a
+    paragraph node (defined using the `<p>` tag) and at the same level of this node
+    exists an image node (defined using the `<img>` tag).
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在标题节点的同一级别，我们还有一个div节点（使用`<div>`标签定义）。此节点包含一个div子节点，其有两个子节点—一个段落节点（使用`<p>`标签定义），在此节点的同一级别存在一个图像节点（使用`<img>`标签定义）。
+- en: The image node has no child elements, and the paragraph node has one child element—a
+    span node (defined using the `<span>` tag).
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图像节点没有子元素，段落节点有一个子元素—一个span节点（使用`<span>`标签定义）。
+- en: The JavaScript runtime included in the web browser provides us with the functionality
+    to access the various nodes in the DOM tree along with their respective values.
+    Using the JavaScript runtime, we can access both an individual node, and, if the
+    given node contains children, we can access a collection of all the parent's child
+    nodes.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Web浏览器中包含的JavaScript运行时为我们提供了访问DOM树中各个节点及其相应值的功能。使用JavaScript运行时，我们可以访问单个节点，如果给定节点包含子节点，我们还可以访问所有父节点的子节点集合。
+- en: Since web pages are represented as a collection of objects, using the DOM we
+    can access the events, methods, and properties of any given DOM object. In fact,
+    the `document` object represents the web page document itself.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于网页被表示为一组对象，使用DOM，我们可以访问任何给定DOM对象的事件、方法和属性。事实上，`document`对象代表了网页文档本身。
+- en: 'Here''s a helpful introduction to the DOM from the MDN website:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是MDN网站上关于DOM的有用介绍：
+- en: '[https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction).'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction)。'
+- en: Accessing and manipulating the DOM
+  id: totrans-25
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 访问和操作DOM
+- en: 'As noted previously, we can use JavaScript to access and manipulate the DOM
+    for a given web page. Since GopherJS transpiles to JavaScript, we now have the
+    capability to access and manipulate the DOM within the confines of Go. *Figure
+    3.2* depicts a JavaScript Program accessing/manipulating the DOM along with a
+    Go program also accessing/manipulating the DOM:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，我们可以使用JavaScript来访问和操作给定网页的DOM。由于GopherJS转译为JavaScript，我们现在有能力在Go的范围内访问和操作DOM。*图3.2*描述了一个JavaScript程序访问/操作DOM以及一个Go程序也访问/操作DOM：
+- en: '![](img/0b73a589-0ac3-48df-9410-e1418404e5b1.png)'
+  id: totrans-27
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/0b73a589-0ac3-48df-9410-e1418404e5b1.png)'
+- en: 'Figure 3.2: The DOM can be accessed and manipulated by a JavaScript program
+    and/or a Go program (using GopherJS)'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.2：DOM可以被JavaScript程序和/或Go程序（使用GopherJS）访问和操作
+- en: Now, let's take a look at a few simple programming snippets, where we can access
+    the JavaScript functionality using Go, followed by some basic DOM operations using
+    JavaScript and their equivalent instruction in GopherJS. For the time being, let's
+    get a preview of what coding with GopherJS looks like. These concepts will be
+    explained in further detail, as fully fleshed out examples, later in this chapter.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们看一些简单的编程片段，我们可以使用Go访问JavaScript功能，然后使用JavaScript进行一些基本的DOM操作，以及它们在GopherJS中的等效指令。暂时让我们预览一下使用GopherJS编码的样子。这些概念将在本章后面作为完整的例子进行进一步详细解释。
+- en: Basic DOM operations
+  id: totrans-30
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 基本的DOM操作
+- en: In this section, we'll look at a collection of some basic DOM operations. Each
+    DOM operation presented includes the equivalent operation performed in JavaScript,
+    GopherJS, and using the DOM binding.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将看一些基本的DOM操作集合。每个呈现的DOM操作都包括在JavaScript、GopherJS和使用DOM绑定中执行的等效操作。
+- en: Displaying an alert message
+  id: totrans-32
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 显示警报消息
+- en: '**JavaScript**'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**JavaScript**'
+- en: '[PRE0]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: '**GopherJS**'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**GopherJS**'
+- en: '[PRE1]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: '**DOM Binding**'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**DOM绑定**'
+- en: '[PRE2]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'One of the most basic operations we can perform is to show an `alert` message
+    in a modal dialog. In JavaScript, we can display the `alert` message using the
+    built-in `alert` function:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以执行的最基本的操作之一是在模态对话框中显示`alert`消息。在JavaScript中，我们可以使用内置的`alert`函数显示`alert`消息：
+- en: '[PRE3]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: This line of code will print out the message `Hello Isomorphic Go!` in a modal
+    window dialog. The `alert` function blocks further execution until the user dismisses
+    the `alert` dialog.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这行代码将在模态窗口对话框中打印出消息`Hello Isomorphic Go!`。`alert`函数会阻止进一步执行，直到用户关闭`alert`对话框。
+- en: 'When we make a call to the `alert` method, we are actually calling it in this
+    manner:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们调用`alert`方法时，实际上是这样调用的：
+- en: '[PRE4]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: The `window` object is a global object, representing an open window in the web
+    browser. The JavaScript implementation allows us to directly call the `alert`
+    function along with the other built-in functions, without explicitly referencing
+    them as methods of the window object as a means of convenience.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`window`对象是一个全局对象，代表浏览器中打开的窗口。JavaScript实现允许我们直接调用`alert`函数以及其他内置函数，而不需要将它们显式地引用为窗口对象的方法，这是一种方便的方式。'
+- en: 'We use the `js` package to access the JavaScript functionality through Go,
+    using GopherJS. We can import the package into our Go program as follows:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`js`包通过GopherJS访问JavaScript功能。我们可以将包导入到我们的Go程序中，如下所示：
+- en: '[PRE5]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: The `js` package provides us with functionality to interact with native JavaScript
+    APIs. Calls to functions in the `js` package are translated directly to their
+    equivalent JavaScript syntax.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`js`包为我们提供了与原生JavaScript API交互的功能。对`js`包中的函数的调用直接转换为它们等效的JavaScript语法。'
+- en: 'We can display an `alert` message dialog using Go, with GopherJS, in the following
+    manner:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用GopherJS在Go中以以下方式显示`alert`消息对话框：
+- en: '[PRE6]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: In the preceding code snippet, we used the `Call` method that is available to
+    the `js.Global` object. The `js.Global` object provides us with JavaScript's global
+    object (the `window` object).
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码片段中，我们使用了`js.Global`对象可用的`Call`方法。`js.Global`对象为我们提供了JavaScript的全局对象（`window`对象）。
+- en: 'Here''s what the `Call` method signature looks like:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是`Call`方法的签名：
+- en: '[PRE7]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: The `Call` method will call the global object's method with the provided name.
+    The first parameter provided to the method is the name of the method to call.
+    The second parameter is a list of arguments that are to be passed on to the global
+    object's method. The `Call` method is known as a variadic function, since it can
+    take in a variable number of parameters of the `interface{}` type.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Call`方法将调用全局对象的方法，并提供名称。提供给方法的第一个参数是要调用的方法的名称。第二个参数是要传递给全局对象方法的参数列表。`Call`方法被称为可变函数，因为它可以接受`interface{}`类型的可变数量的参数。'
+- en: You can learn more about the `Call` method by viewing the GopherJS documentation
+    at [https://godoc.org/github.com/gopherjs/gopherjs/js#Object.Call](https://godoc.org/github.com/gopherjs/gopherjs/js#Object.Call).
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过查看GopherJS文档了解更多关于`Call`方法的信息[https://godoc.org/github.com/gopherjs/gopherjs/js#Object.Call](https://godoc.org/github.com/gopherjs/gopherjs/js#Object.Call)。
+- en: Now that we've seen how to display the `alert` dialog window using the `Call`
+    method of the `js.Global` object, let's take a look at the DOM bindings.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经看到了如何使用`js.Global`对象的`Call`方法来显示`alert`对话框窗口，让我们来看看DOM绑定。
+- en: The `dom` package provides us with convenient GopherJS bindings to the JavaScript
+    DOM API. The idea behind using this package, as opposed to performing all operations
+    using the `js.Global` object, is that the DOM bindings provides us with an idiomatic
+    way to call the common DOM API functionality.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`dom`包为我们提供了方便的GopherJS绑定到JavaScript DOM API。使用这个包的想法是，与使用`js.Global`对象执行所有操作相比，DOM绑定为我们提供了一种惯用的方式来调用常见的DOM
+    API功能。'
+- en: 'If you are already familiar with the JavaScript APIs used to access and manipulate
+    the DOM, then using the `dom` package will feel second nature to you. We can access
+    the global window object using the `GetWindow` function, like this:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您已经熟悉用于访问和操作DOM的JavaScript API，那么使用`dom`包将对您来说感觉自然。我们可以使用`GetWindow`函数访问全局窗口对象，就像这样：
+- en: '[PRE8]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Using the `dom` package, we can display the alert dialog message with the following
+    code:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`dom`包，我们可以使用以下代码显示警报对话框消息：
+- en: '[PRE9]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'A cursory view of this code snippet shows that this feels closer to the JavaScript
+    way of calling the `alert` dialog:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对这段代码片段的粗略观察表明，这更接近于调用`alert`对话框的JavaScript方式：
+- en: '[PRE10]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Due to this similarity, it's a good idea to be well-versed in the JavaScript
+    DOM APIs, since it will provide you with the ability to be familiar with equivalent
+    function calls, using the `dom` package.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于这种相似性，熟悉JavaScript DOM API是一个好主意，因为它将使您能够熟悉等效的函数调用，使用`dom`包。
+- en: You can learn more about the `dom` package by viewing the documentation for
+    the package at </span>[https://godoc.org/honnef.co/go/js/dom](https://godoc.org/honnef.co/go/js/dom).
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过查看包的文档来了解更多关于`dom`包的信息</span>[https://godoc.org/honnef.co/go/js/dom](https://godoc.org/honnef.co/go/js/dom)。
+- en: Getting a DOM element by ID
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 通过ID获取DOM元素
+- en: We can use the `document` object's `getElementById` method to access an element
+    for a given `id`. In these examples, we access the primary content `div` container,
+    which has `id` of `"primaryContent"`.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`document`对象的`getElementById`方法来访问给定`id`的元素。在这些例子中，我们访问了具有`id`为`"primaryContent"`的主要内容`div`容器。
+- en: '**JavaScript**'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JavaScript
+- en: '[PRE11]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: '**GopherJS**'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GopherJS
+- en: '[PRE12]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: '**DOM Binding**'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: DOM绑定
+- en: '[PRE13]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Although the `dom` package's method calls are very similar to the JavaScript
+    method calls, subtle differences can occur.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管`dom`包的方法调用与JavaScript的方法调用非常相似，但可能会出现细微的差异。
+- en: For example, take note of the capitalization in the `getElementById` method
+    call on the `document` object using JavaScript, and compare it with the capitalization
+    of the `GetElementByID` method call when using the DOM binding.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，注意在JavaScript中使用`document`对象的`getElementById`方法调用时的大写，以及使用DOM绑定时使用`GetElementByID`方法调用时的大写。
+- en: In order to export the `GetElementByID` method in Go, we must capitalize the
+    first letter, here, *G*. Also, notice the subtle difference in the capitalization
+    of the substring *Id* when using the JavaScript way, compared with the capitalization
+    of *ID* when using the DOM binding.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了在Go中导出`GetElementByID`方法，我们必须大写第一个字母，这里是*G*。此外，注意在使用JavaScript方式时，*Id*的大小写的微妙差异，与使用DOM绑定时*ID*的大小写的微妙差异。
+- en: Query selector
+  id: totrans-76
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 查询选择器
+- en: The `querySelector` method of the `document` object provides us with a means
+    to access a DOM element using a CSS query selector, in a manner similar to the
+    jQuery library. We can access the `h2` element containing the welcome message,
+    on the IGWEB homepage, using the `querySelector` method of the document object.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`document`对象的`querySelector`方法为我们提供了一种使用CSS查询选择器访问DOM元素的方法，类似于jQuery库。我们可以使用文档对象的`querySelector`方法访问包含欢迎消息的`h2`元素，在IGWEB主页上。'
+- en: '**JavaScript**'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JavaScript
+- en: '[PRE14]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: '**GopherJS**'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GopherJS
+- en: '[PRE15]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: '**DOMBinding**'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: DOM绑定
+- en: '[PRE16]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Changing the CSS style property of an element
+  id: totrans-84
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更改元素的CSS样式属性
+- en: In the previous code snippets that we covered, we only considered examples where
+    we accessed the DOM element. Now, let's consider an example where we change an
+    element's CSS style property. We will hide the content inside the primary content
+    `div` container by changing the value of the `div` element's `display` property.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们之前涵盖的代码片段中，我们只考虑了访问DOM元素的例子。现在，让我们考虑一个例子，我们将改变一个元素的CSS样式属性。我们将通过改变`div`元素的`display`属性来隐藏主要内容`div`容器中的内容。
+- en: 'We can save ourselves some typing by aliasing calls to `js.Global` and the `dom` package
+    like this:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过给`js.Global`和`dom`包的调用起别名来节省一些输入，就像这样：
+- en: 'For GopherJS:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于GopherJS：
+- en: '`JS := js.Global`'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`JS := js.Global`'
+- en: 'For the `dom` package:'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于`dom`包：
+- en: '`D := dom.GetWindow().Document()`'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`D := dom.GetWindow().Document()`'
+- en: In order to change the display property of the primary content div container,
+    we will first need to access the `div` element, and then change it's `display`
+    property to the `none` value.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了改变主要内容div容器的显示属性，我们首先需要访问`div`元素，然后将其`display`属性更改为`none`值。
+- en: '**JavaScript**'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JavaScript
+- en: '[PRE17]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: '**GopherJS**'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: GopherJS
+- en: '[PRE18]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: '**DOM Binding**'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: DOM绑定
+- en: '[PRE19]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: You can get a feel for working with GopherJS, using the GopherJS Playground
+    at [https://gopherjs.github.io/playground/](https://gopherjs.github.io/playground/).
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过使用GopherJS Playground来体验使用GopherJS，网址为[https://gopherjs.github.io/playground/](https://gopherjs.github.io/playground/)。
+- en: GopherJS overview
+  id: totrans-99
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: GopherJS概述
+- en: 'Now that we''ve seen a preview of using GopherJS, let''s consider a high-level
+    overview on how GopherJS works. *Figure 3.3* depicts an Isomorphic Go application
+    that consists of a Go front-end web application (using GopherJS) and a Go back-end
+    web application:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经预览了使用GopherJS，让我们来考虑一下GopherJS的工作原理的高级概述。*图3.3*描述了一个同构的Go应用程序，其中包括一个使用GopherJS的Go前端Web应用程序和一个Go后端Web应用程序：
+- en: '![](img/20fc07f2-fb79-454b-a515-00ad25513e50.png)'
+  id: totrans-101
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/20fc07f2-fb79-454b-a515-00ad25513e50.png)'
+- en: 'Figure 3.3: An Isomorphic Go web application consists of a Go front-end web
+    application (using GopherJS) and a Go back-end web application'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.3：同构的Go Web应用程序包括一个使用GopherJS的Go前端Web应用程序和一个Go后端Web应用程序
+- en: In *Figure 3.3*, we illustrated the means of communication as an HTTP transaction,
+    but it's important to note that this is not the only means by which the client
+    and web server can communicate. We can also establish a persistent connection
+    using the web browser's WebSocket API, which we will cover in [Chapter 8](38c071ef-d44c-452c-80dd-0b76837cc5e8.xhtml),
+    *Real-Time Web Application Functionality*.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在图3.3中，我们将通信方式描述为HTTP事务，但重要的是要注意，这不是客户端和Web服务器进行通信的唯一方式。我们还可以使用Web浏览器的WebSocket
+    API建立持久连接，这将在[第8章](38c071ef-d44c-452c-80dd-0b76837cc5e8.xhtml)中介绍，即*实时Web应用程序功能*。
+- en: In the microexamples that we covered in the previous section, we were introduced
+    to the GopherJS DOM bindings, which provide us access to the DOM API—a JavaScript
+    API implemented in the web browser. In addition to the DOM API, there are other
+    APIs such as the XHR (to create and send XMLHttpRequests) API and WebSocket API
+    (to create a bidirectional, persistent connection with the web server). There
+    are GopherJS bindings available for the XHR and WebSocket APIs as well.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前一节中，我们介绍了GopherJS DOM绑定的微例子，它们为我们提供了对DOM API的访问，这是在Web浏览器中实现的JavaScript API。除了DOM
+    API之外，还有其他API，如XHR（用于创建和发送XMLHttpRequests）API和WebSocket API（用于与Web服务器创建双向持久连接）。XHR和WebSocket
+    API也有GopherJS绑定可用。
+- en: '*Figure 3.4* depicts common JavaScript APIs on the left, and their equivalent
+    GopherJS binding on the right. With a GopherJS binding available, we can access
+    JavaScript API functionality from within the Go programming language itself:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.4显示了左侧的常见JavaScript API，右侧是它们对应的GopherJS绑定。有了GopherJS绑定，我们可以从Go编程语言中访问JavaScript
+    API功能：
+- en: '![](img/4f3bdd37-00ad-44a5-90ba-567cdcdebe49.png)'
+  id: totrans-106
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/4f3bdd37-00ad-44a5-90ba-567cdcdebe49.png)'
+- en: 'Figure 3.4: Common JavaScript APIs and their Equivalent GopherJS bindings'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.4：常见的JavaScript API及其等效的GopherJS绑定
+- en: The GopherJS transpiler
+  id: totrans-108
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: GopherJS转译器
+- en: 'We use the GopherJS transpiler to convert a Go program into a JavaScript program.
+    *Figure 3.5* depicts a Go program that not only makes use of the functionality
+    from the Go standard library but also uses the functionality from various JavaScript
+    APIs using the equivalent GopherJS bindings package:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用GopherJS转译器将Go程序转换为JavaScript程序。图3.5描述了一个Go程序，不仅使用了Go标准库的功能，还使用了各种JavaScript
+    API的功能，使用了等效的GopherJS绑定包：
+- en: '![](img/03e2e6dc-3294-4428-896f-ac16c157496a.png)'
+  id: totrans-110
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/03e2e6dc-3294-4428-896f-ac16c157496a.png)'
+- en: 'Figure 3.5: A Go program that makes use of the standard library and GopherJS
+    bindings transpiled to an equivalent JavaScript program'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.5：使用标准库和GopherJS绑定转译为等效JavaScript程序的Go程序
+- en: We use the `gopherjs build` command to transpile the Go program into its equivalent
+    JavaScript representation. The produced JavaSript source code is not meant to
+    be modified by humans. The JavaScript program has access to the underlying JavaScript
+    runtime embedded in the web browser, along with access to common JavaScript APIs.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`gopherjs build`命令将Go程序转译为其等效的JavaScript表示。生成的JavaScript源代码不是供人类修改的。JavaScript程序可以访问嵌入在Web浏览器中的JavaScript运行时，以及常见的JavaScript
+    API。
+- en: To get an idea of how types are converted from Go to JavaScript, take a look
+    at the table available at [https://godoc.org/github.com/gopherjs/gopherjs/js](https://godoc.org/github.com/gopherjs/gopherjs/js).
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要了解类型是如何从Go转换为JavaScript的，请查看[https://godoc.org/github.com/gopherjs/gopherjs/js](https://godoc.org/github.com/gopherjs/gopherjs/js)上的表格。
+- en: With regard to IGWEB, we have organized the front-end Go web application project
+    code inside of the `client` folder. This allows us to neatly separate the front-end
+    web application from the back-end web application.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于IGWEB，我们将前端Go Web应用程序项目代码组织在`client`文件夹中。这使我们可以将前端Web应用程序与后端Web应用程序清晰地分开。
+- en: '*Figure 3.6* depicts the client project folder containing numerous Go source
+    files:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.6显示了包含许多Go源文件的客户端项目文件夹：
+- en: '![](img/4758a86b-a357-4112-b9f0-c6040844c343.png)'
+  id: totrans-116
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/4758a86b-a357-4112-b9f0-c6040844c343.png)'
+- en: 'Figure 3.6: The client Folder Houses the Go source files that comprise the
+    Front-End Go Web application. The GopherJS transpiler produces a JavaScript program
+    (client.js) and a source map (client.js.map)'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.6：客户端文件夹包含组成前端Go Web应用程序的Go源文件。GopherJS转译器生成一个JavaScript程序（client.js）和一个源映射（client.js.map）
+- en: Upon running the GopherJS transpiler on the Go source files inside the `client`
+    folder, by issuing the `gopherjs build` command, two output files are created.
+    The first output file is the `client.js` file, which represents the equivalent
+    JavaScript program. The second output file is the `client.js.map` file, which
+    is a source map that's used for debugging purposes. This source map helps us when
+    we are chasing down bugs using the web browser's console by providing us detailed
+    information on produced errors.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`client`文件夹中运行GopherJS转译器对Go源文件进行处理时，通过发出`gopherjs build`命令，将创建两个输出文件。第一个输出文件是`client.js`文件，代表等效的JavaScript程序。第二个输出文件是`client.js.map`文件，这是用于调试目的的源映射。这个源映射在我们使用Web浏览器的控制台追踪错误时，通过提供详细的错误信息来帮助我们。
+- en: '*The Appendix: Debugging Isomorphic Go*, contains guidance and advice on debugging
+    an isomorphic web application implemented in Go.'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 附录：调试同构Go包含了有关调试使用Go实现的同构Web应用程序的指导和建议。
+- en: The `gopherjs build` command is synonymous in behavior with its `go build` counterpart.
+    The client project folder can contain any number of subfolders, which may also
+    contain Go source files. When we execute the `gopherjs build` command, a single
+    JavaScript source program is created along with a source `map` file. This is analogous
+    to the single static binary file that gets created when issuing a `go build` command.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`gopherjs build`命令在行为上与其`go build`对应命令相同。客户端项目文件夹可以包含任意数量的子文件夹，这些子文件夹也可能包含Go源文件。当我们执行`gopherjs
+    build`命令时，将创建一个JavaScript源程序和一个源`map`文件。这类似于在发出`go build`命令时创建的单个静态二进制文件。'
+- en: Code that is shared between the server and the client, outside of the client
+    folder, may be shared by specifying the proper path to the shared package in the
+    `import` statement. The `shared` folder will contain code that is to be shared
+    across environments, such as models and templates.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`client`文件夹之外，服务器和客户端之间共享的代码可以通过在`import`语句中指定共享包的正确路径来共享。`shared`文件夹将包含要在各个环境中共享的代码，例如模型和模板。
+- en: 'We can include the GopherJS produced JavaScript source file as an external
+    `javascript` source file in our web page using the `<script>` tag, as shown here:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`<script>`标签将GopherJS生成的JavaScript源文件作为外部`javascript`源文件包含在我们的Web页面中，如下所示：
+- en: '[PRE20]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: Keep in mind that when we issue a `gopherjs build` command, we are not just
+    creating a JavaScript equivalent of the program we are writing, but we are also
+    bringing along any packages from the standard library or third-party packages
+    that our program relies on. So in addition to including our front-end Go program,
+    GophjerJS also includes any dependent packages that our program is dependent on.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，当我们发出`gopherjs build`命令时，我们不仅创建了我们正在编写的程序的JavaScript等效程序，还带来了我们的程序依赖的标准库或第三方包。因此，除了包含我们的前端Go程序外，GopherJS还包括我们的程序依赖的任何依赖包。
+- en: Not all packages from the Go standard library work inside the web browser. You
+    can reference the GopherJS compatibility table to view a list of supported packages
+    from the Go standard library at [https://github.com/gopherjs/gopherjs/blob/master/doc/packages.md](https://github.com/gopherjs/gopherjs/blob/master/doc/packages.md).
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并非所有来自Go标准库的包都可以在Web浏览器中使用。您可以参考GopherJS兼容性表，查看Go标准库中受支持的包的列表，网址为[https://github.com/gopherjs/gopherjs/blob/master/doc/packages.md](https://github.com/gopherjs/gopherjs/blob/master/doc/packages.md)。
+- en: 'The ramification of this fact is that the produced JavaScript source code''s
+    file size will grow proportionately to the amount of dependencies we introduce
+    in our Go program. The other ramification of this fact is that it doesn''t make
+    sense to include multiple GopherJS produced JavaScript files on the same same
+    web page as depicted in *Figure 3.7*, since dependent packages (such as common
+    packages from the standard library) will be included multiple times, unnecessarily
+    bulking up our total script payload and offering no value in return:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一事实的后果是，生成的JavaScript源代码文件大小将与我们在Go程序中引入的依赖关系数量成比例增长。这一事实的另一个后果是，如*图3.7*所示，在同一个Web页面中包含多个GopherJS生成的JavaScript文件是没有意义的，因为依赖包（例如标准库中的常见包）将被多次包含，不必要地增加我们的总脚本负载，并且没有任何回报价值：
+- en: '![](img/c50fbfc9-8ffa-41b3-94bf-91fd6243c09e.png)'
+  id: totrans-127
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/c50fbfc9-8ffa-41b3-94bf-91fd6243c09e.png)'
+- en: 'Figure 3.7: Do not import multiple GopherJS produced source files in a single
+    web page'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.7：不要在单个Web页面中导入多个GopherJS生成的源文件
+- en: 'A web page should therefore, at maximum, include only one GopherJS produced
+    source file, as depicted in *Figure 3.8*:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，一个Web页面最多应包含一个GopherJS生成的源文件，如*图3.8*所示：
+- en: '![](img/99c52275-0f7c-4958-9f46-6168436a2eb6.png)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/99c52275-0f7c-4958-9f46-6168436a2eb6.png)'
+- en: 'Figure 3.8: Only a single GopherJS produced source file should be included
+    in a web page'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.8：Web页面中应包含一个GopherJS生成的源文件
+- en: GopherJS examples
+  id: totrans-132
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: GopherJS示例
+- en: Earlier in this chapter, we got a preview of what coding with GopherJS looks
+    like. Now we will take a look at some fully fleshed out examples to solidify our
+    understanding of some basic concepts.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章的前面，我们预览了使用GopherJS编码的样子。现在我们将看一些完全充实的示例，以巩固我们对一些基本概念的理解。
+- en: As mentioned previously, the source code for the front-end web application can
+    be found within the `client` folder.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，前端Web应用程序的源代码可以在`client`文件夹中找到。
+- en: 'If you want to manually transpile the Go code in the client directory, you
+    can issue the `gopherjs build` command inside the `client` folder:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果要手动转换客户端目录中的Go代码，可以在`client`文件夹中发出`gopherjs build`命令：
+- en: '[PRE21]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: As mentioned earlier, two source files will be produced—the `client.js` JavaScript
+    source file, and the `client.js.map` source map file.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，将生成两个源文件——`client.js` JavaScript源文件和`client.js.map`源映射文件。
+- en: 'To run the web server manually, you can go into the `igweb` folder and run
+    the following command:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要手动运行Web服务器，可以进入`igweb`文件夹并运行以下命令：
+- en: '[PRE22]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'A more convenient alternative is to compile the Go code and the GopherJS code
+    using `kick`, with the following command:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更方便的替代方法是使用`kick`编译Go代码和GopherJS代码，命令如下：
+- en: '[PRE23]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: The advantage of using `kick` is that it will automatically watch for changes
+    made either to the Go back-end web application or the GopherJS front-end web application.
+    As noted in the previous chapter, `kick` will perform an *instant kickstart* when
+    a change is detected, which will speed up your iterative development cycles.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`kick`的优势在于它将自动监视对Go后端Web应用程序或GopherJS前端Web应用程序所做的更改。如前一章所述，当检测到更改时，`kick`将执行*instant
+    kickstart*，这将加快您的迭代开发周期。
+- en: 'Once you have the `igweb` program running, you may access the GopherJS examples
+    at the following URL: [](http://localhost:8080/front-end-examples-demo) `http://localhost:8080/front-end-examples-demo`'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您运行了`igweb`程序，可以在以下网址访问GopherJS示例：[](http://localhost:8080/front-end-examples-demo)
+    `http://localhost:8080/front-end-examples-demo`
+- en: The front-end examples demo will contain some basic GopherJS examples. Let's
+    open up the `igweb.go` source file in the `igweb` folder to see how everything
+    works.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前端示例演示将包含一些基本的GopherJS示例。让我们打开`igweb`文件夹中的`igweb.go`源文件，看看一切是如何工作的。
+- en: 'Inside the `registerRoutes` function, we register the following routes:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`registerRoutes`函数中，我们注册以下路由：
+- en: '[PRE24]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'The `/front-end-examples-demo` route is used to display our front-end examples
+    web page. The `/lowercase-text` route is used to transform text into lowercase.
+    We will be covering the second route in more detail later on; first, let''s take
+    a look at the handler function (found in the `handlers/frontendexamples.go` source
+    file) that handles the `/front-end-examples-demo` route:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`/front-end-examples-demo`路由用于显示我们的前端示例网页。`/lowercase-text`路由用于将文本转换为小写。我们将在稍后更详细地介绍第二个路由；首先，让我们看一下处理`/front-end-examples-demo`路由的处理程序函数（位于`handlers/frontendexamples.go`源文件中）：'
+- en: '[PRE25]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Here, we have defined our handler function, `FrontEndExamplesHandler`, which
+    accepts a pointer to an `env` object as an input argument, and returns an `http.Handler`
+    function. We have defined a closure to return the `http.HandlerFunc`, which accepts
+    `http.ResponseWriter` and `*http.Request` as input arguments.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们已经定义了我们的处理程序函数`FrontEndExamplesHandler`，它接受一个`env`对象的指针作为输入参数，并返回一个`http.Handler`函数。我们已经定义了一个闭包来返回`http.HandlerFunc`，它接受`http.ResponseWriter`和`*http.Request`作为输入参数。
+- en: We call the `Render` method on the `TemplateSet` object to render the front-end
+    examples page. The first input argument to the method is the template's name,
+    which is `frontend_examples_page`. The second input argument is the render parameters
+    that are to be used. Since we are rendering the template from the server side,
+    we pass `w`, `http.ResponseWriter`, which is responsible for writing out the web
+    page response (the rendered template). Since we are not passing any data to the
+    template, we assign a value of `nil` to the `Data` field of the `RenderParams`
+    struct.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`TemplateSet`对象上调用`Render`方法来渲染前端示例页面。方法的第一个输入参数是模板的名称，即`frontend_examples_page`。第二个输入参数是要使用的渲染参数。由于我们是从服务器端渲染模板，我们传递`w`，即`http.ResponseWriter`，负责写出网页响应（渲染的模板）。由于我们没有向模板传递任何数据，我们将`RenderParams`结构体的`Data`字段赋值为`nil`。
+- en: In [Chapter 4](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml), *Isomorphic Templates*,
+    we will explain how template sets work, and how we can use the isomorphic template renderer,
+    provided by the `isokit` package, to render templates on both the server-side
+    and the client-side.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第4章](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml)中，*同构模板*，我们将解释模板集是如何工作的，以及我们如何使用`isokit`包提供的同构模板渲染器在服务器端和客户端渲染模板。
+- en: 'Inside the partial source code listing of the `initializePage` function, found
+    in the `client.go` source file, we have included the following line of code to
+    initialize the GopherJS code examples (shown in bold):'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`client.go`源文件中的`initializePage`函数的部分源代码列表中，我们包含了以下代码行来初始化GopherJS代码示例（以粗体显示）：
+- en: '[PRE26]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: The `gopherjsprimer.InitializePage` function is responsible for adding event
+    listeners to elements found on the front-end examples web page. Before we register
+    any events, we first check to see if the page with the `/front-end-examples` route has
+    been accessed. If the user is accessing a page with a different route, such as
+    `/index`, there is no need to set up the event handlers for the front-end examples
+    page. If the user has accessed the `/front-end-examples` route, then the flow
+    of control will reach the `case` statement specifying the `"front-end-examples-demo"` value,
+    and we will set up all the event handlers for the UI elements on the web page
+    by calling the `gopherjsprimer.InitializePage` function.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`gopherjsprimer.InitializePage`函数负责向前端示例网页中的元素添加事件侦听器。在注册任何事件之前，我们首先检查页面是否已经访问了`/front-end-examples`路由。如果用户正在访问不同路由的页面，例如`/index`，则无需为前端示例页面设置事件处理程序。如果用户已经访问了`/front-end-examples`路由，那么控制流将到达指定值为`"front-end-examples-demo"`的`case`语句，并且我们将通过调用`gopherjsprimer.InitializePage`函数为网页上的UI元素设置所有事件处理程序。'
+- en: 'Let''s take a closer look at the `InitializePage` function found in the `client/gopherjsprimer/initpage.go` source
+    file:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们仔细看看`client/gopherjsprimer/initpage.go`源文件中的`InitializePage`函数：
+- en: '[PRE27]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: The `InitializePage` function is responsible for adding the event listeners
+    to elements found in the front-end examples web page using the element's `AddEventListener`
+    method (shown in bold).
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`InitializePage`函数负责使用元素的`AddEventListener`方法（以粗体显示）向前端示例网页中的元素添加事件侦听器。'
+- en: Displaying an alert message
+  id: totrans-158
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 显示警报消息
+- en: 'Let''s start off with an example to display an alert dialog. Earlier in this
+    chapter, we saw how we could accomplish displaying the alert dialog using the
+    `Call` method of the `js.Global` object and the GopherJS DOM bindings. *Figure
+    3.9* depicts the user interface of our first example:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从一个例子开始，显示一个警报对话框。在本章的前面，我们看到了如何使用`js.Global`对象的`Call`方法和GopherJS DOM绑定来显示警报对话框。*图3.9*描述了我们第一个例子的用户界面：
+- en: '![](img/740dc41d-898d-425d-9898-8ee2959e019c.png)'
+  id: totrans-160
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/740dc41d-898d-425d-9898-8ee2959e019c.png)'
+- en: 'Figure 3.9: The Display Alert message example'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.9：显示警报消息示例
+- en: 'The user interface consists of an input text field, where the user can enter
+    a custom message to display in the alert dialog. Following the text field are
+    two buttons:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户界面包括一个输入文本字段，用户可以在其中输入要显示在警报对话框中的自定义消息。文本字段后面是两个按钮：
+- en: The first button will display the alert dialog using the `Call` method on the
+    `js.Global` object
+  id: totrans-163
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第一个按钮将使用`js.Global`对象上的`Call`方法显示警报对话框
+- en: The second button will display the alert dialog using the GopherJS DOM Bindings
+  id: totrans-164
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第二个按钮将使用GopherJS DOM绑定显示警报对话框
+- en: The HTML markup for the front-end examples can be found in the template file
+    located at `shared/templates/frontend_examples_page.tmpl`.
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前端示例的HTML标记可以在位于`shared/templates/frontend_examples_page.tmpl`的模板文件中找到。
+- en: 'Here''s the HTML markup for the alert message example:'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是警报消息示例的HTML标记：
+- en: '[PRE28]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: Here, we declared two buttons (shown in bold) and assigned unique ids to them.
+    The button that will display the alert dialog using the `js.Global.Call` functionality
+    has an `id` of `alertMessageJSGlobal`. The button that will display the alert
+    dialog using the GopherJS DOM bindings has an `id` of `alertMessageDOM`.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们声明了两个按钮（用粗体显示）并为它们分配了唯一的id。使用`js.Global.Call`功能显示警报对话框的按钮具有`alertMessageJSGlobal`的id。使用GopherJS
+    DOM绑定显示警报对话框的按钮具有`alertMessageDOM`的id。
+- en: 'The following code snippet from the `InitializePage` function, defined in the
+    `initpage.go` source file, is responsible for setting up the event handlers for
+    the `Display Alert Message` buttons that will be displayed in the example:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`initpage.go`源文件中定义的`InitializePage`函数中的以下代码片段负责为在示例中显示的`Display Alert Message`按钮设置事件处理程序：
+- en: '[PRE29]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: We fetch the first button by making a call to the `GetElementByID` function
+    on the `document` object, passing in the `id` of the button as the input argument
+    to the function. We then call the `AddEventListener` method on the button to create
+    a new event listener, which will listen for a click event. We call the `DisplayAlertMessagesJSGlobal`
+    function when the first button has been clicked, and pass in the value of the
+    `messageInput` text field, which contains the custom Alert Message that the user
+    can enter.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们通过在`document`对象上调用`GetElementByID`函数来获取第一个按钮，将按钮的`id`作为函数的输入参数传递。然后，我们调用按钮上的`AddEventListener`方法来创建一个新的事件监听器，该监听器将监听点击事件。当第一个按钮被点击时，我们调用`DisplayAlertMessagesJSGlobal`函数，并传递`messageInput`文本字段的值，其中包含用户可以输入的自定义警报消息。
+- en: We set up the event listener for the second button in a similar fashion, except
+    the function we call when a click event is detected on the button is `DisplayAlertMessageDOM`,
+    which calls the function to show the alert dialog using the GopherJS DOM bindings.
+    Again, we pass in the value of the `messageInput` text field to the function.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们以类似的方式为第二个按钮设置了事件监听器，只是当检测到按钮上的点击事件时，我们调用`DisplayAlertMessageDOM`函数，该函数调用使用GopherJS
+    DOM绑定显示警报对话框的函数。同样，我们将`messageInput`文本字段的值传递给函数。
+- en: 'Now, if you were to click on either button, you should be able to see the alert
+    dialog. Change the alert message to something different, and notice that the change
+    you make to the Alert Message text field will be reflected in the alert dialog.
+    *Figure 3.10* depicts the alert dialog with a custom message of Hello Isomorphic
+    Gopher!:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你点击任何一个按钮，你应该能够看到警报对话框。将警报消息更改为不同的内容，并注意你对警报消息文本字段所做的更改将反映在警报对话框中。*图3.10*描述了具有自定义消息Hello
+    Isomorphic Gopher!的警报对话框：
+- en: '![](img/8ce236ca-e89a-45e5-b86d-0ef86cca8a95.png)'
+  id: totrans-174
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/8ce236ca-e89a-45e5-b86d-0ef86cca8a95.png)'
+- en: 'Figure 3.10: The example that displays the alert dialog with a custom alert
+    message'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.10：显示具有自定义警报消息的示例
+- en: Changing an element's CSS style property
+  id: totrans-176
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更改元素的CSS样式属性
+- en: 'Now we will take a look at an example where we actually manipulate the DOM
+    by changing an element''s CSS style property. The user interface of this example
+    consists of the image of the Isomorphic Gopher, and right below it are two buttons,
+    as shown in *Figure 3.11*. The first button, when clicked, will show the Isomorphic
+    Gopher image, if it is hidden. The second button, when clicked, will hide the
+    Isomorphic Gopher image, if it is shown. *Figure 3.11* shows the Isomorphic Gopher
+    when it is visible:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将看一个例子，其中我们实际上通过改变元素的CSS样式属性来操作DOM。这个例子的用户界面由等距地图鼹鼠的图像组成，正下方是两个按钮，如*图3.11*所示。第一个按钮被点击时，如果它被隐藏，将显示等距地图鼹鼠图像。第二个按钮被点击时，如果它被显示，将隐藏等距地图鼹鼠图像。*图3.11*显示了等距地图鼹鼠可见时的情况：
+- en: '![](img/08a48cf6-fa7c-4848-a09b-a8981a2fb0c7.png)'
+  id: totrans-178
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/08a48cf6-fa7c-4848-a09b-a8981a2fb0c7.png)'
+- en: 'Figure 3.11: The user interface when the Isomorphic Gopher image is visible'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.11：当等距地图鼹鼠图像可见时的用户界面
+- en: '*Figure 3.12* depicts the user interface when the Isomorphic Gopher image is
+    not visible:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*图3.12*描述了当等距地图鼹鼠图像不可见时的用户界面：'
+- en: '![](img/14bd6b99-7a09-41af-b4cd-815616e2a4a6.png)'
+  id: totrans-181
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/14bd6b99-7a09-41af-b4cd-815616e2a4a6.png)'
+- en: 'Figure 3.12: The user interface when the Isomorphic Gopher image is not visible'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.12：当等距地图鼹鼠图像不可见时的用户界面
+- en: 'Here''s the HTML markup that generates the user interface for this example:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是为此示例生成用户界面的HTML标记：
+- en: '[PRE30]'
+  id: totrans-184
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Here, we declare an image tag that represents the Isomorphic Go image and assign
+    it an `id` of `isomorphicGopher`. We declare two buttons (shown in bold):'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们声明了代表等距地图鼹鼠图像的图像标签，并为其分配了`isomorphicGopher`的id。我们声明了两个按钮（用粗体显示）：
+- en: The first button, having an `id` of `showGopher`, will show the Isomorphic Gopher
+    image, when clicked
+  id: totrans-186
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第一个按钮，具有`showGopher`的id，将在点击时显示等距地图鼹鼠图像
+- en: The second button, having an `id` of `hideGopher`, will hide the Isomorphic
+    Gopher image, when clicked
+  id: totrans-187
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第二个按钮，具有`hideGopher`的id，将在点击时隐藏等距地图鼹鼠图像
+- en: 'The following code snippet from the `InitializePage` function is responsible
+    for setting up the event handlers for the two buttons that show and hide the Isomorphic
+    Gopher image:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`InitializePage`函数中的以下代码片段负责为显示和隐藏等距地图鼹鼠图像的两个按钮设置事件处理程序：'
+- en: '[PRE31]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: If the Show Isomorphic Gopher button is clicked, we call the `ShowIsomorphicGopher` function.
+    If the Hide Isomorphic Gopher button is clicked, we call the `HideIsomorphicGopher` function.
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果点击显示等距地图鼹鼠按钮，我们调用`ShowIsomorphicGopher`函数。如果点击隐藏等距地图鼹鼠按钮，我们调用`HideIsomorphicGopher`函数。
+- en: 'Let''s examine the `ShowIsomorphicGopher` and `HideIsomorphicGopher` functions
+    defined in the `client/gopherjsprimer/cssexample.go` source file:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看一下`client/gopherjsprimer/cssexample.go`源文件中定义的`ShowIsomorphicGopher`和`HideIsomorphicGopher`函数：
+- en: '[PRE32]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Both the `ShowIsomorphicGopher` and `HideIsomorphicGopher` functions call the
+    `toggleIsomorphicGopher` function. The only difference is that the `ShowIsomorphicGopher` function
+    calls the `toggleIsomorphicGopher` function with an input parameter of true, and
+    the `HideIsomorphicGopher` function calls the `toggleIsomorphicGopher` function
+    with an input parameter of `false`.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ShowIsomorphicGopher`和`HideIsomorphicGopher`函数都调用`toggleIsomorphicGopher`函数。唯一的区别是，`ShowIsomorphicGopher`函数调用`toggleIsomorphicGopher`函数并传入`true`的输入参数，而`HideIsomorphicGopher`函数调用`toggleIsomorphicGopher`函数并传入`false`的输入参数。'
+- en: The `toggleIsomorphicGopher` function takes in a single argument, which is a
+    Boolean variable indicating whether or not the `IsomorphicGopher` image should
+    be shown, or not.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`toggleIsomorphicGopher`函数接受一个布尔变量作为参数，指示是否应显示`IsomorphicGopher`图像。'
+- en: If we pass in a value of `true` to the function, then the Isomorphic Gopher
+    image should be displayed, as shown in *Figure 3.11*. If we pass in a value of
+    `false` to the function, then the Isomorphic Gopher image should not be displayed,
+    as shown in *Figure 3.12*. We assign the value of the `Document` object to the `d` variable.
+    We make a call to the `GetElementByID` method of the `Document` object to get
+    the Isomorphic Gopher image. Notice that we have performed a type assertion (shown
+    in bold) to assert that the value returned by `d.GetElementByID("isomorphicGopher")`
+    has a concrete type of `*dom.HTMLImageElement`.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们向函数传递`true`的值，那么等距地图像将被显示，如*图3.11*所示。如果我们向函数传递`false`的值，那么等距地图像将不会被显示，如*图3.12*所示。我们将`Document`对象的值赋给`d`变量。我们调用`Document`对象的`GetElementByID`方法来获取等距地图像。请注意，我们已经执行了类型断言（粗体显示），以断言`d.GetElementByID("isomorphicGopher")`返回的值具有`*dom.HTMLImageElement`的具体类型。
+- en: We declared an `if` conditional block that checks if the value of the `isVisible`
+    Boolean variable is `true`, and if it is, we set the `display` property of the
+    image element's `Style` object to be `inline`. This will cause the Isomorphic
+    Gopher image to appear, as shown in *Figure 3.11*.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们声明了一个`if`条件块，检查`isVisible`布尔变量的值是否为`true`，如果是，我们将图像元素的`Style`对象的`display`属性设置为`inline`。这将导致等距地图像出现，如*图3.11*所示。
+- en: If the value of the `isVisible` Boolean variable is `false`, we reach the `else`
+    block, and we set the `display` property of the image element's `Style` object
+    to be `none`, which will prevent the Isomorphic Gopher image from being displayed,
+    as shown in *Figure 3.12*.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果`isVisible`布尔变量的值为`false`，我们进入`else`块，并将图像元素的`Style`对象的`display`属性设置为`none`，这将防止等距地图像显示，如*图3.12*所示。
+- en: The JavaScript typeof operator functionality
+  id: totrans-198
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: JavaScript typeof运算符功能
+- en: 'The JavaScript `typeof` operator is used to return the type of a given operand.
+    For example, let''s consider the following JavaScript code:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JavaScript的`typeof`运算符用于返回给定操作数的类型。例如，让我们考虑以下JavaScript代码：
+- en: '[PRE33]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'This expression will evaluate to the Boolean value of `true`. On a similar
+    note, now consider this JavaScript code:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个表达式将求值为布尔值`true`。同样，现在考虑这段JavaScript代码：
+- en: '[PRE34]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: This expression will also evaluate to the Boolean value of `true`.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个表达式也将求值为布尔值`true`。
+- en: So you might be wondering, how can we make use of the JavaScript `typeof` operator
+    using Go? The answer is, we will need the `jsbuiltin` package, the GopherJS bindings
+    for built-in JavaScript functionality, which includes the `typeof` operator.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以你可能会想，我们如何使用Go来使用JavaScript的`typeof`运算符？答案是，我们将需要`jsbuiltin`包，GopherJS对内置JavaScript功能的绑定，其中包括`typeof`运算符。
+- en: 'In this example, we will make use of JavaScript''s `typeof` operator using
+    the `jsbuiltin` package. *Figure 3.13* depicts the user interface for this example:'
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们将使用`jsbuiltin`包使用JavaScript的`typeof`运算符。*图3.13*展示了这个例子的用户界面：
+- en: '![](img/12865f98-0842-417e-8e3d-b5b7ea66b13a.png)'
+  id: totrans-206
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/12865f98-0842-417e-8e3d-b5b7ea66b13a.png)'
+- en: 'Figure 3.13: The user interface for the JavaScript typeof example'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.13：JavaScript typeof示例的用户界面
+- en: 'Here''s the HTML markup that implements the user interface for this example:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是实现此示例用户界面的HTML标记：
+- en: '[PRE35]'
+  id: totrans-209
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'We have declared a button with an `id` of `bultinDemoButton`. Now, let''s set
+    up an event listener for the Builtin Demo button, inside the `InitializePage`
+    function, to handle the click event:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们声明了一个`id`为`bultinDemoButton`的按钮。现在，让我们在`InitializePage`函数中为内置演示按钮设置一个事件侦听器，以处理点击事件：
+- en: '[PRE36]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: We get the `button` element by calling the `GetElementID` method on the `Document`
+    object, `d`. We assign the returned `button` element to the `builtinDemoButton` variable.
+    We then add an event listener to the `button` element to detect when it's clicked.
+    If a click event is detected, we call the `builtinDemo` function and pass in the
+    value of the `button` element, which happens to be the event target.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们通过在`Document`对象`d`上调用`GetElementID`方法来获取`button`元素。我们将返回的`button`元素赋给`builtinDemoButton`变量。然后我们向`button`元素添加事件侦听器以检测其是否被点击。如果检测到点击事件，我们调用`builtinDemo`函数并传入`button`元素的值，这恰好是事件目标。
+- en: 'Let''s examine the `builtindemo.go` source file found in the `client/gopherjsprimer`
+    folder:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们检查`client/gopherjsprimer`文件夹中的`builtindemo.go`源文件：
+- en: '[PRE37]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'The `bulitindemo` function accepts an input argument of the `dom.Element` type.
+    Inside this function, we perform a JavaScript `typeof` operation on the element
+    that''s passed into the function by calling the `TypeOf` function from the `jsbuiltin`
+    package (shown in bold). We check to see if the element passed in is an object.
+    If it is an object, we print out a message to the web console, confirming that
+    the element passed into the function is an object. *Figure 3.14* depicts the message
+    printed on the web console:'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`bulitindemo`函数接受`dom.Element`类型的输入参数。在这个函数内部，我们通过调用`jsbuiltin`包的`TypeOf`函数（粗体显示）对传入函数的元素执行JavaScript的`typeof`操作。我们检查传入的元素是否是对象。如果是对象，我们会在Web控制台上打印出一条消息，确认传入函数的元素是一个对象。*图3.14*展示了在Web控制台上打印的消息：'
+- en: '![](img/668122f7-9980-4234-b3b0-50af070d483f.png)'
+  id: totrans-216
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/668122f7-9980-4234-b3b0-50af070d483f.png)'
+- en: 'Figure 3.14: The message printed on the web console after the built in demo
+    button is clicked'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.14：在内置演示按钮被点击后在Web控制台上打印的消息
+- en: On the surface, this is a pretty trivial example. However, it highlights a very
+    important concept—from within the confines of Go, we can still access the built-in
+    JavaScript functionality.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从表面上看，这是一个相当琐碎的例子。然而，它突出了一个非常重要的概念——在Go的范围内，我们仍然可以访问内置的JavaScript功能。
+- en: Transforming text to lowercase using an XHR post
+  id: totrans-219
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用XHR post将文本转换为小写
+- en: 'Now we will create a simple lowercase text transformer. Any text the user enters
+    will be converted to lowercase. The user interface for our lowercase text transformer
+    solution is depicted in *Figure 3.15*. In the image, the input text is GopherJS.
+    When the user clicks on the Lowercase It! button, the text in the text field will
+    be transformed to its lowercase equivalent, which is gopherjs:'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将创建一个简单的小写文本转换器。用户输入的任何文本都将转换为小写。我们的小写文本转换器解决方案的用户界面如*图3.15*所示。在图像中，输入文本为GopherJS。当用户点击Lowercase
+    It!按钮时，文本字段中的文本将被转换为其小写等价物，即gopherjs：
+- en: '![](img/c9618da7-a56b-498f-b10c-74e41aa50f38.png)'
+  id: totrans-221
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/c9618da7-a56b-498f-b10c-74e41aa50f38.png)'
+- en: 'Figure 3.15: The lowercase Text Transformer example'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.15：小写文本转换器示例
+- en: In fact, we can apply the text transformation on the client side; however, it
+    would be more interesting to see an example where we send the input text over
+    to the web server in the form of an `XHR Post`, and then perform the lowercase
+    transformation on the server side. Once the server is done transforming the text
+    to lowercase, the input is sent back to the client, and the text field is updated
+    with the lowercase version of the input text.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，我们可以在客户端上应用文本转换；然而，看到一个示例，我们将输入文本以`XHR Post`的形式发送到Web服务器，然后在服务器端执行小写转换会更有趣。一旦服务器完成将文本转换为小写，输入将被发送回客户端，并且文本字段将使用输入文本的小写版本进行更新。
+- en: 'Here''s what the HTML markup for the user interface looks like:'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是用户界面的HTML标记：
+- en: '[PRE38]'
+  id: totrans-225
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: We declare an `input` text field, where the user can enter text that they want
+    to convert to lowercase. We assign an `id` of `textToLowercase` for the `input`
+    text field. We then declare a button with an `id` of `lowercaseTransformButton`.
+    When this button is clicked, we will initiate an `XHR Post` to the server. The
+    server will convert the text to lowercase and send back the lowercase version
+    of the entered text.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们声明一个`input`文本字段，用户可以在其中输入他们想要转换为小写的文本。我们为`input`文本字段分配了一个`id`为`textToLowercase`。然后我们声明一个带有`id`为`lowercaseTransformButton`的按钮。当点击此按钮时，我们将启动一个`XHR
+    Post`到服务器。服务器将转换文本为小写并发送回输入文本的小写版本。
+- en: 'Here''s the code from the `InitializePage` function, that is used to set up
+    the event listener for the button:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是`InitializePage`函数中的代码，用于设置按钮的事件监听器：
+- en: '[PRE39]'
+  id: totrans-228
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: We assign the `button` element to the `lowercaseTransformButton` variable. We
+    then call the `AddEventListener` method on the `button` element to detect a click
+    event. When a click event is detected, we call the `lowercaseTextTransformer` function.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将`button`元素分配给`lowercaseTransformButton`变量。然后我们调用`button`元素上的`AddEventListener`方法来检测点击事件。当检测到点击事件时，我们调用`lowercaseTextTransformer`函数。
+- en: 'Here''s the `lowercaseTextTransformer` function defined in the `client/gopherjsprimer/xhrpost.go`
+    source file:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是在`client/gopherjsprimer/xhrpost.go`源文件中定义的`lowercaseTextTransformer`函数：
+- en: '[PRE40]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: We first start out by fetching the text input element and assigning it to the `textToLowercase` variable.
+    We then marshal the text value entered into the text input element to its JSON
+    representation, using the `Marshal` function from the `json` package. We assign
+    the marshaled value to the `textBytes` variable.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先通过获取文本输入元素并将其分配给`textToLowercase`变量来开始。然后，我们使用`json`包中的`Marshal`函数将输入到文本输入元素中的文本值编组为其JSON表示形式。我们将编组的值分配给`textBytes`变量。
+- en: We use the GopherJS XHR bindings to send the `XHR Post` to the web server. The
+    XHR bindings are made available to us through the `xhr` package. We call the `Send`
+    function from the `xhr` package to submit the `XHR Post`. The first argument to
+    the function is the HTTP method that we are going to use to submit the data. Here
+    we have specified `POST` as the HTTP method. The second input argument is the
+    path to `POST` the data to. Here we have specified the `/lowercase-text` route, which
+    we had set up in the `igweb.go` source file. The third and last argument is the
+    data that is to be sent through the `XHR Post`, which is `textBytes`—the JSON
+    marshaled data.
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用GopherJS XHR绑定来发送`XHR Post`到Web服务器。XHR绑定是通过`xhr`包提供给我们的。我们调用`xhr`包中的`Send`函数来提交`XHR
+    Post`。函数的第一个参数是我们将用于提交数据的HTTP方法。这里我们指定`POST`作为HTTP方法。第二个输入参数是要将数据提交到的路径。这里我们指定了`/lowercase-text`路由，这是我们在`igweb.go`源文件中设置的。第三个也是最后一个参数是要通过`XHR
+    Post`发送的数据，即`textBytes`——JSON编组的数据。
+- en: The server response from the `XHR Post` will be stored in the `data` variable.
+    We call the `Unmarshal` function in the `json` package to unmarshal the server's
+    response and assign the unmarshaled value to the `s` variable of the `string`
+    type. We then set the value of the text input element to the value of the `s` variable,
+    using the `Set` method of the `textToLowercase` object.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来自`XHR Post`的服务器响应将存储在`data`变量中。我们调用`json`包中的`Unmarshal`函数来解组服务器的响应，并将解组的值分配给`string`类型的`s`变量。然后我们使用`textToLowercase`对象的`Set`方法将文本输入元素的值设置为`s`变量的值。
+- en: 'Now, let''s take a look at the server-side handler that''s responsible for
+    the lowercase transformation in the `handlers/lowercasetext.go` source file:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们来看看负责在`handlers/lowercasetext.go`源文件中进行小写转换的服务器端处理程序：
+- en: '[PRE41]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: In the `LowercaseTextTransformHandler` function, we make a call to the `ReadAll`
+    function in the `ioutil` package to read the request body. We save the string
+    value of `reqBody` to the `reqBodyString` variable. We then JSON unmarshal this
+    string, and store the unmarshaled value to the `s` variable, which is of the `string` type.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`LowercaseTextTransformHandler`函数中，我们调用`ioutil`包中的`ReadAll`函数来读取请求体。我们将`reqBody`的字符串值保存到`reqBodyString`变量中。然后我们对这个字符串进行JSON解组，并将解组后的值存储到`string`类型的`s`变量中。
+- en: We use the `ToLower` function from the `strings` package to transform the value
+    of the `s` string variable to lowercase, and marshal the value into its JSON representation.
+    We then call the `Write` method on `http.ResponseWriter`, `w`, to write out the
+    JSON marshaled value of the string in lowercase.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`strings`包中的`ToLower`函数将`s`字符串变量的值转换为小写，并将该值编组成JSON表示。然后我们在`http.ResponseWriter`的`w`上调用`Write`方法，将字符串的JSON编组值写出为小写。
+- en: 'When we click on the Lowercase It! button in the user interface, the string
+    GopherJS gets transformed into its lowercase representation gopherjs, as shown
+    in *Figure 3.16*:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们在用户界面中点击Lowercase It!按钮时，字符串GopherJS会被转换为其小写表示gopherjs，如*图3.16*所示：
+- en: '![](img/51fee22d-c095-4427-aeee-15ef890c2179.png)'
+  id: totrans-240
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/51fee22d-c095-4427-aeee-15ef890c2179.png)'
+- en: 'Figure 3.16: The text "GopherJS" is converted to lowercase "gopherjs" once
+    the button is clicked'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.16：当按钮被点击时，文本“GopherJS”被转换为小写的“gopherjs”
+- en: Inline template rendering
+  id: totrans-242
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 内联模板渲染
+- en: In this section, you will learn how to perform client-side template rendering
+    in Go using GopherJS. We can render templates directly within the web browser
+    using the `html/template` package. We will render the individual rows of a table
+    of cars, using an inline template.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，您将学习如何使用GopherJS在Go中执行客户端模板渲染。我们可以直接在Web浏览器中使用`html/template`包来渲染模板。我们将使用内联模板来渲染汽车表格的各行。
+- en: The cars listing demo
+  id: totrans-244
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 汽车列表演示
+- en: In the cars listing demo, we will populate a table with rows that are rendered
+    from an inline client-side Go template. In our example, the table will be a list
+    of cars, and we will obtain the cars to be shown in the table from a slice of
+    cars. We will then encode the slice of cars using `gob` encoding and transmit
+    the data to the web server instance over an XHR call.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在汽车列表演示中，我们将使用内联客户端端Go模板填充一张表格的行。在我们的示例中，表格将是汽车列表，我们将从汽车切片中获取要显示在表格中的汽车。然后我们使用`gob`编码对汽车切片进行编码，并通过XHR调用将数据传输到Web服务器实例。
+- en: 'Client-side template rendering has many benefits:'
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 客户端模板渲染有很多好处：
+- en: CPU usage on the web server is rendered, which is caused by server-side template
+    rendering
+  id: totrans-247
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Web服务器上的CPU使用率是由服务器端模板渲染引起的
+- en: Full page reloads are not required to render the client-side template
+  id: totrans-248
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 不需要完整页面重新加载来渲染客户端模板
+- en: Bandwidth consumption is reduced by rendering the template on the client-side
+  id: totrans-249
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过在客户端端渲染模板来减少带宽消耗
+- en: 'Let''s open up the `cars.html` source file in the `shared/templates/carsdemo_page.tmpl` directory:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在`shared/templates/carsdemo_page.tmpl`目录中打开`cars.html`源文件：
+- en: '[PRE42]'
+  id: totrans-251
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: This HTML source file contains the web page content for our example, a table
+    of cars, where we will be rendering each row of the table using an inline template.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个HTML源文件包含了我们示例的网页内容，一个汽车表格，我们将使用内联模板来渲染表格的每一行。
+- en: We have declared the table that will be displayed on the web page using the
+    `table` tag. We have declared the headers for each column. Since we will be displaying
+    a table of cars, we have three columns for each car; we have a column for the
+    the model name, a column for the color, and a column for the manufacturer.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`table`标签声明了将在网页上显示的表格。我们声明了每一列的标题。由于我们将显示一张汽车表格，每辆车有三列；我们有一个列用于车型名称，一个列用于颜色，一个列用于制造商。
+- en: Each new row that we will be adding to the table will be appended to the `tbody`
+    element (shown in bold).
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要添加到表格中的每一行都将被追加到`tbody`元素中（以粗体显示）。
+- en: 'Notice that we use the `carsdemolayout.tmpl` layout template, to layout the
+    cars demo page. Let''s open this file located in the `shared/templates/layouts`
+    directory:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们使用`carsdemolayout.tmpl`布局模板来布局汽车演示页面。让我们打开位于`shared/templates/layouts`目录中的这个文件：
+- en: '[PRE43]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: The layout template is responsible for not only rendering the `pagecontent`
+    template but also the header template, `carsdemoheader.tmpl`, which is located
+    in the `templates/shared/partials` directory. The layout template is also responsible
+    for importing the `client.js` external JavaScript source file that was produced
+    by GopherJS.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 布局模板不仅负责渲染`pagecontent`模板，还负责渲染位于`templates/shared/partials`目录中的头部模板`carsdemoheader.tmpl`。布局模板还负责导入由GopherJS生成的`client.js`外部JavaScript源文件。
+- en: 'Let''s take a look at the `carsdemoheader.tmpl` source file:'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看一下`carsdemoheader.tmpl`源文件：
+- en: '[PRE44]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: In this header template file, we import the CSS stylesheet and the JavaScript
+    source file for Material Design Library. We'll use Material Design Library to
+    make our table look pretty with the default material design styles.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个头部模板文件中，我们导入了CSS样式表和Material Design Library的JavaScript源文件。我们将使用Material Design
+    Library来使用默认的材料设计样式使我们的表格看起来漂亮。
+- en: 'Inside the `initializePage` function of the `client.go` source file, we included
+    the following line of code to initialize the cars demo code example, upon landing
+    on the cars demo web page:'
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`client.go`源文件的`initializePage`函数中，我们包含了以下代码行来初始化汽车演示代码示例，当着陆在汽车演示网页上时：
+- en: '[PRE45]'
+  id: totrans-262
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'Inside the `cars.go` source file in the `client/carsdemo` directory, we have
+    declared the inline template used to render the information for a given car:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`client/carsdemo`目录中的`cars.go`源文件中，我们声明了用于渲染给定汽车信息的内联模板：
+- en: '[PRE46]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: We declared the `CarItemTemplate` constant, which is a multi-line string that
+    comprises our inline template. In the first line of our template, we render the
+    column containing the model name. In the second line of our template, we render
+    the color of the car. Finally, in the third line of our template, we render the
+    manufacturer of the car.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们声明了`CarItemTemplate`常量，这是一个多行字符串，包括我们的内联模板。在模板的第一行中，我们渲染包含型号名称的列。在模板的第二行中，我们渲染汽车的颜色。最后，在模板的第三行中，我们渲染汽车的制造商。
+- en: 'We declared and initialized the `D` variable with the `Document` object, as
+    shown here:'
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们声明并初始化了`D`变量，使用了`Document`对象，如下所示：
+- en: '[PRE47]'
+  id: totrans-267
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'The `InitializePage` function (found in the `client/carsdemo/cars.go` source
+    file) is responsible for calling the `cars` function:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`InitializePage`函数（在`client/carsdemo/cars.go`源文件中找到）负责调用`cars`函数：'
+- en: '[PRE48]'
+  id: totrans-269
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'Inside the `cars` function, we create a `nano`, an `ambassador`, and an `omni`—three
+    instances of the `Car` type. Right after this, we use the car objects to populate
+    the `cars` slice:'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`cars`函数内部，我们创建了`nano`，`ambassador`和`omni`——`Car`类型的三个实例。就在这之后，我们使用汽车对象来填充`cars`切片：
+- en: '[PRE49]'
+  id: totrans-271
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'Now that we have a slice of `cars` to populate the table with, it''s time to
+    generate each row of the table with the following code:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一个`cars`切片来填充表格，是时候用以下代码生成表格的每一行了：
+- en: '[PRE50]'
+  id: totrans-273
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Here, we have declared and initialized the `autoTableBody` variable, which is
+    the `tbody` element of the table. This is the element we will use to append new
+    rows to the table. We loop through the `cars` slice, and for each `Car` struct,
+    we dynamically create a `tr` element, using the `CreateElement` method of the
+    `Document` object. We then create a new template, and parse the contents of the
+    car item template.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们声明并初始化了`autoTableBody`变量，这是表格的`tbody`元素。这是我们将用来向表格追加新行的元素。我们遍历`cars`切片，对于每个`Car`结构，我们使用`Document`对象的`CreateElement`方法动态创建一个`tr`元素。然后我们创建一个新模板，并解析汽车项目模板的内容。
+- en: We declare a buffer variable named `buff`, to hold the result of the executed
+    template. We call the `Execute` function on the template object, `tpl`, passing
+    in `buff`, and the current `Car` record at the `i` index of the `cars` slice,
+    which will be the data object that is fed to the inline template.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们声明了一个名为`buff`的缓冲变量，用于保存执行模板的结果。我们在模板对象`tpl`上调用`Execute`函数，传入`buff`和`cars`切片的`i`索引处的当前`Car`记录，这将是传递给内联模板的数据对象。
+- en: We then call the `SetInnerHTML` method on the `tr` element object and pass in
+    the string value of the `buff` variable, which will contain our rendered template
+    contents.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们在`tr`元素对象上调用`SetInnerHTML`方法，并传入`buff`变量的字符串值，其中包含我们渲染的模板内容。
+- en: 'This is what the cars table looks like with all the rows populated:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是所有行都填充的汽车表的样子：
+- en: '![](img/a5cb151a-e871-42ea-9bd8-f2ebbe2f98d9.png)'
+  id: totrans-278
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a5cb151a-e871-42ea-9bd8-f2ebbe2f98d9.png)'
+- en: 'Figure 3.17: The cars table'
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.17：汽车表
+- en: This example was useful for illustration purposes, however, it is not very practical
+    in a real-world scenario. Mixing inline templates, written in HTML, inside Go
+    source files can become an unmaintainable mess, as the project codebase scales.
+    In addition to this, it would be nice if we had a means to access all the templates
+    for user-facing web pages that the server had access to, on the client side. In
+    fact, we can, and that will be our focus in [Chapter 4](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml), *Isomorphic
+    Templates*.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个例子对于说明目的是有用的，但在实际情况下并不是很实用。在Go源文件中混合使用HTML编写的内联模板可能会变得难以维护，因为项目代码库规模扩大。除此之外，如果我们有一种方法可以在客户端访问服务器端所有用户界面的模板，那将是很好的。事实上，我们可以做到，这将是我们在[第4章](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml)中的重点，*同构模板*。
+- en: Now that we've seen how to render an inline template, let's consider how we
+    can transmit the `cars` slice to the server as binary data, encoded in the `gob`
+    format.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经看到了如何渲染内联模板，让我们考虑如何将`cars`切片作为二进制数据以`gob`格式编码传输到服务器。
+- en: Transmitting gob encoded data
+  id: totrans-282
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 传输gob编码数据
+- en: The `encoding/gob` package provides us with the functionality to manage streams
+    of gobs, which are binary values exchanged between an encoder and a decoder. You
+    use the encoder to encode a value into `gob` encoded data and you use the decoder
+    to decode `gob` encoded data.
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`encoding/gob`包为我们提供了管理gob流的功能，这些流是在编码器和解码器之间交换的二进制值。您可以使用编码器将值编码为`gob`编码数据，然后使用解码器解码`gob`编码数据。'
+- en: 'With Go on the server side and on the client-side, we have created a Go-specific
+    environment, as shown in *Figure 3.18*. This is an ideal environment to use the `encoding/gob` package, as
+    a means for data exchange between the client and the server:'
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过在服务器端和客户端上使用Go，我们创建了一个Go特定的环境，如*图3.18*所示。这是使用`encoding/gob`包进行客户端和服务器之间数据交换的理想环境：
+- en: '![](img/948fb981-58cf-4b2a-b0ff-e74256d19245.png)'
+  id: totrans-285
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/948fb981-58cf-4b2a-b0ff-e74256d19245.png)'
+- en: 'Figure 3.18: A Go-specific environment'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.18：Go特定的环境
+- en: The data that we will be transmitting consists of the `cars` slice. The `Car`
+    struct can be considered isomorphic, since we can use the `Car` struct on both
+    the client side and the server side.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要传输的数据包括`cars`切片。`Car`结构可以被认为是同构的，因为我们可以在客户端和服务器端都使用`Car`结构。
+- en: 'Notice that in the `cars.go` source file, we have included the `encoding/gob`
+    package (shown in bold) in our import groupings:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在`cars.go`源文件中，我们已经包含了`encoding/gob`包（以粗体显示）在我们的导入分组中：
+- en: '[PRE51]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'We encode the `cars` slice to the `gob` format using the following code:'
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用以下代码将`cars`切片编码为`gob`格式：
+- en: '[PRE52]'
+  id: totrans-291
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: Here we have declared a bytes buffer called `carsDataBuffer` that will contain
+    the `gob` encoded data. We created a new `gob` encoder, and specified that we
+    want to store the encoded data into `carsDataBuffer`. We then called the `Encode`
+    method on our `gob` encoder object, and passed in the `cars` slice. At this point,
+    we have encoded the `cars` slice into `carsDataBuffer`.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们声明了一个名为`carsDataBuffer`的字节缓冲区，它将包含`gob`编码的数据。我们创建了一个新的`gob`编码器，并指定我们要将编码后的数据存储到`carsDataBuffer`中。然后我们调用了`gob`编码器对象上的`Encode`方法，并传入了`cars`切片。到这一步，我们已经将`cars`切片编码到了`carsDataBuffer`中。
+- en: 'Now that we have encoded the `cars` slice into the `gob` format, we can transmit
+    the `gob` encoded data to the server over an XHR call using the `HTTP POST` method:'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经将`cars`切片编码成`gob`格式，我们可以使用`HTTP POST`方法通过XHR调用将`gob`编码的数据传输到服务器：
+- en: '[PRE53]'
+  id: totrans-294
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: We call the `Send` function in the `xhr` package, and specify that we want to
+    use the `POST` method, and will be sending the data to the `/cars-data` URL. We
+    call the `Bytes` method on the `carsDataBuffer` to get the representation of the
+    buffer as a byte slice. It is this byte slice that we will send off to the server,
+    and it is the `gob` encoded `car` slice.
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`xhr`包中调用`Send`函数，并指定我们要使用`POST`方法，并将数据发送到`/cars-data`URL。我们调用`carsDataBuffer`上的`Bytes`方法，以获取缓冲区的字节切片表示。正是这个字节切片，我们将发送到服务器，并且它是`gob`编码的`car`切片。
+- en: The response from the server will be stored in the `xhrResponse` variable, and
+    we will print this variable out in the web console.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 服务器的响应将存储在`xhrResponse`变量中，并且我们将在网络控制台中打印出这个变量。
+- en: 'Now that we''ve seen the client-side of our program, it''s time to take a look
+    at the server-side handler function that services the `/cars-data` route. Let''s
+    examine the `CarsDataHandler` function defined in the `carsdata.go` source file
+    found in the handlers directory:'
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经看到了程序的客户端部分，是时候来看看服务端处理程序函数了，它服务于`/cars-data`路由。让我们来看看`carsdata.go`源文件中定义的`CarsDataHandler`函数，它位于handlers目录中：
+- en: '[PRE54]'
+  id: totrans-298
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: Inside the `CarsDataHandler` function, we declare the `cars` variable, which
+    is a slice of `Car` objects. Right below this, we have `carsDataBuffer`, which
+    will contain the `gob` encoded data that we receive from the XHR call that was
+    sent from the client-side web application.
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`CarsDataHandler`函数内部，我们声明了一个`cars`变量，它是一个`Car`对象的切片。在这之下，我们有`carsDataBuffer`，它将包含从客户端网页应用程序发送的XHR调用中接收到的`gob`编码数据。
+- en: We create a new `gob` decoder and we specify that the `gob` data will be stored
+    in `carsDataBuffer`. We then use the `ReadAll` function from the `ioutil` package
+    to read the request body and to save all the contents to the `body` variable.
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建了一个新的`gob`解码器，并指定`gob`数据将存储在`carsDataBuffer`中。然后我们使用`ioutil`包中的`ReadAll`函数来读取请求体并将所有内容保存到`body`变量中。
+- en: We then create a new bytes buffer and pass in the `body` variable as the input
+    argument to the `NewBuffer` function. The `carsDataBuffer` now contains the `gob`
+    encoded data that was transmitted over the XHR call. Finally, we make a call to
+    the `Decode` function of the `dec` object to convert the `gob` encoded data back
+    into a slice of the `Car` objects.
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们创建一个新的字节缓冲区，并将`body`变量作为输入参数传递给`NewBuffer`函数。`carsDataBuffer`现在包含了通过XHR调用传输的`gob`编码数据。最后，我们调用`dec`对象的`Decode`函数，将`gob`编码的数据转换回`Car`对象的切片。
+- en: 'If we didn''t receive any errors, we print out the `cars` slice to standard
+    out:'
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们没有收到任何错误，我们将`cars`切片打印到标准输出：
+- en: '[PRE55]'
+  id: totrans-303
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'In addition to printing the `cars` slice to standard out, we write a response
+    back to the web client indicating that the slice of `cars` has been received successfully.
+    We can view this message in the web browser console:'
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了将`cars`切片打印到标准输出之外，我们还向网络客户端发送了一个响应，指示`cars`切片已成功接收。我们可以在网络浏览器控制台中查看这条消息：
+- en: '![](img/24b9fade-eb63-4b23-a704-55d075d06f03.png)'
+  id: totrans-305
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/24b9fade-eb63-4b23-a704-55d075d06f03.png)'
+- en: 'Figure 3.19: The server response to the web client'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.19：服务器对网络客户端的响应
+- en: Local storage
+  id: totrans-307
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 本地存储
+- en: Did you know that the web browser comes with a built-in key-value database?
+    The name of this database is local storage, and in JavaScript, we can access the
+    `localStorage` object as a property of the `window` object. Local storage allows
+    us to store data locally within the web browser. Local storage is per domain and
+    protocol, meaning that pages from the same origin can access and modify shared
+    data.
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你知道吗，网络浏览器自带了一个内置的键值数据库吗？这个数据库的名字叫本地存储，在JavaScript中，我们可以将`localStorage`对象作为`window`对象的属性来访问。本地存储允许我们在网络浏览器中本地存储数据。本地存储是按域和协议划分的，这意味着来自相同来源的页面可以访问和修改共享数据。
+- en: 'Here are some benefits of local storage:'
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是本地存储的一些好处：
+- en: It provides secure data storage
+  id: totrans-310
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它提供安全的数据存储
+- en: It has a far greater storage limit than cookies (at least 5 MB)
+  id: totrans-311
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它的存储限制比cookie大得多（至少5MB）
+- en: It provides low latency data access
+  id: totrans-312
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它提供低延迟的数据访问
+- en: It is helpful for web applications that need to operate offline (internet connection
+    not required)
+  id: totrans-313
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于不需要联网的网络应用程序非常有帮助
+- en: It can be utilized as a local cache
+  id: totrans-314
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它可以用作本地缓存
+- en: Common local storage operations
+  id: totrans-315
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 常见的本地存储操作
+- en: 'We will be showing you how to perform some common operations on the `localStorage`
+    object using JavaScript code. These operations include the following:'
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将向您展示如何使用JavaScript代码对`localStorage`对象执行一些常见操作。这些操作包括以下内容：
+- en: Setting a key-value pair
+  id: totrans-317
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 设置键值对
+- en: Getting a value for a given key
+  id: totrans-318
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 获取给定键的值
+- en: Getting all key-value pairs
+  id: totrans-319
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 获取所有键值对
+- en: Clearing all entries
+  id: totrans-320
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 清除所有条目
+- en: In the next section, we will show you how to perform the same operations using
+    GopherJS, in a fully fleshed out example.
+  id: totrans-321
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将向您展示如何使用GopherJS执行相同的操作，以一个完全充实的示例。
+- en: Setting a key-value pair
+  id: totrans-322
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置键值对
+- en: 'To store an item into local storage, we call the `setItem` method of the `localStorage`
+    object, and pass in the key and value as parameters to the method:'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要将项目存储到本地存储中，我们调用`localStorage`对象的`setItem`方法，并将键和值作为参数传递给该方法：
+- en: '[PRE56]'
+  id: totrans-324
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: Here we have provided a `"foo"` key, with a `"bar"` value.
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们提供了一个`"foo"`键，带有一个`"bar"`值。
+- en: Getting a value for a given key
+  id: totrans-326
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取给定键的值
+- en: 'To get an item from local storage, we call the `getItem` method of the `localStorage`
+    object and pass in the key as the single parameter to the method:'
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要从本地存储中获取项目，我们调用`localStorage`对象的`getItem`方法，并将键作为该方法的单个参数传递：
+- en: '[PRE57]'
+  id: totrans-328
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: Here we have provided the `"foo"` key, and we expect that the value of the `x` variable will
+    be equal to `"bar"`.
+  id: totrans-329
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们提供了`"foo"`键，并且我们期望`x`变量的值将等于`"bar"`。
+- en: Getting all key value pairs
+  id: totrans-330
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取所有键值对
+- en: 'We can retrieve all key-value pairs from local storage using a `for` loop and
+    accessing the values of the key and value, using the `key` and `getItem` methods
+    of the `localStorage` object:'
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`for`循环从本地存储中检索所有键值对，并使用`localStorage`对象的`key`和`getItem`方法访问键和值的值：
+- en: '[PRE58]'
+  id: totrans-332
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: We use the `key` method on the `localStorage` object, passing in the numeric
+    index, `i`, to get the i^(*th*) key in the storage. Similarly, we pass in the `i` numeric
+    index to the `key` method of the `localStorage` object, in order to get the name
+    of the key at the ith place in the storage. Note that the name of the key is obtained
+    by the `localStorage.key(i)` method call and passed to the `getItem` method to
+    retrieve the value for the given key.
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`localStorage`对象上使用`key`方法，传入数字索引`i`，以获取存储中的第i个键。类似地，我们将`i`数字索引传递给`localStorage`对象的`key`方法，以获取存储中第i个位置的键的名称。请注意，键的名称是通过`localStorage.key(i)`方法调用获得的，并传递给`getItem`方法以检索给定键的值。
+- en: Clearing all entries
+  id: totrans-334
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 清除所有条目
+- en: 'We can easily remove all the entries in local storage by calling the `clear`
+    method on the `localStorage` object:'
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过在`localStorage`对象上调用`clear`方法轻松地删除本地存储中的所有条目：
+- en: '[PRE59]'
+  id: totrans-336
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Building a local storage inspector
+  id: totrans-337
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建本地存储检查器
+- en: 'With the information presented in the previous section on how to utilize the
+    `localStorage` object, let''s go ahead and build a local storage inspector. The
+    local storage inspector, will allow us to perform the following operations:'
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据上一节中关于如何利用`localStorage`对象的信息，让我们继续构建本地存储检查器。本地存储检查器将允许我们执行以下操作：
+- en: Viewing all the key-value pairs that are currently stored in local storage
+  id: totrans-339
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 查看当前存储在本地存储中的所有键值对
+- en: Adding a new key-value pair to local storage
+  id: totrans-340
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 向本地存储添加新的键值对
+- en: Clearing all key-value pairs in local storage
+  id: totrans-341
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 清除本地存储中的所有键值对
+- en: '*Figure 3.20* depicts the user interface for the local storage inspector:'
+  id: totrans-342
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*图3.20*描述了本地存储检查器的用户界面：'
+- en: '![](img/f23ed4be-f436-4afe-b71f-7ced3274cf8c.png)'
+  id: totrans-343
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f23ed4be-f436-4afe-b71f-7ced3274cf8c.png)'
+- en: 'Figure 3.20: The Local Storage Demo user interface'
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.20：本地存储演示用户界面
+- en: The box directly under the LocalStorage Demo title is a `div` container that
+    is responsible for holding the list of key-value pairs that are currently stored
+    in local storage. The Key input text field is where the user enters the key for
+    the key-value pair. The Value input text field is where the user enters the value
+    for the key-value pair. Clicking on the Save button will save the new key-value
+    entry into local storage. Clicking on the Clear All button, will clear all key-value
+    entries in local storage.
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 直接位于LocalStorage Demo标题下方的框是一个`div`容器，负责保存当前存储在本地存储中的键值对列表。键输入文本字段是用户输入键的地方。值输入文本字段是用户输入键值对的值的地方。单击保存按钮将新的键值对条目保存到本地存储中。单击清除所有按钮将清除本地存储中的所有键值对条目。
+- en: Creating the user interface
+  id: totrans-346
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建用户界面
+- en: 'We''ve defined the layout for the local storage demo page inside the `localstorage_layout.tmpl`
+    source file found in the `shared/templates/layouts` folder:'
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`shared/templates/layouts`文件夹中找到的`localstorage_layout.tmpl`源文件中定义了本地存储演示页面的布局：
+- en: '[PRE60]'
+  id: totrans-348
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: This layout template defines the layout of the local storage demo web page.
+    We use template actions (shown in bold) to render the `partials/localstorageheader_partial` header
+    template, and the `pagecontent` page content template.
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此布局模板定义了本地存储演示网页的布局。我们使用模板操作（以粗体显示）来呈现`partials/localstorageheader_partial`头部模板和`pagecontent`页面内容模板。
+- en: Notice that at the bottom of the web page, we include the JavaScript source
+    file, `client.js`, which was produced by GopherJS, using the `script` tag (shown
+    in bold).
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在网页底部，我们包含了JavaScript源文件`client.js`，这是由GopherJS生成的，使用`script`标签（以粗体显示）。
+- en: 'We''ve defined the header template for the local storage demo page inside the
+    `localstorageheader_partial.tmpl` source file found in the `shared/templates/partials`
+    folder:'
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`shared/templates/partials`文件夹中找到的`localstorageheader_partial.tmpl`源文件中定义了本地存储演示页面的头部模板。
+- en: '[PRE61]'
+  id: totrans-352
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: This header template is meant to render the `head` tag, where we include external
+    CSS stylesheets using the `link` tags (shown in bold).
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此标题模板旨在呈现`head`标签，我们在其中使用`link`标签（以粗体显示）包含外部CSS样式表。
+- en: 'We''ve defined the HTML markup for the local storage demo''s user interface
+    in the `localstorage_example_page.tmpl` source file found in the `shared/templates`
+    folder:'
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`shared/templates`文件夹中找到的`localstorage_example_page.tmpl`源文件中定义了本地存储演示的用户界面的HTML标记：
+- en: '[PRE62]'
+  id: totrans-355
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: The `div` element with the `id` of `"storageContents"` will be used to store
+    the list of item entries in the local storage database. In fact, we will use the
+    dl (description list) element with `id` of `"itemList"` to display all the key-value
+    pairs.
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 具有`"storageContents"`id的`div`元素将用于存储本地存储数据库中的项目条目列表。实际上，我们将使用具有`"itemList"`id的dl（描述列表）元素来显示所有键值对。
+- en: We have defined an input text field for the user to enter the key, and we have
+    also defined an input text field for the user to enter the value. We've also defined
+    the markup for the `Save` button, and directly under that, we've defined the markup
+    for the `Clear All` button.
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们为用户定义了一个输入文本字段以输入键，并且我们还为用户定义了一个输入文本字段以输入值。我们还为`Save`按钮定义了标记，并且直接在其下方，我们定义了`Clear
+    All`按钮的标记。
+- en: Setting up the server-side route
+  id: totrans-358
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置服务器端路由
+- en: 'We''ve registered the `/localstorage-demo` route inside the `registerRoutes`
+    function found in the `igweb.go` source file:'
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`igweb.go`源文件中的`registerRoutes`函数中注册了`/localstorage-demo`路由：
+- en: '[PRE63]'
+  id: totrans-360
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'We''ve defined the `LocalStorageDemoHandler` server-side handler function to
+    service the `/localstorage-demo` server-side route in the `localstoragedemo.go`
+    source file found in the `handlers` folder:'
+  id: totrans-361
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经定义了`LocalStorageDemoHandler`服务器端处理程序函数，用于服务于`localstorage-demo`服务器端路由，在`handlers`文件夹中找到的`localstoragedemo.go`源文件中：
+- en: '[PRE64]'
+  id: totrans-362
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: The `LocalStorageDemoHandler` function is responsible for writing the web page
+    response to the client. It calls the `Render` method of the application's `TemplateSet`
+    object, to render the `localstorage_example_page` template. You will learn more
+    about rendering isomorphic templates, in [Chapter 4](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml), *Isomorphic
+    Templates*.
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`LocalStorageDemoHandler`函数负责向客户端写入网页响应。它调用应用程序的`TemplateSet`对象的`Render`方法，以渲染`localstorage_example_page`模板。您将在[第4章](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml)中了解更多关于渲染同构模板的内容，*同构模板*。'
+- en: Implementing the client-side functionality
+  id: totrans-364
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现客户端功能
+- en: 'Implementing the client-side functionality of the local storage inspector consists
+    of these steps:'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实现本地存储检查器的客户端功能包括以下步骤：
+- en: Initializing the local storage inspector web page
+  id: totrans-366
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 初始化本地存储检查器网页
+- en: Implementing the local storage inspector
+  id: totrans-367
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现本地存储检查器
+- en: Initializing the local storage inspector web page
+  id: totrans-368
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 初始化本地存储检查器网页
+- en: 'In order to initialize the event handlers on the local storage inspector web
+    page, we need to add the following line of code in the localstorage-demo `case`,
+    inside the `initializePage` function found in the `client.go` source file:'
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了初始化本地存储检查器网页上的事件处理程序，我们需要在`client.go`源文件中的`initializePage`函数内的`localstorage-demo`情况下添加以下代码行：
+- en: '[PRE65]'
+  id: totrans-370
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: Calling the `InitializePage` function, defined in the `localstoragedemo` package,
+    will add the event listeners for the Save and Clear All buttons.
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 调用`localstoragedemo`包中定义的`InitializePage`函数将为保存和清除所有按钮添加事件监听器。
+- en: Implementing the local storage inspector
+  id: totrans-372
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现本地存储检查器
+- en: The implementation of the local storage inspector can be found in the `localstorage.go`
+    source file in the `client/localstoragedemo` directory.
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本地存储检查器的实现可以在`client/localstoragedemo`目录中的`localstorage.go`源文件中找到。
+- en: 'In the `import` groupings we include the `js` and `dom` packages (shown in
+    bold):'
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`import`分组中，我们包括了`js`和`dom`包（以粗体显示）：
+- en: '[PRE66]'
+  id: totrans-375
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'We''ve defined the `localStorage` variable and we''ve assigned it the value
+    of the `localStorage` object that is attached to the `window` object:'
+  id: totrans-376
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经定义了`localStorage`变量，并将其赋值为附加到`window`对象的`localStorage`对象的值：
+- en: '[PRE67]'
+  id: totrans-377
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'As usual, we''ve aliased the `Document` object with the `D` variable to save
+    us some typing:'
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像往常一样，我们使用`D`变量将`Document`对象进行了别名，以节省一些输入。
+- en: '[PRE68]'
+  id: totrans-379
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'The `InitializePage` function is responsible for setting up the event listeners
+    for the Save and Clear All buttons:'
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`InitializePage`函数负责为保存和清除所有按钮设置事件监听器：'
+- en: '[PRE69]'
+  id: totrans-381
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: We fetch the `saveButton` element by calling the `GetElementByID` method of
+    the `Document` object and providing the `id`, `"saveButton"`, as the sole input
+    parameter to the method. Right below this, we add an event listener on the click
+    event to call the `Save` function. Calling the `Save` function will save a new
+    key-value pair entry.
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们通过调用`Document`对象的`GetElementByID`方法并将`id`“saveButton”作为该方法的唯一输入参数来获取`saveButton`元素。紧接着，我们在点击事件上添加一个事件监听器来调用`Save`函数。调用`Save`函数将保存一个新的键值对条目。
+- en: We also fetch the `clearAllButton` element by calling the `GetElementByID` method
+    of the `Document` object and providing the `id`, `"clearAllButton"`, as the sole
+    input parameter to the method. Right below this, we add an event listener on the
+    click event to call the `ClearAll` function. Calling the `ClearAll` function will
+    clear all key-value pairs that are currently stored in local storage.
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还通过调用`Document`对象的`GetElementByID`方法并将`id`“clearAllButton”作为该方法的唯一输入参数来获取`clearAllButton`元素。紧接着，我们在点击事件上添加一个事件监听器来调用`ClearAll`函数。调用`ClearAll`函数将清除本地存储中当前存储的所有键值对。
+- en: 'The `Save` function is responsible for saving the key-value pair into the web
+    browser''s local storage:'
+  id: totrans-384
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Save`函数负责将键值对保存到Web浏览器的本地存储中：'
+- en: '[PRE70]'
+  id: totrans-385
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: We get the text input fields for the key and the value (shown in bold) using
+    the `GetElementByID` method of the `Document` object. In the `if` conditional
+    block, we check to see if the user has not entered a value for the Key input text
+    field. If they have not entered a value, we return from the function.
+  id: totrans-386
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`Document`对象的`GetElementByID`方法获取键和值的文本输入字段（以粗体显示）。在`if`条件块中，我们检查用户是否未为键输入文本字段输入值。如果他们没有输入值，我们就从函数中返回。
+- en: If the user has entered a value into the Key input text field, we continue forward.
+    We call the `SetKeyValuePair` function and provide the values for `itemKey` and
+    `itemValue` as input parameters to the function.
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果用户已经在键输入文本字段中输入了值，我们将继续。我们调用`SetKeyValuePair`函数，并将`itemKey`和`itemValue`的值作为输入参数传递给函数。
+- en: We then set the `Value` property of both `itemKey` and `itemValue` to an empty
+    string, to clear the input text field, so that the user can easily add new entries
+    later without having to manually clear the text in these fields.
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们将`itemKey`和`itemValue`的`Value`属性都设置为空字符串，以清除输入文本字段，这样用户可以轻松地在以后添加新条目而无需手动清除这些字段中的文本。
+- en: Finally we call the `DisplayStorageContents` function, which is responsible
+    for displaying all the current entries in local storage.
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们调用`DisplayStorageContents`函数，该函数负责显示本地存储中的所有当前条目。
+- en: 'Let''s take a look at the `SetKeyValuePair` function:'
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看看`SetKeyValuePair`函数：
+- en: '[PRE71]'
+  id: totrans-391
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: Inside this function, we simply call the `setItem` method of the `localStorage`
+    object, passing in the `itemKey` and `itemValue` as input parameters to the function.
+    At this point, the key-value pair entry will be saved to the web browser's local
+    storage.
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个函数内部，我们只需调用`localStorage`对象的`setItem`方法，将`itemKey`和`itemValue`作为输入参数传递给函数。此时，键值对条目将保存到Web浏览器的本地存储中。
+- en: 'The `DisplayStorageContents` function is responsible for displaying all the
+    key-value pairs that are in local storage inside the `itemList` element, which
+    is a `dl` (description list) element:'
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`DisplayStorageContents`函数负责在`itemList`元素（一个`dl`（描述列表）元素）中显示所有本地存储中的键值对。'
+- en: '[PRE72]'
+  id: totrans-394
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: We call the `SetInnerHTML` method with an input value of empty string to clear
+    the contents of the list.
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们调用`SetInnerHTML`方法并输入空字符串来清除列表的内容。
+- en: We iterate through all the entries in local storage using a `for` loop. For
+    each key-value pair present, we get `itemKey` and `itemValue` by calling the `localStorage`
+    object's `key` and `getItem` methods, respectively.
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`for`循环遍历本地存储中的所有条目。对于每个键值对，我们通过调用`localStorage`对象的`key`和`getItem`方法分别获取`itemKey`和`itemValue`。
+- en: We use a `dt` element (`dtElement`) to display the key. A `dt` element is used
+    to define a term in a description list. We use a `dd` element (`ddElement`) to
+    display the value. A `dd` element is used to describe a term in a description
+    list. Using the description list and its associated elements to display key-value
+    pairs, we are using a semantic friendly approach to displaying the key-value pairs
+    on the web page. We append the `dt` and `dd` elements to the `itemList` object
+    by calling its `AppendChild` method.
+  id: totrans-397
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`dt`元素（`dtElement`）来显示键。`dt`元素用于定义描述列表中的术语。我们使用`dd`元素（`ddElement`）来显示值。`dd`元素用于描述描述列表中的术语。使用描述列表及其相关元素来显示键值对，我们使用了一种语义友好的方法来在网页上显示键值对。我们通过调用其`AppendChild`方法将`dt`和`dd`元素附加到`itemList`对象上。
+- en: 'The `ClearAll` function is used to remove all the key-value pairs that have
+    been saved in local storage:'
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ClearAll`函数用于删除本地存储中保存的所有键值对：'
+- en: '[PRE73]'
+  id: totrans-399
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: We call the `clear` method of the `localStorage` object, and then make a call
+    to the `DisplayStorageContents` function. If everything is working properly, all
+    the items should be cleared, and we should see no values appear in the `itemList`
+    element once the Clear All button has been clicked.
+  id: totrans-400
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们调用`localStorage`对象的`clear`方法，然后调用`DisplayStorageContents`函数。如果一切正常，所有项目应该被清除，一旦单击了清除所有按钮，我们应该看不到`itemList`元素中出现任何值。
+- en: Running the local storage demo
+  id: totrans-401
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 运行本地存储演示
+- en: You can access the local storage demo at `http://localhost:8080/localstorage-demo`.
+  id: totrans-402
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在`http://localhost:8080/localstorage-demo`访问本地存储演示。
+- en: Let's add a new key-value pair to local storage. In the Key input text field,
+    let's add the `"foo"` key, and in the Value input text field, let's add the `"bar"` value.
+    Click on the Save button to add the new key-value pair to local storage.
+  id: totrans-403
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们向本地存储添加一个新的键值对。在键输入文本字段中，让我们添加`"foo"`键，在值输入文本字段中，让我们添加`"bar"`值。单击保存按钮将新的键值对添加到本地存储中。
+- en: '*Figure 3.21* shows the newly created key-value pair appear, after clicking
+    on the Save button:'
+  id: totrans-404
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.21显示了单击保存按钮后出现的新创建的键值对：
+- en: '![](img/923f5dd7-6b4b-42d9-b8bd-d739bf695dfd.png)'
+  id: totrans-405
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/923f5dd7-6b4b-42d9-b8bd-d739bf695dfd.png)'
+- en: 'Figure 3.21: The Local Storage Inspector showing a newly added key-value pair'
+  id: totrans-406
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.21：本地存储检查器显示了一个新添加的键值对
+- en: Try refreshing the web page, and after that, try restarting the web browser
+    and returning to the web page. Notice that in these scenarios, local storage still
+    retains the key-value pairs that were saved. Upon clicking on the Clear All button,
+    you will notice that the `itemList` has been cleared, as shown in *Figure 3.20*,
+    since local storage has been emptied of all key-value pairs.
+  id: totrans-407
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试刷新网页，然后尝试重新启动Web浏览器并返回网页。请注意，在这些情况下，本地存储仍然保留了保存的键值对。单击清除所有按钮后，您会注意到`itemList`已被清除，如图3.20所示，因为本地存储已清空所有键值对。
+- en: 'The local storage inspector that we just created is especially handy to inspect
+    key-value pairs that have been populated by third party JavaScript solutions,
+    used by our client-side web application. If you land on the local storage demo
+    page, after viewing the image carousel on the IGWEB home page, you will notice
+    that the itemList is populated with the key-value pairs shown in *Figure 3.22*:'
+  id: totrans-408
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们刚刚创建的本地存储检查器特别方便，可以检查由第三方JavaScript解决方案填充的键值对，这些解决方案被我们的客户端Web应用程序使用。如果您在IGWEB主页上查看图像轮播后登陆本地存储演示页面，您会注意到itemList中填充了图3.22中显示的键值对：
+- en: '![](img/b7232412-3b7a-4b72-873e-9f60e2b7fd6f.png)'
+  id: totrans-409
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/b7232412-3b7a-4b72-873e-9f60e2b7fd6f.png)'
+- en: 'Figure 3.22: Local Storage Demo displaying key-value pairs that were populated
+    by the image carousel'
+  id: totrans-410
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3.22：本地存储演示显示了由图像轮播填充的键值对
+- en: These key-value pairs were populated by the image carousel, which we will implement
+    as a reusable component in [Chapter 9](cbb6c046-c40f-4681-a25d-9b979614b2cf.xhtml), *Cogs
+    – Reusable Components*.
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些键值对是由图像轮播填充的，我们将在[第9章](cbb6c046-c40f-4681-a25d-9b979614b2cf.xhtml)中实现为可重用组件。
+- en: Summary
+  id: totrans-412
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we introduced you to programming with Go on the front-end using
+    GopherJS. We introduced you to the DOM and showed how you can access and manipulate
+    it using GopherJS. We walked you through several microexamples to get you acquainted
+    with what coding with GopherJS looks like. We then proceeded to show you fully
+    fleshed out examples.
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们向您介绍了使用GopherJS在前端进行Go编程。我们向您介绍了DOM，并展示了如何使用GopherJS访问和操作DOM。我们通过几个微例子来让您熟悉使用GopherJS编码的样子。然后我们继续展示了完全成熟的例子。
+- en: We showed you how to display the alert dialog and display a custom message.
+    We also showed you how to change the CSS style property of an element. We proceeded
+    to show you how to call JavaScript's `typeof` operator from within the confines
+    of Go using the `jsbuiltin` package. We showed you how to create a simple lowercase
+    text transformer and demonstrated how to send an `XHR Post` using the `xhr` package.
+    We also showed you how to render an inline Go template, and finally, we showed
+    you how to build a local storage inspector.
+  id: totrans-414
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们向您展示了如何显示警报对话框并显示自定义消息。我们还向您展示了如何更改元素的CSS样式属性。我们继续向您展示了如何在Go的限制范围内使用`jsbuiltin`包调用JavaScript的`typeof`运算符。我们向您展示了如何创建一个简单的小写文本转换器，并演示了如何使用`xhr`包发送`XHR
+    Post`。我们还向您展示了如何渲染内联Go模板，最后，我们向您展示了如何构建本地存储检查器。
+- en: In [Chapter 4](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml), *Isomorphic Templates*,
+    we will introduce isomorphic templates, which are templates that can be rendered
+    either on the server side or the client side.
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第4章](eec79e85-e888-47e8-851e-d983d5aea55d.xhtml)中，*同构模板*，我们将介绍同构模板，这些模板可以在服务器端或客户端上进行渲染。

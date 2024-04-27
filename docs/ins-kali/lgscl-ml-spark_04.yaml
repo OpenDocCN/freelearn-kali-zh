@@ -1,0 +1,2193 @@
+- en: Chapter 4. Extracting Knowledge through Feature Engineering
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第4章。通过特征工程提取知识
+- en: Which features should be used to create a predictive model is not only a vital
+    question, but also a difficult question that may require deep knowledge of the
+    problem domain to be answered. It is possible to automatically select those features
+    in data that are most useful or most relevant for the problem someone is working
+    on. Considering these questions, this chapter covers Feature Engineering in detail,
+    explaining the reasons why to apply it along with some best practices in feature
+    engineering.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应该使用哪些特征来创建预测模型不仅是一个重要问题，而且可能是一个需要深入了解问题领域才能回答的难题。可以自动选择数据中对某人正在处理的问题最有用或最相关的特征。考虑到这些问题，本章详细介绍了特征工程，解释了为什么要应用它以及一些特征工程的最佳实践。
+- en: In addition to this, we will provide the theoretical descriptions and examples
+    of feature extraction, transformations, and selection applied in large scale machine
+    learning techniques, using both Spark MLlib and Spark ML APIs. Furthermore, this
+    chapter also covers the basic idea of advanced feature engineering (also known
+    as extreme feature engineering).
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除此之外，我们还将提供特征提取、转换和选择的理论描述和示例，这些示例应用于大规模机器学习技术，使用Spark MLlib和Spark ML API。此外，本章还涵盖了高级特征工程的基本思想（也称为极端特征工程）。
+- en: Please note that you will require having R and RStudio installed on your machine
+    prior to proceeding with this chapter since an example towards exploratory data
+    analysis will be shown using R.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在继续本章之前，您需要在计算机上安装R和RStudio，因为将使用R来展示探索性数据分析的示例。
+- en: 'In a nutshell, the following topics will be covered throughout this chapter:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，本章将涵盖以下主题：
+- en: The state of the art of feature engineering
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 特征工程的最新技术
+- en: Best practices in feature engineering
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 特征工程的最佳实践
+- en: Feature engineering with Spark
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Spark进行特征工程
+- en: Advanced feature engineering
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 高级特征工程
+- en: The state of the art of feature engineering
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 特征工程的最新技术
+- en: 'Even though feature engineering is an informal topic, however, it is considered
+    as an essential part in applied machine learning. Andrew Ng, who is one of the
+    leading scientists in the area of machine learning, defined the term feature engineering
+    in his book *Machine Learning and AI via Brain simulations* (see also, feature
+    engineering defined at: [https://en.wikipedia.org/wiki/Andrew_Nghttps://en.wikipedia.org/wiki/Andrew_Ng](https://en.wikipedia.org/wiki/Andrew_Nghttps://en.wikipedia.org/wiki/Andrew_Ng))
+    as follows:'
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管特征工程是一个非正式的话题，但它被认为是应用机器学习中的一个重要部分。安德鲁·吴（Andrew Ng）是机器学习领域的领先科学家之一，他在他的书《通过大脑模拟的机器学习和人工智能》中定义了特征工程这个术语（另请参见：[https://en.wikipedia.org/wiki/Andrew_Nghttps://en.wikipedia.org/wiki/Andrew_Ng](https://en.wikipedia.org/wiki/Andrew_Nghttps://en.wikipedia.org/wiki/Andrew_Ng)）。如下所示：
+- en: '*Coming up with features is difficult, time-consuming, requires expert knowledge.
+    Applied machine learning is basically feature engineering.*'
+  id: totrans-11
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+  zh: '*提出特征是困难的，耗时的，需要专业知识。应用机器学习基本上就是特征工程。*'
+- en: Based on the preceding definition, we can argue that feature engineering is
+    actually human intelligence, not artificial intelligence. Moreover, we will explain
+    what feature engineering is from other perspectives. Feature engineering also
+    can be defined as the process of converting raw data into useful features (also
+    often called feature vectors). The features help you in better representation
+    of the underlying problem to the predictive models eventually; so that the predictive
+    modeling can be applied to new data types to avail high predictive accuracy.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于前述定义，我们可以认为特征工程实际上是人类智慧，而不是人工智能。此外，我们将从其他角度解释特征工程是什么。特征工程还可以被定义为将原始数据转换为有用特征（通常称为特征向量）的过程。这些特征有助于更好地表示基本问题，最终用于预测模型；因此，预测建模可以应用于新数据类型，以获得高预测准确性。
+- en: Alternatively, we can define the term feature engineering as a software engineering
+    process of using or reusing someone's advanced domain knowledge about the underlying
+    problem and the available data to create features, which makes the machine learning
+    algorithms work with ease.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，我们可以将特征工程定义为使用或重复使用某人对基本问题和可用数据的高级领域知识的软件工程过程，以创建使机器学习算法轻松工作的特征。
+- en: 'This is how we define the term feature engineering. If you read it carefully,
+    you will see four dependencies in these definitions:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是我们如何定义特征工程的术语。如果您仔细阅读，您会发现这些定义中有四个依赖关系：
+- en: The problem itself
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 问题本身
+- en: The raw data you will be working with to find out useful patterns or features
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你将使用的原始数据来找出有用的模式或特征
+- en: The type of the machine learning problem or classes
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 机器学习问题或类别的类型
+- en: The predictive models you'll be using
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您将使用的预测模型
+- en: Now based on these four dependencies, we can conclude a workflow out of this.
+    First, you have to understand your problem itself, then you have to know your
+    data and if it is in good order, if not, process your data to find a certain pattern
+    or features so that you can build your model.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在基于这四个依赖关系，我们可以得出一个工作流程。首先，您必须了解您的问题本身，然后您必须了解您的数据以及它是否有序，如果没有，处理您的数据以找到某种模式或特征，以便您可以构建您的模型。
+- en: Once you have identified the features, you need to know which categories your
+    problem falls under. In other words, you have to be able to identify if it is
+    a classification, clustering, or a regression problem based on the features. Finally,
+    you will build the model to make a prediction on the test set or validation set
+    using a well-known method such as random forest or **Support Vector Machine**
+    (**SVMs**).
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您确定了特征，您需要知道您的问题属于哪些类别。换句话说，您必须能够根据特征确定它是分类、聚类还是回归问题。最后，您将使用诸如随机森林或**支持向量机**（**SVMs**）等著名方法在测试集或验证集上构建模型进行预测。
+- en: Throughout this chapter, you will see and argue that feature engineering is
+    an art that deals with uncertain and often unstructured data. It's also true that
+    there are many well-defined procedures of applying the classification, clustering,
+    regression model, or methods such as SVMs that are both methodical and provable;
+    however, the data is a variable and comes often with a variety of characteristics
+    at different times.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，你将看到并论证特征工程是一门处理不确定和常常无结构数据的艺术。也是真实的，有许多明确定义的程序可以应用于分类、聚类、回归模型，或者像SVM这样的方法，这些程序既有条理又可证明；然而，数据是一个变量，经常在不同时间具有各种特征。
+- en: Feature extraction versus feature selection
+  id: totrans-22
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征提取与特征选择
+- en: 'You will get to know when and how you might be good at deciding which procedures
+    to be followed by practice from the empirical apprenticeship. The main tasks involved
+    in feature engineering are:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你将会知道何时以及如何通过经验学徒的实践来决定应该遵循哪些程序。特征工程涉及的主要任务是：
+- en: '**Data exploration and feature extraction**: This is the process of uncovering
+    the hidden treasure in the raw data. Generally, this process does not vary much
+    by algorithms consuming the features. However, a better understanding of the hands-on
+    experience, business domain, and intuition play a vital role in this regard.'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**数据探索和特征提取**：这是揭示原始数据中隐藏宝藏的过程。一般来说，这个过程在消耗特征的算法中并不会有太大变化。然而，在这方面，对实际经验、业务领域和直觉的更好理解起着至关重要的作用。'
+- en: '**Feature selection**: This is the process for deciding which features to be
+    selected based on the machine learning problem you are dealing with. You can use
+    diverse techniques for selecting the features; however, it may vary in algorithms
+    and using the features.'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**特征选择**：这是根据你所处理的机器学习问题决定选择哪些特征的过程。你可以使用不同的技术来选择特征；然而，它可能会因算法和使用特征而有所不同。'
+- en: Importance of feature engineering
+  id: totrans-26
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征工程的重要性
+- en: 'When the ultimate goal is to achieve the most accurate and reliable results
+    from a predictive model, you have to invest your best in what you have. The best
+    investment, in this case, would be the three parameters: time and patience, data
+    and availability, and best algorithm. However, *how do you get the most valuable
+    treasures out of your data for the predictive modeling?* is the problem that the
+    process and practice of feature engineering solves in an emerging way.'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当最终目标是从预测模型中获得最准确和可靠的结果时，你必须投入你所拥有的最好的东西。在这种情况下，最好的投资将是三个参数：时间和耐心，数据和可用性，以及最佳算法。然而，“如何从数据中获取最有价值的宝藏用于预测建模？”是特征工程的过程和实践以新兴方式解决的问题。
+- en: In fact, the success of most of the machine learning algorithms depends on how
+    you properly and intelligently utilize value and present your data. It is often
+    agreed that the hidden treasure (that is, features or patterns) out of your data
+    will directly stimulate the results of the predictive model.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事实上，大多数机器学习算法的成功取决于你如何正确和智能地利用价值并呈现你的数据。通常认为，从你的数据中挖掘出的隐藏宝藏（即特征或模式）将直接刺激预测模型的结果。
+- en: Therefore, better features (that is, what you extract and select from the datasets)
+    mean better results (that is, the results you will achieve from the model). However,
+    please remember one thing before you generalize the earlier statement for your
+    machine learning model, you need a great feature which is true nonetheless with
+    the properties that describe the structures inherent in your data.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，更好的特征（即你从数据集中提取和选择的内容）意味着更好的结果（即你将从模型中获得的结果）。然而，在你为你的机器学习模型概括之前，请记住一件事，你需要一个很好的特征，尽管具有描述数据固有结构的属性。
+- en: 'In summary, better features signify three pros: flexibility, tuning, and better
+    results:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总之，更好的特征意味着三个优点：灵活性、调整和更好的结果：
+- en: '**Better features (better flexibility)**: If you are successful in extracting
+    and selecting the better features, you will get better results for sure, even
+    if you choose a non-optimal or wrong model. In fact, optimal or most suitable
+    models can be selected or picked up based on the good structure of the original
+    data you have. In addition to this, good features will allow you to use less complex
+    but efficient, faster, easily understandable, and easy to maintain models eventually.'
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**更好的特征（更好的灵活性）**：如果你成功地提取和选择了更好的特征，你肯定会获得更好的结果，即使你选择了一个非最佳或错误的模型。事实上，可以根据你拥有的原始数据的良好结构来选择或挑选最佳或最合适的模型。此外，良好的特征将使你能够最终使用更简单但高效、更快速、易于理解和易于维护的模型。'
+- en: '**Better features (better tuning)**: As we already stated, if you do not choose
+    your machine learning model intelligently or if your features are not in good
+    shape, you are more likely to get worse results out of the ML model. However,
+    even if you choose some wrong parameters during building the model and if you
+    do have some well-engineered features, still you can expect better results out
+    of the model. Furthermore, you don''t need to worry much or even work harder to
+    choose the most optimal models and related parameters. The reason is simple, which
+    is the good feature, you have actually understood the problem well and ready to
+    use the better represented by all the data by characterizing the problem itself.'
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**更好的特征（更好的调整）**：正如我们已经提到的，如果你没有聪明地选择你的机器学习模型，或者如果你的特征不够好，你很可能会从ML模型中获得更糟糕的结果。然而，即使在构建模型过程中选择了一些错误的参数，如果你有一些经过良好设计的特征，你仍然可以期望从模型中获得更好的结果。此外，你不需要过多担心或者更加努力地选择最优模型和相关参数。原因很简单，那就是好的特征，你实际上已经很好地理解了问题，并准备使用更好地代表问题本身的所有数据。'
+- en: '**Better features (better results)**: You are most likely to get better results
+    even if you spent most of your efforts in feature engineering towards better features
+    selections.'
+  id: totrans-33
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**更好的特征（更好的结果）**：即使你把大部分精力投入到更好的特征选择上，你很可能会获得更好的结果。'
+- en: 'We also suggest readers not to be overconfident with only the features. The
+    preceding statements are often true; however, sometimes they are misleading. We
+    would like to clear the preceding statements further. Actually, if you receive
+    the best predictive results from a model, it is actually of three factors: the
+    model you selected, the data you had, and the features you had prepared.'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还建议读者不要过分自信地只依赖特征。前面的陈述通常是正确的；然而，有时它们会误导。我们想进一步澄清前面的陈述。实际上，如果你从一个模型中获得了最佳的预测结果，实际上是由三个因素决定的：你选择的模型，你拥有的数据，以及你准备的特征。
+- en: Therefore, if you have enough time and computational resources, always try to
+    use the standard model since often the simplicity does not imply better accuracy.
+    Nonetheless, better features will contribute the most out of these three factors.
+    One thing you should know is that, unfortunately, even if you master feature engineering
+    emanates with many hands-on practices, and research what others are doing well
+    in the state of the arts, some machine learning projects fail at the very end.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，如果你有足够的时间和计算资源，总是尝试使用标准模型，因为通常简单并不意味着更好的准确性。尽管如此，更好的特征将在这三个因素中做出最大的贡献。你应该知道的一件事是，不幸的是，即使你掌握了许多实践经验和研究其他人在最新技术领域做得很好的特征工程，一些机器学习项目最终也会失败。
+- en: Feature engineering and data exploration
+  id: totrans-36
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征工程和数据探索
+- en: 'Very often, an intelligent choice for both training and test samples out of
+    better features leads to better solutions. Although in the previous section we
+    argued that there are two tasks in the feature engineering: feature extraction
+    from the raw data and feature selection. However, there is no definite or fixed
+    path for feature engineering.'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很多时候，对训练和测试样本进行智能选择，选择更好的特征会导致更好的解决方案。尽管在前一节中我们认为特征工程有两个任务：从原始数据中提取特征和特征选择。然而，特征工程没有明确或固定的路径。
+- en: Conversely, the whole step in feature engineering is very much directed by the
+    available raw data. If the data is well-structured you would be feeling lucky.
+    Nonetheless, the reality is often that the raw data comes from diverse sources
+    in multiple formats. Therefore, exploring this data is very important before you
+    proceed to feature extraction and feature selection.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 相反，特征工程中的整个步骤很大程度上受到可用原始数据的指导。如果数据结构良好，你会感到幸运。然而，现实往往是原始数据来自多种格式的多源数据。因此，在进行特征提取和特征选择之前，探索这些数据非常重要。
+- en: Tip
+  id: totrans-39
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: We suggest you to figure out the data skewness and kurtosis using the histogram
+    and outliers using the box-plot and bootstrapping the data using Data Sidekick
+    techniques (introduced by Abe Gong) in the literature (see at: [https://curiosity.com/paths/abe-gong-building-for-resilience-solid-2014-keynote-oreilly/#abe-gong-building-for-resilience-solid-2014-keynote-oreilly](https://curiosity.com/paths/abe-gong-building-for-resilience-solid-2014-keynote-oreilly/#abe-gong-building-for-resilience-solid-2014-keynote-oreilly)).
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们建议您使用直方图和箱线图来找出数据的偏度和峰度，并使用数据辅助技术（由Abe Gong介绍）对数据进行自举（参见：[https://curiosity.com/paths/abe-gong-building-for-resilience-solid-2014-keynote-oreilly/#abe-gong-building-for-resilience-solid-2014-keynote-oreilly](https://curiosity.com/paths/abe-gong-building-for-resilience-solid-2014-keynote-oreilly/#abe-gong-building-for-resilience-solid-2014-keynote-oreilly)）。
+- en: 'The following questions need to be answered and known by means of data exploration
+    before applying the feature engineering:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在应用特征工程之前，需要通过数据探索来回答和了解以下问题：
+- en: What is the percentage of the total data being present or not having null or
+    missing values for all the available fields? Then try to handle those missing
+    values and interpret them well without losing the data semantics.
+  id: totrans-42
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于所有可用字段，总数据的百分比是存在还是不存在空值或缺失值？然后尝试处理这些缺失值，并在不丢失数据语义的情况下进行解释。
+- en: What is the correlation between the fields? What is the correlation of each
+    field with the predicted variable? What values do they take (that is, categorical
+    or non-categorical, numerical or alpha-numerical, and so on)?
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 字段之间的相关性是多少？每个字段与预测变量的相关性是多少？它们取什么值（即，是分类还是非分类，是数值还是字母数字，等等）？
+- en: Then find out if the data distribution is skewed or not. You can identify the
+    skewness by seeing the outliers or long tail (slightly skewed to the right or
+    positively skewed, slightly skewed to the left or negatively skewed, as shown
+    in *Figure 1*). Now identify if the outliers contribute towards making the prediction
+    or not.
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后找出数据分布是否倾斜。你可以通过查看离群值或长尾（略微向右倾斜或正向倾斜，略微向左倾斜或负向倾斜，如*图1*所示）来确定偏斜程度。现在确定离群值是否有助于预测。
+- en: After that, observe the data kurtosis. More technically, check if your kurtosis
+    is mesokurtic (less than but almost equal to 3), leptokurtic (more than 3), or
+    platykurtic (less than 3). Note, the kurtosis of any univariate normal distribution
+    is considered to be 3.
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 之后，观察数据的峰度。更技术性地，检查你的峰度是否是mesokurtic（小于但几乎等于3），leptokurtic（大于3），或者platykurtic（小于3）。请注意，任何一元正态分布的峰度被认为是3。
+- en: Now play with the tail and observe (do the predictions get better?) what happens
+    when you remove the long tail?![Feature engineering and data exploration](img/00063.jpeg)
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 现在尝试调整尾部并观察（预测是否变得更好？）当你去除长尾时会发生什么？
+- en: 'Figure 1: Skewness of the data distribution (x-axis = data, y-axis = density).'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图1：数据分布的偏斜（x轴=数据，y轴=密度）。
+- en: You can use simple visualization tools such as density plots for doing this,
+    as explained by the following example.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以使用简单的可视化工具，如密度图来做到这一点，如下例所示。
+- en: Example 1\. Suppose you are interested in fitness walking and you walked at
+    a sports ground or countryside in the last four weeks (excluding the weekends).
+    You spent the following time (in minutes to finish a 4 KM walking track):15, 16,
+    18, 17.16, 16.5, 18.6, 19.0, 20.4, 20.6, 25.15, 27.27, 25.24, 21.05, 21.65, 20.92,
+    22.61, 23.71, 35, 39, and 50\. Now let's compute and interpret the skewness and
+    kurtosis of these values using R.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 示例1\. 假设您对健身步行感兴趣，并且在过去的四周（不包括周末）在体育场或乡村散步。您花费了以下时间（以分钟为单位完成4公里步行道）：15, 16,
+    18, 17.16, 16.5, 18.6, 19.0, 20.4, 20.6, 25.15, 27.27, 25.24, 21.05, 21.65, 20.92,
+    22.61, 23.71, 35, 39和50。现在让我们使用R计算和解释这些值的偏度和峰度。
+- en: Tip
+  id: totrans-50
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: 'We will show how to configure and work with SparkR in [Chapter 10](part0079_split_000.html#2BASE2-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 10.  Configuring and Working with External Libraries"), *Configuring
+    and Working with External Libraries* and show how to execute the same code on
+    SparkR. The reason behind this is some plotting packages such as `ggplot2` are
+    still not implemented in the current version of Spark used for SparkR directly.
+    However, the `ggplot2` is available as a combined package named `ggplot2.SparkR`
+    on GitHub, which can be installed and configured using the following command:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将展示如何在[第10章](part0079_split_000.html#2BASE2-0b803698e2de424b8aa3c56ad52b005d
+    "第10章。配置和使用外部库")中配置和使用SparkR，*配置和使用外部库*并展示如何在SparkR上执行相同的代码。这样做的原因是一些绘图包，如`ggplot2`，在当前用于SparkR的版本中仍未直接实现。但是，`ggplot2`在GitHub上作为名为`ggplot2.SparkR`的组合包可用，可以使用以下命令安装和配置：
+- en: '**`devtools::install_github("SKKU-SKT/ggplot2.SparkR")`**'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**`devtools::install_github("SKKU-SKT/ggplot2.SparkR")`**'
+- en: However, there are numerous dependencies that need to be ensured before and
+    during the configuration process. Therefore, we should resolve this issue in a
+    later chapter instead. For the time being, we assume you have basic knowledge
+    of using R and if you have R installed and configured on your computer then please
+    use the following steps. However, a step-by-step example on how to install and
+    configure SparkR using RStudio will be shown in [Chapter 10](part0079_split_000.html#2BASE2-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 10.  Configuring and Working with External Libraries"), *Configuring
+    and Working with External Libraries*.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，在配置过程中需要确保许多依赖项。因此，我们应该在以后的章节中解决这个问题。目前，我们假设您具有使用R的基本知识，如果您已经在计算机上安装和配置了R，则请按照以下步骤操作。然而，将在[第10章](part0079_split_000.html#2BASE2-0b803698e2de424b8aa3c56ad52b005d
+    "第10章。配置和使用外部库")中逐步演示如何使用RStudio安装和配置SparkR。
+- en: Now just copy the following code snippets and try to execute to make sure you
+    have the correct value of the Skewness and Kurtosis.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在只需复制以下代码片段并尝试执行，以确保您有Skewness和Kurtosis的正确值。
+- en: 'Install the `moments` package for calculating Skewness and Kurtosis:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装`moments`包以计算Skewness和Kurtosis：
+- en: '[PRE0]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Use the `moments` package:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`moments`包：
+- en: '[PRE1]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Make a vector for the time you have taken during the workout:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在锻炼期间所花费的时间制作一个向量：
+- en: '[PRE2]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Convert the time into DataFrame:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将时间转换为DataFrame：
+- en: '[PRE3]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Now calculate the `skewness`:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在计算`skewness`：
+- en: '[PRE4]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Now calculate the `kurtosis`:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在计算`kurtosis`：
+- en: '[PRE5]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: '**Interpretation of the result**: The skewness of your workout time is 1.769592,
+    which means your data is skewed to the right or positively skewed. The kurtosis,
+    on the other hand, is 5.650427, which means the distribution of the data is leptokurtic.
+    Now to check the outliers or tails check the following histogram. Again, for simplicity,
+    we will use R to plot the density plot that will interpret your workout time.'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**结果的解释**：您的锻炼时间的偏度为1.769592，这意味着您的数据向右倾斜或呈正偏态。另一方面，峰度为5.650427，这意味着数据的分布是尖峰的。现在检查异常值或尾部，请查看以下直方图。同样，为了简单起见，我们将使用R来绘制解释您的锻炼时间的密度图。'
+- en: 'Install `ggplot2package` for plotting the histogram:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装`ggplot2package`以绘制直方图：
+- en: '[PRE6]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Use the `moments` package:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`moments`包：
+- en: '[PRE7]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Now plot the histogram using the `qplot()` method of `ggplot2`:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在使用`ggplot2`的`qplot()`方法绘制直方图：
+- en: '[PRE8]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: '![Feature engineering and data exploration](img/00144.jpeg)'
+  id: totrans-74
+  prefs: []
+  type: TYPE_IMG
+  zh: '![特征工程和数据探索](img/00144.jpeg)'
+- en: Figure 2\. Histogram of the workout time (right-skewed).
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图2\. 锻炼时间的直方图（右偏）。
+- en: 'The interpretation presented in *Figure 2* of the distribution of data (workout
+    times) shows the density plot is skewed to the right so is leptokurtic. Besides
+    the density plot, you can also look at the box-plots for each individual feature.
+    Where the box plot displays the data distribution based on five-number summaries:
+    **minimum**, **first quartile**, median, **third quartile**, and **maximum**,
+    as shown in *Figure 3*, where we can look for outliers beyond three (3) **Inter-Quartile
+    Range** (**IQR**):'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在数据（锻炼时间）的*图2*中呈现的解释显示密度图向右倾斜，因此是尖峰。除了密度图，您还可以查看每个特征的箱线图。箱线图根据五数总结显示数据分布：**最小值**，**第一四分位数**，中位数，**第三四分位数**和**最大值**，如*图3*所示，我们可以查找超出三（3）个**四分位距**（**IQR**）的异常值：
+- en: '![Feature engineering and data exploration](img/00120.jpeg)'
+  id: totrans-77
+  prefs: []
+  type: TYPE_IMG
+  zh: '![特征工程和数据探索](img/00120.jpeg)'
+- en: 'Figure 3\. Histogram of the workout time (figure courtesy of Box Plot: Display
+    of Distribution, [http://www.physics.csbsju.edu/stats/box2.htmlhttp://www.physics.csbsju.edu/stats/box2.html](http://www.physics.csbsju.edu/stats/box2.htmlhttp://www.physics.csbsju.edu/stats/box2.html)).'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3\. 锻炼时间的直方图（图表由箱线图提供，[http://www.physics.csbsju.edu/stats/box2.htmlhttp://www.physics.csbsju.edu/stats/box2.html](http://www.physics.csbsju.edu/stats/box2.htmlhttp://www.physics.csbsju.edu/stats/box2.html)）。
+- en: Bootstrapping the datasets also sometimes offers insights on outliers. If the
+    data volume is too large (that is, big data) doing the Data Sidekick, evaluations
+    and predictions are also useful. The idea of Data Sidekick is to use a small part
+    of the available data to figure out what insights can be concluded from the datasets
+    and it is also commonly referred to as *using small data to multiply the value
+    of big data*.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有时，对数据集进行自举也可以提供有关异常值的见解。如果数据量太大（即大数据），进行数据辅助、评估和预测也是有用的。数据辅助的想法是利用可用数据的一小部分来确定可以从数据集中得出什么见解，这也通常被称为“使用小数据来放大大数据的价值”。
+- en: It is very useful for large-scale text analytics. For example, suppose you have
+    a huge corpus of text, and of course you can use a small portion of it to test
+    various sentiment analysis models and choose the one which gives the best results
+    in terms of performance (computation time, memory usage, scalability, and throughput).
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这对大规模文本分析非常有用。例如，假设您有大量文本语料库，当然您可以使用其中的一小部分来测试各种情感分析模型，并选择在性能方面效果最好的模型（计算时间、内存使用、可扩展性和吞吐量）。
+- en: Now we would like to draw your attention to the other aspects of feature engineering.
+    Moreover, converting continuous variables into categorical variables (with a certain
+    combination of features) results in better predictor variables.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们想要引起您对特征工程的其他方面的注意。此外，将连续变量转换为分类变量（具有一定特征组合）会产生更好的预测变量。
+- en: Tip
+  id: totrans-82
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: In statistical language, a variable in your data either represents measurements
+    on some continuous scale, or on some categorical or discrete characteristics.
+    For example, weight, height, and age of an athlete would represent the continuous
+    variables. Alternatively, the survival or failure in terms of time is also considered
+    as continuous variables. A person's gender, occupation, or marital status, on
+    the other hand, is categorical or discrete variables. Statistically, some variables
+    could be considered in either way. For example, a movie viewer's rating of a move
+    on a 10 point scale may be considered a continuous variable, or we may consider
+    it as a discrete variable with 10 categories. Time series data or real-time streaming
+    data are usually collected for continuous variables until a certain time.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在统计语言中，数据中的变量要么代表某些连续尺度上的测量，要么代表某些分类或离散特征。例如，运动员的体重、身高和年龄代表连续变量。另外，以时间为标准的生存或失败也被视为连续变量。另一方面，一个人的性别、职业或婚姻状况是分类或离散变量。从统计学上讲，某些变量可以以两种方式考虑。例如，电影观众对电影的评分可能被视为连续变量，也可以被视为具有10个类别的离散变量。时间序列数据或实时流数据通常用于连续变量直到某个时间点。
+- en: In parallel, considering the square or cube or even using the non-linear models
+    of the features can also provide better insights. Also, consider the forward selection
+    or backwards selection wisely since both of them are computationally expensive.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同时，考虑特征的平方或立方甚至使用非线性模型也可以提供更好的见解。此外，明智地考虑前向选择或后向选择，因为它们都需要大量计算。
+- en: Finally, when the number of features becomes significantly large it is a wise
+    decision to use the **Principal Component Analysis** (**PCA**) or **Singular Value
+    Decomposition** (**SVD**) technique to find the right combination of features.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，当特征数量变得显著大时，使用主成分分析（PCA）或奇异值分解（SVD）技术找到正确的特征组合是明智的决定。
+- en: Feature extraction – creating features out of data
+  id: totrans-86
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征提取 - 从数据中创建特征
+- en: Feature extraction is the automatic way of constructing new features from the
+    raw data you have or will be collecting. During the feature extraction process,
+    reducing the dimensionality of complex raw data is usually done by making the
+    observation into a much smaller set automatically that can be modeled into later
+    stages. Projection methods such as PCA and unsupervised clustering methods are
+    used for tabular data in TXT, CSV, TSV, or RDB format. However, feature extraction
+    from another data format is very complex. Specially parsing many data formats
+    such as XML and SDRF is a tedious process if the number of fields to extract is
+    huge.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征提取是从您已有或将要收集的原始数据中自动构建新特征的方式。在特征提取过程中，通常通过将观察结果自动转换为可以在后续阶段建模的更小的集合来降低复杂原始数据的维度。投影方法，如PCA和无监督聚类方法，用于TXT、CSV、TSV或RDB格式的表格数据。然而，从另一种数据格式中提取特征非常复杂。特别是解析诸如XML和SDRF之类的许多数据格式，如果要提取的字段数量很大，这是一个繁琐的过程。
+- en: For multimedia data such as image data, the most common type of technique includes
+    line or edge detection or image segmentation. However, subject to the domain and
+    image, video and audio observations advance themselves to many of the same types
+    of **Digital Signal Processing** (**DSP**) methods where typically the analogue
+    observations are stored in digital formats.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于诸如图像数据之类的多媒体数据，最常见的技术类型包括线条或边缘检测或图像分割。然而，受限于领域和图像，视频和音频观察本身也适用于许多相同类型的数字信号处理（DSP）方法，其中通常模拟观察结果以数字格式存储。
+- en: The most positive pros and the key to feature extraction are that the methods
+    that are developed and available are automatic; therefore, thay can solve the
+    problem of unmanageable high dimensional data. As we stated in [Chapter 3](part0031_split_000.html#TI1E2-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 3. Understanding the Problem by Understanding the Data"), *Understanding
+    the Problem by Understanding the Data* that more data exploration and better feature
+    extraction eventually increases the performance of your ML model (since feature
+    extraction also involves feature selection). The reality is more data will provide
+    more insights towards the performance of the predictive models eventually. However,
+    the data has to be useful and dumping unwanted data will kill your valuable time;
+    therefore, think of the meaning of the statement before collecting your data.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征提取的最大优点和关键在于，已经开发和可用的方法是自动的；因此，它们可以解决高维数据难以处理的问题。正如我们在[第3章](part0031_split_000.html#TI1E2-0b803698e2de424b8aa3c56ad52b005d
+    "第3章。通过了解数据来理解问题")中所述，*通过了解数据来理解问题*，更多的数据探索和更好的特征提取最终会提高您的ML模型的性能（因为特征提取也涉及特征选择）。事实上，更多的数据最终将提供更多关于预测模型性能的见解。然而，数据必须是有用的，丢弃不需要的数据将浪费宝贵的时间；因此，在收集数据之前，请考虑这个陈述的意义。
+- en: There are several steps involved in the feature extraction process; including
+    the data transformation and feature transformation. As we stated several times,
+    a machine learning model is likely to provide a better result if the model is
+    well trained with better features out of the raw data. Optimized for learning
+    and generalization is a key characteristic of good data. Therefore, the process
+    of putting together the data in this optimal format is achieved through some data
+    processing steps such as cleaning, missing values handling, and some intermediate
+    transformation like from a text document to words transformation.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征提取过程涉及几个步骤，包括数据转换和特征转换。正如我们多次提到的，如果模型能够从原始数据中提取更好的特征，那么机器学习模型很可能会提供更好的结果。优化学习和泛化是好数据的关键特征。因此，通过一些数据处理步骤（如清洗、处理缺失值以及从文本文档到单词转换等中间转换），将数据以最佳格式组合起来的过程是通过一些数据处理步骤实现的。
+- en: The methods that help to create new features as predictor variables are called
+    feature transformation, which is actually a group of methods. Feature transformation
+    is essentially required for the dimension reduction. Usually, when the transformed
+    features have a descriptive dimension, it is likely to have better order compared
+    to the original features.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 帮助创建新特征作为预测变量的方法被称为特征转换，实际上是一组方法。特征转换基本上是为了降维。通常，当转换后的特征具有描述性维度时，与原始特征相比，可能会有更好的顺序。
+- en: Therefore, less descriptive features can be dropped from the training or test
+    samples when building the machine learning models. The most common tasks included
+    in the feature transformation are non-negative matrix factorization, principal
+    component analysis, and factor analysis using scaling, decomposition, and aggregation
+    operations.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在构建机器学习模型时，可以从训练或测试样本中删除较少描述性的特征。特征转换中最常见的任务包括非负矩阵分解、主成分分析和使用缩放、分解和聚合操作的因子分析。
+- en: Examples of feature extraction include the extraction of contours in images,
+    extraction of diagrams from a text, extraction of phonemes from the recording
+    of spoken text, and so on. Feature extraction involves a transformation of the
+    features, which is often not reversible because some information is lost eventually
+    in the process of dimensionality reduction.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征提取的例子包括图像中轮廓的提取、从文本中提取图表、从口语文本录音中提取音素等。特征提取涉及特征的转换，通常是不可逆的，因为在降维过程中最终会丢失一些信息。
+- en: Feature selection – filtering features from data
+  id: totrans-94
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征选择 - 从数据中筛选特征
+- en: Feature selection is a process for preparing the training datasets or validation
+    dataset for predictive modeling and analytics. Feature selection has practical
+    implication in most of the machine learning problem types including classification,
+    clustering, dimensionality reduction, collaborative filtering, regression, and
+    so on.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征选择是为了为预测建模和分析准备训练数据集或验证数据集的过程。特征选择在大多数机器学习问题类型中都有实际意义，包括分类、聚类、降维、协同过滤、回归等。
+- en: Therefore, the ultimate goal is to select a subset from the large collection
+    of features from the original data set. And often dimensionality reduction algorithms
+    are applied, such as **Singular Value Decomposition** (**SVD**) and **Principal
+    Component Analysis** (**PCA**).
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，最终目标是从原始数据集的大量特征中选择一个子集。通常会应用降维算法，如**奇异值分解**（**SVD**）和**主成分分析**（**PCA**）。
+- en: An interesting power of the feature selection technique is that a minimal feature
+    set can be applied to represent the maximum amount of variance in the available
+    data. In other words, the minimal subset of the feature is enough to train your
+    machine learning model quite efficiently.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征选择技术的一个有趣的能力是，最小的特征集可以被应用来表示可用数据中的最大方差。换句话说，特征的最小子集足以有效地训练您的机器学习模型。
+- en: This subset of features is used to train the model. There are two types of feature
+    selection techniques, namely forward selection and backwards selection. The forward
+    selection starts with the strongest feature and keeps adding more features. On
+    the contrary, the backwards selection starts with all the features and removes
+    the weakest features. However, both techniques are computationally expensive.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个特征子集用于训练模型。特征选择技术有两种类型，即前向选择和后向选择。前向选择从最强的特征开始，不断添加更多特征。相反，后向选择从所有特征开始，删除最弱的特征。然而，这两种技术都需要大量计算。
+- en: Importance of feature selection
+  id: totrans-99
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 特征选择的重要性
+- en: Since not all the features are equally important; consequently, you will find
+    some features with more importance than others for making the model more accurate.
+    Therefore, those attributes can be treated as irrelevant to the problem. As a
+    result, you need to remove those features before preparing the training and test
+    sets. Sometimes, the same technique might be applied to the validation sets.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于并非所有特征都同等重要；因此，您会发现一些特征比其他特征更重要，以使模型更准确。因此，这些属性可以被视为与问题无关。因此，您需要在准备训练和测试集之前删除这些特征。有时，相同的技术可能会应用于验证集。
+- en: 'In parallel to importance, you will always find some features that will be
+    redundant in the context of other features. Feature selection is not only involved
+    with removing irrelevant or redundant features, it also serves other purposes
+    that are important to increase the model''s accuracy, as stated here:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与重要性并行的是，您总是会发现一些特征在其他特征的背景下是多余的。特征选择不仅涉及消除不相关或多余的特征，还有其他重要目的，可以增加模型的准确性，如下所述：
+- en: Feature selection increases the predictive accuracy of the model you are using
+    by eliminating irrelevant, null/missing, and redundant features. It also deals
+    with highly correlated features.
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 特征选择通过消除不相关、空/缺失和冗余特征来提高模型的预测准确性。它还处理高度相关的特征。
+- en: Feature selection techniques make the model training process more robust and
+    faster by decreasing the number of features.
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 特征选择技术通过减少特征数量，使模型训练过程更加稳健和快速。
+- en: Feature selection versus dimensionality reduction
+  id: totrans-104
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 特征选择与降维
+- en: Although by using the feature selection technique it is quietly possible to
+    reduce the number of features by selecting certain features in the dataset. And
+    later on, the subset is used to train the model. However, the entire process usually,
+    cannot be used interchangeably with the term **dimensionality reduction**.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然通过使用特征选择技术可以在数据集中选择某些特征来减少特征数量。然后，使用子集来训练模型。然而，整个过程通常不能与术语**降维**互换使用。
+- en: The reality is that the feature selection methods are used to extract a subset
+    from the total set in the data without changing their underlying properties.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 事实上，特征选择方法用于从数据中提取子集，而不改变其基本属性。
+- en: In contrast, the dimensionality reduction method, on the other hand, employs
+    already engineered features that can transform the original features into corresponding
+    feature vectors by reducing the number of variables under certain considerations
+    and requirements of the machine learning problem.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，降维方法利用已经设计好的特征，可以通过减少变量的数量来将原始特征转换为相应的特征向量，以满足机器学习问题的特定考虑和要求。
+- en: Thus, it actually modifies the underlying data, extracts the original features
+    from raw and noisy features by compressing the data, but maintains the original
+    structure and most of the time is irreversible. Typical examples of dimensionality
+    reduction methods include **Principal Component Analysis** (**PCA**), **Canonical
+    Correlation Analysis** (**CCA**), and **Singular Value Decomposition** (**SVD**).
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，它实际上修改了基础数据，通过压缩数据从原始和嘈杂的特征中提取原始特征，但保持了原始结构，大多数情况下是不可逆的。降维方法的典型例子包括主成分分析（PCA）、典型相关分析（CCA）和奇异值分解（SVD）。
+- en: Other feature selection techniques use the filter-based, wrapper methods and
+    embedded methods feature selection by evaluating the correlation between each
+    feature and the target attribute in a supervised context. These methods apply
+    some statistical measures to assign a score to each feature also known as filter
+    methods.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其他特征选择技术使用基于过滤器的、包装器方法和嵌入方法的特征选择，通过在监督上下文中评估每个特征与目标属性之间的相关性。这些方法应用一些统计量来为每个特征分配一个得分，也被称为过滤方法。
+- en: The features are then ranked based on the scoring system that can help to eliminate
+    the specific features. Examples of such techniques are information gain, correlation
+    coefficient scores, and Chi-squared test. An example of wrapper methods, which
+    is a feature selection process as a search problem, is the recursive feature elimination
+    algorithm. On the other hand, **Least Absolute Shrinkage and Selection Operator**
+    (**LASSO**), Elastic Net, and Ridge Regression are typical examples of embedded
+    methods of feature selection, which is also known as regularizations methods.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后基于评分系统对特征进行排名，可以帮助消除特定特征。这些技术的例子包括信息增益、相关系数得分和卡方检验。作为特征选择过程的包装器方法的一个例子是递归特征消除算法。另一方面，最小绝对值收缩和选择算子（LASSO）、弹性网络和岭回归是特征选择的嵌入方法的典型例子，也被称为正则化方法。
+- en: The current implementation of Spark MLlib provides the support for dimensionality
+    reduction on the `RowMatrix` class only for the SVD and PCA. On the other hand,
+    some typical steps from raw data collection to feature selection are feature extractions,
+    feature transformation, and feature selection.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark MLlib的当前实现仅为`RowMatrix`类提供了对SVD和PCA的降维支持。另一方面，从原始数据收集到特征选择的一些典型步骤包括特征提取、特征转换和特征选择。
+- en: Tip
+  id: totrans-112
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Interested readers are suggested to read the API documentation for the feature
+    selection and dimensionality reduction at: [http://spark.apache.org/docs/latest/mllib-dimensionality-reduction.html](http://spark.apache.org/docs/latest/mllib-dimensionality-reduction.html).
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 建议感兴趣的读者阅读特征选择和降维的API文档：[http://spark.apache.org/docs/latest/mllib-dimensionality-reduction.html](http://spark.apache.org/docs/latest/mllib-dimensionality-reduction.html)。
+- en: Best practices in feature engineering
+  id: totrans-114
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 特征工程的最佳实践
+- en: In this section, we have figured out some good practices while performing the
+    feature engineering on your available data. Some best practices of machine learning
+    were described in [Chapter 2](part0023_split_000.html#LTSU2-5afe140a04e845e0842b44be7971e11a
+    "Chapter 2. Machine Learning Best Practices"), *Machine Learning Best Practices*.
+    However, those were too general for the overall machine learning state of the
+    arts. Those best practices, of course, would be useful in the feature engineering,
+    too. Moreover, we will provide more concrete examples concerning feature engineering
+    in the following sub-sections.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们已经找出了在可用数据上进行特征工程时的一些良好做法。机器学习的一些最佳实践在[第2章](part0023_split_000.html#LTSU2-5afe140a04e845e0842b44be7971e11a
+    "第2章 机器学习最佳实践")中进行了描述，*机器学习最佳实践*。然而，这些对于整体机器学习的最新技术来说还是太笼统了。当然，这些最佳实践在特征工程中也会很有用。此外，我们将在接下来的子章节中提供更多关于特征工程的具体示例。
+- en: Understanding the data
+  id: totrans-116
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 理解数据
+- en: 'Although the term feature engineering is more technical, however, it is an
+    art that helps you to understand where the features come from. Now some vital
+    questions evolve too, which need to be answered before understanding the data:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管术语“特征工程”更加技术化，但它是一门艺术，可以帮助你理解特征的来源。现在也出现了一些重要的问题，需要在理解数据之前回答：
+- en: What are the provenances of those features? Is the data real-time or coming
+    from the static sources?
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这些特征的来源是什么？数据是实时的还是来自静态来源？
+- en: Are the features continuous, discrete, or none?
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这些特征是连续的、离散的还是其他的？
+- en: What is the distribution of the features? Does the distribution largely depend
+    on what subset of examples is being considered?
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 特征的分布是什么样的？分布在很大程度上取决于正在考虑的示例子集是什么样的吗？
+- en: Do these features contain missing values (that is, NULL)? If so, is it possible
+    to handle those values? Is it possible to eliminate them in the present, future,
+    or upcoming data?
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这些特征是否包含缺失值（即NULL）？如果是，是否可能处理这些值？是否可能在当前、未来或即将到来的数据中消除它们？
+- en: Is there duplicate or redundant entries?
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 是否存在重复或冗余条目？
+- en: Should we go for manual feature creation that proves to be useful? If so, how
+    hard would it be to incorporate those features in the model training stage?
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们是否应该进行手动特征创建，这样会证明有用吗？如果是，将这些特征纳入模型训练阶段会有多难？
+- en: Are there features that can be used as standard features?
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 是否有可以用作标准特征的特征？
+- en: Knowing the answers to the preceding questions is important. Since data provenance
+    would help you to prepare your feature engineering techniques a bit faster. You
+    need to know if your features are discrete or continuous or if the requests are
+    a real-time response or not. Moreover, you need to know the data distribution
+    along with their skewness and kurtosis to handle the outliers.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 了解前面的问题的答案很重要。因为数据来源可以帮助你更快地准备特征工程技术。你需要知道你的特征是离散的还是连续的，或者请求是否是实时响应。此外，你需要了解数据的分布以及它们的偏斜和峰度，以处理异常值。
+- en: You need to be prepared for the missing or null values whether they could be
+    removed or need to be filled with alternative values. Besides, you need to remove
+    duplicates entries in the first place, which is extremely important, since duplicate
+    data points might significantly affect the results of model validation if not
+    properly excluded. Finally, you need to know your machine learning problem itself
+    since knowing the problem type would help you to label your data accordingly.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你需要为缺失或空值做好准备，无论是将它们移除还是需要用替代值填充。此外，你需要首先移除重复的条目，这非常重要，因为重复的数据点可能会严重影响模型验证的结果，如果不适当地排除的话。最后，你需要了解你的机器学习问题本身，因为了解问题类型将帮助你相应地标记你的数据。
+- en: Innovative way of feature extraction
+  id: totrans-127
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创新的特征提取方式
+- en: Be innovative while extracting and selecting the features. Here we provide eight
+    tips altogether that will help you to generalize the same during your machine
+    learning application development.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在提取和选择特征时要有创新性。在这里，我们总共提供了八条提示，这些提示将帮助你在机器学习应用开发过程中进行泛化。
+- en: Tip
+  id: totrans-129
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Create the input by rolling up existing data fields to a broader level or category.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过将现有数据字段汇总到更广泛的级别或类别来创建输入。
+- en: To be more specific, let's give you some examples. Obviously, you can categorize
+    your colleagues based on their title into strategic or tactical. For instance,
+    you can code the employee with *Vice President or VP* or above as strategic and
+    the *Director* and below could be encoded as tactical.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更具体地说，让我们给你一些例子。显然，你可以根据同事的职称将他们分类为战略或战术。例如，你可以将*副总裁或VP*及以上职位的员工编码为战略，*总监*及以下职位的员工编码为战术。
+- en: Collating several industries into a higher-level industry could be another example
+    of such categorization. Collate oil and gas companies with commodity companies;
+    gold, silver, or platinum as precious metal companies; high-tech giants and telecommunications
+    industries as *technology*; define the companies with more than $1B revenue as
+    *large* and *small* with net asset $1M for instance.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将几个行业整合到更高级别的行业可能是这种分类的另一个例子。将石油和天然气公司与大宗商品公司整合在一起；黄金、白银或铂金作为贵金属公司；高科技巨头和电信行业作为*技术*；将营收超过10亿美元的公司定义为*大型*，而净资产100万美元以下的公司定义为*小型*。
+- en: Tip
+  id: totrans-133
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Split data into separate categories or bins.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将数据分成单独的类别或区间。
+- en: To be more specific, let's give you some examples. Suppose you are doing some
+    analytics on the companies with an annual that ranges from $50 M to over $1 B.
+    Therefore, obviously, you can split the revenue into some sequential bins, such
+    as $50-$200M, $201-$500M, $501M-$1B, and $1B+, for instance. Now how do you represent
+    the features in a presentable format? It's so simple, try to put a value one whenever
+    a company falls with the revenue bin; otherwise, the value is zero. There are
+    now four new data fields created from the annual revenue field, right?
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更具体地说，让我们举几个例子。假设你正在对年收入在5000万美元到10亿美元以上的公司进行一些分析。因此，显然，你可以将收入分成一些连续的区间，比如5000万美元至2亿美元，2.01亿美元至5亿美元，5.01亿美元至10亿美元，以及10亿美元以上。现在，如何以一种可呈现的格式表示这些特征？很简单，尝试在公司落入收入区间时将值设为1；否则，值为0。现在从年收入字段中创建了四个新的数据字段，对吧？
+- en: Tip
+  id: totrans-136
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Think of an innovative way to combine existing data fields into new ones.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 想出一种创新的方法将现有数据字段组合成新的字段。
+- en: To be more specific, let's give you some examples. In the very first tip, we
+    argue how to create new inputs by rolling up existing fields into broader fields.
+    Now, suppose if you want to create a Boolean flag that identifies whether someone
+    falls in a VP or higher category with more than 10 years of experience. Therefore,
+    in this case, you are actually creating new fields by multiplying, dividing, adding,
+    or subtracting one data field by another.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更具体地说，让我们举几个例子。在第一个提示中，我们讨论了如何通过将现有字段合并成更广泛的字段来创建新的输入。现在，假设你想创建一个布尔标志，用于识别是否有人在拥有10年以上经验的情况下属于VP或更高级别。因此，在这种情况下，你实际上是通过将一个数据字段与另一个数据字段相乘、相除、相加或相减来创建新的字段。
+- en: Tip
+  id: totrans-139
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Think about the problem at hand and be creative simultaneously.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同时考虑手头的问题，并且要有创造性。
+- en: In previous tips, suppose you have created enough bins and fields or inputs.
+    Now, don't worry much about creating too many variables in the first place. It
+    would be wise to just let the brainstorming flow a normal flow for the feature
+    selection step.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在之前的提示中，假设你已经创建了足够的箱子和字段或输入。现在，不要太担心一开始创建太多的变量。最好就让头脑风暴自然地进行特征选择步骤。
+- en: Tip
+  id: totrans-142
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Don't be a fool.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要愚蠢。
+- en: Be cautious about creating unnecessary fields; since creating too many features
+    out of a small amount of data may overfit your model, which can lead to spurious
+    results. When you face the data correlation, remember that correlation does not
+    always imply causation. Our logic to this common point is that modeling observational
+    data can only show us that two variables are related, but it cannot tell us the
+    reason.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 谨慎创建不必要的字段；因为从少量数据中创建太多特征可能会导致模型过拟合，从而产生虚假结果。当面对数据相关性时，记住相关性并不总是意味着因果关系。我们对这个常见观点的逻辑是，对观测数据进行建模只能告诉我们两个变量之间的关系，但不能告诉我们原因。
+- en: 'Research articles in the book *Freakonomics* (see also at *Steven D. Levitt,
+    Stephen J. Dubner, Freakonomics: A Rogue Economist Explores the Hidden Side of
+    Everything*, [http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563](http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563))
+    has found that data from public school''s test scores indicates that children
+    living at home with a higher number of books have a tendency of having higher
+    standardized test scores compared to those with a lower number of books at home.'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 《奇迹经济学》一书中的研究文章（也可参见*史蒂文·D·莱维特，斯蒂芬·J·杜布纳，《奇迹经济学：一位流氓经济学家探索一切的隐藏面》，[http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563](http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563http://www.barnesandnoble.com/w/freakonomics-steven-d-levitt/1100550563)）发现，公立学校的考试成绩数据表明，家中拥有更多书籍的孩子倾向于比家中书籍较少的孩子有更高的标准化考试成绩。
+- en: Therefore, be cautious before creating and constructing unnecessary features,
+    which implies that don't be a fool.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在创建和构建不必要的特征之前要谨慎，这意味着不要愚蠢。
+- en: Tip
+  id: totrans-147
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Don't over engineer.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要过度设计。
+- en: 'It is trivial to judge the difference whether an iteration takes a few minutes
+    or half a day during the feature engineering phase. Since the most productive
+    time during the feature engineering phase is usually spent on the whiteboard.
+    Therefore, the most productive way to make sure it is done right is to ask the
+    right questions to your data. It''s true that nowadays the term big data is taking
+    over the term feature engineering. There is no room for hacking, so for the over
+    engineering:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在特征工程阶段，判断迭代花费几分钟还是半天的时间差异是微不足道的。因为特征工程阶段最有效的时间通常是在白板上度过的。因此，确保做得正确的最有效的方法是向你的数据提出正确的问题。如今，“大数据”这个词正在取代“特征工程”这个词。没有空间进行黑客攻击，所以不要过度设计：
+- en: '![Innovative way of feature extraction](img/00127.jpeg)'
+  id: totrans-150
+  prefs: []
+  type: TYPE_IMG
+  zh: '![特征提取的创新方式](img/00127.jpeg)'
+- en: 'Figure 4: Real interpretation of false positive and false negative.'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图4：对假阳性和假阴性的真实解释。
+- en: Tip
+  id: totrans-152
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Beware of false positives and false negatives.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 谨防假阳性和假阴性。
+- en: Another important aspect is comparing the false negatives and false positives.
+    Depending on the problem, getting a higher accuracy on one or the other is important.
+    For instance, if you are doing research in the healthcare section and trying to
+    develop a machine learning model that will work towards the disease prediction,
+    getting false positives might be better than getting the false negative results.
+    Therefore, our suggestion in this regard would be to look at the confusion matrix
+    that will help you to see the predictions made by a classifier in a visual way.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个重要的方面是比较假阴性和假阳性。根据问题，获得其中一个更高的准确性是重要的。例如，如果你在医疗领域进行研究，试图开发一个机器学习模型来预测疾病，那么获得假阳性可能比获得假阴性结果更好。因此，我们在这方面的建议是查看混淆矩阵，这将帮助你以一种可视化的方式查看分类器的预测结果。
+- en: 'The rows indicate the true class of each observation while the columns correspond
+    to the class predicted by the model itself, as shown in *Figure 4*. However, *Figure
+    5* would provide more insight. Note that the diagonal elements, also called correct
+    decision, are marked in bold. The last column, **Acc**, signifies the accuracy
+    for each key as follows:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 行表示每个观察的真实类别，而列对应于模型本身预测的类别，如*图4*所示。然而，*图5*将提供更多的见解。请注意，对角线元素，也称为正确决策，用粗体标记。最后一列**Acc**表示每个关键的准确性如下：
+- en: '![Innovative way of feature extraction](img/00060.jpeg)'
+  id: totrans-156
+  prefs: []
+  type: TYPE_IMG
+  zh: '![特征提取的创新方式](img/00060.jpeg)'
+- en: 'Figure 5: A simple confusion matrix.'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图5：一个简单的混淆矩阵。
+- en: Tip
+  id: totrans-158
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Think about precision and recall before selecting features.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在选择特征之前考虑精确度和召回率。
+- en: Finally, two more important quantities to consider are the precision and recall.
+    More technically, how often your classifier predicts a +ve outcome correctly is
+    called recall. On the contrary, when your classifier predicts a +ve output and
+    how often it is actually true is the precision.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，还有两个重要的量需要考虑，即精确度和召回率。更技术性地说，您的分类器正确预测正值结果的频率称为召回率。相反，当您的分类器预测正值输出时，它实际上是真实的频率称为精确度。
+- en: It's true that it's really difficult to predict these two values. However, a
+    careful feature selection would help you to get both the values better in the
+    last place.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 预测这两个值确实非常困难。然而，仔细的特征选择将有助于在最后一个位置更好地获得这两个值。
+- en: You will find more interesting and some excellent descriptions about the feature
+    selection in a research paper written by *Matthew Shardlow* (see also at Matthew
+    Shardlow, *An Analysis of Feature Selection Techniques*, [https://studentnet.cs.manchester.ac.uk/pgt/COMP61011/goodProjects/Shardlow.pdf](https://studentnet.cs.manchester.ac.uk/pgt/COMP61011/goodProjects/Shardlow.pdf)).
+    Now let's have a journey to the realm of Spark's feature engineering features
+    in the next section.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将在*Matthew Shardlow*撰写的研究论文中找到更多有趣和优秀的特征选择描述（也可参见Matthew Shardlow，*特征选择技术分析*，[https://studentnet.cs.manchester.ac.uk/pgt/COMP61011/goodProjects/Shardlow.pdf](https://studentnet.cs.manchester.ac.uk/pgt/COMP61011/goodProjects/Shardlow.pdf)）。现在让我们在下一节中探索Spark的特征工程功能。
+- en: Feature engineering with Spark
+  id: totrans-163
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Spark进行特征工程
+- en: Machine learning based on big data is a deep and broad area and it needs a new
+    recipe and the ingredients would be feature engineering and stable optimization
+    of the model out of the data. The optimized model can be called Big Models (see
+    also at *S. Martinez*, *A. Chen*, *G. I. Webb*, and *N. A. Zaidi*, *Scalable learning
+    of Bayesian network classifiers*, accepted to be published in *Journal of Machine
+    Learning Research*) that can learn from big data and holds the key to a breakthrough
+    other than big data.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于大数据的机器学习是一个深度和广泛的领域，它需要一个新的配方，其中的成分将是特征工程和对数据模型的稳定优化。优化后的模型可以称为大模型（也可参见*S.
+    Martinez*，*A. Chen*，*G. I. Webb*和*N. A. Zaidi*，*Bayesian network classifiers的可扩展学习*，已被接受发表在*Journal
+    of Machine Learning Research*中），它可以从大数据中学习，并且是突破的关键，而不仅仅是大数据。
+- en: Big model also signifies that your results out of diverse and complex big data
+    would be with low bias (see at *D. Brain and G. I. Webb*, *The need for low bias
+    algorithms in classification learning from small data sets*, *in PKDD*, *pp. 62,
+    73, 2002*) and out-of-core (see out-of-core learning defined at, [https://en.wikipedia.org/wiki/Out-of-core_algorithm](https://en.wikipedia.org/wiki/Out-of-core_algorithm)
+    and [https://en.wikipedia.org/wiki/Out-of-core_algorithm](https://en.wikipedia.org/wiki/Out-of-core_algorithm))
+    using multi-class machine learning algorithms with minimal tuning parameters.
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大模型还表示，您从多样化和复杂的大数据中得到的结果将具有低偏差（请参见*D. Brain和G. I. Webb*，*分类学习中对小数据集需要低偏差算法*，*在PKDD*，*pp.
+    62, 73, 2002*），并且可以使用多类机器学习算法进行外部核心学习（请参见外部核心学习定义，[https://en.wikipedia.org/wiki/Out-of-core_algorithm](https://en.wikipedia.org/wiki/Out-of-core_algorithm)和[https://en.wikipedia.org/wiki/Out-of-core_algorithm](https://en.wikipedia.org/wiki/Out-of-core_algorithm)）并且具有最小的调整参数。
+- en: Spark introduces this big model for us to deploy our machine learning application
+    at scale. In this section, we will describe how Spark developed machine learning
+    libraries and Spark core to handle the advanced features of feature engineering
+    for large-scale datasets and different data structures efficiently.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark为我们引入了这个大模型，以便我们能够规模化部署我们的机器学习应用。在本节中，我们将描述Spark如何开发机器学习库和Spark核心来有效处理大规模数据集和不同数据结构的高级特征工程功能。
+- en: As we already stated, Spark's machine learning module contains two APIs including
+    `spark.mllib` and `spark.ml`. The MLlib package is built on top of RDD, whereas
+    the ML package is built on top of DataFrame and Dataset that provides a higher
+    label API for constructing an ML pipeline. The next few sections will show you
+    the details of the ML (MLlib will be discussed in [Chapter 5](part0043_split_000.html#190862-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 5.  Supervised and Unsupervised Learning by Examples") , *Supervised
+    and Unsupervised Learning by Examples*) package with examples concluding with
+    a practical machine learning problem.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们已经提到的，Spark的机器学习模块包含两个API，包括`spark.mllib`和`spark.ml`。MLlib包建立在RDD之上，而ML包建立在DataFrame和Dataset之上，为构建ML流水线提供了更高级别的API。接下来的几节将向您展示ML的细节（MLlib将在[第5章](part0043_split_000.html#190862-0b803698e2de424b8aa3c56ad52b005d
+    "第5章。通过示例进行监督和无监督学习")中讨论，*通过示例进行监督和无监督学习*），其中包括一个实际的机器学习问题。
+- en: Machine learning pipeline – an overview
+  id: totrans-168
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 机器学习流水线-概述
+- en: Spark's ML package provides a uniform set of higher-level APIs that helps to
+    create a practical machine learning pipeline. The main concept of this pipeline
+    is to combine multiple algorithms of machine learning together to make a complete
+    workflow. In the machine learning arena, it is often common practice to run a
+    sequence of algorithms to process and learn from the available data.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark的ML包提供了一组统一的高级API，帮助创建一个实用的机器学习流水线。这个流水线的主要概念是将多个机器学习算法组合在一起，形成一个完整的工作流程。在机器学习领域，经常会运行一系列算法来处理和学习可用的数据。
+- en: For example, suppose you want to develop a text analytics machine learning application.
+    The total process could be split into several stages for a collection of some
+    simple text document. Naturally, the processing workflow might include several
+    stages. In the very first step, you need to split the text into words from each
+    document. Once you have the split words, you should convert those words into numerical
+    feature vectors for the words from each document.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，假设您想要开发一个文本分析机器学习应用程序。对于一系列简单的文本文档，总体过程可以分为几个阶段。自然地，处理工作流程可能包括几个阶段。在第一步中，您需要从每个文档中将文本拆分为单词。一旦您拆分了单词，您应该将这些单词转换为每个文档的数值特征向量。
+- en: 'Finally, you might want to learn a prediction model using the features vector
+    you got in stage 2 and also want to label each vector to use supervised machine
+    learning algorithms. In brief, these four stages can be summarised as follows.
+    For each document, do the following:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，您可能希望使用第2阶段得到的特征向量学习预测模型，并且还想要为使用监督机器学习算法的每个向量进行标记。简而言之，这四个阶段可以总结如下。对于每个文档，执行以下操作：
+- en: Split the texts=> words
+  id: totrans-172
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 拆分文本=>单词
+- en: Convert words => numerical feature vectors
+  id: totrans-173
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将单词转换为数值特征向量
+- en: Numerical feature vectors => labeling
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数值特征向量=>标记
+- en: Build an ML model as a prediction model using vectors and labels
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用向量和标签构建ML模型作为预测模型
+- en: These four stages could be considered as a workflow. The Spark ML represents
+    these kinds of workflows as pipelines that consists of a sequence of PipelineStages;
+    where a Transformer and an Estimator contribute in each stage of the pipeline
+    to be run in a certain order. The Transformer is actually an algorithm to transform
+    one Dataset to another Dataset.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这四个阶段可以被视为一个工作流程。Spark ML将这些类型的工作流程表示为由一系列PipelineStages组成的管道，其中转换器和估计器在管道的每个阶段中以特定顺序运行。转换器实际上是一个将一个数据集转换为另一个数据集的算法。
+- en: On the other hand, an Estimator is also an algorithm, which is liable for fitting
+    on a Dataset to produce a Transformer. Technically, an Estimator implements a
+    method called `fit()`, which accepts a Dataset and produces a model, which is
+    a Transformer.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，估计器也是一种算法，负责在数据集上进行拟合以生成一个转换器。从技术上讲，估计器实现了一个称为`fit()`的方法，它接受一个数据集并生成一个模型，这是一个转换器。
+- en: Tip
+  id: totrans-178
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: Interested readers should refer to this URL [http://spark.apache.org/docs/latest/ml-pipeline.html](http://spark.apache.org/docs/latest/ml-pipeline.html)
+    for more details on the Transformer, an Estimator in pipelines.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有兴趣的读者应该参考此网址[http://spark.apache.org/docs/latest/ml-pipeline.html](http://spark.apache.org/docs/latest/ml-pipeline.html)了解有关管道中转换器和估计器的更多详细信息。
+- en: '![Machine learning pipeline – an overview](img/00005.jpeg)'
+  id: totrans-180
+  prefs: []
+  type: TYPE_IMG
+  zh: '![机器学习管道-概述](img/00005.jpeg)'
+- en: 'Figure 6: Pipeline is an Estimator.'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图6：管道是一个估计器。
+- en: To be more specific, let's draw an example, suppose a machine learning algorithm
+    such as Logistic Regression (or the Linear Regression) is used as an Estimator.
+    Now by calling the `fit()` method , which trains a **Logistic Regression Model**
+    (which itself is a model, and hence a Transformer). Technically, a Transformer
+    implements a method, namely `transform()`, which converts one Dataset into another.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更具体地说，让我们举个例子，假设使用诸如逻辑回归（或线性回归）之类的机器学习算法作为估计器。现在通过调用`fit()`方法，训练一个**逻辑回归模型**（它本身也是一个模型，因此是一个转换器）。从技术上讲，转换器实现了一种方法，即`transform()`，它将一个数据集转换为另一个数据集。
+- en: During the conversion, one more column is depending upon the selection and column
+    position. It is to be noted that the pipeline concept that Spark has developed
+    is mostly inspired by the Scikit-learn project, which is a simple and efficient
+    tool for data mining and data analysis (see also at Scikit-learn project, [http://scikit-learn.org/stable/](http://scikit-learn.org/stable/)).
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在转换过程中，还会有一个列取决于选择和列位置。需要注意的是，Spark开发的管道概念大多受到Scikit-learn项目的启发，这是一个用于数据挖掘和数据分析的简单高效的工具（也可以参见Scikit-learn项目，[http://scikit-learn.org/stable/](http://scikit-learn.org/stable/)）。
+- en: As discussed in [Chapter 1](part0014_split_000.html#DB7S2-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 1. Introduction to Data Analytics with Spark"), *Introduction to Data
+    Analytics with Spark*, Spark has implemented RDD operation as **Directed Acyclic
+    Graph** (**DAG**) style. The same fashion is also applicable on pipelining as
+    well; wherein each DAG Pipeline, stages are specified as an ordered array. The
+    text-processing pipeline we previously described as an example with four stages
+    is actually a linear Pipeline; in which each stage consumes the data produced
+    by the previous stage. It is also possible to create the non-linear pipelines
+    as long as the data flow of the feature engineering graph forms and aligns in
+    a DAG style.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如[第1章](part0014_split_000.html#DB7S2-0b803698e2de424b8aa3c56ad52b005d "第1章。使用Spark进行数据分析简介")中所讨论的，Spark已将RDD操作实现为**有向无环图**（**DAG**）风格。同样的方式也适用于管道，其中每个DAG管道的阶段都被指定为一个有序数组。我们之前描述的具有四个阶段的文本处理管道实际上是一个线性管道；在这种管道中，每个阶段都消耗前一阶段产生的数据。只要特征工程图的数据流以DAG样式形成和对齐，也可以创建非线性管道。
+- en: It is to be noted that, if a Pipeline forms a DAG, then the stages need to be
+    specified in topological order essentially. The pipeline we are talking about
+    can be operated on top of Dataset including various file types, therefore run-time
+    and compile-time checking from the pipelining consistencies is required. Unfortunately,
+    the current implementation of Spark Pipeline does not provide the use compile-time
+    type checking. However, Spark provides the run-time checking that is used by the
+    Pipelines and PipelineModels, which is done using the Dataset schema.
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 需要注意的是，如果管道形成一个DAG，那么阶段需要按拓扑顺序指定。我们所讨论的管道可以在包括各种文件类型的数据集上运行，因此需要对管道一致性进行运行时和编译时检查。不幸的是，Spark管道的当前实现不提供使用编译时类型检查。但是，Spark提供了运行时检查，由管道和管道模型使用，使用数据集模式进行。
+- en: Since the concept of RDD is immutable, that means once an RDD is created, it's
+    not possible to change the contents of the RDD, similarly, uniqueness in Pipeline
+    stages should be persistent (please refer to *Figure 6* and *Figure 7* for the
+    clear view) with unique IDs. For simplicity, the preceding text processing workflow
+    can be visualized as like Figure 5; where we have shown the text processing pipeline
+    with three stages. The **Tokenizer** and **HashingTF** are two unique Transformers.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于RDD的概念是不可变的，这意味着一旦创建了RDD，就不可能更改RDD的内容，同样，流水线阶段的唯一性应该是持久的（请参考*图6*和*图7*以获得清晰的视图）具有唯一的ID。为简单起见，前述文本处理工作流程可以像图5一样进行可视化；我们展示了具有三个阶段的文本处理流水线。**Tokenizer**和**HashingTF**是两个独特的转换器。
+- en: On the other hand, LogisticRegression is an Estimator. In the bottom row, a
+    cylinder indicates a Dataset. The `fit()` method from pipeline is called on the
+    original Dataset containing the documents of text with labels. Now the `Tokenizer.transform()`
+    method splits the raw text documents into words and the `HashingTF.transform()`
+    method on the other hand converts the words column into feature vectors.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，LogisticRegression是一个估计器。在底部一行，一个圆柱表示一个数据集。在原始包含带有标签的文本文档的数据集上调用了pipeline的`fit()`方法。现在`Tokenizer.transform()`方法将原始文本文档分割成单词，而`HashingTF.transform()`方法则将单词列转换为特征向量。
+- en: 'Please note in each case, a column on the Dataset is added. Now the `LogisticRegression.fit()`
+    method is called to produce a `LogisticRegressionModel`:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在每种情况下，数据集上都添加了一列。现在调用`LogisticRegression.fit()`方法来生成`LogisticRegressionModel`：
+- en: '![Machine learning pipeline – an overview](img/00162.jpeg)'
+  id: totrans-189
+  prefs: []
+  type: TYPE_IMG
+  zh: '![机器学习流水线-概述](img/00162.jpeg)'
+- en: 'Figure 7: Pipeline is an Estimator.'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图7：Pipeline是一个估计器。
+- en: In *Figure 7*, the PipelineModel has the same number of stages as the original
+    Pipeline. However, in this case, all the Estimators from the original Pipeline
+    need to be converted into Transformers.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在*图7*中，PipelineModel具有与原始Pipeline相同数量的阶段。然而，在这种情况下，原始Pipeline中的所有估计器都需要转换为转换器。
+- en: When the `transform()` method from the **PipelineModel** is called on a test
+    Dataset (that is, numeric feature vectors), the data is passed through the fitted
+    pipeline in a certain order.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当在测试数据集（即数值特征向量）上调用**PipelineModel**的`transform()`方法时，数据按特定顺序通过已安装的流水线传递。
+- en: In a nutshell, Pipelines and PipelineModel help to ensure that training and
+    test data go through identical feature processing steps. The following section
+    shows a practical example of the preceding pipelining process we have described.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总之，流水线和PipelineModel有助于确保训练和测试数据经过相同的特征处理步骤。以下部分展示了我们描述的前述流水线过程的实际示例。
+- en: Pipeline – an example with Spark ML
+  id: totrans-194
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 流水线-使用Spark ML的示例
+- en: 'This section will show a practical machine-learning problem called **Spam Filtering**,
+    which was introduced in [Chapter 3](part0031_split_000.html#TI1E2-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 3. Understanding the Problem by Understanding the Data"), *Understanding
+    the Problem by Understanding the Data* with Spark''s pipeline. We will use the
+    `SMSSpamCollection` dataset downloaded from [https://archive.ics.uci.edu/ml/datasets/SMS+Spam+Collection](https://archive.ics.uci.edu/ml/datasets/SMS+Spam+Collection)
+    to show the feature engineering with Spark. The following code reads a sample
+    dataset as a Dataset using a **Plain Old Java Object** (**POJO**) class (see more
+    at [https://en.wikipedia.org/wiki/Plain_Old_Java_Object](https://en.wikipedia.org/wiki/Plain_Old_Java_Object)).
+    Note that the `SMSSpamHamLabelDocument` class contains the label (`label: double`)
+    and SMS lines (`text: String`).'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '本节将展示一个名为**垃圾邮件过滤**的实际机器学习问题，该问题在[第3章](part0031_split_000.html#TI1E2-0b803698e2de424b8aa3c56ad52b005d
+    "第3章。通过了解数据来理解问题")中介绍了，*通过了解数据来理解问题*，使用Spark的流水线。我们将使用从[https://archive.ics.uci.edu/ml/datasets/SMS+Spam+Collection](https://archive.ics.uci.edu/ml/datasets/SMS+Spam+Collection)下载的`SMSSpamCollection`数据集来展示Spark中的特征工程。以下代码使用**普通的旧Java对象**（**POJO**）类将样本数据集读取为数据集（更多信息请参见[https://en.wikipedia.org/wiki/Plain_Old_Java_Object](https://en.wikipedia.org/wiki/Plain_Old_Java_Object)）。请注意，`SMSSpamHamLabelDocument`类包含标签（`label:
+    double`）和短信行（`text: String`）。'
+- en: To run the code, just create a Maven project in your Eclipse IDE by specifying
+    the master URL and dependencies on the provided `pom.xml` file under the Maven
+    project and package the application as a jar file. Alternatively, run the example
+    on Eclipse as a standalone Java application.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要运行代码，只需在Eclipse IDE中创建一个Maven项目，指定提供的`pom.xml`文件下的Maven项目和包的依赖关系，并将应用程序打包为jar文件。或者，作为独立的Java应用程序在Eclipse上运行示例。
+- en: 'The code for Spark session creation is as follows:'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spark会话创建的代码如下：
+- en: '[PRE9]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Here the Spark SQL warehouse is set to the `E:/Exp/` directory for Windows.
+    Set your path accordingly based on the OS type.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，Spark SQL仓库设置为`E:/Exp/`目录，用于Windows。根据操作系统类型设置您的路径。
+- en: 'The code for the `smsspamdataset` sample is as follows:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`smsspamdataset`样本的代码如下：'
+- en: '[PRE10]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Now let''s see the structure of the Dataset by calling the `show()` method
+    as follows:'
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，通过调用`show()`方法来查看数据集的结构：
+- en: '[PRE11]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'The output will look as follows:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下所示：
+- en: '![Pipeline – an example with Spark ML](img/00099.jpeg)'
+  id: totrans-205
+  prefs: []
+  type: TYPE_IMG
+  zh: '![流水线-使用Spark ML的示例](img/00099.jpeg)'
+- en: 'The code for the POJO Class is as follows:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: POJO类的代码如下：
+- en: '[PRE12]'
+  id: totrans-207
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: Now, let's split the dataset into `trainingData` (60%) and `testData` (40%)
+    for the model training purpose.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们将数据集分割为`trainingData`（60%）和`testData`（40%）以进行模型训练。
+- en: 'The code for splits is as follows:'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 分割的代码如下：
+- en: '[PRE13]'
+  id: totrans-210
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: The objective of the dataset is to build a predictive model using a classification
+    algorithm, as we know from the dataset; there are two types of messages. One is
+    spam, which is represented as 1.0, and another one is ham, represented as 0.0
+    labels. We can consider here the LogisticRegression or linear regression algorithm
+    for training a model for the simplicity of training and using.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 数据集的目标是使用分类算法构建预测模型，我们从数据集中知道，有两种类型的消息。一种是垃圾邮件，表示为1.0，另一种是正常邮件，表示为0.0标签。我们可以考虑使用LogisticRegression或线性回归算法来训练模型以简化训练和使用。
+- en: 'However, more complex classifiers using regression such as generalized regression
+    will be discussed in [Chapter 8](part0067_split_000.html#1VSLM1-5afe140a04e845e0842b44be7971e11a
+    "Chapter 8.  Adapting Your Machine Learning Models"), *Adapting Your Machine Learning
+    Models*. Consequently, our workflow or pipeline will be like the following, according
+    to our dataset:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，使用回归等更复杂的分类器，如广义回归，将在[第8章](part0067_split_000.html#1VSLM1-5afe140a04e845e0842b44be7971e11a
+    "第8章。调整您的机器学习模型"), *调整您的机器学习模型*中进行讨论。因此，根据我们的数据集，我们的工作流程或管道将如下所示：
+- en: Tokenize the text lines into words from the training data
+  id: totrans-213
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将训练数据的文本行标记为单词
+- en: Extracting the features using the hashing technique
+  id: totrans-214
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用哈希技术提取特征
+- en: Applying a LogisticRegression Estimator for building a model
+  id: totrans-215
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 应用逻辑回归估计器构建模型
+- en: The preceding three steps can be done easily by Spark's pipeline component.
+    You can define all the stages into a single Pipeline class that will build a model
+    in an efficient way. The following code shows the whole pipeline for building
+    the predictive model. The Tokenizer class defines the input and output column
+    (for example, `wordText` to words), the `HashTF` class defines how to extract
+    the features from the words of the Tokenizer class.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的三个步骤可以通过Spark的管道组件轻松完成。您可以将所有阶段定义为单个Pipeline类，该类将以高效的方式构建模型。以下代码显示了构建预测模型的整个管道。分词器类定义了输入和输出列（例如，`wordText`到单词），`HashTF`类定义了如何从分词器类的单词中提取特征。
+- en: The `LogisticRegression` class configures its parameter. Finally, you can see
+    the Pipeline class that takes the preceding methods into a PipelineStage array
+    and returns an Estimator. After applying the `fit()` method to the training set
+    it will return the final model, which is ready for prediction. You can see the
+    output of the test data after applying a model for predicting.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`LogisticRegression`类配置其参数。最后，您可以看到Pipeline类，该类将前面的方法作为PipelineStage数组，并返回一个估计器。在训练集上应用`fit()`方法后，它将返回最终模型，该模型已准备好进行预测。您可以在应用模型进行预测后看到测试数据的输出。'
+- en: 'The code for Pipeline is as follows:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 管道的代码如下：
+- en: '[PRE14]'
+  id: totrans-219
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'The output is as follows:'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '[PRE15]'
+  id: totrans-221
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Feature transformation, extraction, and selection
+  id: totrans-222
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征转换、提取和选择
+- en: The preceding section showed you the overall process of the pipeline. This pipeline
+    or workflow is basically the collection of some operation such as transformation
+    to one dataset of another data set, extracting the features, and selecting the
+    features. These are the basic operators for feature engineering that we already
+    described in previous sections. This section will show you the details about those
+    operations using Spark machine learning packages. Spark provides some efficient
+    APIs for feature engineering including MLlib and ML.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的部分向您展示了管道的整体流程。这个管道或工作流基本上是一些操作的集合，例如将一个数据集转换为另一个数据集，提取特征和选择特征。这些是我们在前几节中已经描述过的特征工程的基本操作符。本节将向您展示如何使用Spark机器学习包中的这些操作符的详细信息。Spark提供了一些高效的特征工程API，包括MLlib和ML。
+- en: In this section, we will start with the ML package by continuing the Spam Filter
+    examples. Let's read a large dataset from the text file as Dataset, which contains
+    the lines starting with ham or spam words. The sample output of this Dataset is
+    given here. Now we will use this dataset for feature extracting the features and
+    building a model with Spark's APIs.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将继续使用垃圾邮件过滤器示例开始ML包。让我们从文本文件中读取一个大型数据集作为数据集，其中包含以ham或spam单词开头的行。此数据集的示例输出如下。现在我们将使用此数据集来提取特征并使用Spark的API构建模型。
+- en: 'The code for `Input DF` is as follows:'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Input DF`的代码如下：'
+- en: '[PRE16]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'The output is as follows:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '![Feature transformation, extraction, and selection](img/00059.jpeg)'
+  id: totrans-228
+  prefs: []
+  type: TYPE_IMG
+  zh: '![特征转换、提取和选择](img/00059.jpeg)'
+- en: Transformation – RegexTokenizer
+  id: totrans-229
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 转换 - RegexTokenizer
+- en: 'From the preceding output, you can see that we have to transform it into two
+    columns for identifying the spam and ham messages. For doing this, we can use
+    the `RegexTokenizer` Transformer that can take input from a regular expression
+    (`regex`) and transform it to a new dataset. This code produces `labelFeatured`.
+    For example, refer the Dataset shown in the following output:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从前面的输出中，您可以看到我们必须将其转换为两列以识别垃圾邮件和ham消息。为此，我们可以使用`RegexTokenizer`转换器，该转换器可以从正则表达式（`regex`）中获取输入并将其转换为新数据集。此代码生成`labelFeatured`。例如，请参阅以下输出中显示的数据集：
+- en: '[PRE17]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Here is the output of `labelFeature` Dataset:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是`labelFeature`数据集的输出：
+- en: '[PRE18]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Now let''s create a new Dataset from the `labelFeatured` Dataset that we just
+    created by selecting the label text as follows:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们通过以下方式从我们刚刚创建的`labelFeatured`数据集创建一个新的数据集，选择标签文本：
+- en: '[PRE19]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Now let''s further explore the contents in the new Dataset by calling the `show()`
+    method as follows:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们通过调用`show()`方法进一步探索新数据集中的内容：
+- en: '![Transformation – RegexTokenizer](img/00116.jpeg)'
+  id: totrans-237
+  prefs: []
+  type: TYPE_IMG
+  zh: '![转换 - RegexTokenizer](img/00116.jpeg)'
+- en: Transformation – StringIndexer
+  id: totrans-238
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 转换 - 字符串索引器
+- en: 'The preceding output has the classification of ham and spam messages, but we
+    have to make the ham and spam text as double values. The `StringIndexer` Transformer
+    can do it easily. It can encode a string column of labels into indices in another
+    column. The indices are ordered by label frequencies. `StringIndexer` produces
+    two indices, 0.0 and 1.0 for our dataset:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的输出显示了ham和spam消息的分类，但我们必须将ham和spam文本转换为双精度值。`StringIndexer`转换器可以轻松完成此操作。它可以将标签的字符串列编码为另一列中的索引。索引按标签频率排序。`StringIndexer`为我们的数据集生成了两个索引，0.0和1.0：
+- en: '[PRE20]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'The following is the output for the `indexed.show()` function:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`indexed.show()`函数的输出如下：'
+- en: '![Transformation – StringIndexer](img/00011.jpeg)'
+  id: totrans-242
+  prefs: []
+  type: TYPE_IMG
+  zh: '![转换 - 字符串索引器](img/00011.jpeg)'
+- en: Transformation – StopWordsRemover
+  id: totrans-243
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 转换 - 停用词移除器
+- en: The preceding output contains words or tokens, but some words are not as important
+    as features. Therefore, we need to remove those words. For making this task easier,
+    Spark provides the list of stop words through the `StopWordsRemover` class that
+    will be discussed more in [Chapter 6](part0049_split_000.html#1ENBI2-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 6.  Building Scalable Machine Learning Pipelines"), *Building Scalable
+    Machine Learning Pipelines*.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前述输出包含单词或标记，但有些单词并不像特征那样重要。因此，我们需要删除这些单词。为了使这项任务更容易，Spark通过`StopWordsRemover`类提供了停用词列表，这将在[第6章](part0049_split_000.html#1ENBI2-0b803698e2de424b8aa3c56ad52b005d
+    "第6章。构建可扩展的机器学习管道")中更多地讨论，*构建可扩展的机器学习管道*。
+- en: 'We can use those words to filter unwanted words. Additionally, we will remove
+    the ham and spam words from the text column. The `StopWordsRemover` class will
+    transform the preceding Dataset into a filtered Dataset by removing the stop works
+    from the features. The following output will show us the words without spam and
+    ham word tokens:'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用这些单词来过滤不需要的单词。此外，我们将从文本列中删除垃圾邮件和垃圾邮件单词。`StopWordsRemover`类将通过删除特征中的停用词将前述数据集转换为过滤后的数据集。下面的输出将显示没有垃圾邮件和垃圾邮件单词标记的单词：
+- en: '[PRE21]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'The output is as follows:'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '![Transformation – StopWordsRemover](img/00114.jpeg)'
+  id: totrans-248
+  prefs: []
+  type: TYPE_IMG
+  zh: '![转换 - StopWordsRemover](img/00114.jpeg)'
+- en: Extraction – TF
+  id: totrans-249
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: TF提取
+- en: Now we have the Dataset containing a label with a double value and filtered
+    words or tokens. The next task is to vectorize (make numeric values) the features
+    or extract the features from the words or tokens.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了包含双精度值标签和过滤后的单词或标记的数据集。下一个任务是对特征进行向量化（使其成为数值）或从单词或标记中提取特征。
+- en: '**TF-IDF** (`HashingTF` and `IDF`; also known as **Term Frequency-Inverse Document
+    Frequency**) is a feature vectorization method widely used for extracting the
+    features, which basically calculates the importance of a term to a document in
+    the corpus.'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**TF-IDF**（`HashingTF`和`IDF`；也称为**词频-逆文档频率**）是一种广泛用于提取特征的特征向量化方法，基本上计算了术语在语料库中对文档的重要性。'
+- en: '`TF` counts the frequency of the terms in a document or line and `IDF` counts
+    the document or line frequency, that is, number of document or lines containing
+    a particular term. The following code explains the term frequency of the preceding
+    dataset using the efficient `HashingTF` class of Spark. `HashingTF` is a Transformer
+    that takes sets of terms; and converts those sets into fixed-length feature vectors.
+    The output of the featured data is also shown:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`TF`计算文档或行中术语的频率，`IDF`计算文档或行的频率，即包含特定术语的文档或行的数量。以下代码使用Spark的高效`HashingTF`类解释了前述数据集的词频。`HashingTF`是一个将术语集合转换为固定长度特征向量的转换器。还显示了特征数据的输出：'
+- en: '[PRE22]'
+  id: totrans-253
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'The output is as follows:'
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '[PRE23]'
+  id: totrans-255
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Extraction – IDF
+  id: totrans-256
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提取 - IDF
+- en: 'Similarly, we can apply `IDF` on the featured data to count the document frequency.
+    `IDF` is an Estimator that fits on the preceding dataset and produces an `IDFModel`
+    that transforms to a rescaled dataset containing features and labels:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，我们可以将`IDF`应用于特征数据以计算文档频率。`IDF`是一个适合于前述数据集的估计器，并产生一个将转换为包含特征和标签的重新缩放数据集的`IDFModel`：
+- en: '[PRE24]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'The output is as follows:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '[PRE25]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: The preceding output extracts features from the raw texts. The very first entry
+    is the label and the rest are the feature vector extracted.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前述输出从原始文本中提取特征。第一个条目是标签，其余是提取的特征向量。
+- en: Selection – ChiSqSelector
+  id: totrans-262
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 选择 - ChiSqSelector
+- en: The preceding output is ready for training using a classification algorithm
+    such as `LogisticRegression`. But we can use the more important feature from the
+    categorical features. For doing this, Spark provides some feature selector APIs
+    such as `ChiSqSelector`. The `ChiSqSelector` is called **Chi-Squared feature selection**.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前述输出已准备好使用分类算法进行训练，例如`LogisticRegression`。但是我们可以从分类特征中使用更重要的特征。为此，Spark提供了一些特征选择器API，如`ChiSqSelector`。`ChiSqSelector`被称为**卡方特征选择**。
+- en: 'It operates on labeled data with categorical features. It orders features based
+    on a Chi-Squared test, which is independent from the class, and then filters the
+    top features which the class label depends on the most. This selector is useful
+    for improving the predictive power of a model. The following code will select
+    the top three features from the feature vectors, along with the output given:'
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它在具有分类特征的标记数据上运行。它根据卡方检验对特征进行排序，该检验独立于类，并过滤出类标签最依赖的前几个特征。此选择器对提高模型的预测能力很有用。以下代码将从特征向量中选择前三个特征，以及给出的输出：
+- en: '[PRE26]'
+  id: totrans-265
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Tip
+  id: totrans-266
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: We will discuss more on the `ChiSqSelector`, `IDFModel`, `IDF`, `StopWordsRemover`,
+    and `RegexTokenizer` classes in [Chapter 6](part0049_split_000.html#1ENBI2-0b803698e2de424b8aa3c56ad52b005d
+    "Chapter 6.  Building Scalable Machine Learning Pipelines"), *Building Scalable
+    Machine Learning Pipelines*.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在[第6章](part0049_split_000.html#1ENBI2-0b803698e2de424b8aa3c56ad52b005d "第6章。构建可扩展的机器学习管道")中更多地讨论`ChiSqSelector`，`IDFModel`，`IDF`，`StopWordsRemover`和`RegexTokenizer`类，*构建可扩展的机器学习管道*。
+- en: 'The output is as follows:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输出如下：
+- en: '[PRE27]'
+  id: totrans-269
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Now, you can apply `LogisticRegression` when building a model with the feature
+    vectors. Spark provides lots of different APIs for feature engineering. However,
+    we have not used the other machine learning of Spark (that is, Spark MLlib) for
+    the brevity and page limitation. We will discuss the feature engineering using
+    `spark.mllib` gradually with examples in future chapters.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当构建具有特征向量的模型时，您可以应用`LogisticRegression`。Spark提供了许多不同的特征工程API。但是，出于简洁和页面限制的原因，我们没有使用Spark的其他机器学习（即Spark
+    MLlib）。我们将在未来的章节中逐渐讨论使用`spark.mllib`进行特征工程的示例。
+- en: Advanced feature engineering
+  id: totrans-271
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 高级特征工程
+- en: In this section, we will discuss some advanced features that are also involved
+    in the feature engineering process such as manual feature construction, feature
+    learning, iterative process of feature engineering, and deep learning.
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论一些高级特性，这些特性也涉及到特征工程过程，如手动特征构建，特征学习，特征工程的迭代过程和深度学习。
+- en: Feature construction
+  id: totrans-273
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征构建
+- en: The best results come down to you through the manual feature engineering or
+    feature construction. Therefore, manual construction is the process of creating
+    new features from the raw data. Feature selection based on the feature's importance
+    can inform you about the objective utility of features; however, those features
+    have to come from somewhere else. In fact, sometimes, you need to manually create
+    them.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最好的结果来自于您通过手动特征工程或特征构建。因此，手动构建是从原始数据中创建新特征的过程。基于特征重要性的特征选择可以告诉您有关特征的客观效用；然而，这些特征必须来自其他地方。事实上，有时候，您需要手动创建它们。
+- en: In contrast to the feature selection, the feature construction technique requires
+    spending a lot of effort and time with not the aggregation or picking the feature,
+    but on the actual raw data so that new features can be constructive towards increasing
+    the predictive accuracies of the model. Therefore, it also involves thinking of
+    the underlying structure of the data along with the ML problem.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与特征选择相比，特征构建技术需要花费大量的精力和时间，不是在聚合或挑选特征上，而是在实际的原始数据上，以便新特征能够有助于提高模型的预测准确性。因此，它还涉及思考数据的潜在结构以及机器学习问题。
+- en: 'In this regard, to construct new features from the complex and high dimensional
+    dataset, you need to know the overall structure of the data. In addition to this,
+    how to use and apply them in predictive modeling algorithms. There will be three
+    aspects in terms of tabular, textual, and multimedia datasets:'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这方面，要从复杂和高维数据集中构建新特征，您需要了解数据的整体结构。除此之外，还需要知道如何在预测建模算法中使用和应用它们。在表格、文本和多媒体数据方面将有三个方面：
+- en: Handling and manual creation from the tabular data often means a mixture of
+    combining features to create new features. You might also need the decomposing
+    or splitting of some original features to create new features.
+  id: totrans-277
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理和手动创建表格数据通常意味着混合组合特征以创建新特征。您可能还需要分解或拆分一些原始特征以创建新特征。
+- en: With textual data, it often means devising document or context-specific indicators
+    relevant to the problem. For example, when you are applying text analytics on
+    large raw data such as data from Twitter hashtags.
+  id: totrans-278
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于文本数据，通常意味着设计文档或上下文特定的指标与问题相关。例如，当您在大型原始数据上应用文本分析，比如来自Twitter标签的数据。
+- en: With multimedia data such as image data, it can often mean enormous amounts
+    of time are passed to pick out relevant structures in a manual way.
+  id: totrans-279
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于多媒体数据，比如图像数据，通常需要花费大量时间以手动方式挑选出相关结构。
+- en: Unfortunately, the feature construction technique is not only manual, but the
+    whole process is slower, requiring lots of research involvement from humans like
+    you and us. However, it can make a big difference in the long run. In fact, feature
+    engineering and feature selection are not mutually exclusive; however, both of
+    them are important in the realm of machine learning.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，特征构建技术不仅是手动的，整个过程也更慢，需要人类像你和我们一样进行大量的研究。然而，从长远来看，它可能会产生重大影响。事实上，特征工程和特征选择并不是互斥的；然而，在机器学习领域，它们都很重要。
+- en: Feature learning
+  id: totrans-281
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征学习
+- en: Is it possible to avoid the manual process of prescribing how to construct or
+    extract features from raw data? Feature learning helps you to get rid of this.
+    Therefore, feature learning is an advanced process; alternatively, an automatic
+    identification and use of features from raw data. This is also referred to as
+    representation learning that helps your machine learning algorithm to identify
+    useful features.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 是否可能避免手动指定如何从原始数据中构建或提取特征的过程？特征学习可以帮助您摆脱这一点。因此，特征学习是一个高级过程；或者说是从原始数据中自动识别和使用特征的过程。这也被称为表示学习，有助于您的机器学习算法识别有用的特征。
+- en: The feature learning technique is commonly used in deep learning algorithms.
+    As a result, recent deep learning techniques are achieving some success in this
+    area. The auto-encoders and restricted Boltzmann machines are such an example
+    where the concept of feature learning was used. The key idea behind feature learning
+    is the automatic and abstract representations of the features in a compressed
+    form using unsupervised or semi-supervised learning algorithms.
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征学习技术通常用于深度学习算法。因此，最近的深度学习技术在这一领域取得了一些成功。自动编码器和受限玻尔兹曼机就是使用特征学习概念的例子。特征学习的关键思想是使用无监督或半监督学习算法以压缩形式自动和抽象地表示特征。
+- en: Speech recognition, image classification, and object recognition are some successful
+    examples; where researchers have found supported state-of-the-art results. Further
+    details could not have been represented in this book due to the brevity.
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 语音识别、图像分类和物体识别是一些成功的例子；研究人员在这些领域取得了最新的支持结果。由于篇幅有限，本书中无法详细介绍更多细节。
+- en: Unfortunately, Spark has not implemented any APIs for the automatic feature
+    extraction or construction.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，Spark还没有实现任何自动特征提取或构建的API。
+- en: Iterative process of feature engineering
+  id: totrans-286
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 特征工程的迭代过程
+- en: The whole process of feature engineering is not a standalone, but more or less
+    iterative. Since you are actually interplaying with the form the data selection
+    to model evaluation again and again until you are completely satisfied or you
+    are running out of time. The iteration could be imagined as a four-step workflow
+    that iteratively runs over time. When you are aggregating or collecting the raw
+    data, you might not be doing enough brainstorming. However, when you start exploring
+    the data, you are really getting into the problem into deeper.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征工程的整个过程不是独立的，而是更多或少是迭代的。因为您实际上是在数据选择到模型评估之间反复交互，直到您完全满意或时间用尽。迭代可以想象为一个随时间迭代运行的四步工作流程。当您聚合或收集原始数据时，您可能没有进行足够的头脑风暴。然而，当您开始探索数据时，您真的深入了解问题。
+- en: 'After that you will be looking at a lot of data, studying the best technique
+    of feature engineering and the related problems presented in the state of the
+    arts and you will see how much you are able to steal. When you have done enough
+    brainstorming, you will start devising the required features or extracting the
+    features depending on your problem type or class. You might use the automatic
+    feature extraction or manual feature construction (or both sometimes). If you
+    are not satisfied with the performance you might redo the feature extraction process
+    for improvement. Please refer to *Figure 7* for a clear view of the iterative
+    process of feature engineering:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，您将会看到大量数据，研究特征工程的最佳技术以及现有技术中提出的相关问题，您将看到自己能够偷取多少。当您进行了足够的头脑风暴后，您将开始设计所需的特征或根据问题类型或类别提取特征。您可以使用自动特征提取或手动特征构建（有时两者都有）。如果对性能不满意，您可能需要重新进行特征提取以改进。请参考*图7*，以清晰地了解特征工程的迭代过程：
+- en: '![Iterative process of feature engineering](img/00163.jpeg)'
+  id: totrans-289
+  prefs: []
+  type: TYPE_IMG
+  zh: '![特征工程的迭代过程](img/00163.jpeg)'
+- en: 'Figure 8: The iterative processing in feature engineering.'
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8：特征工程中的迭代处理。
+- en: When you have devised or extracted the feature, you need to select the features.
+    You might apply a different scoring or ranking mechanism based on feature importance.
+    Similarly, you might iterate the same process such as devising the feature to
+    improve the model. And finally, you will evaluate your model to estimate the model's
+    accuracy on new data to make your model adaptive.
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您设计或提取了特征后，您需要选择特征。您可以根据特征重要性应用不同的评分或排名机制。同样，您可能需要迭代相同的过程，如设计特征以改进模型。最后，您将评估模型，以估计模型在新数据上的准确性，使您的模型具有适应性。
+- en: You also need a well-defined problem that will help you to stop the whole iteration.
+    When finished, you can move on to try other models. There will be gain waiting
+    for you in the future once you plateau on ideas or the accuracy delta out of your
+    ML pipeline.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还需要一个明确定义的问题，这将帮助您停止整个迭代。完成后，您可以继续尝试其他模型。一旦您在想法或准确性增量上达到平台，未来将有收益等待着您的ML管道。
+- en: Deep learning
+  id: totrans-293
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 深度学习
+- en: One of the most interesting and promising moves in data representation we would
+    say is deep learning. It is very popular on the tensor computing application and
+    the **Artificial Intelligent Neural Network** (**AINN**) system. Using the deep
+    learning technique, the network learns how to represent data at different levels.
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以说，数据表示中最有趣和有前途的举措之一是深度学习。它在张量计算应用和**人工智能神经网络**（**AINN**）系统中非常受欢迎。使用深度学习技术，网络学习如何在不同层次表示数据。
+- en: Therefore, you will have an exponential ability to represent the linear data
+    you have. Spark can take this advantage and it can be used to improve deep learning.
+    For more general discussion, please refer to the following URL at [https://en.wikipedia.org/wiki/Deep_learning](https://en.wikipedia.org/wiki/Deep_learning)
+    and to learn how to deploy pipelines on a cluster with TensorFlow, see [https://www.tensorflow.org/](https://www.tensorflow.org/).
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，您将具有表示您拥有的线性数据的指数能力。Spark可以利用这一优势，用于改进深度学习。有关更一般的讨论，请参阅以下网址[https://en.wikipedia.org/wiki/Deep_learning](https://en.wikipedia.org/wiki/Deep_learning)，要了解如何在TensorFlow集群上部署管道，请参见[https://www.tensorflow.org/](https://www.tensorflow.org/)。
+- en: A recent research and development at Databricks (also see [https://databricks.com/](https://databricks.com/))
+    has shown that Spark can also be used to find the best set of hyperparameters
+    for AINN training. The advantage is that Spark will do the computation 10X faster
+    than a normal deep learning or neural network algorithm.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Databricks最近的研究和开发（也请参阅[https://databricks.com/](https://databricks.com/)）表明，Spark也可以用于找到AINN训练的最佳超参数集。优势在于，Spark的计算速度比普通的深度学习或神经网络算法快10倍。
+- en: Consequently, your model training time will drastically reduce up to 10 times
+    and the error rate will be 34% lower. Moreover, Spark can be applied to a trained
+    AINN model on a large amount of data so you can deploy your ML model at scale.
+    We will discuss more on deep learning in later chapters as advanced machine learning.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，您的模型训练时间将大幅减少多达10倍，错误率将降低34%。此外，Spark可以应用于大量数据上训练的AINN模型，因此您可以大规模部署您的ML模型。我们将在后面的章节中更多地讨论深度学习作为高级机器学习。
+- en: Summary
+  id: totrans-298
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: Feature engineering, feature selection, and feature construction are the three
+    most commonly used steps while preparing the training and test set towards building
+    a machine learning model. Usually, the feature engineering is applied first to
+    generate additional features from the available dataset. After that, the feature
+    selection technique is applied to eliminate irrelevant, missing or null, redundant,
+    or even highly correlated features so that high predictive accuracy can be availed.
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特征工程、特征选择和特征构建是准备训练和测试集以构建机器学习模型时最常用的三个步骤。通常，首先应用特征工程从可用数据集中生成额外的特征。之后，应用特征选择技术来消除不相关、缺失或空值、冗余或高度相关的特征，以便获得高预测准确性。
+- en: In contrast, feature construction is an advanced technique applied to construct
+    new features that are either absent or trivial in the raw dataset.
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 相比之下，特征构建是一种高级技术，用于构建在原始数据集中要么不存在要么微不足道的新特征。
+- en: Note that it is not always necessary to perform feature engineering or feature
+    selection. Whether to perform feature selection and construction depends on the
+    data you have or collected, what kind of ML algorithm you have picked, and the
+    objective of the experiment itself.
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，并不总是需要进行特征工程或特征选择。是否进行特征选择和构建取决于您拥有或收集的数据，您选择了什么样的ML算法，以及实验本身的目标。
+- en: 'In this chapter, we have described all of the three steps in detail with practical
+    Spark examples. In the next chapter, we will describe in detail some practical
+    examples of supervised and unsupervised learning using two machine learning APIs:
+    Spark MLlib and Spark ML.'
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们已经详细描述了所有三个步骤，并提供了实际的Spark示例。在下一章中，我们将详细描述使用两个机器学习API（Spark MLlib和Spark
+    ML）的监督学习和无监督学习的一些实际示例。

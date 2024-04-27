@@ -1,0 +1,407 @@
+- en: Concurrency in Android
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Android中的并发
+- en: In this chapter, we will explain concurrency in Android. We will give examples
+    and advice and apply concurrency to our Journaler application. We already touched
+    on some basics by demonstrating the use of the `AsyncTask` class, but now we will
+    dig deeper.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将解释Android中的并发。我们将给出例子和建议，并将并发应用到我们的Journaler应用程序中。我们已经通过演示`AsyncTask`类的使用来介绍了一些基础知识，但现在我们将深入探讨。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Handlers and threads
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理程序和线程
+- en: '`AsyncTask`'
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`AsyncTask`'
+- en: Android Looper
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Android Looper
+- en: Delayed execution
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 延迟执行
+- en: Introduction to Android concurrency
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍Android并发
+- en: A default execution for our application is performed on the main application
+    thread. This execution must be performant! If it happens that something is performing
+    too long, then we get ANR--an Android application not responding message. To avoid
+    ANRs, we run our code in the background. Android provides mechanisms so we can
+    do that efficiently. Running operations asynchronously gives not just good performance,
+    but great user experience.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序的默认执行是在主应用程序线程上执行的。这个执行必须是高效的！如果发生某些操作花费太长时间，那么我们会得到ANR--Android应用程序无响应的消息。为了避免ANR，我们在后台运行我们的代码。Android提供了机制，让我们可以高效地这样做。异步运行操作不仅可以提供良好的性能，还可以提供良好的用户体验。
+- en: Main thread
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 主线程
+- en: All user interface updates are performed from one thread. This is the main thread.
+    All events are collected in a queue and processed by the `Looper` class instance.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有用户界面更新都是从一个线程执行的。这就是主线程。所有事件都被收集在一个队列中，并由`Looper`类实例处理。
+- en: 'The following image explains the relationship between classes involved:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图片解释了涉及的类之间的关系：
+- en: '![](img/1b186908-463f-4a05-9454-c76fdb4bdde7.png)'
+  id: totrans-12
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/1b186908-463f-4a05-9454-c76fdb4bdde7.png)'
+- en: It is important to note that the main thread updates are all the UI you see.
+    However, it can be done from other threads as well. Doing this directly from some
+    other thread will cause an exception and your application can crash. To avoid
+    this, execute all thread-related code on the main thread by calling the `runOnUiThread()`
+    method from your current activity context.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要的是要注意，主线程更新是你看到的所有UI。但它也可以从其他线程执行。直接从其他线程执行这些操作会导致异常，你的应用程序可能会崩溃。为了避免这种情况，通过从当前活动上下文调用`runOnUiThread()`方法在主线程上执行所有与线程相关的代码。
+- en: Handlers and threads
+  id: totrans-14
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 处理程序和线程
+- en: In Android, threading can be performed in the standard way by using threads.
+    It is not recommended to just fire naked threads without any control. So, for
+    this purpose, you can use the `ThreadPools` and `Executor` classes.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Android中，可以通过使用线程来执行线程。不建议只是随意启动线程而没有任何控制。因此，为此目的，可以使用`ThreadPools`和`Executor`类。
+- en: 'To demonstrate this, we will update our application. Create a new package called
+    `execution` with a class called `TaskExecutor`. Make sure it looks like this:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了演示这一点，我们将更新我们的应用程序。创建一个名为`execution`的新包，并在其中创建一个名为`TaskExecutor`的类。确保它看起来像这样：
+- en: '[PRE0]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'We extended the `ThreadPoolExecutor` class and `companion` object with the
+    member method for executor instantiation. Let''s apply it to our existing code.
+    We will switch from the `AsyncTask` class we used to `TaskExecutor`. Open the
+    `NoteActivity` class and update it as follows:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们扩展了`ThreadPoolExecutor`类和`companion`对象，并为执行器实例化添加了成员方法。让我们将其应用到我们现有的代码中。我们将从我们使用的`AsyncTask`类切换到`TaskExecutor`。打开`NoteActivity`类并按照以下方式更新它：
+- en: '[PRE1]'
+  id: totrans-19
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: As you can see, we replaced `AsyncTask` with the executor. Our executor will
+    handle only one thread at a time.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如你所见，我们用执行器替换了`AsyncTask`。我们的执行器一次只处理一个线程。
+- en: 'Other than the standard thread approach, Android also provides Handlers as
+    one of the options for developers. Handlers are not a replacement for threads,
+    but an addition! A Handler instance registers itself with its parent thread. It
+    represents a mechanism to send data to that particular thread. We can send instances
+    of the `Message` or `Runnable` class. Let''s illustrate its use with an example.
+    We will update the Notes screen with an indicator that will be green if everything
+    is performed correctly. If database persisting fails, it will be red. Its default
+    color will be grey. Open the `activity_note.xml` file and extend it with the indicator.
+    The indicator will be plain view, as shown here:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了标准的线程方法，Android还提供了处理程序作为开发人员的选择之一。处理程序不是线程的替代品，而是一种补充！处理程序实例会在其父线程中注册自己。它代表了向特定线程发送数据的机制。我们可以发送`Message`或`Runnable`类的实例。让我们通过一个例子来说明它的用法。我们将使用指示器更新笔记屏幕，如果一切都执行正确，指示器将是绿色。如果数据库持久化失败，它将是红色。它的默认颜色将是灰色。打开`activity_note.xml`文件并扩展它以包含指示器。指示器将是普通视图，如下所示：
+- en: '[PRE2]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Now, when we add the indicator, it will change its color depending on the database
+    insertion result. Update your `NoteActivity` class source code like this:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当我们添加指示器时，它将根据数据库插入结果改变颜色。像这样更新你的`NoteActivity`类源代码：
+- en: '[PRE3]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Build your application and run it. Create a new note. You will notice that the
+    indicator changed color to green after you entered a title and the message content.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 构建你的应用程序并运行它。创建一个新的笔记。你会注意到，在输入标题和消息内容后，指示器的颜色变成了绿色。
+- en: 'We will make some more changes and do the same thing with the `Message` class
+    instance. Update your code according to this example:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将进行一些更改，并对`Message`类实例执行相同的操作。根据这个示例更新你的代码：
+- en: '[PRE4]'
+  id: totrans-27
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Pay attention to the Handler instantiation and the `sendMessage()` method. We
+    obtained the `Message` instance using the `obtainMessage()` method from our `Handler`
+    class. As the message argument, we passed an integer datatype. Depending on its
+    value, we will update the indicator color.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意处理程序的实例化和`sendMessage()`方法。我们使用`Handler`类的`obtainMessage()`方法获取了`Message`实例。作为消息参数，我们传递了一个整数数据类型。根据它的值，我们将更新指示器的颜色。
+- en: AsyncTask
+  id: totrans-29
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: AsyncTask
+- en: As you have may have noticed, we are already using the `AsyncTask` class in
+    our application. Now, we will go one step forward with it--we will run it on the
+    executor. Why would we do that?
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能已经注意到，我们已经在我们的应用程序中使用了`AsyncTask`类。现在，我们将进一步运用它--我们将在执行器上运行它。为什么我们要这样做呢？
+- en: First of all, by default, all `AsyncTasks` are executed in sequence by Android.
+    To execute it in parallel, we need to execute it on the executor.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，默认情况下，所有的`AsyncTasks`都是按顺序在Android中执行的。要并行执行它，我们需要在执行器上执行它。
+- en: Wait! There is more. Now, when we execute tasks in parallel, imagine you executed
+    a few of them. Let's say we start with two. That's fine. They will perform their
+    operations and report us when completed. Then, imagine we run four of them. They
+    will work too, in most cases, if the operations they execute are not too heavy.
+    However, at some point, we run fifty `AsyncTasks` in parallel.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 等等！现在，当我们并行执行任务时，想象一下你执行了一些任务。比如说我们从两个开始。这很好。它们将执行它们的操作并在完成时向我们报告。然后，想象一下我们同时运行了四个任务。它们也会工作，在大多数情况下，如果它们执行的操作不太繁重。然而，在某些时候，我们同时运行了五十个`AsyncTasks`。
+- en: 'Then, your application is slowing down! Everything will slow down because there
+    is no control over the execution of tasks. We must manage tasks so the performance
+    is preserved. So, let''s do that! We will continue on the same class we were updating
+    so far. Change your `NoteActivity` as follows:'
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，你的应用程序变慢了！一切都会变慢，因为对任务的执行没有控制。我们必须管理任务，以保持性能。所以，让我们来做吧！我们将继续更新到目前为止更新的同一个类。按照以下方式更改你的`NoteActivity`：
+- en: '[PRE5]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Since this is not actually something we will keep in the Journaler application,
+    do not commit this code. Create it as a separate branch if you wish. We created
+    a new instance of `ThreadPoolExecutor`. The constructor takes several arguments,
+    as shown here:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于这实际上不是我们将在Journaler应用程序中保留的内容，请不要提交此代码。如果你愿意，可以将其创建为一个单独的分支。我们创建了一个`ThreadPoolExecutor`的新实例。构造函数接受几个参数，如下所示：
+- en: '`corePoolSize`: This represents a minimal number of threads to keep in the
+    pool.'
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`corePoolSize`：这代表了池中保持的最小线程数。'
+- en: '`maximumPoolSize`: This represents a maximal number of threads allowed in the
+    pool.'
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`maximumPoolSize`：这代表了池中允许的最大线程数。'
+- en: '`keepAliveTime`: If the number of threads is greater than the core, the noncore
+    threads will wait for a new tasks, and if they don''t get one within the time
+    defined by this parameter, they will terminate.'
+  id: totrans-38
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`keepAliveTime`：如果线程数大于核心数，非核心线程将等待新任务，如果在这个参数定义的时间内没有得到新任务，它们将终止。'
+- en: '`Unit`: This represents the time unit for `keepAliveTime`.'
+  id: totrans-39
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`Unit`：这代表了`keepAliveTime`的时间单位。'
+- en: '`WorkQueue`: This represents the queue instance that will be used to hold the
+    tasks.'
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`WorkQueue`：这代表了将用于保存任务的队列实例。'
+- en: 'We will run our tasks on this executor. `AsyncTask` concretization will log
+    all events during its life cycle. In the `main` method, we will wait for 5 seconds.
+    Run the application and try to add a new note with `Android` as the title. Observe
+    your Logcat output:'
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们将在这个执行器上运行我们的任务。`AsyncTask`具体化将记录其生命周期中的所有事件。在`main`方法中，我们将等待5秒。运行应用程序，尝试添加一个标题为`Android`的新笔记。观察你的Logcat输出：
+- en: '[PRE6]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Let''s filter logs by the methods we execute in our tasks. Let''s look at the
+    filter for the `onPreExecute` method first:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过我们在任务中执行的方法来过滤日志。首先让我们看一下`onPreExecute`方法的过滤器：
+- en: '[PRE7]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Do the same for each method and focus on the times when the methods were executed.
+    To give more challenge to your code, change the `doInBackground()` method implementation
+    to do some more serious and intensive work. Then, fire more tasks by typing a
+    longer title, for example, the entire sentence. Filter and analyze your log.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对每个方法都做同样的事情，并关注方法执行的时间。为了给你的代码更多的挑战，将`doInBackground()`方法的实现改为做一些更严肃和密集的工作。然后，通过输入一个更长的标题来触发更多的任务，例如整个句子。过滤和分析你的日志。
+- en: Understanding Android Looper
+  id: totrans-46
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解Android Looper
+- en: Let's explain the `Looper` class. We used it in previous examples but we did
+    not explain it in details.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们解释一下`Looper`类。我们在之前的例子中用过它，但我们没有详细解释过它。
+- en: '`Looper` represents a class that is used to execute `messages` or `runnable`
+    instances in a queue. Ordinary threads do not have any queue like the `Looper`
+    class has.'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Looper`代表了一个用于在队列中执行`messages`或`runnable`实例的类。普通线程没有像`Looper`类那样的队列。'
+- en: Where we can use the `Looper` class? For the execution of multiple `messages`
+    or `runnable` instances, `Looper` is needed! One example of use can be adding
+    new tasks to the queue while, at the same time, the operation of task processing
+    is running.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在哪里可以使用`Looper`类？对于执行多个`messages`或`runnable`实例，需要`Looper`！一个使用的例子可以是在添加新任务到队列的同时，任务处理操作正在运行。
+- en: Preparing the Looper
+  id: totrans-50
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备Looper
+- en: 'To use the `Looper` class, we must first call the `prepare()` method. When
+    `Looper` is prepared, we can use the `loop()` method. This method is used to create
+    a `message` loop in the current thread. We will give you one short example:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使用`Looper`类，我们必须首先调用`prepare()`方法。当`Looper`准备好后，我们可以使用`loop()`方法。这个方法用于在当前线程中创建一个`message`循环。我们将给你一个简短的例子：
+- en: '[PRE8]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: In this example, we demonstrated basic steps to program a `Looper` class. Do
+    not forget to `prepare()` your `Looper` class or you will get an exception and
+    your application can crash!
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们演示了编程`Looper`类的基本步骤。不要忘记`prepare()`你的`Looper`类，否则你会得到一个异常，你的应用程序可能会崩溃！
+- en: Delayed execution
+  id: totrans-54
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 延迟执行
+- en: 'There''s one more important thing left to show you in this chapter. We will
+    show you some delayed execution in Android. We will give you some examples of
+    delayed operation applied to our UI. Open your `ItemsFragment` and make these
+    changes:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章还有一件重要的事情要向你展示。我们将向你展示在Android中的延迟执行。我们将给你一些延迟操作应用到我们的UI的例子。打开你的`ItemsFragment`并做出以下更改：
+- en: '[PRE9]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'After three seconds, if we don''t close this screen, the background color will
+    be changed to a slightly darker grey tone. Run your application and see for yourself.
+    Now, let''s do the same thing in a different way:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 三秒后，如果我们不关闭这个屏幕，背景颜色将变成稍微深一点的灰色。运行你的应用程序，亲自看看。现在，让我们用另一种方式做同样的事情：
+- en: '[PRE10]'
+  id: totrans-58
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: This time, we used the `Handler` class to perform delayed modification.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一次，我们使用了`Handler`类来执行延迟修改。
+- en: Summary
+  id: totrans-60
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, you were introduced to Android concurrency. We explained and
+    provided you with examples for each of the segments. This is a nice introduction
+    for you before diving into the depths of Android services. Android services are
+    the most powerful concurrency feature Android has to offer, and, as you will see,
+    it can be used as the brain for your application.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们向您介绍了Android并发性。我们为每个部分进行了解释，并为您提供了示例。在深入了解Android服务之前，这是一个很好的介绍。Android服务是Android提供的最强大的并发特性，正如您将看到的，它可以被用作应用程序的大脑。

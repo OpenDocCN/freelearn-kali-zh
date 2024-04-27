@@ -1,0 +1,839 @@
+- en: Implementing a Microservice
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实施微服务
+- en: This chapter takes you from the design stage to the implementation of our sample
+    project—an **online table reservation system** (**OTRS**). Here, you will use
+    the same design explained in the last chapter and enhance it to build the microservices.
+    At the end of this chapter, you will have not only learned how to implement the
+    design, but also learned the different aspects of microservices—building, testing,
+    and packaging. Although the focus is on building and implementing the Restaurant
+    microservices, you can use the same approach to build and implement other microservices
+    used in the OTRS.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将带您从设计阶段到实现我们的示例项目——一个**在线桌位预订系统**（**OTRS**）。在这里，您将使用上一章中解释的相同设计，并加以完善以构建微服务。在本章结束时，您不仅将学会如何实现设计，还将学会微服务的不同方面——构建、测试和打包。虽然重点是构建和实现餐厅微服务，但您可以使用相同的方法来构建和实现OTRS中使用的其他微服务。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: OTRS overview
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: OTRS概述
+- en: Developing and implementing the microservice
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开发和实现微服务
+- en: Testing
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测试
+- en: We will use the domain-driven design key concepts demonstrated in the last chapter.
+    In the last chapter, you saw how domain-driven design is used to develop the domain
+    model using core Java. Now, we will move from a sample domain implementation to
+    a Spring Framework-driven implementation. You'll make use of Spring Boot to implement
+    the domain-driven design concepts and transform them from core Java to a Spring
+    Framework-based model.
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用上一章中演示的领域驱动设计关键概念。在上一章中，您看到了如何使用领域驱动设计来使用核心Java开发领域模型。现在，我们将从一个示例领域实现转移到基于Spring框架的实现。您将利用Spring
+    Boot来实现领域驱动设计概念，并将其从核心Java转换为基于Spring框架的模型。
+- en: In addition, we'll also use Spring Cloud, which provides a cloud-ready solution
+    that is available through Spring Boot. Spring Boot will allow you to use an embedded
+    application container relying on Tomcat or Jetty inside your service, which is
+    packaged as a JAR or as a WAR. This JAR is executed as a separate process, a microservice
+    that will serve and provide the response to all requests and point to endpoints
+    defined in the service.
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，我们还将使用Spring Cloud，它提供了一个可以通过Spring Boot获得的云就绪解决方案。Spring Boot将允许您使用嵌入式应用程序容器，依赖于Tomcat或Jetty，在服务内部作为JAR或WAR打包。这个JAR将作为一个独立的进程执行，一个微服务将为所有请求提供响应并指向服务中定义的端点。
+- en: Spring Cloud can also be integrated easily with Netflix Eureka, a service registry
+    and discovery component. The OTRS will use it for registration and the discovery
+    of microservices.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud也可以轻松集成Netflix Eureka，一个服务注册和发现组件。OTRS将使用它进行微服务的注册和发现。
+- en: OTRS overview
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: OTRS概述
+- en: Based on microservice principles, we need to have separate microservices for
+    each functionality. After looking at OTRS, we can easily divide it into three
+    main microservices—Restaurant service, Booking service, and User service. There
+    are other microservices that can be defined in the OTRS. Our focus is on these
+    three microservices. The idea is to make them independent, including having their
+    own separate databases.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据微服务原则，我们需要为每个功能拥有独立的微服务。在看完OTRS之后，我们可以轻松地将其划分为三个主要的微服务——餐厅服务、预订服务和用户服务。在OTRS中还可以定义其他微服务。我们的重点是这三个微服务。其目的是使它们相互独立，包括拥有自己的独立数据库。
+- en: 'We can summarize the functionalities of these services, as follows:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以总结这些服务的功能如下：
+- en: '**Restaurant service**: This service provides the functionality for the restaurant
+    resource—**create**, **read**, **update**, **delete** (**CRUD**) operation and
+    searching based on criteria. It provides the association between restaurants and
+    tables. Restaurant would also provide access to the `Table` entity.'
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**餐厅服务**：这项服务提供了餐厅资源的功能——**创建**、**读取**、**更新**、**删除**（CRUD）操作和基于条件的搜索。它提供了餐厅和桌子之间的关联。餐厅还将提供对`Table`实体的访问。'
+- en: '**User service**: This service, as the name suggests, allows the end user to
+    perform CRUD operations on User entities.'
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**用户服务**：这项服务，顾名思义，允许最终用户对用户实体执行CRUD操作。'
+- en: '**Booking service**: This makes use of the Restaurant service and User service
+    to perform CRUD operations on booking. It will use restaurant searching and its
+    associated table lookup and allocation based on table availability for a specified
+    time duration. It creates the relationship between the restaurant/table and the
+    user:'
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**预订服务**：这将利用餐厅服务和用户服务执行预订的CRUD操作。它将使用餐厅搜索及其相关的桌子查找和分配，根据指定的时间段查找可用的桌子。它创建了餐厅/桌子和用户之间的关系：'
+- en: '![](img/7477a84d-be2b-4e19-88ec-d74b29e6b4c3.jpg)'
+  id: totrans-15
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/7477a84d-be2b-4e19-88ec-d74b29e6b4c3.jpg)'
+- en: Registration, and discovery of the different microservices
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不同微服务的注册和发现
+- en: The preceding diagram shows how each microservice works independently. This
+    is the reason microservices can be developed, enhanced, and maintained separately,
+    without affecting others. These services can each have their own layered architecture
+    and database. There is no restriction to use the same technologies, frameworks,
+    and languages to develop these services. At any given point in time, you can also
+    introduce new microservices. For example, for accounting purposes, we can introduce
+    an accounting service that can be exposed to restaurants for bookkeeping. Similarly,
+    analytics and reporting are other services that can be integrated and exposed.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上图显示了每个微服务如何独立工作。这就是为什么微服务可以独立开发、增强和维护，而不会影响其他服务。这些服务可以拥有自己的分层架构和数据库。使用相同的技术、框架和语言来开发这些服务没有限制。在任何时候，您也可以引入新的微服务。例如，为了会计目的，我们可以引入一个会计服务，可以向餐厅提供记账服务。同样，分析和报告是其他可以集成和公开的服务。
+- en: For demonstration purposes, we will only implement the three services shown
+    in the preceding diagram.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仅出于演示目的，我们将只实现前面图表中显示的三个服务。
+- en: Developing and implementing microservices
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 开发和实现微服务
+- en: 'We will use the domain-driven implementation and approach described in the
+    last chapter to implement the microservices using Spring Cloud. Let''s revisit
+    the key artifacts:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用上一章描述的领域驱动实现和方法来使用Spring Cloud实现微服务。让我们重新审视关键的构件：
+- en: '**Entities**: These are categories of objects that are identifiable and remain
+    the same throughout the states of the product/services. These objects are *not*
+    defined by their attributes, but by their identities and threads of continuity.
+    Entities have traits such as identity, a thread of continuity, and attributes
+    that do not define their identity.'
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**实体**：这些是可识别的对象类别，在产品/服务的各种状态中保持不变。这些对象不是由它们的属性定义的，而是由它们的身份和连续性线索定义的。实体具有诸如身份、连续性线索和不定义其身份的属性等特征。'
+- en: '**Value objects** (**VOs**) just have the attributes and no conceptual identity.
+    A best practice is to keep VOs as immutable objects. In the Spring Framework,
+    entities are pure POJOs; therefore, we''ll also use them as VOs.'
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**值对象**（**VOs**）只有属性，没有概念上的身份。最佳实践是将VOs保持为不可变对象。在Spring框架中，实体是纯粹的POJOs；因此，我们也将它们用作VOs。'
+- en: '**Service objects**: These are common in technical frameworks. These are also
+    used in the domain layer in domain-driven design. A service object does not have
+    an internal state; the only purpose of it is to provide the behavior to the domain.
+    Service objects provide behaviors that cannot be related with specific entities
+    or VOs. Service objects may provide one or more related behaviors to one or more
+    entities or VOs. It is best practice to define the services explicitly in the
+    domain model.'
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**服务对象**：这些在技术框架中很常见。在领域驱动设计中，它们也用于领域层。服务对象没有内部状态；它的唯一目的是为领域提供行为。服务对象提供与特定实体或VOs无关的行为。服务对象可以为一个或多个实体或VOs提供一个或多个相关行为。在领域模型中明确定义服务是最佳实践。'
+- en: '**Repository objects**: A repository object is a part of the domain model that
+    interacts with storage, such as databases, external sources, and so on, to retrieve
+    the persisted objects. When a request is received by the repository for an object
+    reference, it returns the existing object reference. If the requested object does
+    not exist in the repository, then it retrieves the object from storage.'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**存储库对象**：存储库对象是领域模型的一部分，与存储交互，如数据库、外部来源等，以检索持久化的对象。当存储库收到关于对象引用的请求时，它会返回现有的对象引用。如果存储库中不存在请求的对象，则从存储中检索对象。'
+- en: 'Downloading the example code: detailed steps to download the code bundle are
+    mentioned in the preface of this book. Please have a look. The code bundle for
+    the book is also hosted on GitHub at: [https://github.com/PacktPublishing/Mastering-Microservices-with-Java](https://github.com/PacktPublishing/Mastering-Microservices-with-Java-9-Second-Edition).
+    We also have other code bundles from our rich catalog of books and videos available
+    at: [https://github.com/PacktPublishing/](https://github.com/PacktPublishing/).
+    Check them out!'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下载示例代码：详细的下载代码包的步骤在本书的前言中有提到。请查看。本书的代码包也托管在GitHub上：[https://github.com/PacktPublishing/Mastering-Microservices-with-Java](https://github.com/PacktPublishing/Mastering-Microservices-with-Java-9-Second-Edition)。我们还有来自丰富书籍和视频目录的其他代码包可用：[https://github.com/PacktPublishing/](https://github.com/PacktPublishing/)。去看看吧！
+- en: Each OTRS microservice API represents a RESTful web service. The OTRS API uses
+    HTTP verbs such as `GET`, `POST`, and so on, and a RESTful endpoint structure.
+    Request and response payloads are formatted as JSON. If required, XML can also
+    be used.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个OTRS微服务API代表一个RESTful web服务。OTRS API使用HTTP动词，如`GET`、`POST`等，以及RESTful端点结构。请求和响应有效载荷格式为JSON。如果需要，也可以使用XML。
+- en: Restaurant microservice
+  id: totrans-27
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 餐厅微服务
+- en: 'The Restaurant microservices will be exposed to the external world using REST
+    endpoints for consumption. We''ll find the following endpoints in the Restaurant
+    microservice example. One can add as many endpoints as per the requirements:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 餐厅微服务将使用REST端点暴露给外部世界以供消费。在餐厅微服务示例中，我们将找到以下端点。根据需求可以添加尽可能多的端点：
+- en: 'Endpoint for retrieving restaurant by ID:'
+  id: totrans-29
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过ID检索餐厅的端点：
+- en: '![](img/6dd6acef-2a4c-420e-b962-a11cbb7261f0.png)'
+  id: totrans-30
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6dd6acef-2a4c-420e-b962-a11cbb7261f0.png)'
+- en: 'Endpoint for retrieving all the restaurants that matches the value of query
+    parameter `Name`:'
+  id: totrans-31
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过检索与查询参数`Name`的值匹配的所有餐厅的端点：
+- en: '![](img/4967fca0-9a41-47dc-ba3f-14de1854d494.png)'
+  id: totrans-32
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/4967fca0-9a41-47dc-ba3f-14de1854d494.png)'
+- en: 'Endpoint for creating new restaurant:'
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 用于创建新餐厅的端点：
+- en: '![](img/c3956c15-b2bc-460b-b4a9-0904194f97c6.png)'
+  id: totrans-34
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/c3956c15-b2bc-460b-b4a9-0904194f97c6.png)'
+- en: Similarly, we can add various endpoints and their implementations. For demonstration
+    purposes, we'll implement the preceding endpoints using Spring Cloud.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，我们可以添加各种端点及其实现。为了演示目的，我们将使用Spring Cloud实现前述端点。
+- en: OTRS implementation
+  id: totrans-36
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: OTRS实现
+- en: 'We''ll create the multi-module Maven project for implementing OTRS. The following
+    stack would be used to develop the OTRS application. Please note that at the time
+    of writing this book, only the snapshot build of Spring Boot and Cloud was available.
+    Therefore, in the final release, one or two things may change:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建多模块Maven项目来实现OTRS。以下堆栈将用于开发OTRS应用。请注意，在撰写本书时，只有Spring Boot和Cloud的快照版本可用。因此，在最终版本中，可能会有一两个变化：
+- en: Java version 1.9
+  id: totrans-38
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Java版本1.9
+- en: Spring Boot 2.0.0.M1
+  id: totrans-39
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Spring Boot 2.0.0.M1
+- en: Spring Cloud Finchley.M2
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Spring Cloud Finchley.M2
+- en: Maven Compiler Plugin 3.6.1 (for Java 1.9)
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Maven编译器插件3.6.1（用于Java 1.9）
+- en: 'All preceding points are mentioned in the root `pom.xml`, along with the following
+    OTRS modules:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有前述要点都在根`pom.xml`中提到，以及以下OTRS模块：
+- en: '`eureka-service`'
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`eureka-service`'
+- en: '`restaurant-service`'
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`restaurant-service`'
+- en: '`user-service`'
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`user-service`'
+- en: '`booking-service`'
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`booking-service`'
+- en: 'The root `pom.xml` file will look something like this:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根`pom.xml`文件将看起来像这样：
+- en: '[PRE0]'
+  id: totrans-48
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: We are developing the REST-based microservices. We'll implement the `restaurant`
+    module. The `booking` and `user` modules are developed on similar lines.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们正在开发基于REST的微服务。我们将实现`restaurant`模块。`booking`和`user`模块也是按照类似的方式开发的。
+- en: Controller class
+  id: totrans-50
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 控制器类
+- en: The `RestaurantController` class uses the `@RestController` annotation to build
+    the Restaurant service endpoints. We have already gone through the details of
+    `@RestController` in [Chapter 2](58549a01-e3b9-4702-9326-692008cc32c2.xhtml),
+    *Setting Up the Development Environment*. The
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`RestaurantController`类使用`@RestController`注解来构建餐厅服务端点。我们已经在[第2章](58549a01-e3b9-4702-9326-692008cc32c2.xhtml)中详细介绍了`@RestController`的细节，*设置开发环境*。'
+- en: '`@RestController` is a class-level annotation that is used for resource classes.
+    It is'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`@RestController`是一个用于资源类的类级别注解。它是'
+- en: a combination of the `@Controller` and `@ResponseBody` annotation. It returns
+    the domain object.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`@Controller`和`@ResponseBody`注解的组合。它返回域对象。'
+- en: API versioning
+  id: totrans-54
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: API版本控制
+- en: As we move forward, I would like to share with you that we are using the `v1`
+    prefix on our REST endpoint. That represents the version of the API. I would also
+    like to brief you on the importance of API versioning. Versioning APIs is important,
+    because APIs change over time. Your knowledge and experience improves with time,
+    which leads to changes to your API. A change of API may break existing client
+    integrations.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着我们的前进，我想和你分享的是我们在REST端点上使用了`v1`前缀。这代表API的版本。我还想简要介绍一下API版本控制的重要性。版本化API很重要，因为API会随着时间而改变。您的知识和经验随着时间的推移而提高，这会导致对API的更改。API的更改可能会破坏现有的客户端集成。
+- en: 'Therefore, there are various ways of managing API versions. One of these is
+    using the version in the path, or some people use the HTTP header. The HTTP header
+    can be a custom request header or an accept header to represent the calling API
+    version. Please refer to *RESTful Java Patterns and Best Practices* by Bhakti
+    Mehta, Packt Publishing, [https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices](https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices),
+    for more information:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，管理API版本的方法有很多种。其中之一是在路径中使用版本，或者有些人使用HTTP头。HTTP头可以是自定义请求头或接受头，表示调用API的版本。更多信息，请参考Bhakti
+    Mehta的*RESTful Java Patterns and Best Practices*，Packt Publishing，[https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices](https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices)：
+- en: '[PRE1]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Service classes
+  id: totrans-58
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 服务类
+- en: 'The `RestaurantController` class uses the `RestaurantService` interface. `RestaurantService`
+    is an interface that defines CRUD and some search operations, and is defined as
+    follows:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`RestaurantController`类使用`RestaurantService`接口。`RestaurantService`是一个定义了CRUD和一些搜索操作的接口，定义如下：'
+- en: '[PRE2]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Now, we can implement the `RestaurantService` we have just defined. It also
+    extends the `BaseService` class you created in the last chapter. We use the `@Service`
+    Spring annotation to define it as a service:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以实现刚刚定义的`RestaurantService`。它还扩展了您在上一章中创建的`BaseService`类。我们使用`@Service`
+    Spring注解来定义它为一个服务：
+- en: '[PRE3]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Repository classes
+  id: totrans-63
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 仓库类
+- en: 'The `RestaurantRepository` interface defines two new methods: the `containsName`
+    and `findByName` methods. It also extends the `Repository` interface:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`RestaurantRepository`接口定义了两个新方法：`containsName`和`findByName`方法。它还扩展了`Repository`接口：'
+- en: '[PRE4]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'The `Repository` interface defines three methods: `add`, `remove`, and `update`.
+    It also extends the `ReadOnlyRepository` interface:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Repository`接口定义了三个方法：`add`、`remove`和`update`。它还扩展了`ReadOnlyRepository`接口：'
+- en: '[PRE5]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'The `ReadOnlyRepository` interface definition contains the `get` and `getAll`
+    methods, which return Boolean values, entity, and collection of entity, respectively.
+    It is useful if you want to expose only a read-only abstraction of the repository:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ReadOnlyRepository`接口定义包含`get`和`getAll`方法，分别返回布尔值、实体和实体集合。如果您只想暴露仓库的只读抽象，这将非常有用：'
+- en: '[PRE6]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'The Spring Framework makes use of the `@Repository` annotation to define the
+    repository bean that implements the repository. In the case of `RestaurantRepository`,
+    you can see that a map is used in place of the actual database implementation.
+    This keeps all entities saved in memory only. Therefore, when we start the service,
+    we find only two restaurants in memory. We can use JPA for database persistence.
+    This is the general practice for production-ready implementations:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring框架使用`@Repository`注解来定义实现仓库的仓库bean。在`RestaurantRepository`的情况下，您可以看到在实际数据库实现的位置使用了映射。这样可以使所有实体仅保存在内存中。因此，当我们启动服务时，我们只在内存中找到两家餐馆。我们可以使用JPA进行数据库持久化。这是生产就绪实现的一般做法：
+- en: '[PRE7]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Entity classes
+  id: totrans-72
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实体类
+- en: 'The `Restaurant` entity, which extends `BaseEntity`, is defined as follows:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Restaurant`实体，它扩展了`BaseEntity`，定义如下：'
+- en: '[PRE8]'
+  id: totrans-74
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Since we are using POJO classes for our entity definitions, we do not need to
+    create a VO in many cases. The idea is that the state of the object should not
+    be persisted across.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们在实体定义中使用POJO类，因此在许多情况下我们不需要创建VO。这个想法是对象的状态不应该持续存在。
+- en: 'The `Table` entity, which extends `BaseEntity`, is defined as follows:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Table`实体，它扩展了`BaseEntity`，定义如下：'
+- en: '[PRE9]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'The `Entity` abstract class is defined as follows:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Entity`抽象类定义如下：'
+- en: '[PRE10]'
+  id: totrans-79
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: The `BaseEntity` abstract class is defined as follows. It extends the `Entity`
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`BaseEntity`抽象类定义如下。它扩展了`Entity`。'
+- en: 'abstract class:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 抽象类：
+- en: '[PRE11]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: We are done with the Restaurant service implementation. Now, we'll develop the
+    Eureka module (service).
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经完成了餐厅服务的实现。现在，我们将开发Eureka模块（服务）。
+- en: Registration and discovery service (Eureka service)
+  id: totrans-84
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 注册和发现服务（Eureka服务）
+- en: We need a place where all microservices get registered and can be referenced—a
+    service discovery and registration application. Spring Cloud provides the state-of-the-art
+    service registry and discovery application Netflix Eureka. We'll make use of it
+    for our sample project OTRS.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要一个地方，所有微服务都可以注册并被引用——一个服务发现和注册应用程序。Spring Cloud提供了最先进的服务注册表和发现应用程序Netflix
+    Eureka。我们将在我们的示例项目OTRS中使用它。
+- en: Once you have configured the Eureka service as described in this section, it
+    will be available for all incoming requests to list it on the Eureka service.
+    The Eureka service registers/lists all microservices that have been configured
+    by the Eureka client. Once you start your service, it pings the Eureka service
+    configured in your `application.yml` and once a connection is established, the
+    Eureka service registers the service.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您按照本节中的描述配置了Eureka服务，它将对所有传入的请求进行可用性检查。Eureka服务注册/列出了所有已由Eureka客户端配置的微服务。一旦启动您的服务，它会对`application.yml`中配置的Eureka服务进行ping测试，一旦建立连接，Eureka服务就会注册该服务。
+- en: It also enables the discovery of microservices through a uniform way to connect
+    to other microservices. You don't need any IP, hostname, or port to find the service,
+    you just need to provide the service ID to it. Service IDs are configured in the
+    `application.yml` of the respective microservices.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它还通过统一的方式连接到其他微服务来启用对微服务的发现。您不需要任何IP、主机名或端口来找到服务，您只需要向其提供服务ID。服务ID在各自微服务的`application.yml`中配置。
+- en: 'In the following three steps, we can create a Eureka service (service registration
+    and discovery service):'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在以下三个步骤中，我们可以创建一个Eureka服务（服务注册和发现服务）：
+- en: '**Maven dependency**: It needs a Spring Cloud dependency, as shown here, and
+    a startup class with the `@EnableEurekaApplication` annotation in `pom.xml`:'
+  id: totrans-89
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**Maven依赖**：它需要一个Spring Cloud依赖，如下所示，并在`pom.xml`中的启动类中使用`@EnableEurekaApplication`注解：'
+- en: '[PRE12]'
+  id: totrans-90
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: '**Startup class**: The startup `class App` will run the Eureka service seamlessly
+    by just using the `@EnableEurekaApplication` class annotation:'
+  id: totrans-91
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**启动类**：启动类`App`将通过使用`@EnableEurekaApplication`类注解无缝运行Eureka服务：'
+- en: '[PRE13]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Use `<start-class>com.packtpub.mmj.eureka.service.App</start-class>` under the
+    `<properties>` tag in the `pom.xml` project.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`pom.xml`项目中的`<properties>`标签下使用`<start-class>com.packtpub.mmj.eureka.service.App</start-class>`。
+- en: '**Spring configuration**:The Eureka service also needs the following Spring
+    configuration for the Eureka server configuration (`src/main/resources/application.yml`):'
+  id: totrans-94
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**Spring配置**：Eureka服务还需要以下Spring配置来进行Eureka服务器配置（`src/main/resources/application.yml`）：'
+- en: '[PRE14]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: Eureka client
+  id: totrans-96
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Eureka客户端
+- en: Similar to the Eureka server, each OTRS service should also contain the Eureka
+    client configuration, so that a connection between the Eureka server and the client
+    can be established. Without this, the registration and discovery of services is
+    not possible.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与Eureka服务器类似，每个OTRS服务还应包含Eureka客户端配置，以便建立Eureka服务器和客户端之间的连接。没有这个，服务的注册和发现是不可能的。
+- en: 'Your services can use the following Spring configuration to configure the Eureka
+    client. Add the following configuration in the Restaurant, Booking, and User services
+    (`restaurant-service\src\main\resources\application.yml`):'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的服务可以使用以下Spring配置来配置Eureka客户端。在Restaurant、Booking和User服务中添加以下配置（`restaurant-service\src\main\resources\application.yml`）：
+- en: '[PRE15]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Booking and user services
+  id: totrans-100
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 预订和用户服务
+- en: We can use the `RestaurantService` implementation to develop the Booking and
+    User services. The User service can offer the endpoint related to the User resource
+    with respect to CRUD operations. The Booking service can offer the endpoints related
+    to the booking resource with respect to CRUD operations and the availability of
+    table slots. You can find the sample code of these services on the Packt website
+    or on Packt Publishing GitHub repository.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`RestaurantService`的实现来开发Booking和User服务。User服务可以提供与用户资源相关的端点，涉及CRUD操作。Booking服务可以提供与预订资源相关的端点，涉及CRUD操作和表格插槽的可用性。您可以在Packt网站或Packt
+    Publishing GitHub存储库上找到这些服务的示例代码。
+- en: Execution
+  id: totrans-102
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 执行
+- en: To see how our code works, we need to first build it and then execute it. We'll
+    use a Maven clean package to build the service JARs.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要查看我们的代码如何工作，我们需要首先构建它，然后执行它。我们将使用Maven clean package来构建服务JAR文件。
+- en: 'Now, to execute these service JARs, simply execute the following command from
+    the project home directory:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，要执行这些服务JAR文件，只需从项目主目录执行以下命令：
+- en: '[PRE16]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Here are some examples:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一些示例：
+- en: '[PRE17]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'We will execute our services in the following order from the project home directory.
+    The Eureka service should be started first; the order of the last three microservices
+    can be changed:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将按照以下顺序从项目主目录执行我们的服务。Eureka服务应该首先启动；最后三个微服务的顺序可以更改：
+- en: '[PRE18]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Testing
+  id: totrans-110
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试
+- en: 'To enable testing, add the following dependency in the `pom.xml` file:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了启用测试，在`pom.xml`文件中添加以下依赖项：
+- en: '[PRE19]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'To test the `RestaurantController`, the following files have been added:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了测试`RestaurantController`，已添加了以下文件：
+- en: The `RestaurantControllerIntegrationTests` class, which uses the
+  id: totrans-114
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`RestaurantControllerIntegrationTests`类，使用'
+- en: '`@SpringApplicationConfiguration` annotation to pick the same configuration
+    that Spring Boot uses:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`@SpringApplicationConfiguration`注解来选择与Spring Boot相同的配置：'
+- en: '[PRE20]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'An `abstract` class to write our tests:'
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个`abstract`类来编写我们的测试：
+- en: '[PRE21]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Finally, the `RestaurantControllerTests` class, which extends the previously
+    created `abstract` class and also creates the `RestaurantService` and `RestaurantRepository`
+    implementations:'
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最后，`RestaurantControllerTests`类扩展了先前创建的`abstract`类，并创建了`RestaurantService`和`RestaurantRepository`的实现：
+- en: '[PRE22]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: References
+  id: totrans-121
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 参考
+- en: '*RESTful Java Patterns and Best Practices* by Bhakti Mehta, Packt Publishing:
+    [https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices](https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices)'
+  id: totrans-122
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Bhakti Mehta的RESTful Java模式和最佳实践*，Packt Publishing: [https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices](https://www.packtpub.com/application-development/restful-java-patterns-and-best-practices)'
+- en: 'Spring Cloud: [http://cloud.spring.io/](http://cloud.spring.io/)'
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'Spring Cloud: [http://cloud.spring.io/](http://cloud.spring.io/)'
+- en: 'Netflix Eureka: [https://github.com/netflix/eureka](https://github.com/netflix/eureka)'
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'Netflix Eureka: [https://github.com/netflix/eureka](https://github.com/netflix/eureka)'
+- en: Summary
+  id: totrans-125
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, we have learned how the domain-driven design model can be used
+    in a microservice. After running the demo application, we can see how each microservice
+    can be developed, deployed, and tested independently. You can create microservices
+    using Spring Cloud very easily. We have also explored how one can use the Eureka
+    registry and discovery component with Spring Cloud.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们已经学习了领域驱动设计模型如何在微服务中使用。在运行演示应用程序之后，我们可以看到每个微服务如何可以独立开发、部署和测试。您可以使用Spring
+    Cloud非常容易地创建微服务。我们还探讨了如何使用Eureka注册表和Spring Cloud的发现组件。
+- en: In the next chapter, we will learn to deploy microservices in containers such
+    as Docker. We will also understand microservice testing using REST Java clients
+    and other tools.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习如何在诸如Docker之类的容器中部署微服务。我们还将了解如何使用REST Java客户端和其他工具进行微服务测试。

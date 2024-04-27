@@ -1,0 +1,1158 @@
+- en: Building a Django Application with Zappa
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Zappa构建Django应用程序
+- en: In this chapter, we are going to create a Django based image gallery app where
+    a user can create a photo album and upload images. While working in Django, it's
+    really interesting and challenging to serve the static and media content. Usually,
+    developers store the images in file storage and servers via the URL. Here, we
+    are going to store images in AWS S3 and serve via the CDN network provided by
+    the AWS CloudFront service.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将创建一个基于Django的图库应用程序，用户可以创建相册并上传图片。在Django中工作时，为静态和媒体内容提供服务是非常有趣和具有挑战性的。通常，开发人员将图像存储在文件存储中，并通过URL服务器提供。在这里，我们将在AWS
+    S3中存储图像，并通过AWS CloudFront服务提供的CDN网络进行服务。
+- en: 'Topics we will cover in this chapter include the following:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章我们将涵盖的主题包括以下内容：
+- en: Installing and configuring Django
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安装和配置Django
+- en: Designing an image gallery application
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设计图库应用程序
+- en: Serving static and media files via AWS CloudFront CDN
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过AWS CloudFront CDN提供静态和媒体文件
+- en: Setting up static and media files
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设置静态和媒体文件
+- en: Integrating Zappa
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 集成Zappa
+- en: Building, testing, and deploying the Django application using Zappa
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Zappa构建、测试和部署Django应用程序
+- en: Django management command
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Django管理命令
+- en: Technical requirements
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: 'Before moving ahead, let''s fulfill some prerequisites required for this chapter.
+    We are going to develop a Django based serverless application, so we need to meet
+    the following requirements, which are being used for developing this application:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在继续之前，让我们满足本章所需的一些先决条件。我们将开发一个基于Django的无服务器应用程序，因此我们需要满足以下用于开发此应用程序的要求：
+- en: Ubuntu 16.04/Mac/Windows
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Ubuntu 16.04/Mac/Windows
+- en: Pipenv tool
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Pipenv工具
+- en: Django
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Django
+- en: Django Storage
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Django存储
+- en: Django Imagekit
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Django Imagekit
+- en: Boto3
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Boto3
+- en: Zappa
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Zappa
+- en: These packages are the required packages for this chapter, and we will be installing
+    and configuring these packages using the pipenv tool. Now we will explore the
+    configuration in detail.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些软件包是本章所需的软件包，我们将使用pipenv工具安装和配置这些软件包。现在我们将详细探讨配置。
+- en: Installing and configuring Django
+  id: totrans-20
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装和配置Django
+- en: Configuring any Python project requires following a standard for maintaining
+    the necessary package's versions. Many developers prefer to maintain the `requriements.txt`
+    file, which helps them to keep the application stable. Any version upgrade of
+    specific packages as mentioned in the `requirements.txt` may break the whole application.
+    That's the reason developers strictly follow this standard to maintain a stable
+    version of their application.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置任何Python项目都需要遵循维护必要软件包版本的标准。许多开发人员喜欢维护`requriements.txt`文件，这有助于他们保持应用程序的稳定性。`requirements.txt`中特定软件包的任何版本升级可能会破坏整个应用程序。这就是开发人员严格遵循此标准以维护其应用程序的稳定版本的原因。
+- en: Setting up a virtual environment
+  id: totrans-22
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置虚拟环境
+- en: I was following the traditional pattern until I came across a very cool tool
+    that changed my traditional approach to maintaining the `requirements.txt` file.
+    Now you won't need the `requirements.txt` anymore. It's called **pipenv**; I love
+    to use it.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我一直在遵循传统模式，直到我遇到了一个非常酷的工具，改变了我对维护`requirements.txt`文件的传统方法。现在你不再需要`requirements.txt`了。它叫做**pipenv**；我喜欢使用它。
+- en: Pipenv is a Python package management tool inspired by numerous package management
+    tools of different languages, such as npm, Yarm, cargo, composer, builder, and
+    so on. Pipenv is officially recommended by Python.org ([https://www.python.org/](https://www.python.org/)).
+    This tool entitled the standard to manage Python packages.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Pipenv是一个受多种不同语言的包管理工具启发的Python包管理工具。Pipenv是Python.org官方推荐的（[https://www.python.org/](https://www.python.org/)）。这个工具赋予了管理Python包的标准。
+- en: Installing pipenv
+  id: totrans-25
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装pipenv
+- en: You can initialize the virtual environment from anywhere and it will keep track
+    of every package installation.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以从任何地方初始化虚拟环境，并且它将跟踪每个软件包的安装。
+- en: 'Firstly, we need to install `pipenv` at the system level. So, if you are using
+    macOS then you can simply install the `pipenv` using Homebrew as shown here:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要在系统级安装`pipenv`。因此，如果您使用的是macOS，则可以像这样使用Homebrew安装`pipenv`：
+- en: '[PRE0]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'If you are using Ubuntu 17.10, then you can simply add a PPA repository and
+    install using the `apt` command, such as the following:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您使用的是Ubuntu 17.10，则可以简单地添加PPA存储库并使用`apt`命令进行安装，如下所示：
+- en: '[PRE1]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'You can simply install it via `pip` at the system level, instead of using `pip`
+    from an active virtual environment. Take a look at this code line:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以简单地在系统级别通过`pip`安装它，而不是从活动虚拟环境中使用`pip`。看一下这行代码：
+- en: '[PRE2]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: The system-level installation will be the installation without using any virtual
+    environment. It installed in the system's `bin` directive and should be executable
+    from the Terminal console.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 系统级安装将是在不使用任何虚拟环境的情况下进行的安装。它安装在系统的`bin`目录中，并且应该可以从终端控制台执行。
+- en: 'Now, you can see the detailed information on the `pipenv` commands by just
+    executing the `pipenv` command at the Terminal console:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以通过在终端控制台上执行`pipenv`命令来查看有关`pipenv`命令的详细信息：
+- en: '![](img/00058.jpeg)'
+  id: totrans-35
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00058.jpeg)'
+- en: Here, you can see there are several commands available that provide a very flexible
+    way to deal with the virtual environment.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，您可以看到有几个可用的命令，提供了一种非常灵活的方式来处理虚拟环境。
+- en: Configuring and installing packages
+  id: totrans-37
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 配置和安装软件包
+- en: Now, we are going to create a virtual environment for our project and install
+    the required packages.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将为我们的项目创建一个虚拟环境并安装所需的软件包。
+- en: 'The following screenshot mentions the virtual environment creation process:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图提到了虚拟环境创建过程：
+- en: '![](img/00059.jpeg)'
+  id: totrans-40
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00059.jpeg)'
+- en: 'As you can see from the preceding screenshot, we have created a virtual environment
+    with the following command:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您从前面的屏幕截图中所见，我们使用以下命令创建了一个虚拟环境：
+- en: '[PRE3]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'We explicitly mentioned the Python version that would be required; you can
+    mention any Python version as well. If you are in hurry and just wanted to initialize
+    with Python version 2 or 3, then you can just run the command as follows:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们明确指出了所需的Python版本；你也可以指定任何Python版本。如果你着急，只想用Python版本2或3初始化，那么你可以运行以下命令：
+- en: '[PRE4]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'You can also use this one:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你也可以使用这个：
+- en: '[PRE5]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: '[PRE6]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'It has different sections for managing all packages. Now you can install any
+    package using the following command:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它有不同的部分来管理所有的包。现在你可以使用以下命令安装任何包：
+- en: '[PRE7]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'As we are going to use the Django framework, we will install Django using pipenv
+    as shown in the following screenshot:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们将使用Django框架，我们将使用pipenv来安装Django，如下图所示：
+- en: '![](img/00060.jpeg)'
+  id: totrans-51
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00060.jpeg)'
+- en: Once we install any package, then `pipenv` creates a `Pipfile.lock` file. The
+    `Pipfile.lock` file maintains the commit hashes and dependencies of each installed
+    package.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦安装了任何包，`pipenv`就会创建一个`Pipfile.lock`文件。`Pipfile.lock`文件维护了每个安装包的提交哈希和依赖关系。
+- en: Now, if you were thinking of activating the virtual environment, don't worry
+    about it. You can relay everything to `pipenv` itself.  The `pipenv` provides
+    a command named `pipenv shell` that internally invokes the virtual environment
+    `activate` command. Now, you would be using the activated virtual environment
+    shell.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你想激活虚拟环境，不用担心。你可以把一切都交给`pipenv`。`pipenv`提供了一个名为`pipenv shell`的命令，它在内部调用虚拟环境的`activate`命令。现在，你将使用激活的虚拟环境shell。
+- en: 'Instead of being inside the shell or activating the virtual environment, you
+    can execute any command under the virtual environment by using the command `pipenv
+    run <command as an argument>`, for example:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不必在shell中或激活虚拟环境中，你可以使用命令`pipenv run <command as an argument>`在虚拟环境下执行任何命令，例如：
+- en: '[PRE8]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: It's really interesting, isn't it?
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这真的很有趣，不是吗？
+- en: 'After installing all the required packages, the `Pipfile` will look like the
+    following:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装所有所需的包后，`Pipfile`将如下所示：
+- en: 'File—`Pipfile`:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '文件—`Pipfile`:'
+- en: '[PRE9]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Now, we are done with the configuration and installation of the required packages.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经完成了所需包的配置和安装。
+- en: Let's move on to the next section, where we will be creating an image gallery
+    application, using Django.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续下一节，我们将创建一个基于Django的图库应用。
+- en: Designing an image gallery application
+  id: totrans-62
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设计图库应用
+- en: Once we are done with configuration, then we can start implementing the application.
+    The `ImageGallery` application will be straightforward—a user can create a new
+    photo album record and can upload multiple images at once. Once the photo album
+    is created, we will display all existing album records in list view along with
+    associated images as thumbnail views.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们完成配置，就可以开始实现应用。`ImageGallery`应用将是直接的——用户可以创建一个新的相册记录，并一次上传多张图片。一旦相册创建完成，我们将在列表视图中显示所有现有的相册记录，以及关联的缩略图。
+- en: Let's see the implementation phase, as per our requirements.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们根据我们的需求来看看实现阶段。
+- en: Design overview
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设计概述
+- en: I am going to create an image gallery application based on Django. We are going
+    to use Django admin for the purpose of the UI. Django admin has a very pretty
+    UI/UX design. So we are going to create some models, such as a `PhotoAlbum` model
+    that will have a one-to-many relationship with the `Photo` model.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我将基于Django创建一个图库应用。我们将使用Django admin来实现UI。Django admin有非常漂亮的UI/UX设计。因此，我们将创建一些模型，比如一个`PhotoAlbum`模型，它将与`Photo`模型有一对多的关系。
+- en: Then we are simply going to register these models with the Django admin panel.
+    Once we are done with the admin configuration, we will configure the static and
+    media settings to upload the dynamic images to an Amazon S3 bucket and serve these
+    static files via the CloudFront CDN network.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们只需在Django admin面板中注册这些模型。一旦我们完成了admin配置，我们将配置静态和媒体设置，将动态图片上传到Amazon S3存储桶，并通过CloudFront
+    CDN网络提供这些静态文件。
+- en: Let's take a close look at the implementation.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们仔细看看实现。
+- en: Initializing the project
+  id: totrans-69
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 初始化项目
+- en: 'Once you have configured the `pipenv`, you need to enable the virtual environment
+    using the command `pipenv` shell. Assuming that you are in the `pipenv` shell,
+    which is nothing but an activated virtual environment. Once you enable the virtual
+    environment, you have access to already installed packages. Hence, we are going
+    to create the Django project scaffolding by executing the following command:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦你配置了`pipenv`，你需要使用命令`pipenv shell`启用虚拟环境。假设你在`pipenv` shell中，这只是一个激活的虚拟环境。一旦启用虚拟环境，你就可以访问已安装的包。因此，我们将通过执行以下命令创建Django项目框架：
+- en: '[PRE10]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'The following is a screenshot of the project creation process:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是项目创建过程的屏幕截图：
+- en: '![](img/00061.jpeg)'
+  id: totrans-73
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00061.jpeg)'
+- en: I have created the project and an app as well. From the previous screenshot,
+    you can see the project and app files.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我已经创建了项目和一个应用。从之前的截图中，你可以看到项目和应用文件。
+- en: By default, Django enables the admin panel in the root `urls.py` file. Hence,
+    we do not need to configure it again.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，Django在根`urls.py`文件中启用了admin面板。因此，我们不需要再次配置它。
+- en: Now let's move to the model creation process in the next section.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们进入下一节的模型创建过程。
+- en: Implementing models
+  id: totrans-77
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现模型
+- en: 'We are going to create two models—`PhotoAlbum` and `Photo` model, with a relationship
+    of one-to-many. The following is the code snippet of the `gallery/models.py` file:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建两个模型——`PhotoAlbum`和`Photo`模型，它们之间有一对多的关系。以下是`gallery/models.py`文件的代码片段：
+- en: 'File—`gallery/models.py`:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '文件—`gallery/models.py`:'
+- en: '[PRE11]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: As planned, I have created two models, along with their relationship. Here,
+    `PhotoAlbum` is straightforward, as it acts as a parent class. The `Photo` model
+    is more interesting, as we are going to store images through it.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按计划，我已经创建了两个模型，以及它们的关系。在这里，`PhotoAlbum`很直接，因为它充当父类。`Photo`模型更有趣，因为我们将通过它存储图片。
+- en: In the `Photo` model, I am using the `django-imagekit` ([https://github.com/matthewwithanm/django-imagekit](https://github.com/matthewwithanm/django-imagekit))
+    library to create and store a thumbnail image of the original uploaded image.
+    It is quite interesting, as it has many features to allow us to work on an image
+    as needed. My intention is to create a thumbnail of an uploaded image; hence,
+    I configured it accordingly.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`Photo`模型中，我正在使用`django-imagekit`（[https://github.com/matthewwithanm/django-imagekit](https://github.com/matthewwithanm/django-imagekit)）库来创建和存储原始上传图像的缩略图。这非常有趣，因为它有许多功能可以让我们根据需要处理图像。我的意图是创建上传图像的缩略图；因此，我相应地进行了配置。
+- en: 'Once you are done with model creation, you will need to run `makemigrations`
+    and migrate the command to create the actual database tables. Have a look at the
+    following screenshot to see the process of the `makemigrations` command:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您完成模型创建，您将需要运行`makemigrations`和迁移命令来创建实际的数据库表。查看以下截图，以了解`makemigrations`命令的过程：
+- en: '![](img/00062.jpeg)'
+  id: totrans-84
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00062.jpeg)'
+- en: Once we run the `makemigrations` command, then we are ready to configure these
+    models with the admin panel. Let's move on to the next section on configuring
+    the admin panel.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们运行`makemigrations`命令，就可以准备在管理面板中配置这些模型。让我们继续进行下一节关于配置管理面板的部分。
+- en: Integrating with the admin panel
+  id: totrans-86
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 与管理面板集成
+- en: 'Integrating models with the Django admin panel requires enabling the admin
+    URL configurations in the root `urls.py` file. Let''s have a look at the code:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将模型与Django管理面板集成需要在根`urls.py`文件中启用管理URL配置。让我们来看一下代码：
+- en: 'File—`imageGalleryProject/urls.py`:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件—`imageGalleryProject/urls.py`：
+- en: '[PRE12]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'File—`gallery/admin.py`:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件—`gallery/admin.py`：
+- en: '[PRE13]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Here, we configure the `Photo` model as `TabularInline` so that we can add multiple
+    photos or images under one album. We will have a complete workflow demo after
+    deploying the application on AWS Lambda.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们将`Photo`模型配置为`TabularInline`，这样我们就可以在一个相册下添加多张照片或图片。在将应用程序部署到AWS Lambda后，我们将进行完整的工作流程演示。
+- en: At this point in time, you can run the application and store the images on your
+    local machine. But later on, we want to deploy on AWS Lambda and then store images
+    in an Amazon S3 bucket and serve via the Amazon CloudFront CDN network.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，您可以在本地计算机上运行应用程序并存储图像。但是以后，我们希望部署在AWS Lambda上，然后将图像存储在Amazon S3存储桶中，并通过Amazon
+    CloudFront CDN网络提供服务。
+- en: Application demonstration
+  id: totrans-94
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 应用程序演示
+- en: We already configured the models with the admin panel. Now we are going to run
+    the Django's local server by using the `python manage.py runserver` command. It
+    will start the Django server on `http://locahost:8000 URL`.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经将模型配置到管理面板中。现在，我们将使用`python manage.py runserver`命令来运行Django的本地服务器。它将在`http://locahost:8000
+    URL`上启动Django服务器。
+- en: 'The following is a screenshot of the application:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是应用程序的截图：
+- en: '![](img/00063.jpeg)'
+  id: totrans-97
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00063.jpeg)'
+- en: 'As mentioned in the preceding screenshot, we are creating a photo album. We
+    defined the one-to-many relationship and used the `TabularInline` to accept multiple
+    photos while creating the album. Take a look at this screenshot:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前面的截图所示，我们正在创建一个相册。我们定义了一对多的关系，并使用`TabularInline`在创建相册时接受多张照片。看一下这个截图：
+- en: '![](img/00064.jpeg)'
+  id: totrans-99
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00064.jpeg)'
+- en: 'The list page will appear once we are done with the adding process. Now, you
+    can select the newly created album to view or edit the existing details. Take
+    a look at this screenshot:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 添加过程完成后，将出现列表页面。现在，您可以选择新创建的相册来查看或编辑现有的详细信息。看一下这个截图：
+- en: '![](img/00065.jpeg)'
+  id: totrans-101
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00065.jpeg)'
+- en: Here, you can check that the previously uploaded images are displaying as thumbnails.
+    We used the `django-imagekit` library for configuring the thumbnail image process.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，您可以检查先前上传的图像是否显示为缩略图。我们使用了`django-imagekit`库来配置缩略图图像处理。
+- en: Now, we will see in next section the required process for configuring the Amazon
+    CloudFront CDN and integrating it with our application.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将在下一节中看到配置Amazon CloudFront CDN所需的过程，并将其与我们的应用程序集成。
+- en: Configuring the Amazon CloudFront CDN
+  id: totrans-104
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 配置Amazon CloudFront CDN
+- en: Amazon CloudFront is one of the more popular services. It provides the feature
+    to serve static files through the CDN network, which helps static contents to
+    be distributed in a very efficient way with lower latency to enhance the performance.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Amazon CloudFront是更受欢迎的服务之一。它提供通过CDN网络提供静态文件的功能，有助于以更高效的方式分发静态内容，从而提高性能并降低延迟。
+- en: To configure Amazon CloudFront, we create a CloudFront distribution through
+    the AWS user console.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置Amazon CloudFront时，我们通过AWS用户控制台创建CloudFront分发。
+- en: Creating CloudFront distributions
+  id: totrans-107
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建CloudFront分发
+- en: 'Assuming you have a valid AWS account, you can log in the AWS web console using
+    your credentials. Select the CloudFront service from the services dropdown and
+    click on the Create Distribution button, as shown in the following screenshot:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设您有有效的AWS帐户，您可以使用您的凭据登录AWS Web控制台。从服务下拉菜单中选择CloudFront服务，然后单击“创建分发”按钮，如下截图所示：
+- en: '![](img/00066.jpeg)'
+  id: totrans-109
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00066.jpeg)'
+- en: While creating a distribution, Amazon provides two different methods, such as
+    web and RTMP. The web method is used for static content that needs to be served
+    through the CDN network and when all static files are residing in an Amazon S3
+    bucket. The RTMP method is used to distribute the streaming media files, which
+    allow a user to play the file before it finishes the download.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在创建分发时，Amazon提供了两种不同的方法，即Web和RTMP。Web方法用于需要通过CDN网络提供的静态内容，当所有静态文件都驻留在Amazon
+    S3存储桶中时使用。RTMP方法用于分发流媒体文件，允许用户在下载完成之前播放文件。
+- en: 'In our case, we will choose the web method, as we want to distribute the static
+    files. You can select the method as shown in the following screenshot:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的情况下，我们将选择Web方法，因为我们希望分发静态文件。您可以按照以下截图中显示的方法进行选择：
+- en: '![](img/00067.jpeg)'
+  id: totrans-112
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00067.jpeg)'
+- en: 'Once you select the web method, the Create Distribution form page will open.
+    On this page, we will select the required fields to configure the distribution.
+    Take a look at this screenshot:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 选择Web方法后，将打开创建分发表单页面。在此页面上，我们将选择所需的字段来配置分发。看一下这个截图：
+- en: '![](img/00068.jpeg)'
+  id: totrans-114
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00068.jpeg)'
+- en: After successful creation of the cloud distribution, we are going to integrate
+    the distribution with our Django application.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 成功创建云分发后，我们将把分发与我们的Django应用集成。
+- en: Let's move on to the next section, where we will configure the static and media
+    files in the application.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续下一节，在那里我们将配置应用中的静态和媒体文件。
+- en: Setting up static and media files
+  id: totrans-117
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置静态和媒体文件
+- en: Configuring the static and dynamic files in Django is essential. How we configure
+    and serve static and media files does impact on the overall performance of the
+    application. Hence, configuring the static and media files should be taken care
+    of in an optimized way. Let's have a detailed discussion about it.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Django中配置静态和动态文件是必不可少的。我们如何配置和提供静态和媒体文件会影响应用程序的整体性能。因此，应该以优化的方式来配置静态和媒体文件。让我们对此进行详细讨论。
+- en: Standard configuration
+  id: totrans-119
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 标准配置
+- en: Django has a standard pattern to configure the static and media files. Static
+    and media are two different concerns, where static files refer to fixed content,
+    such as HTML, JS, CSS, and images. Django defines some configuration related to
+    static files in `settings.py` and URL configured in `urls.py`. Media files refer
+    to any files that are handled dynamically by uploading. Django has a very good
+    mechanism to configure and manage static HTML, JS, CSS, and images files.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Django有一个标准模式来配置静态和媒体文件。静态和媒体是两个不同的问题，其中静态文件指固定内容，如HTML、JS、CSS和图像。Django在`settings.py`中定义了一些与静态文件相关的配置，并在`urls.py`中配置了URL。媒体文件指通过上传动态处理的任何文件。Django有一个非常好的机制来配置和管理静态HTML、JS、CSS和图像文件。
+- en: Normally, the default Django static file configuration assumes that you will
+    have static files along with your code base under a static directory, but, in
+    our case, we want to put all static content under an Amazon S3 bucket and serve
+    it through Amazon CloudFront distribution.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，默认的Django静态文件配置假定您将在静态目录下与代码库一起拥有静态文件，但在我们的情况下，我们希望将所有静态内容放在Amazon S3存储桶下，并通过Amazon
+    CloudFront分发进行提供。
+- en: django-storage
+  id: totrans-122
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: django-storage
+- en: We are going to use the `django-storage` ([http://django-storages.readthedocs.io/en/latest/](http://django-storages.readthedocs.io/en/latest/)),
+    a third-party plugin for implementing a custom storage backend. With the help
+    of Django storage, we are going set up the static and media configuration.
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用`django-storage`（[http://django-storages.readthedocs.io/en/latest/](http://django-storages.readthedocs.io/en/latest/)），这是一个第三方插件，用于实现自定义存储后端。借助Django存储，我们将设置静态和媒体配置。
+- en: 'The following is the code snippet, which is required to set up the custom storage
+    for static and media files:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是设置自定义存储静态和媒体文件所需的代码片段：
+- en: 'File—`gallery/utils.py`:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件—`gallery/utils.py`：
+- en: '[PRE14]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Now we are going to configure these two custom storage classes in the `settings.py`
+    file as shown here:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将在`settings.py`文件中配置这两个自定义存储类，如下所示：
+- en: 'File—`imageGalleryProject/settings.py`:'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件—`imageGalleryProject/settings.py`：
+- en: '[PRE15]'
+  id: totrans-129
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'These are the settings you will be required to put into `settings.py`, and
+    now its time to configure the `urls.py`. I would recommend that you update the
+    root `urls.py`, as shown here:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些是您需要放入`settings.py`中的设置，现在是时候配置`urls.py`了。我建议您更新根`urls.py`，如下所示：
+- en: 'File—`imageGalleryProject/urls.py`:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件—`imageGalleryProject/urls.py`：
+- en: '[PRE16]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Once you configure the URLs, then you are all set. To verify the configuration,
+    you can run the command `collectstatic` to collect all your static files at the
+    configured location:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您配置了URL，那么您就准备好了。要验证配置，您可以运行`collectstatic`命令，将所有静态文件收集到配置的位置：
+- en: '[PRE17]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: This command will retrieve all the static files belonging to the mentioned `INSTALL_APPS`
+    and upload them to the `STATIC_ROOT`. Now, when you upload any file, it will be
+    uploaded to Amazon S3 and serve via Amazon CloudFront.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此命令将检索属于所述`INSTALL_APPS`的所有静态文件，并将它们上传到`STATIC_ROOT`。现在，当您上传任何文件时，它将被上传到Amazon
+    S3，并通过Amazon CloudFront提供。
+- en: It's time to configure Zappa and process the deployment.
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是时候配置Zappa并进行部署了。
+- en: Building, testing, and deploying the Django application using Zappa
+  id: totrans-137
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Zappa构建、测试和部署Django应用
+- en: 'Zappa configuration is straightforward. The Zappa package is available in the
+    pip repository as well. But we are going to install it with pipenv, which helps
+    us to keep track of the version management. The following is the command you will
+    need to install Zappa:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zappa配置很简单。Zappa包也可以在pip仓库中找到。但我们将使用pipenv来安装它，这可以帮助我们跟踪版本管理。以下是安装Zappa所需的命令：
+- en: '[PRE18]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: After the Zappa installation, you will need to initialize Zappa with the command
+    `zappa init`. This command will prompt a shell questioner to configure Zappa with
+    the required, basic information. Let's have a look at the next section, where
+    we will discuss Zappa's basic configuration.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装Zappa后，您需要使用`zappa init`命令初始化Zappa。此命令将提示一个shell调查问卷，以配置Zappa所需的基本信息。让我们看看下一节，我们将讨论Zappa的基本配置。
+- en: Configuring Zappa
+  id: totrans-141
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 配置Zappa
+- en: '[PRE19]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: '[PRE20]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'Here, we defined the configuration as per the requirements. As the key defines
+    each configuration, we can see the usages of it. Consider the following:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们根据要求定义了配置。由于密钥定义了每个配置，我们可以看到它的用法。考虑以下内容：
+- en: '`aws_region`: The AWS region where the Lambda will get uploaded'
+  id: totrans-145
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`aws_region`：Lambda将上传的AWS区域'
+- en: '`django_settings`: The import path of Django''s settings file'
+  id: totrans-146
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`django_settings`：Django设置文件的导入路径'
+- en: '`profile_name`: The AWS CLI configuration profile which is defined in the `~/.aws/credentials`
+    file'
+  id: totrans-147
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`profile_name`：在`~/.aws/credentials`文件中定义的AWS CLI配置文件'
+- en: '`project_name`: The project name for the uploading Lambda function'
+  id: totrans-148
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`project_name`：上传Lambda函数的项目名称'
+- en: '`runtime`: The python runtime interpreter'
+  id: totrans-149
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`runtime`：Python运行时解释器'
+- en: '`s3_bucket`: Creates an Amazon s3 bucket and uploads the deployment packages'
+  id: totrans-150
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`s3_bucket`：创建一个Amazon S3存储桶并上传部署包'
+- en: '`remote_env`: Sets the environment variable of all the key-value pairs mentioned
+    in the uploaded JSON file at the Amazon S3 location'
+  id: totrans-151
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`remote_env`：设置Amazon S3位置上传的JSON文件中提到的所有键值对的环境变量'
+- en: With the help of this configuration information, we will proceed with the deployment.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在配置信息的帮助下，我们将继续部署。
+- en: Building and deploying
+  id: totrans-153
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建和部署
+- en: Once we are done with the configuration, then we can process the deployment.
+    Zappa provides two different commands to perform the deployment, such as `zappa
+    deploy <stage_name>` and `zappa update <stage_name>`. Initially, we will use the
+    `zappa deploy <stage_name>` command, as it is the first time that we are deploying
+    this Lambda application.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们完成配置，就可以进行部署。Zappa提供了两个不同的命令来执行部署，例如`zappa deploy <stage_name>`和`zappa update
+    <stage_name>`。最初，我们将使用`zappa deploy <stage_name>`命令，因为这是我们第一次部署这个Lambda应用程序。
+- en: If you have already deployed the application and want to redeploy it, then you
+    would use the `zappa update <stage_name>` command. In the previous chapter, we
+    had a detailed discussion about the deployment process of Zappa, so you can refer
+    to this, if you need to.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您已经部署了应用程序并希望重新部署它，那么您将使用`zappa update <stage_name>`命令。在上一章中，我们对Zappa的部署过程进行了详细讨论，因此如果需要，您可以参考这一点。
+- en: 'The following is the screenshot of our deployment process:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是我们部署过程的截图：
+- en: '![](img/00069.jpeg)'
+  id: totrans-157
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00069.jpeg)'
+- en: 'As you can see, after successful deployment, we got the API gateway endpoint
+    URL. Let''s check how the deployment happened by visiting the admin panel at the
+    mentioned URL. Take a look at this screenshot:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，成功部署后，我们得到了API网关端点URL。让我们通过访问所述URL的管理面板来检查部署过程。看一下这个截图：
+- en: '![](img/00070.jpeg)'
+  id: totrans-159
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00070.jpeg)'
+- en: 'Oops! We encountered an error. This error says that we have an invalid `HTTP_HOST`,
+    and this is true because we have not configured it into the list of `ALLOWED_HOSTS`
+    in the `settings.py` file, as mentioned here:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哎呀！我们遇到了一个错误。这个错误说我们有一个无效的`HTTP_HOST`，这是真的，因为我们没有在`settings.py`文件的`ALLOWED_HOSTS`列表中配置它，如下所述：
+- en: '[PRE21]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'This would resolve the issue. Now, let''s move on to check out the admin panel:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将解决问题。现在，让我们继续查看管理面板：
+- en: '![](img/00071.jpeg)'
+  id: totrans-163
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00071.jpeg)'
+- en: Oops! It seems as though we failed to load the static contents. But we configured
+    the static and media content with Amazon S3 and Amazon CloudFront.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哎呀！看起来好像我们未能加载静态内容。但是我们已经使用Amazon S3和Amazon CloudFront配置了静态和媒体内容。
+- en: 'So, to resolve this error, we will need to run the command `python manage.py
+    collectstatic`. This command will upload all the static content to Amazon S3 and
+    it will be available via Amazon CloudFront. Take a look at this screenshot:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，为了解决这个错误，我们需要运行`python manage.py collectstatic`命令。这个命令将把所有静态内容上传到Amazon S3，并通过Amazon
+    CloudFront可用。看一下这个截图：
+- en: '![](img/00072.jpeg)'
+  id: totrans-166
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00072.jpeg)'
+- en: Wow! We resolved the issue, and our application is live and serverless. That
+    was really easy to deploy. I hope you did enjoy the deployment of the Django based
+    application.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哇！我们解决了问题，我们的应用程序已经上线并且是无服务器的。部署真的很容易。希望您喜欢基于Django的应用程序的部署。
+- en: Here, we never dealt with any server software, such as Apache or Nginx and other
+    complex configuration. Zappa makes it really easy to deploy your application as
+    serverless.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们从未涉及任何服务器软件，如Apache或Nginx等复杂的配置。Zappa使得将应用程序部署为无服务器变得非常容易。
+- en: Now we will see what more we can do with the help of Zappa. Refer our next section
+    for more excitement!
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将看看使用Zappa还可以做些什么。请参考我们的下一节，了解更多精彩内容！
+- en: Django management command using Zappa
+  id: totrans-170
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Zappa进行Django管理命令
+- en: Zappa provides a feature to perform the Django's `manage` command operations
+    on deployed Lamdba instances, directly from your Terminal console. With the help
+    of `zappa mange <stage_name> <manage-command>`, you can execute and check the
+    status of your Django application.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zappa提供了一个功能，可以直接从您的终端控制台在部署的Lamdba实例上执行Django的`manage`命令操作。通过`zappa manage
+    <stage_name> <manage-command>`，您可以执行并检查您的Django应用程序的状态。
+- en: 'The following is a screenshot of the execution of this command:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是执行此命令的截图：
+- en: '![](img/00073.jpeg)'
+  id: totrans-173
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00073.jpeg)'
+- en: There are some limitations though. It is only for Django's `manage` command
+    to use, hence it's bound to Django projects only.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管有一些限制。它只适用于Django的`manage`命令，因此它只适用于Django项目。
+- en: 'For passing any arguments, you can use the `manage` command in string format,
+    such as:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要传递任何参数，您可以使用字符串格式的`manage`命令，例如：
+- en: '[PRE22]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'But it will not be useful for those commands that require user input, such
+    as `createsuperuser`. So, in this kind of situation, you can write a Python script
+    in string format and pass it as an argument for `zappa invoke <env> ''<raw_script>''
+    --raw`. Take a look at this screenshot:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但对于那些需要用户输入的命令，例如`createsuperuser`，它将没有用处。因此，在这种情况下，您可以以字符串格式编写Python脚本，并将其作为参数传递给`zappa
+    invoke <env> '<raw_script>' --raw`。看一下这个截图：
+- en: '![](img/00074.jpeg)'
+  id: totrans-178
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/00074.jpeg)'
+- en: That's it.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样。
+- en: I hope you enjoyed it. It makes a developer's life easy. We may require these
+    feature as we are dealing with serverless environments.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 希望你喜欢。这让开发人员的生活变得轻松。因为我们正在处理无服务器环境，所以可能需要这些功能。
+- en: Summary
+  id: totrans-181
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: We learned how to build a serverless Django application. Zappa makes it very
+    easy to perform the build operation and helps you to make a serverless deployment,
+    which is very handy.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们学会了如何构建一个无服务器的Django应用程序。Zappa使构建操作变得非常容易，并帮助您进行无服务器部署，非常方便。
+- en: We covered all essential details we needed while implementing the serverless
+    Django application. I explained the code written for this application; I am also
+    sharing the entire code base at our GitHub repository ([https://github.com/PacktPublishing/Building-Serverless-Python-Web-Services-with-Zappa/tree/master/chapter_5/imageGalleryProject](https://github.com/PacktPublishing/Building-Serverless-Python-Web-Services-with-Zappa/tree/master/chapter_5/imageGalleryProject)).
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在实现无服务器Django应用程序时，我们涵盖了所有必要的细节。我解释了为这个应用程序编写的代码；我还在我们的GitHub存储库中分享了整个代码库（[https://github.com/PacktPublishing/Building-Serverless-Python-Web-Services-with-Zappa/tree/master/chapter_5/imageGalleryProject](https://github.com/PacktPublishing/Building-Serverless-Python-Web-Services-with-Zappa/tree/master/chapter_5/imageGalleryProject)）。
+- en: I hope you enjoyed this chapter. In the next chapter, we will implement the
+    same application, but as a RESTful API, and see what challenges we come across.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 希望你喜欢这一章。在下一章中，我们将实现相同的应用程序，但作为一个RESTful API，并看看我们会遇到什么挑战。
+- en: Questions
+  id: totrans-185
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题
+- en: What is Amazon CloudFront?
+  id: totrans-186
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 什么是Amazon CloudFront？
+- en: What is pipenv used for?
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: pipenv 用于什么？

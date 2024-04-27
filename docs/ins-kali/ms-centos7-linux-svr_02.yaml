@@ -1,0 +1,1682 @@
+- en: Chapter 2. Security
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第2章。安全
+- en: In this chapter, we will find different tools and utilities that we can use
+    to secure the CentOS system we are using. Security is the most important part
+    for a system or server and thus, a System Administrator's job is always to keep
+    the system up to date and secure from different kind of attacks that happen on
+    a regular basis on servers.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将找到不同的工具和实用程序，可以用来保护我们正在使用的CentOS系统。安全是系统或服务器最重要的部分，因此，系统管理员的工作始终是保持系统最新和安全，以防止服务器上定期发生的各种攻击。
+- en: We will discuss several tools here starting from SELinux to other security tools
+    and measures that we can take on a CentOS 7 system. Let's dive into them one by
+    one.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从SELinux到其他安全工具和措施开始讨论这里的几个工具，并逐一深入了解它们。
+- en: 'In this chapter, we will look into:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将研究：
+- en: SELinux and its tools
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: SELinux及其工具
+- en: Installing SELinux
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安装SELinux
+- en: Domain transition
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 域转换
+- en: SELinux users
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: SELinux用户
+- en: SELinux audit logs and troubleshooting
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: SELinux审计日志和故障排除
+- en: Introducing SELinux
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍SELinux
+- en: '**Security Enhanced Linux** (**SELinux**) is a set of kernel modifications
+    and user-space tools that have been present in CentOS for quite a long time. It
+    is a kind of mechanism that supports Mandatory Access Control security policies,
+    which were initially developed by the US National Security Agency and later released
+    in the public domain to protect computer systems from malicious intrusion and
+    tampering.'
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**安全增强型Linux**（**SELinux**）是一组内核修改和用户空间工具，已经在CentOS中存在了相当长的时间。它是一种支持强制访问控制安全策略的机制，最初由美国国家安全局开发，后来在公共领域发布，以保护计算机系统免受恶意侵入和篡改。'
+- en: Not many System Administrators use SELinux. Commonly, people are reluctant to
+    learn about SELinux and just disable it directly. However, a properly configured
+    SELinux system can reduce the security risks to a great extent.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并不是很多系统管理员使用SELinux。通常，人们不愿意学习SELinux，而是直接禁用它。然而，一个正确配置的SELinux系统可以在很大程度上减少安全风险。
+- en: 'SELinux implements **Mandatory Access Control** (**MAC**), which works on top
+    of already available **Discretionary Access Control** (**DAC**) on CentOS 7\.
+    DAC is the traditional security model that we have on Linux systems where we have
+    three entities: User, Group, and Others who can have a combination of read, write,
+    and execute permission for files and directories. By default, if a user creates
+    any file in his home directory, the user and his group will have the read access
+    and the user will have write access to the file but the other entity might also
+    have read access to it.'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SELinux实现**强制访问控制**（**MAC**），它建立在CentOS 7上已有的**自主访问控制**（**DAC**）之上。 DAC是我们在Linux系统上拥有的传统安全模型，其中有三个实体：用户、组和其他人可以对文件和目录拥有读、写和执行权限的组合。默认情况下，如果用户在他的主目录中创建任何文件，用户和他的组将具有读取访问权限，用户将具有写访问权限，但其他实体也可能具有读取访问权限。
+- en: The user who owns the file can change this access policy and grant or revoke
+    access as well as ownership of the file. This might leave critical files exposed
+    to accounts that don't need access to these files and thus pose as a security
+    threat to the running system. It confines every process to its own domain and
+    makes sure that it can interact only with a defined type of files and processes
+    and thus protect the system from a hacker hijacking a script or process and gaining
+    system-wide control through it.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 拥有文件的用户可以更改此访问策略，并授予或撤销文件的访问权限以及所有权。这可能会使关键文件暴露给不需要访问这些文件的帐户，从而对正在运行的系统构成安全威胁。它将每个进程限制在自己的域中，并确保它只能与一种定义的文件和进程类型进行交互，从而保护系统免受黑客通过劫持脚本或进程并通过它获得系统范围控制的威胁。
+- en: 'To check what SELinux packages are installed on your system, run the following
+    command:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要检查系统上安装了哪些SELinux软件包，请运行以下命令：
+- en: '[PRE0]'
+  id: totrans-15
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'The command will display the following output:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该命令将显示以下输出：
+- en: '![Introducing SELinux](img/B04674_02_01.jpg)'
+  id: totrans-17
+  prefs: []
+  type: TYPE_IMG
+  zh: '![介绍SELinux](img/B04674_02_01.jpg)'
+- en: Installing SELinux
+  id: totrans-18
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 安装SELinux
+- en: 'Install all the packages with the following command; this will install the
+    rest of the packages and update the already installed packages on the system:'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下命令安装所有软件包；这将安装系统上剩余的软件包并更新已安装的软件包：
+- en: '[PRE1]'
+  id: totrans-20
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Now, we will have all the packages required by SELinux installed on the system.
+    Let''s install two more services apache (`httpd`) for the web server and FTP (`vsftpd`)
+    server on the system, so that we can test the SELinux with them:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将在系统上安装SELinux所需的所有软件包。让我们在系统上安装另外两个服务apache（`httpd`）用于Web服务器和FTP（`vsftpd`）服务器，以便我们可以测试它们的SELinux：
+- en: '[PRE2]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Run the apache service now using either of the following commands:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在使用以下命令运行apache服务：
+- en: '[PRE3]'
+  id: totrans-24
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Check the status of httpd using either of the following commands:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下命令之一检查httpd的状态：
+- en: '[PRE4]'
+  id: totrans-26
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'These commands will show that it''s running, as seen in the following screenshot:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些命令将显示它正在运行，如下面的截图所示：
+- en: '![Installing SELinux](img/B04674_02_02.jpg)'
+  id: totrans-28
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装SELinux](img/B04674_02_02.jpg)'
+- en: 'Also, `start vsftpd` using either of the following commands and then check
+    the status of `vsftp` in the same way:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还可以使用以下命令之一启动vsftpd，然后以相同的方式检查`vsftp`的状态：
+- en: '[PRE5]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Check the status of ftpd using either of the following commands:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下命令之一检查ftpd的状态：
+- en: '[PRE6]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: '![Installing SELinux](img/B04674_02_03.jpg)'
+  id: totrans-33
+  prefs: []
+  type: TYPE_IMG
+  zh: '![安装SELinux](img/B04674_02_03.jpg)'
+- en: SELinux mode
+  id: totrans-34
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: SELinux模式
+- en: 'There are three types of SELinux modes; they are as follows:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有三种类型的SELinux模式，它们如下：
+- en: '**Enforcing**: In this mode, SELinux enforces its policies onto the system
+    and makes sure that all access by unauthorized users or processes are denied.
+    These access denial events are also logged in to the system as well, which we
+    will look into later on in this chapter.'
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**强制执行**：在此模式下，SELinux强制执行其策略到系统，并确保未经授权的用户或进程的所有访问都被拒绝。这些访问拒绝事件也会记录在系统中，我们稍后将在本章中进行讨论。'
+- en: '**Permissive**: This is like a semi-enabled mode state where SELinux doesn''t
+    deny any access as the policies are in permissive mode. This is the best mode
+    to test the SELinux policies.'
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**宽容**：这类似于半启用模式状态，其中SELinux不会拒绝任何访问，因为策略处于宽容模式。这是测试SELinux策略的最佳模式。'
+- en: '**Disabled**: In this mode, the SELinux is in a completely disabled state and
+    no logs are created or permissions are denied.'
+  id: totrans-38
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**禁用**：在此模式下，SELinux处于完全禁用状态，不会创建日志或拒绝权限。'
+- en: 'We can run the following commands to get the present SELinux status:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以运行以下命令来获取当前的SELinux状态：
+- en: '[PRE7]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'The outputs from the preceding commands are shown in the following image when
+    SELinux is enabled on the system:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当系统启用SELinux时，前述命令的输出显示在以下图像中：
+- en: '![SELinux mode](img/B04674_02_04.jpg)'
+  id: totrans-42
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux模式](img/B04674_02_04.jpg)'
+- en: The main SELinux configuration file is `/etc/selinux/config`. We will now enable
+    SELinux by setting up `SELINUX=permissive` in this file, and then saving and rebooting
+    the system.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主要的SELinux配置文件是`/etc/selinux/config`。我们现在将通过在该文件中设置`SELINUX=permissive`来启用SELinux，然后保存并重新启动系统。
+- en: '![SELinux mode](img/B04674_02_05.jpg)'
+  id: totrans-44
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux模式](img/B04674_02_05.jpg)'
+- en: 'The `SELINUXTYPE` parameter in the `config` file also has three options, as
+    follows:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`config`文件中的`SELINUXTYPE`参数也有三个选项，如下所示：'
+- en: '**Targeted**: This is the default value that allows you to customize and fine-tune
+    your policies'
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Targeted**：这是允许您自定义和微调策略的默认值。'
+- en: '**Minimum**: In this mode, only the selected processes are protected'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**最小**：在此模式下，只有选定的进程受到保护。'
+- en: '**MLS**: Multi Level Security is an advanced mode of protection and you need
+    an additional package to install it as well'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**MLS**：多级安全是一种高级的保护模式，您需要安装额外的软件包。'
+- en: We will keep the `SELINUXTYPE` at the default value (that is, targeted).
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将保持`SELINUXTYPE`为默认值（即，targeted）。
+- en: This is necessary to set the SELinux into the permissive mode the first time
+    it runs, as it's required to label all files on the system. Otherwise, processes
+    running under confined domains might fail as they can't access the files with
+    correct contexts.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一次运行时，有必要将SELinux设置为宽容模式，因为需要为系统上的所有文件打标签。否则，在受限域下运行的进程可能会失败，因为它们无法访问具有正确上下文的文件。
+- en: Once we are set and we reboot the system, it will label all the files, which
+    will take some time depending on the system with SELinux contexts. Since it's
+    in the permissive mode, only failures and access denials will be reported.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们设置并重新启动系统，它将为所有文件打标签，这将根据具有SELinux上下文的系统而需花费一些时间。由于它处于宽容模式，只会报告失败和访问拒绝。
+- en: 'We must check the system once it is up for any errors using the following command:'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦系统启动，我们必须使用以下命令检查是否有任何错误：
+- en: '[PRE8]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'This will show you outputs such as the following if the SELinux is running
+    in permissive mode:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果SELinux以宽容模式运行，将显示以下输出：
+- en: '[PRE9]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Now, since all the rules are loaded and the files are labeled, we have to enable
+    the SELinux enforcing mode instead of the permissive mode. So, edit the `SELinux
+    config` file once again and set the following to enforcing:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，由于所有规则都已加载并且文件已被标记，我们必须启用SELinux强制模式，而不是宽容模式。因此，再次编辑`SELinux配置`文件，并将以下内容设置为强制：
+- en: '[PRE10]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: '![SELinux mode](img/B04674_02_06.jpg)'
+  id: totrans-58
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux模式](img/B04674_02_06.jpg)'
+- en: Now, reboot the server once again.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在再次重新启动服务器。
+- en: 'Once it is back, check the SELinux status with the `sestatus` command and it
+    will show you an output similar to the following:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦系统恢复，使用`sestatus`命令检查SELinux状态，它将显示类似以下内容的输出：
+- en: '![SELinux mode](img/B04674_02_04.jpg)'
+  id: totrans-61
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux模式](img/B04674_02_04.jpg)'
+- en: 'Now, if you `grep` SELinux in `/var/log/messages` you will find the following:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果在`/var/log/messages`中使用`grep`查找SELinux，将找到以下内容：
+- en: '[PRE11]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: To check the SELinux enforcing status, run the `getenforce` command, and it
+    will display the status as `enforcing`.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要检查SELinux强制状态，请运行`getenforce`命令，它将显示状态为`enforcing`。
+- en: 'The `sestatus` command will display more details about the operating SELinux
+    configuration as follows:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`sestatus`命令将显示有关操作中的SELinux配置的更多详细信息，如下所示：'
+- en: '![SELinux mode](img/B04674_02_07.jpg)'
+  id: totrans-66
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux模式](img/B04674_02_07.jpg)'
+- en: 'If we want to change the SELinux mode temporarily while running SELinux, we
+    can do that using the `setenforce` command as follows:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们想在运行SELinux时临时更改SELinux模式，可以使用`setenforce`命令，如下所示：
+- en: '[PRE12]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Now, `sestatus` will show you the following screen:'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，`sestatus`将显示以下屏幕：
+- en: '![SELinux mode](img/B04674_02_08.jpg)'
+  id: totrans-70
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux模式](img/B04674_02_08.jpg)'
+- en: 'Switch back to the enforcing mode using the following command:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下命令切换回强制模式：
+- en: '[PRE13]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: SELinux policy
+  id: totrans-73
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: SELinux策略
+- en: 'You must have noticed from the previous SELinux outputs in `/var/log/messages`
+    that it is based on Policy. Policy means a set of rules that defines the relation,
+    security and access rights to the following:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你一定已经注意到了之前在`/var/log/messages`中的SELinux输出是基于策略的。策略意味着一组规则，定义了与以下内容的关系、安全性和访问权限：
+- en: '**User**: All regular Linux users are defined by one or more SELinux users.
+    However, please note that SELinux users are different from Linux users. Also,
+    note that a running process or a program is defined as subject in the SELinux.'
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**用户**：所有常规Linux用户都由一个或多个SELinux用户定义。但请注意，SELinux用户与Linux用户不同。还要注意，运行的进程或程序在SELinux中被定义为主题。'
+- en: '**Role**: They are like filters that define which user can access a process
+    and so on. It''s like a gateway between a user and a process. A user can only
+    run a specific process if the role grants it and the user has access to the role.
+    SELinux is based on **Role Based Access Control** (**RBAC**).'
+  id: totrans-76
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**角色**：它们类似于定义哪个用户可以访问进程等的过滤器。它就像用户和进程之间的网关。只有在角色授予访问权限并且用户有权访问角色时，用户才能运行特定进程。SELinux基于**基于角色的访问控制**（**RBAC**）。'
+- en: '**Subject** and **Object**: Subject is like a process or a program and object
+    is anything than can be acted on; like a file, port, directory, and so on. The
+    actions that are performed by a subject on an object depend on the subject''s
+    permissions.'
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**主题**和**对象**：主题类似于进程或程序，对象是可以被操作的任何东西；如文件、端口、目录等。主题对对象执行的操作取决于主题的权限。'
+- en: '**Domain**: This is like a wrapper around the Subject (process), which tells
+    the process what it can or can''t do. For example, the domain will define the
+    directories, folders, files, ports, and so on a process can access. Domains are
+    related to subject in SELinux.'
+  id: totrans-78
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**域**：这类似于主体（进程）的包装器，告诉进程它可以或不能做什么。例如，域将定义进程可以访问的目录、文件夹、文件、端口等。域与SELinux中的主体相关。'
+- en: '**Type**: A file''s context is called its type. For example, the context of
+    a file describes whether it''s only accessible to the local web server process
+    or it''s available to any process within any other directory such as `/` and so
+    on or which specific SELinux user is the owner of the file. Type is related to
+    the object in SELinux.'
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**类型**：文件的上下文称为其类型。例如，文件的上下文描述了它是否仅对本地Web服务器进程可访问，或者对任何其他目录中的任何进程可访问，比如`/`等等，或者文件的特定SELinux用户是文件的所有者。类型与SELinux中的对象相关。'
+- en: In SELinux, policy defines rules for users access to roles, role access to domains,
+    and domain access to types.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在SELinux中，策略定义了用户访问角色的规则，角色访问域的规则，以及域访问类型的规则。
+- en: 'There are three forms of access control in SELinux defined by the `SELINUXTYPE`
+    in the `/etc/selinux/config` file:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SELinux中由`/etc/selinux/config`文件中的`SELINUXTYPE`定义的三种访问控制形式：
+- en: '**Type Enforcement** (**TE**): This is the primary mechanism of access control
+    used in the targeted policy'
+  id: totrans-82
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**类型强制**（**TE**）：这是定向策略中使用的访问控制的主要机制'
+- en: '**Role-Based Access Control** (**RBAC**): This is based around SELinux users
+    (not necessarily the same as the Linux user), but not used in the default targeted
+    policy'
+  id: totrans-83
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**基于角色的访问控制**（**RBAC**）：这是基于SELinux用户（不一定与Linux用户相同）的，但在默认的定向策略中不使用。'
+- en: '**Multi-Level Security** (**MLS**): This is not commonly used and often hidden
+    in the default targeted policy.'
+  id: totrans-84
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**多级安全**（**MLS**）：这不常用，通常在默认的定向策略中隐藏。'
+- en: The targeted policy is used by default in SELinux and we will continue our discussion
+    based on it here.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 定向策略是SELinux中默认使用的策略，我们将在此基础上继续讨论。
+- en: Also, remember that SELinux doesn't replace the traditional DAC policy in the
+    Linux system. Instead, if a file access is prohibited by the DAC policy, the SELinux
+    policy will not be evaluated and will not grant access to the file even if is
+    allowed by SELinux.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要记住，SELinux不会取代Linux系统中的传统DAC策略。相反，如果DAC策略禁止文件访问，SELinux策略将不会被评估，并且不会授予文件访问权限，即使SELinux允许。
+- en: 'SELinux policies are loaded in a modular format much like a kernel module into
+    the memory and can be viewed using the following command:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SELinux策略以模块化格式加载到内存中，并可以使用以下命令查看：
+- en: '[PRE14]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: '![SELinux policy](img/B04674_02_09.jpg)'
+  id: totrans-89
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux策略](img/B04674_02_09.jpg)'
+- en: The `semodule` command can be used for installing, removing, reloading, upgrading,
+    enabling, and disabling SELinux policy modules as well.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`semodule`命令可用于安装、删除、重新加载、升级、启用和禁用SELinux策略模块。'
+- en: The module files are located in `/etc/selinux/targeted/modules/active/modules/`
+    with the `.pp` extension and are not human readable. But, if you look into them
+    closely, you will surely find that they are actually related to different applications
+    in Linux.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模块文件位于`/etc/selinux/targeted/modules/active/modules/`目录中，具有`.pp`扩展名，不是人类可读的。但是，如果你仔细查看它们，你肯定会发现它们实际上与Linux中的不同应用程序相关。
+- en: '![SELinux policy](img/B04674_02_10.jpg)'
+  id: totrans-92
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux策略](img/B04674_02_10.jpg)'
+- en: 'These policy modules are combined into an active policy and are then loaded
+    into the memory. This combined binary policy can be found in the `/etc/selinux/targeted/policy/`
+    directory:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些策略模块被合并为一个活动策略，然后加载到内存中。这个合并的二进制策略可以在`/etc/selinux/targeted/policy/`目录中找到：
+- en: '![SELinux policy](img/B04674_02_11.jpg)'
+  id: totrans-94
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux策略](img/B04674_02_11.jpg)'
+- en: 'We cannot modify these rules directly but can manage them using the `semanage
+    boolean` command. The output of the `semanage boolean -l | less` command will
+    show us this:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不能直接修改这些规则，但可以使用`semanage boolean`命令来管理它们。`semanage boolean -l | less`命令的输出将显示给我们这些信息。
+- en: '![SELinux policy](img/B04674_02_12.jpg)'
+  id: totrans-96
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux策略](img/B04674_02_12.jpg)'
+- en: 'It is clearly evident in the second line of the preceding output that the FTP
+    service access to user home directories is turned off at this moment. We can also
+    see just the status of the `ftpd` service policies using the following command
+    pipeline:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面输出的第二行清楚地表明，FTP服务访问用户主目录目前已关闭。我们还可以使用以下命令管道查看`ftpd`服务策略的状态：
+- en: '[PRE15]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: '![SELinux policy](img/B04674_02_13.jpg)'
+  id: totrans-99
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux策略](img/B04674_02_13.jpg)'
+- en: 'Now, to allow FTP users to access their home directories and allow read-write
+    access we have to issue the following commands. First check the status of the
+    `ftp_home_dir` policy using the following command:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，为了允许FTP用户访问他们的主目录并允许读写访问，我们必须发出以下命令。首先使用以下命令检查`ftp_home_dir`策略的状态：
+- en: '[PRE16]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'This will display the following output:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将显示以下输出：
+- en: '[PRE17]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Now, enable access to the user home directory using `setsebool -P` for permanent:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，使用`setsebool -P`永久启用对用户主目录的访问：
+- en: '[PRE18]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Now, check the status again:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，再次检查状态：
+- en: '[PRE19]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'This will show the following output:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将显示以下输出：
+- en: '[PRE20]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: Now, users will be allowed to access their home directories via the FTP provided;
+    the FTP protocol is allowed in the firewall.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，用户将被允许通过FTP访问其主目录；防火墙中允许FTP协议。
+- en: SELinux files and processes
+  id: totrans-111
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: SELinux文件和进程
+- en: So far, we have looked into the basics of SELinux and how to allow a service
+    like `vsftpd` to allow users to access their files from ftp. Let's look into the
+    details of the context of files and how they are defined in SELinux. Context in
+    SELinux is a collection of information related to security, which helps SELinux
+    determine access control policies. In Linux, everything can have a security context
+    such as files, directories, services, or ports but security context means different
+    type of things for different objects.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经了解了SELinux的基础知识，以及如何允许`vsftpd`等服务允许用户从ftp访问其文件。让我们深入了解文件的上下文以及它们在SELinux中的定义。在SELinux中，上下文是与安全相关的信息集合，它帮助SELinux确定访问控制策略。在Linux中，一切都可以有安全上下文，如文件、目录、服务或端口，但是安全上下文对不同的对象意味着不同类型的事物。
+- en: 'We can display the SELinux file context for any file by using the `ls –Z` parameter
+    like this:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`ls –Z`参数显示任何文件的SELinux文件上下文，如下所示：
+- en: '[PRE21]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: '![SELinux files and processes](img/B04674_02_14.jpg)'
+  id: totrans-115
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux文件和进程](img/B04674_02_14.jpg)'
+- en: 'In the preceding output, this part is the SELinux context for that specific
+    file:'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的输出中，这部分是特定文件的SELinux上下文：
+- en: '[PRE22]'
+  id: totrans-117
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: There are four parts, each separated by a colon (`:`). The first part is the
+    SELinux user context, which is shown as `system_u` here. As you already know,
+    each Linux system user is mapped to a SELinux user and here it is `system_u`.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有四个部分，每个部分由冒号（`:`）分隔。第一部分是SELinux用户上下文，在这里显示为`system_u`。正如您已经知道的，每个Linux系统用户都映射到一个SELinux用户，这里是`system_u`。
+- en: The second part is the SELinux role, which is `object_r` here.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二部分是SELinux角色，在这里是`object_r`。
+- en: The most important part here is the third part, which is mentioned as `user_home_t`.
+    This is the one that defines the type of file, and from this, we can understand
+    that it belongs to the user's home directory.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里最重要的部分是第三部分，即`user_home_t`。这是定义文件类型的部分，从中我们可以理解它属于用户的主目录。
+- en: The fourth part (s0) actually explains the sensitivity of the file and it actually
+    works with the Multi-Level Security. The first three parts are more important,
+    so we will only work with them.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第四部分（s0）实际上解释了文件的敏感性，它实际上与多级安全性一起工作。前三部分更重要，所以我们只会处理它们。
+- en: 'Now, let''s look at the SELinux process context using the `httpd` file that
+    we installed before. Let''s start the `httpd` process first using:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们使用之前安装的`httpd`文件查看SELinux进程上下文。首先使用以下命令启动`httpd`进程：
+- en: '[PRE23]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Now let''s run the `ps` command with the additional `-Z` flag to see the process
+    context:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们运行带有额外`-Z`标志的`ps`命令来查看进程上下文：
+- en: '[PRE24]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: '![SELinux files and processes](img/B04674_02_15.jpg)'
+  id: totrans-126
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux文件和进程](img/B04674_02_15.jpg)'
+- en: 'The security context in the preceding output is as follows:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面输出中的安全上下文如下：
+- en: '[PRE25]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: In SELinux, users are suffixed by `_u`, roles are suffixed by `_r`, and types
+    are suffixed by `_t`.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在SELinux中，用户后缀为`_u`，角色后缀为`_r`，类型后缀为`_t`。
+- en: For a process to run like `httpd`, it needs to access its files and action them.
+    We already have seen that each process can only have access to certain types (files,
+    directories, ports, and so on).
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于像`httpd`这样的进程，它需要访问其文件并执行操作。我们已经看到每个进程只能访问特定类型（文件、目录、端口等）。
+- en: 'SELinux defines these access rules in a policy. These access rules follow the
+    standard `allow` statement as follows:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SELinux在策略中定义了这些访问规则。这些访问规则遵循标准的`allow`语句，如下所示：
+- en: '[PRE26]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'A generic `allow` statement indicates:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通用的`allow`语句表示：
+- en: Whether a process is of a certain domain
+  id: totrans-134
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 进程是否属于某个域
+- en: That the resource object the process is trying to access is of a certain class
+    and type
+  id: totrans-135
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 进程正在尝试访问的资源对象是某个类和类型
+- en: Whether it can allow access or deny access
+  id: totrans-136
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它是否允许访问或拒绝访问
+- en: Let's see how this works in consideration with the security context of the https
+    process that we have already looked into.
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看这如何与我们已经查看过的https进程的安全上下文相结合。
+- en: 'The document root or the default directory for `httpd` is `/var/www/html`.
+    Now, let''s create a file in there and check its security context:'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文档根目录或`httpd`的默认目录是`/var/www/html`。现在，让我们在那里创建一个文件并检查其安全上下文：
+- en: '[PRE27]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: '![SELinux files and processes](img/B04674_02_16.jpg)'
+  id: totrans-140
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux文件和进程](img/B04674_02_16.jpg)'
+- en: The file context for the `index.html` file we created is shown to be `httpd_sys_content_t`.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建的`index.html`文件的文件上下文显示为`httpd_sys_content_t`。
+- en: 'We will use the `sesearch` command in the following way to check the type of
+    access allowed for the `httpd` daemon:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将以以下方式使用`sesearch`命令来检查`httpd`守护程序允许的访问类型：
+- en: '[PRE28]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: '![SELinux files and processes](img/B04674_02_17.jpg)'
+  id: totrans-144
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux文件和进程](img/B04674_02_17.jpg)'
+- en: The flags used in the preceding command are easily understandable; source domain
+    is `httpd_t`, which the domain apache is running within. We wanted to list the
+    target resources that are files and have the type context `httpd_sys_content_t`.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的命令中使用的标志很容易理解；源域是`httpd_t`，这是apache正在其中运行的域。我们想列出目标资源，这些资源是文件，并且具有类型上下文`httpd_sys_content_t`。
+- en: 'Notice the first line of context output in the preceding screenshot is:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意前面截图中上下文输出的第一行是：
+- en: '[PRE29]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: Now, if you relate it with the generic allow statement previously, we will clearly
+    understand that the `httpd` service has I/O control, read, get attribute, lock,
+    and open access to the files of the `httpd_sys_content_t` type. And, in our case,
+    the `index.html` file that we created is also of the same type, which means the
+    `httpd` service will have access to this `index.html` file.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您将其与之前的通用allow语句联系起来，我们将清楚地了解到`httpd`服务对`httpd_sys_content_t`类型的文件具有I/O控制、读取、获取属性、锁定和打开访问权限。而且，在我们的情况下，我们创建的`index.html`文件也是相同类型的，这意味着`httpd`服务将可以访问这个`index.html`文件。
+- en: 'Let''s create a test web page modifying the `index.html` file so that we can
+    check its output from the browser. Add the following lines into the `index.html`
+    file using your favorite editor and save it:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个测试网页，修改`index.html`文件，以便我们可以从浏览器中检查其输出。使用您喜欢的编辑器将以下行添加到`index.html`文件中，并保存：
+- en: '[PRE30]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'We will change the permission of the `/var/www` folder followed by `httpd restart`
+    using the following commands:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用以下命令更改`/var/www`文件夹的权限，然后使用`httpd restart`：
+- en: '[PRE31]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'You might have to allow the http port in the firewall if you are doing it for
+    the first time using the following commands:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您是第一次这样做，可能需要在防火墙中允许http端口，使用以下命令：
+- en: '[PRE32]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Now try to access it from the browser. It will show you the output as in the
+    following screenshot:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在尝试从浏览器中访问它。它将显示以下截图中的输出：
+- en: '![SELinux files and processes](img/B04674_02_18.jpg)'
+  id: totrans-156
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux文件和进程](img/B04674_02_18.jpg)'
+- en: 'Now, let''s see if we change the type context of the `index.html` file and
+    whether we will still be able to access it or not. We will use the `chcon` command
+    to change the type context and will use the `–type` flag for this purpose as shown
+    here:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们看看如果我们更改`index.html`文件的类型上下文，我们是否仍然能够访问它。我们将使用`chcon`命令更改类型上下文，并将使用`-type`标志进行此操作，如下所示：
+- en: '[PRE33]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'If we check the context of the file using `ls -Z` , it will show us:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们使用`ls -Z`检查文件的上下文，它会显示：
+- en: '[PRE34]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: It is visible that the type has been changed to `var_t` here.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里可以看到类型已更改为`var_t`。
+- en: Now, if you try to access the web page again, it will show you an error or you
+    might see a default page but not the same page that we saw before. This is because
+    we have changed the type context for the `index.html` file.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您再次尝试访问网页，它将显示错误，或者您可能会看到一个默认页面，但不是我们之前看到的同一个页面。这是因为我们已经更改了`index.html`文件的类型上下文。
+- en: 'To revert it, we will use the following command:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要恢复它，我们将使用以下命令：
+- en: '[PRE35]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: Now, if we access the site again, we will see that it works again as before.
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果我们再次访问该站点，我们将看到它再次像以前一样工作。
+- en: The SELinux enforcing mode guarantees that unless otherwise specified by the
+    policy, processes and files are created with the same context as their parents.
+    What this means is that if process A is spawning process B, the spawned process
+    B will run in the same domain as process A unless specified differently by the
+    SELinux policy, and similarly, if we have a directory with some `context_t` type,
+    unless defined otherwise, the files or directories under it will inherit the same
+    `context_t` type.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SELinux强制执行模式保证，除非策略另有规定，否则进程和文件将以与其父级相同的上下文创建。这意味着如果进程A生成进程B，生成的进程B将在与进程A相同的域中运行，除非SELinux策略另有规定，同样，如果我们有一个带有一些`context_t`类型的目录，除非另有规定，其下的文件或目录将继承相同的`context_t`类型。
+- en: In CentOS 7, the contexts of all files that exist in the system are listed in
+    the `/etc/selinux/targeted/contexts/files/file_contexts` file and contexts of
+    new directories and files are recorded in the `/etc/selinux/targeted/contexts/files/file_contexts.local`
+    file. Since `chcon` is used to change context temporarily and `restorecon` is
+    used to restore the context, `restorecon` actually looks into this file to restore
+    the original context of a file.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在CentOS 7中，系统中存在的所有文件的上下文都列在`/etc/selinux/targeted/contexts/files/file_contexts`文件中，新目录和文件的上下文记录在`/etc/selinux/targeted/contexts/files/file_contexts.local`文件中。由于`chcon`用于临时更改上下文，`restorecon`用于恢复上下文，`restorecon`实际上会查看此文件以恢复文件的原始上下文。
+- en: 'Let''s create `/www/html`:'
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建`/www/html`：
+- en: '[PRE36]'
+  id: totrans-169
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Now, we copy the contents from `/var/www/html` to `/www/html` using the following
+    command:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们使用以下命令将`/var/www/html`的内容复制到`/www/html`：
+- en: '[PRE37]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: If we check the context of the file, we will find that it's different from what
+    we have for `/var/www/html/index.html` and its `default_t` because that is the
+    context of its parent directory.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们检查文件的上下文，我们会发现它与`/var/www/html/index.html`及其`default_t`的上下文不同，因为那是其父目录的上下文。
+- en: Further, even if we change the `httpd` configuration file to an open `index.html`
+    file from this new location, we will still face errors because the contexts are
+    not right yet. While copying the `index.html` file from `/var/www/html to /www/html`,
+    it inherited the context from its parent directory, which is `default_t`.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，即使我们将`httpd`配置文件更改为从这个新位置打开`index.html`文件，我们仍然会遇到错误，因为上下文还不正确。在从`/var/www/html`复制`index.html`文件到`/www/html`时，它继承了其父目录的上下文，即`default_t`。
+- en: To resolve this issue we will have to change its context.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了解决这个问题，我们将不得不更改它的上下文。
+- en: 'To permanently change the context of the `index.html` file under `/www/html`
+    that we created before, we will follow two steps:'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要永久更改之前在`/www/html`下创建的`index.html`文件的上下文，我们将遵循两个步骤：
+- en: '[PRE38]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'Now, we check the context database from the `/etc/selinux/targeted/contexts/files/file_contexts.local`
+    file:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们从`/etc/selinux/targeted/contexts/files/file_contexts.local`文件检查上下文数据库：
+- en: '![SELinux files and processes](img/B04674_02_19.jpg)'
+  id: totrans-178
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux文件和进程](img/B04674_02_19.jpg)'
+- en: 'Now, we will run the `restorecon` command to relabel the file or directory
+    to what has been recorded in the previous step:'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将运行`restorecon`命令，将文件或目录重新标记为前一步记录的内容：
+- en: '[PRE39]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: This will work in three levels; first it will relabel the `/www` directory,
+    then the `/www/html` directory, and finally, the `/www/html/index.html` file.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在三个级别上起作用；首先它将重新标记`/www`目录，然后是`/www/html`目录，最后是`/www/html/index.html`文件。
+- en: '![SELinux files and processes](img/B04674_02_20.jpg)'
+  id: totrans-182
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux文件和进程](img/B04674_02_20.jpg)'
+- en: Now, if we try to access the web page it should work.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果我们尝试访问网页，它应该可以正常工作。
+- en: 'There is also a command called `matchpathcon`, and it is very handy to troubleshoot
+    context related issues. It can compare the context of a current resource with
+    what''s under the SELinux context database and report back. If the match is different,
+    it suggests the changes required. We can run the command using the `-V` flag for
+    `/www/html/index.html` in the following way:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有一个名为`matchpathcon`的命令，非常方便用于解决与上下文相关的问题。它可以将当前资源的上下文与SELinux上下文数据库中的内容进行比较并报告回来。如果匹配不同，它会建议所需的更改。我们可以使用以下方式使用`-V`标志为`/www/html/index.html`运行该命令：
+- en: '[PRE40]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: Domain transition
+  id: totrans-186
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 域转换
+- en: Now, let's find out how a process accesses other processes.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们找出一个进程如何访问其他进程。
+- en: 'Let''s consider that the `vsftpd` process is running; if it''s not started,
+    we can start it using the following command:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设`vsftpd`进程正在运行；如果它没有启动，我们可以使用以下命令启动它：
+- en: '[PRE41]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'The `vsftpd` process is started by the `systemd` process; this is a replacement
+    of the `Sys V init` process and runs within a context of `init_t`:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`vsftpd`进程是由`systemd`进程启动的；这是`Sys V init`进程的替代品，并在`init_t`的上下文中运行：'
+- en: '[PRE42]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: '![Domain transition](img/B04674_02_21.jpg)'
+  id: totrans-192
+  prefs: []
+  type: TYPE_IMG
+  zh: '![域转换](img/B04674_02_21.jpg)'
+- en: The `systemd` process running under the `init_t` domain is very short lived;
+    it invokes `/usr/sbin/vsftpd`, which has a type context `ftpd_exec_t`, and when
+    this binary executable starts, it becomes the `vsftpd` service itself and runs
+    in the `ftpd_t` domain.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`init_t`域下运行的`systemd`进程的生命周期非常短暂；它调用`/usr/sbin/vsftpd`，其类型上下文为`ftpd_exec_t`，当这个二进制可执行文件启动时，它就成为`vsftpd`服务本身，并在`ftpd_t`域中运行。
+- en: '![Domain transition](img/B04674_02_22.jpg)'
+  id: totrans-194
+  prefs: []
+  type: TYPE_IMG
+  zh: '![域转换](img/B04674_02_22.jpg)'
+- en: So, here's the `systemd` process running under the `init_t` domain executing
+    a binary file with the `ftpd_exec_t` type. The binary file then starts a service
+    within the `ftpd_t` domain.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，这里的`systemd`进程在`init_t`域下执行一个具有`ftpd_exec_t`类型的二进制文件。然后二进制文件在`ftpd_t`域内启动一个服务。
+- en: 'Domain transition is followed by three strict rules:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 域转换遵循三个严格的规则：
+- en: The parent process of the source domain must have the permission to execute
+    the application between both the domains
+  id: totrans-197
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 源域的父进程必须有权限在两个域之间执行应用程序
+- en: The file context for that application must be identified as an entry point for
+    the target domain
+  id: totrans-198
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 该应用程序的文件上下文必须被识别为目标域的入口点
+- en: The original domain must be allowed to transit to the target domain
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 原始域必须被允许转换到目标域
+- en: 'Let''s run the `sesearch` command for the `vsftpd` service to check whether
+    it follows these rules:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们运行`sesearch`命令来检查`vsftpd`服务是否遵循这些规则：
+- en: 'First, the source domain `init_t` must have permission to execute the application
+    in the `ftpd_exec_t` context. So we run:'
+  id: totrans-201
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，源域`init_t`必须有权限在`ftpd_exec_t`上下文中执行应用程序。所以我们运行：
+- en: '[PRE43]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'We found the following output:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们找到了以下输出：
+- en: '[PRE44]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: So, the `init_t` can read, get attribute, execute, and open files of the `ftpd_exec_t`
+    context.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，`init_t`可以读取、获取属性、执行和打开`ftpd_exec_t`上下文的文件。
+- en: '![Domain transition](img/B04674_02_23.jpg)'
+  id: totrans-206
+  prefs: []
+  type: TYPE_IMG
+  zh: '![域转换](img/B04674_02_23.jpg)'
+- en: 'Next, we check whether the binary file is the entry point for the target domain
+    `ftpd_t`:'
+  id: totrans-207
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们检查二进制文件是否是目标域`ftpd_t`的入口点：
+- en: '[PRE45]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'We found that it is:'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们发现它是：
+- en: '[PRE46]'
+  id: totrans-210
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: '![Domain transition](img/B04674_02_24.jpg)'
+  id: totrans-211
+  prefs: []
+  type: TYPE_IMG
+  zh: '![域转换](img/B04674_02_24.jpg)'
+- en: 'Finally, the source domain `init_t` needs to have permission to transit to
+    the target `ftpd_t` domain:'
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，源域`init_t`需要有权限转换到目标`ftpd_t`域：
+- en: '[PRE47]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'We can see that the source domain has that permission as well:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以看到源域也有这个权限：
+- en: '[PRE48]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: '![Domain transition](img/B04674_02_25.jpg)'
+  id: totrans-216
+  prefs: []
+  type: TYPE_IMG
+  zh: '![域转换](img/B04674_02_25.jpg)'
+- en: SELinux also supports processes that run under unconfined domains; for example,
+    `unconfined_t`. This is the domain where logged in users run their processes by
+    default.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SELinux还支持在未受限制的域下运行的进程；例如，`unconfined_t`。这是已登录用户默认运行其进程的域。
+- en: SELinux users
+  id: totrans-218
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SELinux用户
+- en: As explained before, SELinux users are different from normal Linux users. SELinux
+    users are defined in the policy that's loaded into the memory at boot time, and
+    there are only a few of these users.
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，SELinux用户与普通Linux用户不同。SELinux用户在引导时加载到内存中的策略中定义，而且这些用户很少。
+- en: After SELinux is enforced, each regular user account is mapped to a SELinux
+    user account. There can be multiple user accounts mapped to the same SELinux user.
+    This enables the normal user account to inherit the permission of its SELinux
+    counterpart.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在启用SELinux之后，每个常规用户帐户都映射到一个SELinux用户帐户。可以将多个用户帐户映射到同一个SELinux用户。这使得普通用户帐户能够继承其SELinux对应帐户的权限。
+- en: 'To view the mapping, we will run the following command:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要查看映射，我们将运行以下命令：
+- en: '[PRE49]'
+  id: totrans-222
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: '![SELinux users](img/B04674_02_26.jpg)'
+  id: totrans-223
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux用户](img/B04674_02_26.jpg)'
+- en: Here, we will find that there are only three Login Names as shown in the preceding
+    screenshot representing the Linux user accounts. Any Linux user is mapped to the
+    entry shown as `__default__` here. The user root is not mapped to default, instead
+    it has its own entry and there is `system_u` for the running processes or services.
+    The second column indicates the SELinux user they are mapped to. Normal user accounts
+    and roots are mapped to `unconfined_u`, whereas the processes and services are
+    mapped to the `system_u` SELinux user. For now, ignore the third column, which
+    shows the **Multi-Level Security** (**MLS**) **Multi Category Security** (MCS)
+    class for the user, and the last column (service) as well.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们会发现在前面的屏幕截图中只有三个登录名，代表Linux用户帐户。任何Linux用户都映射到此处显示的`__default__`。根用户没有映射到默认值，而是有自己的条目，正在运行的进程或服务有`system_u`。第二列表示它们映射到的SELinux用户。普通用户帐户和根用户映射到`unconfined_u`，而进程和服务映射到`system_u`
+    SELinux用户。暂时忽略第三列，它显示用户的**多级安全**（**MLS**）**多类别安全**（MCS）类，以及最后一列（服务）。
+- en: 'To see the SELinux users that are available in the system, use the `semanage`
+    user command as follows:'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要查看系统中可用的SELinux用户，使用`semanage`用户命令如下：
+- en: '[PRE50]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: '![SELinux users](img/B04674_02_27.jpg)'
+  id: totrans-227
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux用户](img/B04674_02_27.jpg)'
+- en: The table in the preceding screenshot shows the SELinux users available in the
+    system and the roles they have access to. We already discussed that SELinux roles
+    are like gateways between a user and a process. We also compared them to filters,
+    where a user can enter a role, provided the role grants it. If a role is authorized
+    to access a process domain, the users associated with that role will be able to
+    enter that process domain.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的屏幕截图中，表格显示了系统中可用的SELinux用户以及他们可以访问的角色。我们已经讨论过SELinux角色就像用户和进程之间的网关。我们还将它们比作过滤器，用户可以进入一个角色，前提是该角色授予了权限。如果一个角色被授权访问一个进程域，与该角色相关联的用户将能够进入该进程域。
+- en: 'Now, run the id `-Z` command as the root user. It will show the SELinux security
+    context for the root:'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，以根用户身份运行`id -Z`命令。它将显示根用户的SELinux安全上下文：
+- en: '![SELinux users](img/B04674_02_28.jpg)'
+  id: totrans-230
+  prefs: []
+  type: TYPE_IMG
+  zh: '![SELinux用户](img/B04674_02_28.jpg)'
+- en: So, the root user is mapped to the `unconfined_t` SELinux user, which is authorized
+    to the `unconfined_r` role, which in turn is authorized to run processes in the
+    `unconfined_t` domain.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，根用户映射到`unconfined_t` SELinux用户，该用户被授权`unconfined_r`角色，该角色又被授权在`unconfined_t`域中运行进程。
+- en: 'We already saw that there are several SELinux users available in the system.
+    Let''s discuss some of them here:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经看到系统中有几个SELinux用户可用。让我们在这里讨论其中一些：
+- en: '`guest_u`: This type of user doesn''t have access to the X Windows system or
+    networking and also cannot execute the `su` or `sudo` commands'
+  id: totrans-233
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`guest_u`：这种类型的用户无法访问X Windows系统或网络，也无法执行`su`或`sudo`命令'
+- en: '`xguest_u`: This type of user has access to GUI and the network via the browser
+    only'
+  id: totrans-234
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`xguest_u`：这种类型的用户只能通过浏览器访问GUI和网络'
+- en: '`user_u`: This type of user has general access to GUI and the network but cannot
+    run `su` or `sudo`'
+  id: totrans-235
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`user_u`：这种类型的用户可以访问GUI和网络，但不能运行`su`或`sudo`'
+- en: '`staff_u`: This is the same as `user_u` except that they can run `sudo`.'
+  id: totrans-236
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`staff_u`：与`user_u`相同，只是他们可以运行`sudo`。'
+- en: '`system_u`: This is meant for system services and are not mapped with regular
+    user accounts'
+  id: totrans-237
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`system_u`：这是为系统服务而设计的，不与常规用户帐户映射'
+- en: Restricting access to su or sudo
+  id: totrans-238
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 限制对su或sudo的访问
+- en: 'We can restrict a user from running the `su` or `sudo` commands by changing
+    the user''s SELinux user mapping like this:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过更改用户的SELinux用户映射来限制用户运行`su`或`sudo`命令，如下所示：
+- en: '[PRE51]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: The preceding command will change the Linux `test` user's mapping to `user_u`
+    and will not allow the `su` or `sudo` commands access.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述命令将更改Linux `test`用户的映射为`user_u`，并且不允许`su`或`sudo`命令的访问。
+- en: Note
+  id: totrans-242
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: This will only take effect when the user is not logged in.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这只有在用户未登录时才会生效。
+- en: Restricting permissions to run scripts
+  id: totrans-244
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 限制运行脚本的权限
+- en: 'To restrict the Linux `test` user''s ability to run scripts we have to do two
+    things. First, we change the user''s mapping to `guest_u`, the same way as we
+    did previously:'
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要限制Linux `test`用户运行脚本的能力，我们必须做两件事。首先，我们将用户的映射更改为`guest_u`，与之前的操作方式相同：
+- en: '[PRE52]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'By default, SELinux allows users mapped to `guest_t` to execute scripts from
+    their home directories. We can confirm the same using the following command:'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，SELinux允许映射到`guest_t`的用户从其主目录执行脚本。我们可以使用以下命令确认相同的情况：
+- en: '[PRE53]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'It will show that `guest_exec_content` is on. So, the second step is that we
+    disable the `guest_exec_content` using this:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它将显示`guest_exec_content`已启用。因此，第二步是我们使用以下命令禁用`guest_exec_content`：
+- en: '[PRE54]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: Now, the test user for whom we changed the mapping won't be able to execute
+    any scripts even if he has full access to his home directory and the files that
+    he creates there.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们更改了映射的测试用户将无法执行任何脚本，即使他对自己的主目录和在那里创建的文件有完全访问权限。
+- en: 'If we do a grep to see what SELinux is preventing `/var/log/messages`, it will
+    show us the access denial along with an alert ID. We can note the alert ID and
+    run:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们使用grep查看SELinux正在阻止`/var/log/messages`，它将向我们显示访问拒绝以及警报ID。我们可以记录警报ID并运行：
+- en: '[PRE55]'
+  id: totrans-253
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: It will show us full details about the access denial along with some suggestions
+    to remove it as well.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它将向我们显示有关访问拒绝的详细信息以及一些建议来删除它。
+- en: Restricting access to services
+  id: totrans-255
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 限制对服务的访问
+- en: 'Assume we have a user admin with access to `sudo` so that it can run commands
+    with `sudo` to start and stop services like `httpd`. Now, even if the user has
+    `sudo` accesses, we can stop him from management access to services by changing
+    his user mapping to `user_u`, the same way we did before:'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们有一个名为admin的用户，具有`sudo`访问权限，因此可以使用`sudo`运行命令来启动和停止`httpd`等服务。现在，即使用户具有`sudo`访问权限，我们也可以通过将其用户映射更改为`user_u`来阻止他管理对服务的访问，与之前的操作方式相同：
+- en: '[PRE56]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: This will restrict the user admin from restarting or stopping services.
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将限制用户admin重新启动或停止服务。
+- en: 'We can verify the `user_u` access info by running the `seinfo` command as the
+    root:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过以root身份运行`seinfo`命令来验证`user_u`的访问信息：
+- en: '[PRE57]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: '![Restricting access to services](img/B04674_02_29.jpg)'
+  id: totrans-261
+  prefs: []
+  type: TYPE_IMG
+  zh: '![限制对服务的访问](img/B04674_02_29.jpg)'
+- en: This output shows the roles `user_u` can have access to; they are `object_r`
+    and `user_r`.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此输出显示`user_u`可以访问的角色；它们是`object_r`和`user_r`。
+- en: 'Let''s go one step further and run the same command to find out what domains
+    the `user_r` role is authorized to enter:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们再进一步，并运行相同的命令来查找`user_r`角色被授权进入哪些域：
+- en: '[PRE58]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: '![Restricting access to services](img/B04674_02_30.jpg)'
+  id: totrans-265
+  prefs: []
+  type: TYPE_IMG
+  zh: '![限制对服务的访问](img/B04674_02_30.jpg)'
+- en: 'There is a long list of domains the role can enter. Now, let''s find out whether
+    the role can enter the domain `httpd_t` by just filtering the output with grep:'
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 角色可以进入的域有一个很长的列表。现在，让我们通过使用grep过滤输出来找出角色是否可以进入域`httpd_t`：
+- en: '[PRE59]'
+  id: totrans-267
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: This will return nothing, which means that the `user_r` role is not authorized
+    to enter the `httpd_t` domain, and therefore, it is unable to start the `httpd`
+    process or daemon.
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将返回空，这意味着`user_r`角色未被授权进入`httpd_t`域，因此无法启动`httpd`进程或守护程序。
+- en: SELinux audit logs
+  id: totrans-269
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SELinux审计日志
+- en: 'In CentOS 7, we should look into two files for SELinux-related errors and alerts;
+    they are as follows:'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在CentOS 7中，我们应该查看两个与SELinux相关的错误和警报文件；它们如下：
+- en: '`/var/log/audit/audit.log`'
+  id: totrans-271
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: /var/log/audit/audit.log
+- en: '`/var/log/messages`'
+  id: totrans-272
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: /var/log/messages
+- en: SELinux troubleshooting
+  id: totrans-273
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SELinux故障排除
+- en: 'SELinux comes with some tools that are very useful for checking errors and
+    troubleshooting. We already saw one, `sealert -l <alert id>`, where we gather
+    the alert ID by looking into `/var/log/messages`. There is another command called
+    `ausearch`, which is also very helpful in checking errors if the `auditd` service
+    is running, which is as follows:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SELinux配备了一些非常有用的工具，用于检查错误和故障排除。我们已经看到其中一个，`sealert -l <alert id>`，我们通过查看`/var/log/messages`来收集警报ID。还有另一个命令叫做`ausearch`，如果`auditd`服务正在运行，它也非常有助于检查错误，如下所示：
+- en: '[PRE60]'
+  id: totrans-275
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: Summary
+  id: totrans-276
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we looked into various aspects of SELinux and how to configure
+    it; we also demonstrated how to use it according to our needs. However, be cautious
+    and never test SELinux on a production system. It is better to use a production
+    replica and test everything there first. The SELinux facility will enhance the
+    security of a system when it's properly configured, but it's best used when strict
+    security controls are necessary and only when it is deployed with care.
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们研究了SELinux的各个方面以及如何配置它；我们还演示了如何根据我们的需求使用它。然而，要小心，永远不要在生产系统上测试SELinux。最好使用生产副本并首先在那里测试所有内容。当系统正确配置时，SELinux设施将增强系统的安全性，但最好在需要严格安全控制时使用，并且只有在小心部署时才使用。
+- en: In the next chapter, we will look at how Linux can be used for a variety of
+    purposes.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将看看Linux如何用于各种目的。

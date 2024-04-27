@@ -1,0 +1,1614 @@
+- en: Hierarchical Structures
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 分层结构
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Creating hierarchical categories with django-mptt
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用django-mptt创建分层类别
+- en: Creating a category administration interface with django-mptt-admin
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用django-mptt-admin创建一个类别管理界面
+- en: Rendering categories in a template with django-mptt
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在模板中呈现类别与django-mptt
+- en: Using a single selection field to choose a category in forms with django-mptt
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在表单中使用单选字段选择类别与django-mptt
+- en: Using a checkbox list to choose multiple categories in forms with django-mptt
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在表单中使用复选框列表选择多个类别与django-mptt
+- en: Creating hierarchical categories with django-treebeard
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用django-treebeard创建分层类别
+- en: Creating a basic category administration interface with django-treebeard
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用django-treebeard创建基本的类别管理界面
+- en: Introduction
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍
+- en: Whether you build your own forum, threaded comments, or categorization system,
+    there will be a moment when you need to save hierarchical structures in a database.
+    Although the tables of relational databases (such as MySQL and PostgreSQL) are
+    flat, there is a fast and effective way to store hierarchical structures. It is
+    called **Modified Preorder Tree Traversal** (**MPTT**). MPTT allows you to read
+    tree structures without recursive calls to the database.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 无论你是构建自己的论坛、分级评论还是分类系统，总会有一个时刻，你需要在数据库中保存分层结构。尽管关系数据库（如MySQL和PostgreSQL）的表是平面的，但有一种快速有效的方法可以存储分层结构。它被称为**修改的先序树遍历**（**MPTT**）。MPTT允许你在不需要递归调用数据库的情况下读取树结构。
+- en: 'Firstly, let''s get familiar with the terminology of tree structures. A tree
+    data structure is a nested collection of **nodes**, starting at the **root** node
+    and with references to **child** nodes. There are restrictions: for instance,
+    no node should reference back to create a loop and no reference should be duplicated.
+    The following are some other terms to remember:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们熟悉树结构的术语。树数据结构是从**根**节点开始，具有对**子节点**的引用的嵌套集合。有一些限制：例如，没有节点应该引用回来创建一个循环，也不应该重复引用。以下是一些其他要记住的术语：
+- en: A parent is any node that has references to child nodes.
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 父节点是具有对子节点的引用的任何节点。
+- en: '**Descendants** are nodes that can be reached by recursively traversing from
+    a parent to its children. Therefore, a node''s descendants will be its child,
+    the child''s children, and so on.'
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**后代**是通过从父节点递归遍历到其子节点可以到达的节点。因此，一个节点的后代将是它的子节点、子节点的子节点等等。'
+- en: '**Ancestors** are nodes that can be reached by recursively traversing from
+    a child to its parent. Therefore, a node''s ancestors will be its parent, the
+    parent''s parent, and so on up to the root.'
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**祖先**是通过从子节点递归遍历到其父节点可以到达的节点。因此，一个节点的祖先将是其父节点、父节点的父节点等等，一直到根节点。'
+- en: '**Siblings** are nodes with the same parent.'
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**兄弟节点**是具有相同父节点的节点。'
+- en: A **leaf** is a node without children.
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**叶子**是没有子节点的节点。'
+- en: 'Now, I''ll explain how MPTT works. Imagine laying out your tree horizontally
+    with the root node at the top. Each node in the tree has left and right values.
+    Imagine them as small left and right handles on the left- and right-hand sides
+    of the node. Then, you walk (traverse) around the tree counterclockwise, starting
+    from the root node, and mark each left or right value that you find with a number:
+    1, 2, 3, and so on. It will look similar to the following diagram:'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我将解释MPTT的工作原理。想象一下，将树水平布置，根节点在顶部。树中的每个节点都有左右值。想象它们是节点左右两侧的小手柄。然后，你从根节点开始，逆时针绕树行走（遍历），并用数字标记每个左右值：1、2、3等等。它看起来类似于以下图表：
+- en: '![](img/4db12ec1-4fb9-4f86-9cf4-0daa2f13d6cb.png)'
+  id: totrans-18
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/4db12ec1-4fb9-4f86-9cf4-0daa2f13d6cb.png)'
+- en: In the database table of this hierarchical structure, you have a title, left
+    value, and right value for each node.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个分层结构的数据库表中，每个节点都有标题、左值和右值。
+- en: Now, if you want to get the **subtree** of the **B** node with **2** as the
+    left value and **11** as the right value, you will have to select all of the nodes
+    that have a left value between **2** and **11**. They are **C**, **D**, **E**,
+    and **F**.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你想获取**B**节点的**子树**，左值为**2**，右值为**11**，你需要选择所有左值在**2**和**11**之间的节点。它们是**C**、**D**、**E**和**F**。
+- en: To get all of the **ancestors** of the **D** node with **5** as the left value
+    and **10** as the right value, you have to select all of the nodes that have a
+    left value that is less than **5** and a right value that is more than **10**.
+    These would be **B** and **A**.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要获取**D**节点的所有**祖先**，左值为**5**，右值为**10**，你必须选择所有左值小于**5**且右值大于**10**的节点。这些将是**B**和**A**。
+- en: 'To get the number of the **descendants** for a node, you can use the following
+    formula:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要获取节点的**后代**数量，可以使用以下公式：
+- en: '*descendants = (right - left - 1) / 2*'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*后代 = (右值 - 左值 - 1) / 2*'
+- en: 'Therefore, the number of **descendants** for the **B** node can be calculated
+    as shown in the following formula:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，**B**节点的**后代**数量可以根据以下公式计算：
+- en: '*(11 - 2 - 1) / 2 = 4*'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*(11 - 2 - 1) / 2 = 4*'
+- en: If we want to attach the **E** node to the **C** node, we will have to update
+    the left and right values only for the nodes of their first common ancestor, the
+    **B** node. Then, the **C** node will still have **3** as the left value; the
+    **E** node will get **4** as the left value and **5** as the right value; the
+    right value of the **C** node will become **6**; the left value of the **D** node
+    will become **7**; the left value of the **F** node will stay at **8**; the others
+    will also remain the same.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们想把**E**节点附加到**C**节点，我们只需要更新它们的第一个共同祖先**B**节点的左右值。然后，**C**节点的左值仍然是**3**；**E**节点的左值将变为**4**，右值为**5**；**C**节点的右值将变为**6**；**D**节点的左值将变为**7**；**F**节点的左值将保持为**8**；其他节点也将保持不变。
+- en: Similarly, there are other tree-related operations with nodes in MPTT. It might
+    be too complicated to manage all of this by yourself for every hierarchical structure
+    in your project. Luckily, there is a Django app called `django-mptt` that has
+    a long history of handling these algorithms and provides a straightforward API
+    to handle the tree structures. Another app, `django-treebeard`, has also been
+    tried and tested and gained additional traction as a powerful alternative when
+    it replaced MPTT in django CMS 3.1\. In this chapter, you will learn how to use
+    these helper apps.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类似地，MPTT中还有其他与节点相关的树操作。对于项目中的每个分层结构自己管理所有这些可能太复杂了。幸运的是，有一个名为`django-mptt`的Django应用程序，它有很长的历史来处理这些算法，并提供了一个简单的API来处理树结构。另一个应用程序`django-treebeard`也经过了尝试和测试，并在取代MPTT成为django
+    CMS 3.1的强大替代品时获得了额外的关注。在本章中，您将学习如何使用这些辅助应用程序。
+- en: Technical requirements
+  id: totrans-28
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: You will need the latest stable version of Python 3, MySQL, or PostgreSQL and
+    a Django project with a virtual environment.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将需要Python 3的最新稳定版本、MySQL或PostgreSQL以及一个带有虚拟环境的Django项目。
+- en: You can find all of the code for this chapter at the `ch08` directory of the
+    GitHub repository, at: [https://github.com/PacktPublishing/Django-3-Web-Development-Cookbook-Fourth-Edition](https://github.com/PacktPublishing/Django-3-Web-Development-Cookbook-Fourth-Edition).
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在GitHub存储库的`ch08`目录中找到本章的所有代码，网址为：[https://github.com/PacktPublishing/Django-3-Web-Development-Cookbook-Fourth-Edition](https://github.com/PacktPublishing/Django-3-Web-Development-Cookbook-Fourth-Edition)。
+- en: Creating hierarchical categories with django-mptt
+  id: totrans-31
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用django-mptt创建分层类别
+- en: To illustrate how to deal with MPTT, we will build on top of the `ideas` app
+    from [Chapter 3](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*, Forms and Views*.
+    In our changes, we will replace the categories with a hierarchical `Category`
+    model and update the `Idea` model to have a many-to-many relationship with the
+    categories. Alternatively, you can create the app from fresh, using only the content
+    shown here, to implement a very basic version of the `Idea` model from scratch.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了说明如何处理MPTT，我们将在[第3章](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*，表单和视图*中的`ideas`应用程序的基础上构建。在我们的更改中，我们将使用分层的`Category`模型替换类别，并更新`Idea`模型以与类别具有多对多的关系。或者，您可以从头开始创建应用程序，仅使用此处显示的内容，以实现`Idea`模型的非常基本的版本。
+- en: Getting ready
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'To get started, perform the following steps:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要开始，请执行以下步骤：
+- en: 'Install `django-mptt` in your virtual environment using the following command:'
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令在虚拟环境中安装`django-mptt`：
+- en: '[PRE0]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Create the `categories` and `ideas` apps if you have not done so already. Add
+    those apps as well as `mptt` to `INSTALLED_APPS` in the settings, as follows:'
+  id: totrans-37
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果尚未创建`categories`和`ideas`应用程序，请创建它们。将这些应用程序以及`mptt`添加到设置中的`INSTALLED_APPS`中，如下所示：
+- en: '[PRE1]'
+  id: totrans-38
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: How to do it...
+  id: totrans-39
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作步骤
+- en: 'We will create a hierarchical `Category` model and tie it to the `Idea` model,
+    which will have a many-to-many relationship with the categories, as follows:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建一个分层的`Category`模型，并将其与`Idea`模型关联，后者将与类别具有多对多的关系，如下所示：
+- en: Open the `models.py` file in the `categories` app and add a `Category` model
+    that extends `mptt.models.MPTTModel` and
+  id: totrans-41
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`categories`应用程序的`models.py`文件中添加一个扩展`mptt.models.MPTTModel`的`Category`模型
+- en: '`CreationModificationDateBase`, defined in [Chapter 2](4d961db0-e9dd-4449-b140-41ea147bccb5.xhtml)*,
+    Models and Database Structure*. In addition to the fields coming from the mixins,
+    the `Category` model will need to have a `parent` field of the `TreeForeignKey`
+    type and a `title` field:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`CreationModificationDateBase`，在[第2章](4d961db0-e9dd-4449-b140-41ea147bccb5.xhtml)*，模型和数据库结构*中定义。除了来自混合类的字段之外，`Category`模型还需要具有`TreeForeignKey`类型的`parent`字段和`title`字段：'
+- en: '[PRE2]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Update the `Idea` model to include the `categories` field of the `TreeManyToManyField`
+    type:'
+  id: totrans-44
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 更新`Idea`模型以包括`TreeManyToManyField`类型的`categories`字段：
+- en: '[PRE3]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Update your database by making migrations and running them:'
+  id: totrans-46
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过进行迁移并运行它们来更新您的数据库：
+- en: '[PRE4]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: How it works...
+  id: totrans-48
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理
+- en: 'The `MPTTModel` mixin will add the `tree_id`, `lft`, `rght`, and `level` fields
+    to the `Category` model:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`MPTTModel`混合类将向`Category`模型添加`tree_id`、`lft`、`rght`和`level`字段：'
+- en: The `tree_id` field is used as you can have multiple trees in the database table.
+    In fact, each root category is saved in a separate tree.
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`tree_id`字段用作数据库表中可以有多个树的标识。实际上，每个根类别都保存在单独的树中。'
+- en: The `lft` and `rght` fields store the left and right values used in the MPTT
+    algorithms.
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`lft`和`rght`字段存储MPTT算法中使用的左值和右值。'
+- en: The `level` field stores the node's depth in the tree. The root node will be
+    level 0.
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`level`字段存储树中节点的深度。根节点的级别将为0。'
+- en: Through the `order_insertion_by` meta option specific to MPTT, we ensure that
+    when new categories are added, they stay in alphabetical order by title.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过MPTT特有的`order_insertion_by`元选项，我们确保添加新类别时，它们按标题的字母顺序排列。
+- en: 'Besides new fields, the `MPTTModel` mixin adds methods to navigate through
+    the tree structure similar to how you navigate through DOM elements using JavaScript.
+    These methods are as follows:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了新字段之外，`MPTTModel`混合类还添加了用于浏览树结构的方法，类似于使用JavaScript浏览DOM元素。这些方法如下：
+- en: If you want to access the ancestors of a category, use the following code. Here,
+  id: totrans-55
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果要访问类别的祖先，请使用以下代码。在这里，
+- en: 'the `ascending` parameter defines from which direction to read the nodes (the
+    default is `False`), and the `include_self` parameter defines whether to include
+    the category itself in `QuerySet` (the default is `False`):'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ascending`参数定义从哪个方向读取节点（默认为`False`），`include_self`参数定义是否在`QuerySet`中包含类别本身（默认为`False`）：'
+- en: '[PRE5]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'To just get the root category, use the following code:'
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要仅获取根类别，请使用以下代码：
+- en: '[PRE6]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'If you want to get the direct children of a category, use the following code:'
+  id: totrans-60
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果要获取类别的直接子类，请使用以下代码：
+- en: '[PRE7]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'To get all of the descendants of a category, use the following code. Here,
+    the `include_self` parameter again defines whether or not to include the category
+    itself in `QuerySet`:'
+  id: totrans-62
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要获取类别的所有后代，请使用以下代码。在这里，`include_self`参数再次定义是否在`QuerySet`中包含类别本身：
+- en: '[PRE8]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'If you want to get the descendant count without querying the database, use
+    the following code:'
+  id: totrans-64
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果要获取后代计数而不查询数据库，请使用以下代码：
+- en: '[PRE9]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'To get all siblings, call the following method:'
+  id: totrans-66
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要获取所有兄弟节点，请调用以下方法：
+- en: '[PRE10]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Root categories are considered siblings of other root categories.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根类别被视为其他根类别的兄弟节点。
+- en: 'To just get the previous and next siblings, call the following methods:'
+  id: totrans-69
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要只获取前一个和后一个兄弟节点，请调用以下方法：
+- en: '[PRE11]'
+  id: totrans-70
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Also, there are methods to check whether the category is root, child, or leaf,
+    as follows:'
+  id: totrans-71
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 此外，还有一些方法可以检查类别是根、子还是叶子，如下所示：
+- en: '[PRE12]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: All of these methods can be used either in views, templates, or management commands.
+    If you want to manipulate the tree structure, you can also use the `insert_at()`
+    and `move_to()` methods. In this case, you can read about them and the tree manager
+    methods at [https://django-mptt.readthedocs.io/en/stable/models.html](https://django-mptt.readthedocs.io/en/stable/models.html).
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些方法都可以在视图、模板或管理命令中使用。如果要操作树结构，还可以使用`insert_at()`和`move_to()`方法。在这种情况下，您可以在[https://django-mptt.readthedocs.io/en/stable/models.html](https://django-mptt.readthedocs.io/en/stable/models.html)上阅读有关它们和树管理器方法的信息。
+- en: In the preceding models, we used `TreeForeignKey` and `TreeManyToManyField`.
+    These are similar to `ForeignKey` and `ManyToManyField`, except that they show
+    the choices indented in hierarchies in the administration interface.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的模型中，我们使用了`TreeForeignKey`和`TreeManyToManyField`。这些类似于`ForeignKey`和`ManyToManyField`，只是它们在管理界面中以层次结构缩进显示选择项。
+- en: Also, note that in the `Meta` class of the `Category` model, we order the categories
+    by `tree_id` and then by the `lft` value to show the categories naturally in the
+    tree structure.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要注意，在`Category`模型的`Meta`类中，我们按`tree_id`和`lft`值对类别进行排序，以在树结构中自然显示类别。
+- en: See also
+  id: totrans-76
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Creating a model mixin to handle creation and modification dates* recipe
+    in
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-mptt-admin创建类别管理界面*的说明'
+- en: '[Chapter 2](4d961db0-e9dd-4449-b140-41ea147bccb5.xhtml)*, Models and Database
+    Structure*'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[第2章](4d961db0-e9dd-4449-b140-41ea147bccb5.xhtml)*，模型和数据库结构*'
+- en: The *Creating a category administration interface with django-mptt-admin* recipe
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-mptt创建模型混合以处理创建和修改日期*的说明'
+- en: Creating a category administration interface with django-mptt-admin
+  id: totrans-80
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用django-mptt-admin创建类别管理界面
+- en: The `django-mptt` app comes with a simple model administration mixin that allows
+    you to create a tree structure and list it with indentation. To reorder trees,
+    you need to either create this functionality yourself or use a third-party solution.
+    One app that can help you to create a draggable administration interface for hierarchical
+    models is `django-mptt-admin`. Let's take a look at it in this recipe.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`django-mptt`应用程序配备了一个简单的模型管理混合功能，允许您创建树结构并使用缩进列出它。要重新排序树，您需要自己创建此功能，或者使用第三方解决方案。一个可以帮助您为分层模型创建可拖动的管理界面的应用程序是`django-mptt-admin`。让我们在这个教程中看一下它。'
+- en: Getting ready
+  id: totrans-82
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'First, set up the `categories` app as described in the previous, *Creating
+    hierarchical categories with django-mptt* recipe. Then, we need to install the
+    `django-mptt-admin` app by performing the following steps:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，按照前面*使用django-mptt创建分层类别*的说明设置`categories`应用程序。然后，我们需要通过执行以下步骤安装`django-mptt-admin`应用程序：
+- en: 'Install the app in your virtual environment using the following command:'
+  id: totrans-84
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令在虚拟环境中安装应用程序：
+- en: '[PRE13]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Put it in `INSTALLED_APPS` in the settings, as follows:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将其放在设置中的`INSTALLED_APPS`中，如下所示：
+- en: '[PRE14]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'Make sure that the static files for `django-mptt-admin` are available to your
+    project:'
+  id: totrans-88
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 确保`django-mptt-admin`的静态文件对您的项目可用：
+- en: '[PRE15]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: How to do it...
+  id: totrans-90
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Create an `admin.py` file in which we will define the administration interface
+    for the `Category` model. It will extend `DjangoMpttAdmin` instead of `admin.ModelAdmin`,
+    as follows:'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建一个`admin.py`文件，在其中我们将定义`Category`模型的管理界面。它将扩展`DjangoMpttAdmin`而不是`admin.ModelAdmin`，如下所示：
+- en: '[PRE16]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: How it works...
+  id: totrans-93
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'The administration interface for the categories will have two modes: tree view
+    and grid view. Your tree view will look similar to the following screenshot:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类别的管理界面将有两种模式：树视图和网格视图。您的树视图将类似于以下屏幕截图：
+- en: '![](img/3cf0a708-a606-4aa8-9012-9bec7832fcd1.png)'
+  id: totrans-95
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/3cf0a708-a606-4aa8-9012-9bec7832fcd1.png)'
+- en: 'The tree view uses the **jqTree** jQuery library for node manipulation. You
+    can expand and collapse categories for a better overview. To reorder them or change
+    the dependencies, you can drag and drop the titles in this list view. During reordering,
+    the **User Interface** (**UI**) looks similar to the following screenshot:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 树视图使用**jqTree** jQuery库进行节点操作。您可以展开和折叠类别，以便更好地查看。要重新排序或更改依赖关系，您可以在此列表视图中拖放标题。在重新排序期间，**用户界面**（**UI**）类似于以下屏幕截图：
+- en: '![](img/0b2d02dd-4565-49f8-9d5f-3516d165c675.png)'
+  id: totrans-97
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/0b2d02dd-4565-49f8-9d5f-3516d165c675.png)'
+- en: Note that any usual list-related settings, such as `list_display` or `list_filter`,
+    will be ignored in the tree view. Also, any ordering driven by the `order_insertion_by`
+    meta property will be overridden by manual sorting.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，树视图中将忽略任何常规与列表相关的设置，例如`list_display`或`list_filter`。此外，`order_insertion_by`元属性驱动的任何排序都将被手动排序覆盖。
+- en: 'If you want to filter categories, sort them by a specific field, or apply admin
+    actions, you can switch to the grid view, which shows the default category change
+    list, as in the following screenshot:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果要筛选类别、按特定字段对其进行排序或应用管理操作，可以切换到网格视图，它显示默认的类别更改列表，如以下屏幕截图所示：
+- en: '![](img/af21708a-ced6-4258-8e5a-a78530d4f598.png)'
+  id: totrans-100
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/af21708a-ced6-4258-8e5a-a78530d4f598.png)'
+- en: See also
+  id: totrans-101
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Creating hierarchical categories with django-mptt* recipe
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-mptt创建分层类别*的说明'
+- en: The *Creating a category administration interface with django-treebeard* recipe
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-treebeard创建类别管理界面*的说明'
+- en: Rendering categories in a template with django-mptt
+  id: totrans-104
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用django-mptt在模板中呈现类别
+- en: Once you have created categories in your app, you need to display them hierarchically
+    in a template. The easiest way to do this with MPTT trees, as described in the
+    *Creating hierarchical categories with django-mptt* recipe, is to use the `{%
+    recursetree %}` template tag from the `django-mptt` app. We will show you how
+    to do that in this recipe.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您在应用程序中创建了类别，您需要在模板中以分层方式显示它们。使用MPTT树的最简单方法是使用`django-mptt`应用程序中的`{% recursetree
+    %}`模板标记，如*使用django-mptt创建分层类别*食谱中所述。我们将在这个食谱中向您展示如何做到这一点。
+- en: Getting ready
+  id: totrans-106
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: Make sure you have the `categories` and `ideas` apps. There, your `Idea` model should
+    have many-to-many relation to the `Category` model, as per the *Creating hierarchical
+    categories with django-mptt* recipe. Enter some categories in the database.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保您拥有`categories`和`ideas`应用程序。在那里，您的`Idea`模型应该与`Category`模型有多对多的关系，就像*使用django-mptt创建分层类别*食谱中所述。在数据库中输入一些类别。
+- en: How to do it...
+  id: totrans-108
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Pass `QuerySet` of your hierarchical categories to the template and then use
+    the `{% recursetree %}` template tag as follows:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将您的分层类别的`QuerySet`传递到模板，然后使用`{% recursetree %}`模板标记，如下所示：
+- en: 'Create a view that loads all of the categories and passes them to a template:'
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个视图，加载所有类别并将它们传递到模板：
+- en: '[PRE17]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Create a template with the following content to output the hierarchy of categories:'
+  id: totrans-112
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个模板，其中包含以下内容以输出类别的层次结构：
+- en: '[PRE18]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Create a URL rule to show the view:'
+  id: totrans-114
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个URL规则来显示视图：
+- en: '[PRE19]'
+  id: totrans-115
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: How it works...
+  id: totrans-116
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'The template will be rendered as nested lists, as shown in the following screenshot:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模板将呈现为嵌套列表，如下截图所示：
+- en: '![](img/bb80e578-01f8-4373-831f-f04f41a5b866.png)'
+  id: totrans-118
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/bb80e578-01f8-4373-831f-f04f41a5b866.png)'
+- en: 'The `{% recursetree %}` block template tag takes `QuerySet` of the categories
+    and renders the list using the template content nested within the tag. There are
+    two special variables used here:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`{% recursetree %}`块模板标记接受类别的`QuerySet`并使用标记内嵌的模板内容呈现列表。这里使用了两个特殊变量：'
+- en: The `node` variable is an instance of the `Category` model whose fields or methods
+    can be used to add specific CSS classes or HTML5 `data-*` attributes for JavaScript,
+    such as `{{ node.get_descendent_count }}`, `{{ node.level }}`, or `{{ node.is_root
+    }}`.
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`node`变量是`Category`模型的一个实例，其字段或方法可用于添加特定的CSS类或HTML5`data-*`属性，例如`{{ node.get_descendent_count
+    }}`、`{{ node.level }}`或`{{ node.is_root }}`。'
+- en: Secondly, we have a `children` variable that defines where the rendered child
+    nodes of the current category will be placed.
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 其次，我们有一个`children`变量，用于定义当前类别的渲染子节点将放置在何处。
+- en: There's more...
+  id: totrans-122
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: If your hierarchical structure is very complex, with more than 20 levels, it
+    is recommended to use the `{% full_tree_for_model %}` and `{% drilldown_tree_for_node
+    %}` iterative tags or the non-recursive `tree_info` template filter.
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您的分层结构非常复杂，超过20个级别，建议使用非递归的`tree_info`模板过滤器或`{% full_tree_for_model %}`和`{%
+    drilldown_tree_for_node %}`迭代标记。
+- en: For more information on how to do this, refer to the official documentation
+    at [https://django-mptt.readthedocs.io/en/latest/templates.html#iterative-tags](https://django-mptt.readthedocs.io/en/latest/templates.html#iterative-tags)[.](https://django-mptt.readthedocs.io/en/latest/templates.html#iterative-tags)
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关如何执行此操作的更多信息，请参阅官方文档[https://django-mptt.readthedocs.io/en/latest/templates.html#iterative-tags](https://django-mptt.readthedocs.io/en/latest/templates.html#iterative-tags)[.](https://django-mptt.readthedocs.io/en/latest/templates.html#iterative-tags)
+- en: See also
+  id: totrans-125
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Using HTML5 data attributes* recipe in [Chapter 4](707758de-0bea-479d-8e79-3e4de6c956d5.xhtml)*,
+    Templates and JavaScript*
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在[第4章](707758de-0bea-479d-8e79-3e4de6c956d5.xhtml)*的*使用HTML5数据属性*食谱，模板和JavaScript*'
+- en: The *Creating hierarchical categories with django-mptt* recipe
+  id: totrans-127
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-mptt创建分层类别*食谱'
+- en: The *Creating hierarchical categories with django-treebeard* recipe
+  id: totrans-128
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-treebeard创建分层类别*食谱'
+- en: The *Using a single selection field to choose a category in forms with django-mptt*
+    recipe
+  id: totrans-129
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在使用django-mptt在表单中选择类别的单选字段*食谱'
+- en: Using a single selection field to choose a category in forms with django-mptt
+  id: totrans-130
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在表单中使用单选字段来选择类别与django-mptt
+- en: What happens if you want to show category selection in a form? How will the
+    hierarchy be presented? In `django-mptt`, there is a special `TreeNodeChoiceField`
+    form field that you can use to show the hierarchical structures in a selected
+    field. Let's take a look at how to do this.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想在表单中显示类别选择，会发生什么？层次结构将如何呈现？在`django-mptt`中，有一个特殊的`TreeNodeChoiceField`表单字段，您可以使用它来在选定字段中显示分层结构。让我们看看如何做到这一点。
+- en: Getting ready
+  id: totrans-132
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: We will start with the `categories` and `ideas` apps that we defined in the
+    previous recipes. For this recipe, we will also need `django-crispy-forms`. Have
+    a look at how to install it in the *Creating a form layout with django-crispy-forms*
+    recipe in [Chapter 3](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*, Forms and
+    Views*.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从前面的食谱中定义的`categories`和`ideas`应用程序开始。对于这个食谱，我们还需要`django-crispy-forms`。查看如何在[第3章](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*的*使用django-crispy-forms创建表单布局*食谱中安装它。
+- en: How to do it...
+  id: totrans-134
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Let''s enhance the filter form for `ideas` that we created in the *Filtering
+    object lists* recipe in [Chapter 3](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*,
+    Forms and Views*, by adding a field for filtering by category:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过在[第3章](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*的*表单和视图*中创建的`ideas`的过滤对象列表的*过滤对象列表*食谱，添加一个按类别进行过滤的字段。
+- en: 'In the `forms.py` file of the `ideas` app, create a form with a category field
+    as follows:'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`ideas`应用程序的`forms.py`文件中，创建一个带有类别字段的表单，如下所示：
+- en: '[PRE20]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'We should already have created `IdeaListView`, an associated URL rule, and
+    the `idea_list.html` template to show this form. Make sure to render the filter
+    form in the template using the `{% crispy %}` template tag, as follows:'
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们应该已经创建了`IdeaListView`，一个相关的URL规则和`idea_list.html`模板来显示此表单。确保在模板中使用`{% crispy
+    %}`模板标记呈现过滤表单，如下所示：
+- en: '[PRE21]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: How it works...
+  id: totrans-140
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'The category selection drop-down menu will look similar to the following:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类别选择下拉菜单将类似于以下内容：
+- en: '![](img/0a76c13c-f012-4740-945f-f1b1b723f074.png)'
+  id: totrans-142
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/0a76c13c-f012-4740-945f-f1b1b723f074.png)'
+- en: '`TreeNodeChoiceField` acts like `ModelChoiceField`; however, it shows hierarchical
+    choices as indented. By default, `TreeNodeChoiceField` represents each deeper
+    level prefixed by three dashes, `---`. In our example, we have changed the level
+    indicator to be four non-breaking spaces (the `&nbsp;` HTML entities) by passing
+    the `level_indicator` parameter to the field. To ensure that the non-breaking
+    spaces aren''t escaped, we use the `mark_safe()` function.'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`TreeNodeChoiceField`的作用类似于`ModelChoiceField`；但是，它显示缩进的分层选择。默认情况下，`TreeNodeChoiceField`表示每个更深层级都以三个破折号`---`为前缀。在我们的示例中，我们通过将`level_indicator`参数传递给字段，将级别指示器更改为四个不间断空格（`&nbsp;`
+    HTML实体）。为了确保不间断空格不被转义，我们使用`mark_safe()`函数。'
+- en: See also
+  id: totrans-144
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Rendering categories in a template with django-mptt* recipe
+  id: totrans-145
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在模板中使用django-mptt呈现类别*食谱'
+- en: The *Using a checkbox list to choose multiple categories in forms with django-mptt*
+    recipe
+  id: totrans-146
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在表单中使用checkbox列表来选择多个类别，使用django-mptt*食谱'
+- en: Using a checkbox list to choose multiple categories in forms with django-mptt
+  id: totrans-147
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在表单中使用checkbox列表来选择多个类别，使用django-mptt
+- en: When one or more categories need to be selected at once in a form, you can use
+    the `TreeNodeMultipleChoiceField` multiple selection field that is provided by
+    `django-mptt`. However, multiple selection fields (for example, `<select multiple>`)
+    are not very user-friendly from an interface point of view, as the user needs
+    to scroll and hold control or command keys while clicking to make multiple choices.
+    Especially when there is a fairly large number of items to choose from, and the
+    user wants to select several at once, or the user has accessibility handicaps,
+    such as poor motor control, this can lead to a really awful user experience. A
+    much better approach is to provide a checkbox list from which the user can choose
+    categories. In this recipe, we will create a field that allows you to show the
+    hierarchical tree structure as indented checkboxes in the form.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当需要一次选择一个或多个类别时，可以使用`django-mptt`提供的`TreeNodeMultipleChoiceField`多选字段。然而，多选字段（例如，`<select
+    multiple>`）在界面上并不是非常用户友好，因为用户需要滚动并按住控制键或命令键来进行多次选择。特别是当需要从中选择相当多的项目，并且用户希望一次选择多个项目，或者用户有辅助功能障碍，如运动控制能力差，这可能会导致非常糟糕的用户体验。一个更好的方法是提供一个复选框列表，用户可以从中选择类别。在这个食谱中，我们将创建一个允许你在表单中显示分层树结构的缩进复选框的字段。
+- en: Getting ready
+  id: totrans-149
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: We will start with the `categories` and `ideas` apps that we defined in the
+    previous recipes and the `core` app, which you should have in your project.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从我们之前定义的`categories`和`ideas`应用程序以及你的项目中应该有的`core`应用程序开始。
+- en: How to do it...
+  id: totrans-151
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作步骤...
+- en: To render an indented list of categories with checkboxes, we will create and
+    use a new `MultipleChoiceTreeField` form field and create an HTML template for
+    this field.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了呈现带复选框的缩进类别列表，我们将创建并使用一个新的`MultipleChoiceTreeField`表单字段，并为该字段创建一个HTML模板。
+- en: 'The specific template will be passed to the `crispy_forms` layout in the form.
+    To do this, perform the following steps:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 特定模板将传递给表单中的`crispy_forms`布局。为此，请执行以下步骤：
+- en: 'In the `core` app, add a `form_fields.py` file and create a `MultipleChoiceTreeField`
+    form field that extends `ModelMultipleChoiceField`, as follows:'
+  id: totrans-154
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`core`应用程序中，添加一个`form_fields.py`文件，并创建一个扩展`ModelMultipleChoiceField`的`MultipleChoiceTreeField`表单字段，如下所示：
+- en: '[PRE22]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Use the new field with the categories to choose from in a new form for idea
+    creation. Also, in the form layout, pass a custom template to the `categories`
+    field, as shown in the following:'
+  id: totrans-156
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在新的想法创建表单中使用带有类别选择的新字段。此外，在表单布局中，将自定义模板传递给`categories`字段，如下所示：
+- en: '[PRE23]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Create a template for a Bootstrap-style checkbox list based on the `crispy`
+    forms template, `bootstrap4/layout/checkboxselectmultiple.html`, as shown in the
+    following:'
+  id: totrans-158
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个基于`crispy`表单模板`bootstrap4/layout/checkboxselectmultiple.html`的Bootstrap风格复选框列表的模板，如下所示：
+- en: '[PRE24]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Create a new view for adding an idea, using the form we just created:'
+  id: totrans-160
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个新的视图来添加一个想法，使用我们刚刚创建的表单：
+- en: '[PRE25]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'Add the associated template to show the form with the `{% crispy %}` template
+    tag, whose usage you can learn more about in the *Creating a form layout with
+    django-crispy-forms* recipe in [Chapter 3](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*,
+    Forms and Views*:'
+  id: totrans-162
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将相关模板添加到显示带有`{% crispy %}`模板标记的表单中，你可以在[第3章](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*，表单和视图*中了解更多关于其用法的内容：
+- en: '[PRE26]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'We also need a URL rule pointing to the new view, as follows:'
+  id: totrans-164
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们还需要一个指向新视图的URL规则，如下所示：
+- en: '[PRE27]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Add rules to your CSS file to indent the labels using the classes generated
+    in the checkbox tree field template, such as `.level-0`, `.level-1`, and `.level-2`,
+    by setting the `margin-left` parameter. Make sure that you have a reasonable amount
+    of these CSS classes for the expected maximum depth of trees in your context,
+    as follows:'
+  id: totrans-166
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在CSS文件中添加规则，使用复选框树字段模板中生成的类（如`.level-0`、`.level-1`和`.level-2`），通过设置`margin-left`参数来缩进标签。确保你的CSS类有合理数量，以适应上下文中树的预期最大深度，如下所示：
+- en: '[PRE28]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: How it works...
+  id: totrans-168
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: 'As a result, we get the following form:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果如下，我们得到以下表单：
+- en: '![](img/b7c8f727-c145-45f4-863a-a8805faf30ec.png)'
+  id: totrans-170
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/b7c8f727-c145-45f4-863a-a8805faf30ec.png)'
+- en: Contrary to the default behavior of Django, which hardcodes field generation
+    in Python code, the `django-crispy-forms` app uses templates to render the fields.
+    You can browse them under `crispy_forms/templates/bootstrap4` and copy some of
+    them to an analogous path in your project's template directory to overwrite them
+    when necessary.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与Django的默认行为相反，后者在Python代码中硬编码字段生成，`django-crispy-forms`应用程序使用模板来呈现字段。你可以在`crispy_forms/templates/bootstrap4`下浏览它们，并在必要时将其中一些复制到项目模板目录的类似路径下以覆盖它们。
+- en: In our idea creation and editing form, we pass a custom template for the `categories`
+    field that will add the `.level-*` CSS classes to the `<label>` tag, wrapping
+    the checkboxes. One problem with the normal `CheckboxSelectMultiple` widget is
+    that when rendered, it only uses choice values and choice texts, whereas we need
+    other properties of the category, such as the depth level. To solve this, we also
+    created a custom `MultipleChoiceTreeField` form field, which extends `ModelMultipleChoiceField`
+    and overrides the `label_from_instance()` method to return the category instance
+    itself, instead of its Unicode representation. The template for the field looks
+    complicated; however, it is mostly a refactored multiple checkbox field template
+    (`crispy_forms/templates/bootstrap4/layout/checkboxselectmultiple.html`), with
+    all of the necessary Bootstrap markup. We mainly just made a slight modification
+    to add the `.level-*` CSS classes.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的创意创建和编辑表单中，我们传递了一个自定义模板，用于`categories`字段，该模板将为`<label>`标签添加`.level-*`CSS类，包装复选框。正常的`CheckboxSelectMultiple`小部件的一个问题是，当呈现时，它只使用选择值和选择文本，而我们需要类别的其他属性，例如深度级别。为了解决这个问题，我们还创建了一个自定义的`MultipleChoiceTreeField`表单字段，它扩展了`ModelMultipleChoiceField`并覆盖了`label_from_instance()`方法，以返回类别实例本身，而不是其Unicode表示。字段的模板看起来很复杂；但实际上，它主要是一个重构后的多复选框字段模板（`crispy_forms/templates/bootstrap4/layout/checkboxselectmultiple.html`），其中包含所有必要的Bootstrap标记。我们主要只是稍微修改了一下，添加了`.level-*`CSS类。
+- en: See also
+  id: totrans-173
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Creating a form layout with django-crispy-forms* recipe in [Chapter 3](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml),
+    *Forms and Views*
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第3章](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)中的*使用django-crispy-forms创建表单布局*方法'
+- en: The *Rendering categories in a template with django-mptt* recipe
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-mptt在模板中呈现类别*的方法'
+- en: The *Using a single selection field to choose a category in forms* recipe
+  id: totrans-176
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在表单中使用单个选择字段选择类别*的方法'
+- en: Creating hierarchical categories with django-treebeard
+  id: totrans-177
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用django-treebeard创建分层类别
+- en: 'There are several algorithms for tree structures, each with its own benefits.
+    An app called `django-treebeard`, an alternative to `django-mptt` that is used
+    by django CMS, provides support for three tree forms:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 树结构有几种算法，每种算法都有其自己的优点。一个名为`django-treebeard`的应用程序，它是django CMS使用的`django-mptt`的替代方案，提供了对三种树形表单的支持：
+- en: '**Adjacency List** trees are simple structures, where each node has a parent
+    attribute. Although read operations are fast, this comes at the cost of slow writes.'
+  id: totrans-179
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**邻接列表**树是简单的结构，其中每个节点都有一个父属性。尽管读取操作很快，但这是以写入速度慢为代价的。'
+- en: '**Nested Sets** trees and MPTT trees are the same; they structure nodes as
+    sets nested beneath the parent. This structure also provides very fast read access
+    at the cost of more expensive writing and deletion, particularly when writes require
+    some particular ordering.'
+  id: totrans-180
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**嵌套集**树和MPTT树是相同的；它们将节点结构化为嵌套在父节点下的集合。这种结构还提供了非常快速的读取访问，但写入和删除的成本更高，特别是当写入需要某种特定的排序时。'
+- en: '**Materialized Path** trees are built with each node in the tree having an
+    associated path attribute, which is a string indicating the full path from the
+    root to the node—much like a URL path indicates where to find a particular page
+    on a website. This is the most efficient approach supported.'
+  id: totrans-181
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Materialized Path**树是由树中的每个节点构建的，每个节点都有一个关联的路径属性，该属性是一个字符串，指示从根到节点的完整路径，就像URL路径指示在网站上找到特定页面的位置一样。这是支持的最有效方法。'
+- en: As a demonstration of the support it has for all of these algorithms, we will
+    use `django-treebeard` and its consistent API. We will extend the `categories`
+    app from [Chapter 3](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml), *Forms and Views*.
+    In our changes, we will enhance the `Category` model with support for hierarchy
+    via one of the supported tree algorithms.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为对其支持所有这些算法的演示，我们将使用`django-treebeard`及其一致的API。我们将扩展[第3章](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)中的`categories`应用程序，*表单和视图*。在我们的更改中，我们将通过支持的树算法之一增强`Category`模型的层次结构。
+- en: Getting ready
+  id: totrans-183
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'To get started, perform the following steps:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要开始，请执行以下步骤：
+- en: 'Install `django-treebeard` in your virtual environment using the following
+    command:'
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令在虚拟环境中安装`django-treebeard`：
+- en: '[PRE29]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Create the `categories` and `ideas` apps if you have not done so already. Add
+    the `categories` app as well as `treebeard` to `INSTALLED_APPS` in the settings,
+    as follows:'
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果尚未创建`categories`和`ideas`应用程序，请创建。将`categories`应用程序以及`treebeard`添加到设置中的`INSTALLED_APPS`中，如下所示：
+- en: '[PRE30]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: How to do it...
+  id: totrans-189
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'We will enhance the `Category` model using the **Materialized Path** algorithm,
+    as follows:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用**Materialized Path**算法增强`Category`模型，如下所示：
+- en: 'Open the `models.py` file and update the `Category` model to extend `treebeard.mp_tree.MP_Node`
+    instead of the standard Django model. It should also inherit from `CreationModificationDateMixin`,
+    which we defined in [Chapter 2](4d961db0-e9dd-4449-b140-41ea147bccb5.xhtml), *Models
+    and Database Structure*. In addition to the fields coming from the mixins, the
+    `Category` model will need to have a `title` field:'
+  id: totrans-191
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开`models.py`文件，并更新`Category`模型，以扩展`treebeard.mp_tree.MP_Node`而不是标准的Django模型。它还应该继承自我们在[第2章](4d961db0-e9dd-4449-b140-41ea147bccb5.xhtml)中定义的`CreationModificationDateMixin`。除了从混合中继承的字段外，`Category`模型还需要有一个`title`字段：
+- en: '[PRE31]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'This will require an update to the database, so next, we''ll need to migrate
+    the `categories` app:'
+  id: totrans-193
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 这将需要对数据库进行更新，因此接下来，我们需要迁移`categories`应用程序：
+- en: '[PRE32]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'With the use of abstract model inheritance, treebeard tree nodes can be related
+    to other models using standard relationships. As such, the `Idea` model can continue
+    to have a simple `ManyToManyField` relation to `Category`:'
+  id: totrans-195
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过使用抽象模型继承，treebeard树节点可以使用标准关系与其他模型相关联。因此，`Idea`模型可以继续与`Category`具有简单的`ManyToManyField`关系：
+- en: '[PRE33]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: How it works...
+  id: totrans-197
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'The `MP_Node` abstract model provides the `path`, `depth`, and `numchild` fields,
+    as well as the `steplen`, `alphabet`, and `node_order_by` attributes, to the `Category`
+    model as necessary for constructing the tree:'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`MP_Node`抽象模型为`Category`模型提供了`path`、`depth`和`numchild`字段，以及`steplen`、`alphabet`和`node_order_by`属性，以便根据需要构建树：'
+- en: The `depth` and `numchild` fields provide metadata about a node's location and
+    descendants.
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`depth`和`numchild`字段提供了关于节点位置和后代的元数据。'
+- en: The `path` field is indexed, enabling database queries against it using `LIKE`
+    to be very fast.
+  id: totrans-200
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`path`字段被索引，使得可以使用`LIKE`进行数据库查询非常快。'
+- en: The `path` field is made up of fixed-length encoded segments, where the size
+    of each segment is determined by the `steplen` attribute value (which defaults
+    to 4), and the encoding uses characters found in the given `alphabet` attribute
+    value (defaults to Latin alphanumeric characters).
+  id: totrans-201
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`path`字段由固定长度的编码段组成，每个段的大小由`steplen`属性值确定（默认为4），编码使用`alphabet`属性值中的字符（默认为拉丁字母数字字符）。'
+- en: The `path`, `depth`, and `numchild` fields should be treated as read-only. Also,
+    `steplen`, `alphabet`, and `node_order_by` values should never be changed after
+    saving the first object to a tree; otherwise, the data will be corrupted.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`path`，`depth`和`numchild`字段应被视为只读。此外，`steplen`，`alphabet`和`node_order_by`值在保存第一个对象到树后不应更改；否则，数据将被损坏。'
+- en: 'Besides new fields and attributes, the `MP_Node` abstract class adds methods
+    for navigation through the tree structure. Some important examples of these methods
+    are listed here:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了新字段和属性之外，`MP_Node`抽象类还添加了用于浏览树结构的方法。这些方法的一些重要示例在这里列出：
+- en: 'If you want to get the **ancestors** of a category, which are returned as `QuerySet`
+    of ancestors from the root to the parent of the current node, use the following
+    code:'
+  id: totrans-204
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果要获取类别的**ancestors**，返回从根到当前节点的父代的`QuerySet`，请使用以下代码：
+- en: '[PRE34]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'To just get the `root` category, which is identified by having a depth of 1,
+    use the following code:'
+  id: totrans-206
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要只获取`root`类别，其深度为1，请使用以下代码：
+- en: '[PRE35]'
+  id: totrans-207
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'If you want to get the direct `children` of a category, use the following code:'
+  id: totrans-208
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果要获取类别的直接`children`，请使用以下代码：
+- en: '[PRE36]'
+  id: totrans-209
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'To get all `descendants` of a category, returned as `QuerySet` of all children
+    and their children, and so on, but not including the current node itself, use
+    the following code:'
+  id: totrans-210
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要获取类别的所有后代，返回为所有子代及其子代的`QuerySet`，依此类推，但不包括当前节点本身，请使用以下代码：
+- en: '[PRE37]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'If you want to get just the `descendant` count, use the following code:'
+  id: totrans-212
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果要只获取`descendant`计数，请使用以下代码：
+- en: '[PRE38]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'To get all `siblings`, including the reference node, call the following method:'
+  id: totrans-214
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要获取所有`siblings`，包括参考节点，请调用以下方法：
+- en: '[PRE39]'
+  id: totrans-215
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Root categories are considered to be siblings of other root categories.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根类别被认为是其他根类别的兄弟。
+- en: 'To just get the previous and next `siblings`, call the following methods, where
+    `get_prev_sibling()` will return `None` for the leftmost sibling, as will `get_next_sibling()`
+    for the rightmost one:'
+  id: totrans-217
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 要只获取前一个和后一个`siblings`，请调用以下方法，其中`get_prev_sibling()`将对最左边的兄弟返回`None`，`get_next_sibling()`对最右边的兄弟也是如此：
+- en: '[PRE40]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Also, there are methods to check whether the category is `root`, `leaf`, or
+    related to another node:'
+  id: totrans-219
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 此外，还有方法可以检查类别是否为`root`，`leaf`或与另一个节点相关：
+- en: '[PRE41]'
+  id: totrans-220
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: There's more...
+  id: totrans-221
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: This recipe only scratched the surface of the power of `django-treebeard` and
+    its Materialized Path trees. There are many other methods available for the navigation
+    as well as the construction of trees. In addition, the API for Materialized Path
+    trees is largely identical to those for Nested Sets trees and Adjacency List trees,
+    which are available simply by implementing your model with the `NS_Node` or `AL_Node`
+    abstract classes, respectively, instead of using `MP_Node`.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个食谱只是揭示了`django-treebeard`及其Materialized Path树的强大功能的一部分。还有许多其他可用于导航和树构建的方法。此外，Materialized
+    Path树的API与嵌套集树和邻接列表树的API基本相同，只需使用`NS_Node`或`AL_Node`抽象类之一来实现您的模型，而不是使用`MP_Node`。
+- en: Read the `django-treebeard` API documentation for a complete listing of the
+    available properties and methods for each of the tree implementations at [https://django-treebeard.readthedocs.io/en/latest/api.html](https://django-treebeard.readthedocs.io/en/latest/api.html).
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 阅读`django-treebeard` API文档，了解每个树实现的可用属性和方法的完整列表[https://django-treebeard.readthedocs.io/en/latest/api.html](https://django-treebeard.readthedocs.io/en/latest/api.html)。
+- en: See also
+  id: totrans-224
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: '[Chapter 3](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*, Forms and Views*'
+  id: totrans-225
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第3章](ac26c6a6-3fd1-4b28-8b01-5b3cda40f4f9.xhtml)*，表单和视图*'
+- en: The *Creating hierarchical categories with django-mptt* recipe
+  id: totrans-226
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用django-mptt创建分层类别的食谱
+- en: The *Creating a category administration interface with django-treebeard* recipe
+  id: totrans-227
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用django-treebeard创建类别管理界面的食谱
+- en: Creating a basic category administration interface with django-treebeard
+  id: totrans-228
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用django-treebeard创建基本类别管理界面
+- en: The `django-treebeard` app provides its own `TreeAdmin`, extending from the
+    standard `ModelAdmin`. This allows you to view tree nodes hierarchically in the
+    administration interface, with interface features dependent upon the tree algorithm
+    used. Let's take a look at this in this recipe.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`django-treebeard`应用程序提供了自己的`TreeAdmin`，扩展自标准的`ModelAdmin`。这允许您在管理界面中按层次查看树节点，并且界面功能取决于所使用的树算法。让我们在这个食谱中看看这个。'
+- en: Getting ready
+  id: totrans-230
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: 'First, set up the `categories` app and `django-treebeard` as described in the
+    *Creating hierarchical categories with django-treebeard* recipe earlier in this
+    chapter. Also, make sure that the static files for `django-treebeard` are available
+    to your project:'
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，按照本章前面的*使用django-treebeard创建分层类别*食谱中的说明设置`categories`应用程序和`django-treebeard`。此外，确保`django-treebeard`的静态文件对您的项目可用：
+- en: '[PRE42]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: How to do it...
+  id: totrans-233
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Create an administration interface for the `Category` model from the `categories`
+    app that extends `treebeard.admin.TreeAdmin` instead of `admin.ModelAdmin` and
+    uses a custom form factory, as follows:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为`categories`应用程序中的`Category`模型创建管理界面，该界面扩展了`treebeard.admin.TreeAdmin`而不是`admin.ModelAdmin`，并使用自定义表单工厂，如下所示：
+- en: '[PRE43]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: How it works...
+  id: totrans-236
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: 'The administration interface for the categories will have one of two modes,
+    dependent upon the tree implementation used. For Materialized Path and Nested
+    Sets trees, an advanced UI is provided, as seen here:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类别的管理界面将具有两种模式，取决于所使用的树实现。对于Materialized Path和Nested Sets树，提供了高级UI，如下所示：
+- en: '![](img/3d89ba79-960b-472b-8ab1-99bf15903f13.png)'
+  id: totrans-238
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/3d89ba79-960b-472b-8ab1-99bf15903f13.png)'
+- en: 'This advanced view allows you to expand and collapse categories for a better
+    overview. To reorder them or change the dependencies, you can drag and drop the
+    titles. During reordering, the user interface looks similar to the following screenshot:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此高级视图允许您展开和折叠类别，以便更好地进行概述。要重新排序或更改依赖关系，您可以拖放标题。在重新排序期间，用户界面看起来类似于以下截图：
+- en: '![](img/9dffa371-4bb5-40cb-b241-343cc47067ee.png)'
+  id: totrans-240
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/9dffa371-4bb5-40cb-b241-343cc47067ee.png)'
+- en: 'If you apply filtering or sorting of categories by a specific field, the advanced
+    functionality is disabled, but the more attractive look and feel of the advanced
+    interface remains. We can see this intermediate view here, where only categories
+    created in the Past 7 days are shown:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您对类别按特定字段进行过滤或排序，则高级功能将被禁用，但高级界面的更具吸引力的外观和感觉仍然保留。我们可以在这里看到这种中间视图，只显示过去7天创建的类别：
+- en: '![](img/51dcef77-3e70-4410-9687-7e56147148e2.png)'
+  id: totrans-242
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/51dcef77-3e70-4410-9687-7e56147148e2.png)'
+- en: However, if your tree uses the Adjacency List algorithm, a basic UI is provided
+    with less aesthetic presentation and none of the toggling or reordering functionality
+    given in the advanced UI.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，如果您的树使用邻接列表算法，则提供了基本UI，呈现较少的美学呈现，并且没有在高级UI中提供的切换或重新排序功能。
+- en: More details about `django-treebeard` administration, including a screenshot
+    of the basic interface, can be found in the documentation at: [https://django-treebeard.readthedocs.io/en/latest/admin.html](https://django-treebeard.readthedocs.io/en/latest/admin.html).
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关`django-treebeard`管理的更多细节，包括基本界面的截图，可以在文档中找到：[https://django-treebeard.readthedocs.io/en/latest/admin.html](https://django-treebeard.readthedocs.io/en/latest/admin.html)。
+- en: See also
+  id: totrans-245
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Creating hierarchical categories with django-mptt* recipe
+  id: totrans-246
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-mptt创建分层类别*配方'
+- en: The *Creating hierarchical categories with django-treebeard* recipe
+  id: totrans-247
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-treebeard创建分层类别*配方'
+- en: The *Creating a category administration interface with django-mptt-admin* recipe
+  id: totrans-248
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*使用django-mptt-admin创建类别管理界面*配方'

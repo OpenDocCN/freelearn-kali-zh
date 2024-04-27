@@ -1,0 +1,1225 @@
+- en: Chapter 1. Advanced User Management
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第1章。高级用户管理
+- en: In this chapter, we will introduce some advanced user and group management scenarios
+    along with some examples on how to handle advanced level options such as password
+    aging, managing sudoers, and so on, on a day to day basis. Here, we are assuming
+    that we have already successfully installed CentOS 7 along with a root and user
+    credentials as we do in the traditional format. Also, the command examples, in
+    this chapter, assume you are logged in or switched to the root user.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将介绍一些高级用户和组管理场景，以及如何处理高级选项（如密码过期、管理sudoers等）的示例，以及如何在日常工作中处理这些选项。在这里，我们假设我们已经成功安装了CentOS
+    7，并且像传统格式中一样拥有root和用户凭据。此外，在本章中的命令示例中，假设您已登录或切换到root用户。
+- en: 'The following topics will be covered:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将涵盖以下主题：
+- en: User and group management from the GUI and the command line
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从GUI和命令行管理用户和组
+- en: Quotas
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 配额
+- en: Password aging
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 密码寿命
+- en: Sudoers
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Sudoers
+- en: Managing users and groups from GUI and the command line
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从GUI和命令行管理用户和组
+- en: 'We can add a user to the system using `useradd` from the command line with
+    a simple command, as follows:'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用命令行使用`useradd`将用户添加到系统中，命令如下：
+- en: '[PRE0]'
+  id: totrans-9
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'This creates a user entry in the `/etc/passwd` file and automatically creates
+    the `home` directory for the user in `/home`. The `/etc/passwd` entry looks like
+    this:'
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将在`/etc/passwd`文件中创建一个用户条目，并在`/home`中自动创建用户的`home`目录。`/etc/passwd`条目如下所示：
+- en: '[PRE1]'
+  id: totrans-11
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'But, as we all know, the user is in a locked state and cannot log in to the
+    system unless we add a password for the user using the command:'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，众所周知，用户处于锁定状态，除非我们使用命令为用户添加密码，否则无法登录系统：
+- en: '[PRE2]'
+  id: totrans-13
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: This will, in turn, modify the `/etc/shadow` file, at the same time unlock the
+    user, and the user will be able to log in to the system.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将反过来修改`/etc/shadow`文件，同时解锁用户，用户将能够登录系统。
+- en: 'By default, the preceding set of commands will create both a user and a group
+    for the `testuser` user on the system. What if we want a certain set of users
+    to be a part of a common group? We will use the `-g` option along with the `useradd`
+    command to define the group for the user, but we have to make sure that the group
+    already exists. So, to create users such as `testuser1`, `testuser2`, and `testuser3`
+    and make them part of a common group called `testgroup`, we will first create
+    the group and then we create the users using the `-g` or `-G` switches. So, we
+    will do this:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，上述一系列命令将在系统上为`testuser`用户创建用户和组。如果我们想要一组特定的用户成为一个公共组的一部分怎么办？我们将使用`useradd`命令以及`-g`选项来为用户定义组，但是我们必须确保该组已经存在。因此，要创建用户（例如`testuser1`、`testuser2`和`testuser3`）并使它们成为名为`testgroup`的公共组的一部分，我们将首先创建该组，然后使用`-g`或`-G`开关创建用户。所以，我们将这样做：
+- en: '[PRE3]'
+  id: totrans-16
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Here, we have used both `-g` and `-G`. The difference between them is: with
+    `-G`, we create the user with its default group and assign the user to the common
+    `testgroup` as well, but with `-g`, we create the user as part of the `testgroup`
+    only. In both cases, we can use either the `gid` or the group name obtained from
+    the `/etc/group` file.'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们同时使用了`-g`和`-G`。它们之间的区别是：使用`-G`，我们创建用户并将其分配到其默认组以及公共`testgroup`，但使用`-g`，我们只将用户创建为`testgroup`的一部分。在这两种情况下，我们可以使用`gid`或从`/etc/group`文件中获取的组名。
+- en: 'There are a couple more options that we can use for an advanced level user
+    creation; for example, for system users with `uid` less than 500, we have to use
+    the `-r` option, which will create a user on the system, but the `uid` will be
+    less than 500\. We also can use `-u` to define a specific `uid`, which must be
+    unique and greater than 499\. Common options that we can use with the `useradd`
+    command are:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以用于高级用户创建的其他一些选项；例如，对于`uid`小于500的系统用户，我们必须使用`-r`选项，这将在系统上创建一个用户，但`uid`将小于500。我们还可以使用`-u`来定义特定的`uid`，它必须是唯一的，并且大于499。我们可以与`useradd`命令一起使用的常见选项有：
+- en: '`-c`: This option is used for comments, generally to define the user''s real
+    name, such as `-c "John Doe"`.'
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -c：此选项用于注释，通常用于定义用户的真实姓名，例如`-c“John Doe”`。
+- en: '`-d`: This option is used to define `home-dir`; by default, the `home` directory
+    is created in `/home` such as `-d /var/<user name>`.'
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -d：此选项用于定义`home-dir`；默认情况下，`home`目录创建在`/home`中，例如`-d /var/<user name>`。
+- en: '`-g`: This option is used for the group name or the group number for the user''s
+    default group. The group must already have been created earlier.'
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -g：此选项用于用户的默认组的组名或组号。该组必须已经在之前创建过。
+- en: '`-G`: This option is used for additional group names or group numbers, separated
+    by commas, of which the user is a member. Again, these groups must also have been
+    created earlier.'
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -G：此选项用于附加的组名或组号，用逗号分隔，用户是该组的成员。同样，这些组也必须已经创建过。
+- en: '`-r`: This option is used to create a system account with a UID less than 500
+    and without a `home` directory.'
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -r：此选项用于创建一个UID小于500且没有`home`目录的系统帐户。
+- en: '`-u`: This option is the user ID for the user. It must be unique and greater
+    than 499.'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -u：此选项是用户的用户ID。它必须是唯一的，并且大于499。
+- en: 'There are few quick options that we use with the `passwd` command as well.
+    These are:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一些我们与`passwd`命令一起使用的快速选项。这些是：
+- en: '`-l`: This option is to lock the password for the user''s account'
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -l：此选项是锁定用户帐户的密码
+- en: '`-u`: This option is to unlock the password for the user''s account'
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -u：此选项是解锁用户帐户的密码
+- en: '`-e`: This option is to expire the password for the user'
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -e：此选项是为用户设置密码过期
+- en: '`-x`: This option is to define the maximum days for the password lifetime'
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -x：此选项是定义密码寿命的最大天数
+- en: '`-n`: This option is to define the minimum days for the password lifetime'
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: -n：此选项是定义密码寿命的最小天数
+- en: Quotas
+  id: totrans-31
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 配额
+- en: In order to control the disk space used in the Linux filesystem, we must use
+    quota, which enables us to control the disk space and thus helps us resolve low
+    disk space issues to a great extent. For this, we have to enable user and group
+    quotas on the Linux system.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了控制Linux文件系统中使用的磁盘空间，我们必须使用配额，这使我们能够控制磁盘空间，从而帮助我们在很大程度上解决低磁盘空间问题。为此，我们必须在Linux系统上启用用户和组配额。
+- en: In CentOS 7, the user and group quotas are not enabled by default so we have
+    to enable them first.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在CentOS 7中，默认情况下未启用用户和组配额，因此我们必须首先启用它们。
+- en: 'To check whether quota is enabled or not, we issue the following command:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查配额是否启用，我们发出以下命令：
+- en: '[PRE4]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: '![Quotas](img/B04674_01_01.jpg)'
+  id: totrans-36
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Quotas](img/B04674_01_01.jpg)'
+- en: The image shows that the root filesystem is enabled without quota as mentioned
+    by the `noquota` in the output.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该图显示了根文件系统未启用配额，如输出中的`noquota`所述。
+- en: 'Now, we have to enable quota on the root (`/`) filesystem, and to do that,
+    we have to first edit the file `/etc/default/grub` and add the following to `GRUB_CMDLINE_LINUX`:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们必须在根（`/`）文件系统上启用配额，为此，我们必须首先编辑文件`/etc/default/grub`并将以下内容添加到`GRUB_CMDLINE_LINUX`中：
+- en: '[PRE5]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'In file `GRUB_CMDLINE_LINUX` line should read as follows:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在文件`GRUB_CMDLINE_LINUX`中应该读取如下：
+- en: '[PRE6]'
+  id: totrans-41
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'The output of cat `/etc/default/grub` command should look like the following
+    screenshot:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: cat `/etc/default/grub`命令的输出应该如下屏幕截图所示：
+- en: '![Quotas](img/B04674_01_02.jpg)'
+  id: totrans-43
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Quotas](img/B04674_01_02.jpg)'
+- en: 'Since we have to reflect the changes we just made, we should backup the grub
+    configuration using the following command:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们必须反映刚刚做出的更改，我们应该使用以下命令备份grub配置：
+- en: '[PRE7]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Now, we have to rebuild the grub with the changes we just made using the command:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们必须使用以下命令重新构建grub以应用刚刚做出的更改：
+- en: '[PRE8]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Next, reboot the system. Once it''s up, log in and verify that the quota is
+    enabled using the command we used before:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，重新启动系统。一旦启动，登录并使用我们之前使用的命令验证配额是否已启用：
+- en: '[PRE9]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'It should now show us that the quota is enabled and will show us an output
+    as follows:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在应该显示配额已启用，并将显示以下输出：
+- en: '[PRE10]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Add the following lead-in before image and apply CIT style to **mount | grep
+    ' / '**
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在图像之前添加以下引导，并将CIT样式应用于**mount | grep ' / '**
+- en: '![Quotas](img/B04674_01_03.jpg)'
+  id: totrans-53
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Quotas](img/B04674_01_03.jpg)'
+- en: 'Now, since quota is enabled, we will further install quota using the following
+    to operate quota for different users and groups, and so on:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，由于配额已启用，我们将使用以下命令进一步安装配额，以便为不同用户和组操作配额等：
+- en: '[PRE11]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Once quota is installed, we check the current quota for users using the following
+    command:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装配额后，我们使用以下命令检查用户的当前配额：
+- en: '[PRE12]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: The preceding command will report user quotas in a human-readable format.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述命令将以人类可读的格式报告用户配额。
+- en: '![Quotas](img/B04674_01_04.jpg)'
+  id: totrans-59
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Quotas](img/B04674_01_04.jpg)'
+- en: From the preceding screenshot, there are two ways we can limit quota for users
+    and groups; one is setting soft and hard limits for the size of disk space used,
+    and another is limiting the user or group by limiting the number of files they
+    can create. In both cases, soft and hard limits are used. A soft limit is something
+    that warns the user when the soft limit is reached, and the hard limit is the
+    limit that they cannot bypass.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从上述屏幕截图中，我们可以限制用户和组的配额的两种方式；一种是为使用的磁盘空间设置软限制和硬限制，另一种是通过限制用户或组创建的文件数量来限制用户或组。在这两种情况下，都使用软限制和硬限制。软限制是在达到软限制时警告用户的东西，而硬限制是他们无法绕过的限制。
+- en: 'We will use the following command to modify a user quota:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用以下命令修改用户配额：
+- en: '[PRE13]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'The preceding command output shall look like the following screenshot:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述命令的输出应该如下屏幕截图所示：
+- en: '![Quotas](img/B04674_01_05.jpg)'
+  id: totrans-64
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Quotas](img/B04674_01_05.jpg)'
+- en: 'Now, we will use the following command to modify the group quota:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将使用以下命令修改组配额：
+- en: '[PRE14]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: '![Quotas](img/B04674_01_06.jpg)'
+  id: totrans-67
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Quotas](img/B04674_01_06.jpg)'
+- en: 'If you have other partitions mounted separately, you have to modify the `/etc/fstab`
+    file command to enable quota on the filesystem by adding `usrquota` and `grpquota`
+    after the defaults for that specific partition as in the following screenshot,
+    where we have enabled the quota for the `/var` partition:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您有其他分区单独挂载，您必须修改`/etc/fstab`文件命令，通过在特定分区的默认值后添加`usrquota`和`grpquota`来启用文件系统的配额，如下面的屏幕截图所示，在那里我们已经为`/var`分区启用了配额：
+- en: '![Quotas](img/B04674_01_07.jpg)'
+  id: totrans-69
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Quotas](img/B04674_01_07.jpg)'
+- en: 'Once you are finished enabling quota, remount the filesystem and run the following
+    commands:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您完成了启用配额，重新挂载文件系统并运行以下命令：
+- en: '[PRE15]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Quota is something all system admins use to handle disk space consumed on a
+    server by users or groups and limit over usage of the space. It thus helps them
+    manage the disk space usage on the system. In this regard, it should be noted
+    that you plan before your installation and create partitions accordingly as well
+    so that the disk space is used properly. Multiple separate partitions such as
+    `/var` and `/home etc` are always suggested, as generally these are the partitions
+    which consume most space on a Linux system. So, if we keep them on a separate
+    partition, it will not eat up the root (`/`) filesystem space and will be more
+    failsafe than using an entire filesystem mounted as only root.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配额是所有系统管理员用来处理用户或组在服务器上消耗的磁盘空间并限制空间过度使用的东西。因此，它有助于他们管理系统上的磁盘空间使用。在这方面，应该注意在安装之前进行规划并相应地创建分区，以便正确使用磁盘空间。通常建议使用多个单独的分区，如`/var`和`/home`等，因为这些通常是Linux系统上占用最多空间的分区。因此，如果我们将它们放在单独的分区上，它将不会占用根（`/`）文件系统空间，并且比仅使用根文件系统挂载更加安全。
+- en: Password aging
+  id: totrans-73
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 密码过期
+- en: It is a good policy to have password aging so that the users are forced to change
+    their passwords at a certain interval. This, in turn, helps to keep the security
+    of the system as well.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设置密码过期是一个很好的策略，这样用户被迫在一定的时间间隔内更改他们的密码。这反过来也有助于保持系统的安全性。
+- en: We can use `chage` to configure the password to expire the first time the user
+    logs in to the system.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`chage`配置密码，在用户首次登录系统时过期。
+- en: Note
+  id: totrans-76
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'Note: This process will not work if the user logs in to the system using SSH.'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意：如果用户使用SSH登录系统，则此过程将无法工作。
+- en: This method of using `chage` will ensure that the user is forced to change the
+    password right away.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`chage`的这种方法将确保用户被强制立即更改密码。
+- en: Tip
+  id: totrans-79
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: If we use only `chage <username>`, it will display the current password aging
+    value for the specified user and will allow them to be changed interactively.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们只使用`chage <username>`，它将显示指定用户的当前密码过期值，并允许交互式更改它们。
+- en: 'The following steps need to be performed to accomplish password aging:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 需要执行以下步骤来完成密码过期：
+- en: 'Lock the user. If the user doesn''t exist, we will use the `useradd` command
+    to create the user. However, we will not assign any password to the user so that
+    it remains locked. But, if the user already exists on the system, we will use
+    the `usermod` command to lock the user:'
+  id: totrans-82
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 锁定用户。如果用户不存在，我们将使用`useradd`命令创建用户。但是，我们不会为用户分配任何密码，以便保持锁定。但是，如果用户已经存在于系统中，我们将使用`usermod`命令锁定用户：
+- en: '[PRE16]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Force immediate password change using the following command:'
+  id: totrans-84
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令强制立即更改密码：
+- en: '[PRE17]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Unlock the account. This can be achieved in two ways. One is to assign an initial
+    password and the other is to assign a null password. We will take the first approach
+    as the second one, though possible, is not good practice in terms of security.
+    Therefore, here is what we do to assign an initial password:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 解锁帐户。可以通过两种方式实现。一种是分配初始密码，另一种是分配空密码。我们将采用第一种方法，因为第二种方法虽然可能，但在安全方面不是一个好的做法。因此，我们要做的是分配初始密码：
+- en: 'Use the Python command to start the command-line Python interpreter:'
+  id: totrans-87
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Python命令启动命令行Python解释器：
+- en: '[PRE18]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Here, we have used the `Q!W@E#R$` password with a salt combination of the alphanumeric
+    character: `Bing0000` followed by a `/` character. The output is the encrypted
+    password, similar to `BiagqBsi6gl1o`.'
+  id: totrans-89
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在这里，我们使用了带有字母数字字符的盐组合`Bing0000`后跟`/`字符的`Q!W@E#R$`密码。输出是加密密码，类似于`BiagqBsi6gl1o`。
+- en: Press *Ctrl* + *D* to exit the Python interpreter.
+  id: totrans-90
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 按下*Ctrl* + *D*退出Python解释器。
+- en: 'At the shell, enter the following command with the encrypted output of the
+    Python interpreter:'
+  id: totrans-91
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在shell中，输入以下命令以Python解释器的加密输出：
+- en: '[PRE19]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'So, here, in our case, if the username is `testuser`, and the encrypted output
+    is `" BiagqBsi6gl1o"` we will do:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在我们的情况下，如果用户名是`testuser`，加密输出是`" BiagqBsi6gl1o"`，我们将执行：
+- en: '[PRE20]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: Now, upon initial login using the `Q!W@E#R$` password, the user will be prompted
+    for a new password.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，使用`Q!W@E#R$`密码首次登录后，用户将被提示输入新密码。
+- en: Setting the password policy
+  id: totrans-96
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设置密码策略
+- en: This is a set of rules defined in some files, which have to be followed when
+    a system user is setting up. It's an important factor in security because one
+    of the many security breach histories was started with hacking user passwords.
+    This is the reason why most organizations set a password policy for their users.
+    All users and passwords must comply with this.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一组规则，定义在某些文件中，必须在设置系统用户时遵循。这是安全性的一个重要因素，因为许多安全漏洞历史始于黑客攻击用户密码。这就是为什么大多数组织为其用户设置密码策略的原因。所有用户和密码必须符合此策略。
+- en: 'A password policy usually is defined by the following:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 密码策略通常由以下定义：
+- en: Password aging
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 密码过期
+- en: Password length
+  id: totrans-100
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 密码长度
+- en: Password complexity
+  id: totrans-101
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 密码复杂性
+- en: Limit login failures
+  id: totrans-102
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 限制登录失败
+- en: Limit prior password reuse
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 限制先前密码重用
+- en: Configuring password aging and password length
+  id: totrans-104
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 配置密码过期和密码长度
+- en: Password aging and password length are defined in `/etc/login.defs`. Aging basically
+    means the maximum number of days a password might be used, minimum number of days
+    allowed between password changes, and number of warnings before the password expires.
+    Length refers to the number of characters required for creating the password.
+    To configure password aging and length, we should edit the `/etc/login.defs` file
+    and set different `PASS` values according to the policy set by the organization.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 密码过期和密码长度在`/etc/login.defs`中定义。过期基本上是指密码可以使用的最大天数，允许更改密码之间的最小天数，以及密码过期前的警告次数。长度是指创建密码所需的字符数。要配置密码过期和长度，我们应该编辑`/etc/login.defs`文件，并根据组织设置的不同`PASS`值。
+- en: Note
+  id: totrans-106
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'Note: The password aging controls defined here do not affect existing users;
+    it only affects the newly created users. So, we must set these policies when setting
+    up the system or the server at the beginning. The values we modify are:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意：此处定义的密码过期控件不会影响现有用户；它只影响新创建的用户。因此，我们必须在设置系统或服务器时设置这些策略。我们修改的值是：
+- en: '`PASS_MAX_DAYS`: The maximum number of days a password can be used'
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`PASS_MAX_DAYS`：密码可以使用的最大天数'
+- en: '`PASS_MIN_DAYS`: The minimum number of days allowed between password changes'
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`PASS_MIN_DAYS`：允许更改密码之间的最小天数'
+- en: '`PASS_MIN_LEN`: The minimum acceptable password length'
+  id: totrans-110
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`PASS_MIN_LEN`：最小可接受的密码长度'
+- en: '`PASS_WARN_AGE`: The number of days'' warning to be given before a password
+    expires'
+  id: totrans-111
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`PASS_WARN_AGE`：密码过期前要提前多少天的警告'
+- en: 'Let''s take a look at a sample configuration of the `login.defs` file:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看一下`login.defs`文件的示例配置：
+- en: '![Configuring password aging and password length](img/B04674_01_08.jpg)'
+  id: totrans-113
+  prefs: []
+  type: TYPE_IMG
+  zh: '![配置密码过期和密码长度](img/B04674_01_08.jpg)'
+- en: Configuring password complexity and limiting reused password usage
+  id: totrans-114
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 配置密码复杂性和限制重复使用的密码
+- en: 'By editing the `/etc/pam.d/system-auth` file, we can configure the password
+    complexity and the number of reused passwords to be denied. Password complexity
+    refers to the complexity of the characters used in the password, and the reused
+    password deny refers to denying the desired number of passwords the user used
+    in the past. By setting the complexity, we force the usage of the desired number
+    of capital characters, lowercase characters, numbers, and symbols in a password.
+    The password will be denied by the system until and unless the complexity set
+    by the rules is met. We do this using the following terms:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过编辑`/etc/pam.d/system-auth`文件，我们可以配置密码复杂性和要拒绝的重复使用密码的数量。密码复杂性是指密码中使用的字符的复杂性，而重复使用密码拒绝是指拒绝用户过去使用的密码的数量。通过设置复杂性，我们强制密码中使用所需数量的大写字符、小写字符、数字和符号。除非符合规则设置的复杂性，否则系统将拒绝密码。我们使用以下术语来实现这一点：
+- en: '**Force capital characters in passwords**: `ucredit=-X`, where `X` is the number
+    of capital characters required in the password.'
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**强制密码中的大写字符**：`ucredit=-X`，其中`X`是密码中所需的大写字符数量。'
+- en: '**Force lower case characters in passwords**: `lcredit=-X`, where `X` is the
+    number of lowercase characters required in the password.'
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**强制密码中的小写字符**：`lcredit=-X`，其中`X`是密码中所需的小写字符数量。'
+- en: '**Force numbers in passwords**: `dcredit=-X`, where `X` is the number of numbers
+    required in the password.'
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**强制密码中的数字**：`dcredit=-X`，其中`X`是密码中所需的数字数量。'
+- en: '**Force the use of symbols in passwords**: `ocredit=-X`, where `X` is the number
+    of symbols required in the password. For example:'
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**强制密码中使用符号**：`ocredit=-X`，其中`X`是密码中所需的符号数量。例如：'
+- en: '[PRE21]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: '**Deny reused passwords**: `remember=X`, where `X` is the number of past passwords
+    to be denied. For example:'
+  id: totrans-121
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**拒绝重复使用的密码**：`remember=X`，其中`X`是要拒绝的过去密码的数量。例如：'
+- en: '[PRE22]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Let''s now take a look at a sample configuration of `/etc/pam.d/system-auth`:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们来看一下`/etc/pam.d/system-auth`的一个示例配置：
+- en: '![Configuring password complexity and limiting reused password usage](img/B04674_01_09.jpg)'
+  id: totrans-124
+  prefs: []
+  type: TYPE_IMG
+  zh: '![配置密码复杂性和限制重复使用的密码](img/B04674_01_09.jpg)'
+- en: Configuring login failures
+  id: totrans-125
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 配置登录失败
+- en: We set the number of login failures allowed by a user in the `/etc/pam.d/password-auth`,
+    `/etc/pam.d/system-auth`, and `/etc/pam.d/login` files. When a user's failed login
+    attempts are higher than the number defined here, the account is locked and only
+    a system administrator can unlock the account. To configure this, make the following
+    additions to the files. The following `deny=X` parameter configures this, where
+    `X` is the number of failed login attempts allowed.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在`/etc/pam.d/password-auth`、`/etc/pam.d/system-auth`和`/etc/pam.d/login`文件中设置了用户允许的登录失败次数。当用户的失败登录尝试次数高于此处定义的数字时，帐户将被锁定，只有系统管理员才能解锁帐户。要进行配置，请向文件添加以下内容。以下的`deny=X`参数配置了这一点，其中`X`是允许的失败登录尝试次数。
+- en: 'Add these two lines to the `/etc/pam.d/password-auth` and `/etc/pam.d/system-auth`
+    files and only the first line to the `/etc/pam.d/login` file:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将这两行添加到`/etc/pam.d/password-auth`和`/etc/pam.d/system-auth`文件中，只将第一行添加到`/etc/pam.d/login`文件中：
+- en: '[PRE23]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'The following screenshot is a sample `/etc/pam.d/system-auth` file:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一个`/etc/pam.d/system-auth`文件的示例截图：
+- en: '![Configuring login failures](img/B04674_01_10.jpg)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_IMG
+  zh: '![配置登录失败](img/B04674_01_10.jpg)'
+- en: 'The following is a sample `/etc/pam.d/login` file:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一个`/etc/pam.d/login`文件的示例：
+- en: '![Configuring login failures](img/B04674_01_11.jpg)'
+  id: totrans-132
+  prefs: []
+  type: TYPE_IMG
+  zh: '![配置登录失败](img/B04674_01_11.jpg)'
+- en: 'To see failures, use the following command:'
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要查看失败，请使用以下命令：
+- en: '[PRE24]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'To reset the failure attempts and to enable the user to log in again, use the
+    following command:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要重置失败尝试并允许用户再次登录，请使用以下命令：
+- en: '[PRE25]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Sudoers
+  id: totrans-137
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Sudoers
+- en: Separation of user privileges is one of the main features in Linux operating
+    systems. Normal users operate in limited privilege sessions to limit the scope
+    of their influence on the entire system. One special user exists on Linux that
+    we know already is `root`, which has super-user privileges. This account doesn't
+    have any restrictions that are present to normal users. Users can execute commands
+    with super-user or root privileges in a number of different ways.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Linux操作系统中，用户权限的分离是主要特点之一。普通用户在有限的权限会话中操作，以限制他们对整个系统的影响范围。Linux上存在一个我们已经知道的特殊用户`root`，具有超级用户权限。此帐户没有任何适用于普通用户的限制。用户可以以多种不同的方式执行具有超级用户或root权限的命令。
+- en: 'There are mainly three different ways to obtain root privileges on a system:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主要有三种不同的方法可以在系统上获得root权限：
+- en: Log in to the system as `root`.
+  id: totrans-140
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 以`root`身份登录系统。
+- en: Log in to the system as any user and then use the `su -` command. This will
+    ask you for the `root` password and once authenticated, will give you the root
+    shell session. We can disconnect this root shell using *Ctrl* + *D* or using the
+    command `exit`. Once exited, we will come back to our normal user shell.
+  id: totrans-141
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 以任何用户身份登录系统，然后使用`su -`命令。这将要求您输入`root`密码，一旦验证，将为您提供root shell会话。我们可以使用*Ctrl*
+    + *D*或使用`exit`命令断开此root shell。退出后，我们将回到我们的普通用户shell。
+- en: 'Run commands with root privileges using `sudo` without spawning a `root` shell
+    or logging in as root. This `sudo` command works as follows:'
+  id: totrans-142
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`sudo`以root权限运行命令，而不生成`root` shell或以root身份登录。此`sudo`命令的工作方式如下：
+- en: '[PRE26]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Unlike `su`, `sudo` will request the password of the user calling the command,
+    not the root password.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与`su`不同，`sudo`将要求调用命令的用户密码，而不是root密码。
+- en: The `sudo` doesn't work by default and requires to be set up before it functions
+    correctly.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`sudo`默认情况下不起作用，需要在其正确运行之前进行设置。'
+- en: In the following section, we will see how to configure `sudo` and modify the
+    `/etc/sudoers` file so that it works the way we want it to.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的部分中，我们将看到如何配置`sudo`并修改`/etc/sudoers`文件，以使其按我们的意愿工作。
+- en: visudo
+  id: totrans-147
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: visudo
+- en: The `sudo` is modified or implemented using the `/etc/sudoers` file, and `visudo`
+    is the command that enables us to edit the file.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`sudo`是使用`/etc/sudoers`文件进行修改或实现的，`visudo`是使我们能够编辑该文件的命令。'
+- en: Note
+  id: totrans-149
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'Note: This file should not be edited using a normal text editor to avoid potential
+    race conditions in updating the file with other processes. Instead, the `visudo`
+    command should be used.'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意：为了避免在更新文件时出现潜在的竞争条件，不应使用普通文本编辑器编辑此文件。应该使用`visudo`命令。
+- en: The `visudo` command opens a text editor normally, but then validates the syntax
+    of the file upon saving. This prevents configuration errors from blocking `sudo`
+    operations.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`visudo`命令通常会打开文本编辑器，然后在保存时验证文件的语法。这可以防止配置错误阻止`sudo`操作。'
+- en: '![visudo](img/B04674_01_12.jpg)'
+  id: totrans-152
+  prefs: []
+  type: TYPE_IMG
+  zh: '![visudo](img/B04674_01_12.jpg)'
+- en: 'By default, `visudo` opens the `/etc/sudoers` file in vi editor, but we can
+    configure it to use the `nano` text editor instead. For that, we have to make
+    sure `nano` is already installed or we can install `nano` using:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，`visudo`会在vi编辑器中打开`/etc/sudoers`文件，但我们可以配置它使用`nano`文本编辑器。为此，我们必须确保`nano`已安装，或者我们可以使用以下命令安装`nano`：
+- en: '[PRE27]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'Now, we can change it to use `nano` by editing the `~/.bashrc` file:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以通过编辑`~/.bashrc`文件将其更改为使用`nano`：
+- en: '[PRE28]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Then, source the file using:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，使用以下命令源文件：
+- en: '[PRE29]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: Now, we can use `visudo` with `nano` to edit the `/etc/sudoers` file. So, let's
+    open the `/etc/sudoers` file using `visudo` and learn a few things.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以使用`visudo`和`nano`编辑`/etc/sudoers`文件。所以，让我们用`visudo`打开`/etc/sudoers`文件并学习一些东西。
+- en: 'We can use different kinds of aliases for different sets of commands, software,
+    services, users, groups, and so on. For example:'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以为不同的命令、软件、服务、用户、组等创建不同类型的别名。例如：
+- en: '[PRE30]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'We can use these aliases to assign a set of command execution rights to a user
+    or a group. For example, if we want to assign the `NETWORKING` set of commands
+    to the group `netadmin` we will define:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用这些别名为用户或组分配一组命令执行权限。例如，如果我们想要将`NETWORKING`命令集分配给`netadmin`组，我们将定义：
+- en: '[PRE31]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Otherwise, if we want to allow the wheel group users to run all the commands,
+    we will do the following:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 否则，如果我们想要允许`wheel`组的用户运行所有命令，我们将执行以下操作：
+- en: '[PRE32]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'If we want a specific user, `john`, to get access to all commands, we will
+    do the following:'
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们想要特定用户`john`获得对所有命令的访问权限，我们将执行以下操作：
+- en: '[PRE33]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'We can create different groups of users, with overlapping membership:'
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以创建不同的用户组，其成员可能有重叠的权限。
+- en: '[PRE34]'
+  id: totrans-169
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Group names must start with a capital letter. We can then allow members of
+    `GROUPTWO` to update the `yum` database and all the commands assigned to the preceding
+    software by creating a rule like this:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 组名必须以大写字母开头。然后，我们可以允许`GROUPTWO`的成员更新`yum`数据库和前述软件分配的所有命令，通过创建如下规则：
+- en: '[PRE35]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: If we do not specify a user/group to run, `sudo` defaults to the root user.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们不指定要运行的用户/组，`sudo`默认为root用户。
+- en: 'We can allow members of `GROUPTHREE` to shut down and reboot the machine by
+    creating a `command alias` and using that in a rule for `GROUPTHREE`:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以允许`GROUPTHREE`的成员关闭和重新启动机器，通过创建一个`命令别名`并在`GROUPTHREE`的规则中使用它：
+- en: '[PRE36]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: We create a command alias called `POWER` that contains commands to power off
+    and reboot the machine. We then allow the members of `GROUPTHREE` to execute these
+    commands.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建了一个名为`POWER`的命令别名，其中包含关闭电源和重新启动机器的命令。然后，我们允许`GROUPTHREE`的成员执行这些命令。
+- en: 'We can also create `Runas` aliases, which can replace the portion of the rule
+    that specifies to the user to execute the command as:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以创建`Runas`别名，它可以替换规则的部分，指定用户以其身份执行命令：
+- en: '[PRE37]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: This will allow anyone who is a member of `GROUPONE` to execute commands as
+    the `www-data` user or the `apache` user.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将允许`GROUPONE`的任何成员以`www-data`用户或`apache`用户的身份执行命令。
+- en: Just keep in mind that later, rules will override previous rules when there
+    is a conflict between the two.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，稍后的规则将覆盖先前的规则，当两者之间存在冲突时。
+- en: 'There are a number of ways that you can achieve more control over how `sudo`
+    handles a command. Here are some examples:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多方法可以更好地控制`sudo`如何处理命令。以下是一些例子：
+- en: 'The `updatedb` command associated with the `mlocate` package is relatively
+    harmless. If we want to allow users to execute it with root privileges without
+    having to type a password, we can make a rule like this:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与`mlocate`软件包相关联的`updatedb`命令相对无害。如果我们希望允许用户以root权限执行它而无需输入密码，我们可以制定如下规则：
+- en: '[PRE38]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: '`NOPASSWD` is a tag that means no password will be requested. It has a companion
+    command called `PASSWD`, which is the default behavior. A tag is relevant for
+    the rest of the rule unless overruled by its `twin` tag later down the line.'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`NOPASSWD`是一个标签，表示不会请求密码。它有一个伴随命令叫做`PASSWD`，这是默认行为。标签对于规则的其余部分是相关的，除非在后面被其`双胞胎`标签覆盖。'
+- en: 'For instance, we can have a line like this:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们可以有如下行：
+- en: '[PRE39]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: In this case, a user can run the `updatedb` command without a password as the
+    root user, but entering the root password will be required for running the `kill`
+    command. Another helpful tag is `NOEXEC`, which can be used to prevent some dangerous
+    behavior in certain programs.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，用户可以作为root用户运行`updatedb`命令而无需密码，但运行`kill`命令将需要输入root密码。另一个有用的标签是`NOEXEC`，它可以用于防止某些程序中的一些危险行为。
+- en: 'For example, some programs, such as `less`, can spawn other commands by typing
+    this from within their interface:'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，一些程序，如`less`，可以通过在其界面内输入以下内容来生成其他命令：
+- en: '[PRE40]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: This basically executes any command the user gives it with the same permissions
+    that `less` is running under, which can be quite dangerous.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这基本上会以`less`正在运行的相同权限执行用户给出的任何命令，这可能非常危险。
+- en: 'To restrict this, we could use a line like this:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了限制这一点，我们可以使用以下行：
+- en: '[PRE41]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: You should now have clear understanding of what `sudo` is and how we modify
+    and provide access rights using `visudo`. There are many more things left here.
+    You can check the default `/etc/sudoers` file, which has a good number of examples,
+    using the `visudo` command, or you can read the `sudoers` manual as well.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你应该清楚了`sudo`是什么，以及我们如何使用`visudo`修改和提供访问权限。这里还有很多事情。你可以使用`visudo`命令检查默认的`/etc/sudoers`文件，其中包含很多示例，或者你也可以阅读`sudoers`手册。
+- en: One point to remember is that root privileges are not given to regular users
+    often. It is important for us to understand what these commands do when you execute
+    with root privileges. Do not take the responsibility lightly. Learn the best way
+    to use these tools for your use case, and lock down any functionality that is
+    not needed.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要记住的一点是，常规用户通常不会被赋予 root 权限。当您以 root 权限执行这些命令时，了解这些命令的作用非常重要。不要轻视这份责任。学习如何最好地为您的用例使用这些工具，并锁定任何不需要的功能。
+- en: Reference
+  id: totrans-194
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 参考
+- en: 'Now, let''s take a look at the major reference used throughout the chapter:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们来看一下本章中使用的主要参考资料：
+- en: '[https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/index.html](https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/index.html)'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/index.html](https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/index.html)'
+- en: Summary
+  id: totrans-197
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, you learned about some advanced user management and how to
+    manage users through the command line, along with password aging, quota, exposure
+    to `/etc/sudoers`, and how to modify them using `visudo`. User and password management
+    is a regular task that a system administrator performs on servers, and it has
+    a very important role in the overall security of the system.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您了解了一些高级用户管理知识，以及如何通过命令行管理用户，包括密码过期、配额、暴露给 `/etc/sudoers`，以及如何使用 `visudo`
+    修改它们。用户和密码管理是系统管理员在服务器上经常执行的任务，它在系统的整体安全中起着非常重要的作用。
+- en: In the next chapter, we will look into advanced security features called **Security-Enhanced
+    Linux** (**SELinux**), which comes integrated with CentOS or RedHat Linux operating
+    systems.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将研究称为**安全增强型 Linux**（**SELinux**）的高级安全功能，它与 CentOS 或 RedHat Linux 操作系统集成在一起。

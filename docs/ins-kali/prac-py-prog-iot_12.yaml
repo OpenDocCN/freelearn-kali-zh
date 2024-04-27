@@ -1,0 +1,1722 @@
+- en: Measuring Temperature, Humidity, and Light Levels
+  id: totrans-0
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测量温度、湿度和光照水平
+- en: In the previous chapter, we explored two methods of making color with RGB LEDs
+    – using a common RGB LED and with an addressable APA102 RGB LED strip. We also
+    learned how to use a simple OLED display and how PWM can be used to play music
+    using a passive buzzer.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们探讨了使用RGB LED制作颜色的两种方法 - 使用普通的RGB LED和可寻址的APA102 RGB LED条。我们还学习了如何使用简单的OLED显示屏，以及如何使用PWM来使用无源蜂鸣器播放音乐。
+- en: In this chapter, we will be looking at some common components and circuits for
+    collecting environmental data, including temperature, humidity, whether it's dark
+    or light, and how to detect moisture.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将研究一些常见的组件和电路，用于收集环境数据，包括温度、湿度、光线暗或亮以及如何检测湿度。
+- en: The circuits and code examples we will learn will be useful for building and
+    experimenting with your own environmental monitoring projects. These circuits
+    can be considered input or sensor circuits that measure environmental conditions.
+    By way of example, you could combine the circuit ideas and examples from [Chapter
+    7](36313176-0d8b-4a0e-916a-7d4ffd58305a.xhtml), *Turning Things On and Off*, to
+    switch on a pump to water a plant when the soil is dry, or switch on a low-voltage
+    LED lamp when it gets dark. In fact, we have an example of a visualization platform
+    in [Chapter 13](861a1e79-2f40-4a60-bb40-82101ee42e63.xhtml), *IoT Visualization
+    and Automation Platforms*, where we will capture, record, and visualize historical
+    temperature and humidity data using one of the circuits from this chapter!
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 学习的电路和代码示例将对构建和实验自己的环境监测项目非常有用。这些电路可以被视为测量环境条件的输入或传感器电路。例如，您可以结合[第7章](36313176-0d8b-4a0e-916a-7d4ffd58305a.xhtml)中的电路思想和示例，*打开和关闭东西*，当土壤干燥时打开水泵浇水，或者在天黑时打开低电压LED灯。事实上，在[第13章](861a1e79-2f40-4a60-bb40-82101ee42e63.xhtml)中，我们有一个可视化平台的示例，*IoT可视化和自动化平台*，我们将使用本章中的一个电路来捕获、记录和可视化历史温度和湿度数据！
+- en: Furthermore, throughout this chapter, we will see practical examples of analog
+    electronics and associated concepts such as a voltage divider, which we learned
+    about in [Chapter 6](2aba4d00-7883-42da-95fa-bcec2da3dd54.xhtml), *Electronics
+    101 for the Software Engineer. *
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，在本章中，我们将看到模拟电子学和相关概念的实际示例，例如电压分压器，在[第6章](2aba4d00-7883-42da-95fa-bcec2da3dd54.xhtml)中学到的。
+- en: 'Here is what we will cover in this chapter:'
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是本章的内容：
+- en: Measuring temperature and humidity
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 测量温度和湿度
+- en: Detecting light
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检测光线
+- en: Detecting moisture
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检测湿度
+- en: Technical requirements
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: 'To perform the exercises in this chapter, you will need the following:'
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要执行本章的练习，您需要以下内容：
+- en: Raspberry Pi 4 Model B
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 树莓派4型B
+- en: Raspbian OS Buster (with desktop and recommended software)
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Raspbian OS Buster（带桌面和推荐软件）
+- en: Minimum Python version 3.5
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最低Python版本3.5
+- en: These requirements are what the code examples in this book are based on. It's
+    reasonable to expect that the code examples should work without modification on
+    Raspberry Pi 3 Model B or a different version of Raspbian OS as long as your Python
+    version is 3.5 or higher.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些要求是本书中代码示例的基础。可以合理地期望代码示例在树莓派3型B或不同版本的Raspbian OS上无需修改即可工作，只要您的Python版本是3.5或更高。
+- en: You will find this chapter's source code in the `chapter09` folder in the GitHub
+    repository available at [https://github.com/PacktPublishing/Practical-Python-Programming-for-IoT](https://github.com/PacktPublishing/Practical-Python-Programming-for-IoT).
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将在[https://github.com/PacktPublishing/Practical-Python-Programming-for-IoT](https://github.com/PacktPublishing/Practical-Python-Programming-for-IoT)的GitHub存储库的`chapter09`文件夹中找到本章的源代码。
+- en: 'You will need to execute the following commands in a terminal to set up a virtual
+    environment and install the Python libraries required for the code in this chapter:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您需要在终端中执行以下命令来设置虚拟环境并安装本章代码所需的Python库：
+- en: '[PRE0]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'The following dependencies are installed from `requirements.txt`:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下依赖项从`requirements.txt`中安装：
+- en: '**PiGPIO**: The PiGPIO GPIO Library ([https://pypi.org/project/pigpio](https://pypi.org/project/pigpio))'
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**PiGPIO**：PiGPIO GPIO库（[https://pypi.org/project/pigpio](https://pypi.org/project/pigpio)）'
+- en: '**PiGPIO DHT**: DHT11 and DHT22 sensor library ([https://pypi.org/project/pigpio-dht](https://pypi.org/project/pigpio-dht))'
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**PiGPIO DHT**：DHT11和DHT22传感器库（[https://pypi.org/project/pigpio-dht](https://pypi.org/project/pigpio-dht)）'
+- en: '**Adafruit ADS1115**: ADS1115 ADC library ([https://pypi.org/project/Adafruit-ADS1x15](https://pypi.org/project/Adafruit-ADS1x15))'
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Adafruit ADS1115**：ADS1115 ADC库（[https://pypi.org/project/Adafruit-ADS1x15](https://pypi.org/project/Adafruit-ADS1x15)）'
+- en: 'The electronic components we will need for this chapter''s exercises are as
+    follows:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章练习所需的电子元件如下：
+- en: 1 x DHT11 (lower accuracy) or a DHT22 (higher accuracy) temperature and humidity
+    sensor
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x DHT11（较低精度）或DHT22（较高精度）温度和湿度传感器
+- en: 1 x **LDR** (**Light Dependent Resistor**, also known as a photocell or photoresistor)
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x **LDR**（光敏电阻，也称为光电池或光敏电阻）
+- en: 'Resistors:'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 电阻：
+- en: 1 x 200 Ω resistor
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x 200Ω 电阻
+- en: 1 x 10kΩ resistor
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x 10kΩ 电阻
+- en: 1 x 1kΩ resistor
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x 1kΩ 电阻
+- en: 1 x 100kΩ resistor
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x 100kΩ 电阻
+- en: 1 x red LED
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x 红色LED
+- en: 1 x ADS1115 analog-to-digital converter module
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 1 x ADS1115模数转换器模块
+- en: External power sources – at a minimum, a 3.3 V/5 V breadboard-mountable power
+    supply.
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 外部电源 - 至少需要一个3.3V/5V面包板可安装电源供应器。
+- en: Measuring temperature and humidity
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测量温度和湿度
+- en: The measurement of temperature and related environmental properties is a common
+    task, and there are many different types of sensors available for measuring these
+    properties, including thermistors (a temperature-dependent resistor), sophisticated
+    breakout modules that connect via SPI and I2C, and sensor varieties such as the
+    DHT11 or DHT22 sensors, which we will be using for our example.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 测量温度和相关环境属性是一个常见的任务，有许多不同类型的传感器可用于测量这些属性，包括热敏电阻（温度相关电阻）、通过SPI和I2C连接的复杂分支模块，以及DHT11或DHT22传感器等传感器种类，我们将在示例中使用。
+- en: All sensors have their relative strengths and weaknesses when it comes to accuracy,
+    response times (how fast we can rapidly get data from them), and cost.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当涉及准确性、响应时间（从中我们可以快速获取数据的速度）和成本时，所有传感器都有其相对的优势和劣势。
+- en: 'DHT sensors, as illustrated in *Figure 9.1,* are inexpensive, durable, and
+    easy to use:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如*图9.1*所示，DHT传感器价格便宜，耐用且易于使用：
+- en: '![](assets/c253eb8e-399c-433c-89a1-0b75bcae27fc.png)'
+  id: totrans-37
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/c253eb8e-399c-433c-89a1-0b75bcae27fc.png)'
+- en: Figure 9.1 – DHT11 and DHT22 temperature and humidity sensors
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.1 – DHT11和DHT22温度和湿度传感器
+- en: 'The DHT11 is a very common low-cost sensor. The DHT22 is its higher-accuracy
+    cousin. Both are pin-compatible and will be suitable for our example. The pinouts
+    of these sensors as illustrated in the preceding figure are as follows:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: DHT11是一种非常常见的低成本传感器。DHT22是它的高精度表亲。两者都是引脚兼容的，并且适用于我们的示例。如前图所示，这些传感器的引脚分配如下：
+- en: '**Vcc**: 3- to 5-volt power source'
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Vcc**：3到5伏电源来源'
+- en: '**Data**: Data pin that connects to a GPIO pin'
+  id: totrans-41
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Data**：连接到GPIO引脚的数据引脚'
+- en: '**NC**: Not connected, meaning that this pin is not used'
+  id: totrans-42
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**NC**：未连接，表示未使用此引脚'
+- en: '**GND**: Connects to ground'
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**GND**：连接到地面'
+- en: 'Here are the core similarities and differences between the DHT11 and DHT22:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是DHT11和DHT22之间的核心相似之处和不同之处：
+- en: '|  | **DHT 11** | **DHT 22** |'
+  id: totrans-45
+  prefs: []
+  type: TYPE_TB
+  zh: '|  | **DHT 11** | **DHT 22** |'
+- en: '| **Operating Voltage** | 3 to 5 volts | 3 to 5 volts |'
+  id: totrans-46
+  prefs: []
+  type: TYPE_TB
+  zh: '| **工作电压** | 3到5伏 | 3到5伏 |'
+- en: '| **Operating Current** | µA (microamps) | µA (microamps) |'
+  id: totrans-47
+  prefs: []
+  type: TYPE_TB
+  zh: '| **工作电流** | µA（微安） | µA（微安） |'
+- en: '| **Temperature Range** | 0 to 50° Celsius |  - 40 to 125° Celsius |'
+  id: totrans-48
+  prefs: []
+  type: TYPE_TB
+  zh: '| **温度范围** | 0到50摄氏度 |  - 40到125摄氏度 |'
+- en: '| **Temperature Accuracy** | ±2% | ±0.5% |'
+  id: totrans-49
+  prefs: []
+  type: TYPE_TB
+  zh: '| **温度精度** | ±2% | ±0.5% |'
+- en: '| **Humidity Range** | 20 - 80% | 0 - 100% |'
+  id: totrans-50
+  prefs: []
+  type: TYPE_TB
+  zh: '| **湿度范围** | 20 - 80% | 0 - 100% |'
+- en: '| **Humidity Accuracy** | ±5% | ±2% to 5% |'
+  id: totrans-51
+  prefs: []
+  type: TYPE_TB
+  zh: '| **湿度精度** | ±5% | ±2%到5% |'
+- en: '| **Maximum Sampling Rate** | Faster – once every 1 second (1Hz) | Slower –
+    once every 2 seconds (0.5Hz) |'
+  id: totrans-52
+  prefs: []
+  type: TYPE_TB
+  zh: '| **最大采样率** | 更快 – 每秒一次（1Hz） | 更慢 – 每2秒一次（0.5Hz） |'
+- en: As mentioned, the DHT11 and DHT22 sensors are pin-compatible. They differ only
+    in their measurement accuracy and range. Either sensor will be suitable for the
+    circuit we are about to create for measuring temperature and humidity.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，DHT11和DHT22传感器的引脚兼容。它们只在测量精度和范围上有所不同。任一传感器都适用于我们即将创建的用于测量温度和湿度的电路。
+- en: Creating the DHT11/DHT22 circuit
+  id: totrans-54
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建DHT11/DHT22电路
+- en: 'We will begin by creating the circuit illustrated in *Figure 9.2* on our breadboard:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从在我们的面包板上创建的*图9.2*中的电路开始：
+- en: '![](assets/01dd0045-dc16-4245-9518-4e925dc9564a.png)'
+  id: totrans-56
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/01dd0045-dc16-4245-9518-4e925dc9564a.png)'
+- en: Figure 9.2 – DHT sensor schematic
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.2 – DHT传感器原理图
+- en: 'The following is the breadboard layout for this circuit that we are about to
+    build:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是我们即将构建的电路的面包板布局：
+- en: '![](assets/4420680a-9c43-4d09-94b5-4b8f6e40df03.png)'
+  id: totrans-59
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/4420680a-9c43-4d09-94b5-4b8f6e40df03.png)'
+- en: Figure 9.3 – DHT sensor circuit
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.3 – DHT传感器电路
+- en: 'Here are the steps to follow, which match the numbered black circles in *Figure
+    9.3*:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是要遵循的步骤，与*图9.3*中编号的黑色圆圈相匹配：
+- en: Place your DHT11 or DHT22 sensor into your breadboard.
+  id: totrans-62
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将您的DHT11或DHT22传感器放入面包板中。
+- en: Place the 10kΩ resistor (R1) into the breadboard. One end of the resistor shares
+    the same row as the DHT sensor's DATA pin. We will discuss this resistor and why
+    it's marked as optional in *Figure 9.2* after we complete the circuit build.
+  id: totrans-63
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将10kΩ电阻（R1）放入面包板中。电阻的一端与DHT传感器的DATA引脚共用一行。我们将在完成电路构建后讨论这个电阻以及为什么它被标记为可选的*图9.2*。
+- en: Connect a 3.3-volt pin on your Raspberry Pi to the positive rail of the power
+    rail.
+  id: totrans-64
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将树莓派上的3.3伏引脚连接到电源轨的正极。
+- en: Connect the 10kΩ resistor (R1) to the positive power rail.
+  id: totrans-65
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将10kΩ电阻（R1）连接到正电源轨。
+- en: Connect the DHT Vcc pin to the positive power rail.
+  id: totrans-66
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将DHT Vcc引脚连接到正电源轨。
+- en: Connect a GND pin on your Raspberry Pi to the negative power rail.
+  id: totrans-67
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将树莓派上的GND引脚连接到负电源轨。
+- en: Connect the GND pin on the DHT sensor to the negative power rail.
+  id: totrans-68
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将DHT传感器的GND引脚连接到负电源轨。
+- en: Finally, connect the DHT sensor's DATA pin to the GPIO 21 on your Raspberry
+    Pi.
+  id: totrans-69
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，将DHT传感器的DATA引脚连接到树莓派上的GPIO 21。
+- en: This now completes our DHT sensor circuit build.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们的DHT传感器电路已经完成。
+- en: In our circuit, Vcc is connected to 3.3 volts, which makes the DHT data pin
+    operate at this voltage. DHT11 and DHT22 are rated for 5 volts; however, if you
+    connected Vcc to 5 volts, the data pin becomes a 5-volt logic pin, which is not
+    safe for use with the Raspberry Pi's 3.3-volt GPIO pin.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的电路中，Vcc连接到3.3伏，这使得DHT数据引脚以这个电压工作。DHT11和DHT22额定为5伏；但是，如果您将Vcc连接到5伏，数据引脚就会成为一个5伏逻辑引脚，这对于树莓派的3.3伏GPIO引脚来说是不安全的。
+- en: The 10kΩ pull-up resistor is optional because the DHT software library we are
+    using already enables Raspberry Pi's internal pull-up resistor by default. I've
+    included the pull-up resistor in the circuit schematic because it's included in
+    the circuit examples in many DHT11/DHT22 datasheets. If you need a refresher on
+    pull-up resistors, please revisit [Chapter 6](2aba4d00-7883-42da-95fa-bcec2da3dd54.xhtml),
+    *Electronics 101 for the Software Engineer.*
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 10kΩ上拉电阻是可选的，因为我们使用的DHT软件库已经默认启用了树莓派的内部上拉电阻。我在电路原理图中包括了上拉电阻，因为它包含在许多DHT11/DHT22数据表的电路示例中。如果您需要关于上拉电阻的复习，请重新阅读[第6章](2aba4d00-7883-42da-95fa-bcec2da3dd54.xhtml)，*软件工程师的电子学101*。
+- en: In our circuit and for the DHT11/DHT22, the leg labeled **NC** means **Not Connected**.
+    NC is a common abbreviation used to indicate that a leg or terminal of a sensor,
+    IC, or component is not internally connected to anything. However, when we are
+    dealing with switches – including relays – a component leg or terminal labeled
+    NC means the **Normally Closed** connection path...so always interpret NC in the
+    context of the component you are looking at.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的电路和DHT11/DHT22中，标有**NC**的引脚表示**未连接**。 NC是一个常用的缩写，用于表示传感器、IC或元件的引脚或端子没有内部连接到任何东西。但是，当我们处理开关（包括继电器）时，标有NC的元件引脚或端子表示**通常关闭**连接路径...因此，始终根据您正在查看的元件的上下文来解释NC。
+- en: Once you have created your circuit, we are ready to run and explore the code
+    to measure temperature and humidity.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您创建了电路，我们就准备好运行和探索代码来测量温度和湿度。
+- en: Running and exploring the DHT11/DHT22 code
+  id: totrans-75
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 运行和探索DHT11/DHT22代码
+- en: 'Run the code found in the `chapter09/dht_measure.py` file, and the measured
+    temperature and humidity will be printed to your terminal, similar to the following:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行`chapter09/dht_measure.py`文件中的代码，测量的温度和湿度将被打印到您的终端，类似于以下内容：
+- en: '[PRE1]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Here, we have the following:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们有以下内容：
+- en: '`temp_c` is the temperature in degrees Celsius.'
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`temp_c`是摄氏度温度。'
+- en: '`temp_f` is the temperature in degrees Fahrenheit.'
+  id: totrans-80
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`temp_f`是华氏度温度。'
+- en: '`humidity` is the relative humidity percentage.'
+  id: totrans-81
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`humidity`是相对湿度百分比。'
+- en: '`valid` indicates whether the reading is considered valid by way of an internal
+    sensor checksum check. Readings where `value == False` must be abandoned.'
+  id: totrans-82
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`valid`表示通过内部传感器校验和检查是否认为读数有效。读数中`value == False`的必须被放弃。'
+- en: The code in the source file is concise and is fully replicated here.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 源文件中的代码简洁，并在此处完全复制。
+- en: 'In line 1, we import the DHT sensor library and instantiate it in line 2\.
+    Update the line to match the DHT11 or DHT22 sensor you are using:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第1行，我们导入DHT传感器库，并在第2行实例化它。更新该行以匹配您使用的DHT11或DHT22传感器：
+- en: '[PRE2]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: In lines 3 and 4, we use the `pigpio-dht` library to request a temperature and
+    humidity measurement from the sensor. A call to `read()` will query the sensor
+    for measurement and will keep retrying for `retries` times if the measurements
+    come back as `valid == False`. An alternative method for measurement is the `sample()`
+    method, which will take many individual samples of the temperature and humidity
+    and return a normalized measurement.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第3和第4行，我们使用`pigpio-dht`库从传感器请求温度和湿度测量。对`read()`的调用将查询传感器的测量，并在测量结果为`valid ==
+    False`时重试`retries`次。另一种测量方法是`sample()`方法，它将获取温度和湿度的多个单独样本并返回归一化的测量值。
+- en: The advantage of `sample()`, especially for the less-accurate DHT11 sensor,
+    is a more consistent temperature and humidity readings since outlier readings
+    (random spikes) are removed; however, it does significantly increase the time
+    it takes to read measurements – refer back to the *Maximum Sampling Rate* row
+    in the table at the start of this section.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`sample()`的优势，特别是对于精度较低的DHT11传感器，是温度和湿度读数更一致，因为异常值读数（随机尖峰）被移除；然而，它显著增加了读取测量所需的时间-请参考本节开头表格中的*最大采样率*行。'
+- en: As an example, for a DHT11 with a maximum sampling rate of 1 second, for 5 samples,
+    the `sample(samples=5)` call will take approximately *1 second x 5 samples = 5
+    seconds* to return, while a DHT22 with a 2-second sample rate will take about
+    10 seconds.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，对于最大采样率为1秒的DHT11，对于5个样本，`sample(samples=5)`调用将花费大约*1秒 x 5个样本 = 5秒*才能返回，而具有2秒采样率的DHT22将花费约10秒。
+- en: DHT11 and DHT22 are pin-compatible; however, they are not software-compatible
+    due to the way each sensor encodes its data while mixing up the software driver
+    and sensor. For example, while a DHT22 sensor using a DHT11 library will generate
+    results, they will be inaccurate (and it'll be pretty obvious – for example, saying
+    your room is 650+ degrees Celsius!)
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: DHT11和DHT22是引脚兼容的；然而，由于每个传感器编码其数据的方式不同，它们在软件上不兼容。例如，使用DHT11库的DHT22传感器将生成不准确的结果（这将是非常明显的-例如，说您的房间温度为650+摄氏度！）
+- en: How easy was that! The DHT series are popular low-cost sensors that measure
+    both temperature and humidity. For those cases where you need to perform more
+    rapid readings, or you need to mount a sensor in hostile environments, such as
+    in water or outside, directly exposed to the elements, you will certainly be able
+    to find a sensor for your needs.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 多么简单！DHT系列是流行的低成本传感器，可以测量温度和湿度。对于那些需要进行更快速读数的情况，或者需要将传感器安装在恶劣环境中，例如水中或户外，直接暴露在外部环境中，您肯定能找到适合您需求的传感器。
+- en: 'Here is a quick rundown of the other ways temperature (and similar environmental)
+    sensors can connect to your Raspberry Pi:'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是其他温度（和类似环境）传感器连接到树莓派的快速概述：
+- en: '**Thermistors **are temperature-sensitive resistors that are very small and
+    ideal for tight spaces, and you can get them in sealed packages for outside and
+    in-liquid use. You can use them with a voltage-divider circuit (similarly to the
+    **Light-Dependent-Resistor** (**LDR**) we will cover in the next section).'
+  id: totrans-92
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**热敏电阻**是温度敏感电阻，非常小，非常适合狭小空间，并且您可以获得密封包装以供室外和液体使用。您可以将它们与电压分压电路一起使用（类似于我们将在下一节中介绍的**光敏电阻**（**LDR**））。'
+- en: There are many varieties of I2C and SPI sensors available that can be queried
+    fast and may also have other additional on-board sensors, such as air pressure.
+    These modules are typically larger and are probably best not exposed directly
+    to the elements.
+  id: totrans-93
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 有许多种类的I2C和SPI传感器可用于快速查询，可能还具有其他额外的传感器，例如气压传感器。这些模块通常较大，可能最好不要直接暴露在外部环境中。
+- en: '**1-wire** temperature sensors are also compact and easily sealable and have
+    the advantage that they can have long wires (100 meters plus).'
+  id: totrans-94
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**1-wire**温度传感器也是紧凑且易于密封的，其优势在于可以有长电线（100米以上）。'
+- en: With this, we come to the end of this section on measuring temperature and humidity.
+    Many environmental monitoring projects require you to measure temperature and
+    humidity, and using a DHT11 or DHT22 with Raspberry Pi is an easy and cost-effective
+    way to achieve this. We will revisit our DHT11/22 circuit again in [Chapter 13](861a1e79-2f40-4a60-bb40-82101ee42e63.xhtml),
+    *IoT Visualization and Automation Platforms*, where we will integrate this sensor
+    with an IoT platform to collect and monitor the temperature and humidity.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过这一部分，我们结束了关于测量温度和湿度的介绍。许多环境监测项目需要您测量温度和湿度，使用树莓派和DHT11或DHT22是一种简单且具有成本效益的方法。我们将在[第13章](861a1e79-2f40-4a60-bb40-82101ee42e63.xhtml)中再次讨论我们的DHT11/22电路，*IoT可视化和自动化平台*，在那里我们将集成该传感器到IoT平台以收集和监测温度和湿度。
+- en: Now that we have explored temperature sensors, let's learn how to detect light.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经探讨了温度传感器，让我们学习如何检测光线。
+- en: Detecting light
+  id: totrans-97
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测光线
+- en: Detecting the presence or absence of light is easily achieved with a special
+    type of resistor known as an **LDR**. LDRs are a low-cost light sensor, and we
+    find them in many applications, from light-activated switches and lamps or as
+    part of the circuit that dims your alarm clock display when it's dark, to part
+    of alarm circuits on cash boxes and safes.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 轻松实现检测光线的存在或不存在，使用一种特殊类型的电阻器，称为**LDR**。 LDR是一种低成本的光传感器，我们可以在许多应用中找到它们，从光控开关和灯到在黑暗时调暗闹钟显示屏的电路的一部分，再到现金箱和保险柜上的警报电路。
+- en: You may also find LDRs referred to as photoresistors or photocells.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能也会发现LDR被称为光敏电阻或光电池。
+- en: 'The following figure shows a typical LDR component, together with a few varieties
+    of LDR schematic symbols. If you examine the symbols, you will notice that they
+    are a resistor symbol with inward-pointing arrows. You can think of these arrows
+    as representing light falling on the resistor:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图显示了典型的LDR组件，以及几种LDR原理图符号。如果您仔细观察这些符号，您会注意到它们是带有向内箭头的电阻符号。您可以将这些箭头看作代表光照在电阻上：
+- en: '![](assets/717fa3cd-02f4-48cc-9136-f523fba717be.png)'
+  id: totrans-101
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/717fa3cd-02f4-48cc-9136-f523fba717be.png)'
+- en: Figure 9.4 – A physical LDR component and a variety of schematic symbols
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.4 - 一个物理LDR组件和各种原理图符号
+- en: 'An LDR varies its resistance with the relative light it detects. If you placed
+    the terminals of your multimeter in Ohms mode across an LDR, you will find (roughly
+    after a few seconds) the following:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: LDR随其检测到的相对光照变化其电阻。如果您将万用表的端子置于LDR上的欧姆模式下，您会发现（大约几秒钟后）以下情况：
+- en: When the LDR is in the dark (for example, if you cover it up), its resistance
+    will typically measure many mega-ohms.
+  id: totrans-104
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当LDR处于黑暗中（例如，如果您把它遮住），其电阻通常会测量许多兆欧姆。
+- en: In a normally lit room (for example, on the table with the ceiling lights on),
+    the LDR's resistance will measure in kilo-ohms.
+  id: totrans-105
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在一个正常照明的房间（例如，桌子上的吊灯亮着），LDR的电阻将以千欧姆计。
+- en: When an LDR is in bright light (direct sunlight or shining a torch on it), its
+    resistance will measure a few hundred-ohms or less.
+  id: totrans-106
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当LDR处于强光（直射阳光或照射手电筒），其电阻将测量几百欧姆或更低。
+- en: This gives us distinct regions where it becomes possible to work out the presence
+    or absence of light. With calibration and a little tuning, we can easily identify
+    a point between dark and light that we can use to trigger an event. For example, you
+    could use an LDR circuit such as the one we will create next to programmatically
+    control the switching circuits we created in [Chapter 7](36313176-0d8b-4a0e-916a-7d4ffd58305a.xhtml),
+    *Turning Things On and Off*.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这为我们提供了明显的区域，使得我们可以确定光的存在或不存在。通过校准和微调，我们可以轻松地确定在黑暗和光之间的一个点，我们可以用它来触发一个事件。例如，您可以使用我们将在下一步创建的LDR电路来以编程方式控制我们在[第7章](36313176-0d8b-4a0e-916a-7d4ffd58305a.xhtml)中创建的开关电路。
+- en: LDRs are only good at measuring relative light levels – the presence or absence
+    of light. If you want absolute measurements such as lux levels, or even to detect
+    color, there is a range of ICs in the I2C or SPI breakout module form that can
+    achieve this.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: LDR只能很好地测量相对光照水平 - 光的存在或不存在。如果您想要绝对的测量，比如光照水平，甚至是检测颜色，那么有一系列的I2C或SPI断开模块形式的IC可以实现这一点。
+- en: Using this basic understanding, we will build our LDR circuit to detect light.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 利用这种基本理解，我们将构建我们的LDR电路来检测光线。
+- en: Creating an LDR light-detecting circuit
+  id: totrans-110
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 创建LDR光检测电路
+- en: 'As discussed, an LDR varies its resistance in relation to the relative light
+    it detects. To detect varying resistance with our Raspberry Pi, we need to take
+    a few steps that were covered in previous chapters:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如讨论的那样，LDR随其检测到的相对光照变化其电阻。为了在我们的树莓派上检测变化的电阻，我们需要采取一些在以前章节中讨论过的步骤：
+- en: We need to turn the varying resistance into a varying voltage because our Raspberry
+    Pi GPIO pins work on voltage, not resistance. This is an application of Ohms law
+    and a voltage-divider circuit, which we learned about in [Chapter 6](2aba4d00-7883-42da-95fa-bcec2da3dd54.xhtml),
+    *Electronics 101 for the Software Engineer.*
+  id: totrans-112
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们需要将变化的电阻转换为变化的电压，因为我们的树莓派GPIO引脚工作在电压上，而不是电阻。这是欧姆定律和电压分压电路的应用，我们在[第6章](2aba4d00-7883-42da-95fa-bcec2da3dd54.xhtml)中学习过，*软件工程师的电子学101*。
+- en: Our Raspberry Pi GPIO pins can only read digital signals – for example, a high
+    (~3.3 volts) or low (~0 volts) signal. To measure a varying voltage, we can attach
+    an **Analog-to-Digital Converter** (**ADC**) such as an ADS1115\. We covered the
+    ADS1115 and accompanying Python code in [Chapter 5](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml),
+    *Connecting Your Raspberry Pi to the Physical World.*
+  id: totrans-113
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们的树莓派GPIO引脚只能读取数字信号 - 例如高（~3.3伏）或低（~0伏）信号。为了测量变化的电压，我们可以连接一个**模数转换器**（**ADC**），例如ADS1115。我们在[第5章](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml)中介绍了ADS1115和相应的Python代码，*将您的树莓派连接到物理世界*。
+- en: 'We are about to create the circuit illustrated in *Figure 9.5* on your breadboard.
+    This circuit and the accompanying code will illuminate the LED when it detects
+    a certain level of darkness:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在您的面包板上创建*图9.5*中所示的电路。当检测到一定程度的黑暗时，这个电路和附带的代码将点亮LED：
+- en: '![](assets/eaeb9aaa-1cbf-494a-ae23-69a89cc62619.png)'
+  id: totrans-115
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/eaeb9aaa-1cbf-494a-ae23-69a89cc62619.png)'
+- en: Figure 9.5 – LDR circuit with the ADS1115 ADC schematic
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.5 - 带有ADS1115 ADC原理图的LDR电路
+- en: 'We will build our circuit in two parts. For the first part, we will place the
+    components onto our breadboard, as shown:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将分两部分构建电路。对于第一部分，我们将把组件放在面包板上，如图所示：
+- en: '![](assets/3020fc7b-87db-4fd3-a3fa-54e718e837ad.png)'
+  id: totrans-118
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/3020fc7b-87db-4fd3-a3fa-54e718e837ad.png)'
+- en: Figure 9.6 – LDR circuit with ADS1115 ADC circuit (part 1 of 2)
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.6 - 带有ADS1115 ADC电路的LDR电路（第1部分，共2部分）
+- en: 'Here are the steps to follow, which match the numbered black circles in *Figure
+    9.6*:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是要遵循的步骤，这些步骤与*图9.6*中编号的黑色圆圈相匹配：
+- en: Place the LDR onto the breadboard.
+  id: totrans-121
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将LDR放在面包板上。
+- en: Place a 10kΩ resistor (R1) onto the breadboard. One end of this resistor shares
+    the same row as one of the LDR.
+  id: totrans-122
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将10kΩ电阻（R1）放在面包板上。这个电阻的一端与LDR的一端共用同一行。
+- en: Place the ADS1115 ADC onto the breadboard.
+  id: totrans-123
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将ADS1115 ADC放在面包板上。
+- en: Place a 200kΩ resistor (R2) onto the breadboard.
+  id: totrans-124
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将一个200kΩ电阻（R2）放在面包板上。
+- en: Place an LED onto the breadboard, paying careful attention to connect the LED's
+    cathode leg to the same row shared by one of the legs of the 200kΩ resistor.
+  id: totrans-125
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将LED放在面包板上，特别注意将LED的阴极引脚连接到与200kΩ电阻的一根引脚共享的同一行。
+- en: 'Now that we have placed our components, we will wire them up:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经放置了我们的组件，我们将把它们连接起来：
+- en: '![](assets/32db5243-eb85-4ab3-bbc8-a737284be308.png)'
+  id: totrans-127
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/32db5243-eb85-4ab3-bbc8-a737284be308.png)'
+- en: Figure 9.7 – LDR circuit with ADS1115 ADC circuit (part 2 of 2)
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.7 - 带ADS1115 ADC电路的LDR电路（第2部分）
+- en: 'Here are the steps to follow; this time they match the numbered black circles
+    in *Figure 9.7*:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是要遵循的步骤；这次它们与*图9.7*中编号的黑色圆圈相匹配：
+- en: Connect the positive rail of the power rail to the LDR.
+  id: totrans-130
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将正电源轨道连接到LDR。
+- en: Connect a 3.3-volt pin from your Raspberry Pi to the positive rail of the power
+    rail.
+  id: totrans-131
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将树莓派的3.3伏引脚连接到电源轨道的正电源轨道。
+- en: Connect a GND pin from your Raspberry Pi to the negative tail of the power rail.
+  id: totrans-132
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将树莓派的GND引脚连接到负电源轨道的负端。
+- en: Connect the negative power rail to the 10kΩ resistor (R1).
+  id: totrans-133
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将负电源轨道连接到10kΩ电阻（R1）。
+- en: Connect the Vdd terminal of the ADS1115 to the positive power rail.
+  id: totrans-134
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将ADS1115的Vdd端连接到正电源轨道。
+- en: Connect the GND terminal of the ADS1115 to the negative power rail.
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将ADS1115的GND端连接到负电源轨道。
+- en: Connect the junction of the LDR and 10kΩ resistor (R1) to port A0 on the ADS1115
+    (can you see how the LDR and resistor are creating a voltage divider, with the
+    varying voltage output now attached to A0?).
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将LDR和10kΩ电阻（R1）的交接处连接到ADS1115的A0端口（你能看到LDR和电阻如何创建电压分压器，变化的电压输出现在连接到A0吗？）。
+- en: Connect the Raspberry Pi's SDA pin to the ADS1115 SDA terminal.
+  id: totrans-137
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将树莓派的SDA引脚连接到ADS1115的SDA端子。
+- en: Connect the Raspberry Pi's SCL pin to the ADS1115 SCL terminal.
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将树莓派的SCL引脚连接到ADS1115的SCL端子。
+- en: Connect the negative power rail to the 200kΩ resistor.
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将负电源轨道连接到200kΩ电阻。
+- en: Connect the anode leg of the LED to your Raspberry Pi's GPIO 21 pin.
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将LED的阳极引脚连接到树莓派的GPIO 21引脚。
+- en: I hope you were able to see the voltage divider that was formed by the LDR and
+    the 10kΩ resistor R1\. We will cover the reasoning behind the 10kΩ resistor later
+    in the chapter in the section titled *LDR configuration summary.*
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 希望你能看到由LDR和10kΩ电阻R1形成的电压分压器。我们将在本章后面的*LDR配置摘要*部分介绍10kΩ电阻背后的原因。
+- en: As the light detected by the LDR varies, its resistance varies. The effect of
+    this is to alter the relative ratios of R1 (fixed resistor) and the LDR's resistance
+    (varying resistance), which in turn changes the voltage measured at the interception
+    of the LDR and R1 (that's where A (analog-in) of our ADS1115 is attached to measure
+    this varying voltage).
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于LDR检测到的光的变化，它的电阻也会变化。这样做的效果是改变R1（固定电阻）和LDR的电阻（变化电阻）的相对比例，从而改变在LDR和R1交叉处测量到的电压（这就是我们的ADS1115的A（模拟输入）连接的地方，用于测量这个变化的电压）。
+- en: Don't place your LED too close to your LDR. When it illuminates, the LED is
+    a source of light that is detectable by the LDR, and it could interfere with your
+    LDR readings in the code.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要将LED放得太靠近LDR。当LED发光时，LDR可以检测到LED发出的光，这可能会干扰代码中的LDR读数。
+- en: Now that you have created the LDR circuit, we will calibrate and run our example
+    code.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您已经创建了LDR电路，我们将校准并运行我们的示例代码。
+- en: Running the LDR example code
+  id: totrans-145
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 运行LDR示例代码
+- en: 'We are about to run two programs:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要运行两个程序：
+- en: '`chapter09/ldr_ads1115_calibrate.py`, which will help us calibrate our LDR
+    readings'
+  id: totrans-147
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`chapter09/ldr_ads1115_calibrate.py`，这将帮助我们校准LDR读数'
+- en: '`chapter09/ldr_ads1115.py`, which monitors the light level and switches on
+    the LED when the light falls below a configurable level'
+  id: totrans-148
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`chapter09/ldr_ads1115.py`，它监测光照水平，并在光线低于可配置水平时打开LED'
+- en: 'First, we should check that the ADS1115 is connected correctly and can be seen
+    by your Raspberry Pi. Run the `i2cdetect` command in a Terminal. If your output
+    does not include a number (for example `48`), then please verify your wiring:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们应该检查ADS1115是否连接正确，并且树莓派能够识别它。在终端中运行`i2cdetect`命令。如果您的输出不包括一个数字（例如`48`），请验证您的接线是否正确。
+- en: '[PRE3]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: We first covered the ADS1115 analog-to-digital converter and the `i2cdetect`
+    utility in [Chapter 5](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml), *Connecting
+    Your Raspberry Pi to the Physical World*.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先介绍了ADS1115模数转换器和[第5章](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml)中的`i2cdetect`实用程序，*将树莓派连接到物理世界*。
+- en: 'Let''s run the examples, starting with the calibration program:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从校准程序开始运行示例：
+- en: 'Run the code found in the `chapter09/ldr_ads1115_calibrate.py` file, and follow
+    the instructions that appear on your terminal, which are as follows:'
+  id: totrans-153
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`chapter09/ldr_ads1115_calibrate.py`文件中的代码，并按照出现在终端上的说明进行操作，如下所示：
+- en: '`Place the LDR in the light and press Enter`: Use the ambient room light for
+    this exercise, and be careful that you are not casting a shadow over the LDR.
+    When you are building your application, you will want to use the source of light
+    that makes sense for your purposes, be it direct sunlight, room light, or shining
+    a bright torch into the LDR, for example.'
+  id: totrans-154
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: “将LDR放在光线下并按Enter键”：在这个练习中使用环境光，并注意不要在LDR上投下阴影。在构建应用程序时，您将希望使用对您的目的有意义的光源，例如直射阳光、室内光或者用强光照射LDR。
+- en: '`Place the LDR in the dark and press Enter`: I''d suggest completely covering
+    the LDR with a dark cloth or cup. Using your finger is not always ideal as a sensitive
+    LDR may still detect a level of light through your finger:'
+  id: totrans-155
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: “将LDR放在黑暗中并按Enter键”：我建议完全用黑布或杯子覆盖LDR。用手指并不总是理想的，因为敏感的LDR可能仍然能够通过手指检测到一定程度的光：
+- en: '[PRE4]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: The calibration program takes a number of samples (by default, `100`) from the
+    ADS1115 in both the dark and light conditions and calculates the average reading.
+    Next, the program writes the results (also shown in the terminal) into the `ldr_calibration_config.py` file.
+    This is a Python source file for our example, imported into our actual LDR and
+    LED example, as we will see in the next step.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 校准程序从ADS1115在黑暗和光线条件下获取一定数量的样本（默认为`100`），并计算平均读数。接下来，程序将结果（也显示在终端中）写入`ldr_calibration_config.py`文件。这是我们示例的Python源文件，导入到我们实际的LDR和LED示例中，我们将在下一步中看到。
+- en: 'Run the program found in the `chapter09/ldr_ads1115.py` file, and observe the
+    output on the terminal, which displays the voltage read by the ADS1115:'
+  id: totrans-158
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`chapter09/ldr_ads1115.py`文件中的程序，并观察终端上显示的输出，其中显示了ADS1115读取的电压：
+- en: '[PRE5]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Hopefully, the output should read `triggered = False`, and the LED should be
+    off. If this is not the case, try repeating the calibration process in *step 1*,
+    or read on and you'll discover how to adjust the trigger point in code.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 希望输出应该是`triggered = False`，LED应该是关闭的。如果不是这种情况，请尝试重复*步骤1*中的校准过程，或者继续阅读，您将发现如何在代码中调整触发点。
+- en: 'Gradually move your hand nearer and nearer to the LDR restrict the amount of
+    light reaching it. As you move your hand, you will notice the `voltage` reading
+    on the terminal change, and at a certain voltage level, the trigger point will
+    be reached and the LED will illuminate:'
+  id: totrans-161
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 逐渐将手靠近LDR，限制到达它的光线量。当您移动手时，您会注意到终端上的`voltage`读数发生变化，并且在某个电压水平时，将达到触发点，LED将点亮：
+- en: '[PRE6]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: What you are witnessing is the function of the voltage divider varying the voltage
+    as the LDR's resistance changes in response to the light it detects. This voltage
+    is then read by the ADS1115.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您所见到的是电压分压器的功能，随着LDR的电阻随光线变化而变化。然后，ADS1115读取这个电压。
+- en: You may have noticed that the voltage produced is not the full range of ~0 volts
+    to ~3.3 volts as it was when we used a potentiometer with our ADS1115 back in[Chapter
+    5](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml), *Connecting Your Raspberry Pi
+    to the Physical World.* Our restricted range is a side-effect and limitation of
+    our fixed resistor (R1) and varying-resistance (LDR) circuit, which cannot vary
+    resistance to the extremes necessary to reach ~0 or ~3.3 volts. You will encounter
+    this restriction in voltage divider circuits since they will by design include
+    a fixed resistor value. By contrast, our potentiometers are *two* variable resistors
+    creating a voltage divider, and we can effectively zero-out (get close to 0 Ω)
+    one side of the divider, depending on which direction we turn the potentiometer's
+    dial, allowing us to get near to both 0 volts and 3.3 volts.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，所产生的电压不是我们在[第5章](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml)中使用ADS1115和电位计时产生的0伏特到3.3伏特的完整范围。我们受限范围是我们固定电阻（R1）和变阻（LDR）电路的副作用和限制，它无法变化到达~0或~3.3伏特所需的极端电阻。您将在电压分压器电路中遇到这种限制，因为它们将按设计包括固定电阻值。相比之下，我们的电位计是*两个*可变电阻器，创建电压分压器，我们可以有效地将分压器的一侧归零（接近0Ω），这取决于我们将电位计的拨盘转向哪个方向，从而使我们能够接近0伏特和3.3伏特。
+- en: Now that we have seen this code running, let's see how it works.
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 既然我们已经看到这段代码运行，让我们看看它是如何工作的。
+- en: LDR code walkthrough
+  id: totrans-166
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: LDR代码演练
+- en: A bulk of the code in both `chapter09/ldr_ads1115_calibrate.py` and `chapter09/ldr_ads1115_calibrate.py`
+    is the boilerplate code to set up and configure the ADS1115 and set up the LED
+    using PiGPIO. We will not recover the common code here. If you need a refresher
+    on the ADS1115-related code, please review the exercise found in [Chapter 5](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml),
+    *Connecting Your Raspberry Pi to the Physical World.*
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`chapter09/ldr_ads1115_calibrate.py`和`chapter09/ldr_ads1115_calibrate.py`中的大部分代码是设置和配置ADS1115以及使用PiGPIO设置LED的样板代码。我们不会在这里重复常见的代码。如果您需要复习与ADS1115相关的代码，请查看[第5章](45ff8333-2eb2-47f1-86d9-31ccecf39de5.xhtml)中的练习，“将您的树莓派连接到物理世界”。'
+- en: Let's look at the Python code that makes our LDR work.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看使我们的LDR工作的Python代码。
+- en: In line 1, we see that we are importing the `ldr_calibration_config.py` file that
+    we created with our calibration program previously.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第1行，我们看到我们正在导入之前使用校准程序创建的`ldr_calibration_config.py`文件。
+- en: 'Next, in line 2, we are assigning the calibration values to the `LIGHT_VOLTS`
+    (the voltage detected by the ADS1115 when the LDR was in the light) and `DARK_VOLTS`
+    (the voltage detected when you covered up the LDR) variables:'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，在第2行，我们将校准值分配给`LIGHT_VOLTS`（LDR在光线下被ADS1115检测到的电压）和`DARK_VOLTS`（您遮住LDR时检测到的电压）变量：
+- en: '[PRE7]'
+  id: totrans-171
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: In line 3, we create a trigger point. This is a voltage point we will use later
+    in code to switch on and off the LED.
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第3行，我们创建一个触发点。这是我们以后将在代码中使用的电压点来开启和关闭LED。
+- en: You can adjust and experiment with the formula or value of `TRIGGER_VOLTS` to
+    change the lighting condition that causes the code to trigger.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以调整和实验`TRIGGER_VOLTS`的公式或值，以改变导致代码触发的照明条件。
+- en: The `TRIGGER_BUFFER` variable at line 4 is used to create a buffer or lag in
+    our trigger, better known in electronic terms as *hysteresis.* This value creates
+    a small window range where the detected voltage can vary without causing a trigger
+    or un-trigger event. Without this *hysteresis,* the trigger (and LED) would turn
+    on and off rapidly as the detected voltage oscillates around the `TRIGGER_VOLTS` trigger
+    voltage.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第4行的`TRIGGER_BUFFER`变量用于在我们的触发器中创建缓冲区或滞后，电子术语中更为人所知的是*滞后*。这个值创建了一个小的窗口范围，检测到的电压可以在不引起触发或取消触发事件的情况下变化。如果没有这种*滞后*，触发器（和LED）将在检测到的电压围绕`TRIGGER_VOLTS`触发电压振荡时快速打开和关闭。
+- en: To experience this effect practically, set `TRIGGER_BUFFER = 0` and you will
+    find that as you move your hand above the LDR, the LED is very sensitive to on
+    and off, and at a certain point may even appear to blink. As you increase the
+    value of `TRIGGER_BUFFER`, you will notice that the hand movement required to
+    switch the LED becomes on and off greater.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要亲身体验这种效果，请将`TRIGGER_BUFFER = 0`，您会发现当您将手移动到LDR上方时，LED对开和关非常敏感，并且在某一点甚至可能出现闪烁。当您增加`TRIGGER_BUFFER`的值时，您会注意到需要移动手才能使LED开关变得更加明显。
+- en: 'Moving on, in line 5, we come to the code that determines whether our trigger
+    point has been reached. The `update_trigger()` function compares the voltage detected
+    by the ADS1115 to the `TRIGGER_VOLTS` value adjusted for `TRIGGER_BUFFER`, and
+    updates the `triggered` global variable if the triggering point is breached:'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，在第5行，我们来到了确定触发点是否已达到的代码。`update_trigger()`函数将ADS1115检测到的电压与调整为`TRIGGER_BUFFER`的`TRIGGER_VOLTS`值进行比较，并在触发点被触发时更新`triggered`全局变量：
+- en: '[PRE8]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'Near the end of the source file, we have a `while` loop in line 6\. We are
+    reading in the ADS1115 detected voltage, updating the global `triggered` variable,
+    before printing the results to the terminal:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在源文件的末尾附近，我们在第6行有一个`while`循环。我们正在读取ADS1115检测到的电压，更新全局`triggered`变量，然后将结果打印到终端：
+- en: '[PRE9]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Finally, in line 7, we toggle the LED on or off depending on the value of `triggered`.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在第7行，根据`triggered`的值切换LED的开关状态。
+- en: Now that we have seen how we detect light with our LDR circuit and Python code,
+    I want to briefly cover how the series resistor is chosen for the LDR circuit.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经看到了如何使用我们的LDR电路和Python代码检测光线，我想简要介绍一下选择LDR电路的串联电阻的方法。
+- en: LDR configuration summary
+  id: totrans-182
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: LDR配置摘要
+- en: You may have realized while working with the LDR circuit and code that there
+    are a few tunable parameters that influence how the circuit and code work, and
+    did you wonder why we used a 10kΩ resistor?
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用LDR电路和代码时，您可能已经意识到有一些可调参数会影响电路和代码的工作方式，您是否想知道为什么我们使用了10kΩ电阻？
+- en: No two LDRs will give the same resistance-to-light measurement and their resistance-to-light
+    range is not linear. The implication of this is that your LDR, plus the lighting
+    conditions you plan to use it in, can influence a suitable fixed resistor value.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有两个LDR会给出相同的电阻-光线测量值，它们的电阻-光线范围也不是线性的。这意味着您的LDR以及您计划在其中使用它的照明条件可能会影响适当的固定电阻值。
+- en: 'Here is a rough guide to selecting an appropriate fixed resistor:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是选择适当固定电阻的大致指南：
+- en: If you want the LDR to be more sensitive in **darker conditions**, use a **higher
+    value** resistor (for example, try 100kΩ).
+  id: totrans-186
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果您希望LDR在**较暗的条件**下更敏感，请使用**更高值**的电阻（例如，尝试100kΩ）。
+- en: If you want your LDR to be more sensitive in **brighter conditions**, use a **lower
+    value** resistor (for example, try 1kΩ).
+  id: totrans-187
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果您希望您的LDR在**更明亮的条件**下更敏感，请使用**更低值**的电阻（例如，尝试1kΩ）。
+- en: Remember that these are just suggestions, so feel free to try different resistances
+    for your own needs. Plus, whenever you change the value of the fixed resistor,
+    rerun the calibration code.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，这些只是建议，所以请随时根据自己的需求尝试不同的电阻。此外，每当更改固定电阻的值时，请重新运行校准代码。
+- en: 'There is also a formula known as Axel Benz that can be used to calculate a
+    reference resistance value for an analog component such as an LDR. The formula
+    is expressed as follows:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有一个名为Axel Benz的公式，可用于计算诸如LDR之类的模拟元件的参考电阻值。该公式表达如下：
+- en: '![](assets/cdf9980b-f0bc-40f1-b3b3-fc0dd8f1e862.png)'
+  id: totrans-190
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/cdf9980b-f0bc-40f1-b3b3-fc0dd8f1e862.png)'
+- en: 'The parameters in the formula are as follows:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 公式中的参数如下：
+- en: R[ref] is the value of the fixed resistor, R1.
+  id: totrans-192
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: R[ref]是固定电阻R1的值。
+- en: R[max] is the maximum resistance of the LDR (when in dark). A typical value
+    might be 10 Ω.
+  id: totrans-193
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: R[max]是LDR的最大电阻（在黑暗中）。典型值可能为10Ω。
+- en: R[min] is the minimum resistance of the LDR (when in bright light). A typical
+    value might be 10M Ω.
+  id: totrans-194
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: R[min]是LDR的最小电阻（在强光下）。典型值可能为10MΩ。
+- en: 'So, if we use the typical values, we get the 10kΩ value we used for R1:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，如果我们使用典型值，我们得到了用于R1的10kΩ值：
+- en: '![](assets/481f9d9c-b9b5-41e0-8472-fb56b9fefc1a.png)'
+  id: totrans-196
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/481f9d9c-b9b5-41e0-8472-fb56b9fefc1a.png)'
+- en: Measure the extremes on your LDR with a multimeter and see what value you calculate.
+    Do not be surprised if your measurements vary widely from the typical 10kΩ. When
+    you consider we are working with an LDR ohmic range of ~10 Ω to ~10,000,000 Ω,
+    the difference may still only be a fraction of a percent!
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用万用表测量LDR的极端值，并查看您计算出的值。如果您的测量结果与典型的10kΩ相差甚远，不要感到惊讶。考虑到我们使用的LDR欧姆范围约为~10Ω至~10,000,000Ω，差异可能仍然只是百分之一的一小部分！
+- en: 'We also saw previously in the code that two variables influence how our code
+    triggers:'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们之前在代码中看到两个变量影响我们的代码触发：
+- en: Change the value of `TRIGGER_VOLTS` to change the point at which the code triggers
+    – for example, turns on or off the LED.
+  id: totrans-199
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更改`TRIGGER_VOLTS`的值以更改代码触发的点 - 例如，打开或关闭LED。
+- en: Change the value of `TRIGGER_BUFFER` to alter how sensitive the trigger is to
+    changing light conditions.
+  id: totrans-200
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更改`TRIGGER_BUFFER`的值以改变触发器对光线变化的敏感度。
+- en: Finally, remember that an LDR detects light logarithmically, not linearly –
+    for example, as you gradually lower your hand or an object over the LDR to restrict
+    light, the voltages reported by the LDR will not necessarily change in proportion
+    to the amount of light you are restricting. This is a reason why we need to change
+    the fixed resistor value if we want the LDR to be more sensitive in darker or
+    brighter conditions.
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，请记住，LDR以对数方式检测光线，而不是线性方式 - 例如，当您逐渐将手或物体放在LDR上以限制光线时，LDR报告的电压不一定会与您限制的光线量成比例地变化。这就是为什么我们需要更改固定电阻值，如果我们希望LDR在更暗或更亮的条件下更敏感。
+- en: You can experiment with replacing the fixed resistor, R1, with a variable resistor
+    (for example, replace the fixed 10kΩ with a 20kΩ variable resistor set to 10kΩ.
+    We choose 20kΩ because we can adjust it above and below 10kΩ. A 10kΩ variable
+    resistor would only let us adjust down resistance). After code calibration at
+    10kΩ and defining a trigger point in code, you can then fine-tune the trigger
+    point by adjusting the variable resistor.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以尝试用可变电阻替换固定电阻R1（例如，用20kΩ可变电阻替换固定的10kΩ，设置为10kΩ。我们选择20kΩ是因为我们可以将其调整到10kΩ以上和以下。10kΩ可变电阻只能让我们降低电阻）。在代码校准为10kΩ并定义了代码中的触发点后，您可以通过调整可变电阻来微调触发点。
+- en: This concludes our discussion of LDRs. We have seen how to build a simple LDR
+    circuit together with an ADS1115 ADC, and how to detect light with Python. You
+    could use this simple circuit and accompanying code for any project where the
+    detection of light or darkness is the desired input trigger – for example, a light-activated
+    switch.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这结束了我们对LDR的讨论。我们已经看到了如何与ADS1115 ADC一起构建简单的LDR电路，以及如何使用Python检测光线。您可以将这个简单的电路和配套的代码用于任何需要检测光线或黑暗的项目，例如光敏开关。
+- en: Next, we will learn how to detect moisture.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将学习如何检测湿度。
+- en: Detecting moisture
+  id: totrans-205
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 检测湿度
+- en: Guess what...we have already done the grunt work to detect moisture! It's just
+    another application of the LDR circuit and code, only we replace the LDR with
+    probes.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 猜猜看……我们已经完成了检测湿度的繁重工作！这只是LDR电路和代码的另一个应用，只是我们用探针替换了LDR。
+- en: 'For this exercise, you can create a set of probes using two pieces of wire
+    (with the ends stripped), and attach them in place of the LDR, as shown in *Figure
+    9.8**.* This is the same circuit we built in the previous section and showed in *Figure
+    9.7*, only this time, we have replaced the LDR with two wires. Let''s make this
+    slight change now:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于这个练习，您可以使用两根带两端剥离的导线制作一组探针，并将它们安装在LDR的位置，如*图9.8*所示。这与我们在上一节中构建的电路相同，并在*图9.7*中显示，只是这一次，我们用两根导线替换了LDR。现在让我们做出这个小改变：
+- en: '![](assets/8c00b245-fcee-4d98-8535-500def610e4b.png)'
+  id: totrans-208
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/8c00b245-fcee-4d98-8535-500def610e4b.png)'
+- en: Figure 9.8 – Moisture detection circuit
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.8 - 湿度检测电路
+- en: 'Here are the steps to follow, which match the numbered black circles in *Figure
+    9.8*:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是要遵循的步骤，这些步骤与*图9.8*中编号的黑色圆圈相匹配：
+- en: Remove the LDR from the breadboard.
+  id: totrans-211
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从面包板上取下LDR。
+- en: Place a wire (with both ends stripped) into a breadboard row that previously
+    connected to one of the LDR's legs (in the illustration, this new wire connects
+    back to 3.3 volts on your Raspberry Pi).
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将一根带两端剥离的导线放入面包板的一行，该行先前连接到LDR的一条腿（在插图中，这根新导线连接回树莓派上的3.3伏特）。
+- en: Place another wire (with both ends stripped) into a breadboard row that previously
+    connected the LDR's other leg (in the illustration, this new wire connects to
+    the row shared by the 10kΩ resistor (R1)).
+  id: totrans-213
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将另一根带两端剥离的导线放入面包板的一行，该行先前连接了LDR的另一条腿（在插图中，这根新导线连接到与10kΩ电阻（R1）共享的行）。
+- en: This small change – replacing the LDR with bare wires – turns our circuit into
+    a basic moisture-detecting circuit. Let's try the circuit out!
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个小改变 - 用裸导线替换LDR - 将我们的电路变成了一个基本的湿度检测电路。让我们试试这个电路！
+- en: In the `chapter09` folder, you will find two files, named `moisture_calibrate.py`
+    and `moisture_ads1115.py`. These files are almost identical to the LDR file set
+    we used in the previous section, except I've changed the wording and variable
+    names from `Light`/`Dark` to `Wet`/`Dry`. The core differences are marked by comments
+    in the respective files.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在“chapter09”文件夹中，您会找到两个文件，名为“moisture_calibrate.py”和“moisture_ads1115.py”。这些文件与我们在上一节中使用的LDR文件集几乎相同，只是我已经将“Light”/“Dark”的措辞和变量名称更改为“Wet”/“Dry”。各个文件中的核心区别由注释标出。
+- en: 'Given the similarity, we will not cover these source files and the moisture
+    circuit in detail; however, for reference, these are the steps to follow:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 鉴于相似性，我们不会详细介绍这些源文件和湿度电路；但是，供参考，以下是要遵循的步骤：
+- en: Ensure the probe is dry.
+  id: totrans-217
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 确保探针是干燥的。
+- en: Run `moisture_calibrate.py` and follow the instructions to perform a voltage
+    calibration.
+  id: totrans-218
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行“moisture_calibrate.py”并按照说明执行电压校准。
+- en: Run `moisture_ads1115.py`.
+  id: totrans-219
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行“moisture_ads1115.py”。
+- en: Check that the terminal output indicates `trigger=False` (the code triggers
+    on the wet condition).
+  id: totrans-220
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查终端输出是否指示“trigger=False”（代码在湿润条件下触发）。
+- en: Place the probe in a cup of water (yes, it's safe to do this) and observe the
+    voltage reading on the terminal change (It's also OK if the probes get shorted
+    accidentally as it will not cause any damage).
+  id: totrans-221
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将探针放入一杯水中（是的，这样做是安全的），观察终端上的电压读数的变化（如果探针意外短路也没关系，不会造成任何损坏）。
+- en: With the probes immersed in water, check whether the terminal output reads `trigger=True` (probe
+    wet condition).
+  id: totrans-222
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将探针浸入水中，检查终端输出是否显示“trigger=True”（探针湿润状态）。
+- en: If the trigger is still `True`, you will need to adjust the value of `TRIGGER_VOLTS` in
+    the code.
+  id: totrans-223
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果触发器仍然为“True”，则需要在代码中调整“TRIGGER_VOLTS”的值。
+- en: You can also place the probe in dry dirt and observe the voltage readings. Slowly
+    wet the dirt and the voltage reading should change. We now have the basis of a
+    program to tell you when your plant needs watering!
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以将探针放入干燥的土壤中，并观察电压读数。慢慢地浇湿土壤，电压读数应该会改变。现在我们有了一个程序的基础，可以告诉您何时需要给植物浇水！
+- en: So, why does this work? Simple – water is a conductor of electricity and is
+    behaving like a resistor between our two probes.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，为什么会起作用呢？很简单 - 水是电的导体，在我们的两个探针之间的行为就像一个电阻。
+- en: Different water in different parts of the world and from different sources –
+    for example, tap versus bottle – may conduct electricity differently. This means
+    you might need to play with the value of the R1 resistor if your circuit is not
+    responding well with the 10kΩ resistor. In addition, you can also experiment with
+    the distance between the probe wires and their size.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 世界各地和不同来源的水 - 例如自来水与瓶装水 - 可能导电性不同。这意味着如果您的电路对10kΩ电阻的反应不佳，您可能需要调整R1电阻的值。此外，您还可以尝试调整探针导线之间的距离和它们的大小。
+- en: We will conclude our discussion on moisture detection by comparing what we have
+    just created with an off-the-shelf moisture detector that you can purchase.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过比较我们刚刚创建的内容与您可以购买的现成湿度检测器来结束我们对湿度检测的讨论。
+- en: Comparing detection options
+  id: totrans-228
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 比较检测选项
+- en: 'How do our simple circuit and wire probes compare to a *water/moisture detection
+    module* that you can find on retail sites such as eBay? These products typically
+    contain a probe of some sort, plus a small electronic module. A picture of one
+    of these modules, plus a few probes, are shown here:'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们简单的电路和电线探针与您可以在eBay等零售网站上找到的*水/湿度检测模块*相比如何？这些产品通常包含某种探针，以及一个小型电子模块。这里显示了其中一个模块的图片，以及一些探针：
+- en: '![](assets/1572e442-d4f1-43ee-8782-5104d3305278.png)'
+  id: totrans-230
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/1572e442-d4f1-43ee-8782-5104d3305278.png)'
+- en: Figure 9.9 – Moisture detection module and probes
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图9.9 - 湿度检测模块和探针
+- en: The three probes pictured each have two terminals and are simply an exposed
+    copper trace on a circuit board, analogous to the exposed wires we saw in our
+    circuit in *Figure 9.8.* A key difference is that these probes expose a larger
+    surface area and are therefore more sensitive. Furthermore, they are also likely
+    to be less prone to corrosion (at least in the short-to-medium term) than two
+    stripped wires.
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这三个探针每个都有两个端子，只是电路板上的裸露铜线，类似于我们在图9.8中看到的裸露电线。一个关键的区别是这些探针暴露了更大的表面积，因此更敏感。此外，它们也可能比两根剥离的电线更不容易腐蚀（至少在短期到中期内）。
+- en: You can connect these probes directly to the exposed wires in our circuit shown
+    in *Figure 9.8 *to expand and enhance the detection capabilities of the circuit!
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以直接将这些探针连接到我们在图9.8中显示的电路中的裸露电线，以扩展和增强电路的检测能力！
+- en: Let's discuss the electronic module (zoomed in and labeled in *Figure 9.9 *on
+    the right-hand side).
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们讨论一下电子模块（在右侧的图9.9中放大并标记）。
+- en: 'In addition to a Vcc/Vin and a GND terminal, these modules *often* (not always,
+    but often) have two output terminals or pins, which are as follows:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了Vcc/Vin和GND端子外，这些模块通常（不总是，但通常）还有两个输出端子或引脚，如下所示：
+- en: An *analog* output (in our example, this is labeled **A**)
+  id: totrans-236
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*模拟*输出（在我们的示例中，这被标记为**A**）'
+- en: A  *digital* output (labeled **S**)
+  id: totrans-237
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个*数字*输出（标记为**S**）
+- en: Please note that I am not providing instructions on how to connect the previously
+    pictured module to your Raspberry Pi, but rather, I will keep the discussion general.
+    There are many variations of these modules available and while their operation
+    is similar, there can be differences in how they need to be wired. At this stage
+    of the book, if you are comfortable with the basic principles of analog versus
+    digital, voltage dividers, and ADC, you have all you need to understand and make
+    an informed decision on how to interface these modules to a device such as a Raspberry
+    Pi. A good starting place will be your modules' datasheet or any information provided
+    at the place of purchase.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我不会提供如何将先前显示的模块连接到您的树莓派的说明，而是会保持讨论的一般性。这些模块有许多变种，虽然它们的操作类似，但它们的接线方式可能有所不同。在本书的这个阶段，如果您对模拟与数字的基本原理、电压分压器和ADC感到满意，您就有了理解并对如何将这些模块接口到树莓派等设备做出明智决定的所有必要知识。一个很好的起点将是您模块的数据表或购买地点提供的任何信息。
+- en: The *analog output* is a pass-through to the probe. You connect it directly
+    into a voltage divider circuit and measure a varying voltage with an ADC such
+    as the ADS1115 – the exact scenario we created in *Figure 9.8*. If you use the
+    analog pass-through, you are bypassing all the other circuitry on the module (hence
+    why you can just connect the probes directly into our example circuit).
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*模拟输出*是一个通过到探针的通路。您可以直接将其连接到电压分压电路中，并使用诸如ADS1115之类的ADC测量可变电压 - 这正是我们在图9.8中创建的确切情景。如果您使用模拟通过，您将绕过模块上的所有其他电路（这就是为什么您可以直接将探针连接到我们的示例电路中）。'
+- en: The *digital output* is what uses the module circuitry. A typical module circuit
+    includes, at a minimum, an integrated circuit known as a voltage comparator, a
+    fixed resistor, and a variable resistor, which is a trigger-point trim adjustment.
+    The fixed resistor together with the probe creates a voltage divider. The voltage
+    comparator is responsible for monitoring the voltage across the voltage divider and
+    triggering the digital output (for example, transition from `LOW` to `HIGH`) at
+    a point determined by trim adjustment. An example of a trim adjustment variable
+    resistor can be seen in *Figure 9.9*.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*数字输出*是使用模块电路的部分。典型的模块电路至少包括一个称为电压比较器的集成电路，一个固定电阻和一个可变电阻，这是一个触发点调节。固定电阻与探针一起创建一个电压分压器。电压比较器负责监视电压分压器上的电压，并在由调节触发的点上触发数字输出（例如，从“低”到“高”的转换）。图9.9中可以看到一个调节可变电阻的示例。'
+- en: If this voltage comparison and triggering sounds a little familiar, you are
+    correct. This module with its voltage comparator and configurable trigger point
+    is, in principle, a purely electronic version of the LDR and moisture circuits
+    and Python code we have created. And yes, you could use the LDR in one of these
+    modules instead of a probe!
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果这种电压比较和触发听起来有点熟悉，那么您是正确的。这个模块及其电压比较器和可配置触发点原则上是我们创建的LDR和湿度电路以及Python代码的纯电子版本。是的，您可以在这些模块中使用LDR而不是探针！
+- en: 'So, to conclude, what''s better – using an ADS1115 and voltage divider type
+    circuit such as that shown in *Figure 9.8*, or using a module such as that pictured
+    in *Figure 9.9*? There is no one best answer; however, the following points will
+    help you make your own decision:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，总之，什么更好 - 使用ADS1115和电压分压器类型的电路，如图9.8中所示，还是使用图9.9中所示的模块？没有一个最佳答案；然而，以下几点将帮助您做出自己的决定：
+- en: Using a circuit such as that in *Figure 9.8* is an analog approach. The raw
+    voltage detected by the sensor is passed directly to your Raspberry Pi. One simple
+    advantage of this approach is that you have full control over a *trigger* point
+    in code. You could, as an example, remotely adjust the trigger point from a web
+    page. The downside of this approach is that you need a more complex circuit that
+    involves an ADS1115 and a voltage divider.
+  id: totrans-243
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用类似*图9.8*中的电路是一种模拟方法。传感器检测到的原始电压直接传递给您的Raspberry Pi。这种方法的一个简单优点是您可以完全控制代码中的*触发*点。例如，您可以远程调整触发点从网页。这种方法的缺点是您需要一个涉及ADS1115和电压分压器的更复杂的电路。
+- en: Using a module such as that pictured in *Figure 9.9* as a digital approach promotes
+    a simpler interfacing circuit to your Raspberry Pi in that you can connect the
+    digital output terminal directly to a GPIO pin (as long as the digital output
+    of the module 3.3-volts). The caveat is that you must have physical access to
+    the module and the adjustment trim to change the trigger point.
+  id: totrans-244
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用类似*图9.9*中所示的模块作为数字方法，可以促进更简单的接口电路连接到您的Raspberry Pi，只要模块的数字输出为3.3伏特。但缺点是您必须可以物理访问模块和调整电位器来更改触发点。
+- en: Summary
+  id: totrans-245
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we learned how to measure temperature and humidity using the
+    common DHT11 and/or DHT22 sensors. We also looked at how to use an LDR to detect
+    light, and this allowed us to explore voltage divider circuits and ADCs in greater
+    detail. We concluded by retrofitting our LDR circuit so that we could detect moisture.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们学习了如何使用常见的DHT11和/或DHT22传感器测量温度和湿度。我们还研究了如何使用LDR来检测光线，这使我们能够更详细地探索电压分压电路和ADC。最后，我们改装了我们的LDR电路，以便我们可以检测湿度。
+- en: The example circuits and code we covered in this chapter provide practical examples
+    of measuring environmental conditions with readily available sensors and simple
+    circuits. Your understanding of these sensors and circuits now means you can adapt
+    the examples for your own environmental monitoring projects, including using them
+    as input triggers together with Python to control other circuits.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章涵盖的示例电路和代码提供了使用现成传感器和简单电路测量环境条件的实际示例。您对这些传感器和电路的理解现在意味着您可以为自己的环境监测项目调整这些示例，包括将它们作为输入触发器与Python一起用于控制其他电路。
+- en: We also saw new practical applications of voltage divider circuits and how they
+    are used in analog circuits to turn variable resistance into a variable voltage
+    for use with an ADC. These examples and your understanding of them represent an
+    important skill that you can adapt and use with other analog-based sensors.
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还看到了电压分压电路的新实际应用，以及它们在模拟电路中如何将可变电阻转换为可变电压，用于ADC。这些示例和您对它们的理解代表了您可以适应并用于其他基于模拟的传感器的重要技能。
+- en: In the next chapter, we will learn how to go deeper into DC motor control and
+    learn how to control a servo.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习如何更深入地控制直流电机，并学习如何控制舵机。
+- en: Questions
+  id: totrans-250
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题
+- en: 'As we conclude, here is a list of questions for you to test your knowledge
+    of this chapter''s material. You will find the answers in the *Assessments* section
+    of the book:'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们结束时，这里有一些问题供您测试本章材料的知识。您将在书的*评估*部分找到答案：
+- en: Can you list two differences between a DHT11 and DHT22 temperature and humidity
+    sensor?
+  id: totrans-252
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您能列举DHT11和DHT22温湿度传感器之间的两个区别吗？
+- en: Why is the external 10kΩ pull-up resistor optional in our DHT11/22 circuit?
+  id: totrans-253
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为什么在我们的DHT11/22电路中外部10kΩ上拉电阻是可选的？
+- en: Describe the basic electronic principle used with an LDR to measure light.
+  id: totrans-254
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 描述LDR用于测量光线的基本电子原理。
+- en: How can you make an LDR more or less sensitive to certain lighting conditions?
+  id: totrans-255
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您如何使LDR对特定光照条件更或者更不敏感？
+- en: You have created an LDR circuit and calibrated the Python code. Now, you change
+    the LDR and find that the voltages readings and in-code trigger point behave slightly
+    differently. Why?
+  id: totrans-256
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您已经创建了一个LDR电路并校准了Python代码。现在，您更改了LDR，并发现电压读数和代码中的触发点行为略有不同。为什么？
+- en: Why does placing two wires in water work as a basic moisture detector when used
+    with a voltage divider and ADS1115 circuit?
+  id: totrans-257
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为什么将两根导线放入水中，配合电压分压器和ADS1115电路，可以作为基本的湿度检测器？

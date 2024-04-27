@@ -1,0 +1,2343 @@
+- en: Serverless Microservices Architectures and Patterns
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 无服务器微服务架构和模式
+- en: Microservices architectures are based on service. You could think of the microservices
+    as a lightweight version of SOA but enriched with more recent architectures, such
+    as the event-driven architecture, where an event is defined as a state of change
+    that's of interest. In this chapter, you will learn about the monolithic multi-tier
+    architecture and monolithic **service-oriented architecture** (**SOA**). We will
+    discuss the benefits and drawbacks of both architectures. We will also look at
+    the microservices background to understand the rationale behind its growth, and
+    compare different architectures.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务架构基于服务。您可以将微服务视为SOA的轻量级版本，但受到更近期架构的丰富，例如事件驱动架构，其中事件被定义为感兴趣的状态变化。在本章中，您将了解单片多层架构和单片**面向服务的架构**（**SOA**）。我们将讨论这两种架构的优缺点。我们还将研究微服务的背景，以了解其增长背后的原因，并比较不同的架构。
+- en: We will cover the design patterns and principles and introduce the serverless
+    microservice integration patterns. We then cover the communication styles and
+    decomposition microservice patterns, including synchronous and asynchronous communication.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将介绍设计模式和原则，并介绍无服务器微服务集成模式。然后，我们将涵盖通信样式和分解微服务模式，包括同步和异步通信。
+- en: You will then learn how serverless computing in AWS can be used to quickly deploy
+    event-driven computing and microservices in the cloud. We conclude the chapter
+    by setting up your serverless AWS and development environment.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您将学习如何在AWS中使用无服务器计算快速部署基于事件驱动的计算和云中的微服务。我们通过设置您的无服务器AWS和开发环境来结束本章。
+- en: 'In this chapter we will cover the following topics:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Understanding different architecture types and patterns
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解不同的架构类型和模式
+- en: Virtual machines, containers, and serverless computing
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 虚拟机、容器和无服务器计算
+- en: Overview of microservice integration patterns
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 微服务集成模式概述
+- en: Communication styles and decomposition microservice patterns
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通信样式和分解微服务模式
+- en: Serverless computing in AWS
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: AWS中的无服务器计算
+- en: Setting up your serverless environment
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设置您的无服务器环境
+- en: Understanding different architecture types and patterns
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解不同的架构类型和模式
+- en: In this section, we will discuss different architectures, such as monolithic
+    and microservices, along with their benefits and drawbacks.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论不同的架构，如单片和微服务，以及它们的优缺点。
+- en: The monolithic multi-tier architecture and the monolithic service-oriented architecture
+  id: totrans-13
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 单片多层架构和单片面向服务的架构
+- en: 'At the start of my career, while I was working for global fortune 500 clients
+    for Capgemini, we tended to use multi-tier architecture, where you create different
+    physically separate layers that you can update and deploy independently. For example,
+    as shown in the following three-tier architecture diagram, you can use **Presentation**,
+    **Domain logic**, and **Data Storage** layers:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我职业生涯的早期，当我为Capgemini的全球财富500强客户工作时，我们倾向于使用多层架构，其中您可以创建不同的物理分离层，可以独立更新和部署。例如，如下所示的三层架构图表中，您可以使用**表示**，**领域逻辑**和**数据存储**层：
+- en: '![](img/bea0b9fd-ac92-414b-8a9c-19b3cb34d6c6.png)'
+  id: totrans-15
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/bea0b9fd-ac92-414b-8a9c-19b3cb34d6c6.png)'
+- en: In the **presentation layer**, you have the user interface elements and any
+    presentation-related applications. In **domain logic**, you have all the business
+    logic and anything to do with passing the data from the presentation layer. Elements
+    in the domain logic also deal with passing data to the **storage or data layer**,
+    which has the data access components and any of the database elements or filesystem
+    elements. For example, if you want to change the database technology from SQL
+    Server to MySQL, you only have to change the data-access components rather than
+    modifying elements in the presentation or domain-logic layers. This allows you
+    to decouple the type of storage from presentation and business logic, enabling
+    you to more readily change the database technology by swapping the data-storage
+    layer.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在**表示层**，您有用户界面元素和任何与表示相关的应用程序。在**领域逻辑**中，您有所有业务逻辑和与从表示层传递数据有关的任何内容。领域逻辑中的元素还涉及将数据传递给**存储或数据层**，其中包括数据访问组件和任何数据库元素或文件系统元素。例如，如果您想要将数据库技术从SQL
+    Server更改为MySQL，您只需更改数据访问组件，而不是修改表示层或领域逻辑层中的元素。这使您能够将存储类型与表示和业务逻辑解耦，从而能够更容易地通过交换数据存储层来更改数据库技术。
+- en: 'A few years later at Capgemini, we implemented our clients'' projects using
+    SOA, which is much more granular than the multi-tier architecture. It is basically
+    the idea of having standardized service contracts and registry that allows for
+    automation and abstraction:'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 几年后在Capgemini，我们使用SOA来实施客户项目，这比多层架构更加细粒度。基本上是有标准化的服务契约和注册表，允许自动化和抽象：
+- en: '![](img/e74da850-9729-42de-bc3a-8af79fb09645.png)'
+  id: totrans-18
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/e74da850-9729-42de-bc3a-8af79fb09645.png)'
+- en: 'There are four important service properties related to SOA:'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与SOA相关的四个重要服务属性：
+- en: Each service needs to have a clear business activity that is linked to an activity
+    in the enterprise.
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每项服务都需要有一个与企业活动相关联的清晰业务活动。
+- en: Anybody consuming the service does not need to understand the inner workings.
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用服务的任何人都不需要了解内部工作原理。
+- en: All the information and systems are self-contained and abstracted.
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 所有信息和系统都是自包含的和抽象的。
+- en: To support its composability, the service may consist of other underlying services
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为了支持其可组合性，服务可能由其他基础服务组成
+- en: 'Here are some important SOA principles:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一些重要的SOA原则：
+- en: Standardized
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 标准化
+- en: Loosely coupled
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 松散耦合的
+- en: Abstract
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: Stateless
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 无状态的
+- en: Granular
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 细粒度的
+- en: Composable
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 可组合的
+- en: Discoverable
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 可发现的
+- en: Reusable
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 可重用的
+- en: The first principle is that there is a **standardized** service contract. This
+    is basically a communication agreement that's defined at the enterprise level
+    so that when you consume a service, you know exactly which service it is, the
+    contract for passing in messages, and what you are going to get back. These services
+    are **loosely coupled**. That means they can work autonomously, but also you can
+    access them from any location within the enterprise network. They also offer an
+    **abstract** version, which means that these services are a black box where the
+    inner logic is actually hidden away, but also they can work independently of other
+    services.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个原则是存在**标准化**的服务合同。这基本上是在企业级别定义的通信协议，因此当您使用服务时，您确切地知道是哪个服务，传递消息的合同以及您将得到什么回报。这些服务是**松散耦合**的。这意味着它们可以自主工作，但您也可以从企业网络中的任何位置访问它们。它们还提供**抽象**版本，这意味着这些服务是一个黑匣子，内部逻辑实际上是隐藏的，但它们也可以独立于其他服务工作。
+- en: Some services will also be **stateless**. That means that, if you call a service,
+    passing in a request, you will get a response and you would also get an exception
+    if there is a problem with the service or the payload. Granularity is also very
+    important within SOA. The service needs to be **granular** enough that it's not
+    called inefficiently or many times. So, we want to normalize the level and the
+    granularity of the service. Some services can be decomposed if they're being reused
+    by the services, or services can be joined together and normalized to minimize
+    redundancy. Services also need to be **composable **so you can merge them together
+    into larger services or split them up.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些服务也将是**无状态**的。这意味着，如果调用一个服务，传递一个请求，您将得到一个响应，如果服务或有效负载出现问题，您还将得到一个异常。在SOA中，粒度也非常重要。服务的粒度需要足够小，以便不会被低效地调用或多次调用。因此，我们希望规范化服务的级别和粒度。如果某些服务被其他服务重用，可以将其分解，或者可以将服务合并并规范化以最小化冗余。服务还需要**可组合**，因此您可以将它们合并成更大的服务或将它们拆分。
+- en: There's a standardized set of contracts, but the service also needs to be **discoverable**.
+    Discoverable means that there is a way to automatically discover what service
+    is available, what endpoints are available, and a way to interpret them. Finally,
+    the reasonable element, **reuse** is really important for SOA, which is when the
+    logic can be reused in other parts of the code base.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一套标准化的合同，但服务还需要**可发现**。可发现意味着有一种自动发现可用的服务、可用的端点以及解释它们的方法。最后，合理的元素，**重用**对于SOA非常重要，这是指逻辑可以在代码库的其他部分中重用。
+- en: Benefits of monolithic architectures
+  id: totrans-36
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 单体架构的好处
+- en: In SOA, the architecture is loosely coupled. All the services for the enterprise
+    are defined in one repository. This allows us to have good visibility of the services
+    available. In addition, there is a global data model. Usually, there is one data
+    store where we store all the data sources and each individual service actually
+    writes or reads to it. This allows it to be centralized at a global level.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在SOA中，架构是松散耦合的。企业的所有服务都在一个存储库中定义。这使我们能够清楚地看到可用的服务。此外，还有一个全局数据模型。通常，有一个数据存储库，我们在其中存储所有数据源，每个单独的服务实际上都会写入或读取它。这使得它可以在全局层面上集中。
+- en: Another benefit is that there is usually a small number of large services, which
+    are driven by a clear business goal. This makes them easy to understand and consistent
+    for our organization. In general, the communication between the services is decoupled
+    via either smart pipelines or some kind of middleware.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个好处是通常只有少量大型服务，这些服务由明确的业务目标驱动。这使它们易于理解，并且对我们的组织来说是一致的。一般来说，服务之间的通信是通过智能管道或某种中间件解耦的。
+- en: Drawbacks of the monolithic architectures
+  id: totrans-39
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 单体架构的缺点
+- en: The drawback of the monolithic architecture is that there is usually a single
+    technology stack. This means the application server or the web server or the database
+    frameworks are consistent throughout the enterprise. Obsolete libraries and code
+    can be difficult to upgrade, as this is dependent on a single stack and it's almost
+    like all the services need to be aligned on the same version of libraries.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单体架构的缺点是通常只有一个技术堆栈。这意味着应用服务器、Web服务器或数据库框架在整个企业中是一致的。过时的库和代码可能很难升级，因为这取决于单一堆栈，几乎就像所有服务都需要在相同版本的库上对齐。
+- en: Another drawback is that the code base is usually very large on a single stack
+    stack, which means that there are long build times and test times to build and
+    deploy the code. The services are deployed on a single or a large cluster of application
+    servers and web servers. This means that, in order to scale, you need to scale
+    the whole server, which means there's no ability to deploy and scale applications
+    independently. To scale out an application, you need to scale out the web application
+    or the application server that hosts the application.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个缺点是在单一堆栈上通常有非常庞大的代码库，这意味着构建和部署代码需要很长的时间。服务部署在单个或大型应用服务器和Web服务器上。这意味着，为了扩展，您需要扩展整个服务器，这意味着无法独立部署和扩展应用程序。要扩展应用程序，您需要扩展托管应用程序的Web应用程序或应用程序服务器。
+- en: Another drawback is that there's generally a middleware orchestration layer
+    or integration logic that is centralized. For example, services would use the **Business
+    Process Management** (**BPM**) framework to control the workflow, you would use
+    an **Enterprise Service Bus** (**ESB**), which allows you to do routing your messages
+    centrally, or you'd have some kind of middleware that would deal with the integration
+    between the services themselves. A lot of this logic is tied up centrally and
+    you have to be very careful not to break any inter-service communication when
+    you're changing the configuration of that centralized logic.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个缺点是通常有一个中间件编排层或集成逻辑是集中的。例如，服务将使用**业务流程管理**（**BPM**）框架来控制工作流程，您将使用**企业服务总线**（**ESB**），它允许您在中心路由消息，或者您将有某种中间件来处理服务之间的集成。许多这些逻辑都集中在一起，当您更改该中心逻辑的配置时，您必须非常小心，以免破坏任何服务之间的通信。
+- en: Overview of microservices
+  id: totrans-43
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 微服务概述
+- en: The term microservice arose from a workshop in 2011, when different teams described
+    an architecture style that they used. In 2012, Adrien Cockcroft from Netflix actually
+    described microservice as a fine-grained SOA who pioneered this fine-grained SOA
+    at web scale.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务一词起源于2011年的一个研讨会，当时不同的团队描述了他们使用的一种架构风格。2012年，Netflix的Adrien Cockcroft实际上将微服务描述为一种在Web规模上开创的细粒度SOA。
+- en: For example, if we have sensors on an **Internet of Things** (**IoT**) device,
+    if there's a change of temperature, we would emit an event as a possible warning
+    further downstream. This is what's called **event-stream processing** or **complex-event
+    processing**. Essentially, everything is driven by events throughout the whole
+    architecture.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，如果我们在**物联网**（**IoT**）设备上有传感器，如果温度发生变化，我们将发出事件作为可能的下游警告。这就是所谓的**事件流处理**或**复杂事件处理**。基本上，整个架构都由事件驱动。
+- en: The other type of design used in microservices is called **domain-driven design**
+    (**DDD**). This is essentially where there is a common language between the domain
+    experts and the developers. The other important component in DDD is the **bounded
+    context**, which is where there is a strict model of consistency that relies in
+    its bounds for each service. For example, if it's a service dealing with customer
+    invoicing, that service will be the central point and only place where customer
+    invoicing can be processed, written to, or updated. The benefits are that there
+    won't be any confusion around the responsibilities of data access with systems
+    outside of the bounded context.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务中使用的另一种设计类型称为**领域驱动设计**（**DDD**）。这基本上是领域专家和开发人员之间有一个共同的语言。DDD中的另一个重要组成部分是**有界上下文**，这是每个服务都依赖其边界的严格一致性模型。例如，如果这是一个处理客户开票的服务，该服务将是唯一可以处理、写入或更新客户开票的中心点和唯一位置。好处是在有界上下文之外的系统中不会有关于数据访问责任的混淆。
+- en: 'You could think of microservice as centered around a REST endpoint or application
+    programming interface using JSON standards. A lot of the logic could be built
+    into the service. This is what is called a **dumb pipeline** but a smart endpoint,
+    and you can see why in the diagram. We have a service that deals with customer
+    support, as follows:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以将微服务看作是围绕着使用JSON标准的REST端点或应用程序编程接口构建的。很多逻辑可以内置到服务中。这就是所谓的**愚蠢管道**但是聪明的端点，您可以在图表中看到原因。我们有一个处理客户支持的服务，如下：
+- en: '![](img/f3d55bc0-8bb3-4266-9b5d-4570fbcd6e88.png)'
+  id: totrans-48
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f3d55bc0-8bb3-4266-9b5d-4570fbcd6e88.png)'
+- en: For example, the endpoint would update customer support details, add a new ticket,
+    or get customer support details with a specific identifier. We have a local customer
+    support data store, so all the information around customer support is stored in
+    that data store and you can see that the microservice emits customer-support events.
+    These are sent out on a publish-subscribe mechanism or using other publishing-event
+    frameworks, such as **Command Query Responsibility Segregation** (**CQRS**). You
+    can see that this fits within the bounded context. There's a single responsibility
+    around this bounded context. So, this microservice controls all information around
+    customer support.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，端点将更新客户支持详细信息，添加新的工单，或使用特定标识符获取客户支持详细信息。我们有一个本地客户支持数据存储，因此所有关于客户支持的信息都存储在该数据存储中，您可以看到微服务发出客户支持事件。这些事件通过发布-订阅机制或使用其他发布事件框架发送出去，例如**命令查询责任分离**（**CQRS**）。您可以看到这符合有界上下文。在这个有界上下文中有一个单一的责任。因此，这个微服务控制着关于客户支持的所有信息。
+- en: Benefits and drawbacks of microservice architectures
+  id: totrans-50
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 微服务架构的优缺点
+- en: The bounded context, and the fact that this is a very small code base, allow
+    you to build very frequently and deploy very frequently. In addition, you can
+    scale these services independently. There's usually one application server or
+    web server per microservice. You can obviously scale it out very quickly, just
+    for the specific service that you want to. In addition, you can have frequent
+    builds that you test more frequently, and you can use any type of language, database,
+    or web app server. This allows it to be a polygon system. The bounded context
+    is a very important as you can model one domain. Features can be released very
+    quickly because, for example, the customer services microservice could actually
+    control all changes to the data, so you can deploy these components a lot faster.
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有界上下文和这是一个非常小的代码库，允许您非常频繁地构建和部署。此外，您可以独立扩展这些服务。通常每个微服务都有一个应用服务器或Web服务器。您可以很快地扩展它，只需针对您想要的特定服务。此外，您可以经常构建并更频繁地进行测试，并且可以使用任何类型的语言、数据库或Web应用程序服务器。这使其成为一个多边形系统。有界上下文非常重要，因为您可以对一个领域进行建模。功能可以非常快速地发布，因为例如，客户服务微服务实际上可以控制对数据的所有更改，因此您可以更快地部署这些组件。
+- en: However, there are some drawbacks to using a microservices architecture. First,
+    there's a lot of complexity in terms of distributed development and testing. In
+    addition, the services talk a lot more, so there's more network traffic. Latency
+    and networks become very important in microservices. The DevOps team has to maintain
+    and monitor the time it takes to get a response from another service. In addition,
+    the changing of responsibilities is another complication. For example, if we're
+    splitting up one of the bounded contexts into several types of sub-bounded context,
+    you need to think about how that works within teams. A dedicated DevOps team is
+    also generally needed, which is essentially there to support and maintain much
+    larger number of services and machines throughout the organization.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，使用微服务架构也存在一些缺点。首先，在分布式开发和测试方面存在很多复杂性。此外，服务之间的通信更多，因此网络流量更大。延迟和网络在微服务中变得非常重要。DevOps团队必须维护和监控从另一个服务获取响应所需的时间。此外，责任的变化是另一个复杂因素。例如，如果我们将一个有界上下文分成几种类型的子有界上下文，你需要考虑这在团队内如何运作。通常还需要一个专门的DevOps团队，他们基本上是为了支持和维护整个组织中更多的服务和机器。
+- en: SOA versus microservices
+  id: totrans-53
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SOA与微服务
+- en: Now that we have a good understanding of both, we will compare the SOA and microservices
+    architectures. In terms of the communication itself, both SOA and microservices
+    can use synchronous and asynchronous communication. SOA typically relied on **Simple
+    Object Access Protocol** (**SOAP**) or web services. Microservices tend to be
+    more modern and widely use **REpresentational State Transfer** (**REST**) **Application
+    Programming Interfaces** (**APIs**).
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们对两者有了很好的理解，我们将比较SOA和微服务架构。在通信本身方面，SOA和微服务都可以使用同步和异步通信。SOA通常依赖于简单对象访问协议（SOAP）或Web服务。微服务倾向于更现代化，广泛使用表述状态转移（REST）API。
+- en: 'We will start with the following diagram, which compares SOA and microservices:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从以下图表开始，比较SOA和微服务：
+- en: '![](img/d0e8b0cf-57f9-44e9-a02b-959a6a179109.png)'
+  id: totrans-56
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/d0e8b0cf-57f9-44e9-a02b-959a6a179109.png)'
+- en: The orchestration is where there's a big differentiation. In SOA, everything
+    is centralized around a BPM, ESB, or some kind of middleware. All the integration
+    between services and data flowing is controlled centrally. This allows you to
+    configure any changes in one place, which has some advantages.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 编排是一个重大的区别所在。在SOA中，一切都围绕着BPM、ESB或某种中间件集中。所有服务和数据流之间的集成都是在中央控制的。这使你可以在一个地方配置任何更改，这有一些优势。
+- en: The microservices approach has been to use a more choreography-based approach.
+    This is where an individual service is smarter, that is, a smart endpoint but
+    a dumb pipeline. That means that the services know exactly who to call and what
+    data they will get back, and they manage that process within the microservice.
+    This gives us more flexibility in terms of the integration for microservices.
+    In the SOA world or the three-tier architecture, there's less flexibility as it's
+    usually a single code base and the integration is a large set of monolith releases
+    and deployments of user interface or backend services. This can limit the flexibility
+    of your enterprise. For microservices, however, these systems are much smaller
+    and can be deployed in isolation and much more fine-grained.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务的方法是使用更基于协作的方法。这是一个个体服务更加智能，即一个智能端点但一个愚蠢的管道。这意味着服务知道要调用谁以及他们将得到什么数据，并且他们在微服务内管理这个过程。这给了我们在微服务集成方面更多的灵活性。在SOA世界或三层架构中，灵活性较少，因为通常是单一的代码库，集成是一组大型的单体发布和用户界面或后端服务的部署。这可能限制企业的灵活性。然而，对于微服务来说，这些系统要小得多，可以独立部署，更加细粒度。
+- en: Finally, on the architecture side, SOA works at the enterprise level, where
+    we would have an enterprise architect or solutions architect model and control
+    the release of all the services in a central repository. Microservices are much
+    more flexible. Microservices talked about working at the project level where they
+    say the team is only composed of a number of developers or a very small number
+    of developers that could sit around and share a pizza. So, this gives you much
+    more flexibility to make decisions rapidly at the project level, rather than having
+    to get everything agreed at the enterprise level.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在架构方面，SOA在企业级别运作，那里会有一个企业架构师或解决方案架构师模型和控制中央存储库中所有服务的发布。微服务更加灵活。微服务讨论的是在项目级别工作，他们说团队只由一些开发人员或非常少的开发人员组成，可以坐在一起分享披萨。因此，这使你在项目级别更加灵活地做出决策，而不必在企业级别达成一致。
+- en: Virtual machines, containers, and serverless computing
+  id: totrans-60
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 虚拟机、容器和无服务器计算
+- en: Now that we have a better understanding of the monolithic and microservice architectures,
+    let's look at the **Amazon Web Service** (**AWS**) building blocks for creating
+    serverless microservices.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们对单体和微服务架构有了更好的理解，让我们看看用于创建无服务器微服务的亚马逊网络服务（AWS）构建模块。
+- en: But first we'll cover virtual machines, containers, and serverless computing,
+    which are the basic building blocks behind any application or service hosted in
+    the public cloud.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但首先我们将介绍虚拟机、容器和无服务器计算，这是托管在公共云中的任何应用程序或服务的基本构建模块。
+- en: Virtual machines are the original offering in the public cloud and web hosting
+    sites, containers are lightweight standalone images, and serverless computing
+    is when the cloud provider fully manages the resources. You will understand the
+    benefits and drawbacks of each approach and we will end on a detailed comparison
+    of all three.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虚拟机是公共云和网络托管站点的最初提供的服务，容器是独立的轻量级镜像，无服务器计算是云提供商完全管理资源的情况。你将了解每种方法的优缺点，我们将最后进行详细比较。
+- en: Virtual machines
+  id: totrans-64
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 虚拟机
+- en: In traditional data centers, you would have to buy or lease physical machines
+    and have spare capacity to deal with additional web or user traffic. In the new
+    world, virtual machines were one of the first public cloud offerings. You can
+    think of it as similar to physical boxes, where you can install an operating system,
+    remotely connect via SSH or RDP, and install applications and services. I would
+    say that virtual machines have been one of the key building blocks for start-up
+    companies to be successful. It gave them the ability to go to market with only
+    small capital investments and to scale out with an increase in their web traffic
+    and user volumes. This was something that previously only large organizations
+    could afford, given the big upfront costs of physical hardware.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在传统数据中心中，您必须购买或租赁物理机器，并具备额外的容量来处理额外的网络或用户流量。在新世界中，虚拟机是最早的公共云服务之一。您可以将其视为类似于物理盒子，您可以在其中安装操作系统，通过SSH或RDP进行远程连接，并安装应用程序和服务。我认为虚拟机一直是初创公司成功的关键构建模块之一。它使他们能够以较小的资本投资进入市场，并随着其网络流量和用户量的增加而扩展。这是以前只有大型组织才能负担得起的，因为物理硬件的大量前期成本。
+- en: The advantages of virtual machines are the pay per usage, choice of instance
+    type, and dynamic allocation of storage, giving your organization full flexibility
+    to rent hardware within minutes rather than wait for physical hardware to be purchased.
+    Virtual machines also provides security, which is managed by the cloud provider.
+    In addition, they provide multi-region auto-scaling and load balancing, again
+    managed by the cloud provider and available almost at the click of a button. There
+    are many virtual machines available, for example, Amazon EC2, Azure VMs, and Google
+    Compute Engine.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虚拟机的优势在于按使用量付费、实例类型选择和动态存储分配，使您的组织完全灵活地在几分钟内租用硬件，而不是等待购买物理硬件。虚拟机还提供由云提供商管理的安全性。此外，它们提供多区域自动扩展和负载平衡，同样由云提供商管理，几乎可以通过点击按钮获得。有许多虚拟机可用，例如Amazon
+    EC2、Azure VM和Google Compute Engine。
+- en: However, they do have some drawbacks. The main drawback is that it takes a few
+    minutes to scale. So, any machine that needs to be spun up takes a few minutes,
+    making it impossible most to scale quickly upon request. There is also an effort
+    in terms of configuration where the likes of Chef or Puppet are required for configuration
+    management. For example, the operating system needs to be kept up to date.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，它们也有一些缺点。主要缺点是扩展需要几分钟的时间。因此，需要启动的任何机器都需要几分钟的时间，这使得在请求时几乎不可能快速扩展。在配置方面也需要一些努力，需要像Chef或Puppet这样的配置管理工具。例如，操作系统需要保持最新。
+- en: Another drawback is that you still need to write the logic to poll or subscribe
+    to other managed services, such as streaming analytics services. In addition,
+    you still pay for idle machine time. For example, when your services are not running,
+    the virtual machines are still up and you're still paying for that time even if
+    they're not being actively used.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个缺点是您仍然需要编写逻辑来轮询或订阅其他托管服务，例如流分析服务。此外，您仍然需要支付空闲机器时间。例如，当您的服务未运行时，虚拟机仍然运行，并且即使它们没有被积极使用，您仍然需要支付时间费用。
+- en: Containers
+  id: totrans-69
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 容器
+- en: The old way with virtual machines was to deploy applications on a host operating
+    system with configuration-management tools such as Chef or Puppet. This has the
+    advantage of managing the application artifacts' libraries and life cycles with
+    each other and trying to operate specific operating systems, whether Linux or
+    Windows. Containers came out of this limitation with the idea of shipping your
+    code and dependencies into a portable container where you have full operating-system-level
+    virtualization. You essentially have better use of the available resources on
+    the machine.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用虚拟机的旧方法是在主机操作系统上部署应用程序，并使用诸如Chef或Puppet之类的配置管理工具。这样做的好处是管理应用程序构件的库和生命周期，并尝试操作特定的操作系统，无论是Linux还是Windows。容器是出于这种限制而产生的，其思想是将代码和依赖项打包到一个可移植容器中，在这里您可以进行完整的操作系统级虚拟化。实际上，您可以更好地利用机器上可用的资源。
+- en: These containers can be spun up very fast and they are essentially immutable,
+    that is, the OS, library versions, and configurations cannot be changed. The basic
+    idea is that you ship the code and dependencies in this portable container and
+    the environments can be recreated locally or on a server by a configuration. Another
+    important aspect is the orchestration engine. This is the key to managing containers.
+    So, you'd have Docker images that will be managed, deployed, and scaled by Kubernetes
+    or Amazon **EC2 container service** (**ECS**).
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些容器可以非常快速地启动，并且基本上是不可变的，也就是说，操作系统、库版本和配置都不能更改。基本思想是将代码和依赖项放入这个可移植容器中，并且可以通过配置在本地或服务器上重新创建环境。另一个重要方面是编排引擎。这是管理容器的关键。因此，您将有由Kubernetes或Amazon
+    EC2容器服务（ECS）管理、部署和扩展的Docker镜像。
+- en: The drawbacks are that these containers generally scale within seconds, which
+    is still too slow to actually invoke a new container per request. So, you'd need
+    them to be pre-warmed and already available, which has a cost. In addition, the
+    cluster and image configuration does involve some DevOps effort.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些容器的缺点是它们通常在几秒钟内扩展，这仍然太慢了，无法实际上每个请求调用一个新容器。因此，您需要它们预热并且已经可用，这是有成本的。此外，集群和镜像配置确实需要一些DevOps工作。
+- en: Recently AWS introduced AWS Fargate and **Elastic Kubernetes Service** (**EKS**),
+    which have helped to relieve some of this configuration-management and support
+    effort, but you would still need a DevOps team to support them.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最近，AWS推出了AWS Fargate和Elastic Kubernetes Service（EKS），这些都有助于减轻一些配置管理和支持工作，但您仍然需要一个DevOps团队来支持它们。
+- en: The other drawback is that there's an integration effort with the managed services.
+    For example, if you're dealing with a streaming analytics service, you still need
+    to write the polling and subscription code to pull the data into your application
+    or service.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个缺点是与托管服务的集成工作。例如，如果您正在处理流分析服务，仍然需要编写轮询和订阅代码，将数据拉入您的应用程序或服务。
+- en: Finally, like with virtual machines, you still pay for any containers that are
+    running even if the Kubernetes assists with this. They can run on the EC2 instance,
+    so you'll still need to pay for that actual machine through a running time even
+    if it's not being used.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，与虚拟机一样，即使Kubernetes协助，您仍然需要支付正在运行的任何容器的费用。它们可以在EC2实例上运行，因此即使未使用，您仍需要支付实际机器的运行时间。
+- en: Serverless computing
+  id: totrans-76
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 无服务器计算
+- en: You can think of service computing as focusing on business logic rather than
+    on all the infrastructure-configuration management and integration around the
+    service. In serverless computing, there are still servers, it's just that you
+    don't manage the servers themselves, the operating system, or the hardware, and
+    all the scalability is managed by the cloud provider. You don't have access to
+    the raw machine, that is, you can't SSH onto the box.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以将服务计算视为专注于业务逻辑，而不是围绕服务的所有基础设施配置管理和集成。在无服务器计算中，仍然存在服务器，只是您不管理服务器本身、操作系统或硬件，所有的可伸缩性都由云提供商管理。您无法访问原始机器，也就是说，您无法SSH到该机器。
+- en: The benefits are that you can really focus on the business logic code rather
+    than any of the infrastructure or inbound integration code, which is the the business
+    value you are adding as an organization for your customers and clients.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 优势在于您可以真正专注于业务逻辑代码，而不是基础设施或入站集成代码，这是您作为组织为客户和客户添加的业务价值。
+- en: In addition, the security is managed by the cloud provider again, auto-scaling
+    and the high availability options also managed by the cloud provider. You can
+    spin up more instances dynamically based on the number of requests, for example.
+    The cost is per execution time not per idle time.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，安全性再次由云提供商管理，自动扩展和高可用性选项也由云提供商管理。例如，您可以根据请求的数量动态地启动更多实例。费用是按执行时间而不是按空闲时间计算。
+- en: There are different public cloud serverless offerings. Google, Azure, AWS, and
+    Alibaba cloud have the concept of **Functions as a Service** (**FaaS**). This
+    is where you deploy your business logic code within a function and everything
+    around it, such as the security and the scalability, is managed by the cloud provider.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不同的公共云无服务器提供。Google、Azure、AWS和阿里巴巴云都有函数即服务（FaaS）的概念。这是您在函数中部署业务逻辑代码的地方，周围的一切，如安全性和可伸缩性，都由云提供商管理。
+- en: The drawback is that these are stateless, which means they have a very short
+    lifetime. After the few minutes are over, any state maintained within that function
+    is lost, so it has to be persisted outside. It's not suitable for a long-running
+    processes. It does have a limited instance type and a duration too. For example,
+    AWS Lambdas have a duration of 15 minutes before they are terminated. There's
+    also constraints on the actual size of the external libraries or any custom libraries
+    that you package together, since these lambdas need to be spun up very quickly.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 缺点是这些是无状态的，这意味着它们的寿命非常短。几分钟后，函数内部维护的任何状态都会丢失，因此必须在外部进行持久化。它不适用于长时间运行的进程。它还具有有限的实例类型和持续时间。例如，AWS
+    Lambda在终止之前有15分钟的持续时间。对于外部库的实际大小或任何自定义库，也存在限制，因为这些Lambda需要非常快速地启动。
+- en: Comparing virtual machines, containers, and serverless
+  id: totrans-82
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 比较虚拟机、容器和无服务器
+- en: 'Let''s compare **Infrastructure as a Service** (**IaaS**), **Containers as
+    a Service** (**CaaS**), and **Functions as a Service** (**FaaS**). Think of IaaS
+    as the virtual machine, CaaS as pool of Docker containers and FaaS an example
+    will be Lambda functions. This is a comparison between IaaS, CaaS, and FaaS:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们比较基础设施即服务（IaaS），容器即服务（CaaS）和函数即服务（FaaS）。将IaaS视为虚拟机，CaaS视为Docker容器池，FaaS的一个示例将是Lambda函数。这是IaaS、CaaS和FaaS之间的比较：
+- en: '![](img/fedf31b9-02f4-4fc5-a91b-cd15342ebbb5.png)'
+  id: totrans-84
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/fedf31b9-02f4-4fc5-a91b-cd15342ebbb5.png)'
+- en: The green elements are managed by the user, and the blue elements are managed
+    by the cloud service provider. So, on the left, you can see that IaaS, as used
+    with virtual machines, have a lot of the responsibility on the user. In CaaS,
+    the operating-system level is managed by the provider, but you can see that the
+    container and the runtime are actually managed by the user. And, finally on the
+    right, FaaS, you can see the core business logic code and application configuration
+    is managed by the user.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 绿色元素由用户管理，蓝色元素由云服务提供商管理。因此，在左侧，您可以看到IaaS，如虚拟机一样，用户承担了很多责任。在CaaS中，操作系统级由提供商管理，但您可以看到容器和运行时实际上是由用户管理的。最后，在右侧，FaaS，您可以看到核心业务逻辑代码和应用程序配置由用户管理。
+- en: 'So, how do you choose between AWS Lambda containers and EC2 instances in the
+    AWS world? Check out the following chart:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，在AWS世界中，您如何在AWS Lambda容器和EC2实例之间进行选择？请查看以下图表：
+- en: '![](img/d331be81-1102-4713-8318-1f8037af398b.png)'
+  id: totrans-87
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/d331be81-1102-4713-8318-1f8037af398b.png)'
+- en: If we compare virtual machines against the containers and Lambda functions on
+    the top row, you can see that there is some configuration effort required in terms
+    of the maintenance, building it for high availability, and management. For the
+    Lambda functions, this is actually done on a pre-request basis. That is, it's
+    request-driven. AWS will spin up more lambdas if more traffic hits your site to
+    make it **highly available** (**HA**), for example.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们将虚拟机与容器和Lambda函数进行比较，您会发现在维护方面需要一些配置工作，使其具有高可用性和管理性。对于Lambda函数，这实际上是在预请求的基础上完成的。也就是说，它是请求驱动的。例如，如果您的网站受到更多流量的影响，AWS将会启动更多的Lambda以使其高度可用（HA）。
+- en: In terms of flexibility, you have full access in virtual machines and containers,
+    but with AWS Lambda, you have default hardware, default operating system, and
+    no **graphics processing units** (**GPU**) available. The upside is that there
+    is no upgrade or maintenance required on your side for Lambdas.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就灵活性而言，您可以完全访问虚拟机和容器，但在AWS Lambda中，您只有默认的硬件、默认的操作系统，没有图形处理单元（GPU）可用。好处是您不需要对Lambda进行升级或维护。
+- en: In terms of scalability, you need to plan ahead for virtual machines and containers.
+    You need to provision the containers or instances and decide how you are going
+    to scale. In AWS Lambda functions, scaling is implicit based on the number of
+    requests or data volumes, as you natively get more or fewer lambdas executing
+    in parallel.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就可扩展性而言，您需要提前规划虚拟机和容器。您需要预配容器或实例，并决定如何进行扩展。在AWS Lambda函数中，扩展是根据请求的数量或数据量隐式进行的，因为您会自然地获得更多或更少的并行执行的Lambda函数。
+- en: The launch of virtual machines is usually in minutes and they can stay on perhaps
+    for weeks. Containers can spin up within seconds and can stay on for minutes or
+    hours before they can be disposed of. Lambda functions, however, can spin up in
+    around 100 milliseconds and generally live for seconds or maybe a few minutes.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虚拟机的启动通常需要几分钟，可能会持续几周。容器可以在几秒钟内启动，并可能在几分钟或几小时内保持运行，然后被处理掉。然而，Lambda函数可以在大约100毫秒内启动，并且通常会持续几秒钟或几分钟。
+- en: In terms of state, virtual machines and containers can maintain state even if
+    it's generally not best practice for scaling. Lambda functions are always stateless,
+    when they terminate their execution, anything in memory is disposed of, unless
+    it's persisted outside in a DynamoDB table or S3 bucket, for example.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就状态而言，虚拟机和容器可以保持状态，即使这通常不是扩展的最佳实践。Lambda函数始终是无状态的，当它们终止执行时，内存中的任何内容都会被处理掉，除非它在外部持久化，例如在DynamoDB表或S3存储桶中。
+- en: Custom integration with AWS services is required for virtual machines and Docker
+    containers. In Lambda functions, however, event sources can push data to a Lambda
+    function using built-in integration with the other AWS services, such as Kinesis,
+    S3, and API Gateway. All you have to do is subscribe the Lambda event source to
+    a Kinesis Stream and the data will get pushed to your Lambda with its business
+    logic code, which allows you to decide how you process and analyze that data.
+    However, for EC2 virtual machines and ECS containers, you need to build that custom
+    inbound integration logic using the AWS SDK, or by some other means.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虚拟机和Docker容器需要与AWS服务进行自定义集成。然而，在Lambda函数中，事件源可以使用内置集成与其他AWS服务（如Kinesis、S3和API
+    Gateway）将数据推送到Lambda函数。您只需订阅Lambda事件源到Kinesis流，数据就会被推送到您的Lambda函数中，带有其业务逻辑代码，这使您能够决定如何处理和分析这些数据。然而，对于EC2虚拟机和ECS容器，您需要使用AWS
+    SDK或其他方式构建自定义的入站集成逻辑。
+- en: Finally, in terms of pricing, EC2 instances are priced per second. They also
+    have a spot instance that uses market rates, which is lot cheaper than on-demand
+    instances. The same goes for containers, except that you can have many containers
+    on one EC2 instance. This makes better use of resources and is a lot cheaper,
+    as you flexibility to spread different containers among the EC2 instances. For
+    AWS Lambda functions, the pricing is per 100 milliseconds, invocation number,
+    and the amount of **random-access memory** (**RAM**) required.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，就定价而言，EC2实例按秒计费。它们还有一个使用市场价格的竞价实例，比按需实例便宜得多。容器也是如此，只是您可以在一个EC2实例上运行多个容器。这样可以更好地利用资源，成本更低，因为您可以在EC2实例之间灵活地分配不同的容器。对于AWS
+    Lambda函数，定价是按100毫秒、调用次数和所需的随机存取内存（RAM）计费。
+- en: Overview of microservice integration patterns
+  id: totrans-95
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 微服务集成模式概述
+- en: In this section, we'll discuss design patterns, design principles, and how microservice
+    architectural patterns relate to traditional microservice patterns and can be
+    applied to serverless microservices. These topics will help you gain an overview
+    of different integration patterns.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论设计模式、设计原则，以及微服务架构模式与传统微服务模式的关系，以及如何应用于无服务器微服务。这些主题将帮助您了解不同的集成模式。
+- en: Design patterns
+  id: totrans-97
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设计模式
+- en: Patterns are reusable blueprints that are a solution to a similar problem others
+    have faced, and that have widely been reviewed, tested, and deployed in various
+    production environments.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模式是可重复使用的蓝图，是其他人面临类似问题的解决方案，已经在各种生产环境中得到广泛审查、测试和部署。
+- en: Following them means that you will benefit from best practices and the wisdom
+    of the technical crowd. You will also speak the same language as other developers
+    or architects, which allows you to exchange your ideas much faster, integrate
+    with other systems more easily, and run staff handovers more effectively.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 遵循这些模式意味着您将受益于最佳实践和技术人员的智慧。您还将与其他开发人员或架构师说同样的语言，这使您能够更快地交换想法，更轻松地与其他系统集成，并更有效地进行员工交接。
+- en: Why are patterns useful?
+  id: totrans-100
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 模式为什么有用？
+- en: Useful applications almost never exist in isolation. They are almost always
+    integrated in a wider ecosystem, which is especially true for microservices. In
+    other words, the integration specification and requirements need to be communicated
+    and understood by other developers and architects.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有用的应用几乎从不孤立存在。它们几乎总是集成在更广泛的生态系统中，这对于微服务来说尤其如此。换句话说，集成规范和要求需要被其他开发人员和架构师沟通和理解。
+- en: When using patterns, you have a common language that is spoken among the technical
+    crowds, allowing you to be understood. It's really about better collaborating,
+    working with other people, exchanging ideas, and working out how to solve problems.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用模式时，您有一个在技术人员中间通用的语言，使您能够被理解。这实际上是更好地协作，与其他人合作，交换想法，解决问题。
+- en: The main aim of patterns is to save you time and effort when implementing new
+    services, as you have a standard terminology and blueprint to build something.
+    In some cases, they help you avoid pitfalls as you can learn from others' experience
+    and also apply the best practices, software, design patterns, and principles.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模式的主要目的是在实现新服务时节省时间和精力，因为您有一个标准的术语和蓝图来构建东西。在某些情况下，它们可以帮助您避免陷阱，因为您可以从他人的经验中学习，并应用最佳实践、软件、设计模式和原则。
+- en: Software design patterns and principles
+  id: totrans-104
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 软件设计模式和原则
+- en: Your will probably be using **object-oriented** (**OO**) or functional programming
+    in your microservices or Lambda code, so let's briefly talk about the patterns
+    linked to them.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会在您的微服务或Lambda代码中使用面向对象（OO）或函数式编程，因此让我们简要讨论与它们相关的模式。
+- en: 'In OO programming, there are many best practice patterns or principles you
+    can use when coding, such as GRASP or SOLID. I will not go into too much depth
+    as it would take a whole book, but I would like to highlight some principles that
+    are important for microservices:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在面向对象编程中，编码时可以使用许多最佳实践模式或原则，例如GRASP或SOLID。我不会深入讨论，因为这需要一整本书，但我想强调一些对微服务很重要的原则：
+- en: '**SOLID**: This has five principles. One example is the **Single Responsibility
+    Principle** (**SRP**), where you define classes that each have a single responsibility
+    and hence a single reason for change, reducing the size of the services and increasing
+    their stability.'
+  id: totrans-107
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: SOLID：这有五个原则。一个例子是单一责任原则（SRP），其中您定义每个都有单一责任和因此单一变更原因的类，减少服务的大小并增加其稳定性。
+- en: '**Package cohesion**: For example, common closure-principle classes that change
+    together belong together. So when a business rule changes, developers only need
+    to change code in a small number of packages.'
+  id: totrans-108
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 包内聚性：例如，共同的闭包原则类一起变化。因此，当业务规则发生变化时，开发人员只需要在少量的包中更改代码。
+- en: '**Package coupling**: For example, the acyclic dependencies principle, which
+    states that dependency graphs of packages or components should have no cycles.'
+  id: totrans-109
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 包耦合：例如，无环依赖原则，它规定包或组件的依赖图不应该有循环。
+- en: 'Let''s briefly go into some of the useful design patterns for microservice:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们简要地介绍一些微服务的有用设计模式：
+- en: '**Creational patterns**: For example, the factory method creates an instance
+    of several derived classes.'
+  id: totrans-111
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建模式：例如，工厂方法创建多个派生类的实例。
+- en: '**Structural patterns**: For example, the decorator adds additional responsibilities
+    to an object dynamically.'
+  id: totrans-112
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 结构模式：例如，装饰器动态地为对象添加额外的责任。
+- en: '**Behavioral patterns**: For example, the command pattern encapsulates a request
+    as an object, making it easier to extract parameters, queuing, and logging of
+    requests. Basically, you decouple the parameter that creates the command from
+    the one that executes it.'
+  id: totrans-113
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 行为模式：例如，命令模式将请求封装为对象，使得提取参数、排队和记录请求更容易。基本上，您将创建命令的参数与执行命令的参数解耦。
+- en: '**Concurrency patterns**: For example, the reactor object provides an asynchronous
+    interface to resources that must be handled synchronously.'
+  id: totrans-114
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 并发模式：例如，反应器对象为必须同步处理的资源提供了异步接口。
+- en: 'Depending on you coding experience, you may be familiar with these. If not,
+    it''s worth reading about them to improve you code readability, management, and
+    stability, as well as your productivity. Here are some references where you can
+    find out more:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 根据您的编码经验，您可能熟悉这些。如果不熟悉，值得阅读以提高代码的可读性、管理性和稳定性，以及您的生产力。以下是一些参考资料，您可以在其中了解更多：
+- en: '*SOLID Object-Oriented Design*, Sandi Metz (2009)'
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 《SOLID面向对象设计》，Sandi Metz（2009）
+- en: '*Design Patterns: Elements of Reusable Object-Oriented Software*, Erich Gamma,
+    Richard Helm, Ralph Johnson, John Vlissides (1995)'
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 《设计模式：可复用的面向对象软件元素》，Erich Gamma，Richard Helm，Ralph Johnson，John Vlissides（1995）
+- en: '*Head First Design Patterns*, Eric T Freeman, Elisabeth Robson, Bert Bates,
+    Kathy Sierra (2004)'
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 《Head First设计模式》，Eric T Freeman，Elisabeth Robson，Bert Bates，Kathy Sierra（2004）
+- en: '*Agile Software Development, Principles, Patterns, and Practices*, Robert C.
+    Martin (2002)'
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 《敏捷软件开发，原则，模式和实践》，Robert C. Martin（2002）
+- en: Serverless microservices pattern categories
+  id: totrans-120
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 无服务器微服务模式类别
+- en: 'On top of the software design patterns and principles we just discussed are
+    the microservices patterns. From my experience, there are many microservices patterns
+    that I recommended that are relevant for serverless microservices, as shown in
+    the following diagram:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了我们刚刚讨论的软件设计模式和原则之外，还有微服务模式。根据我的经验，有许多我推荐的与无服务器微服务相关的微服务模式，如下图所示：
+- en: '![](img/8d29d8f6-35a6-40de-80a1-834b05b7179c.png)'
+  id: totrans-122
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/8d29d8f6-35a6-40de-80a1-834b05b7179c.png)'
+- en: 'I created this diagram to summarize and illustrate the serverless microservices
+    patterns we will be discussing in this book:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我创建了这个图表来总结和说明我们将在本书中讨论的无服务器微服务模式：
+- en: '**Communication styles**: How services communicate together and externally.'
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通信风格：服务之间和外部之间的通信方式。
+- en: '**Decomposition pattern**: Creating a service that is loosely coupled by business
+    capability or bounded context.'
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 分解模式：创建一个通过业务能力或有界上下文松耦合的服务。
+- en: '**Data management**: Deals with local and shared data stores.'
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据管理：处理本地和共享数据存储。
+- en: '**Queries and messaging**: Looks at events and messages that are sent between
+    microservices, and how services are queried efficiently.'
+  id: totrans-127
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 查询和消息传递：查看微服务之间发送的事件和消息，以及如何有效地查询服务。
+- en: '**Deployment**: Where ideally we would like uniform and independent deployments,
+    you also don''t want developers to re-create a new pipeline for each bounded context
+    or microservice.'
+  id: totrans-128
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 部署：理想情况下，我们希望统一和独立的部署，您也不希望开发人员为每个有界上下文或微服务重新创建新的流水线。
+- en: '**Observability and discovery**: Being able to understand whether a service
+    is functioning correctly, monitor and log activity allow you to drill down if
+    there are issues. You also want to know and monitor what is currently running
+    for cost and maintenance reasons, for example.'
+  id: totrans-129
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**可观察性和发现**：能够了解服务是否正常运行，监视和记录活动，使您能够在出现问题时进行深入分析。您还希望了解和监视当前运行的内容，例如出于成本和维护原因。'
+- en: '**Security**: This is critical for compliance, data integrity, data availability,
+    and potential financial damage. It''s important to have different encryption,
+    authentication, and authorization processes in place.'
+  id: totrans-130
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**安全性**：这对于合规性、数据完整性、数据可用性和潜在的财务损失至关重要。重要的是要建立不同的加密、身份验证和授权流程。'
+- en: Next we will have a look at the communication styles and decomposition pattern
+    first.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将首先看一下通信风格和分解模式。
+- en: Communication styles and decomposition microservice patterns
+  id: totrans-132
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 通信风格和分解微服务模式
+- en: In this section, we will discuss two microservice patterns, called **communication
+    styles and decomposition**, with a sufficient level of detail that you will be
+    able to discuss them with other developers, architects, and DevOps.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论两种微服务模式，称为**通信风格和分解**，并提供足够详细的内容，以便您能够与其他开发人员、架构师和DevOps讨论它们。
+- en: Communication styles
+  id: totrans-134
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 通信风格
+- en: 'Microservice applications are distributed by nature, so they heavily rely on
+    the authorizations network. This makes it important to understand the different
+    communications styles available. These can be to communicate with each other but
+    also with the outside world. Here are some examples:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于微服务应用程序本质上是分布式的，因此它们严重依赖于授权网络。这使得了解可用的不同通信风格非常重要。这些可以用于彼此之间的通信，也可以用于与外部世界的通信。以下是一些示例：
+- en: '**Remote procedure calls**: It used to be popular for Java to use **Remote
+    Method Invocation** (**RMI**), which is a tight coupling between client and servers
+    with a non-standard protocol, which is one limitation. In addition, the network
+    is not reliable and so traditional RMIs should be avoided. Others, such as the
+    SOAP interface, and a client generated from the **Web Service Definition Language**
+    (**WSDL**), are better but are seen as heavy weight, compared to **REpresentational
+    State Transfer** (**REST**) APIs that have widely been adopted in microservices.'
+  id: totrans-136
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**远程过程调用**：以前，Java使用**远程方法调用**（**RMI**）很流行，这是客户端和服务器之间紧密耦合的一种非标准协议，这是一种限制。此外，网络不可靠，因此应避免传统的RMI。其他方法，如SOAP接口和从**Web服务定义语言**（**WSDL**）生成的客户端，更好，但与**REpresentational
+    State Transfer**（**REST**）API相比，它们被视为过重，而REST API已被广泛应用于微服务。'
+- en: '**Synchronous communication**: It is simpler to understand and implement; you
+    make a request and get a response. However, while waiting for the response, you
+    may also be blocking a connection slot and resources, limiting calls from other
+    services:'
+  id: totrans-137
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**同步通信**：它更简单易懂，也更容易实现；您发出请求并获得响应。然而，在等待响应的同时，您可能也会阻塞连接插槽和资源，从而限制其他服务的调用：'
+- en: '![](img/e68c630f-a5b1-4020-848e-9fe499bd2134.png)'
+  id: totrans-138
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/e68c630f-a5b1-4020-848e-9fe499bd2134.png)'
+- en: '**Asynchronous communication**: With asynchronous communication, you make the
+    request and then get the response later and sometimes out of order. These can
+    be implemented using callbacks, `async`/`await`, or `promise` in Node.js or Python.
+    However, there are many design considerations in using `async`, especially if
+    there are failures that need monitoring. Unlike most synchronous calls, these
+    are non-blocking:'
+  id: totrans-139
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**异步通信**：通过异步通信，您发出请求，然后稍后收到响应，有时是无序的。这些可以使用回调、`async`/`await`或Node.js或Python中的`promise`来实现。然而，在使用`async`时有许多设计考虑，特别是如果需要监视失败。与大多数同步调用不同，这些是非阻塞的：'
+- en: '![](img/fdd67a03-5801-4e7d-a43a-ebd7644590bc.png)'
+  id: totrans-140
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/fdd67a03-5801-4e7d-a43a-ebd7644590bc.png)'
+- en: When dealing with communications, you also need to think about whether your
+    call is blocking or non-blocking. For example, writing metrics from web clients
+    to a NoSQL database using blocking calls could slow down your website.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在处理通信时，您还需要考虑您的调用是阻塞还是非阻塞。例如，使用阻塞调用将网页客户端的指标写入NoSQL数据库可能会减慢您的网站。
+- en: You need to think about dealing with receiving too many requests and throttling
+    them to not overwhelm your service, and look at failures such as retires, delays,
+    and errors.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您需要考虑如何处理接收到的太多请求并对其进行限流，以免过度压倒您的服务，并查看失败，如重试、延迟和错误。
+- en: When using Lambda functions, you benefit from AWS-built event source and spinning
+    up a Lambda per request or with a micro-batch of data. In most cases, synchronous
+    code is sufficient even at scale, but it's important to understand the architecture
+    and communication between services when designing a system, as it is limited by
+    bandwidth, and network connections can fail.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Lambda函数时，您可以从AWS构建的事件源中受益，并针对每个请求或微批量数据启动一个Lambda。在大多数情况下，即使在规模上，同步代码也足够使用，但在设计系统时了解架构和服务之间的通信非常重要，因为它受带宽限制，网络连接可能会失败。
+- en: One-to-one communication microservice patterns
+  id: totrans-144
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 一对一通信微服务模式
+- en: 'At an individual microservice level, the data management pattern is composed
+    of a suite of small services, with its own local data store, communicating with
+    a REST API or via publish/subscribe:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在单个微服务级别上，数据管理模式由一套小型服务组成，具有自己的本地数据存储，通过REST API或通过发布/订阅进行通信：
+- en: '![](img/ddf5c5a3-8611-4faf-adf6-82c51e72d5fe.png)'
+  id: totrans-146
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/ddf5c5a3-8611-4faf-adf6-82c51e72d5fe.png)'
+- en: API Gateway is a single entry point for all clients, and tailored for them,
+    allowing changes to be decoupled from the main microservice API, which is especially
+    useful for external-facing services.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: API网关是所有客户端的单一入口点，并为它们量身定制，允许对其进行解耦，这对于面向外部服务特别有用。
+- en: One-to-one request/response can be sync or async. If they are sync, they can
+    have a response for each request. If the communication is async, they can have
+    an async response or async notification. Async is generally preferred and much
+    more scalable, as it does not hold an open connection (non-blocking), and makes
+    better use of the **central processing unit** (**CPU**) and **input/output** (**I/O**)
+    operations.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一对一的请求/响应可以是同步或异步。如果它们是同步的，它们可以对每个请求进行响应。如果通信是异步的，它们可以有异步响应或异步通知。通常更喜欢异步，因为它不会保持开放的连接（非阻塞），并且更好地利用了**中央处理单元**（**CPU**）和**输入/输出**（**I/O**）操作。
+- en: We will go into further detail on the data-management patterns later in the
+    book, where we will be looking at how microservices integrate in a wider ecosystem.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在本书的后面更详细地讨论数据管理模式，届时我们将看看微服务如何在更广泛的生态系统中集成。
+- en: Many-to-many communication microservice patterns
+  id: totrans-150
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 多对多通信微服务模式
+- en: 'For many-to-many communication, we use publish/subscribe, which is a messaging
+    pattern. This is where senders of messages, called publishers, do not program
+    the messages to be sent directly to specific receivers; rather, the receiver needs
+    to subscribe to the messages. It''s a highly scalable pattern as the two are decoupled:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于多对多的通信，我们使用发布/订阅，这是一种消息模式。发送者称为发布者的消息不会直接发送到特定的接收者；相反，接收者需要订阅消息。这是一种高度可扩展的模式，因为两者是解耦的：
+- en: '![](img/bff7dde7-7ef2-4bcc-a30d-1a73bdc65b50.png)'
+  id: totrans-152
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/bff7dde7-7ef2-4bcc-a30d-1a73bdc65b50.png)'
+- en: 'Asynchronous messaging allows a service to consume and act upon the events,
+    and is a very scalable pattern as you have decoupled two services: the publisher
+    and the subscriber.'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 异步消息允许服务消费和响应事件，并且作为一种非常可扩展的模式，因为您已经解耦了两个服务：发布者和订阅者。
+- en: Decomposition pattern by business capability
+  id: totrans-154
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 按业务能力分解模式
+- en: 'How do you create and design microservices?If you are migrating existing systems,
+    you might look at decomposing a monolith or application into microservices. Even
+    for new a green-field project, you will want to think about the microservices
+    that are required:'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如何创建和设计微服务？如果您正在迁移现有系统，您可能会考虑将单体或应用程序分解为微服务。即使对于新的绿地项目，您也需要考虑所需的微服务：
+- en: '![](img/9555cd6d-0cfe-46fb-8dd4-63502c44e717.png)'
+  id: totrans-156
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/9555cd6d-0cfe-46fb-8dd4-63502c44e717.png)'
+- en: First, you identify the business capability, that is, *what* an organization
+    does in order to generate value, rather than *how*. That is, you need to analyze
+    purpose, structure, and business processes. Once you identify the business capabilities,
+    you define a service for each capability or capability group. You then need to
+    add more details to understand what the service does by defining the available
+    methods or operations. Finally, you need to architect how the services will communicate.
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，您需要识别业务能力，即组织为了产生价值而做的事情，而不是*如何*。也就是说，您需要分析目的、结构和业务流程。一旦您确定了业务能力，您就为每个能力或能力组定义一个服务。然后，您需要添加更多细节，以了解服务通过定义可用的方法或操作所做的事情。最后，您需要设计服务之间的通信方式。
+- en: The benefit of this approach is that it is relatively stable as it is linked
+    to what your business offers. In addition, it is linked to processes and stature.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法的好处是相对稳定，因为它与您的业务提供的内容相关。此外，它与流程和地位相关。
+- en: The drawbacks are that the data can span multiple services, it might not be
+    optimum communication or shared code, and needs a centralized enterprise-language
+    model.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 缺点是数据可能跨多个服务，可能不是最佳的通信或共享代码，并且需要一个集中的企业语言模型。
+- en: Decomposition pattern by bounded context
+  id: totrans-160
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 按有界上下文分解模式
+- en: 'There are three steps to apply the decomposition pattern by bounded context:
+    first, identify the domain, which is *what* an organization does. Then identify
+    the subdomain, which is to split intertwined models into logically-separated subdomains
+    according to their actual functionality. Finally, find the bounded context to
+    mark off where the meaning of every term used by the domain model is well understood.
+    Bounded context does not necessarily fall within only a single subdomain. The
+    three steps are as follows:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用有界上下文分解模式有三个步骤：首先，识别领域，即组织所做的事情。然后识别子域，即根据实际功能将交织在一起的模型分割成逻辑上分离的子域。最后，找到有界上下文，标记出领域模型中每个术语的含义都被充分理解的地方。有界上下文不一定只属于单个子域。这三个步骤如下：
+- en: '![](img/19a03d89-0d19-469d-b4ed-d8c2fd3e5f0b.png)'
+  id: totrans-162
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/19a03d89-0d19-469d-b4ed-d8c2fd3e5f0b.png)'
+- en: 'The benefits of this pattern are as follows:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种模式的好处如下：
+- en: Use of Ubiquitous Language where you work with domain experts, which helps with
+    wider communication.
+  id: totrans-164
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在与领域专家合作时使用普遍语言，有助于更广泛的沟通。
+- en: Teams own, deploy, and maintain services, giving them flexibility and a deeper
+    understanding within their bounded context. This is good because services within
+    it are most likely to talk to each other.
+  id: totrans-165
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 团队拥有、部署和维护服务，使他们在有界上下文中具有灵活性和更深入的理解。这是很好的，因为其中的服务最有可能相互通信。
+- en: The domain is understood by the team with a representative domain expert. There
+    is an interface that abstracts away of a lot of the implementation details for
+    other teams.
+  id: totrans-166
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 团队与代表性领域专家一起理解领域。有一个接口，可以将其他团队的许多实现细节抽象出来。
+- en: 'There are a few drawbacks as well:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也有一些缺点：
+- en: It needs domain expertise.
+  id: totrans-168
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 需要领域专业知识。
+- en: It is iterative and needs to be **continuous integration** (**CI**) to be in
+    place.
+  id: totrans-169
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这是一个迭代的过程，需要进行**持续集成**（**CI**）。
+- en: Overly complex for a simple domain, dependent on Ubiquitous Language and domain
+    expert.
+  id: totrans-170
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于简单的领域来说过于复杂，依赖于普遍语言和领域专家。
+- en: If a polyglot approach was used, it's possible no one knows the tech stack any
+    more. Luckily, microservices should be smaller and simpler, so these can be rewritten.
+  id: totrans-171
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果使用了多语言方法，可能没有人再知道技术栈。幸运的是，微服务应该更小更简单，因此可以重新编写这些服务。
+- en: 'More details can be found in the following books:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更多细节可以在以下书籍中找到：
+- en: '*Building-microservices*, Sam Newman (2015)'
+  id: totrans-173
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*构建微服务*，Sam Newman（2015）'
+- en: '*Domain-Driven Design: Tackling Complexity in the Heart of Software*, Eric
+    Evans (2003)'
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*领域驱动设计：应对软件核心的复杂性*，Eric Evans（2003）'
+- en: '*Implementing Domain-Driven Design*, Vaughn Vernon (2013)'
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*实施领域驱动设计*，Vaughn Vernon（2013）'
+- en: Serverless computing in AWS
+  id: totrans-176
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: AWS中的无服务器计算
+- en: Serverless computing in AWS allows you to quickly deploy event-driven computing
+    in the cloud. With serverless computing, there are still servers but you don't
+    have the manage them. AWS automatically manages all the computing resources for
+    you, as well as any trigger mechanisms. For example, when an object gets written
+    to a bucket, that would trigger an event. If another service writes a new record
+    to an Amazon DynamoDB table, that could trigger an event or an endpoint to be
+    called.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AWS中的无服务器计算允许您快速在云中部署事件驱动的计算。使用无服务器计算，仍然有服务器，但您不必管理它们。AWS会自动为您管理所有计算资源，以及任何触发机制。例如，当对象被写入存储桶时，会触发一个事件。如果另一个服务向Amazon
+    DynamoDB表写入新记录，那可能会触发一个事件或调用一个端点。
+- en: The main idea of using event-driven computing is that it easily allows you to
+    transform data as it arrives into the cloud, or we can perform data-driven auditing
+    analysis notifications, transformations, or parse **Internet of Things** (**IoT**)
+    device events. Serverless also means that you don't need to have an always-on
+    running service in order to do that, you can actually trigger it based on the
+    event.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用事件驱动计算的主要思想是，它可以轻松地将数据转换为到达云端时，或者我们可以执行数据驱动的审计分析通知、转换或解析**物联网**（IoT）设备事件。无服务器还意味着您不需要始终运行的服务来执行，实际上可以根据事件触发它。
+- en: Overview of some of the key serverless services in AWS
+  id: totrans-179
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: AWS中一些关键的无服务器服务概述
+- en: 'Some key serverless services in AWS are explained in the following list:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是AWS中一些关键的无服务器服务的解释：
+- en: '**Amazon Simple Storage Service (S3)**: A distributed web-scale object store
+    that is highly scalable, highly secure, and reliable. You only pay for the storage
+    that you actually consume, which makes it beneficial in terms of pricing. It also
+    supports encryption, where you can provide your own key or you can use a server-side
+    encryption key provided by AWS.'
+  id: totrans-181
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Amazon简单存储服务（S3）**：分布式的网络规模对象存储，具有高度可扩展性、高度安全性和可靠性。您只需支付实际消耗的存储空间，这在定价方面非常有利。它还支持加密，您可以提供自己的密钥，或者可以使用AWS提供的服务器端加密密钥。'
+- en: '**Amazon DynamoDB**: A fully-managed NoSQL store database service that is managed
+    by AWS and allows you to focus on writing the data out to the data store. It''s
+    highly durable and available. It has been used in gaming and other high-performance
+    activities, which require low latency. It uses SSD storage under the hood and
+    also provides partitioning for high availability.'
+  id: totrans-182
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Amazon DynamoDB**：由AWS管理的完全托管的NoSQL存储数据库服务，允许您专注于将数据写入数据存储。它具有高度的耐用性和可用性。它已经在游戏和其他需要低延迟的高性能活动中使用。它在内部使用SSD存储，并为高可用性提供了分区。'
+- en: '**Amazon Simple Notification Service (SNS)**: A push-notification service that
+    allows you to send notifications to other subscribers. These subscribers could
+    be email addresses, SNS messages, or other queues. The messages would get pushed
+    to any subscriber to the SNS service.'
+  id: totrans-183
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Amazon简单通知服务（SNS）**：一种推送通知服务，允许您向其他订阅者发送通知。这些订阅者可以是电子邮件地址、SNS消息或其他队列。消息将被推送到SNS服务的任何订阅者。'
+- en: '**Amazon Simple Queue Service (SQS)**: A fully-managed and scalable distributed
+    message queue that is highly available and durable. SQS queues are often subscribed
+    to SNS topics to implement the distributed publish-subscribe pattern. You pay
+    for what you use based on the number of requests.'
+  id: totrans-184
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Amazon简单队列服务（SQS）**：一个完全托管和可扩展的分布式消息队列，具有高可用性和耐用性。SQS队列通常订阅到SNS主题以实现分布式发布-订阅模式。您根据请求的数量付费。'
+- en: '**AWS Lambda**: The main idea is you write your business logic code and it
+    gets triggered based on the event sources you configure. The beauty is that you
+    only pay for when the code is actually executed, down to the 100 milliseconds.
+    It automatically scales and is highly available. It is one of the key components
+    to the AWS serverless ecosystem.'
+  id: totrans-185
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**AWS Lambda**：主要思想是您编写业务逻辑代码，并且它基于您配置的事件源进行触发。美妙之处在于，您只在代码实际执行时付费，最低到100毫秒。它会自动扩展并具有高可用性。这是AWS无服务器生态系统的关键组件之一。'
+- en: '**Amazon API Gateway**: A managed API service that allows you to build, publish,
+    and manage APIs. It performs at scale and allows you to also perform caching,
+    traffic throttling, and caching in edge locations, which means they''re localized
+    based on where the user is located, minimizing overall latency. In addition, it
+    integrates natively with AWS Lambda functions, allowing you to focus on the core
+    business logic code to parse that request or data.'
+  id: totrans-186
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Amazon API网关**：一个托管的API服务，允许您构建、发布和管理API。它可以扩展，并允许您执行缓存、流量限制和边缘位置的缓存，这意味着它们基于用户所在的位置进行本地化，最大限度地减少总体延迟。此外，它与AWS
+    Lambda函数进行本地集成，允许您专注于解析请求或数据的核心业务逻辑代码。'
+- en: '**AWS Identity and Access Management (IAM)**: The central component of all
+    security is IAM roles and policies, which are basically a mechanism that''s managed
+    by AWS for centralizing security and federating it to other services. For example,
+    you can restrict a Lambda to only read a specific DynamoDB table, but not have
+    the ability to write to the same DynamoDB table or deny read/write access any
+    other tables.'
+  id: totrans-187
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**AWS身份和访问管理（IAM）**：所有安全性的核心组件是IAM角色和策略，这基本上是由AWS管理的一种机制，用于集中安全性并将其联合到其他服务。例如，您可以限制Lambda仅读取特定的DynamoDB表，但无法写入相同的DynamoDB表，也可以拒绝对其他表的读/写访问。'
+- en: '**Amazon CloudWatch**: A central system for monitoring services. You can, for
+    example, monitor the utilization of various resources, record custom metrics,
+    and host application logs. It is also very useful for creating rules that trigger
+    a notification when specific events or exceptions occur.'
+  id: totrans-188
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**亚马逊CloudWatch**：用于监控服务的中央系统。例如，您可以监视各种资源的利用率，记录自定义指标，并托管应用程序日志。它还非常有用，可以创建规则，当特定事件或异常发生时触发通知。'
+- en: '**AWS X-Ray**: A service that allows you to trace service requests and analyze
+    latency and traces from various sources. It also generates service maps, so you
+    can see the dependency and where the most time is spent in a request, and do root
+    cause analysis of performance issues and errors.'
+  id: totrans-189
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**AWS X-Ray**：允许您跟踪服务请求并分析来自各种来源的延迟和跟踪。它还生成服务地图，因此您可以看到依赖关系以及请求中花费最多时间的地方，并对性能问题和错误进行根本原因分析。'
+- en: '**Amazon Kinesis Streams**: A steaming service that allows you to capture millions
+    of events per second that you can analyze further downstream. The main idea is
+    you would have, for example, thousands of IoT devices writing directly to Kinesis
+    Streams, capturing that data in one pipe, and then analyzing it with different
+    consumers. If the number of events goes up and you need more capacity, you can
+    simply add more shards, each with a capacity of 1,000 writes per second. It''s
+    simple to add more shards as there is no downtime, and they don''t interrupt the
+    event capture.'
+  id: totrans-190
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**亚马逊Kinesis Streams**：允许您捕获每秒数百万事件的流服务，以便您可以进一步分析。主要思想是，例如，成千上万的物联网设备直接写入Kinesis
+    Streams，将数据捕获在一个管道中，然后用不同的消费者进行分析。如果事件数量增加，需要更多容量，您可以简单地添加更多分片，每个分片的写入容量为每秒1000次。添加更多分片很简单，没有停机时间，也不会中断事件捕获。'
+- en: '**Amazon Kinesis Firehose**: A system that allows you to persist and load streaming
+    data. It allows you to write to an endpoint that would buffer up the events in
+    memory for up to 15 minutes, and then write it into S3\. It supports massive volumes
+    of data and also integrates with Amazon Redshift, which is a data warehouse in
+    the cloud. It also integrates with the Elasticsearch service, which allows you
+    to query free text, web logs, and other unstructured data.'
+  id: totrans-191
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊Kinesis Firehose：允许您持久保存和加载流数据的系统。它允许您写入一个端点，该端点会在内存中缓冲事件长达15分钟，然后将其写入S3。它支持大量数据，并与云中的数据仓库Amazon
+    Redshift集成。它还与Elasticsearch服务集成，允许您查询自由文本、网络日志和其他非结构化数据。
+- en: '**Amazon Kinesis Analytics**: Allows you to analyze data that is in Kinesis
+    Streams using **structured query language** (**SQL**). It also has the ability
+    to discover the data schema so that you can use SQL statements on the stream.
+    For example, if you''re capturing web analytics data, you could count the daily
+    page view data and aggregate them up by specific `pageId`.'
+  id: totrans-192
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**亚马逊Kinesis Analytics**：允许您使用**结构化查询语言**（**SQL**）分析Kinesis Streams中的数据。它还具有发现数据模式的能力，以便您可以在流上使用SQL语句。例如，如果您捕获网络分析数据，您可以计算每日页面查看数据，并按特定的`pageId`进行聚合。'
+- en: '**Amazon Athena**: A service that allows you to directly query S3 using a schema
+    on read. It relies on the AWS Glue Data Catalog to store the table schemas. You
+    can create a table and then query the data straight off S3, there''s no spin-up
+    time, it''s serverless, and allows you to explore massive datasets in a very flexible
+    and cost-effective manner.'
+  id: totrans-193
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**亚马逊Athena**：允许您直接使用读取模式的模式查询S3的服务。它依赖于AWS Glue数据目录来存储表模式。您可以创建一个表，然后直接从S3查询数据，没有启动时间，它是无服务器的，并且可以以非常灵活和具有成本效益的方式探索大规模数据集。'
+- en: Among all these services, AWS Lambda is the most widely used serverless service
+    in AWS. We will discuss more about that in the next section.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在所有这些服务中，AWS Lambda是AWS中最广泛使用的无服务器服务。我们将在下一节中更多地讨论这个。
+- en: AWS Lambda
+  id: totrans-195
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: AWS Lambda
+- en: 'The key serverless component in AWS is called **AWS Lambda**. A Lambda is basically
+    some business logic code that can be triggered by an event source:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AWS中的关键无服务器组件称为**AWS Lambda**。Lambda基本上是一些业务逻辑代码，可以由事件源触发：
+- en: '![](img/f7d7e220-c772-4bff-bd0a-c72338bc5cf6.png)'
+  id: totrans-197
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f7d7e220-c772-4bff-bd0a-c72338bc5cf6.png)'
+- en: A **data event source** could be the put or get of an object to an S3 bucket.
+    **Streaming event sources** could be new records that have been to a DynamoDB
+    table that trigger a Lambda function. Other streaming event sources include Kinesis
+    Streams and SQS.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**数据事件源**可以是将对象放入或获取对象从S3存储桶。**流事件源**可以是已添加到DynamoDB表的新记录，触发了Lambda函数。其他流事件源包括Kinesis
+    Streams和SQS。'
+- en: One example of **requests to endpoints** are Alexa skills, from Alexa echo devices.
+    Another popular one is Amazon API Gateway, when you call an endpoint that would
+    invoke a Lambda function. In addition, you can use changes in AWS CodeCommit or
+    Amazon Cloud Watch.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**端点请求**的一个例子是Alexa技能，来自Alexa Echo设备。另一个常见的是Amazon API Gateway，当您调用一个将调用Lambda函数的端点。此外，您可以使用AWS
+    CodeCommit或Amazon Cloud Watch的更改。'
+- en: Finally, you can trigger different **events and messages based** on SNS or different
+    cron events. These would be regular events or they could be notification events.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，您可以基于SNS或不同的定时事件触发不同的**事件和消息**。这些可以是常规事件，也可以是通知事件。
+- en: The main idea is that the integration between the event source and the Lambda
+    is managed fully by AWS, so all you need to do is write the business logic code,
+    which is the function itself. Once you have the function running, you can run
+    either a transformation or some business logic code to actually write to other
+    services on the right of the diagram. These could be data stores or invoke other
+    endpoints.
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主要思想是，事件源和Lambda之间的集成完全由AWS管理，因此您只需要编写业务逻辑代码，即函数本身。一旦函数运行，您可以运行转换或一些业务逻辑代码，实际上写入图表右侧的其他服务。这些可以是数据存储或调用其他端点。
+- en: In the serverless world, you can implement `sync`/`asyc` requests, messaging
+    or event stream processing much more easily using AWS Lambdas. This includes the
+    microservice communication style and data-management patterns we just talked about.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在无服务器世界中，您可以更轻松地使用AWS Lambda实现`sync`/`asyc`请求、消息传递或事件流处理。这包括我们刚刚讨论的微服务通信风格和数据管理模式。
+- en: 'Lambda has two types of event sources types, non-stream event sources and stream
+    event sources:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Lambda有两种类型的事件源类型，非流事件源和流事件源：
+- en: '**Non-stream event sour****ces**: Lambdas can be invoked asynchronously or
+    synchronously. For example, SNS/S3 are asynchronous but API Gateway is sync. For
+    sync invocations, the client is responsible for retries, but for async it will
+    retry many times before sending it to a **Dead Letter Queue** (**DLQ**) if configured.
+    It''s great to have this retry logic and integration built in and supported by
+    AWS event sources, as it means less code and a simpler architecture:'
+  id: totrans-204
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**非流事件源**：Lambda可以异步或同步调用。例如，SNS/S3是异步的，但API Gateway是同步的。对于同步调用，客户端负责重试，但对于异步调用，如果配置了，它将在发送到**死信队列**（**DLQ**）之前多次重试。有这个重试逻辑和AWS事件源的集成和支持是非常好的，因为这意味着更少的代码和更简单的架构。'
+- en: '![](img/6c1d73bf-b123-4f70-b2a6-adc4dc64c557.png)'
+  id: totrans-205
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6c1d73bf-b123-4f70-b2a6-adc4dc64c557.png)'
+- en: '**Stream event so****urces**: The Lambda is invoked with micro-batches of data.
+    In terms of concurrency, there is one Lambda invoked in parallel per shard for
+    Kinesis Streams or one Lambda per partition for DynamoDB Stream. Within the lambda,
+    you just need to iterate over the Kinesis Streams, DynamoDB, or SQS data passed
+    in as JSON records. In addition, you benefit from the AWS built-in streams integration
+    where the Lambda will poll the stream and retrieve the data in order, and will
+    retry upon failure until the data expires, which can be up to seven days for Kinesis
+    Streams. It''s also great to have that retry logic built in without having to
+    write a line of code. It is much more effort if you had to build it as a fleet
+    of EC2 or containers using the AWS Consumer or Kinesis SDK yourself:'
+  id: totrans-206
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**流事件源**：Lambda被微批量数据调用。在并发方面，对于Kinesis Streams，每个分片并行调用一个Lambda，对于DynamoDB
+    Stream，每个分区调用一个Lambda。在Lambda内部，您只需要迭代传入的Kinesis Streams、DynamoDB或SQS数据作为JSON记录。此外，您可以从AWS内置的流集成中受益，Lambda将轮询流并按顺序检索数据，并在失败时重试，直到数据过期，对于Kinesis
+    Streams，数据可以保存长达七天。而且，有了这个重试逻辑内置，而不需要编写一行代码，这是非常好的。如果您必须使用AWS Consumer或Kinesis
+    SDK自己构建EC2或容器的一组，那么这将需要更多的工作：'
+- en: '![](img/f425d4fd-5e78-4b20-a8f3-1ae9ce6894f4.png)'
+  id: totrans-207
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f425d4fd-5e78-4b20-a8f3-1ae9ce6894f4.png)'
+- en: In essence, AWS is responsible for the invocation and passing in the event data
+    to the Lambda, you are responsible for the processing and the response of the
+    Lambda.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实质上，AWS负责调用并传递事件数据给Lambda，您负责处理Lambda的响应。
+- en: Serverless computing to implement microservice patterns
+  id: totrans-209
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 无服务器计算实现微服务模式
+- en: 'Here is an overview diagram of some of the serverless and managed services
+    available on AWS:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是AWS上可用的一些无服务器和托管服务的概述图：
+- en: '![](img/80ef1c3f-73ad-4021-b836-9de72f9a6d9d.png)'
+  id: totrans-211
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/80ef1c3f-73ad-4021-b836-9de72f9a6d9d.png)'
+- en: Leveraging AWS-managed services does mean additional vendor lock-in but helps
+    you reduce non business differentiating support and maintenance costs. But also
+    to deploy your applications faster as the infrastructure can be provisioned or
+    destroyed in minutes. In some cases, when using AWS-managed services to implement
+    microservices patterns, there is no need for much code, only configuration.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 利用AWS托管服务确实意味着额外的供应商锁定，但有助于减少非业务差异化的支持和维护成本。同时也可以更快地部署应用程序，因为基础设施可以在几分钟内进行配置或销毁。在某些情况下，使用AWS托管服务来实现微服务模式，不需要太多的代码，只需要配置。
+- en: 'We have services for the following:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有以下服务：
+- en: '**Events, messaging, and notifications**: For async publish/subscribe and coordinating
+    components'
+  id: totrans-214
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**事件、消息和通知**：用于异步发布/订阅和协调组件'
+- en: '**API and web**: To create APIs for your serverless microservices and expose
+    it to the web'
+  id: totrans-215
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**API和Web**：为您的无服务器微服务创建API并将其暴露给Web'
+- en: '**Data and analytics**: To store, share, and analyze your data'
+  id: totrans-216
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据和分析：存储、共享和分析您的数据
+- en: '**Monitoring**: Making sure your microservices and stack are operating correctly'
+  id: totrans-217
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**监控**：确保您的微服务和堆栈正常运行'
+- en: '**Authorization and security**: To ensure that your services and data is secure,
+    and only accessed by those authorized'
+  id: totrans-218
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**授权和安全**：确保您的服务和数据安全，并且只能被授权的人访问'
+- en: At the center is AWS Lambda, the glue for connecting services, but also one
+    of the key places for you to deploy your business logic source code.
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在中心是AWS Lambda，用于连接服务的粘合剂，同时也是您部署业务逻辑源代码的关键位置之一。
+- en: Example use case – serverless file transformer
+  id: totrans-220
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 示例用例 - 无服务器文件转换器
+- en: 'Here is an example use case, to give you an idea of how different managed AWS
+    systems can fit together as a solution. The requirements are that a third-party
+    vendor is sending us a small 10 MB file daily at random times, and we need to
+    transform the data and write it to a NoSQL database so it can be queried in real
+    time. If there are any issues with the third-party data, we want to send an alert
+    within a few minutes. Your boss tells you that you they don''t want to have an
+    always-on machine just for this task, the third party has no API development experience,
+    and there is a limited budget. The head of security also finds out about this
+    project and adds another constraint. They don''t want to give third-party access
+    to your AWS account beyond one locked-down S3 bucket:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一个示例用例，让您了解不同的托管AWS系统如何作为解决方案组合在一起。要求是第三方供应商每天在随机时间向我们发送一个小的10MB文件，我们需要转换数据并将其写入NoSQL数据库，以便可以实时查询。如果第三方数据出现任何问题，我们希望在几分钟内发送警报。您的老板告诉您，他们不想为这个任务专门保留一台始终开机的机器，第三方没有API开发经验，而且预算有限。安全主管也了解到这个项目，并增加了另一个限制。他们不希望将第三方访问您的AWS帐户超出一个被封锁的S3存储桶：
+- en: '![](img/995750b2-2975-43f6-8c44-a3277ba2c6ee.png)'
+  id: totrans-222
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/995750b2-2975-43f6-8c44-a3277ba2c6ee.png)'
+- en: This can be implemented as an event-driven serverless stack. On the left, we
+    have an S3 bucket where the third party has access to drop their file. When a
+    new object is created, that triggers a Lambda invocation via the built-in event
+    source mapping. The Lambda executes code to transform the data, for example, extracts
+    key records such as `user_id`, `date`, and `event` type from the object, and writes
+    them to a DynamoDB table. The Lambda sends summary custom metrics of the transformation,
+    such as number of records transformed and written to CloudWatch metrics. In addition,
+    if there are transformation errors, the Lambda sends an SNS notification with
+    a summary of the transformation issues, which could generate an email to the administrator
+    and third-party provider for them to investigate the issue.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可以作为一个事件驱动的无服务器堆栈来实现。在左边，我们有一个S3存储桶，第三方可以访问并放置他们的文件。当创建新对象时，会触发Lambda调用，通过内置的事件源映射。Lambda执行代码来转换数据，例如，从对象中提取关键记录，如`user_id`、`date`和`event`类型，并将它们写入DynamoDB表。Lambda发送转换的摘要自定义指标，例如转换并写入CloudWatch指标的记录数。此外，如果有转换错误，Lambda会发送包含转换问题摘要的SNS通知，这可能会生成一封邮件给管理员和第三方提供商，以便他们调查问题。
+- en: Setting up your serverless environment
+  id: totrans-224
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置您的无服务器环境
+- en: If you already have an AWS account and configured it locally you can skip this
+    section, but for security reasons, I recommend you enable **Multi-Factor Authentication**
+    (**MFA**) for console access and do not use the root user account keys for the
+    course.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您已经拥有AWS帐户并在本地配置了它，您可以跳过此部分，但出于安全原因，我建议您为控制台访问启用**多因素身份验证**（**MFA**），并且不要使用根用户帐户密钥进行课程。
+- en: 'There are three ways to access resources in AWS:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有三种访问AWS资源的方式：
+- en: AWS Management Console is a web-based interface to manage your services and
+    billing.
+  id: totrans-227
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: AWS管理控制台是一个用于管理您的服务和计费的基于Web的界面。
+- en: AWS Command Line Interface is a unified tool to manage and automate all your
+    AWS services.
+  id: totrans-228
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: AWS命令行界面是一个统一的工具，用于管理和自动化所有AWS服务。
+- en: The software-development kit in Python, JavaScript, Java, .NET, and GO, which
+    allows you to programmatically interact with AWS.
+  id: totrans-229
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Python、JavaScript、Java、.NET和GO中的软件开发工具包，允许您以编程方式与AWS进行交互。
+- en: Setting up your AWS account
+  id: totrans-230
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置您的AWS帐户
+- en: 'It''s very simple to set up an account; all you need is about five minutes,
+    a smartphone, and a credit card:'
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设置帐户非常简单；您只需要大约五分钟、一个智能手机和一张信用卡：
+- en: Create an account. AWS accounts include 12 months of Free Tier access: [https://aws.amazon.com/free/](https://aws.amazon.com/free/).
+  id: totrans-232
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建帐户。AWS帐户包括12个月的免费使用：[https://aws.amazon.com/free/](https://aws.amazon.com/free/)。
+- en: Enter your name and address.
+  id: totrans-233
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 输入您的姓名和地址。
+- en: Provide a payment method.
+  id: totrans-234
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 提供付款方式。
+- en: Verify your phone number.
+  id: totrans-235
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 验证您的电话号码。
+- en: This will create a root account, I recommend you only use it for billing and
+    not development
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将创建一个根帐户，我建议您仅将其用于计费，而不是开发
+- en: Setting up MFA
+  id: totrans-237
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置MFA
+- en: 'I recommend you use MFA as it adds an extra layer of protection on top of your
+    username and password. It''s free using your mobile phone as a Virtual MFA Device
+    ([https://aws.amazon.com/iam/details/mfa/](https://aws.amazon.com/iam/details/mfa/)).
+    Perform the following steps to set it up:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我建议您使用MFA，因为它在用户名和密码之上增加了额外的保护层。使用您的手机作为虚拟MFA设备是免费的 ([https://aws.amazon.com/iam/details/mfa/](https://aws.amazon.com/iam/details/mfa/))。执行以下步骤进行设置：
+- en: Sign into the AWS Management Console: [https://console.aws.amazon.com](https://console.aws.amazon.com).
+  id: totrans-239
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 登录AWS管理控制台：[https://console.aws.amazon.com](https://console.aws.amazon.com)。
+- en: Choose Dashboard on the left menu.
+  id: totrans-240
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在左侧菜单中选择仪表板。
+- en: Under Security Status, expand Activate MFA on your root account.
+  id: totrans-241
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在安全状态下，展开在根帐户上激活MFA。
+- en: Choose Activate MFA or Manage MFA.
+  id: totrans-242
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择激活MFA或管理MFA。
+- en: In the wizard, choose Virtual MFA device, and then choose Continue.
+  id: totrans-243
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在向导中，选择虚拟MFA设备，然后选择继续。
+- en: Install an MFA app such as Authy ([https://authy.com/](https://authy.com/)).
+  id: totrans-244
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装MFA应用程序，如Authy ([https://authy.com/](https://authy.com/))。
+- en: Choose Show QR code then scan the QR code with you smartphone. Click on the
+    account and generate an Amazon six-digit token.
+  id: totrans-245
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择显示QR码，然后用您的智能手机扫描QR码。点击帐户并生成Amazon的六位数字令牌。
+- en: Type the six-digit token in the MFA code 1 box.
+  id: totrans-246
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在MFA代码1框中输入六位数字令牌。
+- en: Wait for your phone to generate a new token, which is generated every 30 seconds.
+  id: totrans-247
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 等待您的手机生成一个新的令牌，每30秒生成一次。
+- en: Type the six-digit token into the MFA code 2 box.
+  id: totrans-248
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在MFA代码2框中输入六位数字令牌。
+- en: 'Choose Assign MFA:'
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择分配MFA：
+- en: '![](img/a37f3ab6-3baa-4b56-bf66-c794fa4755f9.png)'
+  id: totrans-250
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a37f3ab6-3baa-4b56-bf66-c794fa4755f9.png)'
+- en: Setting up a new user with keys
+  id: totrans-251
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置新用户和密钥
+- en: 'For security reasons, I recommend you use the root account only for billing!
+    So, the first thing is to create another user with fewer privileges:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 出于安全原因，我建议您仅将根帐户用于计费！因此，第一件事是创建另一个权限较低的用户：
+- en: '![](img/842e7ecc-4612-4189-9399-49f2cbc09969.png)'
+  id: totrans-253
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/842e7ecc-4612-4189-9399-49f2cbc09969.png)'
+- en: 'Create a user with the following steps:'
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤创建用户：
+- en: Sign into the AWS Management console ([https://console.aws.amazon.com/](https://console.aws.amazon.com/)).
+  id: totrans-255
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 登录AWS管理控制台 ([https://console.aws.amazon.com/](https://console.aws.amazon.com/))。
+- en: Choose Security, Identity, & Compliance > IAM or search for IAM under Find services.
+  id: totrans-256
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择安全、身份和合规性 > IAM或在“查找服务”下搜索IAM。
+- en: In the IAM page, choose Add User.
+  id: totrans-257
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在IAM页面上，选择添加用户。
+- en: For User name, type new user on the set user details pane.
+  id: totrans-258
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对于用户名，在设置用户详细信息窗格上输入新用户。
+- en: For Select AWS access Type, select the check boxes next to Programmatic access,
+    AWS Console access. Optionally select Autogenerated password and Require password
+    rest.
+  id: totrans-259
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对于选择AWS访问类型，选择旁边的复选框，即编程访问、AWS控制台访问。可选择自动生成的密码和需要密码重置。
+- en: 'Choose Next: Permissions:'
+  id: totrans-260
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择下一步：权限：
+- en: '![](img/319c4fb6-2d32-456a-a9e7-ce82457e6a5c.png)'
+  id: totrans-261
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/319c4fb6-2d32-456a-a9e7-ce82457e6a5c.png)'
+- en: 'Follow these steps to set the permission for the new user:'
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤为新用户设置权限：
+- en: Choose Create group.
+  id: totrans-263
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择创建组。
+- en: In the Create group dialog box, type `Administrator` for new group name.
+  id: totrans-264
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在“创建组”对话框中，输入`Administrator`作为新组名称。
+- en: In policy list, select the checkbox next to AdministratorAccess (note that,
+    for non-proof of concept or non-development AWS environments, I recommend using
+    more restricted access policies).
+  id: totrans-265
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在策略列表中，选择AdministratorAccess旁边的复选框（请注意，对于非概念验证或非开发AWS环境，我建议使用更受限制的访问策略）。
+- en: Select Create group.
+  id: totrans-266
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择创建组。
+- en: Choose refresh and ensure the checkbox next to Administrator is selected.
+  id: totrans-267
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择刷新并确保管理员旁边的复选框被选中。
+- en: 'Choose Next: Tags.'
+  id: totrans-268
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择下一步：标签。
+- en: 'Choose Next: Review.'
+  id: totrans-269
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择下一步：审核。
+- en: Choose Create user.
+  id: totrans-270
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择创建用户。
+- en: Choose Download .csv and take a note of the keys and password. You will need
+    these to access the account programmatically and log on as this user.
+  id: totrans-271
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择下载.csv并记下密钥和密码。您将需要这些来以编程方式访问账户并登录为此用户。
+- en: Choose Close.
+  id: totrans-272
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择关闭。
+- en: More details on creating a new user can be found at [https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html).
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关创建新用户的更多详细信息，请访问[https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html)。
+- en: 'As with the root account, I recommend you enable MFA:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与root账户一样，我建议您启用MFA：
+- en: In the Management Console, choose IAM | User and choose the newuser.
+  id: totrans-275
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在管理控制台中，选择IAM | 用户并选择新用户。
+- en: Choose the Security Credentials tab, then choose Manage next to Assigned MFA
+    device Not assigned.
+  id: totrans-276
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择安全凭据选项卡，然后选择未分配的MFA设备旁边的管理。
+- en: Choose a virtual MFA device and choose Continue.
+  id: totrans-277
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择虚拟MFA设备并选择继续。
+- en: Install an MFA application such as Authy ([https://authy.com/](https://authy.com/)).
+  id: totrans-278
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装诸如Authy ([https://authy.com/](https://authy.com/))之类的MFA应用程序。
+- en: Choose Show QR code then scan the QR code with you smartphone. Click on the
+    Account and generate an Amazon six-digit token.
+  id: totrans-279
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择显示QR码，然后用您的智能手机扫描QR码。点击账户并生成Amazon的六位令牌。
+- en: Type the six-digit token in the MFA code 1 box.
+  id: totrans-280
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在MFA代码1框中输入六位令牌。
+- en: Wait for your phone to generate a new token, which is generated every 30 seconds.
+  id: totrans-281
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 等待手机生成一个新的令牌，每30秒生成一个。
+- en: Type the six-digit token into the MFA code 2 box.
+  id: totrans-282
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在MFA代码2框中输入六位令牌。
+- en: Choose Assign MFA.
+  id: totrans-283
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择分配MFA。
+- en: Managing your infrastructure with code
+  id: totrans-284
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用代码管理您的基础设施
+- en: A lot can be done with the web interface in the AWS Management Console. It's
+    a good place to start and help you to understand what you are building, but most
+    often it is not recommended for production deployments as it is time-consuming
+    and prone to human error. Best practice is to deploy and manage your infrastructure
+    using code and configuration only. We will be using the AWS **Command-line Interface**
+    (**CLI**), bash shell scripts, and Python 3 throughout this book, so let's set
+    these up now.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在AWS管理控制台中可以通过Web界面完成很多工作。这是一个很好的开始，可以帮助您了解您正在构建的内容，但通常不建议用于生产部署，因为它耗时且容易出错。最佳实践是仅使用代码和配置来部署和管理基础设施。我们将在本书中使用AWS
+    **命令行界面**（**CLI**）、bash shell脚本和Python 3，所以现在让我们设置这些。
+- en: Installing bash on Windows 10
+  id: totrans-286
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Windows 10上安装bash
+- en: Please skip this step if you are not using Windows.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您不使用Windows，请跳过此步骤。
+- en: Using bash (Unix shell) makes your life much easier when deploying and managing
+    your serverless stack. I think all analysts, data scientists, architects, administrators,
+    database administrators, developers, DevOps, and technical people should know
+    some basic bash and be able to run shell scripts, which are typically used on
+    Linux and Unix (including the macOS Terminal).
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在部署和管理无服务器堆栈时，使用bash（Unix shell）可以让您的生活变得更加轻松。我认为所有分析师、数据科学家、架构师、管理员、数据库管理员、开发人员、DevOps和技术人员都应该了解一些基本的bash，并能够运行shell脚本，这些通常用于Linux和Unix（包括macOS终端）。
+- en: Alternatively, you can adapt the scripts to use MS-DOS or PowerShell, but it's
+    not something I recommended, given that bash can now run natively on Windows 10
+    as an application, and there are many more examples online in bash.
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，您可以调整脚本以使用MS-DOS或PowerShell，但鉴于bash现在可以作为Windows 10上的应用程序本地运行，并且在线上有更多的bash示例，我不建议这样做。
+- en: Note that I have stripped off the `\r` or carriage returns, as they are illegal
+    in shell scripts. You can use something such as Notepad++ ([https://notepad-plus-plus.org/](https://notepad-plus-plus.org/))
+    on Windows if you want to view the carriage returns in your files properly. If
+    you use traditional Windows Notepad, the new lines may not be rendered at all,
+    so use Notepad++, Sublime ([https://www.sublimetext.com/](https://www.sublimetext.com/)),
+    Atom ([https://atom.io/](https://atom.io/)), or another editor.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我已经去掉了`\r`或回车符，因为它们在shell脚本中是非法的。如果您想正确查看文件中的回车符，可以在Windows上使用Notepad++
+    ([https://notepad-plus-plus.org/](https://notepad-plus-plus.org/))。如果您使用传统的Windows记事本，新行可能根本不会呈现，因此请使用Notepad++、Sublime
+    ([https://www.sublimetext.com/](https://www.sublimetext.com/))、Atom ([https://atom.io/](https://atom.io/))或其他编辑器。
+- en: 'A detailed guide on how to install Linux Bash shell on Windows 10 can be found
+    at [https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/).
+    The main steps are as follows:'
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关如何在Windows 10上安装Linux Bash shell的详细指南，请访问[https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/)。主要步骤如下：
+- en: Navigate to Control Panel | Programs | Turn Windows Features On Or Off.
+  id: totrans-292
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导航至控制面板|程序|打开或关闭Windows功能。
+- en: Choose the check box next to the Windows Subsystem for Linux option in the list,
+    and then Choose OK.
+  id: totrans-293
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在列表中选择Windows子系统的复选框，然后选择确定。
+- en: Navigate to Microsoft Store | Run Linux on Windows and select Ubuntu.
+  id: totrans-294
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导航至Microsoft Store | 在Windows上运行Linux并选择Ubuntu。
+- en: 'Launch Ubuntu and set up a root account with a username and password the Windows
+    `C:\` and other drives are already mounted, and you can access them with the following
+    command in the Terminal:'
+  id: totrans-295
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 启动Ubuntu并设置一个带有用户名和密码的root账户，Windows `C:\`和其他驱动器已经挂载，您可以使用终端中的以下命令访问它们：
+- en: '[PRE0]'
+  id: totrans-296
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Well done, you now have full access to Linux on Windows!
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 干得好，您现在可以完全访问Windows上的Linux！
+- en: Updating Ubuntu, installing Git and Python 3
+  id: totrans-298
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更新Ubuntu，安装Git和Python 3
+- en: 'Git will be used later on in this book:'
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Git将在本书的后面使用：
+- en: '[PRE1]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'The Lambda code is written in Python 3.6\. `pip` is a tool for installing and
+    managing Python packages. Other popular Python package and dependency managers
+    are available, such as Conda ([https://conda.io/docs/index.html](https://conda.io/docs/index.html))
+    or Pipenv ([https://pipenv.readthedocs.io/en/latest/](https://pipenv.readthedocs.io/en/latest/)),
+    but we will be using pip as it is the recommended tool for installing packages
+    from the Python Package Index PyPI ([https://pypi.org/](https://pypi.org/)) and
+    is the most widely supported:'
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Lambda代码是用Python 3.6编写的。`pip`是一个用于安装和管理Python包的工具。还有其他流行的Python包和依赖管理器可用，例如Conda（[https://conda.io/docs/index.html](https://conda.io/docs/index.html)）或Pipenv（[https://pipenv.readthedocs.io/en/latest/](https://pipenv.readthedocs.io/en/latest/)），但我们将使用pip，因为它是从Python包索引PyPI（[https://pypi.org/](https://pypi.org/)）安装包的推荐工具，并且得到了最广泛的支持。
+- en: '[PRE2]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Check the Python version:'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查Python版本：
+- en: '[PRE3]'
+  id: totrans-304
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: You should get Python version 3.6+.
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该使用Python版本3.6+。
+- en: 'The dependent packages required for running, testing, and deploying the severless
+    microservices are listed in `requirements.txt` under each project folder, and
+    can be installed using `pip`:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在每个项目文件夹的`requirements.txt`中列出了运行、测试和部署无服务器微服务所需的依赖包，并且可以使用`pip`进行安装：
+- en: '[PRE4]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: This will install the dependent libraries for local development, such as Boto3,
+    which is the Python AWS **Software Development Kit** (**SDK**).
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将安装本地开发所需的依赖库，例如Boto3，这是Python AWS **软件开发工具包**（**SDK**）。
+- en: In some projects, there is a file called `lambda-requirements.txt`, which contains
+    the third-party packages that are required by the Lambda when it is deployed.
+    We have created this other `requirements` file as the Boto3 package is already
+    included when the Lambda is deployed to AWS, and the deployed Lambda does not
+    need testing-related libraries, such as `nose` or `locust`, which increase the
+    package size.
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在一些项目中，有一个名为`lambda-requirements.txt`的文件，其中包含Lambda部署时所需的第三方包。我们创建了另一个`requirements`文件，因为当Lambda部署到AWS时，Boto3包已经包含在内，并且部署的Lambda不需要与测试相关的库，例如`nose`或`locust`，这些库会增加包的大小。
+- en: Installing and setting up the AWS CLI
+  id: totrans-310
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装和设置AWS CLI
+- en: 'The AWS CLI is used to package and deploy your Lambda functions, as well as
+    to set up the infrastructure and security in a repeatable way:'
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AWS CLI用于打包和部署Lambda函数，以及以可重复的方式设置基础架构和安全性：
+- en: '[PRE5]'
+  id: totrans-312
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'You created a user called `newuser` earlier and have a `crednetials.csv` file
+    with the AWS keys. Enter them by running `aws configure`:'
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您之前创建了一个名为`newuser`的用户，并且有一个名为`crednetials.csv`的文件，其中包含AWS密钥。通过运行`aws configure`输入它们：
+- en: '[PRE6]'
+  id: totrans-314
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: More details on setting up the AWS CLI are available in the AWS docs ([https://docs.aws.amazon.com/lambda/latest/dg/welcome.html](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)).
+  id: totrans-315
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关设置AWS CLI的更多详细信息，请参阅AWS文档（[https://docs.aws.amazon.com/lambda/latest/dg/welcome.html](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)）。
+- en: To choose your AWS Region, refer to AWS Regions and Endpoints ([https://docs.aws.amazon.com/general/latest/gr/rande.html](https://docs.aws.amazon.com/general/latest/gr/rande.html)).
+    Generally, those in the USA use `us-east-1` and those in Europe use `eu-west-1`.
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要选择AWS区域，请参考AWS区域和终端点（[https://docs.aws.amazon.com/general/latest/gr/rande.html](https://docs.aws.amazon.com/general/latest/gr/rande.html)）。通常，美国用户使用`us-east-1`，欧洲用户使用`eu-west-1`。
+- en: Summary
+  id: totrans-317
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we got an overview of monolithic and microservices architectures.
+    We then talked about the design patterns and principles and how they relate to
+    serverless microservices. We also saw how to set up the AWS and development environment
+    that will be used in this book.
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们概述了单片和微服务架构。然后我们讨论了设计模式和原则以及它们与无服务器微服务的关系。我们还看到了如何设置AWS和开发环境，这将在本书中使用。
+- en: In the next chapter, we will create a serverless microservice that exposes a
+    REST API and is capable of querying a NoSQL store built using API Gateway, Lambda,
+    and DynamoDB.
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将创建一个无服务器微服务，该微服务公开了一个REST API，并能够查询使用API Gateway，Lambda和DynamoDB构建的NoSQL存储。

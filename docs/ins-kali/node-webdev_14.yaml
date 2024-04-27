@@ -1,0 +1,1856 @@
+- en: Deploying Node.js Microservices with Docker
+  id: totrans-0
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Docker部署Node.js微服务
+- en: Now that we've experienced the traditional Linux way to deploy an application,
+    let's turn to Docker, which is a popular new way to manage application deployment.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经体验了传统的Linux部署应用程序的方式，让我们转向Docker，这是一种流行的新的应用程序部署方式。
+- en: Docker ([http://docker.com](http://docker.com)) is a cool new tool in the software
+    industry. It is described as *an open platform for distributed applications for
+    developers and sysadmins*. It is designed around Linux containerization technology
+    and focuses on describing the configuration of software on any variant of Linux.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker（http://docker.com）是软件行业中一个很酷的新工具。它被描述为*面向开发人员和系统管理员的分布式应用程序的开放平台*。它是围绕Linux容器化技术设计的，并专注于描述在任何Linux变体上的软件配置。
+- en: A Docker container is a running instantiation of a Docker image. A Docker image
+    is a bundle containing a specific Linux OS, system configuration, and application
+    configuration. Docker images are described using a **Dockerfile**, which is a
+    fairly simple-to-write script describing how to build a Docker image. The Dockerfile
+    starts by specifying a *base image* from which to build, meaning we derive Docker
+    images from other images. The rest of the Dockerfile describes what files to add
+    to the image, which commands to run in order to build or configure the image,
+    which network ports to expose, which directories to mount in the image, and more.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker容器是Docker镜像的运行实例。Docker镜像是一个包含特定Linux操作系统、系统配置和应用程序配置的捆绑包。Docker镜像使用Dockerfile来描述，这是一个相当简单的编写脚本，描述如何构建Docker镜像。Dockerfile首先通过指定一个基础镜像来开始构建，这意味着我们从其他镜像派生Docker镜像。Dockerfile的其余部分描述了要添加到镜像中的文件，要运行的命令以构建或配置镜像，要公开的网络端口，要在镜像中挂载的目录等等。
+- en: Docker images are stored on a Docker Registry server, with each image stored
+    in its own repository. The largest registry is Docker Hub, but there are also
+    third-party registries available, including registry servers that you can install
+    on your own hardware. Docker images can be uploaded to a repository, and, from
+    the repository, deployed to any Docker server.
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker镜像存储在Docker注册服务器上，每个镜像存储在自己的存储库中。最大的注册表是Docker Hub，但也有第三方注册表可用，包括您可以安装在自己硬件上的注册服务器。Docker镜像可以上传到存储库，并且可以从存储库部署到任何Docker服务器。
+- en: We instantiate a Docker image to launch a Docker container. Typically, launching
+    a container is very fast, and often, containers are instantiated for a short time
+    and then discarded when no longer needed.
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们实例化一个Docker镜像来启动一个Docker容器。通常，启动容器非常快速，而且通常情况下，容器会在短时间内实例化，然后在不再需要时被丢弃。
+- en: A running container feels like a virtual server running on a virtual machine.
+    However, Docker containerization is very different from a virtual machine system
+    such as VirtualBox or Multipass. A container is not a virtualization of a complete
+    computer. Instead, it is an extremely lightweight shell creating the appearance
+    of an installed OS. For example, the processes running inside the container are
+    actually running on the host OS with certain Linux technologies (cgroups, kernel
+    namespaces, and so on) creating the illusion of running a specific Linux variant.
+    Your host OS could be Ubuntu and the container OS could be Fedora or OpenSUSE,
+    or even Windows; Docker makes it all work.
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行的容器感觉像是在虚拟机上运行的虚拟服务器。然而，Docker容器化与诸如VirtualBox或Multipass之类的虚拟机系统非常不同。容器不是完整计算机的虚拟化。相反，它是一个极其轻量级的外壳，创建了已安装操作系统的外观。例如，容器内运行的进程实际上是在主机操作系统上运行的，使用某些Linux技术（cgroups、内核命名空间等）创建了运行特定Linux变体的幻觉。您的主机操作系统可以是Ubuntu，容器操作系统可以是Fedora或OpenSUSE，甚至是Windows；Docker使所有这些都能运行。
+- en: While Docker is primarily targeted at x86 flavors of Linux, it is available
+    on several ARM-based OSes, as well as other processors. You can even run Docker
+    on single-board computers, such as Raspberry Pi, for hardware-oriented **Internet
+    of Things** (**IoT**) projects.
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然Docker主要针对x86版本的Linux，但它也适用于几种基于ARM的操作系统，以及其他处理器。甚至可以在单板计算机上运行Docker，比如树莓派，用于面向硬件的物联网（IoT）项目。
+- en: 'The Docker ecosystem contains many tools, and their number is increasing rapidly.
+    For our purposes, we''ll focus on the following two tools:'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker生态系统包含许多工具，它们的数量正在迅速增加。对于我们的目的，我们将专注于以下两个工具：
+- en: '**Docker Engine**: This is the core execution system that orchestrates everything.
+    It runs on a Linux host system, exposing a network-based API that client applications
+    use to make Docker requests, such as building, deploying, and running containers.'
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Docker引擎**：这是协调一切的核心执行系统。它在Linux主机系统上运行，公开一个基于网络的API，客户端应用程序使用它来进行Docker请求，比如构建、部署和运行容器。'
+- en: '**Docker Compose**: This helps you define, in a single file, a multi-container
+    application with all of its dependencies defined.'
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Docker Compose**：这有助于您在一个文件中定义一个多容器应用程序及其所有定义的依赖关系。'
+- en: There are other tools closely associated with Docker, such as Kubernetes, but
+    it all starts with building a container to house your application. By learning
+    about Docker, we learn how to containerize an application, a skill we can use
+    with both Docker and Kubernetes.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有其他与Docker密切相关的工具，比如Kubernetes，但一切都始于构建一个容器来容纳您的应用程序。通过学习Docker，我们学会了如何将应用程序容器化，这是我们可以在Docker和Kubernetes中使用的技能。
+- en: Learning how to use Docker is a gateway to learning about other popular systems,
+    such as Kubernetes or AWS ECS. These are two popular orchestration systems for
+    managing container deployments at a large scale on cloud-hosting infrastructure.
+    Typically, the containers are Docker containers, but they are deployed and managed
+    by other systems, whether that is Kubernetes, ECS, or Mesos. That makes learning
+    how to use Docker an excellent starting point for learning these other systems.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 学习如何使用Docker是学习其他流行系统的入门，比如Kubernetes或AWS ECS。这两个是用于在云托管基础设施上大规模管理容器部署的流行编排系统。通常，容器是Docker容器，但它们是由其他系统部署和管理的，无论是Kubernetes、ECS还是Mesos。这使得学习如何使用Docker成为学习这些其他系统的绝佳起点。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Installing Docker on our laptop
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在我们的笔记本电脑上安装Docker
+- en: Developing our own Docker containers and using third-party containers
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开发我们自己的Docker容器并使用第三方容器
+- en: Setting up the user authentication service and its database in Docker
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Docker中设置用户认证服务及其数据库
+- en: Setting up the Notes service and its database in Docker
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Docker中设置Notes服务及其数据库
+- en: Deploying MySQL instances in Docker infrastructure, and data persistence for
+    applications such as databases in Docker
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Docker中部署MySQL实例，并为Docker中的应用程序提供数据持久性，例如数据库
+- en: Using Docker Compose to describe the Docker deployment of a full application
+  id: totrans-19
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Docker Compose描述完整应用程序的Docker部署
+- en: Scaling container instances in Docker infrastructure and using Redis to mitigate
+    scaling issues
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Docker基础设施中扩展容器实例并使用Redis来缓解扩展问题
+- en: The first task is to duplicate the source code from the previous chapter. It's
+    suggested that you create a new directory, `chap11`, as a sibling of the `chap10` directory
+    and copy everything from `chap10` to `chap11`.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一项任务是复制上一章的源代码。建议您创建一个新目录`chap11`，作为`chap10`目录的兄弟目录，并将`chap10`中的所有内容复制到`chap11`中。
+- en: By the end of this chapter, you will have a solid grounding of using Docker,
+    creating Docker containers, and using Docker Compose to manage the services required
+    by the Notes application.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章结束时，您将对使用Docker、创建Docker容器以及使用Docker Compose管理Notes应用程序所需的服务有扎实的基础。
+- en: With the help of Docker, we will design, on our laptop, the system shown in
+    the diagram in [Chapter 10](176ce11c-dd6f-4ebf-ba14-529be6db28da.xhtml), *Deploying
+    Node.js Applications to Linux Servers*. That chapter, this one, and [Chapter 12](8551a26c-6834-4df6-b392-60a15c20f6ff.xhtml), *Deploying
+    a Docker Swarm to AWS EC2 with Terraform*, form an arc covering three styles of
+    Node.js deployment to servers.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 借助Docker，我们将在笔记本电脑上设计[第10章](176ce11c-dd6f-4ebf-ba14-529be6db28da.xhtml)中显示的系统，*将Node.js应用程序部署到Linux服务器*。这一章，以及[第12章](8551a26c-6834-4df6-b392-60a15c20f6ff.xhtml)，*使用Terraform在AWS
+    EC2上部署Docker Swarm*，形成了一个覆盖Node.js三种部署风格的弧线。
+- en: Setting up Docker on your laptop or computer
+  id: totrans-24
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在您的笔记本电脑或计算机上设置Docker
+- en: 'The best place to learn how to install Docker on your laptop is the Docker documentation.
+    What we''re looking for is the Docker **Community Edition** (**CE**), which is
+    all we need:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 学习如何在笔记本电脑上安装Docker的最佳地方是Docker文档。我们要找的是Docker **Community Edition**（CE），这就是我们所需要的：
+- en: macOS installation: [https://docs.docker.com/docker-for-mac/install/](https://docs.docker.com/docker-for-mac/install/)
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: macOS安装：[https://docs.docker.com/docker-for-mac/install/](https://docs.docker.com/docker-for-mac/install/)
+- en: Windows installation: [https://docs.docker.com/docker-for-windows/install/](https://docs.docker.com/docker-for-windows/install/)
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Windows安装：[https://docs.docker.com/docker-for-windows/install/](https://docs.docker.com/docker-for-windows/install/)
+- en: Ubuntu installation: [https://docs.docker.com/install/linux/docker-ce/ubuntu/](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Ubuntu安装：[https://docs.docker.com/install/linux/docker-ce/ubuntu/](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+- en: Instructions are also available for several other distributions. Some useful
+    post-install Linux instructions are available at [https://docs.docker.com/install/linux/linux-postinstall/](https://docs.docker.com/install/linux/linux-postinstall/).
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有其他几种发行版的安装说明。一些有用的Linux后安装说明可在[https://docs.docker.com/install/linux/linux-postinstall/](https://docs.docker.com/install/linux/linux-postinstall/)找到。
+- en: Docker runs natively on Linux, and the installation is simply the Docker daemon
+    and command-line tools. To run Docker on macOS or Windows, you need to install
+    the Docker for Windows or Docker for Mac applications. These applications manage
+    a virtual Linux environment in a lightweight virtual machine, within which is
+    a Docker Engine instance running on Linux. In the olden days (a few years ago),
+    we had to handcraft that setup. Thanks must be given to the Docker team, who have made
+    this as easy as installing an application, and all the complexity is hidden away.
+    The result is very lightweight, and Docker containers can be left running in the
+    background with little impact.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker在Linux上本地运行，安装只是Docker守护程序和命令行工具。要在macOS或Windows上运行Docker，您需要安装Docker
+    for Windows或Docker for Mac应用程序。这些应用程序在轻量级虚拟机中管理一个虚拟Linux环境，在其中运行着一个在Linux上运行的Docker
+    Engine实例。在过去（几年前），我们不得不手工设置这个环境。必须感谢Docker团队，他们使得这一切像安装应用程序一样简单，所有复杂性都被隐藏起来。结果非常轻量级，Docker容器可以在后台运行而几乎不会产生影响。
+- en: Let's now learn how to install Docker on a Windows or macOS machine.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们学习如何在Windows或macOS机器上安装Docker。
+- en: Installing and starting Docker with Docker for Windows or macOS
+  id: totrans-32
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Docker for Windows或macOS安装和启动Docker
+- en: The Docker team has made installing Docker on Windows or macOS very easy. You
+    simply download an installer and, as with most other applications, you run the
+    installer. It takes care of installation and provides you with an application
+    icon that is used to launch Docker. On Linux, the installation is a little more
+    involved, so it is best to read and follow the official instructions.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker团队使得在Windows或macOS上安装Docker变得非常简单。您只需下载安装程序，并像大多数其他应用程序一样运行安装程序。它会负责安装并为您提供一个应用程序图标，用于启动Docker。在Linux上，安装稍微复杂一些，因此最好阅读并遵循官方说明。
+- en: Starting Docker for Windows or macOS is very simple, once you've followed the
+    installation instructions. You simply find and double-click on the application
+    icon. There are settings available so that Docker automatically launches every
+    time you start your laptop.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Windows或macOS上启动Docker非常简单，一旦您遵循了安装说明。您只需找到并双击应用程序图标。有可用的设置，使得Docker在每次启动笔记本电脑时自动启动。
+- en: On both Docker for Windows and Docker for Mac, the CPU must support **virtualization**.
+    Bundled inside Docker for Windows and Docker for Mac is an ultra-lightweight hypervisor,
+    which, in turn, requires virtualization support from the CPU.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Docker for Windows和Docker for Mac上，CPU必须支持**虚拟化**。Docker for Windows和Docker
+    for Mac中内置了一个超轻量级的hypervisor，而这又需要CPU的虚拟化支持。
+- en: For Windows, this may require a BIOS configuration. Refer to [https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled](https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled) for
+    more information.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于Windows，这可能需要BIOS配置。有关更多信息，请参阅[https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled](https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled)。
+- en: For macOS, this requires hardware from 2010 or later, with Intel's hardware
+    support for **Memory Management Unit** (**MMU**) virtualization, including **Extended
+    Page Tables** (**EPTs**) and unrestricted mode. You can check for this support
+    by running `sysctl kern.hv_support`. It also requires macOS 10.11 or later.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于macOS，这需要2010年或之后的硬件，具有英特尔对**内存管理单元**（**MMU**）虚拟化的硬件支持，包括**扩展页表**（**EPTs**）和无限制模式。您可以通过运行`sysctl
+    kern.hv_support`来检查此支持。还需要macOS 10.11或更高版本。
+- en: Having installed the software, let's try it out and familiarize ourselves with
+    Docker.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装完软件后，让我们尝试并熟悉Docker。
+- en: Familiarizing ourselves with Docker
+  id: totrans-39
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 熟悉Docker
+- en: With the setup accomplished, we can use the local Docker instance to create
+    Docker containers, run a few commands, and, in general, learn how to use it.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成设置后，我们可以使用本地Docker实例创建Docker容器，运行一些命令，并且通常学习如何使用它。
+- en: 'As in so many software journeys, this one starts with *Hello World*:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像许多软件之旅一样，这一切都始于“Hello World”：
+- en: '[PRE0]js\1'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE0]js\1'
+- en: The `Unable to find image` phrase means that Docker has not downloaded the named
+    image yet. Therefore, it downloaded not only the Ubuntu image but also the images
+    it depends on. Any Docker image can be built in layers, meaning we always define
+    an image in terms of a base image. In this instance, we see that the Ubuntu image
+    required four layers in total.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “无法找到镜像”这个短语意味着Docker尚未下载命名的镜像。因此，它不仅下载了Ubuntu镜像，还下载了它所依赖的镜像。任何Docker镜像都可以分层构建，这意味着我们总是根据基础镜像定义镜像。在这种情况下，我们看到Ubuntu镜像总共需要四层。
+- en: Images are identified by an SHA-256 hash, and there is both a long-form identifier
+    and a short-form identifier. We can see both the long and short identifiers in
+    this output.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 镜像由SHA-256哈希标识，并且有长格式标识符和短格式标识符。我们可以在此输出中看到长标识符和短标识符。
+- en: The `docker run` command downloads an image, configures it for execution, and
+    executes the image. The `-it` flag means to run the image interactively in the
+    terminal.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`docker run`命令下载图像，配置其执行，并执行图像。`-it`标志表示在终端中交互式运行图像。'
+- en: In the `docker run` command line, the part after the image name to execute is
+    passed into the container as command options to execute. In this case, the command
+    option says to run `bash`, which is the default command shell. Indeed, we were
+    given a command prompt and can run Linux commands.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`docker run`命令行中，图像名称后面要执行的部分作为命令选项传递到容器中以执行。在这种情况下，命令选项表示要运行`bash`，这是默认的命令shell。事实上，我们得到了一个命令提示符，可以运行Linux命令。
+- en: 'You can query your computer to see that while the `hello-world` container has
+    executed and finished, it still exists:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以查询您的计算机，看到`hello-world`容器已经执行并完成，但它仍然存在：
+- en: '![](img/fc4a87f1-2ca6-44b6-aa62-a8b206cf9a98.png)'
+  id: totrans-48
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/fc4a87f1-2ca6-44b6-aa62-a8b206cf9a98.png)'
+- en: The `docker ps` command lists the running Docker containers. As we see here,
+    the `hello-world` container is no longer running, but the Ubuntu container is.
+    With the `-a` switch, `docker ps` also shows those containers that exist but are
+    not currently running.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`docker ps`命令列出正在运行的Docker容器。正如我们在这里看到的，`hello-world`容器不再运行，但Ubuntu容器在运行。使用`-a`开关，`docker
+    ps`还会显示那些存在但当前未运行的容器。'
+- en: The last column is the container name. Since we didn't specify a container name
+    when launching the container, Docker created a semi-random name for us.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后一列是容器名称。由于在启动容器时我们没有指定容器名称，Docker为我们创建了一个半随机的名称。
+- en: 'When you''re done using a container, you can clean up with the following command:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用容器后，您可以使用以下命令进行清理：
+- en: '[PRE1]js\1'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE1]js\1'
+- en: It's also possible to specify the hex ID. However, it is, of course, more user
+    friendly to have a name for the container than a hex ID. When creating a container, it's
+    easy to specify any container name you like.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也可以指定十六进制ID。但是，相对于十六进制ID，为容器指定一个名称当然更加用户友好。在创建容器时，可以轻松地指定任何您喜欢的容器名称。
+- en: We've installed Docker on our laptop or computer and tried a couple of simple
+    commands to familiarize ourselves with Docker. Let's now get down to some work.
+    We'll start by setting up the user authentication service in Docker containers.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经在笔记本电脑或计算机上安装了Docker，并尝试了一些简单的命令来熟悉Docker。现在让我们开始一些工作。我们将首先在Docker容器中设置用户认证服务。
+- en: Setting up the user authentication service in Docker
+  id: totrans-55
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Docker中设置用户认证服务
+- en: With all that theory spinning around in our heads, it's time to do something
+    practical. Let's start by setting up the user authentication service. We'll call
+    this AuthNet, and it comprises a MySQL instance to store the user database, the
+    authentication server, and a private subnet to connect them.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的脑海中有这么多理论，现在是时候做一些实际的事情了。让我们首先设置用户认证服务。我们将称之为AuthNet，并且它包括一个用于存储用户数据库的MySQL实例，认证服务器和一个私有子网来连接它们。
+- en: It is best for each container to focus on providing one service. Having one
+    service per container is a useful architectural decision because we can focus
+    on optimizing each container for a specific purpose. Another rationale has to
+    do with scaling, in that each service has different requirements to satisfy the
+    traffic it serves. In our case, we might need a single MySQL instance, and 10
+    user authentication instances, depending on the traffic load.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最好让每个容器专注于提供一个服务。每个容器提供一个服务是一个有用的架构决策，因为我们可以专注于为特定目的优化每个容器。另一个理由与扩展有关，因为每个服务有不同的要求来满足其提供的流量。在我们的情况下，根据流量负载，我们可能需要一个单独的MySQL实例和10个用户认证实例。
+- en: There is a large library of predefined Docker images available on Docker Hub
+    ([https://hub.docker.com](https://hub.docker.com)). It is best to reuse one of
+    those images as a starting point to build our desired service.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker Hub（[https://hub.docker.com](https://hub.docker.com)）上有大量预定义的Docker镜像库。最好重用其中一个镜像作为构建我们所需服务的起点。
+- en: The Docker environment lets us not only define and instantiate Docker containers
+    but also the networking connections between containers. That's what we meant by a
+    *private subnet* earlier. With Docker, we not only manage containers, but we can
+    also configure subnets, data storage services, and more.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker环境不仅让我们定义和实例化Docker容器，还可以定义容器之间的网络连接。这就是我们之前所说的*私有子网*。通过Docker，我们不仅可以管理容器，还可以配置子网、数据存储服务等等。
+- en: In the next few sections, we'll carefully dockerize the user authentication
+    service infrastructure. We'll learn how to set up a MySQL container for Docker
+    and launch a Node.js service in Docker.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的几节中，我们将仔细地将用户认证服务基础架构docker化。我们将学习如何为Docker设置一个MySQL容器，并在Docker中启动一个Node.js服务。
+- en: Let's start by learning how to launch a MySQL container in Docker.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们首先学习如何在Docker中启动一个MySQL容器。
+- en: Launching a MySQL container in Docker
+  id: totrans-62
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在Docker中启动一个MySQL容器
+- en: Among the publicly available Docker images, there are over 11,000 available
+    for MySQL. Fortunately, the image provided by the MySQL team, `mysql/mysql-server`,
+    is easy to use and configure, so let's use that.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在公开可用的Docker镜像中，有超过11,000个适用于MySQL的镜像。幸运的是，MySQL团队提供的`mysql/mysql-server`镜像易于使用和配置，所以让我们使用它。
+- en: A Docker image name can be specified, along with a *tag* that is usually the
+    software version number. In this case, we'll use `mysql/mysql-server:8.0`, where `mysql/mysql-server` is
+    the image repository URL, `mysql-server` is the image name, and `8.0` is the tag.
+    The MySQL 8.x release train is the current version as of the time of writing.
+    As with many projects, the MySQL project tags the Docker images with the version
+    number.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以指定Docker镜像名称，以及通常是软件版本号的*标签*。在这种情况下，我们将使用`mysql/mysql-server:8.0`，其中`mysql/mysql-server`是镜像存储库URL，`mysql-server`是镜像名称，`8.0`是标签。截至撰写本文时，MySQL
+    8.x版本是当前版本。与许多项目一样，MySQL项目使用版本号标记Docker镜像。
+- en: 'Download the image, as follows:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下方式下载镜像：
+- en: '[PRE2]js\1'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE2]js\1'
+- en: There are two images currently available—the `mysql-server` image we just downloaded
+    and the `hello-world` image we ran earlier.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前有两个可用的镜像——我们刚刚下载的`mysql-server`镜像和之前运行的`hello-world`镜像。
+- en: 'We can remove unwanted images with the following command:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用以下命令删除不需要的镜像：
+- en: '[PRE3]js\1'
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE3]js\1'
+- en: The `docker run` command takes an image name, along with various arguments,
+    and launches it as a running container.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`docker run`命令接受一个镜像名称，以及各种参数，并将其作为运行中的容器启动。'
+- en: We started this service in the foreground, and there is a tremendous amount
+    of output as MySQL initializes its container. Because of the `--name` option,
+    the container name is `mysql`. Using an environment variable, we tell the container
+    to initialize the `root` password.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在前台启动了这项服务，当MySQL初始化其容器时，会有大量的输出。由于`--name`选项，容器的名称是`mysql`。通过环境变量，我们告诉容器初始化`root`密码。
+- en: 'Since we have a running server, let''s use the MySQL CLI to make sure it''s
+    actually running. In another window, we can run the MySQL client inside the container,
+    as follows:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 既然我们有一个运行中的服务器，让我们使用MySQL CLI来确保它实际上正在运行。在另一个窗口中，我们可以在容器内运行MySQL客户端，如下所示：
+- en: '[PRE4]js\1'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE4]js\1'
+- en: This closes out and cleans up the container we created. To reiterate the point
+    made earlier, the database in that container went away. If that database contained
+    critical information, you just lost it, with no chance of recovering the data.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这关闭并清理了我们创建的容器。重申之前提到的观点，容器中的数据库已经消失了。如果那个数据库包含重要信息，你刚刚丢失了它，没有机会恢复数据。
+- en: Before moving on, let's discuss how this impacts the design of our services.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在继续之前，让我们讨论一下这对我们服务设计的影响。
+- en: The ephemeral nature of Docker containers
+  id: totrans-76
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Docker容器的短暂性
+- en: Docker containers are designed to be easy to create and easy to destroy. In
+    the course of kicking the tires, we've already created and destroyed three containers.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker容器被设计为易于创建和销毁。在试验过程中，我们已经创建并销毁了三个容器。
+- en: In the olden days (a few years ago), setting up a database required the provisioning
+    of specially configured hardware, hiring a database admin with special skills,
+    and carefully optimizing everything for the expected workload. In the space of
+    a few paragraphs, we just instantiated and destroyed three database instances.
+    What a brave new world this is!
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在过去（几年前），设置数据库需要提供特别配置的硬件，雇佣具有特殊技能的数据库管理员，并仔细地为预期的工作负载进行优化。在短短几段文字中，我们已经实例化和销毁了三个数据库实例。这是多么崭新的世界啊！
+- en: In terms of databases and Docker containers, the database is relatively eternal,
+    and the Docker container is ephemeral. Databases are expected to last for years,
+    or perhaps even decades. In computer years, that's practically immortal. By contrast,
+    a Docker container that is used and then immediately thrown away is merely a brief
+    flicker of time compared to the expected lifetime of a database.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在数据库和Docker容器方面，数据库相对是永恒的，而Docker容器是短暂的。数据库预计会持续数年，甚至数十年。在计算机年代，那几乎是不朽的。相比之下，一个被使用后立即丢弃的Docker容器只是与数据库预期寿命相比的短暂时间。
+- en: Those containers can be created and destroyed quickly, and this gives us a lot
+    of flexibility. For example, orchestration systems, such as Kubernetes or AWS
+    ECS, can automatically increase or decrease the number of containers to match
+    traffic volume, restart containers that crash, and more.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些容器可以快速创建和销毁，这给了我们很大的灵活性。例如，编排系统，如Kubernetes或AWS ECS，可以自动增加或减少容器的数量以匹配流量，重新启动崩溃的容器等等。
+- en: But where does the data in a database container live? With the commands we ran
+    in the previous section, the database data directory lives inside the container.
+    When the container was destroyed, the data directory was destroyed, and any data
+    in our database was vaporized. Obviously, this is not compatible with the life
+    cycle requirements of the data we store in a database.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是数据库容器中的数据存放在哪里？在前一节中运行的命令中，数据库数据目录位于容器内部。当容器被销毁时，数据目录也被销毁，我们数据库中的任何数据都被永久删除。显然，这与我们在数据库中存储的数据的生命周期要求不兼容。
+- en: Fortunately, Docker allows us to attach a variety of mass storage services to
+    a Docker container. The container itself might be ephemeral, but we can attach
+    eternal data to the ephemeral container. It's just a matter of configuring the
+    database container so that the data directory is on the correct storage system.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，Docker允许我们将各种大容量存储服务附加到Docker容器。容器本身可能是短暂的，但我们可以将永久数据附加到短暂的容器。只需配置数据库容器，使数据目录位于正确的存储系统上。
+- en: Enough theory, let's now do something. Specifically, let's create the infrastructure
+    for the authentication service.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 足够的理论，现在让我们做点什么。具体来说，让我们为身份验证服务创建基础架构。
+- en: Defining the Docker architecture for the authentication service
+  id: totrans-84
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 定义身份验证服务的Docker架构
+- en: Docker supports the creation of virtual bridge networks between containers.
+    Remember that a Docker container has many of the features of an installed Linux
+    OS. Each container can have its own IP address and exposed ports. Docker supports
+    the creation of what amounts to a virtual Ethernet segment, called a **bridge
+    network**. These networks live solely within the host computer and, by default,
+    are not reachable by anything outside the host computer.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker支持在容器之间创建虚拟桥接网络。请记住，Docker容器具有已安装的Linux操作系统的许多功能。每个容器都可以有自己的IP地址和公开的端口。Docker支持创建类似虚拟以太网段的东西，称为**桥接网络**。这些网络仅存在于主机计算机中，并且默认情况下，外部计算机无法访问它们。
+- en: A Docker bridge network, therefore, has strictly limited access. Any Docker containers
+    attached to a bridge network can communicate with other containers attached to
+    that network and, by default, that network does not allow external traffic. The
+    containers find each other by hostname, and Docker includes an embedded DNS server
+    to set up the hostnames required. That DNS server is configured to not require
+    dots in domain names, meaning the DNS/hostname of each container is simply the
+    container name. We'll find later that the hostname of the container is actually `container-name.network-name`,
+    and that the DNS configuration lets you skip using the `network-name` portion
+    of the hostname. This policy of using hostnames to identify containers is Docker's
+    implementation of service discovery.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，Docker桥接网络的访问受到严格限制。连接到桥接网络的任何Docker容器都可以与连接到该网络的其他容器进行通信，并且默认情况下，该网络不允许外部流量。容器通过主机名找到彼此，并且Docker包含一个嵌入式DNS服务器来设置所需的主机名。该DNS服务器配置为不需要域名中的点，这意味着每个容器的DNS/主机名只是容器名称。我们将在后面发现，容器的主机名实际上是`container-name.network-name`，并且DNS配置允许您跳过使用`network-name`部分的主机名。使用主机名来标识容器的策略是Docker对服务发现的实现。
+- en: Create a directory named `authnet` as a sibling to the `users` and `notes` directories.
+    We'll be working on `authnet` in that directory.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`users`和`notes`目录的同级目录中创建名为`authnet`的目录。我们将在该目录中处理`authnet`。
+- en: 'In that directory, create a file—`package.json`—which we''ll use solely to
+    record commands for managing AuthNet:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在该目录中创建一个名为`package.json`的文件，我们将仅使用它来记录管理AuthNet的命令：
+- en: '[PRE5]js\1'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE5]js\1'
+- en: This creates a Docker bridge network. The long coded string is the identifier
+    for this network. The `docker network ls` command lists the existing networks
+    in the current Docker system. In addition to the short hex ID, the network has
+    the name we specified.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将创建一个Docker桥接网络。长编码字符串是此网络的标识符。`docker network ls`命令列出当前Docker系统中的现有网络。除了短十六进制ID外，网络还具有我们指定的名称。
+- en: 'Look at details regarding the network with this command:'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用以下命令查看有关网络的详细信息：
+- en: '[PRE6]js\1'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE6]js\1'
+- en: This command lets us remove a network from the Docker system. However, since
+    we need this network, rerun the command to recreate it.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此命令允许我们从Docker系统中删除网络。但是，由于我们需要此网络，重新运行命令以重新创建它。
+- en: We have explored setting up a bridge network, and so our next step is to populate
+    it with a database server.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经探讨了设置桥接网络，因此我们的下一步是用数据库服务器填充它。
+- en: Creating the MySQL container for the authentication service
+  id: totrans-95
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 为身份验证服务创建MySQL容器
+- en: Now that we have a network, we can start connecting containers to that network.
+    In addition to attaching the MySQL container to a private network, we'll be able
+    to control the username and password used with the database, and we'll also give
+    it external storage. That will correct the issues we named earlier.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了一个网络，我们可以开始将容器连接到该网络。除了将MySQL容器连接到私有网络外，我们还将能够控制与数据库一起使用的用户名和密码，并且还将为其提供外部存储。这将纠正我们之前提到的问题。
+- en: 'To create the container, we can run the following command:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要创建容器，可以运行以下命令：
+- en: '[PRE7]js\1'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE7]js\1'
+- en: In other words, Docker lets you mount not only a directory but also a single
+    file.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 换句话说，Docker不仅允许您挂载目录，还允许您挂载单个文件。
+- en: 'The command line follows this pattern:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 命令行遵循以下模式：
+- en: '[PRE8]js\1'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE8]js\1'
+- en: This will ensure that you are starting with a fresh database each time, as well
+    as ensuring that the container initialization runs.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将确保您每次都从新数据库开始，并确保容器初始化运行。
+- en: This also suggests an administrative pattern to follow. Any time you wish to
+    update to a later MySQL release, simply stop the container, leaving the data directory
+    in place. Then, delete the container and re-execute the `docker run` command with
+    a new `mysql/mysql-server` tag. That will cause Docker to recreate the container
+    using a different image, but using the same data directory. Using this technique,
+    you can update the MySQL version by pulling down a newer image.
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这也暗示了一个行政模式要遵循。每当您希望更新到较新的MySQL版本时，只需停止容器，保留数据目录。然后，删除容器，并使用新的`mysql/mysql-server`标签重新执行`docker
+    run`命令。这将导致Docker使用不同的镜像重新创建容器，但使用相同的数据目录。使用这种技术，您可以通过拉取更新的镜像来更新MySQL版本。
+- en: 'Once you have the MySQL container running, type this command:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦MySQL容器运行，输入以下命令：
+- en: '![](img/f8b581a3-5b69-4a4c-9725-32697e2a774b.png)'
+  id: totrans-105
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f8b581a3-5b69-4a4c-9725-32697e2a774b.png)'
+- en: This will show the current container status. If we use `docker ps -a`, we see
+    that the `PORTS` column says `0.0.0.0:3306->3306/tcp, 33060/tcp`. That says that
+    the container is listening to access from anywhere (`0.0.0.0`) to port `3306`,
+    and this traffic will connect to port `3306` inside the container. Additionally,
+    there is a port `33060` that is available, but it is not exposed outside the container.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将显示当前容器状态。如果我们使用`docker ps -a`，我们会看到`PORTS`列显示`0.0.0.0:3306->3306/tcp, 33060/tcp`。这表示容器正在监听从任何地方（`0.0.0.0`）到端口`3306`的访问，这个流量将连接到容器内部的端口`3306`。此外，还有一个端口`33060`可用，但它没有暴露到容器外部。
+- en: Even though it is configured to listen to the whole world, the container is
+    attached to `authnet`, which limits where connections can come from. Limiting
+    the scope of processes that can attach to the database is a good thing. However,
+    since we used the `-p` option, the database port is exposed to the host, and it's
+    not as secure as we want. We'll fix this later.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管它配置为监听整个世界，但容器附加到`authnet`，限制了连接的来源。限制可以连接到数据库的进程的范围是一件好事。但是，由于我们使用了`-p`选项，数据库端口暴露给了主机，这并不像我们想要的那样安全。我们稍后会修复这个问题。
+- en: Security in the database container
+  id: totrans-108
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 数据库容器中的安全性
+- en: A question to ask is whether setting the `root` password like this is a good
+    idea. The `root` user has broad access to the entire MySQL server, where other
+    users, such as `userauth`, have limited access to the given database. Since one
+    of our goals is security, we must consider whether this has created a secure or
+    insecure database container.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个要问的问题是是否像这样设置`root`密码是一个好主意。`root`用户对整个MySQL服务器有广泛的访问权限，而其他用户，如`userauth`，对给定数据库的访问权限有限。由于我们的目标之一是安全性，我们必须考虑这是否创建了一个安全或不安全的数据库容器。
+- en: 'We can log in as the `root` user with the following command:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用以下命令以`root`用户身份登录：
+- en: '[PRE9]js\1'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE9]js\1'
+- en: A connection to a MySQL server includes a user ID, a password, and the source
+    of the connection. This connection might come from inside the same computer, or
+    it might come over a TCP/IP socket from another computer. To approve the connection,
+    the server looks in the `mysql.user` table for a row matching the `user`, `host` (source
+    of connection), and `password` fields. The username and password are matched as
+    a simple string comparison, but the host value is a more complex comparison. Local
+    connections to the MySQL server are matched against rows where the host value
+    is `localhost`.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到MySQL服务器包括用户ID、密码和连接的来源。这个连接可能来自同一台计算机内部，也可能来自另一台计算机的TCP/IP套接字。为了批准连接，服务器会在`mysql.user`表中查找与`user`、`host`（连接来源）和`password`字段匹配的行。用户名和密码是作为简单的字符串比较进行匹配的，但主机值是一个更复杂的比较。与MySQL服务器的本地连接将与主机值为`localhost`的行匹配。
+- en: For remote connections, MySQL compares the IP address and domain name of the
+    connection against entries in the `host` column. The `host` column can contain
+    IP addresses, hostnames, or wildcard patterns. The wildcard character for SQL
+    is `%`. A single `%` character matches against any connection source, while a
+    pattern of `172.%` matches any IP address where the first IPv4 octet is `172`,
+    or `172.20.%.%` matches any IP address in the `172.20.x.x` range.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于远程连接，MySQL会将连接的IP地址和域名与`host`列中的条目进行比较。`host`列可以包含IP地址、主机名或通配符模式。SQL的通配符字符是`%`。单个`%`字符匹配任何连接源，而`172.%`的模式匹配第一个IPv4八位是`172`的任何IP地址，或者`172.20.%.%`匹配`172.20.x.x`范围内的任何IP地址。
+- en: Therefore, since the only row for `userauth` specifies a host value of `%`,
+    we can use `userauth` from anywhere. By contrast, the `root` user can only be
+    used with a `localhost` connection.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，由于`userauth`的唯一行指定了`%`的主机值，我们可以从任何地方使用`userauth`。相比之下，`root`用户只能在`localhost`连接中使用。
+- en: 'The next task is to examine the access rights for the `userauth` and `root` user
+    IDs:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一个任务是检查`userauth`和`root`用户ID的访问权限：
+- en: '[PRE10]js\1'
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE10]js\1'
+- en: We've demonstrated four modes of accessing the database, showing that indeed,
+    the `userauth` ID can be accessed either from the same container or from a remote
+    container, while the `root` ID can only be used from the local container.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们展示了访问数据库的四种模式，表明`userauth` ID确实可以从同一容器或远程容器访问，而`root` ID只能从本地容器使用。
+- en: Using `docker run --it --rm ... container-name ..` starts a container, runs
+    the command associated with the container, and then exits the container and automatically
+    deletes it when it's done.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`docker run --it --rm ... container-name ..`启动一个容器，运行与容器相关的命令，然后在完成后退出容器并自动删除它。
+- en: Therefore, with those last two commands, we created a separate `mysql/mysql-server:8.0` container,
+    connected to `authnet`, to run the `mysql` CLI program. The `mysql` arguments
+    are to connect using the given username (`root` or `userauth`) to the MySQL server
+    on the host named `db-userauth`. This demonstrates connecting to the database
+    from a separate connector and shows that we can connect remotely with the `userauth` user,
+    but not with the `root` user.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，通过这两个命令，我们创建了一个单独的`mysql/mysql-server:8.0`容器，连接到`authnet`，以运行`mysql`CLI程序。`mysql`参数是使用给定的用户名（`root`或`userauth`）连接到名为`db-userauth`的主机上的MySQL服务器。这演示了从一个独立的连接器连接到数据库，并显示我们可以使用`userauth`用户远程连接，但不能使用`root`用户。
+- en: 'Then, the final access experiment involves leaving off the `--network` option:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，最终的访问实验涉及省略`--network`选项：
+- en: '[PRE11]js\1'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE11]js\1'
+- en: In other words, the `authnet` network has the `172.20.0.0/16` network number,
+    and the `db-userauth` container was assigned the `172.20.0.2` IP address. This
+    level of detail is rarely important, but it is useful on the first occasion to
+    carefully examine the setup so that we understand what we're dealing with.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 换句话说，`authnet`网络具有`172.20.0.0/16`网络号，而`db-userauth`容器被分配了`172.20.0.2`IP地址。这种细节很少重要，但在第一次仔细检查设置时是有用的，这样我们就能理解我们正在处理的内容。
+- en: There is a gaping security issue that violates our design. Namely, the database
+    port is visible to the host, and therefore, anyone with access to the host can
+    access the database. This happened because we used `-p 3306:3306` in a misguided
+    belief that this was required so that `svc-userauth`, which we'll build in the
+    next section, can access the database. We'll fix this later by removing that option.
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 存在一个严重的安全问题，违反了我们的设计。即，数据库端口对主机是可见的，因此，任何可以访问主机的人都可以访问数据库。这是因为我们在错误的认为下使用了`-p
+    3306:3306`，以为这是必需的，这样`svc-userauth`才能在下一节中访问数据库。我们将通过删除该选项来解决这个问题。
+- en: Now that we have the database instance set up for the authentication service,
+    let's see how to Dockerize it.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经为认证服务设置了数据库实例，让我们看看如何将其Docker化。
+- en: Dockerizing the authentication service
+  id: totrans-125
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Docker化认证服务
+- en: The word *Dockerize* means to create a Docker image for a piece of software.
+    The Docker image can then be shared with others or be deployed to a server. In
+    our case, the goal is to create a Docker image for the user authentication service.
+    It must be attached to `authnet` so that it can access the database server we
+    just configured in the `db-userauth` container.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*Dockerize*一词意味着为软件创建一个Docker镜像。然后可以与他人共享Docker镜像，或部署到服务器上。在我们的情况下，目标是为用户认证服务创建一个Docker镜像。它必须连接到`authnet`，以便可以访问我们刚刚在`db-userauth`容器中配置的数据库服务器。'
+- en: We'll name this new container `svc-userauth` to indicate that this is the user
+    authentication REST service, while the `db-userauth` container is the database.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将命名这个新容器为`svc-userauth`，以表示这是用户认证REST服务，而`db-userauth`容器是数据库。
+- en: Docker images are defined using Dockerfiles, which are files to describe the
+    installation of an application on a server. They document the setup of the Linux
+    OS, installed software, and configuration required in the Docker image. This is
+    literally a file named `Dockerfile`, containing Dockerfile commands. Dockerfile commands
+    are used to describe how the image is constructed.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker镜像是使用Dockerfile定义的，Dockerfile是描述在服务器上安装应用程序的文件。它们记录了Linux操作系统的设置，安装的软件以及Docker镜像中所需的配置。这实际上是一个名为`Dockerfile`的文件，其中包含Dockerfile命令。Dockerfile命令用于描述镜像的构建方式。
+- en: Refer to [https://docs.docker.com/engine/reference/builder/](https://docs.docker.com/engine/reference/builder/) for
+    the documentation.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请参考[https://docs.docker.com/engine/reference/builder/](https://docs.docker.com/engine/reference/builder/)获取文档。
+- en: Creating the authentication service Dockerfile
+  id: totrans-130
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 创建认证服务Dockerfile
+- en: 'In the `users` directory, create a file named `Dockerfile` containing the following
+    content:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`users`目录中，创建一个名为`Dockerfile`的文件，其中包含以下内容：
+- en: '[PRE12]js\1'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE12]js\1'
+- en: The difference is that instead of `localhost` as the database host, we use `db-userauth`.
+    Earlier, we explored the `db-userauth` container and determined that this was
+    the hostname of the container. By using `db-userauth` in this file, the authentication
+    service will use the database in the container.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不同之处在于，我们使用`db-userauth`而不是`localhost`作为数据库主机。之前，我们探索了`db-userauth`容器，并确定这是容器的主机名。通过在这个文件中使用`db-userauth`，认证服务将使用容器中的数据库。
+- en: The `EXPOSE` command informs Docker that the container listens on the named
+    TCP port. This does not expose the port beyond the container. The `-p` flag is
+    what exposes a given port outside the container.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`EXPOSE`命令通知Docker容器监听指定的TCP端口。这不会将端口暴露到容器之外。`-p`标志是将给定端口暴露到容器之外的方式。'
+- en: Finally, the `CMD` command documents the process to launch when the container
+    is executed. The `RUN` commands are executed while building the container, while `CMD` says
+    what's executed when the container starts.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，`CMD`命令记录了在执行容器时启动的过程。`RUN`命令在构建容器时执行，而`CMD`表示容器启动时执行的内容。
+- en: We could have installed `PM2` in the container, and then used a `PM2` command
+    to launch the service. However, Docker is able to fulfill the same function because
+    it automatically supports restarting a container if the service process dies.
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们本可以在容器中安装`PM2`，然后使用`PM2`命令来启动服务。然而，Docker能够实现相同的功能，因为它自动支持在服务进程死掉时重新启动容器。
+- en: Building and running the authentication service Docker container
+  id: totrans-137
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 构建和运行认证服务Docker容器
+- en: Now that we've defined the image in a Dockerfile, let's build it.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经在Dockerfile中定义了镜像，让我们来构建它。
+- en: 'In `users/package.json`, add the following line to the `scripts` section:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`users/package.json`中，将以下行添加到`scripts`部分：
+- en: '[PRE13]js\1'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE13]js\1'
+- en: The `docker build` command builds an image from a Dockerfile. Notice that the
+    build executes one step at a time, and that the steps correspond exactly to the
+    commands in the Dockerfile.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`docker build`命令从Dockerfile构建一个镜像。请注意，构建一步一步进行，每个步骤都与Dockerfile中的命令完全对应。'
+- en: Each step is stored in a cache so that it doesn't have to be rerun. On subsequent
+    builds, the only steps executed are the step that changed and all subsequent steps.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个步骤都存储在缓存中，因此不必重新运行。在后续构建中，执行的唯一步骤是更改的步骤和所有后续步骤。
+- en: 'In `authnet/package.json`, we require quite a few scripts to manage the user
+    authentication service:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在“authnet/package.json”中，我们需要相当多的脚本来管理用户认证服务：
+- en: '[PRE14]js\1'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE14]js\1'
+- en: This option requires absolute pathnames and specifying the path this way works
+    on Windows.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此选项需要绝对路径名，并且以这种方式指定路径在Windows上有效。
+- en: Another thing to notice is the absence of the `-p 3306:3306` option. It was
+    determined that this was not necessary for two reasons. First, the option exposed
+    the database in `db-userauth` to the host, when our security model required otherwise,
+    and so removing the option got us the desired security. Second, `svc-userauth` was
+    still able to access the `db-userauth` database after this option was removed.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个需要注意的是“-p 3306:3306”选项的缺失。有两个原因确定这是不必要的。首先，该选项将数据库暴露给主机，“db-userauth”的安全模型要求不这样，因此删除该选项可以获得所需的安全性。其次，“svc-userauth”在删除此选项后仍然能够访问“db-userauth”数据库。
+- en: 'With these commands, we can now type the following to build and then run the
+    containers:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这些命令，我们现在可以输入以下内容来构建，然后运行容器：
+- en: '[PRE15]js\1'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE15]js\1'
+- en: This stops and starts both containers making up the user authentication service.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将停止并启动构成用户认证服务的两个容器。
+- en: We have created the infrastructure to host the user authentication service,
+    plus a collection of scripts to manage the service. Our next step is to explore
+    what we've created and learn a few things about the infrastructure Docker creates
+    for us.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经创建了托管用户认证服务的基础设施，以及一系列脚本来管理该服务。我们的下一步是探索我们创建的内容，并了解Docker为我们创建的基础设施的一些情况。
+- en: Exploring AuthNet
+  id: totrans-151
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 探索AuthNet
+- en: 'Remember that AuthNet is the connection medium for the authentication service.
+    To understand whether this network provides the security gains we''re looking
+    for, let''s explore what we just created:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，AuthNet是认证服务的连接介质。为了了解这个网络是否提供了我们正在寻找的安全性增益，让我们探索一下我们刚刚创建的内容：
+- en: '[PRE16]js\1'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE16]js\1'
+- en: 'The `/userauth` directory is inside the container and contains the files placed
+    in the container using the `COPY` command, plus the installed files in `node_modules`:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “/userauth”目录位于容器内，包含使用“COPY”命令放置在容器中的文件，以及“node_modules”中安装的文件：
+- en: '[PRE17]js\1'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE17]js\1'
+- en: 'The process listing is interesting to study. Process `PID 1` is the `node ./user-server.mjs` command
+    in the Dockerfile. The format we used for the `CMD` line ensured that the `node`
+    process ended up as process 1\. This is important so that process signals are
+    handled correctly, allowing Docker to manage the service process correctly. The
+    tail end of the following blog post has a good discussion of the issue:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 进程列表是值得研究的。进程“PID 1”是Dockerfile中的“node ./user-server.mjs”命令。我们在“CMD”行中使用的格式确保“node”进程最终成为进程1。这很重要，以便正确处理进程信号，从而允许Docker正确管理服务进程。以下博客文章的末尾有关于这个问题的很好讨论：
+- en: '[https://www.docker.com/blog/keep-nodejs-rockin-in-docker/](https://www.docker.com/blog/keep-nodejs-rockin-in-docker/)'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://www.docker.com/blog/keep-nodejs-rockin-in-docker/](https://www.docker.com/blog/keep-nodejs-rockin-in-docker/)'
+- en: 'A `ping` command proves that the two containers are available as hostnames
+    matching the container names:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “ping”命令证明两个容器作为与容器名称匹配的主机名可用：
+- en: '[PRE18]js\1'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE18]js\1'
+- en: As with `authnet`, this is just the starting point as we have several more scripts
+    to add.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与“authnet”一样，这只是起点，因为我们还有几个脚本要添加。
+- en: 'Let''s go ahead and create the `frontnet` bridge network:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续创建“frontnet”桥接网络：
+- en: '[PRE19]js\1'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE19]js\1'
+- en: This is largely the same as for `db-userauth`, with the word `notes` substituted
+    for `userauth`. Remember that on Windows the -`-mount` option requires a Windows-style
+    absolute pathname.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这与“db-userauth”几乎相同，只是将“notes”替换为“userauth”。请记住，在Windows上，“-mount”选项需要Windows风格的绝对路径名。
+- en: 'Let''s now run the script:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '现在让我们运行脚本： '
+- en: '[PRE20]js\1'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE20]js\1'
+- en: Since `db-notes` is on a different network segment, we've achieved separation.
+    But we can notice something interesting. The `ping` command tells us that the
+    full domain name for `db-userauth` is `db-userauth.authnet`. Therefore, it stands
+    to reason that `db-notes` is also known as `db-notes.frontnet`. But either way,
+    we cannot reach containers on `frontnet` from a container on `authnet`, and so
+    we have achieved the desired separation.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于“db-notes”位于不同的网络段，我们已经实现了隔离。但我们可以注意到一些有趣的事情。“ping”命令告诉我们，“db-userauth”的完整域名是“db-userauth.authnet”。因此，可以推断“db-notes”也被称为“db-notes.frontnet”。但无论如何，我们无法从“authnet”上的容器访问“frontnet”上的容器，因此我们已经实现了所需的隔离。
+- en: We're able to move more quickly to construct FrontNet because it's so much like
+    AuthNet. We just have to do what we did before and tweak the names.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们能够更快地移动以构建FrontNet，因为它非常类似于AuthNet。我们只需要做以前做过的事情，并微调名称。
+- en: In this section, we created a database container. In the next section, we will
+    create the Dockerfile for the Notes application.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们创建了一个数据库容器。在下一节中，我们将为Notes应用程序创建Dockerfile。
+- en: Dockerizing the Notes application
+  id: totrans-169
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Docker化Notes应用程序
+- en: Our next step is, of course, to Dockerize the Notes application. This starts
+    by creating a Dockerfile, and then adding another Sequelize configuration file,
+    before finishing up by adding more scripts to the `frontnet/package.json` file.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的下一步当然是将Notes应用程序Docker化。这始于创建一个Dockerfile，然后添加另一个Sequelize配置文件，最后通过向“frontnet/package.json”文件添加更多脚本来完成。
+- en: 'In the `notes` directory, create a file named `Dockerfile` containing the following:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在“notes”目录中，创建一个名为“Dockerfile”的文件，其中包含以下内容：
+- en: '[PRE21]js\1'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE21]js\1'
+- en: However, the multiple `COPY` commands let us control exactly what's copied.
+    It's most important to avoid copying the `node_modules` directory into the container.
+    Not only is the `node_modules` file on the host large, which would bloat the container
+    if copied, but it is set up for the host OS and not the container OS. The `node_modules` directory must
+    be built inside the container, with the installation happening on the container's
+    OS. That constraint led to the choice to explicitly copy specific files to the
+    destination.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，多个`COPY`命令让我们可以精确控制复制的内容。避免复制`node_modules`目录是最重要的。不仅是主机上的`node_modules`文件很大，如果复制到容器中会使容器膨胀，而且它是为主机操作系统而不是容器操作系统设置的。`node_modules`目录必须在容器内部构建，安装过程发生在容器的操作系统上。这个约束导致选择明确地将特定文件复制到目标位置。
+- en: 'We also have a new `SEQUELIZE_CONNECT` file. Create `models/sequelize-docker-mysql.yaml` containing
+    the following:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还有一个新的`SEQUELIZE_CONNECT`文件。创建`models/sequelize-docker-mysql.yaml`，其中包含以下内容：
+- en: '[PRE22]js\1'
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE22]js\1'
+- en: As with the authentication server, this lets us build the container image for
+    the Notes application service.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与身份验证服务器一样，这使我们能够为Notes应用程序服务构建容器镜像。
+- en: 'Then, in `frontnet/package.json`, add these scripts:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，在`frontnet/package.json`中添加这些脚本：
+- en: '[PRE23]js\1'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE23]js\1'
+- en: This creates the container image and then launches the container.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将创建容器镜像，然后启动容器。
+- en: Notice that the exposed port `3000` is mapped with `-p 80:3000` onto the normal
+    HTTP port. Since we're getting ready for deployment on a real service, we can
+    stop using port `3000`.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意，暴露的端口`3000`与`-p 80:3000`映射到正常的HTTP端口。由于我们准备在真实服务上部署，我们可以停止使用端口`3000`。
+- en: 'At this point, we can connect our browser to `http://localhost` and start using
+    the Notes application. However, we''ll quickly run into a problem:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，我们可以将浏览器连接到`http://localhost`并开始使用Notes应用程序。但是，我们很快就会遇到一个问题：
+- en: '![](img/11e5e001-7757-4392-9277-62ce82f78a64.png)'
+  id: totrans-182
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/11e5e001-7757-4392-9277-62ce82f78a64.png)'
+- en: The user experience team is going to scream about this ugly error message, so
+    put it on your backlog to generate a prettier error screen. For example, a flock
+    of birds pulling a whale out of the ocean is popular.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户体验团队将对这个丑陋的错误消息大声疾呼，所以把它放在您的待办事项中，生成一个更漂亮的错误屏幕。例如，一群鸟将鲸鱼从海洋中拉出是很受欢迎的。
+- en: 'This error means that Notes cannot access anything at the host named `svc-userauth`.
+    That host does exist because the container is running, but it''s not on `frontnet`,
+    and is not reachable from the `notes` container. Instead, it is on `authnet`,
+    which is currently not reachable by `svc-notes`:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个错误意味着Notes无法访问名为`svc-userauth`的主机上的任何内容。该主机确实存在，因为容器正在运行，但它不在`frontnet`上，并且无法从`notes`容器中访问。相反，它在`authnet`上，目前无法被`svc-notes`访问：
+- en: '[PRE24]js\1'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE24]js\1'
+- en: In the architecture diagram presented in [Chapter 10](176ce11c-dd6f-4ebf-ba14-529be6db28da.xhtml), *Deploying
+    Node.js Applications to Linux Servers,* we showed a connection between the `svc-notes` and `svc-userauth` containers.
+    This connection is required so that Notes can authenticate its users. But that
+    connection does not yet exist.
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第10章](176ce11c-dd6f-4ebf-ba14-529be6db28da.xhtml)中呈现的架构图中，*将Node.js应用程序部署到Linux服务器*，我们展示了`svc-notes`和`svc-userauth`容器之间的连接。这种连接是必需的，以便Notes可以对其用户进行身份验证。但是这种连接尚不存在。
+- en: 'Docker requires you to take a second step to attach the container to a second
+    network:'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker要求您采取第二步将容器连接到第二个网络：
+- en: '[PRE25]js\1'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE25]js\1'
+- en: The first time around, we connected `svc-notes` to `authnet`, then we disconnected
+    it from `authnet`, and then connected `svc-userauth` to `frontnet`. That means
+    we tried both combinations and, as expected, in both cases, `svc-notes` and `svc-userauth` were
+    able to communicate.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一次，我们将`svc-notes`连接到`authnet`，然后将其从`authnet`断开连接，然后将`svc-userauth`连接到`frontnet`。这意味着我们尝试了两种组合，并且如预期的那样，在这两种情况下，`svc-notes`和`svc-userauth`都能够通信。
+- en: This is a question for security experts since the consideration is the attack
+    vectors available to any intruders. Suppose Notes has a security hole allowing
+    an invader to gain access. How do we limit what is reachable via that hole?
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个安全专家的问题，因为考虑到任何入侵者可用的攻击向量。假设Notes存在安全漏洞，允许入侵者访问。我们如何限制通过该漏洞可达到的内容？
+- en: 'The primary observation is that by connecting `svc-notes` to `authnet`, `svc-notes` not
+    only has access to `svc-userauth` but also to `db-userauth`. To see this, run
+    these commands:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主要观察是通过将`svc-notes`连接到`authnet`，`svc-notes`不仅可以访问`svc-userauth`，还可以访问`db-userauth`。要查看这一点，请运行以下命令：
+- en: '[PRE26]js\1'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE26]js\1'
+- en: Primarily, this adds a command, `connect-userauth`, to connect `svc-userauth` to `frontnet`.
+    That helps us remember our decision on how to join the containers. We also took
+    the opportunity to do a little reorganization.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 主要是添加一个命令`connect-userauth`，将`svc-userauth`连接到`frontnet`。这有助于我们记住如何加入容器的决定。我们还借此机会进行了一些重新组织。
+- en: We've learned a lot in this section about Docker—using Docker images, creating
+    Docker containers from images, and configuring a group of Docker containers with
+    some security constraints in mind. We came out of this section having implemented
+    our initial architecture idea. We have two private networks with the containers
+    connected to their appropriate network. The only exposed TCP port is the Notes
+    application, visible on port `80`. The other containers connect with one another
+    using TCP/IP connections that are not available from outside the containers.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们学到了很多关于Docker的知识——使用Docker镜像，从镜像创建Docker容器，并在考虑一些安全约束的情况下配置一组Docker容器。我们在本节中实现了我们最初的架构想法。我们有两个私有网络，容器连接到它们适当的网络。唯一暴露的TCP端口是Notes应用程序，可在端口`80`上看到。其他容器使用不可从容器外部访问的TCP/IP连接相互连接。
+- en: 'Before proceeding to the next section, you may want to shut down the services
+    we''ve launched. Simply execute the following command:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在继续下一部分之前，您可能希望关闭我们启动的服务。只需执行以下命令：
+- en: '[PRE27]js\1'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE27]js\1'
+- en: That's the description of the entire Notes deployment. It's at a fairly high
+    level of abstraction, roughly equivalent to the options in the command-line tools
+    we've used so far. It's fairly succinct and self-explanatory, and, as we'll see,
+    the `docker-compose` command makes these files a convenient way to manage Docker
+    services.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是整个Notes部署的描述。它在相当高的抽象级别上，大致相当于我们迄今为止使用的命令行工具中的选项。它相当简洁和自解释，正如我们将看到的，`docker-compose`命令使这些文件成为管理Docker服务的便利方式。
+- en: The `version` line says that this is a version 3 Compose file. The version number
+    is inspected by the `docker-compose` command so that it can correctly interpret
+    its content. The full documentation is worth reading at [https://docs.docker.com/compose/compose-file/](https://docs.docker.com/compose/compose-file/).
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`version`行表示这是一个版本3的Compose文件。版本号由`docker-compose`命令检查，以便它可以正确解释其内容。完整的文档值得阅读，网址是[https://docs.docker.com/compose/compose-file/](https://docs.docker.com/compose/compose-file/)。'
+- en: There are three major sections used here: `services`, `volumes`, and `networks`.
+    The `services` section describes the containers being used, the `networks` section
+    describes the networks, and the `volumes` section describes the volumes. The content
+    of each section matches the containers we created earlier. The configuration we've
+    already dealt with is all here, just rearranged.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里使用了三个主要部分：`services`、`volumes`和`networks`。`services`部分描述了正在使用的容器，`networks`部分描述了网络，`volumes`部分描述了卷。每个部分的内容都与我们之前创建的容器相匹配。我们已经处理过的配置都在这里，只是重新排列了一下。
+- en: There are the two database containers—`db-userauth` and `db-notes`—and the two
+    service containers—`svc-userauth` and `svc-notes`. The service containers are
+    built from a Dockerfile located in the directory named in the `build` attribute.
+    The database containers are instantiated from images downloaded from Docker Hub.
+    Both correspond directly to what we did previously, using the `docker run` command
+    to create the database containers and using `docker build` to generate the images
+    for the services.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有两个数据库容器——`db-userauth`和`db-notes`——以及两个服务容器——`svc-userauth`和`svc-notes`。服务容器是从`build`属性中指定的目录中的Dockerfile构建的。数据库容器是从Docker
+    Hub下载的镜像实例化的。两者都直接对应于我们之前所做的，使用`docker run`命令创建数据库容器，并使用`docker build`生成服务的镜像。
+- en: The `container_name` attribute is equivalent to the `--name` attribute and specifies
+    a user-friendly name for the container. We must specify the container name in
+    order to specify the container hostname to effect a Docker-style service discovery.
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`container_name`属性等同于`--name`属性，并为容器指定了一个用户友好的名称。我们必须指定容器名称，以便指定容器主机名以实现Docker风格的服务发现。'
+- en: The `networks` attribute lists the networks to which this container must be
+    connected and is exactly equivalent to the `--net` argument. Even though the `docker` command
+    doesn't support multiple `--net` options, we can list multiple networks in the
+    Compose file. In this case, the networks are bridge networks. As we did earlier,
+    the networks themselves must be created separately and, in a Compose file, this
+    is done in the `networks` section.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`networks`属性列出了此容器必须连接的网络，与`--net`参数完全相同。即使`docker`命令不支持多个`--net`选项，我们可以在Compose文件中列出多个网络。在这种情况下，网络是桥接网络。与之前一样，网络本身必须单独创建，在Compose文件中，这是在`networks`部分完成的。'
+- en: The `ports` attribute declares the ports that are to be published and the mapping
+    to container ports. In the `ports` declaration, we have two port numbers, the
+    first being the published port number and the second being the port number inside
+    the container. This is exactly equivalent to the `-p` option used earlier.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ports`属性声明要发布的端口及其与容器端口的映射。在`ports`声明中，有两个端口号，第一个是要发布的端口号，第二个是容器内部的端口号。这与之前使用的`-p`选项完全相同。'
+- en: The `depends_on` attribute lets us control the start up order. A container that
+    depends on another will wait to start until the depended-on container is running.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`depends_on`属性允许我们控制启动顺序。依赖于另一个容器的容器将等待直到被依赖的容器正在运行。'
+- en: The `volumes` attribute describes mappings of a container directory to a `host` directory.
+    In this case, we've defined two volume names—`db-userauth-data` and `db-notes-data`—and
+    then used them for the volume mapping. However, when we deploy to Docker Swarm
+    on AWS EC2, we'll need to change how this is implemented.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`volumes`属性描述了容器目录到`host`目录的映射。在这种情况下，我们定义了两个卷名称——`db-userauth-data`和`db-notes-data`——然后将它们用于卷映射。但是，当我们部署到AWS
+    EC2上的Docker Swarm时，我们需要改变这个实现方式。'
+- en: Notice that we haven't defined a host directory for the volumes. Docker will
+    assign a directory for us, which we can learn about by using the `docker volume
+    inspect` command.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们没有为卷定义主机目录。Docker会为我们分配一个目录，我们可以使用`docker volume inspect`命令了解这个目录。
+- en: The `restart` attribute controls what happens if or when the container dies.
+    When a container starts, it runs the program named in the `CMD` instruction, and
+    when that program exits, the container exits. But what if that program is meant
+    to run *forever*; shouldn't Docker know that it should restart the process? We
+    could use a background process supervisor, such as Supervisord or PM2\. However,
+    the Docker `restart` option takes care of it.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`restart`属性控制容器死亡时或者何时发生的情况。当容器启动时，它运行`CMD`指令中指定的程序，当该程序退出时，容器也退出。但是，如果该程序是要永远运行的，Docker不应该知道它应该重新启动该进程吗？我们可以使用后台进程监视器，如Supervisord或PM2。但是，Docker的`restart`选项会处理这个问题。'
+- en: 'The `restart` attribute can take one of the following four values:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`restart`属性可以取以下四个值之一：'
+- en: '`no`: Do not restart.'
+  id: totrans-209
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`no`: 不重新启动。'
+- en: '`on-failure:count`: Restart up to *N* times.'
+  id: totrans-210
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`on-failure:count`: 最多重新启动*N*次。'
+- en: '`always`: Always restart.'
+  id: totrans-211
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`always`: 总是重新启动。'
+- en: '`unless-stopped`: Start the container unless it was explicitly stopped.'
+  id: totrans-212
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`unless-stopped`: 除非明确停止，否则启动容器。'
+- en: In this section, we've learned how to build a Docker Compose file by creating
+    one that describes the Notes application stack. With that in hand, let's see how
+    to use this tool to launch the containers.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们学习了如何通过创建描述Notes应用程序堆栈的文件来构建Docker Compose文件。有了这个，让我们看看如何使用这个工具来启动容器。
+- en: Building and running the Notes application with Docker Compose
+  id: totrans-214
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Docker Compose构建和运行Notes应用程序
+- en: With the Docker Compose CLI tool, we can manage any sets of Docker containers
+    that can be described in a `docker-compose.yml` file. We can build the containers,
+    bring them up and down, view the logs, and more. On Windows, we're able to run
+    the commands in this section unchanged.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用Docker Compose CLI工具，我们可以管理任何可以在`docker-compose.yml`文件中描述的Docker容器集。我们可以构建容器，启动和关闭它们，查看日志等。在Windows上，我们可以无需更改地运行本节中的命令。
+- en: 'Our first task is to create a clean slate by running these commands:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的第一个任务是通过运行以下命令来创建一个干净的状态：
+- en: '[PRE28]js\1'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE28]js\1'
+- en: This builds the images listed in `docker-compose.yml`. Note that the image names
+    we end up with all start with `compose-local`, which is the name of the directory
+    containing the file. Because this is the equivalent of running `docker build` in
+    each of the directories, it only builds the images.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将构建`docker-compose.yml`中列出的镜像。请注意，我们最终得到的镜像名称都以`compose-local`开头，这是包含该文件的目录的名称。因为这相当于在每个目录中运行`docker
+    build`，它只构建镜像。
+- en: 'Having built the containers, we can start them all at once using either `docker-compose
+    up` or `docker-compose start`:'
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 构建了容器之后，我们可以使用`docker-compose up`或`docker-compose start`一次性启动它们所有：
+- en: '[PRE29]js\1'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE29]js\1'
+- en: If necessary, `docker-compose up` will first build the containers. In addition,
+    it keeps the containers all in the foreground so that we can see the logging.
+    It combines the log output for all the containers together in one output, with
+    the container name shown at the beginning of each line. For a multi-container
+    system such as Notes, this is very helpful.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果需要，`docker-compose up`将首先构建容器。此外，它将保持所有容器在前台运行，以便我们可以查看日志。它将所有容器的日志输出合并在一起，每行开头显示容器名称。对于像Notes这样的多容器系统，这非常有帮助。
+- en: 'We can check the status using this command:'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用此命令检查状态：
+- en: '[PRE30]js\1'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE30]js\1'
+- en: This means that the REST service port for `svc-userauth` was published. Indeed,
+    in the status output, we see that the port is published. That violates our security
+    design, but it does let us run the tests with `users/cli.mjs` from our laptop.
+    That is, we can add users to the database as we've done so many times before.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着`svc-userauth`的REST服务端口已经发布。确实，在状态输出中，我们看到端口已经发布。这违反了我们的安全设计，但它确实让我们可以从笔记本电脑上使用`users/cli.mjs`运行测试。也就是说，我们可以像以前那样向数据库添加用户。
+- en: This security violation is acceptable so long as it stays on our laptop. The `compose-local` directory
+    is named specifically to be used with Docker Compose on our laptop.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只要它保持在我们的笔记本电脑上，这种安全违规是可以接受的。`compose-local`目录的命名是专门用于在我们的笔记本电脑上与Docker Compose一起使用的。
+- en: 'Alternatively, we can run commands inside the `svc-userauth` container just
+    as before:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，我们可以像以前一样在`svc-userauth`容器内运行命令：
+- en: '[PRE31]js\1'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE31]js\1'
+- en: From there, we can try pinging each of the containers to see which containers
+    can be reached. That will serve as a simplistic security audit to ensure that
+    what we've created fits the security model we desired.
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从那里，我们可以尝试ping每个容器，以查看哪些容器可以被访问。这将作为一个简单的安全审计，以确保我们创建的内容符合我们期望的安全模型。
+- en: While doing this, we find that `svc-userauth` can ping every container, including `db-notes`.
+    This violates the security plan and has to be changed.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在执行此操作时，我们发现`svc-userauth`可以ping通每个容器，包括`db-notes`。这违反了安全计划，必须更改。
+- en: 'Fortunately, this is easy to fix. Simply by changing the configuration, we
+    can add a new network named `svcnet` to `docker-compose.yml`:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，这很容易解决。只需通过更改配置，我们可以在`docker-compose.yml`中添加一个名为`svcnet`的新网络：
+- en: '[PRE32]js\1'
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE32]js\1'
+- en: 'As shown here, this stops the whole set of containers. Occasionally, it will
+    instead exit the user to the shell, and the containers will still be running.
+    In that case, the user will have to use an alternative method to shut down the
+    containers:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如图所示，这将停止整组容器。偶尔，它会退出用户到shell，并且容器仍然在运行。在这种情况下，用户将不得不使用其他方法来关闭容器：
+- en: '[PRE33]js\1'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE33]js\1'
+- en: This is the service definition for the `svc-notes-2` container we just described.
+    Because we set the `PORT` variable, the container will listen on port `3020`,
+    which is what is advertised in the `ports` attribute.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们刚刚描述的`svc-notes-2`容器的服务定义。因为我们设置了`PORT`变量，所以容器将在端口`3020`上监听，这也是在`ports`属性中宣传的端口。
+- en: As before, when we quickly reconfigured the network configuration, notice that
+    a simple edit to the Docker Compose file was all that was required to change things
+    around.
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与以前一样，当我们快速重新配置网络配置时，注意到只需对Docker Compose文件进行简单编辑就足以改变事物。
+- en: 'Then, relaunch the Notes stack, as follows:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，按照以下步骤重新启动Notes堆栈：
+- en: '[PRE34]js\1'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE34]js\1'
+- en: This sets up a Redis server in a container named `redis`. This means that other
+    services wanting to use Redis will access it at the host named `redis`.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这在一个名为`redis`的容器中设置了一个Redis服务器。这意味着想要使用Redis的其他服务将在名为`redis`的主机上访问它。
+- en: For any `svc-notes` services you've defined (`svc-notes` and `svc-notes-2`),
+    we must now tell the Notes application where to find the Redis server. We can
+    do this by using an environment variable.
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于您定义的任何`svc-notes`服务（`svc-notes`和`svc-notes-2`），我们现在必须告诉Notes应用程序在哪里找到Redis服务器。我们可以通过使用环境变量来实现这一点。
+- en: 'In `compose-local/docker-compose.yml`, add the following environment variable
+    declaration to any such services:'
+  id: totrans-240
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`compose-local/docker-compose.yml`中，向任何此类服务添加以下环境变量声明：
+- en: '[PRE35]js\1'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE35]js\1'
+- en: This installs the required packages. The `redis` package is a client for using
+    Redis from Node.js and the `connect-redis` package is the Express session store
+    for Redis.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将安装所需的软件包。`redis`软件包是用于从Node.js使用Redis的客户端，而`connect-redis`软件包是Redis的Express会话存储。
+- en: 'We need to change the initialization in `app.mjs` to use the `connect-redis` package
+    in order to store session data:'
+  id: totrans-243
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们需要更改`app.mjs`中的初始化，以使用`connect-redis`包来存储会话数据：
+- en: '[PRE36]js\1'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE36]js\1'
+- en: Because source file changes were made, the containers need to be rebuilt. These
+    options ensure that this happens.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于源文件发生了更改，需要重新构建容器。这些选项确保了这一点。
+- en: We'll now be able to connect to both the Notes service on `http://localhost:3000` (`svc-notes`)
+    and the service on `http://localhost:3020` (`svc-notes-2`), and it will handle
+    the login session on both services.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们将能够连接到`http://localhost:3000`（`svc-notes`）上的Notes服务和`http://localhost:3020`（`svc-notes-2`）上的服务，并且它将处理两个服务上的登录会话。
+- en: Another issue should be noted, however, and this is the fact that real-time
+    notifications are not sent between the two servers. To see this, set up four browser
+    windows, two for each of the servers. Navigate all of them to the same note. Then,
+    add and delete some comments. Only the browser windows connected to the same server
+    will dynamically show changes to the comments. Browser windows connected to the
+    other server will not.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，还应该注意另一个问题，即实时通知在两个服务器之间没有发送。要看到这一点，设置四个浏览器窗口，两个用于每个服务器。将它们全部导航到相同的笔记。然后，添加和删除一些评论。只有连接到相同服务器的浏览器窗口才会动态显示评论的更改。连接到另一个服务器的浏览器窗口不会。
+- en: This is the second horizontal scaling issue. Fortunately, its solution also
+    involves the use of Redis.
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是第二个水平扩展问题。幸运的是，它的解决方案也涉及使用Redis。
+- en: Distributing Socket.IO messages using Redis
+  id: totrans-249
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用Redis分发Socket.IO消息
+- en: 'While testing what happens when we have multiple `svc-notes` containers, we
+    found that login/logout was not reliable. We fixed this by installing a Redis-based
+    session store to keep session data in a place that is accessible by multiple containers.
+    But we also noticed another issue: the fact that the Socket.IO-based messaging
+    did not reliably cause updates in all browser windows.'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在测试多个`svc-notes`容器时，我们发现登录/注销不可靠。我们通过安装基于Redis的会话存储来解决了这个问题，以便将会话数据存储在可以被多个容器访问的地方。但我们也注意到另一个问题：基于Socket.IO的消息传递并不能可靠地在所有浏览器窗口中引发更新。
+- en: Remember that the updates we want to happen in the browser are triggered by
+    updates to the `SQNotes` or `SQMessages` tables. The events emitted by updating either table
+    are emitted by the server making the update. An update happening in one service
+    container (say, `svc-notes-2`) will emit an event from that container, but not
+    from the other one (say, `svc-notes`). There is no mechanism for the other containers
+    to know that they should emit such events.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请记住，我们希望在浏览器中发生的更新是由对`SQNotes`或`SQMessages`表的更新触发的。更新任一表时由服务器进行更新时发出的事件。发生在一个服务容器中的更新（比如`svc-notes-2`）将从该容器发出一个事件，但不会从另一个容器（比如`svc-notes`）发出。没有机制让其他容器知道它们应该发出这样的事件。
+- en: 'The Socket.IO documentation talks about this situation:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Socket.IO文档谈到了这种情况：
+- en: '[https://socket.io/docs/using-multiple-nodes/](https://socket.io/docs/using-multiple-nodes/)'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://socket.io/docs/using-multiple-nodes/](https://socket.io/docs/using-multiple-nodes/)'
+- en: The Socket.IO team provides the `socket.io-redis` package as the solution to
+    this problem. It ensures that events emitted through Socket.IO by any server will
+    be passed along to other servers so that they can also emit those events.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Socket.IO团队提供了`socket.io-redis`包作为解决这个问题的方案。它确保通过Socket.IO由任何服务器发出的事件将传递到其他服务器，以便它们也可以发出这些事件。
+- en: 'Since we already have the Redis server installed, we simply need to install
+    the package and configure it as per the instructions. Again, we will not need
+    to learn anything about Redis:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们已经安装了Redis服务器，我们只需要按照说明安装包并进行配置。再次强调，我们不需要学习有关Redis的任何内容：
+- en: '[PRE37]js\1'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE37]js\1'
+- en: The only change is to add the lines in bold. The `socket.io-redis` package is
+    what the Socket.IO team calls an adapter. Adapters are added to Socket.IO by using
+    the `io.adapter` call.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 唯一的变化是添加粗体字中的行。`socket.io-redis`包是Socket.IO团队称之为适配器的东西。通过使用`io.adapter`调用，可以将适配器添加到Socket.IO中。
+- en: We only connect this adapter if a Redis endpoint has been specified. As before,
+    this is so that Notes can be run without Redis as needed.
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只有在指定了Redis端点时，我们才连接这个适配器。与以前一样，这是为了需要时可以在没有Redis的情况下运行Notes。
+- en: Nothing else is required. If you relaunch the Notes application stack, you will
+    now receive updates in every browser window connected to every instance of the
+    Notes service.
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不需要其他任何东西。如果重新启动Notes应用程序堆栈，现在将在连接到Notes服务的每个实例的每个浏览器窗口中接收更新。
+- en: In this section, we thought ahead about deployment to a cloud-hosting service.
+    Knowing that we might want to implement multiple Notes containers, we tested this
+    scenario on our laptop and found a couple of issues. They were easily fixed by
+    installing a Redis server and adding a couple of packages.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们提前考虑了部署到云托管服务的情况。知道我们可能想要实现多个Notes容器，我们在笔记本上测试了这种情况，并发现了一些问题。通过安装Redis服务器并添加一些包，这些问题很容易解决。
+- en: We're getting ready to finish this chapter, and there's one task to take care
+    of before we do. The `svc-notes-2` container was useful for ad hoc testing, but
+    it is not the correct way to deploy multiple Notes instances. Therefore, in `compose-local/docker-compose.yml`,
+    comment out the `svc-notes-2` definition.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们准备完成本章，但在此之前有一项任务要处理。`svc-notes-2`容器对于临时测试很有用，但不是部署多个Notes实例的正确方式。因此，在`compose-local/docker-compose.yml`中，注释掉`svc-notes-2`的定义。
+- en: This gave us some valuable exposure to a new tool that's widely used—Redis.
+    Our application now also appears to be ready for deployment. We'll take care of
+    that in the next chapter.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这让我们对一个广泛使用的新工具——Redis有了宝贵的了解。我们的应用现在似乎也已经准备好部署。我们将在下一章处理这个问题。
+- en: Summary
+  id: totrans-263
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we took a huge step toward the vision of deploying Notes on
+    a cloud-hosting platform. Docker containers are widely used on cloud-hosting systems
+    for application deployment. Even if we don't end up using the Docker Compose file
+    once, we can still carry out the deployment and we have worked out how to Dockerize
+    every aspect of the Notes stack.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们迈出了一个巨大的步伐，朝着在云托管平台上部署Notes的愿景迈进。Docker容器在云托管系统上被广泛用于应用程序部署。即使我们最终不使用Docker
+    Compose文件，我们仍然可以进行部署，并且我们已经解决了如何将Notes堆栈的每个方面都Docker化。
+- en: In this chapter, we learned not only about creating Docker images for Node.js
+    applications, but also about launching a whole system of services comprising a
+    web application. We have learned that a web application is not just about the
+    application code but also the databases, the frameworks we use, and even other
+    services, such as Redis.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们不仅学习了如何为Node.js应用程序创建Docker镜像，还学习了如何启动包括Web应用程序在内的一整套服务系统。我们了解到，Web应用程序不仅涉及应用程序代码，还涉及数据库、我们使用的框架，甚至其他服务，比如Redis。
+- en: For that purpose, we learned both how to create our own Docker containers as
+    well as how to use third-party containers. We learned how to launch containers
+    using `docker run` and Docker Compose. We learned how to build custom Docker containers
+    using a Dockerfile, and how to customize third-party containers.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，我们学习了如何创建自己的Docker容器以及如何使用第三方容器。我们学习了如何使用`docker run`和Docker Compose启动容器。我们学习了如何使用Dockerfile构建自定义Docker容器，以及如何自定义第三方容器。
+- en: For connecting containers, we learned about the Docker bridge network. This
+    is useful on a single-host Docker installation and is a private communication
+    channel where containers can find each other. As a private channel, the bridge
+    network is relatively safe from outside intrusion, giving us a way to securely
+    tie services together. We had the opportunity to try different network architectures
+    inside Docker and to explore the security implications of each. We learned that
+    Docker offers an excellent way to securely deploy persistent services on a host
+    system.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了连接容器，我们学习了关于Docker桥接网络。这在单主机Docker安装中非常有用，它是一个私有通信通道，容器可以在其中找到彼此。作为一个私有通道，桥接网络相对安全，可以让我们安全地将服务绑定在一起。我们有机会尝试Docker内部的不同网络架构，并探索每种架构的安全影响。我们了解到Docker提供了一个在主机系统上安全部署持久服务的绝佳方式。
+- en: Looking ahead to the task of deploying Notes on a cloud hosting service, we
+    did some ad hoc testing with multiple instances of the Notes service. This highlighted
+    a few issues that will crop up with multiple instances, and we remedied those
+    issues by adding Redis to the application stack.
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 展望将Notes部署到云托管服务的任务，我们对Notes服务的多个实例进行了一些临时测试。这凸显了多个实例可能出现的一些问题，我们通过将Redis添加到应用程序堆栈中来解决了这些问题。
+- en: This gave us a well-rounded view of how Node.js services are prepared for deployment
+    to cloud-hosting providers. Remember that our goal is to deploy the Notes application
+    as Docker containers on AWS EC2 as an example of cloud deployment. In this chapter,
+    we explored different aspects of Dockerizing a Node.js application stack, giving
+    us a solid grounding in deploying services with Docker. We're now ready to take
+    this application to a server on the public internet.
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这使我们全面了解了如何准备Node.js服务以在云托管提供商上部署。请记住，我们的目标是将Notes应用程序作为Docker容器部署到AWS EC2上，作为云部署的一个示例。在本章中，我们探讨了Docker化Node.js应用程序堆栈的不同方面，为我们提供了在Docker上部署服务的坚实基础。我们现在已经准备好将这个应用程序部署到公共互联网上的服务器上。
+- en: In the next chapter, we will learn about two very important technologies. The
+    first is **Docker Swarm**, which is a Docker orchestrator that comes bundled with
+    Docker. We'll learn how to deploy our Docker stack as services in a Swarm that
+    we'll build on the AWS EC2 infrastructure. The second technology we'll learn about
+    is Terraform, which is an open source tool for describing service configuration
+    on cloud-hosting systems. We'll use it to describe the AWS EC2 configuration for
+    the Notes application stack.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将学习两种非常重要的技术。第一种是**Docker Swarm**，它是一个与Docker捆绑在一起的Docker编排器。我们将学习如何在AWS
+    EC2基础设施上构建的Swarm中将我们的Docker堆栈部署为服务。我们将学习的第二种技术是Terraform，它是一种用于描述云托管系统上服务配置的开源工具。我们将使用它来描述Notes应用程序堆栈的AWS
+    EC2配置。

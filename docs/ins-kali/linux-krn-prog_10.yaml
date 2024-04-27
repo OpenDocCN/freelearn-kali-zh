@@ -1,0 +1,3586 @@
+- en: Kernel Memory Allocation for Module Authors - Part 1
+  id: totrans-0
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 模块作者的内核内存分配-第1部分
+- en: In the previous two chapters, one on kernel internal aspects and architecture
+    and the other on the essentials of memory management internals, we covered key
+    aspects that serve as required background information for this and the following
+    chapter. In this and the next chapter, we will get down to the actual allocation
+    and freeing of kernel memory by various means. We will demonstrate this via kernel
+    modules that you can test and tweak, elaborate on the whys and hows of it, and
+    provide many real-world tips and tricks to enable a kernel or driver developer
+    like you to gain maximum efficiency when working with memory within your kernel
+    module.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前两章中，一章介绍了内核内部方面和架构，另一章介绍了内存管理内部的基本知识，我们涵盖了为本章和下一章提供所需的背景信息的关键方面。在本章和下一章中，我们将着手实际分配和释放内核内存的各种方式。我们将通过您可以测试和调整的内核模块来演示这一点，详细说明其中的原因和方法，并提供许多实用的技巧，以使像您这样的内核或驱动程序开发人员在处理内核模块内存时能够获得最大的效率。
+- en: In this chapter, we will cover the kernel's two primary memory allocators –
+    the **Page Allocator** (**PA**) (aka **Buddy System Allocator** (**BSA**)) and
+    the slab allocator. We will delve into the nitty-gritty of working with their
+    APIs within kernel modules. Actually, we will go well beyond simply seeing how
+    to use the APIs, clearly demonstrating why all is not optimal in all cases, and
+    how to overcome these situations. [Chapter 9](dbb888a2-8145-4132-938c-1313a707b2f2.xhtml),
+    *Kernel Memory Allocation for Module Authors – Part 2*, will continue our coverage
+    of the kernel memory allocators, delving into a few more advanced areas.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将介绍内核的两个主要内存分配器——**页面分配器**（**PA**）（又称**Buddy System Allocator**（**BSA**））和slab分配器。我们将深入研究在内核模块中使用它们的API的细节。实际上，我们将远远超出简单地了解如何使用API，清楚地展示在所有情况下都不是最佳的原因，以及如何克服这些情况。[第9章](dbb888a2-8145-4132-938c-1313a707b2f2.xhtml)，*模块作者的内核内存分配-第2部分*，将继续介绍内核内存分配器，深入探讨一些更高级的领域。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Introducing kernel memory allocators
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 介绍内核内存分配器
+- en: Understanding and using the kernel page allocator (or BSA)
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解和使用内核页面分配器（或BSA）
+- en: Understanding and using the kernel slab allocator
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解和使用内核slab分配器
+- en: Size limitations of the kmalloc API
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: kmalloc API的大小限制
+- en: Slab allocator - a few additional details
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Slab分配器-一些额外的细节
+- en: Caveats when using the slab allocator
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用slab分配器时的注意事项
+- en: Technical requirements
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: I assume that you have gone through [Chapter 1](ad75db43-a1a2-4f3f-92c7-a544f47baa23.xhtml),
+    *Kernel Workspace Setup*, and have appropriately prepared a guest **Virtual Machine**
+    (**VM**) running Ubuntu 18.04 LTS (or a later stable release) and installed all
+    the required packages. If not, I highly recommend you do this first.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我假设您已经阅读了[第1章](ad75db43-a1a2-4f3f-92c7-a544f47baa23.xhtml)，*内核工作空间设置*，并已经适当准备了一个运行Ubuntu
+    18.04 LTS（或更高稳定版本）的虚拟机，并安装了所有必需的软件包。如果没有，我强烈建议您首先这样做。
+- en: To get the most out of this book, I strongly recommend you first set up the
+    workspace
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了充分利用本书，我强烈建议您首先设置好工作空间
+- en: environment, including cloning this book's GitHub repository ([https://github.com/PacktPublishing/Linux-Kernel-Programming](https://github.com/PacktPublishing/Linux-Kernel-Programming)) for
+    the code, and work on it in a hands-on fashion.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 环境，包括克隆本书的GitHub存储库（[https://github.com/PacktPublishing/Linux-Kernel-Programming](https://github.com/PacktPublishing/Linux-Kernel-Programming)）以获取代码，并进行实际操作。
+- en: 'Refer to *Hands-On System Programming with Linux*, Kaiwan N Billimoria, Packt
+    ([https://www.packtpub.com/networking-and-servers/hands-system-programming-linux](https://www.packtpub.com/networking-and-servers/hands-system-programming-linux))
+    as a prerequisite to this chapter (essential reading, really):'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请参考*Hands-On System Programming with Linux*，Kaiwan N Billimoria, Packt ([https://www.packtpub.com/networking-and-servers/hands-system-programming-linux](https://www.packtpub.com/networking-and-servers/hands-system-programming-linux))作为本章的先决条件（确实是必读的）：
+- en: '*Chapter 1*, *Linux System Architecture*'
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*第1章*，*Linux系统架构*'
+- en: '*Chapter 2*, *Virtual Memory*'
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*第2章*，*虚拟内存*'
+- en: Introducing kernel memory allocators
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍内核内存分配器
+- en: The Linux kernel, like any other OS, requires a sturdy algorithm and implementation
+    to perform a really key task – the allocation and subsequent deallocation of memory
+    or page frames (RAM). The primary (de)allocator engine in the Linux OS is referred
+    to as the PA, or the BSA. Internally, it uses a so-called buddy system algorithm
+    to efficiently organize and parcel out free chunks of system RAM. We will find
+    more on the algorithm in the *Understanding and using the kernel page allocator
+    (or BSA)* section.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 像任何其他操作系统一样，Linux内核需要一个稳固的算法和实现来执行一个非常关键的任务——分配和释放内存或页面帧（RAM）。Linux操作系统中的主要（de）分配器引擎被称为PA或BSA。在内部，它使用所谓的伙伴系统算法来高效地组织和分配系统RAM的空闲块。我们将在*理解和使用内核页面分配器（或BSA）*部分找到更多关于该算法的信息。
+- en: 'In this chapter and in this book, when we use the notation *(de)allocate*,
+    please read it as both words: *allocate* and *deallocate*.'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章和本书中，当我们使用*(de)allocate*这种表示法时，请将其理解为*allocate*和*deallocate*两个词。
+- en: Of course, being imperfect, the page allocator is not the only or always the
+    best way to obtain and subsequently release system memory. Other technologies
+    exist within the Linux kernel to do so. High on the list of them is the kernel's **slab
+    allocator** or **slab cache** system (we use the word *slab* here as the generic
+    name for this type of allocator as it originated with this name; in practice,
+    though, the internal implementation of the modern slab allocator used by the Linux
+    kernel is called SLUB (the unqueued slab allocator); more on this later).
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，作为不完美的，页面分配器并不是获取和释放系统内存的唯一或总是最佳方式。Linux内核中存在其他技术来实现这一点。其中之一是内核的**slab分配器**或**slab缓存**系统（我们在这里使用*slab*这个词作为这种类型分配器的通用名称，因为它起源于这个名称；实际上，Linux内核使用的现代slab分配器的内部实现称为SLUB（无队列slab分配器）；稍后会详细介绍）。
+- en: 'Think of it this way: the slab allocator solves some issues and optimizes performance
+    with the page allocator. What issues exactly? We shall soon see. For now, though,
+    it''s really important to understand that the only way in which to actually (de)allocate
+    physical memory is via the page allocator. The page allocator is the primary engine
+    for memory (de)allocation on the Linux OS!'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以这样理解：slab分配器解决了一些问题，并通过页面分配器优化了性能。到底解决了哪些问题？我们很快就会看到。不过，现在，真的很重要的是要理解，实际（de）分配物理内存的唯一方式是通过页面分配器。页面分配器是Linux操作系统上内存（de）分配的主要引擎！
+- en: To avoid confusion and repetition, we will from now on refer to this primary
+    allocation engine as the page allocator. *Y*ou will understand that it's also
+    known as the BSA (derived from the name of the algorithm that drives it).
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了避免混淆和重复，我们从现在开始将这个主要分配引擎称为页面分配器。*您将了解到它也被称为BSA（源自驱动它的算法的名称）。*
+- en: 'Thus, the slab allocator is layered upon (or above) the page allocator. Various
+    core kernel subsystems, as well as non-core code within the kernel, such as device
+    drivers, can allocate (and deallocate) memory either directly via the page allocator
+    or indirectly via the slab allocator; the following diagram illustrates this:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，slab分配器是建立在页面分配器之上的。各种核心内核子系统以及内核中的非核心代码，如设备驱动程序，都可以直接通过页面分配器或间接通过slab分配器分配（和释放）内存；以下图表说明了这一点：
+- en: '![](img/5ac7cdd2-8784-4148-a456-149595e71aed.png)'
+  id: totrans-24
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/5ac7cdd2-8784-4148-a456-149595e71aed.png)'
+- en: Figure 8.1 – Linux's page allocator engine with the slab allocator layered above
+    it
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.1 - Linux的页面分配器引擎，上面是slab分配器
+- en: 'A few things to be clear about at the outset:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，有几件事要澄清：
+- en: The entire Linux kernel and all of its core components and subsystems (excluding
+    the memory management subsystem itself) ultimately use the page allocator (or
+    BSA) for memory (de)allocation. This includes non-core stuff, such as kernel modules
+    and device drivers.
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 整个Linux内核及其所有核心组件和子系统（不包括内存管理子系统本身）最终都使用页面分配器（或BSA）进行内存（de）分配。这包括非核心内容，如内核模块和设备驱动程序。
+- en: The preceding systems reside completely in kernel (virtual) address space and
+    are not directly accessible from user space.
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 前面的系统完全驻留在内核（虚拟）地址空间中，不可直接从用户空间访问。
+- en: The page frames (RAM) from where the page allocator gets memory is within the
+    kernel lowmem region, or the direct-mapped RAM region of the kernel segment (we
+    covered the kernel segment in detail in the previous chapter)
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 页面帧（RAM）从页面分配器获取内存的地方位于内核低内存区域，或内核段的直接映射RAM区域（我们在上一章节详细介绍了内核段）
+- en: The slab allocator is ultimately a user of the page allocator, and thus gets
+    its memory from there itself (which again implies from the kernel lowmem region)
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: slab分配器最终是页面分配器的用户，因此它的内存也是从那里获取的（这再次意味着从内核低内存区域获取）
+- en: User space dynamic memory allocation with the familiar `malloc` family of APIs
+    does not directly map to the preceding layers (that is, calling `malloc(3)` in
+    user space does *not *directly result in a call to the page or slab allocator).
+    It does so indirectly. How exactly? You will learn how; patience! (This key coverage
+    is found in two sections of the next chapter, in fact, involving demand paging; look
+    out for it as you cover that chapter!)
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户空间使用熟悉的`malloc`系列API进行动态内存分配并不直接映射到前面的层（也就是说，在用户空间调用`malloc(3)`并不直接导致对页面或slab分配器的调用）。它是间接的。具体是如何？您将会学到；请耐心等待！（这个关键内容实际上在下一章的两个部分中找到，涉及到需求分页；在您学习那一章时要注意！）
+- en: Also, to be clear, Linux kernel memory is non-swappable. It can never be swapped
+    out to disk; this was decided in the early Linux days to keep performance high.
+    User space memory pages are always swappable by default; this can be changed by
+    the system programmer via the `mlock()`/`mlockall()` system calls.
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 另外，要明确的是，Linux内核内存是不可交换的。它永远不会被交换到磁盘上；这是在早期Linux时代决定的，以保持性能高。用户空间内存页面默认是可交换的；系统程序员可以通过`mlock()`/`mlockall()`系统调用来改变这一点。
+- en: Now, fasten your seatbelts! With this basic understanding of the page allocator
+    and slab allocator, let's begin the journey on learning (the basics on) how the
+    Linux kernel's memory allocators work and, more importantly, how to work well
+    with them.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，系好安全带！有了对页面分配器和slab分配器的基本理解，让我们开始学习Linux内核内存分配器的工作原理，更重要的是，如何与它们良好地配合工作。
+- en: Understanding and using the kernel page allocator (or BSA)
+  id: totrans-34
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解和使用内核页面分配器（或BSA）
+- en: 'In this section, you will learn about two aspects of the Linux kernel''s primary
+    (de)allocator engine:'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，您将了解Linux内核主要（de）分配器引擎的两个方面：
+- en: First, we will cover the fundamentals of the algorithm behind this software
+    (called the buddy system).
+  id: totrans-36
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 首先，我们将介绍这个软件背后算法的基础知识（称为伙伴系统）。
+- en: Then, we will cover the actual and practical usage of the APIs it exposes to
+    the kernel or driver developer.
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后，我们将介绍它向内核或驱动程序开发人员公开的API的实际使用。
+- en: Understanding the basics of the algorithm behind the page allocator is important.
+    You will then be able to understand the pros and cons of it, and thus, when and
+    which APIs to use in which situation. Let's begin with its inner workings. Again,
+    remember that the scope of this book with regard to the internal memory management
+    details is limited. We will cover it to a depth deemed sufficient and no more.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 理解页面分配器背后的算法的基础知识是重要的。然后您将能够了解其优缺点，以及在哪种情况下使用哪些API。让我们从它的内部工作原理开始。再次提醒，本书关于内部内存管理细节的范围是有限的。我们将涵盖到足够的深度，不再深入。
+- en: The fundamental workings of the page allocator
+  id: totrans-39
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 页面分配器的基本工作原理
+- en: We will break up this discussion into a few relevant parts. Let's begin with
+    how the kernel's page allocator tracks free physical page frames via its freelist data
+    structures.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将把这个讨论分成几个相关的部分。让我们从内核的页面分配器如何通过其freelist数据结构跟踪空闲物理页面帧开始。
+- en: Freelist organization
+  id: totrans-41
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: Freelist组织
+- en: The key to the page allocator (buddy system) algorithm is its primary internal
+    metadata structure. It's called the buddy system freelist and consists of an array
+    of pointers to (the oh-so-common!) doubly linked circular lists. The index of
+    this array of pointers is called the order of the list – it's the power to which
+    to raise 2 to. The array length is from `0` to `MAX_ORDER-1`. The value of `MAX_ORDER`
+    is arch-dependent. On the x86 and ARM, it's 11, whereas on a large-ish system
+    such as the Itanium, it's 17\. Thus, on the x86 and ARM, the order ranges from
+    2⁰ to 2^(10) ; that is, from 1 to 1,024\. What does that mean? Do read on...
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 页面分配器（伙伴系统）算法的关键是其主要内部元数据结构。它被称为伙伴系统空闲列表，由指向（非常常见的！）双向循环列表的指针数组组成。这个指针数组的索引称为列表的顺序
+    - 它是要提高2的幂。数组长度从`0`到`MAX_ORDER-1`。`MAX_ORDER`的值取决于体系结构。在x86和ARM上，它是11，而在大型系统（如Itanium）上，它是17。因此，在x86和ARM上，顺序范围从2⁰到2^(10)；也就是从1到1,024。这是什么意思？请继续阅读...
+- en: 'Each doubly linked circular list points to free physical contiguous page frames
+    of size *2^(order)*. Thus (assuming a 4 KB page size), we end up with lists of
+    the following:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个双向循环链表指向大小为*2^(order)*的自由物理连续页面帧。因此（假设页面大小为4 KB），我们最终得到以下列表：
+- en: 2⁰ = 1 page = 4 KB chunks
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 2⁰ = 1页 = 4 KB块
+- en: 2¹ = 2 pages = 8 KB chunks
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 2¹ = 2页 = 8 KB块
+- en: 2² = 4 pages = 16 KB chunks
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 2² = 4页 = 16 KB块
+- en: 2³ = 8 pages = 32 KB chunks
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 2³ = 8页 = 32 KB块
+- en: 2^(10) = 1024 pages = 1024*4 KB = 4 MB chunks
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 2^(10) = 1024页 = 1024*4 KB = 4 MB块
+- en: 'The following diagram is a simplified conceptual illustration of (a single
+    instance of) the page allocator freelist:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表是对（单个实例的）页面分配器空闲列表的简化概念说明：
+- en: '![](img/72c111f2-5fee-43ad-91e8-e1ee9d18eabf.png)'
+  id: totrans-50
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/72c111f2-5fee-43ad-91e8-e1ee9d18eabf.png)'
+- en: Figure 8.2 – Buddy system/page allocator freelist on a system with 4 KB page
+    size and MAX_ORDER of 11
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.2 - 具有4 KB页面大小和MAX_ORDER为11的系统上的伙伴系统/页面分配器空闲列表
+- en: In the preceding figure, each memory "chunk" is represented by a square box (to
+    keep it simple, we use the same size in our diagram). Internally, of course, these
+    aren't the actual memory pages; rather, the boxes represent metadata structures
+    (struct page) that point to physical memory frames. On the right side of the figure,
+    we show the size of each physically contiguous free memory chunk that could be
+    enqueued on the list to the left.
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上图中，每个内存“块”由一个正方形框表示（为了简单起见，我们在图中使用相同的大小）。当然，在内部，这些并不是实际的内存页面；相反，这些框代表指向物理内存帧的元数据结构（struct
+    page）。在图的右侧，我们显示了可以排入左侧列表的每个物理连续空闲内存块的大小。
+- en: 'The kernel gives us a convenient (summarized) view into the current state of
+    the page allocator via the `proc` filesystem (on our Ubuntu guest VM with 1 GB
+    RAM):'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 内核通过`proc`文件系统（在我们的Ubuntu虚拟机上，内存为1 GB）为我们提供了对页面分配器当前状态的方便（汇总）视图：
+- en: '![](img/12346cfe-59e4-438a-bea4-dced0a622b0e.png)'
+  id: totrans-54
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/12346cfe-59e4-438a-bea4-dced0a622b0e.png)'
+- en: Figure 8.3 – Annotated screenshot of sample /proc/buddyinfo output
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.3 - 样本/proc/buddyinfo输出的带注释的屏幕截图
+- en: 'Our guest VM is a pseudo-NUMA box with one node (`Node 0`) and two zones (`DMA`
+    and `DMA32`). The numbers following `zone XXX` are the number of free (physically
+    contiguous!) page frames in order 0, order 1, order 2, right up to `MAX_ORDER-1` (here,
+    *11 – 1 = 10*). So, let''s take a couple of examples from the preceding output:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的虚拟机是一个伪NUMA框，有一个节点（`Node 0`）和两个区域（`DMA`和`DMA32`）。在`zone XXX`后面的数字是从顺序0，顺序1，顺序2一直到`MAX_ORDER-1`（这里是*11
+    - 1 = 10*）的空闲（物理连续！）页框的数量。因此，让我们从前面的输出中取几个例子：
+- en: There are 35 single-page free chunks of RAM in the order `0` list for node `0`, zone
+    DMA.
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在节点`0`，`zone DMA`的顺序`0`列表中有35个单页的空闲RAM块。
+- en: In node `0`, zone DMA32, order `3`, the number shown in *Figure 8.3* here is 678;
+    now, take *2^(order) = 2^(3 )**= 8* *page frames = 32 KB* (assuming a page size
+    of 4 KB); this implies that there are 678 32 KB physically contiguous free chunks
+    of RAM on that list.
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在节点`0`，`zone DMA32`，顺序`3`，这里显示的数字是678；现在，取*2^(order) = 2^(3)* = 8* *页框 = 32
+    KB*（假设页面大小为4 KB）；这意味着在该列表上有678个32 KB的物理连续空闲RAM块。
+- en: It is important to note that **each chunk is guaranteed to be physically contiguous
+    RAM in and of itself**. Also, notice that the size of the memory chunks on a given
+    order is always double that of the previous order (and half that of the next one).
+    This is, of course, as they're all powers of 2.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要的是要注意**每个块都保证是物理连续的RAM**。还要注意，给定顺序上的内存块的大小始终是前一个顺序的两倍（并且是下一个顺序的一半）。当然，这是因为它们都是2的幂。
+- en: Note that `MAX_ORDER` can (and does) vary with the architecture. On regular
+    x86 and ARM systems, it's `11`, yielding a largest chunk size of 4 MB of physically
+    contiguous RAM on order 10 of the freelists. On high-end enterprise server class
+    systems running the Itanium (IA-64) processor, `MAX_ORDER` can be as high as `17` (implying
+    a largest chunk size on order (17-1), thus of *2^(16) = 65,536 pages = 512 MB
+    chunks* of physically contiguous RAM on order 16 of the freelists, for a 4 KB
+    page size). The IA-64 MMU supports up to eight page sizes ranging from a mere
+    4 KB right up to 256 MB. As another example, with a page size of 16 MB, the order
+    16 list could potentially have physically contiguous RAM chunks of size *65,536
+    * 16 MB = 1 TB* each!
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`MAX_ORDER`可以（并且确实）随体系结构变化。在常规x86和ARM系统上，它是`11`，在空闲列表的顺序10上产生4 MB的物理连续RAM的最大块大小。在运行Itanium（IA-64）处理器的高端企业服务器级系统上，`MAX_ORDER`可以高达`17`（意味着在空闲列表的顺序（17-1）上的最大块大小，因此在16的顺序上是*2^(16)
+    = 65,536页 = 512 MB块*的物理连续RAM，对于4 KB页面大小）。IA-64 MMU支持从仅有的4 KB到256 MB的八种页面大小。作为另一个例子，对于16
+    MB的页面大小，顺序16列表可能每个具有*65,536 * 16 MB = 1 TB*的物理连续RAM块！
+- en: 'Another key point: the kernel keeps **multiple BSA freelists – one for every node:zone that
+    is present on the system!** This lends a natural way to allocate memory on a NUMA
+    system.'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个关键点：内核保留多个BSA空闲列表 - 每个存在于系统上的node:zone都有一个！这为在NUMA系统上分配内存提供了一种自然的方式。
+- en: 'The following diagram shows how the kernel instantiates multiple freelists
+    – *one per node:zone present on the system* (diagram credit: *Professional Linux
+    Kernel Architecture*, Mauerer, Wrox Press, Oct 2008):'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下图显示了内核如何实例化多个*空闲列表-系统上每个节点：区域一个*（图表来源：*Professional Linux Kernel Architecture*，Mauerer，Wrox
+    Press，2008年10月）：
+- en: '![](img/998a8480-eae3-4f0e-bb2b-4ecd15a07d4b.png)'
+  id: totrans-63
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/998a8480-eae3-4f0e-bb2b-4ecd15a07d4b.png)'
+- en: Figure 8.4 – Page allocator (BSA) "freelists," one per node:zone on the system;
+    diagram credit: Professional Linux Kernel Architecture, Mauerer, Wrox Press, Oct
+    2008
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.4-页面分配器（BSA）“空闲列表”，系统上每个节点：区域一个；图表来源：*Professional Linux Kernel Architecture*，Mauerer，Wrox
+    Press，2008年10月
+- en: Furthermore, as can be seen in Figure 8.5, when the kernel is called upon to
+    allocate RAM via the page allocator, it picks the optimal freelist to allocate
+    memory from – the one associated with the node upon which the thread asking the
+    request is running (recall the NUMA architecture from the previous chapter). If
+    this node is out of memory or cannot allocate it for whatever reason, the kernel
+    then uses a fallback list to figure out which freelist to attempt to allocate
+    memory from. (In reality, the real picture is even more complex; we provide a
+    few more details in the *Page allocator internals – a few more details* section.)
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，如图8.5所示，当内核被调用以通过页面分配器分配RAM时，它会选择最佳的空闲列表来分配内存-与请求的线程所在的*节点*相关联的列表（回想一下前一章的NUMA架构）。如果该节点没有内存或由于某种原因无法分配内存，内核将使用备用列表来确定从哪个空闲列表尝试分配内存（实际上，实际情况更加复杂；我们在*页面分配器内部-更多细节*部分提供了一些更多的细节）。
+- en: Let's now understand (in a conceptual way) how all of this actually works.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们以概念方式了解所有这些实际上是如何工作的。
+- en: The workings of the page allocator
+  id: totrans-67
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 页面分配器的工作原理
+- en: 'The actual (de)allocation strategy can be explained by using a simple example.
+    Let''s say a device driver requests 128 KB of memory. To fulfill this request,
+    the (simplified and conceptual) page allocator algorithm will do this:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际的（解）分配策略可以通过一个简单的例子来解释。假设一个设备驱动程序请求128 KB的内存。为了满足这个请求，（简化和概念化的）页面分配器算法将执行以下操作：
+- en: The algorithm expresses the amount to be allocated (128 KB here) in pages. Thus,
+    here, it's (assuming a page size of 4 KB) *128/4 = 32 pages*.
+  id: totrans-69
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 该算法以页面的形式表示要分配的数量（这里是128 KB），因此，这里是（假设页面大小为4 KB）*128/4=32页*。
+- en: Next, it determines to what power 2 must be raised to get 32\. That's *log**[2]**32*,
+    which is 5 (as 2⁵ is 32).
+  id: totrans-70
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，它确定2必须被提高到多少次方才能得到32。这就是*log*[2]*32*，结果是5（因为2⁵等于32）。
+- en: Now, it checks the list on order 5 of the appropriate *node:zone *page allocator
+    freelist. If a memory chunk is available (it will be of size *2**⁵ **pages = 128
+    KB*), dequeue it from the list, update the list, and allocate it to the requester.
+    Job done! Return to caller.
+  id: totrans-71
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，它检查适当的*节点：区域*页面分配器空闲列表上的顺序5列表。如果有可用的内存块（大小为*2**⁵**页=128 KB*），则从列表中出列，更新列表，并分配给请求者。任务完成！返回给调用者。
+- en: 'Why do we say *of the appropriate node:zone **page allocator freelist*? Does
+    that mean there''s more than one of them? Yes, indeed! We repeat: the reality
+    is that there will be several freelist data structures, one each per *node:zone *on
+    the system. (Also see more details in the section *Page allocator internals –
+    a few more details*.)'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么我们说*适当的节点：区域**页面分配器空闲列表*？这是否意味着有不止一个？是的，确实如此！我们再次重申：实际情况是系统上将有几个空闲列表数据结构，每个*节点：区域*一个（还可以在*页面分配器内部-更多细节*部分中查看更多细节）。
+- en: If no memory chunk is available on the order 5 list (that is, if it's null),
+    then it checks the list on the next order; that is, the order 6-linked list (if
+    it's not empty, it will have *2⁶** pages = 256 KB* memory chunks enqueued on it,
+    each chunk being double the size of what we want).
+  id: totrans-73
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果顺序5列表上没有可用的内存块（即为空），那么它将检查下一个顺序的列表；也就是顺序6的链表（如果不为空，它将有*2⁶**页=256 KB*的内存块排队，每个块的大小是我们想要的两倍）。
+- en: 'If the order 6 list is non-null, then it will take (dequeue) a chunk of memory
+    from it (which will be 256 KB in size, double of what''s required), and do the
+    following:'
+  id: totrans-74
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果顺序6列表不为空，那么它将从中取出（出列）一个内存块（大小为256 KB，是所需大小的两倍），并执行以下操作：
+- en: Update the list to reflect the fact that one chunk is now removed.
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 更新列表以反映现在已经移除了一个块。
+- en: Cut the chunk in half, thus obtaining two 128 KB halves or **buddies**! (Please
+    see the following information box.)
+  id: totrans-76
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将这个块切成两半，从而得到两个128 KB的半块或**伙伴**！（请参阅下面的信息框。）
+- en: Migrate (enqueue) one half (of size 128 KB) to the order 5 list.
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将一半（大小为128 KB）迁移（入列）到顺序5列表。
+- en: Allocate the other half (of size 128 KB) to the requester.
+  id: totrans-78
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将另一半（大小为128 KB）分配给请求者。
+- en: Job done! Return to caller.
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 任务完成！返回给调用者。
+- en: If the order 6 list is also empty, then it repeats the preceding process with
+    the order 7 list, and so on, until it succeeds.
+  id: totrans-80
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果顺序6列表也是空的，那么它将使用顺序7列表重复前面的过程，直到成功为止。
+- en: If all the remaining higher-order lists are empty (null), it will fail the request.
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果所有剩余的高阶列表都为空（null），则请求将失败。
+- en: We can cut or slice a memory chunk in half because every chunk on the list is
+    guaranteed to be physically contiguous memory. Once cut, we have two halves; each
+    is called a **buddy block**, hence the name of this algorithm. Pedantically, it's
+    called the binary buddy system as we use power-of-2-sized memory chunks. A buddy
+    block is defined as a block that is of the same size and physically adjacent to
+    another.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将内存块切成两半，因为列表上的每个块都保证是物理上连续的内存。切割后，我们得到两个半块；每个都被称为**伙伴块**，因此这个算法的名称。从学术角度来说，它被称为二进制伙伴系统，因为我们使用2的幂大小的内存块。**伙伴块**被定义为与另一个相同大小且物理相邻的块。
+- en: You will understand that the preceding description is conceptual. The actual
+    code implementation is certainly more complex and optimized. By the way, the code
+    – the *heart of the zoned buddy allocator*,as its comment mentions, is here: `mm/page_alloc.c:__alloc_pages_nodemask()`.
+    Being beyond the scope of this book, we won't attempt to delve into the code-level
+    details of the allocator.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你会明白前面的描述是概念性的。实际的代码实现当然更复杂和优化。顺便说一句，代码-作为**分区伙伴分配器的核心**，正如它的注释所提到的，就在这里：`mm/page_alloc.c:__alloc_pages_nodemask()`。超出了本书的范围，我们不会尝试深入研究分配器的代码级细节。
+- en: Working through a few scenarios
+  id: totrans-84
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 通过几种情景来工作
+- en: 'Now that we have the basics of the algorithm, let''s consider a few scenarios:
+    first, a simple straightforward case, and after that, a couple of more complex
+    cases.'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经了解了算法的基础，让我们考虑一些情景：首先是一个简单直接的情况，然后是一些更复杂的情况。
+- en: '**The simplest case**'
+  id: totrans-86
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: '**最简单的情况**'
+- en: Let's say that a kernel-space device driver (or some core code) requests 128
+    KB and receives a memory chunk from the order 5 list of one of the freelist data
+    structures. At some later point in time, it will necessarily free the memory chunk
+    by employing one of the page allocator free APIs. Now, this API's algorithm calculates
+    – via its order – that the just-freed chunk belongs on the order 5 list; thus,
+    it enqueues it there.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设一个内核空间设备驱动程序（或一些核心代码）请求128 KB，并从一个空闲列表数据结构的order 5列表中接收到一个内存块。在以后的某个时间点，它将必然通过使用页面分配器的一个free
+    API来释放内存块。现在，这个API的算法通过它的order计算出刚刚释放的块属于order 5列表；因此，它将其排队在那里。
+- en: '**A more complex case**'
+  id: totrans-88
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: '**更复杂的情况**'
+- en: Now, let's say that, unlike the previous simple case, when the device driver
+    requests 128 KB, the order 5 list is null; thus, as per the page allocator algorithm,
+    we go to the list on the next order, 6, and check it. Let's say it's non-null;
+    the algorithm now dequeues a 256 KB chunk and splits (or cuts) it in half. Now,
+    one half (of size 128 KB) goes to the requester, and the remaining half (again,
+    of size 128 KB) is enqueued on to the order 5 list.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，假设与之前的简单情况不同，当设备驱动程序请求128 KB时，order 5列表为空；因此，根据页面分配器算法，我们转到下一个order 6的列表并检查它。假设它不为空；算法现在出列一个256
+    KB的块并将其分割（或切割）成两半。现在，一半（大小为128 KB）发送给请求者，剩下的一半（同样大小为128 KB）排队到order 5列表。
+- en: The really interesting property of the buddy system is what happens when the
+    requester (the device driver), at some later point in time, frees the memory chunk.
+    As expected, the algorithm calculates (via its order) that the just-freed chunk
+    belongs on the order 5 list. But before blindly enqueuing it there, **it looks
+    for its buddy block**, and in this case, it (possibly) finds it! It now merges
+    the two buddy blocks into a single larger block (of size 256 KB) and places (enqueues)
+    the merged block on the *order 6 *list. This is fantastic – it has actually helped defragment
+    memory!
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 伙伴系统的真正有趣的特性是当请求者（设备驱动程序）在以后的某个时间点释放内存块时会发生什么。正如预期的那样，算法通过它的order计算出刚刚释放的块属于order
+    5列表。但在盲目地将其排队到那里之前，**它会寻找它的伙伴块**，在这种情况下，它（可能）找到了！现在它将两个伙伴块合并成一个更大的块（大小为256 KB）并将合并后的块排队到*order
+    6*列表。这太棒了-它实际上帮助了**碎片整理内存**！
+- en: '**The downfall case**'
+  id: totrans-91
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: '**失败的情况**'
+- en: Let's make it interesting now by not using a convenient rounded power-of-2 size
+    as the requirement. This time, let's say that the device driver requests a memory
+    chunk of size 132 KB. What will the buddy system allocator do? As, of course,
+    it cannot allocate less memory than requested, it allocates more – you guessed
+    it (see *Figure 8.2*), the next available memory chunk is on order 7, of size
+    256 KB. But the consumer (the driver) is only going to see and use the first 132
+    KB of the 256 KB chunk allocated to it. The remaining (124 KB) is wasted (think
+    about it, that's close to 50% wastage!).This is called **internal fragmentation
+    (or wastage)** and is the critical failing of the binary buddy system!
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们通过不使用方便的2的幂大小作为需求来增加趣味性。这一次，假设设备驱动程序请求大小为132 KB的内存块。伙伴系统分配器会怎么做？当然，它不能分配比请求的内存更少，它会分配更多-你猜到了（见*图8.2*），下一个可用的内存块是大小为256
+    KB的order 7。但消费者（驱动程序）只会看到并使用分配给它的256 KB块的前132 KB。剩下的（124 KB）是**浪费**的（想想看，接近50%的浪费！）。这被称为**内部碎片（或浪费）**，是二进制伙伴系统的关键失败！
+- en: 'You will learn, though, that there is indeed a mitigation to this: a patch
+    was contributed to deal with similar scenarios (via the `alloc_pages_exact() /
+    free_pages_exact()` APIs). We will cover the APIs to use the page allocator shortly.'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你会发现，对于这种情况确实有一种缓解方法：有一个补丁用于处理类似的情况（通过`alloc_pages_exact() / free_pages_exact()`
+    API）。我们将很快介绍使用页面分配器的API。
+- en: Page allocator internals – a few more details
+  id: totrans-94
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 页面分配器内部-更多细节
+- en: 'In this book, we do not intend to delve into code-level detail on the internals
+    of the page allocator. Having said that, here''s the thing: in terms of data structures,
+    the `zone` structure contains an array of `free_area` structures. This makes sense;
+    as you''ve learned, there can be (and usually are) multiple page allocator freelists
+    on the system, one per node:zone:'
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书中，我们不打算深入研究页面分配器内部的代码级细节。话虽如此，事实是：在数据结构方面，`zone`结构包含一个`free_area`结构的数组。这是有道理的；正如你所学到的，系统上可以有（通常有）多个页面分配器空闲列表，每个节点：区域一个：
+- en: '[PRE0]'
+  id: totrans-96
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'The `free_area` structure is the implementation of the doubly-linked circular
+    lists (of free memory page frames within that node:zone) along with the number
+    of page frames that are currently free:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`free_area`结构是双向循环链表的实现（在该节点：区域内的空闲内存页框中）以及当前空闲的页框数量：'
+- en: '[PRE1]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Why is it an array of linked lists and not just one list? Without delving into
+    the details, we''ll mention that, in reality, the kernel layout for the buddy
+    system freelists is more complex than let on until now: from the 2.6.24 kernel,
+    each freelist we have seen is actually further broken up into multiple freelists
+    to cater to different *page migration types*. This was required to deal with complications
+    when trying to keep memory defragmented.Besides that, as mentioned earlier, these
+    freelists exist per *node:zone* on the system. So, for example, on an actual NUMA
+    system with 4 nodes and 3 zones per node, there will be 12 (4 x 3) freelists.
+    Not just that, each freelist is actually further broken down into 6 freelists,
+    one per migration type. Thus, on such a system, a total of *6 x 12 = 72* freelist
+    data structures would exist system-wide!'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为什么是一个链表数组而不是一个链表？不深入细节，我们将提到，实际上，到目前为止，伙伴系统空闲列表的内核布局比表面上的更复杂：从2.6.24内核开始，我们看到的每个空闲列表实际上进一步分解为多个空闲列表，以满足不同的*页面迁移类型*。这是为了处理在尝试保持内存碎片整理时出现的复杂情况。除此之外，如前所述，这些空闲列表存在于系统上的每个*节点：区域*。因此，例如，在一个实际的NUMA系统上，每个节点有4个区域，每个节点有3个区域，将有12（4
+    x 3）个空闲列表。不仅如此，每个空闲列表实际上进一步分解为6个空闲列表，每个迁移类型一个。因此，在这样的系统上，整个系统将存在*6 x 12 = 72*个空闲列表数据结构！
+- en: If you are interested, dig into the details and check out the output of `/proc/buddyinfo` – a
+    nice summary view of the state of the buddy system freelists (as Figure 8.3 shows).
+    Next, for a more detailed and realistic view (of the type mentioned previously,
+    showing *all *the freelists), look up `/proc/pagetypeinfo` (requires root access)
+    – it shows all the freelists (broken up into page migration types as well).
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您感兴趣，请深入了解细节，并查看`/proc/buddyinfo`的输出-这是伙伴系统空闲列表状态的一个很好的总结视图（如图8.3所示）。接下来，为了获得更详细和更现实的视图（如前面提到的类型，显示*所有*空闲列表），查看`/proc/pagetypeinfo`（需要root访问）-它显示所有空闲列表（也分解为页面迁移类型）。
+- en: The design of the page allocator (buddy system) algorithm is one of the best-fit class.
+    It confers the major benefit of actually helping to defragment physical memory
+    as the system runs. Briefly, its pros and cons are as follows.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 页面分配器（伙伴系统）算法的设计是*最佳适配*类之一。它的主要优点是实际上有助于在系统运行时整理物理内存。简而言之，它的优缺点如下。
+- en: 'The pros of the page allocator (buddy system) algorithm are as follows:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 页面分配器（伙伴系统）算法的优点如下：
+- en: Helps defragment memory (external fragmentation is prevented)
+  id: totrans-103
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 有助于碎片整理内存（防止外部碎片）
+- en: Guarantees the allocation of a physically contiguous memory chunk
+  id: totrans-104
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 保证分配物理连续的内存块
+- en: Guarantees CPU cache line-aligned memory blocks
+  id: totrans-105
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 保证CPU缓存行对齐的内存块
+- en: Fast (well, fast enough; the algorithmic time complexity is *O(log n)*)
+  id: totrans-106
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 快速（足够快；算法时间复杂度为*O(log n)*）
+- en: On the other hand, by far the biggest downside is that internal fragmentation
+    or wastage can be much too high.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一方面，迄今为止最大的缺点是内部碎片或浪费可能过高。
+- en: 'Okay, great! We have covered a good deal of background material on the internal
+    workings of the page or buddy system allocator. Time to get hands on: let''s now
+    dive into actually understanding and using the page allocator APIs to allocate
+    and free memory.'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，很棒！我们已经涵盖了页面或伙伴系统分配器内部工作的大量背景材料。现在是动手的时候：让我们现在深入了解并使用页面分配器API来分配和释放内存。
+- en: Learning how to use the page allocator APIs
+  id: totrans-109
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 学习如何使用页面分配器API
+- en: 'The Linux kernel provides (exposes to the core and modules) a set of APIs to
+    allocate and deallocate memory (RAM) via the page allocator. These are often referred
+    to as the low-level (de)allocator routines. The following table summarizes the
+    page allocation APIs; you''ll notice that all the APIs or macros that have two
+    parameters, the first parameter is called the *GFP flags or bitmask*; we shall
+    explain it in detail shortly, please ignore it for now. The second parameters
+    is the `order`- the order of the freelist, that is, the amount of memory to allocate
+    is 2^(order) page frames. All prototypes can be found in `include/linux/gfp.h`:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux内核提供了一组API来通过页面分配器分配和释放内存（RAM），这些通常被称为低级（de）分配器例程。以下表格总结了页面分配API；您会注意到所有具有两个参数的API或宏，第一个参数称为*GFP标志或位掩码*；我们将很快详细解释它，请现在忽略它。第二个参数是`order`-空闲列表的顺序，即要分配的内存量为2^(order)页帧。所有原型都可以在`include/linux/gfp.h`中找到：
+- en: '| **API or macro name** | **Comments** | **API signature or macro** |'
+  id: totrans-111
+  prefs: []
+  type: TYPE_TB
+  zh: '| **API或宏名称** | **评论** | **API签名或宏** |'
+- en: '| `__get_free_page()` | Allocates exactly one page frame. The allocated memory
+    will have random content; it''s a wrapper around the `__get_free_pages()` API.
+    The return value is a pointer to the just-allocated memory''s kernel logical address.
+    | `#define __get_free_page(gfp_mask)  \ __get_free_pages((gfp_mask), 0)`​ |'
+  id: totrans-112
+  prefs: []
+  type: TYPE_TB
+  zh: '| `__get_free_page()` | 分配一个页面帧。分配的内存将具有随机内容；它是`__get_free_pages()`API的包装器。返回值是刚分配的内存的内核逻辑地址的指针。
+    | `#define __get_free_page(gfp_mask) \ __get_free_pages((gfp_mask), 0)`​ |'
+- en: '| `__get_free_pages()` | Allocates *2^(order)* physically contiguous page frames.
+    Allocated memory will have random content; the return value is a pointer to the
+    just-allocated memory''s kernel logical address. | `unsigned long __get_free_pages(gfp_t
+    gfp_mask, unsigned int order);` |'
+  id: totrans-113
+  prefs: []
+  type: TYPE_TB
+  zh: '| `__get_free_pages()` | 分配*2^(order)*个物理连续的页面帧。分配的内存将具有随机内容；返回值是刚分配的内存的内核逻辑地址的指针。
+    | `unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);` |'
+- en: '| `get_zeroed_page()` | Allocates exactly one page frame; its contents are
+    set to ASCII zero (`NULL`; that is, it''s zeroed out); the return value is a pointer
+    to the just-allocated memory''s kernel logical address. | `unsigned long get_zeroed_page(gfp_t
+    gfp_mask);` |'
+  id: totrans-114
+  prefs: []
+  type: TYPE_TB
+  zh: '| `get_zeroed_page()` | 分配一个页面帧；其内容设置为ASCII零（`NULL`；即，它被清零）；返回值是刚分配的内存的内核逻辑地址的指针。
+    | `unsigned long get_zeroed_page(gfp_t gfp_mask);` |'
+- en: '| `alloc_page()` | Allocates exactly one page frame. The allocated memory will
+    have random content; a wrapper over the `alloc_pages()` API; the return value
+    is a pointer to the just-allocated memory''s `page` metadata structure; can convert
+    it into a kernel logical address via the `page_address()` function. | `#define
+    alloc_page(gfp_mask)  \ alloc_pages(gfp_mask, 0)` |'
+  id: totrans-115
+  prefs: []
+  type: TYPE_TB
+  zh: '| `alloc_page()` | 分配一个页面帧。分配的内存将具有随机内容；是`alloc_pages()` API的包装器；返回值是指向刚分配的内存的`page`元数据结构的指针；可以通过`page_address()`函数将其转换为内核逻辑地址。
+    | `#define alloc_page(gfp_mask) \ alloc_pages(gfp_mask, 0)` |'
+- en: '| `alloc_pages()` | Allocates *2^(order)* physically contiguous page frames.
+    The allocated memory will have random content; the return value is a pointer to
+    the start of the just-allocated memory''s `page` metadata structure; can convert
+    it into a kernel logical address via the `page_address()` function. | `struct
+    page * alloc_pages(gfp_t gfp_mask, unsigned int order);` |'
+  id: totrans-116
+  prefs: []
+  type: TYPE_TB
+  zh: '| `alloc_pages()` | 分配*2^(order)*个物理连续页面帧。分配的内存将具有随机内容；返回值是指向刚分配的内存的`page`元数据结构开头的指针；可以通过`page_address()`函数将其转换为内核逻辑地址。
+    | `struct page * alloc_pages(gfp_t gfp_mask, unsigned int order);` |'
+- en: Table 8.1 – Low-level (BSA/page) allocator – popular exported allocation APIs
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表8.1 - 低级（BSA/page）分配器 - 流行的导出分配API
+- en: All the preceding APIs are exported (via the `EXPORT_SYMBOL()` macro), and hence
+    available to kernel module and device driver developers. Worry not, you will soon
+    see a kernel module that demonstrates using them.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有先前的API都是通过`EXPORT_SYMBOL()`宏导出的，因此可供内核模块和设备驱动程序开发人员使用。不用担心，您很快就会看到一个演示如何使用它们的内核模块。
+- en: 'The Linux kernel considers it worthwhile to maintain a (small) metadata structure
+    to track every single page frame of RAM. It''s called the `page` structure. The
+    point here is, be careful: unlike the usual semantics of returning a pointer (a
+    virtual address) to the start of the newly allocated memory chunk, notice how
+    both the `alloc_page()` and `alloc_pages()` APIs mentioned previously return a
+    pointer to the start of the newly allocated memory''s page structure, not the
+    memory chunk itself (as the other APIs do). You must obtain the actual pointer
+    to the start of the newly allocated memory by invoking the `page_address()` API
+    on the page structure address that is returned. Example code in the *Writing a
+    kernel module to demo using the page allocator APIs* sectionwill illustrate the
+    usage of all of the preceding APIs.'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux内核认为维护一个（小）元数据结构来跟踪每个RAM页面帧是值得的。它被称为`page`结构。关键在于，要小心：与通常的返回指向新分配的内存块开头的指针（虚拟地址）的语义不同，注意先前提到的`alloc_page()`和`alloc_pages()`
+    API都返回指向新分配的内存的`page`结构开头的指针，而不是内存块本身（其他API所做的）。您必须通过调用返回的页面结构地址上的`page_address()`
+    API来获取新分配的内存开头的实际指针。在*编写内核模块以演示使用页面分配器API*部分的示例代码将说明所有先前API的用法。
+- en: Before we can make use of the page allocator APIs mentioned here, though, it's
+    imperative to understand at least the basics regarding the **Get Free Page** (**GFP**) flags,
+    which are the topic of the section that follows.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里提到的页面分配器API之前，至关重要的是了解至少关于**获取空闲页面**（GFP）标志的基础知识，这是接下来的部分的主题。
+- en: Dealing with the GFP flags
+  id: totrans-121
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 处理GFP标志
+- en: 'You will notice that the first parameter to all the previous allocator APIs
+    (or macros) is `gfp_t gfp_mask`. What does this mean? Essentially, these are GFP flags*.*
+    These are flags (there are several of them) used by the kernel''s internal memory
+    management code layers. For all practical purposes, for the typical kernel module
+    (or device driver) developer, just two GFP flags are crucial (as mentioned before,
+    the rest are for internal usage). They are as follows:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您会注意到所有先前的分配器API（或宏）的第一个参数是`gfp_t gfp_mask`。这是什么意思？基本上，这些是GFP标志。这些是内核内部内存管理代码层使用的标志（有几个）。对于典型的内核模块（或设备驱动程序）开发人员来说，只有两个GFP标志至关重要（如前所述，其余是用于内部使用）。它们如下：
+- en: '`GFP_KERNEL`'
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`GFP_KERNEL`'
+- en: '`GFP_ATOMIC`'
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`GFP_ATOMIC`'
+- en: 'Deciding which of these to use when performing memory allocation via the page
+    allocator APIs is important; a key rule to always remember is the following:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在通过页面分配器API执行内存分配时决定使用哪个是重要的；始终记住的一个关键规则是：
+- en: '*If in process context and it is safe to sleep, use the GFP_KERNEL flag. If
+    it is unsafe to sleep (typically, when in any type of atomic or interrupt context), you must use
+    the GFP_ATOMIC flag.*'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*如果在进程上下文中并且可以安全休眠，则使用GFP_KERNEL标志。如果不安全休眠（通常在任何类型的原子或中断上下文中），必须使用GFP_ATOMIC标志。*'
+- en: Following the preceding rule is critical. Getting this wrong can result in the
+    entire machine freezing, kernel crashes, and/or random bad stuff happening. So,
+    what exactly do the statements *safe/unsafe to sleep* really mean? For this and
+    more, we defer to the *The GFP flags – digging deeper *section that follows. It *is*
+    reallyimportant though, so I definitely recommend you read it.
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 遵循上述规则至关重要。搞错了会导致整个机器冻结、内核崩溃和/或发生随机的不良情况。那么*安全/不安全休眠*这些陈述到底意味着什么？为此以及更多内容，我们推迟到接下来的*深入挖掘GFP标志*部分。尽管如此，这真的很重要，所以我强烈建议您阅读它。
+- en: '**Linux Driver Verification** (**LDV**) project: back in [Chapter 1](ad75db43-a1a2-4f3f-92c7-a544f47baa23.xhtml),
+    *Kernel Workspace Setup*, in the The LDV - Linux Driver Verification - project section,
+    we mentioned that this project has useful "rules" with respect to various programming
+    aspects of Linux modules (drivers, mostly) as well as the core kernel.'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Linux驱动程序验证**（LDV）项目：回到[第1章](ad75db43-a1a2-4f3f-92c7-a544f47baa23.xhtml)，*内核工作空间设置*，在*LDV
+    - Linux驱动程序验证*项目部分，我们提到该项目对于Linux模块（主要是驱动程序）以及核心内核的各种编程方面有有用的“规则”。'
+- en: 'With regard to our current topic, here''s one of the rules, a negative one,
+    implying that you *cannot *do this: *"Using a blocking memory allocation when
+    spinlock is held"* ([http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0043](http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0043)).
+    When holding a spinlock, you''re not allowed to do anything that might block;
+    this includes kernel-space memory allocations. Thus, very important, you must
+    use the `GFP_ATOMIC` flag when performing a memory allocation in any kind of atomic
+    or non-blocking context, like when holding a spinlock (you will learn that this
+    isn''t the case with the mutex lock; you are allowed to perform blocking activities
+    while holding a mutex). Violating this rule leads to instability and even raises
+    the possibility of (an implicit) deadlock. The LDV page mentions a device driver
+    that was violating this very rule and the subsequent fix ([https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=5b0691508aa99d309101a49b4b084dc16b3d7019](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=5b0691508aa99d309101a49b4b084dc16b3d7019)).
+    Take a look: the patch clearly shows (in the context of the `kzalloc()` API, which
+    we shall soon cover) the `GFP_KERNEL` flag being replaced with the `GFP_ATOMIC`
+    flag.'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于我们当前的主题，这里有一个规则，一个否定的规则，暗示着你*不能*这样做：“在持有自旋锁时使用阻塞内存分配”([http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0043](http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0043))。持有自旋锁时，你不允许做任何可能会阻塞的事情；这包括内核空间内存分配。因此，非常重要的是，在任何原子或非阻塞上下文中执行内存分配时，必须使用`GFP_ATOMIC`标志，比如在持有自旋锁时（你会发现这在互斥锁中并不适用；在持有互斥锁时，你可以执行阻塞活动）。违反这个规则会导致不稳定，甚至可能引发（隐式）死锁的可能性。LDV页面提到了一个违反这个规则的设备驱动程序以及随后的修复([https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=5b0691508aa99d309101a49b4b084dc16b3d7019](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=5b0691508aa99d309101a49b4b084dc16b3d7019))。看一下：补丁清楚地显示了（在我们即将介绍的`kzalloc()`API的上下文中）`GFP_KERNEL`标志被替换为`GFP_ATOMIC`标志。
+- en: Another GFP flag commonly used is `__GFP_ZERO`. Its usage implies to the kernel
+    that you want zeroed-out memory pages. It's often bitwise-ORed with `GFP_KERNEL`
+    or `GFP_ATOMIC` flags in order to return memory initialized to zero.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个常用的GFP标志是`__GFP_ZERO`。它的使用向内核表明你想要零化的内存页面。它经常与`GFP_KERNEL`或`GFP_ATOMIC`标志按位或操作，以返回初始化为零的内存。
+- en: 'The kernel developers do take the trouble to document the GFP flags in detail.
+    Take a look in `include/linux/gfp.h`. Within it, there''s a long and detailed
+    comment; it''s headed `DOC: Useful GFP flag combinations`.'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '内核开发人员确实费心详细记录了GFP标志。在`include/linux/gfp.h`中有一个长而详细的注释；标题是`DOC: 有用的GFP标志组合`。'
+- en: For now, and so that we get off the ground quickly, just understand that using
+    the Linux kernel's memory allocation APIs with the `GFP_KERNEL` flag is indeed
+    the common case for kernel-internal allocations.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，为了让我们快速入门，只需了解使用`GFP_KERNEL`标志与Linux内核的内存分配API确实是内核内部分配的常见情况。
+- en: Freeing pages with the page allocator
+  id: totrans-133
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 使用页面分配器释放页面
+- en: 'The flip side of allocating memory is freeing it, of course. Memory leakage
+    in the kernel is definitely not something you''d like to contribute to. For the
+    page allocator APIs shown in *Table 8.1**,* here are the corresponding free APIs:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，分配内存的另一面是释放内存。内核中的内存泄漏绝对不是你想要贡献的东西。在*表8.1*中显示的页面分配器API中，这里是相应的释放API：
+- en: '| **API or macro name** | **Comment** | **API signature or macro** |'
+  id: totrans-135
+  prefs: []
+  type: TYPE_TB
+  zh: '| **API或宏名称** | **评论** | **API签名或宏** |'
+- en: '| `free_page()` | Free a (single) page that was allocated via the `__get_free_page()`,
+    `get_zeroed_page()`, or `alloc_page()` APIs; it''s a simple wrapper over the `free_pages()`
+    API | `#define free_page(addr) __free_pages((addr), 0)` |'
+  id: totrans-136
+  prefs: []
+  type: TYPE_TB
+  zh: '| `free_page()` | 释放通过`__get_free_page()`、`get_zeroed_page()`或`alloc_page()`API分配的（单个）页面；它只是`free_pages()`API的简单包装
+    | `#define free_page(addr) __free_pages((addr), 0)` |'
+- en: '| `free_pages()` | Free multiple pages that were allocated via the `__get_free_pages()` or `alloc_pages()` APIs
+    (it''s actually a wrapper over `__free_pages()`.)  | `void free_pages(unsigned
+    long addr, unsigned int order)` |'
+  id: totrans-137
+  prefs: []
+  type: TYPE_TB
+  zh: '| `free_pages()` | 释放通过`__get_free_pages()`或`alloc_pages()`API分配的多个页面（实际上是`__free_pages()`的包装）
+    | `void free_pages(unsigned long addr, unsigned int order)` |'
+- en: '| `__free_pages()` | (*Same as the preceding row, plus*) it''s the underlying
+    routine where the work gets done; also, note that the first parameter is a pointer
+    to the `page` metadata structure. | `void __free_pages(struct page *page, unsigned
+    int order)` |'
+  id: totrans-138
+  prefs: []
+  type: TYPE_TB
+  zh: '| `__free_pages()` | （与前一行相同，另外）这是执行实际工作的基础例程；还要注意第一个参数是指向`page`元数据结构的指针。 |
+    `void __free_pages(struct page *page, unsigned int order)` |'
+- en: Table 8.2 – Common free page(s) APIs to use with the page allocator
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表8.2 - 与页面分配器一起使用的常见释放页面API
+- en: You can see that the actual underlying API in the preceding functions is `free_pages()`,
+    which itself is just a wrapper over the `mm/page_alloc.c:__free_pages()` code.
+    The first parameter to the `free_pages()` API is the pointer to the start of the
+    memory chunk being freed; this, of course, being the return value from the allocation
+    routine. However, the first parameter to the underlying API, `__free_pages()`,
+    is the pointer to the *page* metadata structure of the start of the memory chunk
+    being freed.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到前面函数中实际的基础API是`free_pages()`，它本身只是`mm/page_alloc.c:__free_pages()`代码的包装。`free_pages()`API的第一个参数是指向被释放内存块的起始指针；当然，这是分配例程的返回值。然而，基础API`__free_pages()`的第一个参数是指向被释放内存块的*page*元数据结构的指针。
+- en: Generally speaking, unless you really know what you are doing, you're definitely
+    advised to invoke the `foo()` wrapper routine and not its internal `__foo()` routine.
+    One reason to do so is simply correctness (perhaps the wrapper uses some necessary
+    synchronization mechanism - like a lock - prior to invoking the underlying routine).
+    Another reason to do so is validity checking (which helps code remain robust and
+    secure). *O*ften, the `__foo()` routines bypass validity checks in favor of speed.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一般来说，除非您真的知道自己在做什么，您肯定应该调用`foo()`包装例程而不是其内部的`__foo()`例程。这样做的一个原因是简单的正确性（也许包装器在调用底层例程之前使用了一些必要的同步机制
+    - 比如锁）。另一个原因是有效性检查（这有助于代码保持健壮和安全）。通常，`__foo()`例程会绕过有效性检查以换取速度。
+- en: As all experienced C/C++ application developers know, allocating and subsequently
+    freeing memory is a rich source of bugs! This is primarily because C is an unmanaged
+    language, as far as memory is concerned; hence, you can hit all sorts of memory
+    bugs. These include the well-known memory leakage, buffer overflows/underflows
+    for both read/write, double-free, and **Use After Free** (**UAF**) bugs.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如所有有经验的C/C++应用程序开发人员所知，分配和随后释放内存是错误的丰富来源！这主要是因为C是一种无管理语言，就内存而言；因此，您可能会遇到各种各样的内存错误。这些包括众所周知的内存泄漏，读/写的缓冲区溢出/下溢，双重释放和**使用后释放**（UAF）错误。
+- en: 'Unfortunately, it''s no different in kernel space; it''s just that the consequences
+    are (much) worse! Be extra careful! Please do take care to ensure the following:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，在内核空间中也没有什么不同；只是后果会更严重！要特别小心！请务必确保以下内容：
+- en: Favor routines that initialize the memory allocated to zero.
+  id: totrans-144
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 偏爱初始化分配的内存为零的例程。
+- en: 'Think about and use the appropriate GFP flag when performing an allocation
+    – more on this in the *The GFP flags – digging deeper* section, but briefly, note
+    the following:'
+  id: totrans-145
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在执行分配时考虑并使用适当的GFP标志 - 更多内容请参阅*GFP标志 - 深入挖掘*部分，但简而言之，请注意以下内容：
+- en: When in process context where it's safe to sleep, use `GFP_KERNEL`.
+  id: totrans-146
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在可以安全休眠的进程上下文中，使用`GFP_KERNEL`。
+- en: When in an atomic context, such as when processing an interrupt, use `GFP_ATOMIC`.
+  id: totrans-147
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在原子上下文中，比如处理中断时，使用`GFP_ATOMIC`。
+- en: When using the page allocator (as we're doing now), try as much as possible
+    to keep the allocation size as rounded power-of-2 pages (again, the rationale
+    behind this and ways to mitigate this – when you don't require so much memory,
+    the typical case – are covered in detail in the coming sections of this chapter).
+  id: totrans-148
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在使用页面分配器时（就像我们现在正在做的那样），尽量保持分配大小为圆整的2的幂页（关于这一点的原因以及在不需要这么多内存时如何减轻这一点 - 典型情况下
+    - 将在本章后续部分详细介绍）。
+- en: You only ever attempt to free memory that you allocated earlier; needless to
+    say, don't miss freeing it, and don't double-free it.
+  id: totrans-149
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您只会尝试释放您之前分配的内存；不用说，不要忘记释放它，也不要重复释放它。
+- en: Keep the original memory chunk's pointer safe from reuse, manipulation (`ptr
+    ++` or something similar), and corruption, so that you can correctly free it when
+    done.
+  id: totrans-150
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 确保原始内存块的指针不受重用、操纵（`ptr ++`或类似的操作）和破坏，以便在完成时正确释放它。
+- en: Check (and recheck!) the parameters passed to APIs. Is a pointer to the previously
+    allocated block required, or to its underlying `page` structure?
+  id: totrans-151
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 检查（并再次检查！）传递给API的参数。是否需要指向先前分配的块或其底层`page`结构的指针？
+- en: Finding it difficult and/or worried about issues in production? Don't forget,
+    you have help! Do learn how to use powerful static analysis tools found within
+    the kernel itself (Coccinelle,  `sparse` and others, such as `cppcheck` or `smatch`).
+    For dynamic analysis, learn how to install and use **KASAN** (the **Kernel Address
+    Sanitizer**).
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在生产中发现困难和/或担心问题？别忘了，您有帮助！学习如何使用内核内部的强大静态分析工具（Coccinelle、`sparse`和其他工具，如`cppcheck`或`smatch`）。对于动态分析，学习如何安装和使用**KASAN**（内核地址消毒剂）。
+- en: Recall the Makefile template I provided in [Chapter 5](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml),
+    *Writing Your First Kernel Module – LKMs Part 2*, in the *A better Makefile template* section.
+    It contains targets that use several of these tools; please do use it!
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回想一下我在[第5章](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml)中提供的Makefile模板，*编写您的第一个内核模块
+    - LKMs第2部分*，在*A better Makefile template*部分。它包含使用了几种这些工具的目标；请使用它！
+- en: Alright, now that we've covered both the (common) allocation and free APIs of
+    the page allocator, it's time to put this learning to use. Let's write some code!
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了，既然我们已经涵盖了页面分配器的（常见的）分配和释放API，现在是时候将这些知识付诸实践了。让我们写一些代码！
+- en: Writing a kernel module to demo using the page allocator APIs
+  id: totrans-155
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 编写一个内核模块来演示使用页面分配器API
+- en: Let's now get hands on with the low-level page allocator and free APIs that
+    we've learned about so far. In this section, we will show relevant code snippets,
+    followed by an explanation where warranted, from our demo kernel module (`ch8/lowlevel_mem/lowlevel_mem.c`).
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们动手使用我们迄今为止学到的低级页面分配器和释放API。在本节中，我们将展示相关的代码片段，然后在必要时进行解释，来自我们的演示内核模块（`ch8/lowlevel_mem/lowlevel_mem.c`）。
+- en: 'In the primary worker routine, `bsa_alloc()`, of our small LKM, we highlighted
+    (in bold font) the code comments that show what we are trying to achieve. A few
+    points to note:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们小型LKM的主要工作例程`bsa_alloc()`中，我们用粗体字突出显示了显示我们试图实现的代码注释。需要注意的几点：
+- en: 'First, we do something very interesting: we use our small kernel "library"
+    function `klib_llkd.c:show_phy_pages()` to literally show you how physical RAM
+    page frames are identity mapped to kernel virtual pages in the kernel lowmem region!
+    (The exact working of the `show_phy_pages()` routine is discussed very shortly):'
+  id: totrans-158
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 首先，我们做了一些非常有趣的事情：我们使用我们的小内核“库”函数`klib_llkd.c:show_phy_pages()`，直接向您展示物理RAM页框如何在内核低端内存区域与内核虚拟页进行身份映射！（`show_phy_pages()`例程的确切工作将很快讨论）：
+- en: '[PRE2]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Next, we allocate one page of memory via the underlying `__get_free_page()`
+    page allocator API (that we saw previously in *Table 8.1*):'
+  id: totrans-160
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们通过底层的`__get_free_page()`页面分配器API分配一页内存（我们之前在*表8.1*中看到过）：
+- en: '[PRE3]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Notice how we emit a `printk` function showing the kernel's logical address. Recall
+    from the previous chapter that this is page allocator memory that lies very much
+    in the direct-mapped RAM or lowmem region of the kernel segment/VAS.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意我们发出一个`printk`函数，显示内核的逻辑地址。回想一下上一章，这是页面分配器内存，位于内核段/VAS的直接映射RAM或lowmem区域。
+- en: Now, for security, we should consistently, and only, use the `%pK` format specifier
+    when printing kernel addresses so that a hashed value and not the real virtual
+    address shows up in the kernel logs. However, here, in order to show you the actual
+    kernel virtual address, we also use the `%px` format specifier (which, like the
+    `%pK`, is portable as well; for security, please don't use the `%px` format specifier
+    in production!).
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 出于安全考虑，我们应该一致且只使用`%pK`格式说明符来打印内核地址，以便在内核日志中显示哈希值而不是真实的虚拟地址。然而，在这里，为了向您展示实际的内核虚拟地址，我们还使用了`%px`格式说明符（与`%pK`一样，也是可移植的；出于安全考虑，请不要在生产中使用`%px`格式说明符）。
+- en: Next, notice the detailed comment just after the first `__get_free_page()` API
+    (in the preceding snippet) is issued. It mentions the fact that you don't really
+    have to print an out-of-memory error or warning messages. (Curious? To find out
+    why, visit [https://lkml.org/lkml/2014/6/10/382](https://lkml.org/lkml/2014/6/10/382).)
+    In this example module (as with several earlier ones and more to follow), we code
+    our printk's (or `pr_foo()` macro) instances for portability by using appropriate
+    printk format specifiers (like the `%zd`, `%zu`, `%pK`, `%px`, and `%pa`).
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，请注意在发出第一个`__get_free_page()` API（在前面的代码片段中）之后的详细注释。它提到您实际上不必打印内存不足的错误或警告消息。（好奇吗？要找出原因，请访问[https://lkml.org/lkml/2014/6/10/382](https://lkml.org/lkml/2014/6/10/382)。）在这个示例模块中（以及之前的几个模块和将要跟进的模块），我们通过使用适当的printk格式说明符（如`%zd`、`%zu`、`%pK`、`%px`和`%pa`）来编码我们的printk（或`pr_foo()`宏）实例，以实现可移植性。
+- en: 'Let''s move on to our second memory allocation using the page allocator; see
+    the following code snippet:'
+  id: totrans-165
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们继续使用页面分配器进行第二次内存分配；请参阅以下代码片段：
+- en: '[PRE4]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: In the preceding code snippet (see the code comments), we have allocated 2³ –
+    that is, 8 – pages of memory via the page allocator's `__get_free_pages()` API
+    (as the default value of our module parameter, `bsa_alloc_order`, is `3`).
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码片段中（请参阅代码注释），我们通过页面分配器的`__get_free_pages()` API（因为我们模块参数`bsa_alloc_order`的默认值是`3`）分配了2³
+    - 也就是8页的内存。
+- en: 'An aside: notice that we use the `GFP_KERNEL|__GFP_ZERO` GFP flags to ensure
+    that the allocated memory is zeroed out, a best practice. Then again, zeroing
+    out large memory chunks can result in a slight performance hit.'
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旁注意到，我们使用`GFP_KERNEL|__GFP_ZERO` GFP标志来确保分配的内存被清零，这是最佳实践。然而，清零大内存块可能会导致轻微的性能损失。
+- en: 'Now, we ask ourselves the question: is there a way to verify that the memory
+    is really physically contiguous (as promised)? It turns out that yes, we can actually
+    retrieve and print out the physical address of the start of each allocated page
+    frame and retrieve its **Page Frame Number** **(PFN****)** as well.'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们问自己一个问题：有没有办法验证内存是否真的是物理上连续的（承诺的）？事实证明，是的，我们实际上可以检索并打印出每个分配的页框的起始物理地址，并检索其**页框号**（PFN）。
+- en: 'The **PFN** is a simple concept: it''s just the index or page number – for
+    example, the PFN of physical address 8192 is 2 (*8192/4096*). As we''ve shown
+    how to (and importantly, when you can) translate kernel virtual addresses to their
+    physical counterparts earlier (and vice versa; this coverage is in [Chapter 7](06ee05b5-3e71-482d-93b8-235c27ce23bc.xhtml),
+    *Memory Management Internals – Essentials*, in the *Direct-mapped RAM and address
+    translation* section), we won''t repeat it here.'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: PFN是一个简单的概念：它只是索引或页码 - 例如，物理地址8192的PFN是2（*8192/4096*）。由于我们已经展示了如何（以及何时可以）将内核虚拟地址转换为它们的物理对应物（反之亦然；这个覆盖在[第7章](06ee05b5-3e71-482d-93b8-235c27ce23bc.xhtml)中，*内存管理内部
+    - 基本知识*，在*直接映射RAM和地址转换*部分），我们就不在这里重复了。
+- en: 'To do this work of translating virtual addresses to physical addresses and
+    checking for contiguity, we write a small "library" function, which is kept in
+    a separate C file in the root of this book''s GitHub source tree, `klib_llkd.c`. Our
+    intent is to modify our kernel module''s Makefile to link in the code of this
+    library file as well! (Doing this properly was  covered back in [Chapter 5](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml), *Writing
+    Your First Kernel Module – LKMs Part 2*, in the *Performing library emulation
+    via multiple source files* section.) Here''s our invocation of our library routine
+    (just as was done in step 0):'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了完成将虚拟地址转换为物理地址并检查连续性的工作，我们编写了一个小的“库”函数，它保存在本书GitHub源树的根目录中的一个单独的C文件`klib_llkd.c`中。我们的意图是修改我们的内核模块的Makefile，以便将这个库文件的代码也链接进来！（正确地完成这个工作在[第5章](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml)中已经涵盖了，*编写您的第一个内核模块
+    - LKMs第2部分*，在*通过多个源文件执行库模拟*部分。）这是我们对库例程的调用（就像在步骤0中所做的那样）：
+- en: '[PRE5]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'The following is the code of our library routine (in the `<booksrc>/klib_llkd.c`
+    source file; again, for clarity, we won''t show the entire code here):'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是我们库例程的代码（在`<booksrc>/klib_llkd.c`源文件中；为了清晰起见，我们不会在这里展示整个代码）：
+- en: '[PRE6]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Study the preceding function. We walk through our given memory range, (virtual)
+    page by (virtual) page, obtaining the physical address and PFN, which we then
+    emit via printk (notice how we use the `%pa` format specifier to port-ably print
+    a *physical address* - it requires it to be passed by reference though). Not only
+    that, if the third parameter, `contiguity_check`*,* is `1`, we check whether the
+    PFNs are just a single digit apart, thus checking that the pages are indeed physically
+    contiguous or not. (By the way, the simple `powerof()` function that we make use
+    of is also within our library code.)
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 研究前面的函数。我们逐个遍历给定的内存范围（虚拟页），获取物理地址和PFN，然后通过printk发出（请注意，我们使用`%pa`格式说明符来可移植地打印*物理地址*
+    - 它需要通过引用传递）。不仅如此，如果第三个参数`contiguity_check`是`1`，我们将检查PFN是否只相差一个数字，从而检查页面是否确实是物理上连续的。
+    （顺便说一句，我们使用的简单`powerof()`函数也在我们的库代码中。）
+- en: 'Hang on, though, a key point: having kernel modules working with physical addresses
+    is *highly discouraged*. Only the kernel''s internal memory management code works
+    directly with physical addresses. There are very few real-world cases of even
+    hardware device drivers using physical memory directly (DMA is one, and using
+    the `*ioremap*` APIs another).'
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不过，有一个关键点：让内核模块与物理地址一起工作是*极不鼓励*的。只有内核的内部内存管理代码直接使用物理地址。甚至硬件设备驱动程序直接使用物理内存的真实案例非常少见（DMA是其中之一，使用`*ioremap*`API是另一个）。
+- en: We only do so here to prove a point – that the memory allocated by the page
+    allocator (with a single API call) is physically contiguous. Also, do realize
+    that the `virt_to_phys()`(and friends) APIs that we employ are guaranteed to work
+    *only* on direct-mapped memory (the kernel lowmem region) and nothing else (not
+    the `vmalloc` range, the IO memory ranges, bus memory, DMA buffers, and so on).
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们只在这里这样做是为了证明一点-由页面分配器分配的内存（通过单个API调用）是物理连续的。此外，请意识到我们使用的`virt_to_phys()`（和其他）API保证仅在直接映射内存（内核低内存区域）上工作，而不是在`vmalloc`范围、IO内存范围、总线内存、DMA缓冲区等其他地方。
+- en: 'Now, let''s continue with the kernel module code:'
+  id: totrans-178
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们继续进行内核模块代码：
+- en: '[PRE7]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: As seen in the preceding snippet, we allocate a single page of memory but ensure
+    it's zeroed out by employing the PA `get_zeroed_page()` API. `pr_info()` shows
+    the hashed and actual KVAs (using the `%pK` or `%px` has the addresses printed
+    in a port-able fashion as well, irrespective of your running on a 32 or 64-bit
+    system.)
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前面的代码片段所示，我们分配了一页内存，但通过使用PA `get_zeroed_page()` API确保它被清零。`pr_info()`显示了哈希和实际的KVA（使用`%pK`或`%px`以便地址以便以可移植的方式打印，无论你是在32位还是64位系统上运行）。
+- en: 'Next, we allocate one page with the `alloc_page()` API. Careful! It does not
+    return the pointer to the allocated page, but rather the pointer to the metadata
+    structure `page` representing the allocated page; here''s the function signature:
+    `struct page * alloc_page(gfp_mask)`. Thus, we use the `page_address()` helper
+    to convert it into a kernel logical (or virtual) address:'
+  id: totrans-181
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，我们使用`alloc_page()` API分配一页。小心！它不会返回分配页面的指针，而是返回代表分配页面的元数据结构`page`的指针；这是函数签名：`struct
+    page * alloc_page(gfp_mask)`。因此，我们使用`page_address()`助手将其转换为内核逻辑（或虚拟）地址：
+- en: '[PRE8]'
+  id: totrans-182
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: In the preceding code snippet, we allocate one page of memory via the `alloc_page()`
+    PA API. As explained, we need to convert the page metadata structure returned
+    by it into a KVA (or kernel logical address) via the `page_address()` API.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码片段中，我们通过`alloc_page()` PA API分配了一页内存。正如所解释的，我们需要将其返回的页面元数据结构转换为KVA（或内核逻辑地址）通过`page_address()`
+    API。
+- en: 'Next, allocate and `init` *2^3 = 8 pages* with the `alloc_pages()` API. The
+    same warning as the preceding code snippet applies here too:'
+  id: totrans-184
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 接下来，使用`alloc_pages()` API分配和`init` *2^3 = 8页*。与前面的代码片段一样，这里也适用相同的警告：
+- en: '[PRE9]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: In the preceding code snippet, we combine `alloc_pages()` wrapped within a `page_address()`
+    API to allocate *2^3 = 8* pages of memory!
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码片段中，我们将`alloc_pages()`包装在`page_address()` API中，以分配*2^3 = 8*页内存！
+- en: Interestingly, we use several local `goto` statements in the code (do peek at
+    the code in the repo). Looking carefully at it, you will notice that it actually
+    keeps error handling code paths clean and logical. This is indeed part of the
+    Linux kernel coding style guidelines.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是，我们在代码中使用了几个本地的`goto`语句（请在存储库中查看代码）。仔细观察，你会注意到它实际上保持了*错误处理代码路径*的清晰和逻辑。这确实是Linux内核*编码风格*指南的一部分。
+- en: Usage of the (sometimes controversial) `goto` is clearly documented right here: [https://www.kernel.org/doc/html/v5.4/process/coding-style.html#centralized-exiting-of-functions](https://www.kernel.org/doc/html/v5.4/process/coding-style.html#centralized-exiting-of-functions).
+    I urge you to check it out! Once you understand the usage pattern, you'll find
+    that it helps reduce the all-too-typical memory leakage (and similar) cleanup
+    errors!
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对（有时有争议的）`goto`的使用在这里清楚地记录在这里：[https://www.kernel.org/doc/html/v5.4/process/coding-style.html#centralized-exiting-of-functions](https://www.kernel.org/doc/html/v5.4/process/coding-style.html#centralized-exiting-of-functions)。我敦促你去查看！一旦你理解了使用模式，你会发现它有助于减少所有太典型的内存泄漏（等等）清理错误！
+- en: Finally, in the cleanup method, prior to being removed from kernel memory, we
+    free up all the memory chunks we just allocated in the cleanup code of the kernel
+    module.
+  id: totrans-189
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，在清理方法中，在从内核内存中删除之前，我们释放了在内核模块的清理代码中刚刚分配的所有内存块。
+- en: 'In order to link our library `klib_llkd` code with our `lowlevel_mem`kernel
+    module, the Makefile changes to have the following (recall that we learned about
+    compiling multiple source files into a single kernel module in [Chapter 5](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml), *Writing
+    Your First Kernel Module – LKMs Part 2*, in the *Performing library emulation
+    via multiple source files* section):'
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了将我们的库`klib_llkd`代码与我们的`lowlevel_mem`内核模块链接起来，`Makefile`更改为以下内容（回想一下，我们在[第5章](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml)中学习了如何将多个源文件编译成单个内核模块，*编写你的第一个内核模块-LKMs第2部分*，在*通过多个源文件执行库模拟*部分）：
+- en: '[PRE10]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Again, in this sample LKM we often used the `%px` printk format specifier so
+    that we can see the actual virtual address and not a hashed value (kernel security
+    feature). It's okay here, but don't do this in production.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，在这个示例LKM中，我们经常使用`%px` printk格式说明符，以便我们可以看到实际的虚拟地址而不是哈希值（内核安全功能）。在这里可以，但在生产中不要这样做。
+- en: Phew! That was quite a bit to cover. Do ensure you understand the code, and
+    then read on to see it in action.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 哎呀！这是相当多的内容。确保你理解了代码，然后继续看它的运行。
+- en: Deploying our lowlevel_mem_lkm kernel module
+  id: totrans-194
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 部署我们的lowlevel_mem_lkm内核模块
+- en: Okay, time to see our kernel module in action! Let's build and deploy it on
+    both a Raspberry Pi 4 (running the default Raspberry Pi OS) and on an x86_64 VM
+    (running Fedora 31).
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了，是时候看看我们的内核模块在运行中的情况了！让我们在树莓派4（运行默认的树莓派OS）和x86_64 VM（运行Fedora 31）上构建和部署它。
+- en: 'On the Raspberry Pi 4 Model B (here running Raspberry Pi kernel version 5.4.79-v7l+),
+    we build and then `insmod(8)` our `lowlevel_mem_lkm`kernel module. The following
+    screenshot shows the output:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Raspberry Pi 4 Model B上（运行Raspberry Pi内核版本5.4.79-v7l+），我们构建然后`insmod(8)`我们的`lowlevel_mem_lkm`内核模块。以下截图显示了输出：
+- en: '![](img/08a93d27-6112-4b32-8314-20969b47d182.png)'
+  id: totrans-197
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/08a93d27-6112-4b32-8314-20969b47d182.png)'
+- en: Figure 8.5 – The lowlevel_mem_lkm kernel module's output on a Raspberry Pi 4
+    Model B
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.5 - 在Raspberry Pi 4 Model B上的lowlevel_mem_lkm内核模块的输出
+- en: Check it out! In step 0 of the output in Figure 8.6 our `show_phy_pages()` library
+    routine clearly shows that KVA `0xc000 0000` has PA `0x0`, KVA `0xc000 1000` has
+    pa `0x1000`, and so on, for five pages (along with the PFN on the right); you
+    can literally see the 1:1 identity mapping of physical RAM page frames to kernel
+    virtual pages (in the lowmem region of the kernel segment)!
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看看！在图8.6的输出的第0步中，我们的`show_phy_pages()`库例程清楚地显示KVA `0xc000 0000`具有PA `0x0`，KVA
+    `0xc000 1000`具有PA `0x1000`，依此类推，共五页（右侧还有PFN）；你可以清楚地看到物理RAM页框与内核虚拟页（在内核段的lowmem区域）的1:1身份映射！
+- en: Next, the initial memory allocation with the `__get_free_page()` API goes through
+    as expected. More interesting is our case 2\. Here, we can clearly see that the physical
+    address and PFN of each allocated page (from 0 to 7, for a total of 8 pages) are
+    consecutive, showing that the memory pages allocated are indeed physically contiguous!
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，使用`__get_free_page()`API进行初始内存分配如预期进行。更有趣的是我们的第2种情况。在这里，我们可以清楚地看到每个分配的页面（从0到7，共8页）的物理地址和PFN是连续的，显示出分配的内存页面确实是物理上连续的！
+- en: 'We build and run the same module on an x86_64 VM running Ubuntu 20.04 (running
+    our custom 5.4 ''debug'' kernel). The following screenshot shows the output:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在运行我们自定义的5.4 'debug'内核的Ubuntu 20.04上的x86_64 VM上构建和运行相同的模块。以下截图显示了输出：
+- en: '![](img/90c13860-8203-43b7-a2d7-7926b1256fd8.png)'
+  id: totrans-202
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/90c13860-8203-43b7-a2d7-7926b1256fd8.png)'
+- en: Figure 8.6 – The lowlevel_mem_lkm kernel module's output on a x86_64 VM running
+    Ubuntu 20.04
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.6 - 在运行Ubuntu 20.04的x86_64 VM上的lowlevel_mem_lkm内核模块的输出
+- en: 'This time (refer Figure 8.7), with the `PAGE_OFFSET` value being a 64-bit quantity
+    (the value here is `0xffff 8880 0000 0000`), you can again clearly see the identity
+    mapping of physical RAM frames to kernel virtual addresses (for 5 pages). Let''s
+    take a moment and look carefully at the kernel logical addresses returned by the
+    page allocator APIs. In Figure 8.7, you can see that they are all in the range `0xffff
+    8880 .... ....`. The following snippet is from the kernel source tree at `Documentation/x86/x86_64/mm.txt`,
+    documenting (a part of) the virtual memory layout on the x86_64:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一次（参见图8.7），由于`PAGE_OFFSET`值是64位数量（这里的值是`0xffff 8880 0000 0000`），你可以再次清楚地看到物理RAM页框与内核虚拟地址的身份映射（5页）。让我们花点时间仔细看看页分配器API返回的内核逻辑地址。在图8.7中，你可以看到它们都在`0xffff
+    8880 .... ....`范围内。以下片段来自x86_64的内核源树中的`Documentation/x86/x86_64/mm.txt`，记录了x86_64上的虚拟内存布局（部分）：
+- en: If this all seems new and strange to you, please refer to [Chapter 7](06ee05b5-3e71-482d-93b8-235c27ce23bc.xhtml),
+    *Memory Management Internals – Essentials*, particularly the *Examining the kernel
+    segment *and *Direct-mapped RAM and address translation* sections.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果这一切对你来说都很新奇，请参考[第7章](06ee05b5-3e71-482d-93b8-235c27ce23bc.xhtml)，*内存管理内部-基本知识*，特别是*检查内核段*和*直接映射的RAM和地址转换*部分。
+- en: '[PRE11]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: It's quite clear, isn't it? The page allocator memory (the buddy system free
+    lists) maps directly onto free physical RAM within the direct-mapped or lowmem region
+    of the kernel VAS. Thus, it obviously returns memory from this region. You can
+    see this region in the preceding documentation output (highlighted in bold font)
+    – the kernel direct-mapped or lowmem region. Again, I emphasize the fact that
+    the specific address range used is very arch-specific. In the preceding code,
+    it's the (maximum possible) range on the x86_64.
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很清楚，不是吗？页分配器内存（伙伴系统空闲列表）直接映射到内核VAS的直接映射或lowmem区域内的空闲物理RAM。因此，它显然会从这个区域返回内存。你可以在前面的文档输出中看到这个区域（用粗体字突出显示）-
+    内核直接映射或lowmem区域。再次强调特定的地址范围非常与架构相关。在前面的代码中，这是x86_64上的（最大可能的）范围。
+- en: Though tempting to claim that you're now done with the page allocator and its
+    APIs, the reality is that this is (as usual) not quite the case. Do read on to
+    see why – it's really important to understand these aspects.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然很想宣称你现在已经完成了页分配器及其API，但现实情况是（像往常一样）并非完全如此。请继续阅读，看看为什么-理解这些方面真的很重要。
+- en: The page allocator and internal fragmentation
+  id: totrans-209
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 页分配器和内部碎片
+- en: 'Though all looks good and innocent on the surface, I urge you to delve a bit
+    deeper. Just under the surface, a massive (unpleasant!) surprise might await you:
+    the blissfully unaware kernel/driver developer. The APIs we covered previously
+    regarding the page allocator (see *Table 8.1*) have the dubious distinction of
+    being able to internally fragment – in simpler terms, **waste** – very significant
+    portions of kernel memory!'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然表面上看起来一切都很好，但我敦促你深入一点。在表面之下，一个巨大的（不愉快的！）惊喜可能在等待着你：那些毫不知情的内核/驱动程序开发人员。我们之前介绍的有关页分配器的API（参见*表8.1*）有能力在内部产生碎片-简单来说，**浪费**-内核内存的非常重要部分！
+- en: To understand why this is the case, you must understand at least the basics
+    of the page allocator algorithm and its freelist data structures. The section *The
+    fundamental workings of the page allocator* covered this (just in case you haven't
+    read it, please do so).
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要理解为什么会这样，你必须至少了解页分配器算法及其空闲列表数据结构的基础知识。*页分配器的基本工作*部分涵盖了这一点（以防你还没有阅读，请务必阅读）。
+- en: 'In the *Working through a few scenarios* section, you would have seen that
+    when we make an allocation request of convenient, perfectly rounded power-of-two-size
+    pages, it goes very smoothly. However, when this isn''t the case – let''s say
+    the driver requests 132 KB of memory – then we end up with a major issue: the internal
+    fragmentation or wastage is very high. This is a serious downside and must be
+    addressed. We will see how, in two ways, in fact. Do read on!'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在*通过几种情景*部分，你会看到当我们请求方便的、完全舍入的二次幂大小的页面时，情况会非常顺利。然而，当情况不是这样时——比如说驱动程序请求132 KB的内存——那么我们就会遇到一个主要问题：内部碎片或浪费非常高。这是一个严重的缺点，必须加以解决。我们将看到实际上有两种方法。请继续阅读！
+- en: The exact page allocator APIs
+  id: totrans-213
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 确切的页面分配器API
+- en: Realizing the vast potential for wastage within the default page allocator (or
+    BSA), a developer from Freescale Semiconductor (see the information box) contributed
+    a patch to the kernel page allocator that extends the API, adding a couple of
+    new ones.
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 意识到默认页面分配器（或BSA）内存在浪费的巨大潜力后，来自Freescale Semiconductor的开发人员（请参见信息框）为内核页面分配器贡献了一个扩展API的补丁，添加了一些新的API。
+- en: In the 2.6.27-rc1 series, on 24 July 2008, Timur Tabi submitted a patch to mitigate
+    the page allocator wastage issue. Here's the relevant commit: [https://github.com/torvalds/linux/commit/2be0ffe2b29bd31d3debd0877797892ff2d91f4c](https://github.com/torvalds/linux/commit/2be0ffe2b29bd31d3debd0877797892ff2d91f4c).
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在2.6.27-rc1系列中，2008年7月24日，Timur Tabi提交了一个补丁来减轻页面分配器浪费问题。这是相关的提交：[https://github.com/torvalds/linux/commit/2be0ffe2b29bd31d3debd0877797892ff2d91f4c](https://github.com/torvalds/linux/commit/2be0ffe2b29bd31d3debd0877797892ff2d91f4c)。
+- en: 'Using these APIs leads to more efficient allocations for large-ish chunks (multiple
+    pages) of memory **with far less wastage**. The new (well, it *was *new back in
+    2008, at least) pair of APIs to allocate and free memory are as follows:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用这些API可以更有效地分配大块（多个页面）内存，**浪费要少得多**。用于分配和释放内存的新（嗯，至少在2008年是*新的*）API对如下：
+- en: '[PRE12]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: The first parameter to the `alloc_pages_exact()` API, `size`, is in bytes, the
+    second is the "usual" GFP flags value discussed earlier (in the *Dealing with
+    the GFP flags* section; `GFP_KERNEL` for the might-sleep process context cases,
+    and `GFP_ATOMIC` for the never-sleep interrupt or atomic context cases).
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`alloc_pages_exact()`API的第一个参数`size`是以字节为单位的，第二个参数是之前讨论过的“通常”的GFP标志值（在*处理GFP标志*部分；对于可能休眠的进程上下文情况，使用`GFP_KERNEL`，对于永不休眠的中断或原子上下文情况，使用`GFP_ATOMIC`）。'
+- en: Note that the memory allocated by this API is still guaranteed to be physically
+    contiguous. Also, the amount that can be allocated at a time (with one function
+    call) is limited by `MAX_ORDER`; in fact, this is true of all the other regular
+    page allocation APIs that we have seen so far. We will discuss a lot more about
+    this aspect in the upcoming section, *Size limitations of the kmalloc API.* There,
+    you'll realize that the discussion is in fact not limited to the slab cache but
+    to the page allocator as well!
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，由此API分配的内存仍然保证是物理上连续的。此外，一次（通过一个函数调用）可以分配的数量受到`MAX_ORDER`的限制；事实上，这也适用于我们迄今为止看到的所有其他常规页面分配API。我们将在即将到来的*kmalloc
+    API的大小限制*部分中讨论更多关于这方面的内容。在那里，你会意识到讨论实际上不仅限于slab缓存，还包括页面分配器！
+- en: The `free_pages_exact()` API must only be used to free memory allocated by its
+    counterpart, `alloc_pages_exact()`. Also, note that the first parameter to the "free"
+    routine is of course the value returned by the matching 'alloc' routine (the pointer
+    to the newly allocated memory chunk).
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`free_pages_exact()` API只能用于释放由其对应的`alloc_pages_exact()`分配的内存。此外，要注意“free”例程的第一个参数当然是匹配的“alloc”例程返回的值（指向新分配的内存块的指针）。'
+- en: 'The implementation of `alloc_pages_exact()` is simple and clever: it first
+    allocates the entire memory chunk requested "as usual" via the `__get_free_pages()`
+    API. Then, it loops – from the end of the memory to be used to the amount of actually
+    allocated memory (which is typically far greater) – freeing up those unnecessary
+    memory pages! So, in our example, if you allocate 132 KB via the `alloc_pages_exact()`
+    API, it will actually first internally allocate 256 KB via `__get_free_pages()`,
+    but will then free up memory from 132 KB to 256 KB!'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`alloc_pages_exact()`的实现很简单而巧妙：它首先通过`__get_free_pages()`API“通常”分配整个请求的内存块。然后，它循环——从要使用的内存的末尾到实际分配的内存量（通常远大于此）——释放那些不必要的内存页面！因此，在我们的例子中，如果通过`alloc_pages_exact()`API分配了132
+    KB，它实际上会首先通过`__get_free_pages()`分配256 KB，然后释放从132 KB到256 KB的内存！'
+- en: Another example of the beauty of open source! A demo of using these APIs can
+    be found here: `ch8/page_exact_loop`; we will leave it to you to try it out.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 开源之美的又一个例子！可以在这里找到使用这些API的演示：`ch8/page_exact_loop`；我们将留给你来尝试。
+- en: Before we began this section, we mentioned that there were two ways in which
+    the wastage issue of the page allocator can be addressed. One is by using the
+    more efficient `alloc_pages_exact()` and `free_pages_exact()` APIs, as we just
+    learned; the other is by using a different layer to allocate memory – the *slab
+    allocator*. We will soon cover it; until then, hang in there. Next, let's cover
+    more, *crucial to understand*, details on the (typical) GFP flags and how you,
+    the kernel module or driver author, are expected to use them.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开始这一部分之前，我们提到了解决页面分配器浪费问题的两种方法。一种是使用更有效的`alloc_pages_exact()`和`free_pages_exact()`API，就像我们刚刚学到的那样；另一种是使用不同的层来分配内存——*slab分配器*。我们很快就会涉及到它；在那之前，请耐心等待。接下来，让我们更详细地了解（典型的）GFP标志以及你作为内核模块或驱动程序作者应该如何使用它们，这一点非常重要。
+- en: The GFP flags – digging deeper
+  id: totrans-224
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: GFP标志——深入挖掘
+- en: With regard to our discussions on the low-level page allocator APIs, the first
+    parameter to every function is the so-called GFP mask. When discussing the APIs
+    and their usage, we mentioned a *key rule*.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于我们对低级页面分配器API的讨论，每个函数的第一个参数都是所谓的GFP掩码。在讨论API及其使用时，我们提到了一个*关键规则*。
+- en: If in *process context and it is safe to sleep,* use the `GFP_KERNEL` flag. If
+    it is *unsafe to **sleep* (typically, when in any type of interrupt context or
+    when holding some types of locks), you *must* use the `GFP_ATOMIC` flag.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果在*进程上下文中并且可以安全地休眠*，请使用`GFP_KERNEL`标志。如果*不安全*休眠（通常是在任何类型的中断上下文或持有某些类型的锁时），*必须*使用`GFP_ATOMIC`标志。
+- en: We elaborate on this in the following sections.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在接下来的章节中详细阐述这一点。
+- en: Never sleep in interrupt or atomic contexts
+  id: totrans-228
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 永远不要在中断或原子上下文中休眠
+- en: What does the phrase *safe to sleep *actually mean? To answer this, think of blocking
+    calls (APIs):a *blocking call *is one where the calling process (or thread) is
+    put into a sleep state because it is waiting on something, an *event*, and the
+    eventit is waiting on has not occurred yet. Thus, it waits – it "sleeps." When,
+    at some future point in time, the event it is waiting on occurs or arrives, it
+    is woken up by the kernel and proceeds forward.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 短语*安全休眠*实际上是什么意思？为了回答这个问题，想想阻塞调用（API）：*阻塞调用*是指调用进程（或线程）因为在等待某些事件而进入休眠状态，而它正在等待的事件尚未发生。因此，它等待
+    - 它“休眠”。当在将来的某个时间点，它正在等待的事件发生或到达时，它会被内核唤醒并继续前进。
+- en: One example of a user space blocking API includes `sleep(3)`. Here, the event
+    it is waiting on is the elapse of a certain amount of time. Another example is `read(2)` and
+    its variants, where the event being waited on is storage or network data becoming
+    available. With `wait4(2)`, the event being waited on is the death or stoppage/continuing
+    of a child process, and so on.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户空间阻塞API的一个例子是`sleep(3)`。在这里，它正在等待的事件是一定时间的流逝。另一个例子是`read(2)`及其变体，其中正在等待的事件是存储或网络数据的可用性。使用`wait4(2)`，正在等待的事件是子进程的死亡或停止/继续，等等。
+- en: So, any function that might possibly block can end up spending some time asleep
+    (while asleep, it's certainly off the CPU run queues, and in a wait queue). Invoking
+    this *possibly blocking* functionality when in kernel mode (which, of course,
+    is the mode we are in when working on kernel modules)is *only allowed when in
+    process context.* **It is a bug to invoke a blocking call of any sort in a context
+    where it is unsafe to sleep, such as an interrupt or atomic context***. *Think
+    of this as a golden rule. This is also known as sleeping in an atomic context
+    – it's wrong, it's buggy, and it must *never *happen.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，任何可能阻塞的函数最终可能会花费一些时间处于休眠状态（在休眠时，它肯定不在CPU运行队列中，并且在等待队列中）。在内核模式下调用这种*可能阻塞*的功能（当然，这是我们在处理内核模块时所处的模式）*只允许在进程上下文中*。**在不安全休眠的上下文中调用任何类型的阻塞调用都是错误的**。*把这看作是一个黄金法则。这也被称为在原子上下文中休眠
+    - 这是错误的，是有bug的，绝对*不*应该发生。
+- en: 'You might wonder, *how can I know in advance if my code will ever enter an
+    atomic or interrupt context*? In one way, the kernel helps us out: when configuring
+    the kernel (recall `make menuconfig` from [Chapter 2](e0b89a37-18a3-424d-8983-58c4ac0725f6.xhtml),
+    *Building the 5.x Linux Kernel from Source - Part 1*), under the `Kernel Hacking
+    / Lock Debugging` menu, there is a Boolean tunable called `"Sleep inside atomic
+    section checking"`. Turn it on! (The config option is named `CONFIG_DEBUG_ATOMIC_SLEEP`;
+    you can always grep your kernel config file for it. Again, in [Chapter 5](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml),
+    *Writing Your First Kernel Module - LKMs Part 2*, under the Configuring a "debug"
+    kernel section, this is something you should definitely turn on.)'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会想，*我怎么能*预先*知道我的代码是否会进入原子或中断上下文*？在某种程度上，内核会帮助我们：在配置内核时（回想一下[第2章](e0b89a37-18a3-424d-8983-58c4ac0725f6.xhtml)，*从源代码构建5.x
+    Linux内核 - 第1部分*中的`make menuconfig`），在`Kernel Hacking / Lock Debugging`菜单下，有一个名为`"Sleep
+    inside atomic section checking"`的布尔可调节项。打开它！（配置选项名为`CONFIG_DEBUG_ATOMIC_SLEEP`；您可以随时在内核配置文件中使用grep查找它。同样，在[第5章](408b6f9d-42dc-4c59-ab3d-1074d595f9e2.xhtml)，*编写您的第一个内核模块
+    - LKMs第2部分*，在“配置”内核部分，这是您绝对应该打开的东西。）
+- en: Another way to think of this situation is howexactly do you put a process or
+    thread to sleep? The short answer is by having it invoke the scheduling code –
+    the `schedule()` function. Thus, by implication of what we have just learned (as
+    a corollary), `schedule()` must only be called from within a context where it's
+    safe to sleep; process context usually is safe, interrupt context never is.
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一种思考这种情况的方式是如何确切地让一个进程或线程进入休眠状态？简短的答案是通过调用调度代码 - `schedule()`函数。因此，根据我们刚刚学到的内容（作为推论），`schedule()`只能在安全休眠的上下文中调用；进程上下文通常是安全的，中断上下文永远不安全。
+- en: This is really important to keep in mind! (We briefly covered what process and
+    interrupt context are in [Chapter 4](1c494ebd-e7ec-4a78-8695-5b97bdc3d6be.xhtml),
+    *Writing Your First Kernel Module – LKMs Part 1*, in the *Process and interrupt
+    contexts* section*, *and how the developer can use the `in_task()` macro to determine
+    whether the code is currently running in a process or interrupt context.) Similarly,
+    you can use the `in_atomic()` macro; if the code is an *atomic context* – where
+    it must typically run to completion without interruption – it returns `True`;
+    otherwise, `False`. You can be in process context but atomic at the same time
+    – for example, when holding certain kinds of locks (spinlocks; we will, of course,
+    cover this in the chapters on *synchronization* later); the converse cannot happen.
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一点非常重要！（我们在[第4章](1c494ebd-e7ec-4a78-8695-5b97bdc3d6be.xhtml)中简要介绍了进程和中断上下文，*编写您的第一个内核模块
+    - LKMs第1部分*，在*进程和中断上下文*部分中，以及开发人员如何使用`in_task()`宏来确定代码当前是否在进程或中断上下文中运行。）同样，您可以使用`in_atomic()`宏；如果代码处于*原子上下文*
+    - 在这种情况下，它通常会在没有中断的情况下运行完成 - 它返回`True`；否则，返回`False`。您可以同时处于进程上下文和原子上下文 - 例如，当持有某些类型的锁时（自旋锁；当然，我们稍后会在关于*同步*的章节中介绍这一点）；反之则不会发生。
+- en: Besides the GFP flags we're focused upon - the `GFP_KERNEL` and `GFP_ATOMIC` ones
+    - the kernel has several other `[__]GFP_*` flags that are used internally; several
+    for the express purpose of reclaiming memory*.* These include (but are not limited
+    to) `__GFP_IO`, `__GFP_FS`, `__GFP_DIRECT_RECLAIM`, `__GFP_KSWAPD_RECLAIM`, `__GFP_RECLAIM`,
+    `__GFP_NORETRY`, and so on. In this book, we do not intend to delve into these
+    details. I refer you to the detailed comment in `include/linux/gfp.h` that describes
+    them (also see the *Further reading* section).
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了我们关注的GFP标志——`GFP_KERNEL`和`GFP_ATOMIC`之外，内核还有几个其他`[__]GFP_*`标志，用于内部使用；其中有几个是专门用于回收内存的。这些包括（但不限于）`__GFP_IO`，`__GFP_FS`，`__GFP_DIRECT_RECLAIM`，`__GFP_KSWAPD_RECLAIM`，`__GFP_RECLAIM`，`__GFP_NORETRY`等等。在本书中，我们不打算深入研究这些细节。我建议您查看`include/linux/gfp.h`中对它们的详细注释（也请参阅*进一步阅读*部分）。
+- en: '**Linux Driver Verification** (**LDV**) project: back in [Chapter 1](ad75db43-a1a2-4f3f-92c7-a544f47baa23.xhtml),* Kernel Workspace
+    Setup*, we mentioned that this project has useful "rules" with respect to various
+    programming aspects of Linux modules (drivers, mostly) as well as the core kernel.'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Linux驱动程序验证**（**LDV**）项目：回到[第1章](ad75db43-a1a2-4f3f-92c7-a544f47baa23.xhtml)，*内核工作空间设置*，我们提到这个项目对Linux模块（主要是驱动程序）以及核心内核的各种编程方面有有用的“规则”。'
+- en: 'With regard to our current topic, here''s one of the rules, a negative one,
+    implying that you *cannot *do this: *Not disabling IO during memory allocation
+    while holding a USB device lock* ([http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0077](http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0077)).
+    Some quick background: when you specify the `GFP_KERNEL` flag, it implicitly means
+    (among other things) that the kernel can start an IO (Input/Output; reads/writes)
+    operation to reclaim memory. The trouble is, at times this can be problematic
+    and should not be done; to get over this, you''re expected use the `GFP_NOIO`
+    flag as part of the GFP bitmask when allocating kernel memory.'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于我们当前的主题，这是其中一个规则，一个否定的规则，暗示着你*不能*这样做：*在持有USB设备锁时不禁用IO进行内存分配*（[http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0077](http://linuxtesting.org/ldv/online?action=show_rule&rule_id=0077)）。一些快速背景：当你指定`GFP_KERNEL`标志时，它隐含地意味着（除其他事项外）内核可以启动IO（输入/输出；读/写）操作来回收内存。问题是，有时这可能会有问题，不应该这样做；为了解决这个问题，你应该在分配内核内存时使用GFP位掩码的一部分`GFP_NOIO`标志。
+- en: 'That''s precisely the case that this LDV ''rule'' is referring to: here, between
+    the `usb_lock_device()` and `usb_unlock_device()` APIs, the `GFP_KERNEL` flag
+    shouldn''t be used and the `GFP_NOIO` flag should be used instead. (You can see
+    several instances of this flag being used in this code: `drivers/usb/core/message.c`).
+    The LDV page mentions the fact that a couple of USB-related code driver code source
+    files were fixed to adhere to this rule.'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这正是这个LDV“规则”所指的情况：在`usb_lock_device()`和`usb_unlock_device()`API之间，不应该使用`GFP_KERNEL`标志，而应该使用`GFP_NOIO`标志。（你可以在这段代码中看到使用这个标志的几个实例：`drivers/usb/core/message.c`）。LDV页面提到了一些USB相关的驱动程序代码源文件已经修复以符合这个规则。
+- en: All right, now that you're armed with a good amount of detail on the page allocator
+    (it is, after all, the internal "engine" of RAM (de)allocation!), its APIs, and
+    how to use them, let's move on to a very important topic – the motivation(s) behind
+    the slab allocator, its APIs, and how to use them.
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了，现在你已经掌握了大量关于页面分配器的细节（毕竟，它是RAM（de）分配的内部“引擎”！），它的API以及如何使用它们，让我们继续讨论一个非常重要的主题——slab分配器背后的动机，它的API以及如何使用它们。
+- en: Understanding and using the kernel slab allocator
+  id: totrans-240
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解和使用内核slab分配器
+- en: 'As seen in the first section of this chapter, *Introducing kernel memory allocators,* the *slab
+    allocator* or *slab cache* is layered above the page allocator (or BSA; refer
+    back to *Figure 8.1*). The slab allocator justifies its very existence with two
+    primary ideas or purposes:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如本章的第一节*介绍内核内存分配器*中所看到的，*slab分配器*或*slab缓存*位于页面分配器（或BSA）之上（请参阅*图8.1*）。slab分配器通过两个主要的想法或目的来证明它的存在：
+- en: '**Object caching**: Here, it serves as a cache of common "objects," and the
+    allocation (and subsequent freeing) of frequently allocated data structures within
+    the Linux kernel, for high performance.'
+  id: totrans-242
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**对象缓存**：在这里，它作为常见“对象”的缓存，用于在Linux内核中高性能地分配（和随后释放）频繁分配的数据结构。'
+- en: Mitigate the high wastage (internal fragmentation) of the page allocator by
+    providing small, conveniently sized caches, typically **fragments of a page**.
+  id: totrans-243
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过提供小巧方便的大小的缓存，通常是**页面的片段**，来减少页面分配器的高浪费（内部碎片）。
+- en: Let's now examine these ideas in a more detailed manner.
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们以更详细的方式来检查这些想法。
+- en: The object caching idea
+  id: totrans-245
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 对象缓存的想法
+- en: Okay, we begin with the first of these design ideas – the notion of a cache
+    of common objects. A long time ago, a SunOS developer, Jeff Bonwick, noticed that
+    certain kernel objects – data structures, typically – were allocated and deallocated
+    frequently within the OS. He thus had the idea of *pre-allocating* them in a cache
+    of sorts. This evolved into what we call the *slab cache*.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，我们从这些设计理念中的第一个开始——常见对象的缓存概念。很久以前，SunOS的开发人员Jeff Bonwick注意到操作系统内部频繁分配和释放某些内核对象（通常是数据结构）。因此，他有了在某种程度上*预分配*它们的想法。这演变成了我们所说的*slab缓存*。
+- en: 'Thus, on the Linux OS as well, the kernel (as part of the boot time initialization)
+    pre-allocates a fairly large number of objects into several slab caches. The reason:
+    performance! When core kernel code (or a device driver) requires memory for one
+    of these objects, it directly requests the slab allocator. If cached, the allocation
+    is almost immediate (the converse being true as well at deallocation). You might
+    wonder, *is all this really necessary*? Indeed it is!'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，在Linux操作系统上，内核（作为引导时初始化的一部分）将相当多的对象预先分配到几个slab缓存中。原因是：性能！当核心内核代码（或设备驱动程序）需要为这些对象之一分配内存时，它直接请求slab分配器。如果有缓存，分配几乎是立即的（反之亦然在释放时）。你可能会想，*这真的有必要吗*？确实有！
+- en: A good example of high performance being required is within the critical code
+    paths of the network and block IO subsystems. Precisely for this reason, several
+    network and block IO data structures (the network stack's socket buffer, `sk_buff`,
+    the block layer's `biovec`, and, of course, the core `task_struct` data structures
+    or objects, being a few good examples) are *auto-cached *(*pre-allocated*) by
+    the kernel within the slab caches. Similarly, filesystem metadata structures (such
+    as the `inode` and `dentry` structures, and so on), the memory descriptor (`struct
+    mm_struct`), and several more are *pre-allocated* on slab caches. Can we see these
+    cached objects? Yes, just a bit further down, we will do precisely this (via `/proc/slabinfo`).
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 高性能被要求的一个很好的例子是网络和块IO子系统的关键代码路径。正因为这个原因，内核在slab缓存中*自动缓存*（*预分配*）了几个网络和块IO数据结构（网络堆栈的套接字缓冲区`sk_buff`，块层的`biovec`，当然还有核心的`task_struct`数据结构或对象，这是一些很好的例子）。同样，文件系统的元数据结构（如`inode`和`dentry`结构等），内存描述符（`struct
+    mm_struct`）等也都是在slab缓存中*预分配*的。我们能看到这些缓存的对象吗？是的，稍后我们将通过`/proc/slabinfo`来做到这一点。
+- en: The other reason that the slab (or, more correctly now, the SLUB) allocator
+    has far superior performance is simply that traditional heap-based allocators
+    tend to allocate and deallocate memory often, creating "holes" (fragmentation).
+    Because the slab objects are allocated once (at boot) onto the caches, and freed
+    back there (thus not really "freed" up), performance remains high. Of course,
+    the modern kernel has the intelligence to, in a graceful manner, start freeing
+    up the slab caches when the memory pressure gets too high.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: slab（或者更正确地说，SLUB）分配器具有更优越的性能的另一个原因是传统的基于堆的分配器往往会频繁分配和释放内存，从而产生“空洞”（碎片）。因为slab对象在缓存中只分配一次（在启动时），并在那里释放（因此实际上并没有真正“释放”），所以性能保持很高。当然，现代内核具有智能功能，当内存压力过高时，会以一种优雅的方式开始释放slab缓存。
+- en: 'The current state of the slab caches – the object caches, the number of objects
+    in a cache, the number in use, the size of each object, and so on – can be looked
+    up in several ways: a raw view via the `proc` and `sysfs` filesystems, or a more
+    human-readable view via various frontend utilities, such as `slabtop(1)`, `vmstat(8)`,
+    and `slabinfo`. In the following code snippet, on a native x86_64 (with 16 GB
+    of RAM) running Ubuntu 18.04 LTS, we peek at the top 10 lines of output from `/proc/slabinfo`:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: slab缓存的当前状态 - 对象缓存、缓存中的对象数量、正在使用的数量、每个对象的大小等 - 可以通过几种方式查看：通过`proc`和`sysfs`文件系统的原始视图，或者通过各种前端实用程序（如`slabtop(1)`、`vmstat(8)`和`slabinfo`）的更易读的视图。在下面的代码片段中，在运行Ubuntu
+    18.04 LTS的本机x86_64（带有16 GB RAM），我们查看了从`/proc/slabinfo`输出的前10行：
+- en: '[PRE13]'
+  id: totrans-251
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'A few points to note:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 需要注意的几点：
+- en: Even reading `/proc/slabinfo` requires root access (hence, we use `sudo(8)`).
+  id: totrans-253
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 即使是读取`/proc/slabinfo`也需要root访问权限（因此，我们使用`sudo(8)`）。
+- en: In the preceding output, the leftmost column is the name of the slab cache.
+    It often, but not always, matches the name of the actual data structure within
+    the kernel that it caches.
+  id: totrans-254
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在前面的输出中，最左边的一列是slab缓存的名称。它通常，但并不总是，与内核中实际缓存的数据结构的名称匹配。
+- en: 'Then follows, for each cache, information in this format: `<statistics> : <tunables>
+    : <slabdata>`. The meaning of each of the fields shown in the header line is explained
+    in the man page for `slabinfo(5)` (look it up with `man 5 slabinfo`).'
+  id: totrans-255
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '然后，对于每个缓存，以这种格式提供信息：`<statistics> : <tunables> : <slabdata>`。在`slabinfo(5)`的man页面中解释了标题行中显示的每个字段的含义（使用`man
+    5 slabinfo`查找）。'
+- en: 'Incidentally, the `slabinfo` utility is one example of user space C code *within*
+    the kernel source tree under the `tools/` directory (as are several others). It
+    displays a bunch of slab layer statistics (try it with the `-X` switch). To build
+    it, do the following:'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 顺便说一句，`slabinfo`实用程序是内核源代码树中`tools/`目录下的用户空间C代码的一个例子（还有其他几个）。它显示了一堆slab层统计信息（尝试使用`-X`开关）。要构建它，请执行以下操作：
+- en: '[PRE14]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'A question you might have at this point is, *how much memory in total is the
+    slab cache currently using*? This is easily answered by grepping `/proc/meminfo` for
+    the `Slab:` entry, as follows:'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上你可能会问，*slab缓存当前总共使用了多少内存*？这很容易通过在`/proc/meminfo`中查找`Slab:`条目来回答，如下所示：
+- en: '[PRE15]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'As is apparent, significant amounts of memory can be used by the slab caches!
+    This, in fact, is a common feature on Linux that puzzles those new to it: the
+    kernel can and will use RAM for cache purposes, thus greatly improving performance.
+    It is, of course, designed to intelligently throttle down the amount of memory
+    used for caching as the memory pressure increases. On a regular Linux system,
+    a significant percentage of memory can go toward caching (especially the *page
+    cache; *it''s used to cache the content of files as IO is performed upon them).
+    This is fine, *as long as* *memory pressure is low*. The `free(1)` utility clearly
+    shows this (again, on my x86_64 Ubuntu box with 16 GB of RAM, in this example):'
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，slab缓存可以使用大量内存！事实上，这是Linux上一个让新手感到困惑的常见特性：内核可以并且*会*使用RAM进行缓存，从而大大提高性能。当然，它被设计为在内存压力增加时智能地减少用于缓存的内存量。在常规的Linux系统上，大部分内存可能用于缓存（特别是*页面缓存*；它用于在进行IO时缓存文件的内容）。这是可以接受的，*只要*内存压力低。`free(1)`实用程序清楚地显示了这一点（同样，在我的带有16
+    GB RAM的x86_64 Ubuntu系统上，在这个例子中）：
+- en: '[PRE16]'
+  id: totrans-261
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: The `buff/cache` column indicates two caches that the Linux kernel employs –
+    the buffer and page caches. In reality, among the various caches that the kernel
+    employs, the *page cache* is a key one and often accounts for a majority of memory
+    usage.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`buff/cache`列指示了Linux内核使用的两个缓存 - 缓冲区和页面缓存。实际上，在内核使用的各种缓存中，*页面缓存*是一个关键的缓存，通常占据了大部分内存使用量。'
+- en: Look up `/proc/meminfo` for fine-granularity detail on system memory usage;
+    the fields displayed are numerous. The man page on `proc(5)` describes them under
+    the `/proc/meminfo` section.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看`/proc/meminfo`以获取有关系统内存使用的细粒度详细信息；显示的字段很多。`proc(5)`的man页面在`/proc/meminfo`部分描述了这些字段。
+- en: Now that you understand the motivation behind the slab allocator (there's more
+    on this too), let's dive into learning how to use the APIs it exposes for both
+    the core kernel as well as module authors.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你已经了解了slab分配器背后的动机（这方面还有更多内容），让我们深入学习如何使用它为核心内核和模块作者提供的API。
+- en: Learning how to use the slab allocator APIs
+  id: totrans-265
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 学习如何使用slab分配器API
+- en: You may have noticed that, so far, we haven't explained the second "design idea"
+    behind the slab allocator (cache), namely, *mitigate the high wastage (internal
+    fragmentation) of the page allocator by providing small, conveniently sized caches,
+    typically, fragments of a page*. We will see what exactly this means in a practical
+    fashion, along with the kernel slab allocator APIs.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，您可能已经注意到我们还没有解释slab分配器（缓存）背后的第二个“设计理念”，即通过提供小巧方便的缓存（通常是页面的片段）来**减少页分配器的高浪费（内部碎片）**。我们将看到这实际上意味着什么，以及内核slab分配器API。
+- en: Allocating slab memory
+  id: totrans-267
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 分配slab内存
+- en: 'Though several APIs to perform memory allocation and freeing exist within the
+    slab layer, there are just a couple of really key ones, with the rest falling
+    into a "convenience or helper" functions category (which we will of course mention
+    later). The key slab allocation APIs for the kernel module or device driver author
+    are as follows:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管在slab层内存在多个执行内存分配和释放的API，但只有几个真正关键的API，其余属于“便利或辅助”功能类别（我们当然会在后面提到）。对于内核模块或设备驱动程序作者来说，关键的slab分配API如下：
+- en: '[PRE17]'
+  id: totrans-269
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Be sure to include the `<linux/slab.h>` header file when using any slab allocator
+    APIs.
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在使用任何slab分配器API时，请务必包含`<linux/slab.h>`头文件。
+- en: The `kmalloc()` and `kzalloc()` routines tend to be the **most frequently used
+    APIs for memory allocation** within the kernel. A quick check – we're not aiming
+    to be perfectly precise – with the very useful `cscope(1)` code browsing utility
+    on the 5.4.0 Linux kernel source tree reveals the (approximate) frequency of usage: `kmalloc()` is called
+    around 4,600 times and `kzalloc()` is called over 11,000 times!
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`kmalloc()`和`kzalloc()`例程往往是内核内存分配中**最常用的API**。在5.4.0 Linux内核源代码树上使用非常有用的`cscope(1)`代码浏览工具进行快速检查（我们并不追求完全精确）后，发现了（大约）使用频率：`kmalloc()`被调用了大约4600次，而`kzalloc()`被调用了超过11000次！'
+- en: 'Both functions have two parameters: the first parameter to pass is the size of
+    the memory allocation required in bytes, while the second is the type of memory
+    to allocate, specified via the now familiar GFP flags(we already covered this
+    topic in earlier sections, namely, *Dealing with the **GFP flags* and *The GFP
+    flags – digging deeper. *If you''re not familiar with them, I suggest you read
+    those sections first).'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这两个函数都有两个参数：要传递的第一个参数是以字节为单位所需的内存分配的大小，而第二个参数是要分配的内存类型，通过现在熟悉的GFP标志指定（我们已经在前面的部分中涵盖了这个主题，即**处理GFP标志**和**GFP标志-深入挖掘**。如果您对它们不熟悉，我建议您先阅读这些部分）。
+- en: 'To mitigate the risk of **Integer Overflow** (**IoF**) bugs, you should avoid
+    dynamically calculating the size of memory to allocate (the first parameter).
+    The kernel documentation warns us regarding precisely this (link:'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了减轻**整数溢出**（IoF）错误的风险，您应该避免动态计算要分配的内存大小（第一个参数）。内核文档警告我们要特别注意这一点（链接：
+- en: '[https://www.kernel.org/doc/html/latest/process/deprecated.html#open-coded-arithmetic-in-allocator-arguments](https://www.kernel.org/doc/html/latest/process/deprecated.html#open-coded-arithmetic-in-allocator-arguments)).'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://www.kernel.org/doc/html/latest/process/deprecated.html#open-coded-arithmetic-in-allocator-arguments](https://www.kernel.org/doc/html/latest/process/deprecated.html#open-coded-arithmetic-in-allocator-arguments)。'
+- en: 'In general, always avoid using deprecated stuff documented here: *Deprecated
+    Interfaces, Language Features, Attributes, and Conventions* (link: [https://www.kernel.org/doc/html/latest/process/deprecated.html#deprecated-interfaces-language-features-attributes-and-conventions](https://www.kernel.org/doc/html/latest/process/deprecated.html#deprecated-interfaces-language-features-attributes-and-conventions)).'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总的来说，要始终避免使用此处记录的过时内容：*过时的接口、语言特性、属性和约定*（链接：[https://www.kernel.org/doc/html/latest/process/deprecated.html#deprecated-interfaces-language-features-attributes-and-conventions](https://www.kernel.org/doc/html/latest/process/deprecated.html#deprecated-interfaces-language-features-attributes-and-conventions)）。
+- en: 'Upon successful allocation, the return value is a pointer, the *kernel logical
+    address* (remember, it''s still a virtual address, *not* physical) of the start
+    of the memory chunk (or slab) just allocated. Indeed, you should notice that but
+    for the second parameter, the `kmalloc()` and `kzalloc()` APIs closely resemble
+    their user space counterpart, the all-too-familiar glibc `malloc(3)` (and friends)
+    APIs. Don''t get the wrong idea, though: they''re completely different. `malloc()` returns
+    a user space virtual address and, as mentioned earlier, there is no direct correlation
+    between the user-mode `malloc(3)` and the kernel-mode `k[m|z]alloc()` (so no,
+    a call to `malloc()` does *not *result in an immediate call to `kmalloc()`; more
+    on this later!).'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 成功分配后，返回值是一个指针，即刚刚分配的内存块（或slab）的*内核逻辑地址*（请记住，它仍然是虚拟地址，*不是*物理地址）。确实，您应该注意到，除了第二个参数之外，`kmalloc()`和`kzalloc()`API与它们的用户空间对应物glibc
+    `malloc(3)`（及其伙伴）API非常相似。不过，不要误解：它们完全不同。`malloc()`返回一个用户空间虚拟地址，并且如前所述，用户模式的`malloc(3)`和内核模式的`k[m|z]alloc()`之间没有直接的对应关系（因此，对`malloc()`的调用*不会*立即导致对`kmalloc()`的调用；稍后会详细介绍！）。
+- en: Next, it's important to understand that the memory returned by these slab allocator
+    APIs **is guaranteed to be physically contiguous***. *Furthermore, and another
+    key benefit, the return address is guaranteed to be on a CPU cacheline boundary;
+    that is, it will be **cacheline-aligned**. Both of these are important performance-enhancing
+    benefits.
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其次，重要的是要理解这些slab分配器API返回的内存**保证是物理上连续的**。此外，另一个关键的好处是返回地址保证在CPU缓存行边界上；也就是说，它将是**缓存行对齐**的。这两点都是重要的性能增强的好处。
+- en: Every CPU reads and writes data (from and to CPU caches <-> RAM) in an atomic
+    unit called the **CPU cacheline***.* The size of the cacheline varies with the
+    CPU. You can look this up with the `getconf(1)` utility – for example, try doing `getconf
+    -a|grep LINESIZE`. On modern CPUs, the cachelines for instructions and data are
+    often separated out (as are the CPU caches themselves). A typical CPU cacheline
+    size is 64 bytes.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个CPU在CPU缓存<->RAM中以原子单位读取和写入数据。缓存行的大小因CPU而异。你可以使用`getconf(1)`实用程序查找这个信息 - 例如，尝试执行`getconf
+    -a|grep LINESIZE`。在现代CPU上，指令和数据的缓存行通常是分开的（CPU缓存本身也是如此）。典型的CPU缓存行大小为64字节。
+- en: The content of a memory chunk immediately after allocation by `kmalloc()` is
+    random (again, like `malloc(3)`). Indeed, the reason why `kzalloc()` is the preferred
+    and recommended API to use is that it *sets to zero* the allocated memory. Some
+    developers argue that the initialization of the memory slab takes some time, thus
+    reducing performance. Our counter argument is that unless the memory allocation
+    code is in an extremely time-critical code path (which, you could reasonably argue,
+    is not good design in the first place, but sometimes can't be helped), you should,
+    as a best practice, *initialize your memory upon allocation*. A whole slew of
+    memory bugs and security side effects can thereby be avoided.
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`kmalloc()`分配的内存块在分配后立即是随机的（就像`malloc(3)`一样）。事实上，`kzalloc()`被推荐和建议的API之所以被使用，是因为它*将分配的内存设置为零*。一些开发人员认为内存块的初始化需要一些时间，从而降低了性能。我们的反驳是，除非内存分配代码在一个极端时间关键的代码路径中（这在设计上并不是一个好的设计，但有时是无法避免的），你应该作为最佳实践*在分配时初始化你的内存*。这样可以避免一系列内存错误和安全副作用。'
+- en: Many parts of the Linux kernel core code certainly use the slab layer for memory.
+    Within these, there *are* timecritical code paths – good examples can be found
+    within the network and block IO subsystems. For maximizing performance, the slab
+    (actually SLUB) layer code has been written to be *lo*ckless (via a lock-free
+    technology called per-CPU variables). See more on the performance challenges and
+    implementation details in the *Further reading *section.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux内核核心代码的许多部分肯定会使用slab层来管理内存。在其中，*有*时间关键的代码路径 - 很好的例子可以在网络和块IO子系统中找到。为了最大化性能，slab（实际上是SLUB）层代码已经被编写成*无锁*（通过一种称为per-CPU变量的无锁技术）。在*进一步阅读*部分中可以了解更多关于性能挑战和实现细节。
+- en: Freeing slab memory
+  id: totrans-281
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 释放slab内存
+- en: 'Of course, you must free the allocated slab memory you allocated at some point
+    in the future (thus not leaking memory); the  `kfree()` routine serves this purpose.
+    Analogous to the user space `free(3)` API, `kfree()` takes a single parameter
+    – the pointer to the memory chunk to free. It must be a valid kernel logical (or
+    virtual) address and must have been initialized by, that is, the return value
+    of, one of the slab layer APIs (`k[m|z]alloc()` or one of its helpers). Its API
+    signature is simple:'
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，你必须在将来的某个时候释放你分配的slab内存（以防内存泄漏）；`kfree()`例程就是为此目的而存在的。类似于用户空间的`free(3)`API，`kfree()`接受一个参数
+    - 要释放的内存块的指针。它必须是有效的内核逻辑（或虚拟）地址，并且必须已经被slab层API（`k[m|z]alloc()`或其帮助程序之一）初始化。它的API签名很简单：
+- en: '[PRE18]'
+  id: totrans-283
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Just as with `free(3)`, there is no return value. As mentioned before, take
+    care to ensure that the parameter to `kfree()` is the precise value returned by
+    `k[m|z]alloc()`. Passing an incorrect value will result in memory corruption,
+    ultimately leading to an unstable system.
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像`free(3)`一样，`kfree()`没有返回值。如前所述，务必确保传递给`kfree()`的参数是`k[m|z]alloc()`返回的精确值。传递错误的值将导致内存损坏，最终导致系统不稳定。
+- en: There are a few additional points to note.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有一些额外的要点需要注意。
+- en: 'Let''s assume we have allocated some slab memory with `kzalloc()`:'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们使用`kzalloc()`分配了一些slab内存：
+- en: '[PRE19]'
+  id: totrans-287
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Later, after usage, we would like to free it, so we do the following:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，在使用后，我们想要释放它，所以我们做以下操作：
+- en: '[PRE20]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: This code – checking that the value of `kptr` is not `NULL` before freeing it
+    – *is unnecessary*; just perform `kfree(kptr);` and it's done.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这段代码 - 在释放之前检查`kptr`的值是否不是`NULL` - *是不必要的*；只需执行`kfree(kptr);`就可以了。
+- en: 'Another example of *incorrect* code (pseudo-code) is shown as follows:'
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个*不正确*的代码示例（伪代码）如下所示：
+- en: '[PRE21]'
+  id: totrans-292
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Interesting: here, from the second loop iteration onward, the programmer has *assumed *that
+    the `kptr` pointer variable will be set to `NULL` upon being freed! This is definitely
+    not the case (it would have been quite a nice semantic to have though; also, the
+    same argument applies to the "usual" user space library APIs). Thus, we hit a
+    dangerous bug: on the loop''s second iteration, the `if` condition will likely
+    turn out to be false, thus skipping the allocation. Then, we hit the `kfree()`,
+    which, of course, will now corrupt memory (due to a double-free bug)! (We provide
+    a demo of this very case in the LKM here: `ch8/slab2_buggy`).'
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是：在第二次循环迭代开始，程序员*假设*`kptr`指针变量在被释放时会被设置为`NULL`！这显然不是事实（尽管这本来是一个很好的语义；同样的论点也适用于“通常”的用户空间库API）。因此，我们遇到了一个危险的bug：在循环的第二次迭代中，`if`条件很可能会变为false，从而跳过分配。然后，我们遇到了`kfree()`，这当然会破坏内存（由于双重释放的bug）！（我们在LKM中提供了这种情况的演示：`ch8/slab2_buggy`）。
+- en: With regard to *initializing* memory buffers after (or during) allocation, just
+    as we mentioned with regard to allocations, the same holds true for freeing memory.
+    You should realize that the `kfree()` API merely returns the just-freed slab to
+    its corresponding cache, leaving the internal memory content exactly as it was!
+    Thus, just prior to freeing up your memory chunk, a (slightly pedantic) best practice
+    is to *wipe out (overwrite)* the memory content. This is especially true for security
+    reasons (such as in the case of an "info-leak," where a malicious attacker could
+    conceivably scan freed memory for "secrets"). The Linux kernel provides the `kzfree()` API
+    for this express purpose (the signature is identical to that of `kfree()`).
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于在分配内存后（或期间）*初始化*内存缓冲区，就像我们提到分配时一样，释放内存也是一样的。您应该意识到`kfree()`API只是将刚释放的slab返回到其相应的缓存中，内部内存内容保持不变！因此，在释放内存块之前，一个（稍微迂琐的）最佳实践是*清除（覆盖）*内存内容。这对于安全原因尤为重要（例如在“信息泄漏”情况下，恶意攻击者可能会扫描已释放的内存以寻找“秘密”）。Linux内核提供了`kzfree()`API，专门用于此目的（签名与`kfree()`相同）。
+- en: '*Careful!* In order to overwrite "secrets," a simple `memset()` of the target
+    buffer might just not work. Why not? The compiler might well optimize away the
+    code (as the buffer is no longer to be used). David Wheeler, in his excellent
+    work *Secure Programming HOWTO* ([https://dwheeler.com/secure-programs/](https://dwheeler.com/secure-programs/)),
+    mentions this very fact and provides a solution: "One approach that seems to work
+    on all platforms is to write your own implementation of memset with internal "volatilization"
+    of the first argument." (This code is based on a workaround proposed by Michael
+    Howard):'
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*小心！*为了覆盖“秘密”，简单的`memset()`目标缓冲区可能不起作用。为什么？编译器可能会优化掉代码（因为不再使用缓冲区）。大卫·惠勒在他的优秀作品*安全编程HOWTO*（[https://dwheeler.com/secure-programs/](https://dwheeler.com/secure-programs/)）中提到了这一事实，并提供了解决方案：“似乎在所有平台上都有效的一种方法是编写具有第一个参数的内部“挥发性”的memset的自己的实现。”（此代码基于迈克尔·霍华德提出的解决方案）：'
+- en: '`void *guaranteed_memset(void *v,int c,size_t n)`'
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`void *guaranteed_memset(void *v,int c,size_t n)`'
+- en: '`{ volatile char *p=v; while (n--) *p++=c; return v; }`'
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`{ volatile char *p=v; while (n--) *p++=c; return v; }`'
+- en: '"Then place this definition into an external file to force the function to
+    be external (define the function in a corresponding `.h` file, and `#include`
+    the file in the callers, as is usual). This approach appears to be safe at any
+    optimization level (even if the function gets inlined)."'
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后将此定义放入外部文件中，以强制该函数为外部函数（在相应的`.h`文件中定义函数，并在调用者中`#include`该文件，这是通常的做法）。这种方法似乎在任何优化级别下都是安全的（即使函数被内联）。
+- en: The kernel's `kzfree()` API should work just fine. Take care when doing similar
+    stuff in user space.
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 内核的`kzfree()`API应该可以正常工作。在用户空间进行类似操作时要小心。
+- en: Data structures – a few design tips
+  id: totrans-300
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 数据结构-一些设计提示
+- en: Using the slab APIs for memory allocation in kernel space is highly recommended.
+    For one, it guarantees both physically contiguous as well as cacheline-aligned
+    memory. This is very good for performance; in addition, let's check out a few
+    quick tips that can yield big returns.
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在内核空间使用slab API进行内存分配是非常推荐的。首先，它保证了物理上连续和缓存行对齐的内存。这对性能非常有利；此外，让我们看看一些可以带来巨大回报的快速提示。
+- en: '*CPU caching* can provide tremendous performance gains. Thus, especially for
+    time-critical code, take care to design your data structures for best performance:'
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*CPU缓存*可以提供巨大的性能提升。因此，特别是对于时间关键的代码，要注意设计数据结构以获得最佳性能：'
+- en: Keep the most important (frequently accessed, "hot") members  together and at
+    the top of the structure. To see why, imagine there are five important members
+    (of a total size of say, 56 bytes) in your data structure; keep them all together
+    and at the top of the structure. Say the CPU cacheline size is 64 bytes. Now,
+    when your code accesses *any one* of these five important members (for anything,
+    read/write), *all five members will be fetched into the CPU cache(s) as the CPU's
+    memory read/writes work in an atomic unit of CPU cacheline size; *this optimizes
+    performance (as working on the cache is typically multiple times faster than working
+    on RAM).
+  id: totrans-303
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将最重要的（频繁访问的，“热”）成员放在一起并置于结构的顶部。要了解原因，想象一下您的数据结构中有五个重要成员（总大小为56字节）；将它们全部放在结构的顶部。假设CPU缓存行大小为64字节。现在，当您的代码访问*任何一个*这五个重要成员（无论读取/写入），*所有五个成员都将被取到CPU缓存中，因为CPU的内存读/写以CPU缓存行大小的原子单位工作；*这优化了性能（因为在缓存上的操作通常比在RAM上的操作快几倍）。
+- en: Try and align the structure members such that a single member does not "fall
+    off a cacheline." Usually, the compiler helps in this regard, but you can even
+    use compiler attributes to explicitly specify this.
+  id: totrans-304
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 尝试对齐结构成员，使单个成员不会“掉出”缓存行。通常，编译器在这方面会有所帮助，但您甚至可以使用编译器属性来明确指定这一点。
+- en: 'Accessing memory sequentially results in high performance due to effective
+    CPU caching. However, we can''t seriously push the case for making all our data
+    structures arrays! Experienced designers and developers know that using linked
+    lists is extremely common. But doesn''t that actually hurt performance? Well,
+    yes, to some extent. Thus, a suggestion: use linked lists. Keep the "node" of
+    the list as a large data structure (with "hot" members at the top and together).
+    This way, we try and maximize the best of both cases as the large structure is
+    essentially an array. (Think about it, the list of task structures that we saw
+    in [Chapter 6](e13fb379-a77f-4ba5-9de6-d6707b0214e6.xhtml), *Kernel Internals
+    Essentials – Processes and Threads*, – the *task list – *is a perfect real-world
+    example of a linked list with large data structures as nodes).'
+  id: totrans-305
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 顺序访问内存会因CPU缓存的有效使用而导致高性能。但是，我们不能认真地要求将所有数据结构都变成数组！经验丰富的设计师和开发人员知道使用链表是非常常见的。但是，这实际上会损害性能吗？嗯，是的，在某种程度上。因此，建议：使用链表。将列表的“节点”作为一个大数据结构（顶部和一起的“热”成员）。这样，我们尽量最大化两种情况的优势，因为大结构本质上是一个数组。（想想看，我们在[第6章](e13fb379-a77f-4ba5-9de6-d6707b0214e6.xhtml)中看到的任务结构列表，*内核内部要点-进程和线程*，*任务列表*是一个具有大数据结构作为节点的链表的完美实际例子）。
+- en: 'The upcoming section deals with a key aspect: we learn exactly which slab caches
+    the kernel uses when allocating (slab) memory via the popular `k[m|z]alloc()`
+    APIs.'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 即将到来的部分涉及一个关键方面：我们确切地了解内核在通过流行的`k[m|z]alloc()` API分配（slab）内存时使用的slab缓存。
+- en: The actual slab caches in use for kmalloc
+  id: totrans-307
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 用于kmalloc的实际slab缓存
+- en: 'We''ll take a quick deviation – very important, though – before trying out
+    a kernel module using the basic slab APIs. It''s important to understand where
+    exactly the memory allocated by the `k[m|z]alloc()` APIs is coming from. Well,
+    it''s from the slab caches, yes, but which ones exactly? A quick `grep` on the
+    output of `sudo vmstat -m` reveals this for us (the following screenshot is on
+    our x86_64 Ubuntu guest):'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在尝试使用基本的slab API创建内核模块之前，我们将进行一个快速的偏离-尽管非常重要。重要的是要了解`k[m|z]alloc()` API分配的内存确切来自哪里。好吧，是来自slab缓存，但确切是哪些？在`sudo
+    vmstat -m`的输出上快速使用`grep`为我们揭示了这一点（以下截图是我们的x86_64 Ubuntu客户端）：
+- en: '![](img/ec7fdc35-1bda-4de1-b8fb-fed9b2cce797.png)'
+  id: totrans-309
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/ec7fdc35-1bda-4de1-b8fb-fed9b2cce797.png)'
+- en: Figure 8.7 – Screenshot of sudo vmstat -m showing the kmalloc-n slab caches
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.7-显示kmalloc-n slab缓存的sudo vmstat -m截图
+- en: That's very interesting! The kernel has a slew of dedicated slab caches for
+    generic `kmalloc` memory of varying sizes, *ranging from 8,192 bytes down to a
+    mere 8 bytes!* This tells us something – with the page allocator, if we had requested,
+    say, 12 bytes of memory, it would have ended up giving us a whole page (4 KB)
+    – the wastage is just too much. Here, with the slab allocator, an allocation request
+    for 12 bytes ends up actually allocating just 16 bytes (from the second-to-last
+    cache seen in Figure 8.8)! Fantastic.
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这非常有趣！内核有一系列专用的slab缓存，用于各种大小的通用`kmalloc`内存，*从8192字节到仅有8字节！*这告诉我们一些东西-使用页面分配器，如果我们请求了，比如，12字节的内存，它最终会给我们整个页面（4
+    KB）-浪费太多了。在这里，使用slab分配器，对12字节的分配请求实际上分配了16字节（从图8.8中看到的倒数第二个缓存）！太棒了。
+- en: 'Also, note the following:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另请注意以下内容：
+- en: Upon `kfree()`, the memory is freed back into the appropriate slab cache.
+  id: totrans-313
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在`kfree()`之后，内存被释放回适当的slab缓存中。
+- en: The precise sizing of the slab caches for `kmalloc` varies with the architecture.
+    On our Raspberry Pi system (an ARM CPU, of course), the generic memory `kmalloc-N` caches
+    ranged from 64 bytes to 8,192 bytes.
+  id: totrans-314
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`kmalloc`的slab缓存的精确大小因架构而异。在我们的树莓派系统（当然是ARM CPU）上，通用内存`kmalloc-N`缓存范围从64字节到8192字节。'
+- en: 'The preceding screenshot also reveals a clue. Often, the demand is for small-to-tiny
+    fragments of memory. As an example, in the preceding screenshot the column labelled
+    `Num` represents the *Number of currently active objects*, the maximum number
+    is from the 8- and 16-byte `kmalloc` slab caches (of course, this may not always
+    be the case. Quick tip: use the `slabtop(1)` utility (you''ll need to run it as
+    root): the rows towards the top reveal the current frequently used slab caches.)'
+  id: totrans-315
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 前面的截图也透露了一个线索。通常，需求是小到微小的内存片段。例如，在前面的截图中，标有`Num`的列代表*当前活动对象的数量*，最大数量来自8字节和16字节的`kmalloc`
+    slab缓存（当然，这不一定总是这种情况。快速提示：使用`slabtop(1)`实用程序（您需要以root身份运行）：靠近顶部的行显示当前经常使用的slab缓存。）
+- en: 'Linux keeps evolving, of course. As of the 5.0 mainline kernel, there is a
+    newly introduced `kmalloc` cache type, called the reclaimable cache (the naming
+    format is `kmalloc-rcl-N`). Thus, performing a grep as done previously on a 5.x
+    kernel will also reveal these caches:'
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，Linux不断发展。截至5.0主线内核，引入了一种新的`kmalloc`缓存类型，称为可回收缓存（命名格式为`kmalloc-rcl-N`）。因此，在5.x内核上进行与之前相同的grep操作也会显示这些缓存。
+- en: '[PRE22]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: The new `kmalloc-rcl-N` caches help internally with more efficiencies (to reclaim
+    pages under pressure and as an anti-fragmentation measure). However, a module
+    author like you need not be concerned with these details. (The commit for this
+    work can be viewed here: [https://github.com/torvalds/linux/commit/1291523f2c1d631fea34102fd241fb54a4e8f7a0](https://github.com/torvalds/linux/commit/1291523f2c1d631fea34102fd241fb54a4e8f7a0).)
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 新的`kmalloc-rcl-N`缓存在内部帮助更有效地回收页面并作为防止碎片化的措施。但是，像您这样的模块作者不需要关心这些细节。（此工作的提交可以在此处查看：[https://github.com/torvalds/linux/commit/1291523f2c1d631fea34102fd241fb54a4e8f7a0](https://github.com/torvalds/linux/commit/1291523f2c1d631fea34102fd241fb54a4e8f7a0)。）
+- en: '`vmstat -m` is essentially a wrapper over the kernel''s `/sys/kernel/slab`
+    content (more on this follows). Deep internal details of the slab caches can be
+    seen using utilities such as `slabtop(1)`, as well as the powerful `crash(1)`
+    utility (on a "live" system, the relevant crash command is `kmem -s` (or `kmem
+    -S`)).'
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`vmstat -m`本质上是内核的`/sys/kernel/slab`内容的包装器（后面会有更多内容）。可以使用诸如`slabtop(1)`和强大的`crash(1)`实用程序（在“实时”系统上，相关的crash命令是`kmem
+    -s`（或`kmem -S`））来查看slab缓存的深层内部细节。'
+- en: Right! Time to again get hands on with some code to demonstrate the usage of
+    the slab allocator APIs!
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了！是时候再次动手演示使用板块分配器API的代码了！
+- en: Writing a kernel module to use the basic slab APIs
+  id: totrans-321
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 编写一个使用基本板块API的内核模块
+- en: In the following code snippet, take a look at the demo kernel module code (found
+    at `ch8/slab1/`). In the `init` code, we merely perform a couple of slab layer
+    allocations (via the `kmalloc()` and `kzalloc()` APIs), print some information,
+    and free the buffers in the cleanup code path (of course, the full source code
+    is accessible at this book's GitHub repository). Let's look at the relevant parts
+    of the code step by step.
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的代码片段中，看一下演示内核模块代码（位于`ch8/slab1/`）。在`init`代码中，我们仅执行了一些板块层分配（通过`kmalloc()`和`kzalloc()`API），打印了一些信息，并在清理代码路径中释放了缓冲区（当然，完整的源代码可以在本书的GitHub存储库中找到）。让我们一步一步地看代码的相关部分。
+- en: 'At the start of the `init` code of this kernel module, we initialize a global
+    pointer (`gkptr`) by allocating 1,024 bytes to it (*remember: pointers have no
+    memory!*) via the `kmalloc()` slab allocation API. Notice that, as we''re certainly
+    running in process context here, and it is thus "safe to sleep," we use the `GFP_KERNEL` flag
+    for the second parameter (just in case you want to refer back, the earlier section, *The
+    GFP flags – digging deeper*, has it covered):'
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个内核模块的`init`代码开始时，我们通过`kmalloc()`板块分配API为一个全局指针（`gkptr`）分配了1,024字节的内存（记住：指针没有内存！）。请注意，由于我们肯定是在进程上下文中运行，因此“安全地休眠”，我们在第二个参数中使用了`GFP_KERNEL`标志（以防您想要参考，前面的章节*GFP标志-深入挖掘*已经涵盖了）：
+- en: '[PRE23]'
+  id: totrans-324
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'In the preceding code, also notice that we use the `print_hex_dump_bytes()` kernel
+    convenience routine as a convenient way to dump the buffer memory in a human-readable
+    format. Its signature is:'
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码中，还要注意我们使用`print_hex_dump_bytes()`内核便捷例程作为以人类可读格式转储缓冲区内存的便捷方式。它的签名是：
+- en: '[PRE24]'
+  id: totrans-326
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: Where `prefix_str` is any string you would like to prefix to each line of the
+    hex dump; `prefix_type` is one of `DUMP_PREFIX_OFFSET`, `DUMP_PREFIX_ADDRESS`,
+    or `DUMP_PREFIX_NONE`, `buf` is the source buffer to hex-dump; and `len` is the
+    number of bytes to dump.
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中`prefix_str`是您想要添加到每行十六进制转储的任何字符串；`prefix_type`是`DUMP_PREFIX_OFFSET`、`DUMP_PREFIX_ADDRESS`或`DUMP_PREFIX_NONE`中的一个；`buf`是要进行十六进制转储的源缓冲区；`len`是要转储的字节数。
+- en: 'Up next is a typical strategy (*a best practice*) followed by many device drivers:
+    they keep all their required or context information in a single data structure,
+    often termed the *driver context* structure. We mimic this by declaring a (silly/sample)
+    data structure called `myctx`, as well as a global pointer to it called `ctx` (the
+    structure and pointer definition is in the preceding code block):'
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来是许多设备驱动程序遵循的典型策略（*最佳实践*）：它们将所有所需的或上下文信息保存在一个单一的数据结构中，通常称为*驱动程序上下文*结构。我们通过声明一个（愚蠢/示例）名为`myctx`的数据结构以及一个名为`ctx`的全局指针来模仿这一点（结构和指针定义在前面的代码块中）：
+- en: '[PRE25]'
+  id: totrans-329
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: After the data structure, we then allocate and initialize `ctx` to the size
+    of the `myctx` data structure via the useful `kzalloc()` wrapper API. The subsequent
+    *hexdump* will show that it is indeed initialized to all zeroes (for readability,
+    we will only "dump" the first 32 bytes).
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在数据结构之后，我们通过有用的`kzalloc()`包装API为`ctx`分配并初始化了`myctx`数据结构的大小。随后的*hexdump*将显示它确实被初始化为全零（为了可读性，我们只会“转储”前32个字节）。
+- en: 'Do notice how we handle the error paths using `goto`; this has already been
+    mentioned a few times earlier in this book, so we won''t repeat ourselves here. Finally,
+    in the cleanup code of the kernel module, we `kfree()` both buffers, preventing
+    any memory leakage:'
+  id: totrans-331
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意我们如何使用`goto`处理错误路径；这在本书的前面已经提到过几次，所以我们不会在这里重复了。最后，在内核模块的清理代码中，我们使用`kfree()`释放了两个缓冲区，防止内存泄漏：
+- en: '[PRE26]'
+  id: totrans-332
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'A screenshot of a sample run on my Raspberry Pi 4 follows. I used our `../../lkm`
+    convenience script to build, load, and do `dmesg`:'
+  id: totrans-333
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来是我在我的树莓派4上运行的一个示例截图。我使用我们的`../../lkm`便捷脚本来构建、加载和执行`dmesg`：
+- en: '![](img/ca0f2ab4-3db3-48cf-8ae9-d5ff027ddcdf.png)'
+  id: totrans-334
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/ca0f2ab4-3db3-48cf-8ae9-d5ff027ddcdf.png)'
+- en: Figure 8.8 – Partial screenshot of our slab1.ko kernel module in action on a
+    Raspberry Pi 4
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.8-我们的slab1.ko内核模块在树莓派4上运行的部分截图
+- en: Okay, now that you have a grip on the basics of using the common slab allocator
+    APIs, `kmalloc(), kzalloc()`, and `kfree()`, let's go further. In the next section,
+    we will dive into a really key concern – the reality of size limitations on the
+    memory you can obtain via the slab (and page) allocators. Read on!
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了，现在您已经掌握了使用常见板块分配器API`kmalloc()`、`kzalloc()`和`kfree()`的基础知识，让我们继续。在下一节中，我们将深入探讨一个非常关键的问题-在通过板块（和页面）分配器获取的内存上的大小限制的现实。继续阅读！
+- en: Size limitations of the kmalloc API
+  id: totrans-337
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: kmalloc API的大小限制
+- en: One of the key advantages of both the page and slab allocators is that the memory
+    chunk they provide upon allocation is not only virtually contiguous (obviously)
+    but is also guaranteed to be *physically contiguous memory*. Now that is a big
+    deal and will certainly help performance.
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 页面和板块分配器的一个关键优势是，它们在分配时提供的内存块不仅在逻辑上是连续的（显而易见），而且还保证是*物理上连续的内存*。这是一件大事，肯定会提高性能。
+- en: But (there's always a *but*, isn't there!), precisely because of this guarantee,
+    it becomes impossible to serve up any given large size when performing an allocation.
+    In other words, there is a definite limit to the amount of memory you can obtain
+    from the slab allocator with a single call to our dear `k[m|z]alloc()` APIs. What
+    is the limit? (This is indeed a really frequently asked question.)
+  id: totrans-339
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是（总会有*但是*，不是吗！），正因为有了这个保证，所以在执行分配时不可能提供任意*大*的大小。换句话说，您可以通过一次对我们亲爱的`k[m|z]alloc()`API的调用从板块分配器获取的内存量是有明确限制的。这个限制是多少？（这确实是一个经常被问到的问题。）
+- en: 'Firstly, you should understand that, technically, the limit is determined by
+    two factors:'
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，您应该了解，从技术上讲，限制由两个因素决定：
+- en: One, the system page size (determined by the `PAGE_SIZE` macro)
+  id: totrans-341
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 系统页面大小（由`PAGE_SIZE`宏确定）
+- en: Two, the number of "orders" (determined by the `MAX_ORDER` macro); that is,
+    the number of lists in the page allocator (or BSA) freelist data structures (see
+    Figure 8.2)
+  id: totrans-342
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第二，"orders"的数量（由`MAX_ORDER`宏确定）；也就是说，在页面分配器（或BSA）空闲列表数据结构中的列表数量（见图8.2）
+- en: With a standard 4 KB page size and a MAX_ORDER value of 11, the maximum amount
+    of memory that can be allocated with a single `kmalloc()` or `kzalloc()` API call
+    is 4 MB. This is the case on both the x86_64 and ARM architectures.
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用标准的4 KB页面大小和`MAX_ORDER`值为11，可以使用单个`kmalloc()`或`kzalloc()`API调用分配的最大内存量为4 MB。这在x86_64和ARM架构上都是如此。
+- en: 'You might wonder, *how exactly is this 4 MB limit arrived at*? Think about
+    it: once a slab allocation request exceeds the maximum slab cache size that the
+    kernel provides (often 8 KB), the kernel simply passes the request down to the
+    page allocator. The page allocator''s maximum allocable size is determined by
+    `MAX_ORDER`. With it set to `11`, the maximum allocable buffer size is *2^((MAX_ORDER-1)) =**2^(10)
+    pages = 1024 pages = 1024 * 4K = 4 MB*!'
+  id: totrans-344
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会想知道，*这个4 MB的限制到底是如何得出的*？想一想：一旦slab分配请求超过内核提供的最大slab缓存大小（通常为8 KB），内核就会简单地将请求传递给页面分配器。页面分配器的最大可分配大小由`MAX_ORDER`确定。将其设置为`11`，最大可分配的缓冲区大小为*2^((MAX_ORDER-1))
+    = 2^(10)页 = 1024页 = 1024 * 4K = 4 MB*！
+- en: Testing the limits – memory allocation with a single call
+  id: totrans-345
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 测试极限 - 一次性内存分配
+- en: A really key thing for developers (and everyone else, for that matter) is to
+    **be empirical** in your work! The English word *empirical *means based on what
+    is experienced or seen, rather than on theory. This is a critical rule to always
+    follow – do not simply assume things or take them at face value. Try them out
+    for yourself and see.
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于开发人员（以及其他所有人来说），一个非常关键的事情是**要有实证精神**！英语单词*empirical*的意思是基于所经历或所见，而不是基于理论。这是一个始终要遵循的关键规则
+    - 不要简单地假设事情或接受它们的表面价值。自己尝试一下，看看。
+- en: 'Let''s do something quite interesting: write a kernel module that allocates
+    memory from the (generic) slab caches (via the `kmalloc()` API, of course). We
+    will do so in a loop, allocating – and freeing – a (calculated) amount on each
+    loop iteration. The key point here is that we will keep increasing the amount
+    allocated by a given "step" size. The loop terminates when `kmalloc()` fails;
+    this way, we can test just how much memory we can actually allocate with a single
+    call to `kmalloc()`(you''ll realize, of course, that `kzalloc()`, being a simple
+    wrapper over `kmalloc()`, faces precisely the same limits).'
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们做一些非常有趣的事情：编写一个内核模块，从（通用）slab缓存中分配内存（当然是通过`kmalloc()`API）。我们将在循环中这样做，每次迭代分配
+    - 和释放 - 一个（计算出的）数量。这里的关键点是，我们将不断增加给定“步长”大小的分配量。当`kmalloc()`失败时，循环终止；这样，我们可以测试通过单个`kmalloc()`调用实际上可以分配多少内存（当然，您会意识到，`kzalloc()`作为`kmalloc()`的简单包装，面临着完全相同的限制）。
+- en: 'In the following code snippet, we show the relevant code. The `test_maxallocsz()`
+    function is called from the `init` code of the kernel module:'
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下面的代码片段中，我们展示了相关代码。`test_maxallocsz()`函数从内核模块的`init`代码中调用：
+- en: '[PRE27]'
+  id: totrans-349
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: By the way, notice how our `printk()` function uses the `%zu` format specifier
+    for the `size_t` (essentially an unsigned integer) variable? `%zu` is a portability
+    aid; it makes the variable format correct for both 32- and 64-bit systems!
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 顺便说一下，注意我们的`printk()`函数如何使用`%zu`格式说明符来表示`size_t`（本质上是一个无符号整数）变量？`%zu`是一个可移植性辅助工具；它使变量格式对32位和64位系统都是正确的！
+- en: 'Let''s build (cross-compile on the host) and insert this kernel module on our
+    Raspberry Pi device running our custom-built 5.4.51-v7+ kernel; almost immediately, upon
+    `insmod(8)`, you will see an error message, `Cannot allocate memory`, printed
+    by the `insmod` process; the following (truncated) screenshot shows this:'
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在我们的树莓派设备上构建（在主机上进行交叉编译）并插入这个内核模块，该设备运行我们自定义构建的5.4.51-v7+内核；几乎立即，在`insmod(8)`时，您将看到一个错误消息，`insmod`进程打印出`Cannot
+    allocate memory`；下面（截断的）截图显示了这一点：
+- en: '![](img/5fd4b019-8594-448d-9c41-7f0cb0040383.png)'
+  id: totrans-352
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/5fd4b019-8594-448d-9c41-7f0cb0040383.png)'
+- en: Figure 8.9 – The first insmod(8) of our slab3_maxsize.ko kernel module on a
+    Raspberry Pi 3 running a custom 5.4.51 kernel
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.9 - 在树莓派3上运行自定义5.4.51内核的slab3_maxsize.ko内核模块的第一个insmod(8)
+- en: This is expected! Think about it, the `init` function of our kernel module code
+    has indeed failed with `ENOMEM` after all. Don't get thrown by this; looking up
+    the kernel log reveals what actually transpired. The fact is that on the very
+    first test run of this kernel module, you will find that at the place where `kmalloc()` fails,
+    the kernel dumps some diagnostic information, including a pretty lengthy kernel
+    stack trace. This is due to it invoking a `WARN()` macro.
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是预期的！想一想，我们的内核模块代码的`init`函数确实在最后失败了，出现了`ENOMEM`。不要被这个扔出去；查看内核日志会揭示实际发生了什么。事实上，在这个内核模块的第一次测试运行中，您会发现在`kmalloc()`失败的地方，内核会转储一些诊断信息，包括相当长的内核堆栈跟踪。这是因为它调用了一个`WARN()`宏。
+- en: 'So, our slab memory allocations worked, up to a point. To clearly see the failure
+    point, simply scroll down in the kernel log (`dmesg`) display. The following screenshot
+    shows this:'
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，我们的slab内存分配工作了，直到某个点。要清楚地看到失败点，只需在内核日志（`dmesg`）显示中向下滚动。以下截图显示了这一点：
+- en: '![](img/df1b5ab9-fc13-4aa8-889f-e1e0294c79ea.png)'
+  id: totrans-356
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/df1b5ab9-fc13-4aa8-889f-e1e0294c79ea.png)'
+- en: Figure 8.10 – Partial screenshot showing the lower part of the dmesg output
+    (of our slab3_maxsize.ko kernel module) on a Raspberry Pi 3
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.10 - 部分截图显示了在树莓派3上运行我们的slab3_maxsize.ko内核模块的dmesg输出的下部分
+- en: 'Aha, look at the last line of output (Figure 8.11): the `kmalloc()` fails on
+    an allocation above 4 MB (at 4,200,000 bytes), precisely as expected; until then,
+    it succeeds.'
+  id: totrans-358
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 啊哈，看一下输出的最后一行（图8.11）：`kmalloc()`在分配超过4 MB（在4,200,000字节处）时失败，正如预期的那样；在那之前，它成功了。
+- en: 'As an interesting aside, notice that we have (quite deliberately) performed
+    the very first allocation in the loop with size `0`; it does not fail:'
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是，注意我们故意在循环中的第一次分配中使用了大小为`0`；它没有失败：
+- en: '`kmalloc(0, GFP_xxx);` returns the zero pointer; on x86[_64], it''s the value `16` or `0x10` (see `include/linux/slab.h` for
+    details). In effect, it''s an invalid virtual address living in the page `0` `NULL`
+    pointer trap. Accessing it will, of course, lead to a page fault (originating
+    from the MMU).'
+  id: totrans-360
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`kmalloc(0, GFP_xxx);`返回零指针；在x86[_64]上，它的值是`16`或`0x10`（详细信息请参阅`include/linux/slab.h`）。实际上，它是一个无效的虚拟地址，位于页面`0`的`NULL`指针陷阱。当然，访问它将导致页面错误（源自MMU）。'
+- en: Similarly, attempting `kfree(NULL);` or `kfree()` of the zero pointer results
+    in `kfree()` becoming a no-op.
+  id: totrans-361
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 同样地，尝试`kfree(NULL);`或`kfree()`零指针的结果是`kfree()`变成了一个无操作。
+- en: 'Hang on, though – an extremely important point to note: in the *The actual
+    slab caches in use for kmalloc* section, we saw that the slab caches that are
+    used to allocate memory to the caller are the `kmalloc-n` slab caches, where `n` ranges
+    from `64` to `8192` bytes (on the Raspberry Pi, and thus the ARM for this discussion).
+    Also, FYI, you can perform a quick  `sudo vmstat -m | grep -v "\-rcl\-" | grep
+    --color=auto "^kmalloc"` to verify this.'
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 等等，一个非常重要的要点要注意：在*用于kmalloc的实际slab缓存*部分，我们看到用于向调用者分配内存的slab缓存是`kmalloc-n`slab缓存，其中`n`的范围是`64`到`8192`字节（在树莓派上，因此对于本讨论是ARM）。另外，FYI，您可以执行`sudo
+    vmstat -m | grep -v "\-rcl\-" | grep --color=auto "^kmalloc"`来验证这一点。
+- en: 'But clearly, in the preceding kernel module code example, we have allocated
+    via `kmalloc()` much larger quantities of memory (right from 0 bytes to 4 MB).
+    The way it really works is that the `kmalloc()` API only uses the `kmalloc-''n''`
+    slab caches for memory allocations less than or equal to 8,192 bytes (if available);
+    any allocation request for larger memory chunks is then passed to the underlying page
+    (or buddy system) allocator! Now, recall what we learned in the previous chapter:
+    the page allocator uses the buddy system freelists (on a per *node:zone* basis) *and *the
+    maximum size of memory chunks enqueued on the freelists are *2^((MAX_ORDER-1)) =
+    2^(10)* *pages*, which, of course, is 4 MB (given a page size of 4 KB and `MAX_ORDER` of `11`).
+    This neatly ties in with our theoretical discussions.'
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但显然，在前面的内核模块代码示例中，我们通过`kmalloc()`分配了更大数量的内存（从0字节到4 MB）。它真正的工作方式是`kmalloc()`API仅对小于或等于8192字节的内存分配使用`kmalloc-'n'`slab缓存（如果可用）；任何对更大内存块的分配请求都会传递给底层的页面（或伙伴系统）分配器！现在，回想一下我们在上一章学到的：页面分配器使用伙伴系统空闲列表（基于每个*节点:区域*）*和*在空闲列表上排队的内存块的最大尺寸为*2^((MAX_ORDER-1))
+    = 2^(10)* *页*，当然，这是4 MB（给定页面大小为4 KB和`MAX_ORDER`为`11`）。这与我们的理论讨论完美地结合在一起。
+- en: 'So, there we have it: both in theory and in practice, you can now see that (again,
+    given a page size of 4 KB and `MAX_ORDER` of `11`), the maximum size of memory
+    that can be allocated via a single call to `kmalloc()` (or `kzalloc()`) is 4 MB.'
+  id: totrans-364
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，从理论上和实践上来看，你现在可以看到（再次给定4 KB的页面大小和`MAX_ORDER`为`11`），通过单次调用`kmalloc()`（或`kzalloc()`）分配的内存的最大尺寸是4
+    MB。
+- en: Checking via the /proc/buddyinfo pseudo-file
+  id: totrans-365
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 通过/proc/buddyinfo伪文件检查
+- en: 'It''s really important to realize that although we figured out that 4 MB of
+    RAM is the maximum we can get at one shot, it definitely doesn''t mean that you
+    will always get that much. No, of course not. It completely depends upon the amount
+    of free memory present within the particular freelist at the time of the memory
+    request. Think about it: what if you are running on a Linux system that has been
+    up for several days (or weeks). The likelihood of finding physically contiguous
+    4 MB chunks of free RAM is quite low (again, this depends upon the amount of RAM
+    on the system and its workload).'
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常重要的是要意识到，尽管我们已经确定一次最多可以获得4 MB的RAM，但这绝对不意味着你总是会得到那么多。不，当然不是。这完全取决于内存请求时特定空闲列表中的空闲内存量。想想看：如果你在运行了几天（或几周）的Linux系统上运行。找到物理上连续的4
+    MB的空闲RAM块的可能性是相当低的（再次取决于系统上的RAM量和其工作负载）。
+- en: 'As a rule of thumb, if the preceding experiment did not yield a maximum allocation
+    of what we have deemed to be the maximum size (that is, 4 MB), why not try it
+    on a freshly booted guest system? Now, the chances of having physically contiguous
+    4 MB chunks of free RAM are a lot better. Unsure about this? Let''s get empirical
+    again and look up the content of `/proc/buddyinfo` – both on an in-use and a freshly
+    booted system – to figure out whether the memory chunks are available. In the
+    following code snippet, on our in-use x86_64 Ubuntu guest system with just 1 GB
+    of RAM, we look it up:'
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个经验法则，如果前面的实验没有产生我们认为的最大尺寸的最大分配（即4 MB），为什么不在一个新启动的客户系统上尝试呢？现在，有物理上连续的4 MB的空闲RAM的机会要好得多。对此不确定？让我们再次进行实证研究，并查看`/proc/buddyinfo`的内容-在使用中和新启动的系统上-以确定内存块是否可用。在我们使用中的x86_64
+    Ubuntu客户系统上，只有1 GB的RAM，我们查看到：
+- en: '[PRE28]'
+  id: totrans-368
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: As we learned earlier (in the *Freelist organization* section), the numbers
+    seen in the preceding code block are in the sequence order `0` to `MAX_ORDER-1`
+    (typically, *0* to *11 – 1 = 10*), and they represent the number of *2^(order)*
+    contiguous free page frames in that order.
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们之前学到的（在*空闲列表组织*部分），在前面的代码块中看到的数字是顺序`0`到`MAX_ORDER-1`（通常是*0*到*11-1=10*），它们代表该顺序中的*2^(order)*连续空闲页框的数量。
+- en: 'In the preceding output, we can see that we do *not* have free blocks on the
+    order `10` list (that is, the 4 MB chunks; it''s zero). On a freshly booted Linux
+    system, the chances are high that we will. In the following output, on the same
+    system that''s just been rebooted, we see that there are seven chunks of free
+    physically contiguous 4 MB RAM available in node `0`, zone DMA32:'
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的输出中，我们可以看到我们在`10`列表（即4 MB块）上没有空闲块（为零）。在一个新启动的Linux系统上，可能性很高。在接下来的输出中，在刚刚重新启动的相同系统上，我们看到在节点`0`，DMA32区域有7个空闲的物理连续的4
+    MB RAM块可用：
+- en: '[PRE29]'
+  id: totrans-371
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Reiterating this very point, on a Raspberry Pi that has been up for just about
+    a half hour, we have the following:'
+  id: totrans-372
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重申这一点，在一个刚刚运行了大约半小时的树莓派上，我们有以下情况：
+- en: '[PRE30]'
+  id: totrans-373
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: Here, there are 160 4 MB chunks of physically contiguous RAM available (free).
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，有160个4 MB的物理连续RAM块可用（空闲）。
+- en: Of course, there's more to explore. In the following section, we cover more
+    on using the slab allocator – the resource-managed API alternative, additional
+    slab helper APIs that are available, and a note on cgroups and memory in modern
+    Linux kernels.
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，还有更多可以探索的。在接下来的部分中，我们将介绍更多关于使用板块分配器的内容 - 资源管理的API替代方案，可用的额外板块辅助API，以及现代Linux内核中的cgroups和内存的注意事项。
+- en: Slab allocator – a few additional details
+  id: totrans-376
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 板块分配器 - 一些额外的细节
+- en: A few more key points remain to be explored. First, some information on using
+    the kernel's resource-managed versions of the memory allocator APIs, followed
+    by a few additionally available slab helper routines within the kernel, and then
+    a brief look at cgroups and memory. We definitely recommend you go through these
+    sections as well. Please, do read on!
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有一些关键点需要探讨。首先，关于使用内核的资源管理版本的内存分配API的一些信息，然后是内核内部的一些额外可用的板块辅助例程，然后简要介绍cgroups和内存。我们强烈建议您也阅读这些部分。请继续阅读！
+- en: Using the kernel's resource-managed memory allocation APIs
+  id: totrans-378
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用内核的资源管理内存分配API
+- en: 'Especially useful for device drivers, the kernel provides a few managed APIs
+    for memory allocation. These are formally referred to as the device resource-managed
+    or devres APIs (the link to kernel documentation on this is [https://www.kernel.org/doc/Documentation/driver-model/devres.txt](https://www.kernel.org/doc/Documentation/driver-model/devres.txt)).
+    They are all prefixed with `devm_`; though there are several of them, we will
+    focus on only one common use case here – that of using these APIs in place of
+    the usual `k[m|z]alloc()` ones. They are as follows:'
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于设备驱动程序来说，内核提供了一些受管理的内存分配API。这些正式称为设备资源管理或devres API（关于此的内核文档链接是[https://www.kernel.org/doc/Documentation/driver-model/devres.txt](https://www.kernel.org/doc/Documentation/driver-model/devres.txt)）。它们都以`devm_`为前缀；虽然有几个，但我们在这里只关注一个常见用例
+    - 即在使用这些API替代通常的`k[m|z]alloc()`时。它们如下：
+- en: '`void * devm_kmalloc(struct device *dev, size_t size, gfp_t gfp);`'
+  id: totrans-380
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`void * devm_kmalloc(struct device *dev, size_t size, gfp_t gfp);`'
+- en: '`void * devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);`'
+  id: totrans-381
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`void * devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);`'
+- en: The reason why these resource-managed APIs are useful is that there is *no need
+    for the developer to explicitly free the memory allocated by them*. The kernel
+    resource management framework guarantees that it will automatically free the memory
+    buffer upon driver detach, or if a kernel module, when the module is removed (or
+    the device is detached, whichever occurs first). This feature immediately enhances
+    code robustness. Why? Simple, we're all human and make mistakes. Leaking memory
+    (especially on error code paths) is indeed a pretty common bug!
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些资源管理的API之所以有用，是因为*开发人员无需显式释放它们分配的内存*。内核资源管理框架保证它将在驱动程序分离时或者如果是内核模块时，在模块被移除时（或设备被分离时，以先发生者为准）自动释放内存缓冲区。这个特性立即增强了代码的健壮性。为什么？简单，我们都是人，都会犯错误。泄漏内存（尤其是在错误代码路径上）确实是一个相当常见的错误！
+- en: 'A few relevant points regarding the usage of these APIs:'
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于使用这些API的一些相关要点：
+- en: A key point – please do not attempt to blindly replace `k[m|z]alloc()` with
+    the corresponding `devm_k[m|z]alloc()`! These resource-managed allocations are
+    really designed to be used only in the `init` and/or `probe()` methods of a device
+    driver (all drivers that work with the kernel's unified device model will typically
+    supply the `probe()` and `remove()` (or `disconnect()`) methods. We will not delve
+    into these aspects here).
+  id: totrans-384
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个关键点 - 请不要盲目尝试用相应的`devm_k[m|z]alloc()`替换`k[m|z]alloc()`！这些受资源管理的分配实际上只设计用于设备驱动程序的`init`和/或`probe()`方法（所有与内核统一设备模型一起工作的驱动程序通常会提供`probe()`和`remove()`（或`disconnect()`）方法。我们将不在这里深入讨论这些方面）。
+- en: '`devm_kzalloc()` is usually preferred as it initializes the buffer as well.
+    Internally (as with `kzalloc()`), it is merely a thin wrapper over the `devm_kmalloc()` API.'
+  id: totrans-385
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`devm_kzalloc()`通常更受欢迎，因为它也初始化缓冲区。在内部（与`kzalloc()`一样），它只是`devm_kmalloc()` API的一个薄包装器。'
+- en: The second and third parameters are the usual ones, as with the `k[m|z]alloc()` APIs – the
+    number of bytes to allocate and the GFP flags to use. The first parameter, though,
+    is a pointer to `struct device`. Quite obviously, it represents the *device *that
+    your driver is driving.
+  id: totrans-386
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 第二个和第三个参数与`k[m|z]alloc()` API一样 - 要分配的字节数和要使用的GFP标志。不过，第一个参数是指向`struct device`的指针。显然，它代表您的驱动程序正在驱动的*设备*。
+- en: As the memory allocated by these APIs is auto-freed (on driver detach or module
+    removal), you don't have to do anything. It can, though, be freed via the `devm_kfree()` API.
+    You doing this, however, is usually an indication that the managed APIs are the
+    wrong ones to use...
+  id: totrans-387
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 由这些API分配的内存是自动释放的（在驱动程序分离或模块移除时），您不必做任何事情。但是，它可以通过`devm_kfree()` API释放。不过，您这样做通常表明受管理的API不是正确的选择...
+- en: 'Licensing: The managed APIs are exported (and thus available) only to modules
+    licensed under the GPL (in addition to other possible licenses).'
+  id: totrans-388
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 许可：受管理的API仅对在GPL下许可的模块（以及其他可能的许可）可用。
+- en: Additional slab helper APIs
+  id: totrans-389
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 额外的板块辅助API
+- en: There are several helper slab allocator APIs, friends of the `k[m|z]alloc()` API
+    family. These include the `kcalloc()` and `kmalloc_array()` APIs for allocating
+    memory for an array, as well as `krealloc()`, whose behavior is analogous to `realloc(3)`, the
+    familiar user space API.
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有几个辅助的板块分配器API，是`k[m|z]alloc()` API家族的朋友。这些包括用于为数组分配内存的`kcalloc()`和`kmalloc_array()`
+    API，以及`krealloc()`，其行为类似于熟悉的用户空间API`realloc(3)`。
+- en: 'In conjunction with allocating memory for an array of elements, the `array_size()`
+    and `struct_size()` kernel helper routines can be very helpful. In particular,
+    `struct_size()` has been heavily used to prevent (and indeed fix) many integer
+    overflow (and related) bugs when allocating an array of structures, a common task
+    indeed. As a quick example, here''s a small code snippet from `net/bluetooth/mgmt.c`:'
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与为元素数组分配内存一起，`array_size()`和`struct_size()`内核辅助程序非常有帮助。特别是，`struct_size()`已被广泛用于防止（实际上修复）在分配结构数组时的许多整数溢出（以及相关）错误，这确实是一个常见的任务。作为一个快速的例子，这里是来自`net/bluetooth/mgmt.c`的一个小代码片段：
+- en: '[PRE31]'
+  id: totrans-392
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: It's worth browsing through the `include/linux/overflow.h` kernel header file.
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 值得浏览一下`include/linux/overflow.h`内核头文件。
+- en: '`kzfree()` is like `kfree()` but zeroes out the (possibly larger) memory region
+    being freed. (Why larger? This will be explained in the next section.) Note that
+    this is considered a security measure but might hurt performance.'
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`kzfree()`类似于`kfree()`，但会清零（可能更大的）被释放的内存区域。（为什么更大？这将在下一节中解释。）请注意，这被认为是一种安全措施，但可能会影响性能。'
+- en: 'The resource-managed versions of these APIs are also available: `devm_kcalloc()`
+    and `devm_kmalloc_array()`.'
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些API的资源管理版本也是可用的：`devm_kcalloc()`和`devm_kmalloc_array()`。
+- en: Control groups and memory
+  id: totrans-396
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 控制组和内存
+- en: The Linux kernel supports a very sophisticated resource management system called **cgroups **(**control
+    groups**), which, in a nutshell, are used to hierarchically organize processes
+    and perform resource management (more on cgroups, with an example of cgroups v2
+    CPU controller usage, can be found in [Chapter 11](d6e5ebd3-1f04-40e8-a240-2607c58b1299.xhtml), *The
+    CPU Scheduler - Part 2*, on CPU scheduling).
+  id: totrans-397
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Linux内核支持一个非常复杂的资源管理系统，称为**cgroups**（控制组），简而言之，它们用于分层组织进程并执行资源管理（有关cgroups的更多信息，以及cgroups
+    v2 CPU控制器用法示例，可以在[第11章](d6e5ebd3-1f04-40e8-a240-2607c58b1299.xhtml)中找到，*CPU调度器-第2部分*，关于CPU调度）。
+- en: Among the several resource controllers is one for memory bandwidth. By carefully
+    configuring it, the sysadmin can effectively regulate the distribution of memory
+    on the system. Memory protection is possible, both as (what is called) hard and
+    best-effort protection via certain `memcg` (memory cgroup) pseudo-files (particularly,
+    the `memory.min` and `memory.low` files). In a similar fashion, within a cgroup,
+    the `memory.high` and `memory.max` pseudo-files are the main mechanism to control
+    the memory usage of a cgroup. Of course, as there is a lot more to it than is
+    mentioned here, I refer you to the kernel documentation on the new cgroups (v2)
+    here: [https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html).
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在几个资源控制器中，有一个用于内存带宽的控制器。通过仔细配置它，系统管理员可以有效地调节系统上内存的分配。内存保护是可能的，既可以作为（所谓的）硬保护，也可以通过某些`memcg`（内存cgroup）伪文件（特别是`memory.min`和`memory.low`文件）作为尽力保护。类似地，在cgroup内，`memory.high`和`memory.max`伪文件是控制cgroup内存使用的主要机制。当然，这里提到的远不止这些，我建议你查阅有关新cgroups（v2）的内核文档：[https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)。
+- en: Right, now that you have learned how to use the slab allocator APIs better,
+    let's dive a bit deeper still. The reality is, there are still a few important
+    caveats regarding the size of the memory chunks allocated by the slab allocator
+    APIs. Do read on to find out what they are!
+  id: totrans-399
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，现在你已经学会了如何更好地使用slab分配器API，让我们再深入一点。事实是，关于slab分配器API分配的内存块大小仍然有一些重要的注意事项。继续阅读以了解它们是什么！
+- en: Caveats when using the slab allocator
+  id: totrans-400
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用slab分配器时的注意事项
+- en: We will split up this discussion into three parts. We will first re-examine
+    some necessary background (which we covered earlier), then actually flesh out
+    the problem with two use cases – the first being very simple, and the second a
+    more real-world case of the issue at hand.
+  id: totrans-401
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将把这个讨论分成三部分。我们将首先重新审视一些必要的背景（我们之前已经涵盖了），然后实际上详细说明两个用例的问题-第一个非常简单，第二个是问题的更真实的案例。
+- en: Background details and conclusions
+  id: totrans-402
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 背景细节和结论
+- en: 'So far, you have learned some key points:'
+  id: totrans-403
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，你已经学到了一些关键点：
+- en: The *page* (or *buddy system*) *allocator* allocates power-of-2 pages to the
+    caller. The power to raise 2 to is called the *order*; it typically ranges from
+    `0` to `10` (on both x86[_64] and ARM).
+  id: totrans-404
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*页面*（或*buddy系统*）*分配器*向调用者分配2的幂次方页。要提高2的幂次方，称为*阶*；它通常范围从`0`到`10`（在x86[_64]和ARM上都是如此）。'
+- en: This is fine, except when it's not. When the amount of memory requested is very
+    small, the *wastage* (or internal fragmentation) can be huge.
+  id: totrans-405
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这很好，除非不是。当请求的内存量非常小时，*浪费*（或内部碎片）可能会很大。
+- en: Requests for fragments of a page (less than 4,096 bytes) are very common. Thus,
+    the *slab allocator, layered upon the page allocator *(see Figure 8.1) is designed
+    with object caches, as well as small generic memory caches, to efficiently fulfill
+    requests for small amounts of memory.
+  id: totrans-406
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 对于页面的片段请求（小于4,096字节）非常常见。因此，*slab分配器，叠加在页面分配器上*（见图8.1）被设计为具有对象缓存，以及小的通用内存缓存，以有效地满足对小内存量的请求。
+- en: The page allocator guarantees physically contiguous page and cacheline-aligned
+    memory.
+  id: totrans-407
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 页面分配器保证物理上连续的页面和高速缓存对齐的内存。
+- en: The slab allocator guarantees physically contiguous and cacheline-aligned memory.
+  id: totrans-408
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: slab分配器保证物理上连续和高速缓存对齐的内存。
+- en: 'So, fantastic – this leads us to conclude that when the amount of memory required
+    is large-ish and a perfect (or close) power of 2, use the page allocator. When
+    it''s quite small (less than a page), use the slab allocator. Indeed, the kernel
+    source code of `kmalloc()` has a comment that neatly sums up how the `kmalloc()` API
+    should be used (reproduced in bold font as follows):'
+  id: totrans-409
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，很棒-这让我们得出结论，当需要的内存量较大且接近2的幂时，请使用页面分配器。当内存量相当小（小于一页）时，请使用slab分配器。事实上，`kmalloc()`的内核源代码中有一条注释，简洁地总结了应该如何使用`kmalloc()`
+    API（如下所示以粗体字重现）：
+- en: '[PRE32]'
+  id: totrans-410
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'Sounds great, but there is still a problem! To see it, let''s learn how to
+    use another useful slab API, `ksize()`. Its signature is as follows:'
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 听起来很棒，但还有一个问题！为了看到它，让我们学习如何使用另一个有用的slab API，`ksize()`。它的签名如下：
+- en: '[PRE33]'
+  id: totrans-412
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: The parameter to `ksize()` is a pointer to an existing slab cache (it must be
+    a valid one). In other words, it's the return address from one of the slab allocator
+    APIs (typically, `k[m|z]alloc()`). The return value is the actual number of bytes
+    allocated.
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ksize()`的参数是指向现有slab缓存的指针（它必须是有效的）。换句话说，它是slab分配器API的返回地址（通常是`k[m|z]alloc()`）。返回值是分配的实际字节数。'
+- en: Okay, now that you know what `ksize()` is for, let's use it in a more practical
+    fashion, first with a simple use case and then with a better one!
+  id: totrans-414
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，现在你知道`ksize()`的用途，让我们首先以一种更实际的方式使用它，然后再用一个更好的方式！
+- en: Testing slab allocation with ksize() – case 1
+  id: totrans-415
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用ksize()测试slab分配 - 情况1
+- en: 'To understand what we''re getting at, consider a small example (for readability,
+    we will not show essential validity checks. Also, as this is a tiny code snippet,
+    we haven''t provided it as a kernel module in the book''s code base):'
+  id: totrans-416
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了理解我们的意思，考虑一个小例子（为了可读性，我们不会显示必要的有效性检查。此外，由于这是一个小的代码片段，我们没有将其提供为书中代码库中的内核模块）：
+- en: '[PRE34]'
+  id: totrans-417
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'The resulting output on my x86_64 Ubuntu guest system is as follows:'
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我的x86_64 Ubuntu虚拟机系统上的结果输出如下：
+- en: '[PRE35]'
+  id: totrans-419
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: So, we attempted to allocate 20 bytes with `kzalloc()`, but actually obtained
+    32 bytes (thus incurring a wastage of 12 bytes, or 60%!). This is expected. Recall
+    the `kmalloc-n` slab caches – on x86, there is one for 16 bytes and another for
+    32 bytes (among the many others). So, when we ask for an amount in between the
+    two, we obviously get memory from the higher of the two. (Incidentally, and FYI,
+    on our ARM-based Raspberry Pi system, the smallest slab cache for `kmalloc` is
+    64 bytes, so, of course, we get 64 bytes when we ask for 20 bytes.)
+  id: totrans-420
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们尝试使用`kzalloc()`分配20字节，但实际上获得了32字节（因此浪费了12字节，或60％！）。这是预期的。回想一下`kmalloc-n`
+    slab缓存 - 在x86上，有一个用于16字节的缓存，另一个用于32字节（还有许多其他）。因此，当我们要求介于两者之间的数量时，显然会从两者中较大的一个获取内存。（顺便说一句，在我们基于ARM的树莓派系统上，`kmalloc`的最小slab缓存是64字节，因此当我们要求20字节时，我们当然会得到64字节。）
+- en: Note that the `ksize()` API works only on allocated slab memory; you cannot
+    use it on the return value from any of the page allocator APIs (which we saw in
+    the *Understanding and u**sing the kernel page allocator (or BSA)* section).
+  id: totrans-421
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`ksize()` API仅适用于已分配的slab内存；您不能将其用于任何页分配器API的返回值（我们在*理解和使用内核页分配器（或BSA）*部分中看到）。
+- en: Now for the second, and more interesting, use case.
+  id: totrans-422
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是第二个更有趣的用例。
+- en: Testing slab allocation with ksize() – case 2
+  id: totrans-423
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用ksize()测试slab分配 - 情况2
+- en: 'Okay, now, let''s extend our previous kernel module (`ch8/slab3_maxsize`) to `ch8/slab4_actualsize`.
+    Here, we will perform the same loop, allocating memory with `kmalloc()` and freeing
+    it as before, but this time, we will also document the actual amount of memory
+    allocated to us in each loop iteration by the slab layer, by invoking the `ksize()` API:'
+  id: totrans-424
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好的，现在，让我们扩展我们之前的内核模块（`ch8/slab3_maxsize`）到`ch8/slab4_actualsize`。在这里，我们将执行相同的循环，使用`kmalloc()`分配内存并像以前一样释放它，但这一次，我们还将通过调用`ksize()`API记录由slab层在每个循环迭代中分配给我们的实际内存量：
+- en: '[PRE36]'
+  id: totrans-425
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'The output of this kernel module is indeed interesting to scan! In the following
+    figure, we show a partial screenshot of the output I got on my x86_64 Ubuntu 18.04
+    LTS guest running our custom built 5.4.0 kernel:'
+  id: totrans-426
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个内核模块的输出确实很有趣！在下图中，我们展示了我在运行我们自定义构建的5.4.0内核的x86_64 Ubuntu 18.04 LTS虚拟机上获得的输出的部分截图：
+- en: '![](img/bdf32434-baf3-4fa3-a64f-7327729d0c8a.png)'
+  id: totrans-427
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/bdf32434-baf3-4fa3-a64f-7327729d0c8a.png)'
+- en: Figure 8.11 – Partial screenshot of our slab4_actualsize.ko kernel module in
+    action
+  id: totrans-428
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.11 - slab4_actualsize.ko内核模块的部分截图
+- en: The module's printk output can be clearly seen in the preceding screenshot. The
+    remainder of the screen is diagnostic information from the kernel – this is emitted
+    as a kernel-space memory allocation request failed. All this kernel diagnostic
+    information is a  result of the first invocation of the kernel calling the `WARN_ONCE()` macro,
+    as the underlying page allocator code, `mm/page_alloc.c:__alloc_pages_nodemask()` –
+    the "heart" of the buddy system allocator, as it's known -  failed! This should
+    typically never occur, hence the diagnostics (the details on the kernel diagnostics
+    is beyond this book's scope, so we will leave this aside. Having said that, we
+    do examine the kernel stack backtrace to some extent in coming chapters).
+  id: totrans-429
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 内核模块的`printk`输出可以在前面的截图中清楚地看到。屏幕的其余部分是内核的诊断信息 - 这是因为内核空间内存分配请求失败而发出的。所有这些内核诊断信息都是由内核调用`WARN_ONCE()`宏的第一次调用产生的，因为底层页分配器代码`mm/page_alloc.c:__alloc_pages_nodemask()`
+    - 众所周知的伙伴系统分配器的“核心” - 失败了！这通常不应该发生，因此有诊断信息（内核诊断的详细信息超出了本书的范围，因此我们将不予讨论。话虽如此，我们在接下来的章节中确实会在一定程度上检查内核堆栈回溯）。
+- en: Interpreting the output from case 2
+  id: totrans-430
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 解释情况2的输出
+- en: 'Look closely at the preceding screenshot (Figure 8.12; here, we will simply
+    ignore the kernel diagnostics emitted by the `WARN()` macro, which got invoked
+    because a kernel-level memory allocation failed!). The Figure 8.12 output has
+    five columns, as follows:'
+  id: totrans-431
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 仔细看前面的截图（图8.12；在这里，我们将简单地忽略由`WARN()`宏发出的内核诊断，因为内核级内存分配失败而调用了它！）。图8.12的输出有五列，如下：
+- en: The timestamp from `dmesg(1)`; we ignore it.
+  id: totrans-432
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 来自`dmesg(1)`的时间戳；我们忽略它。
+- en: '`kmalloc(n)`: The number of bytes requested by `kmalloc()` (where `n` is the
+    required amount).'
+  id: totrans-433
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`kmalloc(n)`：`kmalloc()`请求的字节数（其中`n`是所需的数量）。'
+- en: The actual number of bytes allocated by the slab allocator (revealed via `ksize()`).
+  id: totrans-434
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 由slab分配器分配的实际字节数（通过`ksize()`揭示）。
+- en: 'The wastage (bytes): The difference between the actual and required bytes.'
+  id: totrans-435
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 浪费（字节）：实际字节和所需字节之间的差异。
+- en: The wastage as a percentage.
+  id: totrans-436
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 浪费的百分比。
+- en: As an example, in the second allocation, we requested 200,100 bytes, but actually
+    obtained 262,144 bytes (256 KB). This makes sense, as this is the precise size
+    of one of the page allocator lists on a buddy system freelist (it's *order 6*,
+    as *2⁶ = 64 pages = 64 x 4 = 256 KB*; see *Figure 8.2*). Hence, the delta, or
+    wastage really, is *262,144 - 200,100 = 62,044 bytes*, which, when expressed as
+    a percentage, is 31%.
+  id: totrans-437
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，在第二次分配中，我们请求了200,100字节，但实际获得了262,144字节（256 KB）。这是有道理的，因为这是伙伴系统空闲列表中的一个页面分配器列表的确切大小（它是*6阶*，因为*2⁶
+    = 64页 = 64 x 4 = 256 KB*；参见*图8.2*）。因此，差值，或者实际上是浪费，是*262,144 - 200,100 = 62,044字节*，以百分比表示，为31%。
+- en: 'It''s like this: the closer the requested (or required) size gets to the kernel''s
+    available (or actual) size, the less the wastage will be; the converse is true
+    as well. Let''s look at another example from the preceding output (the snipped
+    output is reproduced as follows for clarity):'
+  id: totrans-438
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像这样：请求的（或所需的）大小越接近内核可用的（或实际的）大小，浪费就越少；反之亦然。让我们从前面的输出中再看一个例子（为了清晰起见，以下是剪辑输出）：
+- en: '[PRE37]'
+  id: totrans-439
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'From the preceding output, you can see that when `kmalloc()` requests 1,600,100
+    bytes (around 1.5 MB), it actually gets 2,097,152 bytes (exactly 2 MB), and the
+    wastage is 31%. The wastage then successively *reduces as we get closer to an
+    allocation "boundary" or threshold* (the actual size of the kernel''s slab cache
+    or page allocator memory chunk) as it were: to 16%, then down to  4%. But look:
+    with the next allocation, when we cross that threshold, asking for *just over* 2
+    MB (2,200,100 bytes), we actually get 4 MB, *a wastage of 90%*! Then, the wastage
+    again drops as we move closer to the 4 MB memory size...'
+  id: totrans-440
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从前面的输出中，您可以看到当`kmalloc()`请求1,600,100字节（大约1.5 MB）时，实际上获得了2,097,152字节（确切的2 MB），浪费为31%。随着我们接近分配的“边界”或阈值（内核的slab缓存或页面分配器内存块的实际大小）*，浪费逐渐减少：到16%，然后降至4%。但是请注意：在下一个分配中，当我们跨越该阈值，要求*略高于*2
+    MB（2,200,100字节）时，我们实际上获得了4 MB，*浪费了90%*！然后，随着我们接近4 MB的内存大小，浪费再次减少...
+- en: This is important! You might think you're being very efficient by mere use of
+    the slab allocator APIs, but in reality, the slab layer invokes the page allocator
+    when the amount of memory requested is above the maximum size that the slab layer
+    can provide (typically, 8 KB, which is often the case in our preceding experiments).
+    Thus, the page allocator, suffering from its usual wastage issues, ends up allocating
+    far more memory than you actually require, or indeed ever use. What a waste!
+  id: totrans-441
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这很重要！您可能认为仅通过使用slab分配器API非常高效，但实际上，当请求的内存量超过slab层可以提供的最大大小时（通常为8 KB，在我们之前的实验中经常出现），slab层会调用页面分配器。因此，页面分配器由于通常的浪费问题，最终分配的内存远远超过您实际需要的，或者实际上永远不会使用的。多么浪费！
+- en: 'The moral: *check and recheck your code that allocates memory with the slab
+    APIs*. Run trials on it using `ksize()` to figure out how much memory is actually
+    being allocated, not how much you think is being allocated.'
+  id: totrans-442
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 寓言：*检查并反复检查使用slab API分配内存的代码*。使用`ksize()`对其进行试验，以找出实际分配了多少内存，而不是您认为分配了多少内存。
+- en: 'There are no shortcuts. Well, there is one: if you require less than a page
+    of memory (a very typical use case), just use the slab APIs. If you require more,
+    the preceding discussion comes into play. Another thing: using the `alloc_pages_exact()
+    / free_pages_exact()` APIs (covered in the *One Solution – the exact page allocator
+    APIs* section) should help reduce wastage as well.'
+  id: totrans-443
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有捷径。嗯，有一个：如果您需要的内存少于一页（非常典型的用例），只需使用slab API。如果需要更多，前面的讨论就会起作用。另一件事：使用`alloc_pages_exact()
+    / free_pages_exact()` API（在*一个解决方案 - 精确页面分配器API*部分中介绍）也应该有助于减少浪费。
+- en: Graphing it
+  id: totrans-444
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 绘图
+- en: 'As an interesting aside, we use the well-known `gnuplot(1)` utility to plot
+    a graph from the previously gathered data. Actually, we have to minimally modify
+    the kernel module to only output what we''d like to graph: the required (or requested)
+    amount of memory to allocate (*x* axis), and the percentage of waste that actually
+    occurred at runtime (*y* axis). You can find the code of our slightly modified
+    kernel module in the book''s GitHub repository here: `ch8/slab4_actualsz_wstg_plot` ([https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/ch8/slab4_actualsize](https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/ch8/slab4_actualsize)).'
+  id: totrans-445
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有趣的是，我们使用著名的`gnuplot(1)`实用程序从先前收集的数据绘制图形。实际上，我们必须最小限度地修改内核模块，只输出我们想要绘制的内容：要分配的内存量（*x*轴），以及运行时实际发生的浪费百分比（*y*轴）。您可以在书的GitHub存储库中找到我们略微修改的内核模块的代码，链接在这里：`ch8/slab4_actualsize`（[https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/ch8/slab4_actualsize](https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/ch8/slab4_actualsize)）。
+- en: 'So, we build and insert this kernel module, "massage" the kernel log, saving
+    the data in an appropriate column-wise format as required by `gnuplot` (in a file
+    called `2plotdata.txt`). While we do not intend to delve into the intricacies
+    of using `gnuplot(1)` here (refer to the *Further reading* section for a tutorial
+    link), in the following code snippet, we show the essential commands to generate
+    our graph:'
+  id: totrans-446
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们构建并插入这个内核模块，“整理”内核日志，将数据保存在`gnuplot`所需的适当的列格式中（保存在名为`2plotdata.txt`的文件中）。虽然我们不打算在这里深入讨论如何使用`gnuplot(1)`（请参阅*进一步阅读*部分以获取教程链接），但在以下代码片段中，我们展示了生成图形的基本命令：
+- en: '[PRE38]'
+  id: totrans-447
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'Lo and behold, the plot:'
+  id: totrans-448
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看哪，图：
+- en: '![](img/f0680fcb-f728-4941-a8ea-c00a301d1e8b.png)'
+  id: totrans-449
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f0680fcb-f728-4941-a8ea-c00a301d1e8b.png)'
+- en: Figure 8.12 – A graph showing the size requested by kmalloc() (x axis) versus
+    the wastage incurred (as a percentage; y axis)
+  id: totrans-450
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图8.12 - 显示kmalloc()请求的大小（x轴）与产生的浪费（作为百分比；y轴）的图形
+- en: This "saw-tooth"-shaped graph helps visualize what you just learned. The closer
+    a `kmalloc()` (or `kzalloc()`, or indeed *any* page allocator API) allocation
+    request size is to any of the kernel's predefined freelist sizes, the less wastage
+    there is. But the moment this threshold is crossed, the wastage zooms up (spikes)
+    to close to 100% (as seen by the literally vertical lines in the preceding graph).
+  id: totrans-451
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个“锯齿”形状的图表有助于可视化您刚刚学到的内容。一个`kmalloc()`（或`kzalloc()`，或者*任何*页面分配器API）分配请求的大小越接近内核预定义的空闲列表大小，浪费就越少。但一旦超过这个阈值，浪费就会飙升（尖峰），接近100%（如前图中的垂直线所示）。
+- en: 'So, with this, we''ve covered a significant amount of stuff. As usual, though,
+    we''re not done: the next section very briefly highlights the actual slab layer
+    implementations (yes, there are several) within the kernel. Let''s check it out!'
+  id: totrans-452
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们已经涵盖了大量的内容。然而，我们还没有完成：下一节非常简要地介绍了内核中实际的slab层实现（是的，有几种）。让我们来看看吧！
+- en: Slab layer implementations within the kernel
+  id: totrans-453
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 内核中的Slab层实现
+- en: 'In closing, we mention the fact that there are at least three different mutually
+    exclusive kernel-level implementations of the slab allocator; only one of them
+    can be in use at runtime. The one to be used at runtime is selected at the time
+    of *configuring* the kernel (you learned this procedure in detail in [Chapter
+    2](e0b89a37-18a3-424d-8983-58c4ac0725f6.xhtml), *Building the 5.x Linux Kernel
+    from Source – Part 1*). The relevant kernel configuration options are as follows:'
+  id: totrans-454
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们提到了一个事实，即至少有三种不同的互斥的内核级slab分配器实现；在运行时只能使用其中一种。在*配置*内核时选择在运行时使用的分配器（您在[第2章](e0b89a37-18a3-424d-8983-58c4ac0725f6.xhtml)中详细了解了此过程，*从源代码构建5.x
+    Linux内核-第1部分*）。相关的内核配置选项如下：
+- en: '`CONFIG_SLAB`'
+  id: totrans-455
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`CONFIG_SLAB`'
+- en: '`CONFIG_SLUB`'
+  id: totrans-456
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`CONFIG_SLUB`'
+- en: '`CONFIG_SLOB`'
+  id: totrans-457
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`CONFIG_SLOB`'
+- en: The first (`SLAB`) is the early, well-supported (but quite under-optimized)
+    one; the second one (`SLUB`*, the unqueued allocator*) is a major improvement
+    on the first, in terms of memory efficiency, performance, and better diagnostics,
+    and is the one selected by default. The `SLOB` allocator is a drastic simplification
+    and, as per the kernel config help, "does not perform well on large systems."
+  id: totrans-458
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个（`SLAB`）是早期的、得到很好支持（但相当未优化）的分配器；第二个（`SLUB`，未排队的分配器）在内存效率、性能和诊断方面是对第一个的重大改进，并且是默认选择的分配器。`SLOB`分配器是一种极端简化，根据内核配置帮助，“在大型系统上表现不佳”。
+- en: Summary
+  id: totrans-459
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, you learned – to a good level of detail – how both the page
+    (or buddy system) as well as the slab allocators work. Recall that the actual
+    "engine" of allocating (and freeing) RAM within the kernel is ultimately the *page
+    (or buddy system) allocator*,the slab allocator being layered on top of it to
+    provide optimization for typical less-than-a-page-in-size allocation requests
+    and to efficiently allocate several well-known kernel data structures ('objects').
+  id: totrans-460
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您详细了解了页面（或伙伴系统）和slab分配器的工作原理。请记住，内核内部分配（和释放）RAM的实际“引擎”最终是*页面（或伙伴系统）分配器*，slab分配器则在其上层提供了对典型小于页面大小的分配请求的优化，并有效地分配了几种众所周知的内核数据结构（“对象”）。
+- en: You learned how to efficiently use the APIs exposed by both the page and slab
+    allocators, with several demo kernel modules to help show this in a hands-on manner.
+    A good deal of focus was (quite rightly) given to the real issue of the developer
+    issuing a memory request for a certain *N* number of bytes, but you learned that
+    it can be very sub-optimal, with the kernel actually allocating much more (the
+    wastage can climb to very close to 100%)! You now know how to check for and mitigate
+    these cases. Well done!
+  id: totrans-461
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您学会了如何有效地使用页面和slab分配器提供的API，以及几个演示内核模块，以便以实际操作的方式展示这一点。我们非常正确地关注了开发人员发出对某个*N*字节数的内存请求的实际问题，但您学会了这可能是非常次优的，因为内核实际上分配了更多的内存（浪费可能接近100%）！现在您知道如何检查和减轻这些情况。干得好！
+- en: The following chapter covers more on optimal allocation strategies, as well
+    as some more advanced topics on kernel memory allocation, including the creation
+    of custom slab caches, using the `vmalloc` interfaces, what the *OOM killer *is
+    all about, and more. So, first ensure you've understood the content of this chapter
+    and worked on the kernel modules and assignments (as follows). Then, let's get
+    you on to the next one!
+  id: totrans-462
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下章节涵盖了更多关于最佳分配策略的内容，以及有关内核内存分配的一些更高级主题，包括创建自定义slab缓存，使用`vmalloc`接口，以及*OOM killer*的相关内容等。因此，首先确保您已经理解了本章的内容，并且已经完成了内核模块和作业（如下所示）。然后，让我们继续下一章吧！
+- en: Questions
+  id: totrans-463
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题
+- en: 'As we conclude, here is a list of questions for you to test your knowledge
+    regarding this chapter''s material: [https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/questions](https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/questions).
+    You will find some of the questions answered in the book''s GitHub repo: [https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/solutions_to_assgn](https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/solutions_to_assgn).'
+  id: totrans-464
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着我们的结束，这里有一些问题供您测试对本章材料的了解：[https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/questions](https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/questions)。您会在书的GitHub存储库中找到一些问题的答案：[https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/solutions_to_assgn](https://github.com/PacktPublishing/Linux-Kernel-Programming/tree/master/solutions_to_assgn)。
+- en: Further reading
+  id: totrans-465
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 进一步阅读
+- en: To help you delve deeper into the subject with useful materials, we provide
+    a rather detailed list of online references and links (and at times, even books)
+    in a Further reading document in this book's GitHub repository. The *Further reading*
+    document is available here: [https://github.com/PacktPublishing/Linux-Kernel-Programming/blob/master/Further_Reading.md](https://github.com/PacktPublishing/Linux-Kernel-Programming/blob/master/Further_Reading.md).
+  id: totrans-466
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了帮助您深入了解这个主题并提供有用的材料，我们在本书的GitHub存储库中提供了一个相当详细的在线参考和链接列表（有时甚至包括书籍）。*进一步阅读*文档在这里可用：[https://github.com/PacktPublishing/Linux-Kernel-Programming/blob/master/Further_Reading.md](https://github.com/PacktPublishing/Linux-Kernel-Programming/blob/master/Further_Reading.md)。

@@ -1,0 +1,2070 @@
+- en: Implementing the Weather Application
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现天气应用程序
+- en: 'The first application in this book is going to be a web scraping application
+    that will scrape weather forecast information from [https://weather.com](https://weather.com)
+    and present it in a terminal. We will add some options that can be passed as arguments
+    to the application, such as:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本书中的第一个应用程序将是一个网络爬虫应用程序，它将从[https://weather.com](https://weather.com)爬取天气预报信息并在终端中呈现。我们将添加一些选项，可以将其作为应用程序的参数传递，例如：
+- en: The temperature unit (Celsius or Fahrenheit)
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 温度单位（摄氏度或华氏度）
+- en: The area where you can get the weather forecast
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 您可以获取天气预报的地区
+- en: Output options where the user of our application can choose between the current
+    forecast, a five-day forecast, a ten-day forecast, and the weekend
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 用户可以在我们的应用程序中选择当前预报、五天预报、十天预报和周末的输出选项
+- en: Ways to complement the output with extra information such as wind and humidity
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 补充输出的方式，例如风和湿度等额外信息
+- en: Apart from the aforementioned arguments, this application will be designed to
+    be extendable, which means that we can create parsers for different websites to
+    get a weather forecast, and these parsers will be available as argument options.
+  id: totrans-6
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了上述参数之外，此应用程序将被设计为可扩展的，这意味着我们可以为不同的网站创建解析器来获取天气预报，并且这些解析器将作为参数选项可用。
+- en: 'In this chapter, you will learn how to:'
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您将学习如何：
+- en: Use object-oriented programming concepts in Python applications
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Python应用程序中使用面向对象编程概念
+- en: Scrape data from websites using the `BeautifulSoup` package
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`BeautifulSoup`包从网站上爬取数据
+- en: Receive command line arguments
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 接收命令行参数
+- en: Utilize the `inspect` module
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 利用`inspect`模块
+- en: Load Python modules dynamically
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 动态加载Python模块
+- en: Use Python comprehensions
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Python推导
+- en: Use `Selenium` to request a webpage and inspect its DOM elements
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`Selenium`请求网页并检查其DOM元素
+- en: Before we get started, it is important to say that when developing web scraping
+    applications, you should keep in mind that these types of applications are susceptible
+    to changes. If the developers of the site that you are getting data from change
+    a CSS class name, or the structure of the HTML DOM, the application will stop
+    working. Also, if the URL of the site we are getting the data from changes, the
+    application will not be able to send requests.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始之前，重要的是要说，当开发网络爬虫应用程序时，您应该牢记这些类型的应用程序容易受到更改的影响。如果您从中获取数据的网站的开发人员更改了CSS类名或HTML
+    DOM的结构，应用程序将停止工作。此外，如果我们获取数据的网站的URL更改，应用程序将无法发送请求。
+- en: Setting up the environment
+  id: totrans-16
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置环境
+- en: Before we get right into writing our first example, we need to set up an environment
+    to work and install any dependencies that the project may have. Luckily, Python
+    has a really nice tooling system to work with virtual environments.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开始编写第一个示例之前，我们需要设置一个环境来工作并安装项目可能具有的任何依赖项。幸运的是，Python有一个非常好的工具系统来处理虚拟环境。
+- en: Virtual environments in Python are a broad subject, and beyond the scope of
+    this book. However, if you are not familiar with virtual environments, it will
+    suffice to know that a virtual environment is a contained Python environment that
+    is isolated from your global Python installation. This isolation allows developers
+    to easily work with different versions of Python, install packages within the
+    environment, and manage project dependencies without interfering with Python's
+    global installation.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Python中的虚拟环境是一个广泛的主题，超出了本书的范围。但是，如果您不熟悉虚拟环境，知道虚拟环境是一个与全局Python安装隔离的Python环境即可。这种隔离允许开发人员轻松地使用不同版本的Python，在环境中安装软件包，并管理项目依赖项，而不会干扰Python的全局安装。
+- en: Python's installation comes with a module called `venv`, which you can use to
+    create virtual environments; the syntax is fairly straightforward. The application
+    that we are going to create is called `weatherterm` (weather terminal), so we
+    can create a virtual environment with the same name to make it simple.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Python的安装包含一个名为`venv`的模块，您可以使用它来创建虚拟环境；语法非常简单。我们将要创建的应用程序称为`weatherterm`（天气终端），因此我们可以创建一个同名的虚拟环境，以使其简单。
+- en: 'To create a new virtual environment, open a terminal and run the following
+    command:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要创建一个新的虚拟环境，请打开终端并运行以下命令：
+- en: '[PRE0]'
+  id: totrans-21
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'If everything goes well, you should see a directory called `weatherterm` in
+    the directory you are currently at. Now that we have the virtual environment,
+    we just need to activate it with the following command:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果一切顺利，您应该在当前目录中看到一个名为`weatherterm`的目录。现在我们有了虚拟环境，我们只需要使用以下命令激活它：
+- en: '[PRE1]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: I recommend installing and using `virtualenvwrapper`, which is an extension
+    of the `virtualenv` tool. This makes it very simple to manage, create, and delete
+    virtual environments as well as quickly switch between them. If you wish to investigate
+    this further, visit: [https://virtualenvwrapper.readthedocs.io/en/latest/#](https://virtualenvwrapper.readthedocs.io/en/latest/#).
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我建议安装并使用`virtualenvwrapper`，这是`virtualenv`工具的扩展。这使得管理、创建和删除虚拟环境以及快速在它们之间切换变得非常简单。如果您希望进一步了解，请访问：[https://virtualenvwrapper.readthedocs.io/en/latest/#](https://virtualenvwrapper.readthedocs.io/en/latest/#)。
+- en: Now, we need to create a directory where we are going to create our application.
+    Don't create this directory in the same directory where you created the virtual
+    environment; instead, create a projects directory and create the directory for
+    the application in there. I would recommend you name it with the same name as
+    the virtual environment for simplicity.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要创建一个目录，我们将在其中创建我们的应用程序。不要在创建虚拟环境的同一目录中创建此目录；相反，创建一个项目目录，并在其中创建应用程序目录。我建议您简单地使用与虚拟环境相同的名称命名它。
+- en: I am setting the environment and running all the examples in a machine with
+    Debian 9.2 installed, and at the time of writing, I am running the latest Python
+    version (3.6.2). If you are a Mac user, it shouldn't be so different; however,
+    if you are on Windows, the steps can be slightly different, but it is not hard
+    to find information on how to set up virtual environments on it. A Python 3 installation
+    works nicely on Windows nowadays.
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我正在设置环境并在安装了Debian 9.2的机器上运行所有示例，并且在撰写本文时，我正在运行最新的Python版本（3.6.2）。如果您是Mac用户，情况可能不会有太大差异；但是，如果您使用Windows，步骤可能略有不同，但是很容易找到有关如何在其中设置虚拟环境的信息。现在，Windows上的Python
+    3安装效果很好。
+- en: 'Go into the project''s directory that you just created and create a file named
+    `requirements.txt` with the following content:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 进入刚创建的项目目录并创建一个名为`requirements.txt`的文件，内容如下：
+- en: '[PRE2]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'These are all the dependencies that we need for this project:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些都是我们这个项目所需的所有依赖项：
+- en: '`BeautifulSoup`**:** This is a package for parsing HTML and XML files. We will
+    be using it to parse the HTML that we fetch from weather sites and to get the
+    weather data we need on the terminal. It is very simple to use and it has a great
+    documentation available online at: [http://beautiful-soup-4.readthedocs.io/en/latest/](http://beautiful-soup-4.readthedocs.io/en/latest/).'
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`BeautifulSoup`**：**这是一个用于解析HTML和XML文件的包。我们将使用它来解析从天气网站获取的HTML，并在终端上获取所需的天气数据。它非常简单易用，并且有在线上有很好的文档：[http://beautiful-soup-4.readthedocs.io/en/latest/](http://beautiful-soup-4.readthedocs.io/en/latest/)。'
+- en: '`Selenium`**:** This is a well-known set of tools for testing. There are many
+    applications, but it is mostly used for the automated testing of web applications.'
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`selenium`**：**这是一个用于测试的知名工具集。有许多应用程序，但它主要用于自动测试Web应用程序。'
+- en: 'To install the required packages in our virtual environment, you can run the
+    following command:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在我们的虚拟环境中安装所需的软件包，可以运行以下命令：
+- en: '[PRE3]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: It is always a good idea to make use of version-control tools like GIT or Mercurial.
+    It is very helpful to control changes, check history, rollback changes, and more.
+    If you are not familiar with any of these tools, there are plenty of tutorials
+    on the internet. You can get started by checking the documentation for GIT at: [https://git-scm.com/book/en/v1/Getting-Started](https://git-scm.com/book/en/v1/Getting-Started).
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 始终使用GIT或Mercurial等版本控制工具是一个好主意。它非常有助于控制更改，检查历史记录，回滚更改等。如果您对这些工具不熟悉，互联网上有很多教程。您可以通过查看GIT的文档来开始：[https://git-scm.com/book/en/v1/Getting-Started](https://git-scm.com/book/en/v1/Getting-Started)。
+- en: One last tool that we need to install is PhantomJS; you can download it from: [http://phantomjs.org/download.html](http://phantomjs.org/download.html)
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要安装的最后一个工具是PhantomJS；您可以从以下网址下载：[http://phantomjs.org/download.html](http://phantomjs.org/download.html)
+- en: After downloading it, extract the contents inside the `weatherterm` directory
+    and rename the folder to `phantomjs.`
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下载后，提取`weatherterm`目录中的内容，并将文件夹重命名为`phantomjs`。
+- en: With our virtual environment set up and PhantomJS installed, we are ready to
+    start coding!
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在设置好我们的虚拟环境并安装了PhantomJS后，我们准备开始编码！
+- en: Core functionality
+  id: totrans-38
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 核心功能
+- en: 'Let''s start by creating a directory for your module. Inside of the project''s
+    root directory, create a subdirectory called `weatherterm.` The subdirectory `weatherterm`
+    is where our module will live. The module directory needs two subdirectories -
+    `core` and `parsers`. The project''s directory structure should look like this:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，创建一个模块的目录。在项目的根目录内，创建一个名为`weatherterm`的子目录。`weatherterm`子目录是我们模块的所在地。模块目录需要两个子目录-`core`和`parsers`。项目的目录结构应该如下所示：
+- en: '[PRE4]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Loading parsers dynamically
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 动态加载解析器
+- en: 'This application is intended to be flexible and allow developers to create
+    different parsers for different weather websites. We are going to create a parser
+    loader that will dynamically discover files inside of the `parsers` directory,
+    load them, and make them available to be used by the application without requiring
+    changes to any other parts of the code. Here are the rules that our loader will
+    require when implementing new parsers:'
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个应用程序旨在灵活，并允许开发人员为不同的天气网站创建不同的解析器。我们将创建一个解析器加载器，它将动态发现`parsers`目录中的文件，加载它们，并使它们可供应用程序使用，而无需更改代码的其他部分。在实现新解析器时，我们的加载器将需要遵循以下规则：
+- en: Create a file with a class implementing the methods for fetching the current
+    weather forecast as well as five-day, ten-day, and weekend weather forecasts
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 创建一个实现获取当前天气预报以及五天、十天和周末天气预报方法的类文件
+- en: The file name has to end with `parser`, for example, `weather_com_parser.py`
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文件名必须以`parser`结尾，例如`weather_com_parser.py`
+- en: The file name can't start with double underscores
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 文件名不能以双下划线开头
+- en: 'With that said, let''s go ahead and create the parser loader. Create a file
+    named `parser_loader.py` inside of the `weatherterm/core` directory and add the
+    following content:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 说到这里，让我们继续创建解析器加载器。在`weatherterm/core`目录中创建一个名为`parser_loader.py`的文件，并添加以下内容：
+- en: '[PRE5]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: First, the `_get_parser_list` function is executed and returns a list of all
+    files located in `weatherterm/parsers`; it will filter the files based on the
+    rules of the parser described previously. After returning a list of files, it
+    is time to import the module. This is done by the `_import_parsers` function,
+    which first imports the `weatherterm.parsers` module and makes use of the inspect
+    package in the standard library to find the parser classes within the module.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，执行`_get_parser_list`函数并返回位于`weatherterm/parsers`中的所有文件的列表；它将根据先前描述的解析器规则过滤文件。返回文件列表后，就可以导入模块了。这是由`_import_parsers`函数完成的，它首先导入`weatherterm.parsers`模块，并利用标准库中的inspect包来查找模块中的解析器类。
+- en: The `inspect.getmembers` function returns a list of tuples where the first item
+    is a key representing a property in the module, and the second item is the value,
+    which can be of any type. In our scenario, we are interested in a property with
+    a key ending with `parser` and with the value of type class.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`inspect.getmembers`函数返回一个元组列表，其中第一项是表示模块中的属性的键，第二项是值，可以是任何类型。在我们的情况下，我们对以`parser`结尾的键和类型为类的值感兴趣。'
+- en: 'Assuming that we already have a parser in place in the `weatherterm/parsers` 
+    directory, the value returned by the `inspect.getmembers(_modules)` will look
+    something like this:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 假设我们已经在`weatherterm/parsers`目录中放置了一个解析器，`inspect.getmembers(_modules)`返回的值将看起来像这样：
+- en: '[PRE6]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: '`inspect.getmembers(_module)` returns many more items, but they have been omitted
+    since it is not relevant to show all of them at this point.'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`inspect.getmembers(_module)`返回了更多的项目，但它们已被省略，因为在这一点上展示它们并不相关。'
+- en: Lastly, we loop through the items in the module and extract the parser classes,
+    returning a dictionary containing the name of the class and the class object that
+    will be later used to create instances of the parser.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们循环遍历模块中的项目，并提取解析器类，返回一个包含类名和稍后用于创建解析器实例的类对象的字典。
+- en: Creating the application's model
+  id: totrans-54
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建应用程序的模型
+- en: 'Let''s start creating the model that will represent all the information that
+    our application will scrape from the weather website. The first item we are going
+    to add is an enumeration to represent each option of the weather forecast we will
+    provide to the users of our application. Create a file named `forecast_type.py`
+    in the directory `weatherterm/core` with the following contents:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们开始创建将代表我们的应用程序从天气网站上爬取的所有信息的模型。我们要添加的第一项是一个枚举，用于表示我们应用程序的用户将提供的天气预报选项。在`weatherterm/core`目录中创建一个名为`forecast_type.py`的文件，内容如下：
+- en: '[PRE7]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Enumerations have been in Python's standard library since version 3.4 and they
+    can be created using the syntax for creating classes. Just create a class inheriting
+    from `enum.Enum` containing a set of unique properties set to constant values.
+    Here, we have values for the four types of forecast that the application will
+    provide, and where values such as `ForecastType.TODAY`, `ForecastType.WEEKEND`,
+    and so on can be accessed.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 枚举自Python 3.4版本以来一直存在于Python标准库中，可以使用创建类的语法来创建。只需创建一个从`enum.Enum`继承的类，其中包含一组设置为常量值的唯一属性。在这里，我们为应用程序提供的四种类型的预报设置了值，可以访问`ForecastType.TODAY`、`ForecastType.WEEKEND`等值。
+- en: Note that we are assigning constant values that are different from the property
+    item of the enumeration, the reason being that later these values will be used
+    to build the URL to make requests to the weather website.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们正在分配与枚举的属性项不同的常量值，原因是以后这些值将用于构建请求天气网站的URL。
+- en: The application needs one more enumeration to represent the temperature units
+    that the user will be able to choose from in the command line. This enumeration
+    will contain Celsius and Fahrenheit items.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用程序需要另一个枚举来表示用户在命令行中可以选择的温度单位。这个枚举将包含摄氏度和华氏度项目。
+- en: 'First, let''s include a base enumeration. Create a file called `base_enum.py`
+    in the `weatherterm/core` directory with the following contents:'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们包含一个基本枚举。在`weatherterm/core`目录中创建一个名为`base_enum.py`的文件，内容如下：
+- en: '[PRE8]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: '`BaseEnum` is a very simple class inheriting from `Enum `. The only thing we
+    want to do here is override the method `_generate_next_value_` so that every enumeration
+    that inherits from `BaseEnum` and has properties with the value set to `auto() ` will
+    automatically get the same value as the property name.'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`BaseEnum`是一个非常简单的类，继承自`Enum`。我们在这里想要做的唯一一件事是覆盖`_generate_next_value_`方法，以便从`BaseEnum`继承的每个枚举和具有值设置为`auto()`的属性将自动获得与属性名称相同的值。'
+- en: 'Now, we can create an enumeration for the temperature units. Create a file
+    called `unit.py` in the `weatherterm/core` directory with the following content:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以为温度单位创建一个枚举。在`weatherterm/core`目录中创建一个名为`unit.py`的文件，内容如下：
+- en: '[PRE9]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: This class inherits from the `BaseEnum` that we just created, and every property
+    is set to `auto()`, meaning the value for every item in the enumeration will be
+    set automatically for us. Since the `Unit` class inherits from `BaseEnum`, every
+    time the `auto()` is called, the `_generate_next_value_` method on `BaseEnum `will
+    be invoked and will return the name of the property itself.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个类继承自我们刚刚创建的`BaseEnum`，每个属性都设置为`auto()`，这意味着枚举中每个项目的值将自动设置。由于`Unit`类继承自`BaseEnum`，每次调用`auto()`时，`BaseEnum`上的`_generate_next_value_`方法将被调用，并返回属性本身的名称。
+- en: 'Before we try this out, let''s create a file called `__init__.py` in the `weatherterm/core`
+    directory and import the enumeration that we just created, like so:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们尝试这个之前，让我们在`weatherterm/core`目录中创建一个名为`__init__.py`的文件，并导入我们刚刚创建的枚举，如下所示：
+- en: '[PRE10]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'If we load this class in the Python REPL and check the values, the following
+    will occur:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们在Python REPL中加载这个类并检查值，将会发生以下情况：
+- en: '[PRE11]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Another item that we also want to add to the core module of our application
+    is a class to represent the weather forecast data that the parser returns. Let''s
+    go ahead and create a file named `forecast.py` in the `weatherterm/core` directory
+    with the following contents:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还想要添加到我们应用程序的核心模块的另一项内容是一个类，用于表示解析器返回的天气预报数据。让我们继续在`weatherterm/core`目录中创建一个名为`forecast.py`的文件，内容如下：
+- en: '[PRE12]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'In the Forecast class, we will define properties for all the data we are going
+    to parse:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Forecast类中，我们将定义我们将要解析的所有数据的属性：
+- en: '| `current_temp` | Represents the current temperature. It will only be available
+    when getting today''s weather forecast. |'
+  id: totrans-73
+  prefs: []
+  type: TYPE_TB
+  zh: '| `current_temp` | 表示当前温度。仅在获取今天的天气预报时才可用。 |'
+- en: '| `humidity` | The humidity percentage for the day. |'
+  id: totrans-74
+  prefs: []
+  type: TYPE_TB
+  zh: '| `humidity` | 一天中的湿度百分比。 |'
+- en: '| `wind` | Information about today''s current wind levels. |'
+  id: totrans-75
+  prefs: []
+  type: TYPE_TB
+  zh: '| `wind` | 有关今天当前风级的信息。 |'
+- en: '| `high_temp` | The highest temperature for the day. |'
+  id: totrans-76
+  prefs: []
+  type: TYPE_TB
+  zh: '| `high_temp` | 一天中的最高温度。 |'
+- en: '| `low_temp` | The lowest temperature for the day. |'
+  id: totrans-77
+  prefs: []
+  type: TYPE_TB
+  zh: '| `low_temp` | 一天中的最低温度。 |'
+- en: '| `description` | A description of the weather conditions, for example, *Partly
+    Cloudy.* |'
+  id: totrans-78
+  prefs: []
+  type: TYPE_TB
+  zh: '| `description` | 天气条件的描述，例如*部分多云*。 |'
+- en: '| `forecast_date` | Forecast date; if not supplied, it will be set to the current
+    date. |'
+  id: totrans-79
+  prefs: []
+  type: TYPE_TB
+  zh: '| `forecast_date` | 预测日期；如果未提供，将设置为当前日期。 |'
+- en: '| `forecast_type` | Any value in the enumeration `ForecastType` (`TODAY`, `FIVEDAYS`,
+    `TENDAYS`, or `WEEKEND`). |'
+  id: totrans-80
+  prefs: []
+  type: TYPE_TB
+  zh: '| `forecast_type` | 枚举`ForecastType`中的任何值（`TODAY`，`FIVEDAYS`，`TENDAYS`或`WEEKEND`）。
+    |'
+- en: We can also implement two methods called `forecast_date ` with the decorators
+    `@property ` and `@forecast_date.setter `. The `@property ` decorator will turn
+    the method into a getter for the `_forecast_date` property of the Forecast class,
+    and the `@forecast_date.setter` will turn the method into a setter.  The setter
+    was defined here because, every time we need to set the date in an instance of
+    `Forecast`, we need to make sure that it will be formatted accordingly. In the
+    setter, we call the `strftime` method, passing the format codes `%a` (weekday
+    abbreviated name), `%b` (monthly abbreviated name), and `%d` (day of the month).
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以实现两个名为`forecast_date`的方法，使用`@property`和`@forecast_date.setter`装饰器。`@property`装饰器将方法转换为`Forecast`类的`_forecast_date`属性的getter，而`@forecast_date.setter`将方法转换为setter。之所以在这里定义setter，是因为每次需要在`Forecast`的实例中设置日期时，我们都需要确保它将被相应地格式化。在setter中，我们调用`strftime`方法，传递格式代码`%a`（缩写的星期几名称），`%b`（缩写的月份名称）和`%d`（月份的第几天）。
+- en: The format codes `%a` and `%b` will use the locale configured in the machine
+    that the code is running on.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 格式代码`%a`和`%b`将使用在运行代码的机器上配置的区域设置。
+- en: Lastly, we override the `__str__` method to allow us to format the output the
+    way we would like when using the `print`, `format`, and `str` functions.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们重写`__str__`方法，以便在使用`print`，`format`和`str`函数时以我们希望的方式格式化输出。
+- en: 'By default, the temperature unit used by `weather.com` is `Fahrenheit`, and
+    we want to give the users of our application the option to use Celsius instead.
+    So, let''s go ahead and create one more file in the `weatherterm/core` directory called
+    `unit_converter.py` with the following content:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，`weather.com`使用的温度单位是`华氏度`，我们希望我们的应用程序用户可以选择使用摄氏度。因此，让我们继续在`weatherterm/core`目录中创建一个名为`unit_converter.py`的文件，内容如下：
+- en: '[PRE13]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: This is the class that is going to make the temperature conversions from Celsius
+    to Fahrenheit and vice versa. The initializer of this class gets two arguments;
+    the default unit used by the parser and the destination unit. In the initializer,
+    we will define a dictionary containing the functions that will be used for temperature
+    unit conversion.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个类将负责将摄氏度转换为华氏度，反之亦然。这个类的初始化器有两个参数；解析器使用的默认单位和目标单位。在初始化器中，我们将定义一个包含用于温度单位转换的函数的字典。
+- en: The `convert` method only gets one argument, the temperature. Here, the temperature
+    is a string, so the first thing we need to do is try converting it to a float
+    value; if it fails, it will return a zero value right away.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`convert`方法只接受一个参数，即温度。在这里，温度是一个字符串，因此我们需要尝试将其转换为浮点值；如果失败，它将立即返回零值。'
+- en: You can also verify whether the destination unit is the same as the parser's
+    default unit or not. In that case, we don't need to continue and perform any conversion;
+    we simply format the value and return it.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以验证目标单位是否与解析器的默认单位相同。在这种情况下，我们不需要继续执行任何转换；我们只需格式化值并返回它。
+- en: If we need to perform a conversion, we can look up the `_convert_functions ` dictionary
+    to find the `conversion` function that we need to run. If we find the function
+    we are looking for, we invoke it and return the formatted value.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果需要执行转换，我们可以查找`_convert_functions`字典，找到需要运行的`conversion`函数。如果找到我们正在寻找的函数，我们调用它并返回格式化的值。
+- en: 'The code snippet below shows the `_format_results` method, which is a utility
+    method that will format the temperature value for us:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下面的代码片段显示了`_format_results`方法，这是一个实用方法，将为我们格式化温度值：
+- en: '[PRE14]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: The `_format_results` method checks if the number is an integer; the `value.is_integer()`
+    will return `True` if the number is, for example, 10.0\. If `True`, we will use
+    the `int` function to convert the value to 10; otherwise, the value is returned
+    as a fixed-point number with a precision of 1\. The default precision in Python
+    is 6\. Lastly, there are two utility methods that perform the temperature conversions, `_to_celsius` and
+    `_to_fahrenheit`.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`_format_results`方法检查数字是否为整数；如果`value.is_integer()`返回`True`，则表示数字是整数，例如10.0。如果为`True`，我们将使用`int`函数将值转换为10；否则，该值将作为具有精度为1的定点数返回。Python中的默认精度为6。最后，有两个实用方法执行温度转换，`_to_celsius`和`_to_fahrenheit`。'
+- en: 'Now, we only need to edit the `__init__.py` file in the `weatherterm/core`
+    directory and include the following import statements:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们只需要编辑`weatherterm/core`目录中的`__init__.py`文件，并包含以下导入语句：
+- en: '[PRE15]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Fetching data from the weather website
+  id: totrans-95
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从天气网站获取数据
+- en: 'We are going to add a class named `Request` that will be responsible for getting
+    the data from the weather website. Let''s add a file named `request.py` in the
+    `weatherterm/core` directory with the following content:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将添加一个名为`Request`的类，负责从天气网站获取数据。让我们在`weatherterm/core`目录中添加一个名为`request.py`的文件，内容如下：
+- en: '[PRE16]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: This class is very simple; the initializer defines the base URL and creates
+    a PhantomJS driver, using the path where PhantomJS is installed. The `fetch_data`
+    method formats the URL, adding the forecast option and the area. After that, the
+    `webdriver` performs a request and returns the page source. If the title of the
+    markup returned is `404 Not Found`, it will raise an exception. Unfortunately,
+    `Selenium` doesn't provide a proper way of getting the HTTP Status code; this
+    would have been much better than comparing strings.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个类非常简单；初始化程序定义了基本URL并创建了一个PhantomJS驱动程序，使用PhantomJS安装的路径。`fetch_data`方法格式化URL，添加预测选项和区域。之后，`webdriver`执行请求并返回页面源代码。如果返回的标记标题是`404
+    Not Found`，它将引发异常。不幸的是，`Selenium`没有提供获取HTTP状态代码的正确方法；这比比较字符串要好得多。
+- en: You may notice that I prefix some of the class properties with an underscore
+    sign. I usually do that to show that the underlying property is private and shouldn't
+    be set outside the class. In Python, there is no need to do that because there's
+    no way to set private or public properties; however, I like it because I can clearly
+    show my intent.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会注意到，我在一些类属性前面加了下划线符号。我通常这样做是为了表明底层属性是私有的，不应该在类外部设置。在Python中，没有必要这样做，因为没有办法设置私有或公共属性；但是，我喜欢这样做，因为我可以清楚地表明我的意图。
+- en: 'Now, we can import it in the `__init__.py ` file in the `weatherterm/core` directory:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以在`weatherterm/core`目录中的`__init__.py`文件中导入它：
+- en: '[PRE17]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Now we have a parser loader to load any parser that we drop into the directory
+    `weatherterm/parsers`,  we have a class representing the forecast model, and an
+    enumeration `ForecastType` so we can specify which type of forecast we are parsing.
+    The enumeration represents temperature units and utility functions to convert
+    temperatures from `Fahrenheit` to `Celsius` and `Celsius` to `Fahrenheit.` So
+    now, we should be ready to create the application's entry point to receive all
+    the arguments passed by the user, run the parser, and present the data on the
+    terminal.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有一个解析器加载器，可以加载我们放入`weatherterm/parsers`目录中的任何解析器，我们有一个表示预测模型的类，以及一个枚举`ForecastType`，因此我们可以指定要解析的预测类型。该枚举表示温度单位和实用函数，用于将温度从`华氏度`转换为`摄氏度`和从`摄氏度`转换为`华氏度`。因此，现在，我们应该准备好创建应用程序的入口点，以接收用户传递的所有参数，运行解析器，并在终端上呈现数据。
+- en: Getting the user's input with ArgumentParser
+  id: totrans-103
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用ArgumentParser获取用户输入
+- en: Before we run our application for the first time, we need to add the application's
+    entry point. The entry point is the first code that will be run when our application
+    is executed.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们第一次运行应用程序之前，我们需要添加应用程序的入口点。入口点是在执行应用程序时将首先运行的代码。
+- en: We want to give the users of our application the best user experience possible,
+    so the first features that we need to add are the ability to receive and parse
+    command line arguments, perform argument validation, set arguments when needed,
+    and, last but not least, show an organized and informative help system so the
+    users can see which arguments can be used and how to use the application.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们希望为我们的应用程序的用户提供尽可能好的用户体验，因此我们需要添加的第一个功能是能够接收和解析命令行参数，执行参数验证，根据需要设置参数，最后但并非最不重要的是，显示一个有组织且信息丰富的帮助系统，以便用户可以查看可以使用哪些参数以及如何使用应用程序。
+- en: Sounds like tedious work, right?
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 听起来很繁琐，对吧？
+- en: Luckily, Python has batteries included and the standard library contains a great
+    module that allows us to implement this in a very simple way; the module is called
+    `argparse`.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，Python自带了很多功能，标准库中包含一个很棒的模块，可以让我们以非常简单的方式实现这一点；该模块称为`argparse`。
+- en: 'Another feature that would be good to have is for our application to be easy
+    to distribute to our users. One approach is to create a `__main__.py` file in
+    the `weatherterm` module directory, and you can run the module as a regular script.
+    Python will automatically run the `__main__.py` file, like so:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个很好的功能是让我们的应用程序易于分发给用户。一种方法是在`weatherterm`模块目录中创建一个`__main__.py`文件，然后可以像运行常规脚本一样运行模块。Python将自动运行`__main__.py`文件，如下所示：
+- en: '[PRE18]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Another option is to zip the entire application's directory and execute the
+    Python passing the name of the ZIP file instead. This is an easy, fast, and simple
+    way to distribute our Python programs.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 另一个选项是压缩整个应用程序目录并执行Python，传递ZIP文件的名称。这是一种简单、快速、简单的分发Python程序的方法。
+- en: There are many other ways of distributing your programs, but they are beyond
+    the scope of this book; I just wanted to give you some examples of the usage of
+    the `__main__.py` file.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还有许多其他分发程序的方法，但这超出了本书的范围；我只是想给你一些使用`__main__.py`文件的例子。
+- en: 'With that said, let''s create a `__main__.py` file inside of the `weatherterm` directory
+    with the following content:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这个说法，让我们在`weatherterm`目录中创建一个`__main__.py`文件，内容如下：
+- en: '[PRE19]'
+  id: totrans-113
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: The weather forecast options (today, five days, ten days, and weekend forecast)
+    that our application will accept will not be required; however, at least one option
+    must be provided in the command line, so we create a simple function called `_validate_forecast_args`
+    to perform this validation for us. This function will show a help message and
+    exit the application.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的应用程序将接受的天气预报选项（今天、五天、十天和周末预报）不是必需的；但是，至少必须在命令行中提供一个选项，因此我们创建了一个名为`_validate_forecast_args`的简单函数来执行此验证。此函数将显示帮助消息并退出应用程序。
+- en: First, we get all the parsers available in the `weatherterm/parsers` directory.
+    The list of parsers will be used as valid values for the parser argument.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们获取`weatherterm/parsers`目录中可用的所有解析器。解析器列表将用作解析器参数的有效值。
+- en: It is the `ArgumentParser` object that does the job of defining the parameters,
+    parsing the values, and showing help, so we create an instance of `ArgumentParser`
+    and also create an argument group for the required parameters. This will make
+    the help output look much nicer and organized.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ArgumentParser`对象负责定义参数、解析值和显示帮助，因此我们创建一个`ArgumentParser`的实例，并创建一个必需参数的参数组。这将使帮助输出看起来更加美观和有组织。'
+- en: In order to make the parameters and the help output more organized, we are going
+    to create a group within the `ArgumentParser` object. This group will contain
+    all the required arguments that our application needs. This way, the users of
+    our application can easily see which parameters are required and the ones that
+    are not required.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使参数和帮助输出更有组织，我们将在`ArgumentParser`对象中创建一个组。此组将包含我们的应用程序需要的所有必需参数。这样，我们的应用程序的用户可以轻松地看到哪些参数是必需的，哪些是不必需的。
+- en: 'We achieve this with the following statement:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们通过以下语句实现了这一点：
+- en: '[PRE20]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: After creating the argument group for the required arguments, we get a list
+    of all members of the enumeration `Unit` and use the `title()` function to make
+    only the first letter a capital letter.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在为必需参数创建参数组之后，我们获取枚举`Unit`的所有成员的列表，并使用`title()`函数使只有第一个字母是大写字母。
+- en: Now, we can start adding the arguments that our application will be able to
+    receive on the command line. Most argument definitions use the same set of keyword
+    arguments, so I will not be covering all of them.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以开始添加我们的应用程序能够在命令行接收的参数。大多数参数定义使用相同的一组关键字参数，因此我不会覆盖所有参数。
+- en: 'The first argument that we will create is `--parser` or `-p`:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建的第一个参数是`--parser`或`-p`：
+- en: '[PRE21]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Let''s break down every parameter of the `add_argument ` used when creating
+    the parser flag:'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们分解创建解析器标志时使用的`add_argument`的每个参数：
+- en: The first two parameters are the flags. In this case, the user passes a value
+    to this argument using either `-p` or `--parser` in the command line, for example,
+    `--parser WeatherComParser`.
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 前两个参数是标志。在这种情况下，用户可以使用`-p`或`--parser`在命令行中传递值给此参数，例如`--parser WeatherComParser`。
+- en: The `choices` parameter specifies a list of valid values for that argument that
+    we are creating. Here, we are using `parsers.keys()`, which will return a list
+    of parser names. The advantage of this implementation is that if we add a new
+    parser, it will be automatically added to this list, and no changes will be required
+    in this file.
+  id: totrans-126
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`choices`参数指定我们正在创建的参数的有效值列表。在这里，我们使用`parsers.keys()`，它将返回一个解析器名称的列表。这种实现的优势是，如果我们添加一个新的解析器，它将自动添加到此列表中，而且不需要对此文件进行任何更改。'
+- en: The `required` parameter, as the name says, specifies if the argument will be
+    required or not.
+  id: totrans-127
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`required`参数，顾名思义，指定参数是否为必需的。'
+- en: The `dest` parameter specifies the name of the attribute to be added to the
+    resulting object of the parser argument. The object returned by `parser_args()` will
+    contain an attribute called `parser` with the value that we passed to this argument
+    in the command line.
+  id: totrans-128
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`dest`参数指定要添加到解析器参数的结果对象中的属性的名称。`parser_args()`返回的对象将包含一个名为`parser`的属性，其值是我们在命令行中传递给此参数的值。'
+- en: Finally, the `help` parameter is the argument's help text, shown when using
+    the `-h` or `--help` flag.
+  id: totrans-129
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最后，`help`参数是参数的帮助文本，在使用`-h`或`--help`标志时显示。
+- en: 'Moving on to the `--today` argument:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 转到`--today`参数：
+- en: '[PRE22]'
+  id: totrans-131
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Here we have two keyword arguments that we haven't seen before, `action` and
+    `const`.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里有两个我们以前没有见过的关键字参数，`action`和`const`。
+- en: Actions can be bound to the arguments that we create and they can perform many
+    things. The `argparse` module contains a great set of actions, but if you need
+    to do something specific, you can create your own action that will meet your needs.
+    Most actions defined in the `argparse` module are actions to store values in the
+    parse result's object attributes.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 行动可以绑定到我们创建的参数，并且它们可以执行许多操作。`argparse`模块包含一组很棒的操作，但如果您需要执行特定操作，可以创建自己的操作来满足您的需求。`argparse`模块中定义的大多数操作都是将值存储在解析结果对象属性中的操作。
+- en: In the previous code snippet, we use the `store_const` action, which will store
+    a constant value to an attribute in the object returned by `parse_args()`.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码片段中，我们使用了`store_const`操作，它将一个常量值存储到`parse_args()`返回的对象中的属性中。
+- en: We also used the keyword argument `const`, which specifies the constant default
+    value when the flag is used in the command line.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还使用了关键字参数`const`，它指定在命令行中使用标志时的常量默认值。
+- en: 'Remember that I mentioned that it is possible to create custom actions? The
+    argument unit is a great use case for a custom action. The `choices` argument
+    is just a list of strings, so we use this comprehension to get the list of names
+    of every item in the `Unit` enumeration, as follows:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记住我提到过可以创建自定义操作吗？参数unit是自定义操作的一个很好的用例。`choices`参数只是一个字符串列表，因此我们使用此推导式获取`Unit`枚举中每个项目的名称列表，如下所示：
+- en: '[PRE23]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: The object returned by `parse_args()` will contain an attribute called unit
+    with a string value (`Celsius` or `Fahrenheit`), but this is not exactly what
+    we want. Wouldn't it be nice to have the value as an enumeration item instead?
+    We can change this behavior by creating a custom action.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`parse_args()`返回的对象将包含一个名为unit的属性，其值为字符串（`Celsius`或`Fahrenheit`），但这并不是我们想要的。我们可以通过创建自定义操作来更改此行为。'
+- en: 'First, add a new file named `set_unit_action.py` in the `weatherterm/core`
+    directory with the following contents:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，在`weatherterm/core`目录中添加一个名为`set_unit_action.py`的新文件，内容如下：
+- en: '[PRE24]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: This action class is very simple; it just inherits from `argparse.Action` and
+    overrides the `__call__` method, which will be called when the argument value
+    is parsed. This is going to be set to the destination attribute.
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个操作类非常简单；它只是继承自`argparse.Action`并覆盖`__call__`方法，当解析参数值时将调用该方法。这将设置为目标属性。
+- en: 'The `parser` parameter will be an instance of `ArgumentParser`. The namespace
+    is an instance of `argparser.Namespace` and it is just a simple class containing
+    all the attributes defined in the `ArgumentParser` object. If you inspect this
+    parameter with the debugger, you will see something similar to this:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`parser`参数将是`ArgumentParser`的一个实例。命名空间是`argparser.Namespace`的一个实例，它只是一个简单的类，包含`ArgumentParser`对象中定义的所有属性。如果您使用调试器检查此参数，您将看到类似于这样的东西：'
+- en: '[PRE25]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: The `values` parameter is the value that the user has passed on the command
+    line; in our case, it can be either Celsius or Fahrenheit. Lastly, the `option_string` parameter
+    is the flag defined for the argument. For the unit argument, the value of `option_string` will
+    be `-u`.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`values`参数是用户在命令行上传递的值；在我们的情况下，它可以是摄氏度或华氏度。最后，`option_string`参数是为参数定义的标志。对于单位参数，`option_string`的值将是`-u`。'
+- en: 'Fortunately, enumerations in Python allow us to access their members and attributes
+    using item access:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，Python中的枚举允许我们使用项目访问它们的成员和属性：
+- en: '[PRE26]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Verifying this in Python REPL, we have:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Python REPL中验证这一点，我们有：
+- en: '[PRE27]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: After getting the correct enumeration member, we set the value of the property
+    specified by `self.dest` in the namespace object. That is much cleaner and we
+    don't need to deal with magic strings.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在获取正确的枚举成员之后，我们设置了命名空间对象中`self.dest`指定的属性的值。这样更清晰，我们不需要处理魔术字符串。
+- en: 'With the custom action in place, we need to add the import statement in the `__init__.py` file
+    in the `weatherterm/core` directory:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了自定义操作，我们需要在`weatherterm/core`目录中的`__init__.py`文件中添加导入语句：
+- en: '[PRE28]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Just include the line above at the end of the file. Then, we need to import
+    it into the `__main__.py` file,  like so:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只需在文件末尾包含上面的行。然后，我们需要将其导入到`__main__.py`文件中，就像这样：
+- en: '[PRE29]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'And we are going to add the `action` keyword argument in the definition of
+    the unit argument and set it to `SetUnitAction`, like so:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们将在单位参数的定义中添加`action`关键字参数，并将其设置为`SetUnitAction`，就像这样：
+- en: '[PRE30]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'So, when the user of our application uses the flag `-u` for Celsius, the value
+    of the attribute unit in the object returned by the `parse_args() ` function will
+    be:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，当我们的应用程序的用户使用摄氏度标志`-u`时，`parse_args()`函数返回的对象的属性单位的值将是：
+- en: '`<Unit.CELSIUS: ''CELSIUS''>`'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`<Unit.CELSIUS: ''CELSIUS''>`'
+- en: The rest of the code is very straightforward; we invoke the `parse_args` function
+    to parse the arguments and set the result in the `args` variable. Then, we use
+    the value of `args.parser` (the name of the selected parser) and access that item
+    in the parser's dictionary. Remember that the value is the class type, so we create
+    an instance of the parser, and lastly, invoke the method run, which will kick
+    off website scraping.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码的其余部分非常简单；我们调用`parse_args`函数来解析参数并将结果设置在`args`变量中。然后，我们使用`args.parser`的值（所选解析器的名称）并访问解析器字典中的项。请记住，值是类类型，所以我们创建解析器的实例，最后调用run方法，这将启动网站抓取。
+- en: Creating the parser
+  id: totrans-159
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建解析器
+- en: In order to run our code for the first time, we need to create a parser. We
+    can quickly create a parser to run our code and check whether the values are being
+    parsed properly.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了第一次运行我们的代码，我们需要创建一个解析器。我们可以快速创建一个解析器来运行我们的代码，并检查数值是否被正确解析。
+- en: 'Let''s go ahead and create a file called `weather_com_parser.py` in the `weatherterm/parsers` directory.
+    To make it simple, we are going to create just the necessary methods, and the
+    only thing we are going to do when the methods are invoked is to raise a `NotImplementedError`:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续，在`weatherterm/parsers`目录中创建一个名为`weather_com_parser.py`的文件。为了简单起见，我们只会创建必要的方法，当这些方法被调用时，我们唯一要做的就是引发`NotImplementedError`：
+- en: '[PRE31]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: In the initializer, we create a dictionary where the key is a member of the `ForecasType` enumeration,
+    and the value is the method bound to any of these options. Our application will
+    be able to present today's, a five-day, ten-day, and the weekend forecast, so
+    we implement all four methods.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在初始化器中，我们创建了一个字典，其中键是`ForecasType`枚举的成员，值是绑定到任何这些选项的方法。我们的应用程序将能够呈现今天的、五天的、十天的和周末的预报，所以我们实现了所有四种方法。
+- en: The `run` method only does two things; it looks up the function that needs to
+    be executed using the `forecast_option` that we passed as an argument in the command
+    line, and executes the function returning its value.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`run`方法只做两件事；它使用我们在命令行中传递的`forecast_option`查找需要执行的函数，并执行该函数返回其值。'
+- en: 'Now, the application is finally ready to be executed for the first time if
+    you run the command in the command line:'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你在命令行中运行命令，应用程序终于准备好第一次执行了：
+- en: '[PRE32]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: 'You should see the application''s help options:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应该看到应用程序的帮助选项：
+- en: '[PRE33]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: As you can see, the `ArgumentParse` module already provides out-of-the-box output
+    for help. There are ways you can customize the output how you want to, but I find
+    the default layout really good.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，`ArgumentParse`模块已经提供了开箱即用的帮助输出。你可以按照自己的需求自定义输出的方式，但我觉得默认布局非常好。
+- en: Notice that the `-p` argument already gave you the option to choose the `WeatherComParser`.
+    It wasn't necessary to hardcode it anywhere because the parser loader did all
+    the work for us. The `-u` (`--unit`) flag also contains the items of the enumeration
+    `Unit`. If someday you want to extend this application and add new units, the
+    only thing you need to do here is to add the new item to the enumeration, and
+    it will be automatically picked up and included as an option for the `-u` flag.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意，`-p`参数已经给了你选择`WeatherComParser`的选项。因为解析器加载器已经为我们完成了所有工作，所以不需要在任何地方硬编码它。`-u`（`--unit`）标志也包含了枚举`Unit`的项。如果有一天你想扩展这个应用程序并添加新的单位，你唯一需要做的就是在这里添加新的枚举项，它将自动被捡起并包含为`-u`标志的选项。
+- en: 'Now, if you run the application again and this time pass some parameters:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果你再次运行应用程序并传递一些参数：
+- en: '[PRE34]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'You will get an exception similar to this:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你会得到类似于这样的异常：
+- en: '![](assets/c2b594fc-7ad7-4b4f-877a-3476564ec7f6.png)'
+  id: totrans-174
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/c2b594fc-7ad7-4b4f-877a-3476564ec7f6.png)'
+- en: Don't worry -- this is exactly what we wanted! If you follow the stack trace,
+    you can see that everything is working as intended. When we run our code, we call
+    the `run` method on the selected parser from the `__main__.py` file, then we select
+    the method associated with the forecast option, in this case, `_today_forecast`,
+    and finally store the result in the `forecast_function` variable.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不用担心——这正是我们想要的！如果您跟踪堆栈跟踪，您会看到一切都按预期工作。当我们运行我们的代码时，我们在`__main__.py`文件中选择了所选解析器上的`run`方法，然后选择与预报选项相关联的方法，例如`_today_forecast`，最后将结果存储在`forecast_function`变量中。
+- en: When the function stored in the `forecast_function` variable was executed, the
+    `NotImplementedError` exception was raised. So far so good; the code is working
+    perfectly and now we can start adding the implementation for each of these methods.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当执行存储在`forecast_function`变量中的函数时，引发了`NotImplementedError`异常。到目前为止一切顺利；代码完美运行，现在我们可以开始为这些方法中的每一个添加实现。
+- en: Getting today's weather forecast
+  id: totrans-177
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取今天的天气预报
+- en: The core functionality is in place and the entry point of the application with
+    the argument parser will give the users of our application a much better experience.
+    Now, it is finally the time we all have been waiting for, the time to start implementing
+    the parser. We will start implementing the method to get today's weather forecast.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 核心功能已经就位，应用程序的入口点和参数解析器将为我们的应用程序的用户带来更好的体验。现在，终于到了我们一直在等待的时间，开始实现解析器的时间。我们将开始实现获取今天的天气预报的方法。
+- en: 'Since I am in Sweden, I will use the area code `SWXX2372:1:SW` (Stockholm,
+    Sweden); however, you can use any area code you want. To get the area code of
+    your choice, go to [https://weather.com](https://weather.com) and search for the
+    area you want. After selecting the area, the weather forecast for the current
+    day will be displayed. Note that the URL changes, for example, when searching
+    Stockholm, Sweden, the URL changes to:'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我在瑞典，我将使用区号`SWXX2372:1:SW`（瑞典斯德哥尔摩）；但是，您可以使用任何您想要的区号。要获取您选择的区号，请转到[https://weather.com](https://weather.com)并搜索您想要的区域。选择区域后，将显示当天的天气预报。请注意，URL会更改，例如，搜索瑞典斯德哥尔摩时，URL会更改为：
+- en: '[https://weather.com/weather/today/l/SWXX2372:1:SW](https://weather.com/weather/today/l/SWXX2372:1:SW)'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://weather.com/weather/today/l/SWXX2372:1:SW](https://weather.com/weather/today/l/SWXX2372:1:SW)'
+- en: 'For São Paulo, Brazil it will be:'
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于巴西圣保罗，将是：
+- en: '[https://weather.com/weather/today/l/BRXX0232:1:BR](https://weather.com/weather/today/l/BRXX0232:1:BR)'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://weather.com/weather/today/l/BRXX0232:1:BR](https://weather.com/weather/today/l/BRXX0232:1:BR)'
+- en: Note that there is only one part of the URL that changes, and this is the area
+    code that we want to pass as an argument to our application.
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，URL只有一个部分会更改，这就是我们要作为参数传递给我们的应用程序的区号。
+- en: Adding helper methods
+  id: totrans-184
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加辅助方法
+- en: 'To start with, we need to import some packages:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要导入一些包：
+- en: '[PRE35]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'And in the initializer, we are going to add the following code:'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在初始化程序中，我们将添加以下代码：
+- en: '[PRE36]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: In the initializer, we define the URL template we are going to use to perform
+    requests to the weather website; then, we create a `Request` object. This is the
+    object that will perform the requests for us.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在初始化程序中，我们定义了要使用的URL模板，以执行对天气网站的请求；然后，我们创建了一个`Request`对象。这是将代表我们执行请求的对象。
+- en: Regular expressions are only used when parsing today's weather forecast temperatures.
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只有在解析今天的天气预报温度时才使用正则表达式。
+- en: We also define a `UnitConverter` object and set the default unit to `Fahrenheit`.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还定义了一个`UnitConverter`对象，并将默认单位设置为`华氏度`。
+- en: 'Now, we are ready to start adding two methods that will be responsible for
+    actually searching for HTML elements within a certain class and return its contents.
+    The first method is called `_get_data`:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们准备开始添加两个方法，这两个方法将负责实际搜索某个类中的HTML元素并返回其内容。第一个方法称为`_get_data`：
+- en: '[PRE37]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: The idea of this method is to search items within a container that matches some
+    criteria. The `container` is just a DOM element in the HTML and the `search_items` is
+    a dictionary where the key is a CSS class and the value is the type of the HTML
+    element. It can be a DIV, SPAN, or anything that you wish to get the value from.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法的想法是在匹配某些条件的容器中搜索项目。`container`只是HTML中的DOM元素，而`search_items`是一个字典，其中键是CSS类，值是HTML元素的类型。它可以是DIV、SPAN或您希望获取值的任何内容。
+- en: It starts looping through `search_items.items()` and uses the find method to
+    find the element within the container. If the item is found, we use `get_text` to
+    extract the text of the DOM element and add it to a dictionary that will be returned
+    when there are no more items to search.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它开始循环遍历`search_items.items()`，并使用find方法在容器中查找元素。如果找到该项，我们使用`get_text`提取DOM元素的文本，并将其添加到一个字典中，当没有更多项目可搜索时将返回该字典。
+- en: 'The second method that we will implement is the `_parser` method. This will
+    make use of the `_get_data` that we just implemented:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将实现的第二个方法是`_parser`方法。这将使用我们刚刚实现的`_get_data`：
+- en: '[PRE38]'
+  id: totrans-197
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Here, we also get a `container` and `criteria` like the `_get_data` method.
+    The container is a DOM element and the criterion is a dictionary of nodes that
+    we want to find. The first comprehension gets all the container's children elements
+    and passes them to the `_get_data` method.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们还会得到一个`container`和`criteria`，就像`_get_data`方法一样。容器是一个DOM元素，标准是我们要查找的节点的字典。第一个推导式获取所有容器的子元素，并将它们传递给刚刚实现的`_get_data`方法。
+- en: The results will be a list of dictionaries with all the items that have been
+    found, and we will only return the dictionaries that are not empty.
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 结果将是一个包含所有已找到项目的字典列表，我们只会返回不为空的字典。
+- en: 'There are only two more helper methods we need to implement in order to get
+    today''s weather forecast in place. Let''s implement a method called `_clear_str_number`:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还需要实现另外两个辅助方法，以便获取今天的天气预报。让我们实现一个名为`_clear_str_number`的方法：
+- en: '[PRE39]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: This method will use a regular expression to make sure that only digits are
+    returned.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种方法将使用正则表达式确保只返回数字。
+- en: 'And the last method that needs to be implemented is the `_get_additional_info` method:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还需要实现的最后一个方法是 `_get_additional_info` 方法：
+- en: '[PRE40]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: This method loops through the table rows, getting the text of every cell. This
+    comprehension will return lots of information about the weather, but we are only
+    interested in the first `2`, the wind and the humidity.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个方法循环遍历表格行，获取每个单元格的文本。这个推导式将返回有关天气的大量信息，但我们只对前 `2` 个感兴趣，即风和湿度。
+- en: Implementing today's weather forecast
+  id: totrans-206
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实施今天的天气预报
+- en: 'It''s time to start adding the implementation of the `_today_forecast` method,
+    but first, we need to import `BeautifulSoup`. At the top of the file, add the
+    following import statement:'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是时候开始添加 `_today_forecast` 方法的实现了，但首先，我们需要导入 `BeautifulSoup`。在文件顶部添加以下导入语句：
+- en: '[PRE41]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'Now, we can start adding the `_today_forecast` method:'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以开始添加 `_today_forecast` 方法：
+- en: '[PRE42]'
+  id: totrans-210
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: That is the function that will be called when the `-td` or `--today` flag is
+    used on the command line. Let's break down this code so that we can easily understand
+    what it does. Understanding this method is important because these methods parse
+    data from other weather forecast options (five days, ten days, and weekend) that
+    are very similar to this one.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是在命令行上使用`-td` 或`--today` 标志时将被调用的函数。让我们分解这段代码，以便我们可以轻松理解它的作用。理解这个方法很重要，因为这些方法解析了与此非常相似的其他天气预报选项（五天、十天和周末）的数据。
+- en: 'The method''s signature is quite simple; it only gets `args`, which is the
+    `Argument` object that is created in the `__main__` method. The first thing we
+    do in this method is to create a `criteria` dictionary with all the DOM elements
+    that we want to find in the markup:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个方法的签名非常简单；它只获取`args`，这是在`__main__` 方法中创建的`Argument` 对象。在这个方法中，我们首先创建一个包含我们想要在标记中找到的所有DOM元素的`criteria` 字典：
+- en: '[PRE43]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: 'As mentioned before, the key to the `criteria` dictionary is the name of the
+    DOM element''s CSS class, and the value is the type of the HTML element:'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，`criteria` 字典的关键是DOM元素的CSS类的名称，值是HTML元素的类型：
+- en: The `today_nowcard-temp` class is a CSS class of the DOM element containing
+    the current temperature
+  id: totrans-215
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`today_nowcard-temp` 类是包含当前温度的DOM元素的CSS类'
+- en: The `today_nowcard-phrase` class is a CSS class of the DOM element containing
+    weather conditions text (Cloudy, Sunny, and so on)
+  id: totrans-216
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`today_nowcard-phrase` 类是包含天气条件文本（多云，晴天等）的DOM元素的CSS类'
+- en: The `today_nowcard-hilo` class is the CSS class of the DOM element containing
+    the highest and lowest temperature
+  id: totrans-217
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`today_nowcard-hilo` 类是包含最高和最低温度的DOM元素的CSS类'
+- en: 'Next, we are going to fetch, create, and use `BeautifulSoup` to parse the DOM:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将获取、创建和使用`BeautifulSoup` 来解析DOM：
+- en: '[PRE44]'
+  id: totrans-219
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: First, we make use of the `fetch_data` method of the `Request` class that we
+    created on the core module and pass two arguments; the first is the forecast option
+    and the second argument is the area code that we passed on the command line.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们利用我们在核心模块上创建的`Request` 类的`fetch_data` 方法，并传递两个参数；第一个是预报选项，第二个参数是我们在命令行上传递的地区代码。
+- en: After fetching the data, we create a `BeautifulSoup` object passing the `content`
+    and a `parser`. Since we are getting back HTML, we use `html.parser`.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 获取数据后，我们创建一个`BeautifulSoup` 对象，传递`content`和一个`parser`。因为我们得到的是HTML，所以我们使用`html.parser`。
+- en: Now is the time to start looking for the HTML elements that we are interested
+    in. Remember, we need to find an element that will be a container, and the `_parser` function
+    will search through the children elements and try to find items that we defined
+    in the dictionary criteria. For today's weather forecast, the element that contains
+    all the data we need is a `section` element with the `today_nowcard-container` CSS
+    class.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是开始寻找我们感兴趣的HTML元素的时候了。记住，我们需要找到一个容器元素，`_parser` 函数将搜索子元素并尝试找到我们在字典条件中定义的项目。对于今天的天气预报，包含我们需要的所有数据的元素是一个带有 `today_nowcard-container` CSS类的`section` 元素。
+- en: '`BeautifulSoup` contains the `find` method, which we can use to find elements
+    in the HTML DOM with specific criteria. Note that the keyword argument is called
+    `class_` and not `class` because `class` is a reserved word in Python.'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`BeautifulSoup` 包含了 `find` 方法，我们可以使用它来查找具有特定条件的HTML DOM中的元素。请注意，关键字参数称为`class_` 而不是`class`，因为`class` 在Python中是一个保留字。'
+- en: Now that we have the container element, we can pass it to the `_parse` method,
+    which will return a list. We perform a check if the result list contains at least
+    one element and raise an exception if it is empty. If it is not empty, we just
+    get the first element and assign it to the `weatherinfo` variable. The `weatherinfo`
+    variable now contains a dictionary with all the items that we were looking for.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了容器元素，我们可以将其传递给`_parse` 方法，它将返回一个列表。我们检查结果列表是否至少包含一个元素，并在为空时引发异常。如果不为空，我们只需获取第一个元素并将其分配给`weatherinfo` 变量。`weatherinfo` 变量现在包含了我们正在寻找的所有项目的字典。
+- en: 'The next step is split the highest and lowest temperature:'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一步是分割最高和最低温度：
+- en: '[PRE45]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'We want to parse the text that has been extracted from the DOM element with
+    the `today_nowcard-hilo` CSS class, and the text should look something like `H
+    50 L 60`, `H -- L 60`, and so on. An easy and simple way of extracting the text
+    we want is to use a regular expression:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们想解析从带有 `today_nowcard-hilo` CSS类的DOM元素中提取的文本，文本应该看起来像 `H 50 L 60`，`H -- L
+    60` 等。提取我们想要的文本的一种简单方法是使用正则表达式：
+- en: '`H\s+(\d+|\-{,2}).L\s+(\d+|\-{,2})`'
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`H\s+(\d+|\-{,2}).L\s+(\d+|\-{,2})`'
+- en: We can break this regular expression into two parts. First, we want to get the
+    highest temperature—`H\s+(\d+|\-{,2})`; this means that it will match an `H` followed
+    by some spaces, and then it will group a value that matches either numbers or
+    a maximum of two dash symbols. After that, it will match any character. Lastly,
+    comes the second part that basically does the same; however, it starts matching
+    an `L`.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将这个正则表达式分成两部分。首先，我们想要得到最高温度—`H\s+(\d+|\-{,2})`；这意味着它将匹配一个`H`后面跟着一些空格，然后它将分组一个匹配数字或最多两个破折号的值。之后，它将匹配任何字符。最后，第二部分基本上做了相同的事情；不过，它开始匹配一个`L`。
+- en: After executing the search method, it gets regular expression groups that have
+    been returned calling the `groups()` function, which in this case will return
+    two groups, one for the highest temperature and the second for the lowest.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行搜索方法后，调用`groups()`函数返回了正则表达式组，这种情况下将返回两个组，一个是最高温度，另一个是最低温度。
+- en: 'Other information that we want to provide to our users is information about
+    wind and humidity. The container element that contains this information has a
+    CSS class called `today_nowcard-sidecar`:'
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们想要向用户提供的其他信息是关于风和湿度的信息。包含这些信息的容器元素具有一个名为`today_nowcard-sidecar`的CSS类：
+- en: '[PRE46]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: We just find the container and pass it into the `_get_additional_info` method
+    that will loop through the children elements of the container, extracting the
+    text and finally returning the results for us.
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们只需找到容器并将其传递给`_get_additional_info`方法，该方法将循环遍历容器的子元素，提取文本，最后为我们返回结果。
+- en: 'Finally, the last part of this method:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，这个方法的最后一部分：
+- en: '[PRE47]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: Since the current temperature contains a special character (degree sign) that
+    we don't want to have at this point, we use the `_clr_str_number` method to pass
+    the `today_nowcard-temp` item of the `weatherinfo` dictionary.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于当前温度包含一个我们此时不想要的特殊字符（度数符号），我们使用`_clr_str_number`方法将`weatherinfo`字典的`today_nowcard-temp`项传递给它。
+- en: Now that we have all the information we need, we construct the `Forecast` object
+    and return it. Note that we are returning an array here; this is because all other
+    options that we are going to implement (five-day, ten-day, and weekend forecasts)
+    will return a list, so to make it consistent; also to facilitate when we will
+    have to display this information on the terminal, we are also returning a list.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了所有需要的信息，我们构建`Forecast`对象并返回它。请注意，我们在这里返回一个数组；这是因为我们将要实现的所有其他选项（五天、十天和周末天气预报）都将返回一个列表，为了使其一致；也为了在终端上显示这些信息时更方便，我们也返回一个列表。
+- en: Another thing to note is that we are making use of the convert method of our
+    `UnitConverter` to convert all the temperatures to the unit selected in the command
+    line.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还要注意的一点是，我们正在使用`UnitConverter`的转换方法将所有温度转换为命令行中选择的单位。
+- en: 'When running the command again:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次运行命令时：
+- en: '[PRE48]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: 'You should see an output similar to this:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该看到类似于这样的输出：
+- en: '![](assets/1f2ea039-104c-4786-a400-ae107a248609.png)'
+  id: totrans-242
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/1f2ea039-104c-4786-a400-ae107a248609.png)'
+- en: Congratulations! You have implemented your first web scraping application. Next
+    up, let's add the other forecast options.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜！你已经实现了你的第一个网络爬虫应用。接下来，让我们添加其他的预报选项。
+- en: Getting five- and ten-day weather forecasts
+  id: totrans-244
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取五天和十天的天气预报
+- en: The site that we are currently scraping the weather forecast from ([weather.com](https://weather.com/en-IN/))
+    also provides the weather forecast for
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们目前正在从([weather.com](https://weather.com/en-IN/))这个网站上爬取天气预报，它也提供了风和湿度的天气预报。
+- en: five and ten days, so in this section, we are going to implement methods to
+    parse these forecast options as well.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 五天和十天，所以在这一部分，我们将实现解析这些预报选项的方法。
+- en: 'The markup of the pages that present data for five and ten days are very similar;
+    they have the same DOM structure and share the same CSS classes, which makes it
+    easier for us to implement just one method that will work for both options. Let''s
+    go ahead and add a new method to the `wheater_com_parser.py` file with the following
+    contents:'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 呈现五天和十天数据的页面的标记非常相似；它们具有相同的DOM结构和共享相同的CSS类，这使得我们可以实现只适用于这两个选项的方法。让我们继续并向`wheater_com_parser.py`文件添加一个新的方法，内容如下：
+- en: '[PRE49]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'As I mentioned before, the DOM for the five- and ten-day weather forecasts
+    is very similar, so we create the `_parse_list_forecast` method, which can be
+    used for both options. First, we define the criteria:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我之前提到的，五天和十天的天气预报的DOM结构非常相似，因此我们创建了`_parse_list_forecast`方法，可以用于这两个选项。首先，我们定义了标准：
+- en: The `date-time` is a `span` element and contains a string representing the day
+    of the week
+  id: totrans-250
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`date-time`是一个`span`元素，包含代表星期几的字符串'
+- en: The `day-detail` is a `span` element and contains a string with the date, for
+    example, `SEP 29`
+  id: totrans-251
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`day-detail`是一个`span`元素，包含一个日期的字符串，例如，`SEP 29`'
+- en: The `description` is a `TD` element and contains the weather conditions, for
+    example, ``Cloudy``
+  id: totrans-252
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`description`是一个`TD`元素，包含天气状况，例如，``Cloudy``'
+- en: '`temp` is a `TD` element and contains temperature information such as high
+    and low temperature'
+  id: totrans-253
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`temp`是一个`TD`元素，包含高低温度等温度信息'
+- en: '`wind` is a `TD` element and contains wind information'
+  id: totrans-254
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`wind`是一个`TD`元素，包含风力信息'
+- en: '`humidity` is a `TD` element and contains humidity information'
+  id: totrans-255
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`humidity`是一个`TD`元素，包含湿度信息'
+- en: Now that we have the criteria, we create a `BeatufulSoup` object, passing the
+    content and the `html.parser`. All the data that we would like to get is on the
+    table with a CSS class named `twc-table`. We find the table and define the `tbody` element
+    as a container.
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了标准，我们创建一个`BeatufulSoup`对象，传递内容和`html.parser`。我们想要获取的所有数据都在一个名为`twc-table`的CSS类的表格中。我们找到表格并将`tbody`元素定义为容器。
+- en: 'Finally, we run the `_parse` method, passing the `container` and the `criteria`
+    that we defined. The return of this function will look something like this:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们运行`_parse`方法，传递`container`和我们定义的`criteria`。这个函数的返回将看起来像这样：
+- en: '[PRE50]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Another method that we need to create is a method that will prepare the data
+    for us, for example, parsing and converting temperature values and creating a `Forecast` object.
+    Add a new method called `_prepare_data` with the following content:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要创建的另一个方法是一个为我们准备数据的方法，例如，解析和转换温度值，并创建一个`Forecast`对象。添加一个名为`_prepare_data`的新方法，内容如下：
+- en: '[PRE51]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: This method is quite simple. First, loop through the results and apply the regex
+    that we created to split the high and low temperatures stored in `item['temp']`.
+    If there's a match, it will get the groups and assign the value to `high_temp` and
+    `low_temp`.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个方法非常简单。首先，循环遍历结果，并应用我们创建的正则表达式来分割存储在`item['temp']`中的高温和低温。如果匹配成功，它将获取组并将值分配给`high_temp`和`low_temp`。
+- en: After that, we create a `Forecast` object and append it to a list that will
+    be returned later on.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 之后，我们创建一个`Forecast`对象，并将其附加到稍后将返回的列表中。
+- en: 'Lastly, we add the method that will be invoked when the `-5d` or `-10d` flag
+    is used. Create another method called `_five_and_ten_days_forecast` with the following
+    contents:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们添加一个在使用`-5d`或`-10d`标志时将被调用的方法。创建另一个名为`_five_and_ten_days_forecast`的方法，内容如下：
+- en: '[PRE52]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: This method only fetches the contents of the page passing the `forecast_option`
+    value and the area code, so it will be possible to build the URL to perform the
+    request. When the data is returned, we pass it down to the `_parse_list_forecast`,
+    which will return a list of `Forecast` objects (one for each day); finally, we
+    prepare the data to be returned using the `_prepare_data` method.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个方法只获取页面的内容，传递`forecast_option`值和区域代码，因此可以构建URL来执行请求。当数据返回时，我们将其传递给`_parse_list_forecast`，它将返回一个`Forecast`对象的列表（每天一个）；最后，我们使用`_prepare_data`方法准备要返回的数据。
+- en: 'Before we run the command, we need to enable this option in the command line
+    tool that we implemented; go over to the `__main__.py` file, and, just after the
+    definition of the `-td` flag, add the following code:'
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在运行命令之前，我们需要在我们实现的命令行工具中启用此选项；转到`__main__.py`文件，并在`-td`标志的定义之后，添加以下代码：
+- en: '[PRE53]'
+  id: totrans-267
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'Now, run the application again, but this time using the `-5d` or `--fivedays` flag:'
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，再次运行应用程序，但这次使用`-5d`或`--fivedays`标志：
+- en: '[PRE54]'
+  id: totrans-269
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'It will produce the following output:'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它将产生以下输出：
+- en: '[PRE55]'
+  id: totrans-271
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'To wrap this section up, let''s include the option to get the weather forecast
+    for the next ten days as well, in the `__main__.py` file, just below the `-5d`
+    flag definition. Add the following code:'
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了结束本节，让我们在`__main__.py`文件中添加一个选项，以便获取未来十天的天气预报，就在`-5d`标志定义的下面。添加以下代码：
+- en: '[PRE56]'
+  id: totrans-273
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'If you run the same command as we used to get the five-day forecast but replace
+    the `-5d` flag with `-10d`, like so:'
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您运行与获取五天预报相同的命令，但将`-5d`标志替换为`-10d`，如下所示：
+- en: '[PRE57]'
+  id: totrans-275
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'You should see the ten-day weather forecast output:'
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该看到十天的天气预报输出：
+- en: '[PRE58]'
+  id: totrans-277
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: As you can see, the weather was not so great here in Sweden while I was writing
+    this book.
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，我在瑞典写这本书时天气并不是很好。
+- en: Getting the weekend weather forecast
+  id: totrans-279
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 获取周末天气预报
+- en: The last weather forecast option that we are going to implement in our application
+    is the option to get the weather forecast for the upcoming weekend. This implementation
+    is a bit different from the others because the data returned by the weekend's
+    weather is slightly different from today's, five, and ten days weather forecast.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在我们的应用程序中实现的最后一个天气预报选项是获取即将到来的周末天气预报的选项。这个实现与其他实现有些不同，因为周末天气返回的数据与今天、五天和十天的天气预报略有不同。
+- en: The DOM structure is different and some CSS class names are different as well.
+    If you remember the previous methods that we implemented, we always use the `_parser` method,
+    which gives us arguments such as the container DOM and a dictionary with the search
+    criteria. The return value of that method is also a dictionary where the key is
+    the class name of the DOM that we were searching and the value is the text within
+    that DOM element.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: DOM结构不同，一些CSS类名也不同。如果您还记得我们之前实现的方法，我们总是使用`_parser`方法，该方法为我们提供容器DOM和带有搜索条件的字典作为参数。该方法的返回值也是一个字典，其中键是我们正在搜索的DOM的类名，值是该DOM元素中的文本。
+- en: Since the CSS class names of the weekend page are different, we need to implement
+    some code to get that array of results and rename all the keys so the `_prepare_data` function
+    can use scraped results properly.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于周末页面的CSS类名不同，我们需要实现一些代码来获取结果数组并重命名所有键，以便`_prepare_data`函数可以正确使用抓取的结果。
+- en: 'With that said, let''s go ahead and create a new file in the `weatherterm/core` directory
+    called `mapper.py` with the following contents:'
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 说到这一点，让我们继续在`weatherterm/core`目录中创建一个名为`mapper.py`的新文件，内容如下：
+- en: '[PRE59]'
+  id: totrans-284
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: The `Mapper` class gets a list with dictionaries and renames specific keys that
+    we would like to rename. The important methods here are `remap_key` and `remap`.
+    The `remap_key` gets two arguments, `source` and `dest`. `source` is the key that
+    we wish to rename and `dest` is the new name for that key. The `remap_key` method
+    will add it to an internal dictionary called `_mapping`, which will be used later
+    on to look up the new key name.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Mapper`类获取一个包含字典的列表，并重命名我们想要重命名的特定键。这里的重要方法是`remap_key`和`remap`。`remap_key`接收两个参数，`source`和`dest`。`source`是我们希望重命名的键，`dest`是该键的新名称。`remap_key`方法将其添加到一个名为`_mapping`的内部字典中，以便以后查找新的键名。'
+- en: The `remap` method simply gets a list containing the dictionaries and, for every
+    item on that list, it calls the `_exec` method that first creates a brand new
+    dictionary, then checks whether the dictionary is empty. In that case, it raises an
+    `AttributeError`.
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`remap`方法只是获取包含字典的列表，并对该列表中的每个项目调用`_exec`方法，该方法首先创建一个全新的字典，然后检查字典是否为空。在这种情况下，它会引发`AttributeError`。'
+- en: If the dictionary has keys, we loop through its items, search for whether the
+    current item's key has a new name in the mapping dictionary. If the new key name
+    is found, will to create a new item with the new key name; otherwise, we just
+    keep the old name. After the loop, the list is returned with all the dictionaries
+    containing the keys with a new name.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果字典有键，我们循环遍历其项，搜索当前项的键是否在映射字典中具有新名称。如果找到新的键名，将创建一个具有新键名的新项；否则，我们只保留旧名称。循环结束后，返回包含所有具有新名称键的字典的列表。
+- en: 'Now, we just need to add it to the `__init__.py` file in the `weatherterm/core` directory:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们只需要将其添加到`weatherterm/core`目录中的`__init__.py`文件中：
+- en: '[PRE60]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: 'And, in the `weather_com_parser.py` file in `weatherterm/parsers`, we need
+    to import the `Mapper`:'
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 而且，在`weatherterm/parsers`目录中的`weather_com_parser.py`文件中，我们需要导入`Mapper`：
+- en: '[PRE61]'
+  id: totrans-291
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'With the mapper in place, we can go ahead and create the `_weekend_forecast`
+    method in the `weather_com_parser.py` file, like so:'
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了映射器，我们可以继续在`weather_com_parser.py`文件中创建`_weekend_forecast`方法，如下所示：
+- en: '[PRE62]'
+  id: totrans-293
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'The method starts off by defining the criteria in exactly the same way as the
+    other methods; however, the DOM structure is slightly different and some of the
+    CSS names are also different:'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该方法首先通过以与其他方法完全相同的方式定义标准来开始；但是，DOM结构略有不同，一些CSS名称也不同：
+- en: '`weather-cell`: Contains the forecast date: `FriSEP 29`'
+  id: totrans-295
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`weather-cell`：包含预报日期：`FriSEP 29`'
+- en: '`temp`: Contains the temperature (high and low): `57°F48°F`'
+  id: totrans-296
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`temp`：包含温度（高和低）：`57°F48°F`'
+- en: '`weather-phrase`: Contains the weather conditions: `Cloudy`'
+  id: totrans-297
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`weather-phrase`：包含天气条件：`多云`'
+- en: '`wind-conditions`: Wind information'
+  id: totrans-298
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`wind-conditions`：风信息'
+- en: '`humidity`: The humidity percentage'
+  id: totrans-299
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`humidity`：湿度百分比'
+- en: As you can see, to make it play nicely with the `_prepare_data` method, we will
+    need to rename some keys in the dictionaries in the result set—`wind-conditions`
+    should be `wind` and `weather-phrase` should be the `description`.
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，为了使其与`_prepare_data`方法很好地配合，我们需要重命名结果集中字典中的一些键——`wind-conditions`应该是`wind`，`weather-phrase`应该是`description`。
+- en: 'Luckily, we have introduced the `Mapper` class to help us out:'
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 幸运的是，我们引入了`Mapper`类来帮助我们：
+- en: '[PRE63]'
+  id: totrans-302
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'We create a `Mapper` object and say, remap `wind-conditions` to `wind` and
+    `weather-phrase` to `description`:'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建一个`Mapper`对象并说，将`wind-conditions`重新映射为`wind`，将`weather-phrase`重新映射为`description`：
+- en: '[PRE64]'
+  id: totrans-304
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: We fetch all the data, create a `BeautifulSoup` object using the `html.parser`,
+    and find the container element that contains the children elements that we are
+    interested in. For the weekend forecast, we are interested in getting the `article`
+    element with a CSS class called `ls-mod` and within that `article` we go down
+    to the first child element, which is a DIV, and gets its first child element,
+    which is also a DIV element.
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们获取所有数据，使用`html.parser`创建一个`BeautifulSoup`对象，并找到包含我们感兴趣的子元素的容器元素。对于周末预报，我们有兴趣获取具有名为`ls-mod`的CSS类的`article`元素，并在`article`中向下移动到第一个子元素，这是一个DIV，并获取其第一个子元素，这也是一个DIV元素。
+- en: 'The HTML should look something like this:'
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HTML应该看起来像这样：
+- en: '[PRE65]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: That's the reason we first find the article, assign it to `forecast_data`, and
+    then use `forecast_data.div.div` so we get the DIV element we want.
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是我们首先找到文章，将其分配给`forecast_data`，然后使用`forecast_data.div.div`，这样我们就可以得到我们想要的DIV元素。
+- en: After defining the container, we pass it to the `_parse` method together with
+    the container element; when we get the results back, we simply need to run the
+    `remap` method of the `Mapper` instance, which will normalize the data for us
+    before we call `_prepare_data`.
+  id: totrans-309
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在定义容器之后，我们将其与容器元素一起传递给`_parse`方法；当我们收到结果时，我们只需要运行`Mapper`实例的`remap`方法，它将在我们调用`_prepare_data`之前为我们规范化数据。
+- en: 'Now, the last detail before we run the application and get the weather forecast
+    for the weekend is that we need to include the `--w` and `--weekend` flag to the
+    `ArgumentParser`. Open the `__main__.py` file in the `weatherterm` directory and,
+    just below the `--tenday` flag, add the following code:'
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，在运行应用程序并获取周末天气预报之前的最后一个细节是，我们需要将`--w`和`--weekend`标志包含到`ArgumentParser`中。打开`weatherterm`目录中的`__main__.py`文件，并在`--tenday`标志的下方添加以下代码：
+- en: '[PRE66]'
+  id: totrans-311
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'Great! Now, run the application using the `-w` or `--weekend` flag:'
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太好了！现在，使用`-w`或`--weekend`标志运行应用程序：
+- en: '[PRE67]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: Note that this time, I used the `-u` flag to choose Celsius. All the temperatures
+    in the output are represented in Celsius instead of Fahrenheit.
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，这次我使用了`-u`标志来选择摄氏度。输出中的所有温度都以摄氏度表示，而不是华氏度。
+- en: Summary
+  id: totrans-315
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, you learned the basics of object-oriented programming in Python;
+    we covered how to create classes, use inheritance, and use the `@property` decorators
+    to create getter and setters.
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您学习了Python中面向对象编程的基础知识；我们介绍了如何创建类，使用继承，并使用`@property`装饰器创建getter和setter。
+- en: We covered how to use the inspect module to get more information about modules,
+    classes, and functions. Last but not least, we made use of the powerful package
+    `Beautifulsoup` to parse HTML and `Selenium` to make requests to the weather website.
+  id: totrans-317
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们介绍了如何使用inspect模块来获取有关模块、类和函数的更多信息。最后但并非最不重要的是，我们利用了强大的`Beautifulsoup`包来解析HTML和`Selenium`来向天气网站发出请求。
+- en: We also learned how to implement command line tools using the `argparse` module
+    from Python's standard library, which allows us to provide tools that are easier
+    to use and with very helpful documentation.
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还学习了如何使用Python标准库中的`argparse`模块实现命令行工具，这使我们能够提供更易于使用且具有非常有用的文档的工具。
+- en: Next up, we are going to develop a small wrapper around the Spotify Rest API
+    and use it to create a remote control terminal.
+  id: totrans-319
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将开发一个小包装器，围绕Spotify Rest API，并使用它来创建一个远程控制终端。

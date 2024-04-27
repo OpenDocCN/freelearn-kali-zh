@@ -1,0 +1,2027 @@
+- en: Building a CRM Using React and Microservices
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用React和微服务构建CRM
+- en: In previous chapters where we used REST services, we concentrated on having
+    a single site for dealing with REST calls. Modern applications frequently make
+    use of microservices, potentially hosted inside a container-based system such
+    as Docker.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们使用REST服务的先前章节中，我们专注于有一个用于处理REST调用的单个站点。现代应用程序经常使用微服务，可能托管在基于容器的系统（如Docker）中。
+- en: In this chapter, we are going to look at how to create a set of microservices
+    hosted in multiple Docker containers using Swagger to design our REST API. Our
+    React client application will be responsible for drawing these microservices together
+    to create a simple **Customer Relationship Management** (**CRM**) system.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习如何使用Swagger创建托管在多个Docker容器中的一组微服务来设计我们的REST API。我们的React客户端应用程序将负责将这些微服务整合在一起，创建一个简单的客户关系管理（CRM）系统。
+- en: 'The following topics will be covered in this chapter:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下主题：
+- en: Understanding Docker and containers
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解Docker和容器
+- en: What microservices are and what they are used for
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 微服务是什么，它们的用途是什么
+- en: Decomposing monolithic architectures down into microarchitectures
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将单片架构分解为微架构
+- en: Sharing common server-side functionality
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 共享通用的服务器端功能
+- en: Using Swagger to design APIs
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Swagger设计API
+- en: Hosting microservices in Docker
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在Docker中托管微服务
+- en: Using React to connect to microservices
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用React连接到微服务
+- en: Using routing in React
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在React中使用路由
+- en: Technical requirements
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: The finished project can be downloaded from [https://github.com/PacktPublishing/Advanced-TypeScript-3-Programming-Projects/tree/master/Chapter08](https://github.com/PacktPublishing/Advanced-TypeScript-3-Programming-Projects/tree/master/Chapter08).
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成的项目可以从[https://github.com/PacktPublishing/Advanced-TypeScript-3-Programming-Projects/tree/master/Chapter08](https://github.com/PacktPublishing/Advanced-TypeScript-3-Programming-Projects/tree/master/Chapter08)下载。
+- en: After downloading the project, you will have to install the package requirements
+    using the **`npm install`** command. Since the services are spread over a number
+    of folders, you will have to install each service individually.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下载项目后，您将需要使用`npm install`命令安装软件包要求。由于服务分布在多个文件夹中，您将需要逐个安装每个服务。
+- en: Understanding Docker and microservices
+  id: totrans-15
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解Docker和微服务
+- en: Since we are building a system that uses microservices hosted inside Docker
+    containers, there is a bit of terminology and theory that we need to understand
+    beforehand.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们正在构建一个使用Docker容器托管的微服务系统，所以我们需要事先了解一些术语和理论。
+- en: In this section, we are going to look at common Docker terms and what they mean
+    before we move on to looking at what microservices are, what problems they are
+    intended to solve, and how to think about breaking monolithic applications down
+    into more modular services.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将在继续了解微服务是什么、它们旨在解决什么问题以及如何将单片应用程序拆分为更模块化的服务之前，先看一下常见的Docker术语及其含义。
+- en: Docker terminology
+  id: totrans-18
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Docker术语
+- en: If you are new to Docker, there is a whole slew of terminology surrounding it
+    that you will come across. Knowing the terminology will help when we come to set
+    up our servers, so let's start with the basics.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您是Docker的新手，您将遇到许多围绕它的术语。了解这些术语将有助于我们在设置服务器时，因此让我们从基础知识开始。
+- en: Container
+  id: totrans-20
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 容器
+- en: This is probably a term you have come across if you have seen any Docker literature
+    on the internet. A container is a running instance taking in the various pieces
+    of software needed to run an application. This is the starting point for us. Containers
+    are built from images, which you can either build yourself or download from a
+    central Docker database. Containers can be opened up to other containers, the
+    host operating system, or even to the wider world using ports and volumes. One
+    of the big selling points of containers is that they are easy to set up and create
+    and can be stopped and started very quickly.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您在互联网上看到过任何Docker文献，这可能是您已经遇到的术语。容器是运行实例，接收运行应用程序所需的各种软件。这是我们的起点。容器是从镜像构建的，您可以自己构建或从中央Docker数据库下载。容器可以向其他容器、主机操作系统甚至向更广泛的世界开放，使用端口和卷。容器的一个重要卖点是它们易于设置和创建，并且可以快速停止和启动。
+- en: Image
+  id: totrans-22
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 镜像
+- en: As we covered in the previous paragraph, a container starts off as an image.
+    There are a huge number of images already available for use, but we can also create
+    our own images. When we create an image, the creation steps are cached so that
+    they can be reused easily.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在上一段中所介绍的，容器最初是一个镜像。已经有大量可供使用的镜像，但我们也可以创建自己的镜像。创建镜像时，创建步骤会被缓存，以便轻松重复使用。
+- en: Port
+  id: totrans-24
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 端口
+- en: This should be familiar to you already. The term ports in Docker means exactly
+    the same as ports does for OSes. These are TCP or UDP ports that are visible to
+    the host operating system, or that are connected to the outer world. We will get
+    to some interesting code later on in this chapter when we have applications use
+    the same port number internally but expose them to the world using different port
+    numbers.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这对您来说可能已经很熟悉了。Docker中的端口术语与操作系统中的端口术语完全相同。这些是对主机操作系统可见的TCP或UDP端口，或者连接到外部世界的端口。当我们的应用程序在内部使用相同的端口号但使用不同的端口号向外界公开时，本章后面将会有一些有趣的代码。
+- en: Volume
+  id: totrans-26
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 卷
+- en: The easiest way to visualize a volume is that it is similar to a shared folder.
+    When a container is created, volumes are initialized and allow us to persist data,
+    regardless of the container life cycle.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可视化卷的最简单方法是将其视为共享文件夹。创建容器时，卷被初始化，并允许我们持久保存数据，无论容器的生命周期如何。
+- en: Registry
+  id: totrans-28
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 注册表
+- en: Effectively, a registry could be viewed as the App Store of the Docker world.
+    It stores Docker images that can be downloaded, and local images can be pushed
+    back to the registry in a similar fashion to pushing an app up to the App Store.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，注册表可以被视为Docker世界的应用商店。它存储可以下载的Docker镜像，并且本地镜像可以以类似于将应用程序推送到应用商店的方式推送回注册表。
+- en: Docker Hub
+  id: totrans-30
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Docker Hub
+- en: Docker Hub is the original Docker registry, provided by Docker themselves. This
+    registry stores a vast number of Docker images, some of which come from Docker
+    and some of which have been built for them by software teams.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker Hub是最初由Docker提供的Docker注册表。该注册表存储了大量的Docker镜像，其中一些来自Docker，一些是由软件团队为其构建的。
+- en: In this chapter, we aren't going to cover installing Docker, as installing it
+    and setting it up is a chapter in its own right, especially since installing Docker
+    on Windows is a different experience to installing Docker on macOS or Linux. The
+    commands that we will use to compose Docker applications and check the state of
+    instances don't change though, so we will cover them as and when they are needed.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们不打算涵盖安装Docker，因为安装和设置Docker本身就是一个章节，特别是因为在Windows上安装Docker与在macOS或Linux上安装Docker是不同的体验。但我们将使用的命令来组合Docker应用程序和检查实例的状态不会改变，所以我们会在需要时进行覆盖。
+- en: Microservices
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 微服务
+- en: It's hard to be involved in the corporate software world and not hear the term
+    microservices. This is a style of architecture that breaks a so-called monolithic
+    system down into a collection of services. The nature of this architecture is
+    that services are tightly scoped and testable. Services should be loosely coupled
+    so that dependencies between them are limited—it should be up to the end application
+    to bring these services together. This loose coupling promotes the idea that they
+    can be deployed independently and that services are generally tightly focused
+    on business capabilities.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在企业软件世界中很难不听到微服务这个术语。这是一种架构风格，将所谓的单体系统拆分为一系列服务。这种架构的特点是服务范围紧凑且可测试。服务应该松散耦合，以限制它们之间的依赖关系——将这些服务组合在一起应该由最终应用程序来完成。这种松散耦合促进了它们可以独立部署的想法，服务通常专注于业务能力。
+- en: Despite what we may hear from marketing gurus and consultancies looking to sell
+    services, microservices are not always a suitable choice for an application. Sometimes,
+    it is better to stay with a monolithic application. If we can't break the application
+    down using all the ideas outlined in the preceding paragraph then, chances are,
+    the application is not a suitable candidate for microservices.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管我们可能会听到来自营销大师和咨询公司的声音，他们希望销售服务，但微服务并不总是应用的合适选择。有时，保持单体应用可能更好。如果我们无法使用前面段落中概述的所有想法来拆分应用程序，那么应用程序很可能不适合作为微服务的候选。
+- en: 'Unlike a lot of what we have covered in this book so far, such as patterns,
+    microservices don''t have an officially approved definition. You can''t follow
+    a checklist and say, *this is a microservice because it is doing a, b, and c*.
+    Instead, the agreed view on what constitutes a microservice has evolved, based
+    on seeing what works and what doesn''t, into a series of characteristics. For
+    our purposes, the important attributes of what constitutes a microservice include
+    the following:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与我们迄今为止在本书中涵盖的许多内容不同，例如模式，微服务没有官方批准的定义。你不能遵循一个清单并说，“这是一个微服务，因为它正在执行a、b和c”。相反，对于构成微服务的内容的共识观点已经发展，基于看到什么有效和什么无效，演变成一系列特征。对于我们的目的，构成微服务的重要属性包括以下内容：
+- en: The service can be deployed independently of other microservices. In other words,
+    the service has no dependency on other microservices.
+  id: totrans-37
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 该服务可以独立部署，不依赖于其他微服务。
+- en: The service is based on a business process. Microservices are meant to be granular,
+    so having them organized around single business areas helps create large-scale
+    applications out of small, focused components.
+  id: totrans-38
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 该服务基于业务流程。微服务应该是粒度细小的，因此将它们组织在单一的业务领域周围有助于从小而专注的组件创建大规模应用程序。
+- en: The languages and technologies can be different across the services. This gives
+    us the opportunity to leverage the best and most appropriate technologies where
+    necessary. For instance, we might have one service hosted in-house while another
+    service might be hosted in a cloud service such as Azure.
+  id: totrans-39
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 服务之间的语言和技术可以是不同的。这为我们提供了在必要时利用最佳和最合适的技术的机会。例如，我们可能有一个服务在内部托管，而另一个服务可能在Azure等云服务中托管。
+- en: The service should be small in size. That doesn't mean that it should not have
+    much code to it; rather, it means that it is focused on one area only.
+  id: totrans-40
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 服务应该规模小。这并不意味着它不应该有太多代码；相反，它意味着它只专注于一个领域。
+- en: Designing our REST API using Swagger
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Swagger设计我们的REST API
+- en: When developing REST-driven applications, I find it really useful to use the
+    facilities of Swagger ([https://swagger.io](https://swagger.io)). Swagger has
+    many features that make it the go-to tool when we want to do things such as creating
+    API documentation, creating code for APIs, and testing APIs.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开发REST驱动的应用程序时，我发现使用Swagger的功能非常有用。Swagger具有许多功能，使其成为我们想要执行诸如创建API文档、为API创建代码和测试API等操作时的首选工具。
+- en: We're going to use the Swagger UI to prototype the ability to retrieve a list
+    of people. From this, we can generate documentation to go along with our API.
+    While we could generate the code from this, we are going to use the tooling that's
+    available to see what the *shape* of our final REST call will be, which we will
+    use to roll our own implementation using the data model we created previously.
+    The reason I like to do this is twofold. First, I like to craft small, clean data
+    models, and I find the prototype gives me a visualization of the model. Secondly,
+    there's a lot of generated code—an awful lot—and I find it easier to tie my data
+    model to the database when I craft the code myself.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用Swagger UI来原型化检索人员列表的能力。从这里，我们可以生成与我们的API一起使用的文档。虽然我们可以从中生成代码，但我们将使用可用的工具来查看我们最终REST调用的*形状*，然后使用我们之前创建的数据模型来实现自己的实现。我喜欢这样做的原因有两个。首先，我喜欢打造小而干净的数据模型，我发现原型可以让我可视化模型。其次，有很多生成的代码，我发现当我自己编写代码时更容易将我的数据模型与数据库联系起来。
+- en: For this chapter, we are going to write the code ourselves, but we will use
+    Swagger to prototype what we want to deliver.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将自己编写代码，但我们将使用Swagger来原型设计我们想要交付的内容。
+- en: 'The first thing we need to do is sign into Swagger:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要做的第一件事是登录Swagger：
+- en: 'From the home page, click Sign In. This brings up a dialog that asks which
+    product we want to log into, that is, SwaggerHub or Swagger Inspector. Swagger
+    Inspector is a great tool for testing our APIs, but since we are going to be developing
+    the API, we will sign into SwaggerHub. The following screenshot shows how it looks:'
+  id: totrans-46
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从主页，点击登录。这会弹出一个对话框，询问我们要登录哪个产品，即SwaggerHub或Swagger Inspector。Swagger Inspector是一个用于测试API的好工具，但由于我们将开发API，我们将登录SwaggerHub。以下截图显示了它的外观：
+- en: '![](assets/eed2dbdb-d965-4190-9be0-ddbf0bf2eae0.png)'
+  id: totrans-47
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/eed2dbdb-d965-4190-9be0-ddbf0bf2eae0.png)'
+- en: 'If you don''t have a Swagger account, you can create one from here either by
+    signing up or by using a GitHub account. In order to create an API, we need to
+    select Create New > Create New API. Choose None in the Template dropdown and fill
+    it in, as follows:'
+  id: totrans-48
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果您没有Swagger帐户，可以通过注册或使用GitHub帐户从这里创建一个。为了创建一个API，我们需要选择创建新的>创建新的API。在模板下拉菜单中选择None，并填写如下：
+- en: '![](assets/408868db-6a1b-44f9-8a05-748d562714f3.png)'
+  id: totrans-49
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/408868db-6a1b-44f9-8a05-748d562714f3.png)'
+- en: 'At this stage, we are ready to start filling in our API. What we are given
+    out of the box is the following:'
+  id: totrans-50
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在这个阶段，我们准备开始填写我们的API。我们得到的开箱即用的是以下内容：
+- en: '[PRE0]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Let''s start building this API out. First of all, we are going to create the
+    start of our API paths. Any paths we need to create go under a `paths` node. The
+    Swagger editor validates inputs as we are building the API, so don''t worry if
+    it comes up with validation errors as we are filling it in. In our example here,
+    we are going to create the API to retrieve an array of all the people we have
+    added to our database. Therefore, we start off with this, our API endpoint, which
+    replaces the `paths: {}` line:'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '让我们开始构建这个API。首先，我们要创建API路径的开始。我们需要创建的任何路径都放在`paths`节点下。Swagger编辑器在构建API时验证输入，所以不用担心在填写时出现验证错误。在我们的示例中，我们将创建API来检索我们添加到数据库中的所有人的数组。因此，我们从这里开始，我们的API端点，替换`paths:
+    {}`行：'
+- en: '[PRE1]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'So, we have said that our REST call will be issued using a `GET` verb. Our
+    API is going to return two statuses, `HTTP 200` and `HTTP 400`. Let''s provide
+    the beginnings of this by populating a `responses` node with these statuses. When
+    we return a `400` error, we need to create the schema that defines what we will
+    return over the wire. The `schema` returns an `object` that contains a single `message` string,
+    as follows:'
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们已经说过我们的REST调用将使用`GET`动词发出。我们的API将返回两种状态，`HTTP 200`和`HTTP 400`。让我们通过在`responses`节点中填充这些状态的开始来提供这一点。当我们返回`400`错误时，我们需要创建定义我们将通过网络返回的内容的模式。`schema`返回一个包含单个`message`字符串的`object`，如下所示：
+- en: '[PRE2]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Since our API is going to return an array of people, our schema is typed to
+    an `array`. The `items` that make up the person map back to the model we discussed
+    in the server code. So, by filling in our `schema` for the `200` response, we
+    get this:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们的API将返回一个人的数组，我们的模式被定义为一个`array`。构成人的`items`与我们在服务器代码中讨论的模型相对应。因此，通过填写我们`200`响应的`schema`，我们得到了这个：
+- en: '[PRE3]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'This is what our `schema` looks like in the editor:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是编辑器中我们的`schema`的样子：
+- en: '![](assets/29dbb934-da56-4d77-b897-bef2ab2516ad.png)'
+  id: totrans-59
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/29dbb934-da56-4d77-b897-bef2ab2516ad.png)'
+- en: Now that we have seen how Swagger can be used to prototype our APIs, we can
+    move onto the definition of the project that we want to build.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经看到了Swagger如何用于原型设计我们的API，我们可以继续定义我们想要构建的项目。
+- en: Creating a microservices application with Docker
+  id: totrans-61
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Docker创建微服务应用
+- en: The project we are going to write is a small part of a CRM system to maintain
+    details about customers and add leads for those customers. The way the application
+    works is that the user creates addresses; when they add in details about contacts,
+    they will select the address from the list of addresses they have already created.
+    Finally, they can create leads that use the contacts they have already added.
+    The idea behind this system is that, previously, the application used one big
+    database for this information—we are going to break this down into three discrete
+    services.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要编写的项目是CRM系统的一个小部分，用于维护有关客户的详细信息并为这些客户添加潜在客户。应用程序的工作方式是用户创建地址；当他们添加有关联系人的详细信息时，他们将从他们已经创建的地址列表中选择地址。最后，他们可以创建使用他们已经添加的联系人的潜在客户。这个系统的想法是，以前，应用程序使用一个大数据库来存储这些信息，我们将把它分解成三个独立的服务。
+- en: 'Working alongside the GitHub code, this chapter should take about three hours
+    to complete. When completed, the application should look as follows:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与GitHub代码一起工作，本章应该需要大约三个小时才能完成。完成后，应用程序应如下所示：
+- en: '![](assets/5b119141-e7c1-42f6-8830-50256b3fad64.png)'
+  id: totrans-64
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/5b119141-e7c1-42f6-8830-50256b3fad64.png)'
+- en: After doing this, we'll move on and see how to create apps for Docker and how
+    this complements our project.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成这些后，我们将继续看如何为Docker创建应用程序，以及这如何补充我们的项目。
+- en: Getting started creating a microservices application with Docker
+  id: totrans-66
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Docker创建微服务应用的入门
+- en: We are making a welcome return to React in this chapter. As well as using React,
+    we will also be using Firebase and Docker, hosting Express and Node. REST communications
+    between our React application and the Express microservices will be done with
+    Axios.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将再次使用React。除了使用React，我们还将使用Firebase和Docker，托管Express和Node。我们的React应用程序与Express微服务之间的REST通信将使用Axios完成。
+- en: If you are using Windows 10 for your development, install Docker Desktop for
+    Windows, which is available here: [https://hub.docker.com/editions/community/docker-ce-desktop-windows](https://hub.docker.com/editions/community/docker-ce-desktop-windows).
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您在Windows 10上进行开发，请安装Windows版的Docker Desktop，可在此处下载：[https://hub.docker.com/editions/community/docker-ce-desktop-windows](https://hub.docker.com/editions/community/docker-ce-desktop-windows)。
+- en: In order to run Docker on Windows, you need to have Hyper-V virtualization installed.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在Windows上运行Docker，您需要安装Hyper-V虚拟化。
+- en: If you want to install Docker Desktop on macOS, head to [https://hub.docker.com/editions/community/docker-ce-desktop-mac](https://hub.docker.com/editions/community/docker-ce-desktop-mac).
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想在macOS上安装Docker Desktop，请前往[https://hub.docker.com/editions/community/docker-ce-desktop-mac](https://hub.docker.com/editions/community/docker-ce-desktop-mac)。
+- en: Docker Desktop on Mac runs on OS X Sierra 10.12 and newer macOS releases.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Docker Desktop在Mac上运行在OS X Sierra 10.12和更新的macOS版本上。
+- en: The CRM application that we are going to build demonstrates how we can take
+    a number of microservices and bring them together into one cohesive application
+    where the end user is unaware that our application is working with information
+    from a wide number of data sources.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要构建的CRM应用程序演示了如何将多个微服务集成到一个统一的应用程序中，最终用户不知道我们的应用程序正在使用来自多个数据源的信息。
+- en: 'The requirements of our application are as follows:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们应用程序的要求如下：
+- en: The CRM system will provide the ability to enter addresses.
+  id: totrans-74
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: CRM系统将提供输入地址的功能。
+- en: The system will let the user enter details about a person.
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 系统将允许用户输入有关一个人的详细信息。
+- en: When details are entered about a person, the user can choose a previously entered
+    address.
+  id: totrans-76
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当有关一个人的详细信息被输入时，用户可以选择之前输入的地址。
+- en: The system will let the user enter details about potential leads.
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 系统将允许用户输入有关潜在客户的详细信息。
+- en: Data will be saved to a cloud database.
+  id: totrans-78
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 数据将保存到云数据库中。
+- en: The people, leads, and address information will be retrieved from separate services.
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 人员、潜在客户和地址信息将从单独的服务中检索。
+- en: These separate services will be hosted by Docker.
+  id: totrans-80
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这些单独的服务将由Docker托管。
+- en: Our user interface will be created as a React system.
+  id: totrans-81
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们的用户界面将作为一个React系统创建。
+- en: We have been steadily working toward being able to share functionality in our
+    application. Our microservices are going to take this approach to the next level
+    by sharing as much common code as possible and then just adding in the little
+    bits and pieces that they need to customize the data they fetch and return to
+    the client. We can do this because our services are similar in their requirements,
+    so they can share a lot of common code.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们一直在努力实现在我们的应用程序中共享功能的能力。我们的微服务将通过尽可能共享尽可能多的公共代码，然后只添加它们需要定制的数据，来将这种方法推向更高水平。我们之所以能够这样做，是因为我们的服务在需求上是相似的，所以它们可以共享很多公共代码。
+- en: Our microservice application starts off from the point of view of a monolithic
+    application. That application has the people, addresses, and leads all managed
+    by one system. We are going to treat this monolithic application with the contempt
+    it deserves and break it down into smaller, discrete chunks, where each constituent
+    part exists in isolation from other parts. Here, the leads, addresses, and people
+    all exist in their own self-contained services.
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的微服务应用程序从单体应用程序的角度开始。该应用程序由一个系统管理所有的人员、地址和潜在客户。我们将对这个单体应用程序进行适当的处理，并将其分解成更小、离散的部分，其中每个组成部分都存在于其他部分之外。在这里，潜在客户、地址和人员都存在于自己独立的服务中。
+- en: 'The place that we are going to start is with our `tsconfig` file. In previous
+    chapters, we had one service per chapter, with a single `tsconfig` file. We are
+    going to mix things up here by having a root level `tsconfig.json` file. Our services
+    will all use that as a common base:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从我们的`tsconfig`文件开始。在之前的章节中，每章都有一个服务，一个`tsconfig`文件。我们将通过拥有一个根级`tsconfig.json`文件来改变这种情况。我们的服务将都使用它作为一个共同的基础：
+- en: Let's start by creating a folder called `Services`, which will serve as the
+    base for our services. Under this, we are going to create separate `Addresses`,
+    `Common`, `Leads`, and `People` folders, as well as our base `tsconfig` file.
+  id: totrans-85
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让我们从创建一个名为`Services`的文件夹开始，它将作为我们服务的基础。在此之下，我们将创建单独的`Addresses`、`Common`、`Leads`和`People`文件夹，以及我们的基础`tsconfig`文件。
+- en: 'When we have finished this step, our `Services` folder should look as follows:'
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 当我们完成这一步时，我们的`Services`文件夹应该如下所示：
+- en: '![](assets/7a971ac6-66c1-4955-8cc0-b99205dc692a.png)'
+  id: totrans-87
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/7a971ac6-66c1-4955-8cc0-b99205dc692a.png)'
+- en: 'Now, let''s add the `tsconfig` settings. These settings are going to be shared
+    by all of the services we are going to host:'
+  id: totrans-88
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们添加`tsconfig`设置。这些设置将被我们将要托管的所有服务共享：
+- en: '[PRE4]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: You might have noticed that we haven't set up our output directory here. We're
+    going to leave that to slightly later on. Before we get to that step, we are going
+    to start adding in the common functionality that will be shared by our microservices.
+    Our shared functionality is going to be added in the `Common` folder. Some of
+    what we are going to add should look very familiar because we built similar server
+    code in earlier chapters.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到我们在这里还没有设置输出目录。我们将稍后再进行设置。在进行这一步之前，我们将开始添加将由我们的微服务共享的公共功能。我们的共享功能将被添加到`Common`文件夹中。我们将要添加的一些内容应该看起来非常熟悉，因为我们在之前的章节中构建了类似的服务器代码。
+- en: Our services are going to save to Firebase, so we are going to start off by
+    writing our database code. The `npm` packages that we need to install to work
+    with Firebase are `firebase` and `@types/firebase`. While we are adding these,
+    we should also import `guid-typescript` and the basic node `cors` and `express`
+    packages that we installed previously.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的服务将保存到Firebase，因此我们将从编写我们的数据库代码开始。我们需要安装的`npm`包是`firebase`和`@types/firebase`。在添加这些的同时，我们还应该导入`guid-typescript`以及我们之前安装的基本node`cors`和`express`包。
+- en: 'When each service saves data to the database, it will start with the same basic
+    structure. We will have a `ServerID` that we are going to set ourselves using
+    a GUID. The basic model that we are going to use starts off like this:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当每个服务将数据保存到数据库时，它将以相同的基本结构开始。我们将有一个`ServerID`，我们将使用GUID自己设置。我们将使用的基本模型如下所示：
+- en: '[PRE5]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'We are going to create an `abstract` base class that will work with instances
+    of `IDatabaseModelBase`, giving us the ability to `Get` a record, `GetAll` the
+    records, and `Save` a record. The beauty of working with Firebase is that, while
+    it is a powerful system, the code that we have to write to accomplish each of
+    these tasks is very short. Let''s start off with the class definition:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将创建一个`abstract`基类，它将与`IDatabaseModelBase`的实例一起工作，使我们能够`Get`记录，`GetAll`记录和`Save`记录。与Firebase一起工作的美妙之处在于，虽然它是一个强大的系统，但我们必须编写的代码来完成这些任务非常简短。让我们从类定义开始：
+- en: '[PRE6]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: As you can see, our class is generic, which tells us that each service will
+    extend `IDatabaseModelBase` and use that in its specific database implementation.
+    The collection is the name of the collection that will be written in Firebase.
+    For our purposes, we are going to share one Firebase instance to store the different
+    collections, but the beauty of our architecture is that we don't need to if we
+    don't want to. We can use separate Firebase stores if we need to; in fact, this
+    is generally what would happen in a production environment.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你所看到的，我们的类是通用的，这告诉我们每个服务都将扩展`IDatabaseModelBase`并在其特定的数据库实现中使用它。集合是将在Firebase中写入的集合的名称。对于我们的目的，我们将共享一个Firebase实例来存储不同的集合，但我们的架构之美在于如果我们不想要，我们不需要这样做。如果需要，我们可以使用单独的Firebase存储；事实上，在生产环境中通常会发生这种情况。
+- en: 'It''s pointless us adding our `GET` methods if we don''t have any data saved,
+    so the first thing we are going to do is write our `Save` method. Unsurprisingly,
+    our `Save` method is going to be asynchronous, so it will return a `Promise`:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们添加我们的`GET`方法是没有意义的，如果我们没有保存任何数据，所以我们要做的第一件事是编写我们的`Save`方法。毫不奇怪，我们的`Save`方法将是异步的，因此它将返回一个`Promise`：
+- en: '[PRE7]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Something that might look strange is the `async (coll)` code. Since we are using
+    the fat arrow (`=>`), we are creating a simplified function. Since this is a function,
+    we add the `async` keyword to it to indicate that the code can have an `await`
+    inside it. If we didn't mark this as `async`, then we would not be able to use
+    the `await` inside.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可能看起来奇怪的是`async (coll)`的代码。由于我们使用了`=>`，我们创建了一个简化的函数。由于这是一个函数，我们在其中添加了`async`关键字，以指示代码可以在其中使用`await`。如果我们没有将其标记为`async`，那么我们将无法在其中使用`await`。
+- en: 'Our code allocates a GUID to the `ServerID` before we call a chain of methods
+    to set the data. Let''s tackle the code in small chunks to see what each bit does.
+    As we discussed in [Chapter 7](e8c1594d-72de-47a5-bc5c-29af9b8e84fb.xhtml), *Angular
+    Cloud-Based Mapping with Firebase*, Firebase offers more than just database services,
+    so the first thing we need to do is access the database part. If we weren''t following
+    method chaining here, we could write this as follows:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的代码在调用一系列方法设置数据之前为`ServerID`分配了一个GUID。让我们分块处理代码，看看每个部分的作用。正如我们在[第7章](e8c1594d-72de-47a5-bc5c-29af9b8e84fb.xhtml)中讨论的那样，*使用Firebase进行Angular基于云的映射*，Firebase提供的不仅仅是数据库服务，所以我们需要做的第一件事是访问数据库部分。如果我们在这里不遵循方法链接，我们可以将其写成如下形式：
+- en: '[PRE8]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'In Firestore, we don''t save data in tables, we save it in named collections.
+    Once we have `firestore`, we get `CollectionReference`. Following on from the
+    preceding code snippet, we could rewrite this as follows:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Firestore中，我们不是将数据保存在表中，而是将其保存在命名集合中。一旦我们有了`firestore`，我们就会得到`CollectionReference`。在前面的代码片段之后，我们可以将其重写如下：
+- en: '[PRE9]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Once we have `CollectionReference`, we can get access to individual documents
+    using the `ServerID` we set up earlier in the method. If we don''t supply our
+    own ID, one will be created for us:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们有了`CollectionReference`，我们就可以使用我们在方法中之前设置的`ServerID`来访问单个文档。如果我们不提供自己的ID，系统会为我们创建一个：
+- en: '[PRE10]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Now, we need to set the data that we want to write to the database:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要设置我们要写入数据库的数据：
+- en: '[PRE11]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: This will save the data to a document in the appropriate collection in Firestore.
+    I have to admit that, while I like the ability to type in code that can be broken
+    down like this, method chaining means that I rarely do so if it's available. Where
+    the next step in the chain logically follows on from the previous step, I will
+    often chain the methods together because you cannot get to the next step without
+    going through the previous steps, and it makes it easy for me to visualize the
+    sequence of steps if I see them linked together.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将把数据保存到Firestore中适当的集合中的文档中。我不得不承认，虽然我喜欢输入可以像这样分解的代码的能力，但是如果可以使用方法链接，我很少这样做。当链中的下一步逻辑上从前一步逻辑上逻辑上跟随时，我经常将方法链接在一起，因为如果没有经过前面的步骤，就无法到达下一步，而且这样做可以让我很容易地将步骤序列可视化。
+- en: 'Once the item is saved to the database, we are going to return the saved item,
+    complete with `ServerID`, back to the calling code so that it can be used immediately.
+    That''s where this line comes in:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦项目保存到数据库中，我们将返回保存的项目，包括`ServerID`，返回到调用代码，以便可以立即使用。这就是这行代码的作用：
+- en: '[PRE12]'
+  id: totrans-110
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'The next step in our `FirestoreService` is to add the `GET` method. This method,
+    like the `Save` method, is an `async` method that returns a single instance of
+    type `T`, wrapped inside a promise. Since we know the ID, the vast majority of
+    our Firestore code is the same. The difference here is that we call `get()`, which
+    we then use to return the data:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们`FirestoreService`的下一步是添加`GET`方法。这个方法，像`Save`方法一样，是一个`async`方法，返回一个包装在promise中的`T`类型的单个实例。由于我们知道ID，我们的Firestore代码的绝大部分是相同的。不同之处在于我们调用`get()`，然后用它来返回数据：
+- en: '[PRE13]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Guess what? We also have an `async GetAll` method to write, this time returning
+    an array of `T`. Since we want to retrieve multiple records, rather than just
+    a single doc, we call `get()` on our `collection` instead. Once we have the records,
+    we use a simple `forEach` to build up the array we need to return:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 猜猜看？我们还有一个`async GetAll`方法要写，这次返回一个`T`数组。由于我们想要检索多个记录，而不仅仅是单个文档，我们在我们的`collection`上调用`get()`。一旦我们有了记录，我们使用一个简单的`forEach`来构建我们需要返回的数组：
+- en: '[PRE14]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'With our database code in place, let''s see what this looks like in practice.
+    We''re going to start off in the `Addresses` service by creating an `IAddress`
+    interface that extends `IDatabaseModelBase`:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的数据库代码已经就位，让我们看看实际情况是什么样子。我们将从`Addresses`服务开始，创建一个扩展`IDatabaseModelBase`的`IAddress`接口：
+- en: '[PRE15]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'With `IAddress` in place, we can now create the class that ties our service
+    to the `addresses` collection that we are going to store in Firebase. With all
+    the hard work that we have put in, our `AddressesService` is as simple as this:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了`IAddress`，我们现在可以创建将我们的服务与我们将在Firebase中存储的`addresses`集合联系起来的类。通过我们的努力，`AddressesService`就像这样简单：
+- en: '[PRE16]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'You might wonder whether the code for the data models and database access are
+    as easy with the other microservices. Let''s see what our `People` interface and
+    database service looks like:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能想知道数据模型和数据库访问的代码是否与其他微服务一样简单。让我们看看我们的`People`接口和数据库服务是什么样子的：
+- en: '[PRE17]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: You might also be wondering why we store the address information inside `IPerson`.
+    It's tempting to think that we should start a reference to the address only and
+    not duplicate data, especially if you are coming to the NoSQL architecture from
+    the viewpoint of relational databases where records are linked together through
+    foreign keys to create `pointers` to relationships. *Old-fashioned* SQL databases
+    use foreign tables to minimize the redundancies in records so we don't end up
+    creating duplicate data that's shared across multiple records. While that's a
+    useful thing to have available, it does make querying and retrieving records more
+    complicated because the information that we are interested in could well be scattered
+    over several tables. By storing the address alongside the person, we reduce the
+    number of tables we have to query to build up the person's information. This is
+    based on the idea that we want to query records far more often than we want to
+    change them so, if we needed to change the address, we would change the master
+    address and then a separate query would run through all of the people records
+    looking for addresses that needed to be updated. We will be achieving this because
+    the `ServerID` record in the address part of the person record will match the
+    `ServerID` in the master address.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能还想知道为什么我们将地址信息存储在`IPerson`内部。如果您是从关系数据库的角度来看待NoSQL架构，那么很容易认为我们应该只开始引用地址，而不是重复数据，特别是在关系数据库中，记录是通过外键链接在一起创建`指针`来建立关系。
+    *老式* SQL数据库使用外部表来最小化记录中的冗余，以便我们不会创建跨多个记录共享的重复数据。虽然这是一个有用的功能，但它确实使查询和检索记录变得更加复杂，因为我们感兴趣的信息可能分散在几个表中。通过将地址存储在人员旁边，我们减少了我们需要查询以构建人员信息的表的数量。这是基于我们想要查询记录的频率远远超过我们想要更改记录的想法，因此，如果我们需要更改地址，我们将更改主地址，然后单独的查询将运行通过所有人员记录，寻找需要更新的地址。我们将实现这一点，因为人员记录中地址部分的`ServerID`将与主地址中的`ServerID`匹配。
+- en: We won't cover the `Leads` database code; you can read it in the source, and
+    it is virtually identical to this. What we did was work out that our microservices
+    would be, functionally, very similar so that we can take advantage of inheritance
+    in a simple way.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不会涵盖`Leads`数据库代码；您可以在源代码中阅读它，它几乎与此相同。我们的做法是，我们的微服务在功能上非常相似，因此我们可以简单地利用继承。
+- en: Adding server-side routing support
+  id: totrans-123
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加服务器端路由支持
+- en: As well as having a common way of working with the database, our incoming API
+    requests are all going to be very similar in terms of endpoints. While writing
+    this book, I tried to put together snippets of code that could be reused later
+    on. One such snippet is the way we handle Express routing. The server-side code
+    we put together in [Chapter 4](23db6d37-1947-4f7b-9b25-3195c2df7274.xhtml), *The
+    MEAN Stack – Building a Photo Gallery*, was one such area, specifically the code
+    for routing. We can bring this code in pretty much exactly as we wrote it all
+    those chapters ago.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了有一个与数据库共同工作的常见方式之外，我们的传入API请求在端点方面都将非常相似。在写这本书的时候，我试图整理一些以后可以重复使用的代码片段。其中一个片段是我们处理Express路由的方式。我们在[第4章](23db6d37-1947-4f7b-9b25-3195c2df7274.xhtml)中组合的服务器端代码，*MEAN
+    Stack - 构建照片库*，就是这样一个区域，特别是路由的代码。我们可以几乎完全按照当时写的方式引入这段代码。
+- en: 'Here''s a quick reminder of what the code looks like. First, we have our `IRouter`
+    interface:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是代码的快速提醒。首先，我们有我们的`IRouter`接口：
+- en: '[PRE18]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Then, we have our routing engine—the code that we are going to plug directly
+    into our server:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们有我们的路由引擎 - 这段代码我们将直接插入到我们的服务器中：
+- en: '[PRE19]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'So, what does this look like in practice? Well, here''s the code to save an
+    address that has been sent over from the client. When we receive an `/add/` request
+    from the client, we extract the details from the body and cast it to an `IAddress`,
+    which we then use to save to the addresses service:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，在实践中，这是什么样子呢？好吧，这是保存从客户端发送过来的地址的代码。当我们从客户端收到一个`/add/`请求时，我们从请求体中提取详细信息，并将其转换为`IAddress`，然后用于保存到地址服务中：
+- en: '[PRE20]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'The code to get the address is very similar. We aren''t going to dissect this
+    method because it should look very familiar by now:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 获取地址的代码非常相似。我们不打算解剖这个方法，因为现在它应该看起来非常熟悉：
+- en: '[PRE21]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: The code for the `Leads` and `People` services are virtually identical. Please
+    read the code from our GitHub repository to get familiar with it.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Leads`和`People`服务的代码几乎是相同的。请阅读我们的GitHub存储库中的代码，以熟悉它。'
+- en: The Server class
+  id: totrans-134
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 服务器类
+- en: 'Again, continuing with the theme of reusing code as much as possible, we are
+    going to use a slightly modified version of the Express `Server` class we wrote,
+    way back in [Chapter 4](23db6d37-1947-4f7b-9b25-3195c2df7274.xhtml), *The MEAN
+    Stack – Building a Photo Gallery*. Again, we will quickly go through the code
+    to re-familiarize ourselves with it. First, let''s put the class definition and
+    constructor in place. Our constructor is a slimmed-down version of the constructor
+    from [Chapter 4](23db6d37-1947-4f7b-9b25-3195c2df7274.xhtml), *The MEAN Stack
+    – Building a Photo Gallery*:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次，为了尽可能地重用代码，我们将使用我们在[第4章](23db6d37-1947-4f7b-9b25-3195c2df7274.xhtml)中编写的Express
+    `Server`类的略微修改版本，*The MEAN Stack – Building a Photo Gallery*。我们将快速浏览代码以重新熟悉它。首先，让我们放置类定义和构造函数。我们的构造函数是[第4章](23db6d37-1947-4f7b-9b25-3195c2df7274.xhtml)中构造函数的简化版本，*The
+    MEAN Stack – Building a Photo Gallery*：
+- en: '[PRE22]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'We also want to add CORS support. While we could make this mandatory, I still
+    like the idea that we can put control of whether we want to do this into the hands
+    of the service developer, so we will keep this as a `public` method:'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还想要添加CORS支持。虽然我们可以将其设为强制性，但我仍然喜欢将是否要这样做的控制权交给服务开发人员，因此我们将保持这个方法为`public`：
+- en: '[PRE23]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'In order for our actual server implementations to work, we need to give them
+    the ability to add routing. We do this through the `AddRouting` method:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使我们的实际服务器实现工作，我们需要赋予它们添加路由的能力。我们通过`AddRouting`方法来实现这一点：
+- en: '[PRE24]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Now that we have our `AddRouting` method, we need code in place to start up
+    our server:'
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了`AddRouting`方法，我们需要编写代码来启动我们的服务器：
+- en: '[PRE25]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'What you may have noticed is that we are missing one important piece of the
+    puzzle. We have no database support in place in our server, but our service needs
+    to initialize Firebase. In our server, we add in the following:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，我们缺少一个重要的部分。我们的服务器中没有数据库支持，但我们的服务需要初始化Firebase。在我们的服务器中，我们添加了以下内容：
+- en: '[PRE26]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'Note that I have not included `Environment.fireBase` in the repository because
+    it contains details about servers and keys that I use. This is a constant that
+    contains the Firebase connection information. You can replace this with the connection
+    information you set up when you created your Firebase database in the cloud. To
+    add this, you will need to create a file in the `Common` folder called `Environment.ts`
+    which contains code that looks like this:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我没有在存储库中包含`Environment.fireBase`，因为它包含我使用的服务器和密钥的详细信息。这是一个包含Firebase连接信息的常量。您可以将其替换为您在云中创建Firebase数据库时设置的连接信息。要添加这个，您需要在`Common`文件夹中创建一个名为`Environment.ts`的文件，其中包含如下代码：
+- en: '[PRE27]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Creating our Addresses service
+  id: totrans-147
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建我们的Addresses服务
+- en: 'We now have everything we need to create our actual services. Here, we will
+    look at the `Addresses` service, understanding that the other services will follow
+    the same pattern. Since we already have the data models, data access code, and
+    routing in place, all we have to do is create our actual `AddressesServer` class.
+    The `AddressesServer` class is as simple as this:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经有了创建实际服务所需的一切。在这里，我们将看一下`Addresses`服务，理解其他服务将遵循相同的模式。由于我们已经有了数据模型、数据访问代码和路由，我们所要做的就是创建我们的实际`AddressesServer`类。`AddressesServer`类就是这么简单：
+- en: '[PRE28]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'We start the server like this:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们这样启动服务器：
+- en: '[PRE29]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: The code is as easy as that. We are following a principle called **Don't Repeat
+    Yourself **(**DRY**)  as much as possible. This simply states that you should
+    aim to retype as little code as possible. In other words, you should try to avoid
+    having code that does exactly the same thing scattered about your code base. Sometimes,
+    you can't avoid it and sometimes, it doesn't make sense to go to the trouble of
+    creating a lot of code scaffolding for a one- or two-line piece of code, but when
+    you have large functional areas, you should definitely try to avoid having to
+    copy and paste it into multiple parts of your code. Part of the reason for this
+    is if you have copied and pasted code and subsequently you find a bug in it, you
+    are going to have to fix that bug in multiple places.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码就是这么简单。我们尽可能地遵循一个叫做**不要重复自己**（**DRY**）的原则。这简单地表示您应该尽量少地重复输入代码。换句话说，您应该尽量避免在代码库中散布着完全相同的代码。有时候，您无法避免这种情况，有时候，为了一个或两行代码而费力地创建大量代码框架是没有意义的，但是当您有大型功能区域时，您绝对应该尽量避免将其复制粘贴到代码的多个部分中。部分原因是，如果您复制并粘贴了代码，随后发现了一个bug，您将不得不在多个地方修复这个bug。
+- en: Using Docker to run our services
+  id: totrans-153
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Docker来运行我们的服务
+- en: When we look at our services, we can see that we have an interesting problem;
+    namely that they all use the same port to start up on. Obviously, we can't actually
+    use the same port for each service, so have we caused ourselves a problem? Does
+    this mean that we cannot start more than one service and, if so, does this blow
+    our microservice architecture apart and mean that we should go back to a monolithic
+    service?
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们看我们的服务时，我们可以看到一个有趣的问题；即它们都使用相同的端口启动。显然，我们不能真的为每个服务使用相同的端口，那么我们是不是给自己造成了问题？这是否意味着我们不能启动多个服务，如果是这样，这是否会破坏我们的微服务架构，意味着我们应该回到单体服务？
+- en: Given the potential problems we have just discussed and the fact that this chapter
+    introduces Docker, it should come as no surprise to learn that Docker is the answer
+    to this. With Docker, we can spin up a container, deploy our code to it, and expose
+    the service with a different endpoint. So, how do we do this?
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 鉴于我们刚刚讨论的潜在问题以及本章介绍了Docker，毫不奇怪地得知Docker就是解决这个问题的答案。通过Docker，我们可以启动一个容器，部署我们的代码，并使用不同的端点暴露服务。那么，我们该如何做到这一点呢？
+- en: 'In each service, we are going to add a couple of common files:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在每个服务中，我们将添加一些常见的文件：
+- en: '[PRE30]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: The first file, called `.dockerignore`, chooses which files to ignore when copying
+    or adding files to the container.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个文件叫做`.dockerignore`，它选择在复制或添加文件到容器时要忽略的文件。
+- en: 'The next file we are going to add is called `Dockerfile`. This file describes
+    the Docker container and how to build it up. `Dockerfile` works by building up
+    layers of instructions that represent a step toward building up the container.
+    The first layer downloads and installs Node in the container, specifically Node
+    version 8:'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要添加的下一个文件叫做 `Dockerfile`。这个文件描述了 Docker 容器以及如何构建它。`Dockerfile` 通过构建一系列指令的层来构建容器。第一层在容器中下载并安装
+    Node，具体来说是 Node 版本 8：
+- en: '[PRE31]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'The next layer is used to set the default working directory. This directory
+    is used for subsequent commands, such as `RUN`, `COPY`, `ENTRYPOINT`, `CMD`, and
+    `ADD`:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一层用于设置默认工作目录。该目录用于后续命令，比如 `RUN`、`COPY`、`ENTRYPOINT`、`CMD` 和 `ADD`：
+- en: '[PRE32]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: In some online sources, you'll see that people create their own directories
+    to use as the working directory. It's better to use a predefined, well-known location
+    such as `/usr/src/app` as `WORKDIR`.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在一些在线资源中，你会看到人们创建自己的目录作为工作目录。最好使用预定义的、众所周知的位置，比如 `/usr/src/app` 作为 `WORKDIR`。
+- en: 'Since we have a working directory in place right now, we can start to set up
+    the code. We want to copy the necessary files to download and install our `npm`
+    packages:'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们现在已经有了一个工作目录，我们可以开始设置代码了。我们想要复制必要的文件来下载和安装我们的 `npm` 包：
+- en: '[PRE33]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: As a good practice, we copy the `package.json` and `package-lock.json` files
+    before copying the code because the install caches the contents of the installation.
+    As long as we don't change the `package.json` file, if the code is built again,
+    we won't need to re-download the packages.
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个良好的实践，我们在复制代码之前复制 `package.json` 和 `package-lock.json` 文件，因为安装会缓存安装的内容。只要我们不改变
+    `package.json` 文件，如果代码再次构建，我们就不需要重新下载包。
+- en: 'So, we have our packages installed, but we don''t have any code in place. Let''s
+    copy the contents of our local folders into the working directory:'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，我们的包已经安装好了，但是我们还没有任何代码。让我们将本地文件夹的内容复制到工作目录中：
+- en: '[PRE34]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'We want to expose the server port to the outside world, so let''s add that
+    layer now:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们想要将服务器端口暴露给外部世界，所以现在让我们添加这一层：
+- en: '[PRE35]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'Finally, we want to start the server. To do this, we want to trigger `npm start`:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们想要启动服务器。为了做到这一点，我们想要触发 `npm start`：
+- en: '[PRE36]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: As an alternative to running `CMD["npm", "start"]`, we can bypass `npm` altogether
+    and use `CMD ["node", "dist/server.js"]` (or whatever the server code is called).
+    The reason we might want to consider doing this is that running `npm` starts the
+    `npm` process, which then starts our server process, so using Node directly reduces
+    the number of services that are running. Also, `npm` has a habit of silently consuming
+    process exit signals, so Node has no idea that the process has exited unless `npm`
+    tells it.
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为运行 `CMD["npm", "start"]` 的替代方案，我们可以完全绕过 `npm`，使用 `CMD ["node", "dist/server.js"]`（或者服务器代码叫什么）。我们考虑这样做的原因是，运行
+    `npm` 会启动 `npm` 进程，然后启动我们的服务器进程，所以直接使用 Node 减少了运行的服务数量。此外，`npm` 有一个擅自消耗进程退出信号的习惯，所以除非
+    `npm` 告诉它，Node 不知道进程已经退出。
+- en: 'Now, if we want to start the address service, for instance, we run the following
+    commands from the command line:'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果我们想要启动地址服务，例如，我们可以从命令行运行以下命令：
+- en: '[PRE37]'
+  id: totrans-175
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: The first line builds the container image using `Dockerfile` and gives it a
+    tag so that we can identify it in the Docker containers.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一行使用 `Dockerfile` 构建容器镜像，并给它一个标签，这样我们就可以在 Docker 容器中识别它。
+- en: Once the image has been built, the next command runs the installation and publishes
+    the container port to the host. This trick is the *magic* that makes our server
+    code work—it exposes the internal port `3000` to the outside world as `17171`.
+    Note that we are using `ohanlon/addresses` in both cases to tie the container
+    image to the one that we are going to run (you can replace this name with whatever
+    you want).
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦镜像构建完成，下一个命令运行安装并将容器端口发布到主机。这个技巧是使我们的服务器代码工作的 *魔法*，它将内部端口 `3000` 暴露给外部世界作为
+    `17171`。请注意，我们在这两种情况下都使用 `ohanlon/addresses` 来将容器镜像与我们要运行的镜像绑定（你可以用任何你想要的名称替换这个名称）。
+- en: The `-d` flag stands for detach, which means that our container runs silently
+    in the background. This allows us to start the service and avoid tying up the
+    command line.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`-d` 标志代表分离，这意味着我们的容器在后台静默运行。这允许我们启动服务并避免占用命令行。'
+- en: If you want to find what images you have available, you can run the `docker
+    ps` command.
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想找到可用的镜像，可以运行 `docker ps` 命令。
+- en: Using docker-compose to compose and start the services
+  id: totrans-180
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用 docker-compose 来组合和启动服务
+- en: Rather than running up our images using `docker build` and `docker run`, we
+    have something called `docker-compose` to compose and run multiple containers.
+    With Docker composition, we can create our containers from multiple docker files
+    or entirely through a file called `docker-compose.yml`.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不再使用 `docker build` 和 `docker run` 来运行我们的镜像，而是有一个叫做 `docker-compose` 的东西来组合和运行多个容器。使用
+    Docker 组合，我们可以从多个 docker 文件或者完全通过一个名为 `docker-compose.yml` 的文件创建我们的容器。
+- en: 'We are going to use a combination of `docker-compose.yml` and the Docker files
+    that we created in the previous section to create a composition that we can easily
+    run up. In the root of the server code, create a blank file called `docker-compose.yml`.
+    We are going to start off by specifying the compose format that the file conforms
+    to. In our case, we are going to set it to `2.1`:'
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用 `docker-compose.yml` 和我们在上一节中创建的 Docker 文件的组合来创建一个可以轻松运行的组合。在服务器代码的根目录中，创建一个名为
+    `docker-compose.yml` 的空文件。我们将首先指定文件符合的组合格式。在我们的情况下，我们将把它设置为 `2.1`：
+- en: '[PRE38]'
+  id: totrans-183
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'We are going to create three services inside our containers, so let''s start
+    by defining the services themselves:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在容器内创建三个服务，所以让我们首先定义这些服务本身：
+- en: '[PRE39]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Now, each service is made up of discrete information, the first part of which
+    details the build information that we want to use. This information comes under
+    a build node and consists of the context, which maps to the directory our service
+    lives under, and the Docker file, which defines how we build up the container.
+    Optionally, we can set the `NODE_ENV` parameter to identify the node environment,
+    which we are going to set to `production`. The last piece of our puzzle maps back
+    to the `docker run` command where we set the port mapping; each service can set
+    its own `ports` mapping. This is what the node looks like that goes under `chapter08_addresses`:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，每个服务由离散信息组成，其中的第一部分详细说明了我们要使用的构建信息。这些信息在一个构建节点下，并包括上下文，它映射到我们的服务所在的目录，以及Docker文件，它定义了我们如何构建容器。可选地，我们可以设置`NODE_ENV`参数来标识节点环境，我们将设置为`production`。我们的谜题的最后一部分映射回`docker
+    run`命令，我们在其中设置端口映射；每个服务都可以设置自己的`ports`映射。这是放在`chapter08_addresses`下的节点的样子：
+- en: '[PRE40]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'When we put this all together, our `docker-compose.yml` file looks like this:'
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们把所有这些放在一起时，我们的`docker-compose.yml`文件看起来像这样：
+- en: '[PRE41]'
+  id: totrans-189
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: Before we can start the processes, we must compile our microservices. Docker
+    is not responsible for building the application, so it is our responsibility to
+    do this before we attempt to compose our service.
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开始这些过程之前，我们必须编译我们的微服务。Docker不负责构建应用程序，因此在尝试组合我们的服务之前，我们有责任先这样做。
+- en: 'We now have multiple containers that can be started together using one compose
+    file. In order to run our compose file, we use the `docker-compose up` command.
+    When all of the containers have started, we can verify their status using the
+    `docker ps` command, which gives us the following output:'
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们有多个容器可以使用一个组合文件一起启动。为了运行我们的组合文件，我们使用`docker-compose up`命令。当所有容器都启动后，我们可以使用`docker
+    ps`命令验证它们的状态，这给我们以下输出：
+- en: '![](assets/6f71c67e-1999-4a26-8426-59829276ce7f.png)'
+  id: totrans-192
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/6f71c67e-1999-4a26-8426-59829276ce7f.png)'
+- en: We have now finished with the server-side code. We have everything in place
+    that we need to create our microservices. What we want to do now is move on to
+    creating the user interface that is going to interact with our services.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在已经完成了服务器端的代码。我们已经准备好了需要创建我们的微服务的一切。现在我们要做的是继续创建将与我们的服务交互的用户界面。
+- en: Creating our React user interface
+  id: totrans-194
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建我们的React用户界面
+- en: 'We''ve spent a lot of time building Angular applications, so it''s only fair
+    that we return to building a React one. In just the same way that Angular can
+    work with Express and Node, React can also work with them and, since we have the
+    Express/Node side already in place, we are now going to create our React client.
+    We will start off with the command to create our React application with TypeScript
+    support:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们花了很多时间构建Angular应用程序，所以回到构建React应用程序是公平的。就像Angular可以与Express和Node一起工作一样，React也可以与它们一起工作，既然我们已经有了Express/Node端，现在我们要创建我们的React客户端。我们将从创建具有TypeScript支持的React应用程序的命令开始：
+- en: '[PRE42]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: This creates a standard React application, which we will modify to suit our
+    needs. The first thing that we need to do is bring in support for Bootstrap, this
+    time using the `react-bootstrap` package. While we are at it, we might as well
+    install the following dependencies as well—`react-table`, `@types/react-table`,
+    `react-router-dom`, `@types/react-router-dom`, and `axios`. We will be using these
+    throughout this chapter, so installing them now will save a bit of time later
+    on.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将创建一个标准的React应用程序，我们将修改以满足我们的需求。我们需要做的第一件事是引入对Bootstrap的支持，这次使用`react-bootstrap`包。在此期间，我们也可以安装以下依赖项——`react-table`、`@types/react-table`、`react-router-dom`、`@types/react-router-dom`和`axios`。我们将在本章中使用它们，因此现在安装它们将节省一些时间。
+- en: Throughout this book, we have been using `npm` to install dependencies, but
+    this isn't the only option available to us. `npm` has the advantage of being the
+    default package manager for Node (it is called Node Package Manager, after all),
+    but Facebook introduced its own package manager back in 2015, called Yarn. Yarn
+    was created to address issues in the version of `npm` that existed at the time.
+    Yarn uses its own set of lock files, instead of the default `package*.lock` that
+    `npm` uses. Which one you use really depends on your personal preferences and
+    evaluating whether the features they provide are something you need. For our purposes,
+    `npm` is a suitable package manager, so that's what we will continue to use.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书中，我们一直在使用`npm`来安装依赖项，但这并不是我们唯一的选择。`npm`有一个优点，它是Node的默认包管理器（毕竟它叫Node Package
+    Manager），但Facebook在2015年推出了自己的包管理器，叫做Yarn。Yarn是为了解决当时`npm`版本存在的问题而创建的。Yarn使用自己的一组锁文件，而不是`npm`使用的默认`package*.lock`。你使用哪一个取决于你的个人偏好和评估它们提供的功能是否是你需要的。对于我们的目的，`npm`是一个合适的包管理器，所以我们将继续使用它。
+- en: Using Bootstrap as our container
+  id: totrans-199
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Bootstrap作为我们的容器
+- en: 'We want to use Bootstrap to render the entirety of our display. Fortunately,
+    this is a trivial task and revolves around a minor modification being made to
+    our `App` component. In order to render out our display, we will wrap our content
+    inside a container, like this:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们希望使用Bootstrap来渲染我们整个显示。幸运的是，这是一个微不足道的任务，围绕着对我们的`App`组件进行一些小修改。为了渲染我们的显示，我们将把内容包裹在一个容器内，就像这样：
+- en: '[PRE43]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Now, when we render our content, it will automatically be rendered inside a
+    container that stretches to the full width of the page.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当我们渲染我们的内容时，它将自动渲染在一个容器内，该容器延伸到页面的整个宽度。
+- en: Creating a tabbed user interface
+  id: totrans-203
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建一个分页用户界面
+- en: 'Before we add in our navigation elements, we are going to create the components
+    that we will link to when the user clicks on one of the links. We will start with
+    `AddAddress.tsx`, which we will add code into to add an address. We start off
+    by adding the class definition:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在添加导航元素之前，我们将创建用户单击链接时将链接到的组件。我们将从`AddAddress.tsx`开始，我们将在其中添加代码以添加地址。我们首先添加类定义：
+- en: '[PRE44]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'The default state for our component is an empty `IAddress`, so we add the definition
+    for it, and set the component state to our default:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们组件的默认状态是一个空的`IAddress`，所以我们添加了它的定义，并将组件状态设置为我们的默认值：
+- en: '[PRE45]'
+  id: totrans-207
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'Before we add our code to render out our form, we need to add in a couple of
+    methods. As you may remember from our last look at React, we learned that we have
+    to explicitly update the state if the user changes anything in the display. Just
+    like we did last time, we are going to write an `UpdateBinding` event handler,
+    which we will call when the user changes any value on the display. We will see
+    this pattern repeated throughout all of our `Add*xxx*` components. As a refresher,
+    the ID tells us what field is being updated by the user, which we then use to
+    set the appropriate field in the state with the update value. Given this information,
+    our `event` handler looks like this:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们添加代码来渲染表单之前，我们需要添加一些方法。正如您可能还记得我们上次学习React时，我们学到如果用户在显示中更改任何内容，我们必须显式更新状态。就像上次一样，我们将编写一个`UpdateBinding`事件处理程序，当用户更改显示中的任何值时我们将调用它。我们将在所有的`Add*xxx*`组件中看到这种模式重复出现。作为一个复习，ID告诉我们用户正在更新哪个字段，然后我们使用它来设置状态中的适当字段与更新值。根据这些信息，我们的`event`处理程序看起来像这样：
+- en: '[PRE46]'
+  id: totrans-209
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: The other supporting method we need to add in triggers the REST call to our
+    address service. We are going to use the Axios package to transmit a `POST` request
+    to the add address endpoint. Axios gives us promise-based REST calls so that we
+    can, for example, issue the call and wait for it to come back before we continue
+    processing. We are going to opt for a simple code model here and send our request
+    over in a fire-and-forget fashion so we don't have to wait for any results to
+    come back. For the sake of simplicity, we are going to immediately reset the state
+    of the UI, ready for the user to add another address.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要添加的另一个支持方法是触发REST调用到我们的地址服务。我们将使用Axios包来传输一个`POST`请求到添加地址的端点。Axios给我们提供了基于promise的REST调用，这样我们就可以，例如，发出调用并等待它返回再继续处理。我们将选择一个简单的代码模型，并以一种忘记即可的方式发送我们的请求，这样我们就不必等待任何结果返回。为了简单起见，我们将立即重置UI的状态，准备让用户添加另一个地址。
+- en: 'Now that we have added these methods in, we are going to code up our `render`
+    method. The definition looks like this:'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 既然我们已经添加了这些方法，我们将编写我们的`render`方法。定义如下：
+- en: '[PRE47]'
+  id: totrans-212
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'The `Container` element maps back to the good old container class we are used
+    to from Bootstrap. What is missing from this is the actual input elements. Each
+    piece of input is grouped inside `Form.Group` so that we can add `Label` and `Control`,
+    like this:'
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Container`元素映射回我们从Bootstrap中习惯的好老容器类。这里缺少的是实际的输入元素。每个输入都被分组在`Form.Group`中，这样我们就可以添加`Label`和`Control`，就像这样：'
+- en: '[PRE48]'
+  id: totrans-214
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: As another reminder, the current value of the binding is rendered to our display
+    inside the one-way binding, represented by `value={this.state.Line1}`, and any
+    input from the user triggers an update to the state through the `UpdateBinding`
+    event handler.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为另一个提醒，绑定的当前值通过单向绑定呈现在我们的显示中，表示为`value={this.state.Line1}`，用户的任何输入都会通过`UpdateBinding`事件处理程序触发对状态的更新。
+- en: 'The `Button` code that we add to save our state looks like this:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们添加的用于保存状态的`Button`代码如下：
+- en: '[PRE49]'
+  id: totrans-217
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: 'Putting it all together, this is what our `render` method looks like:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 把所有这些放在一起，这就是我们的`render`方法的样子：
+- en: '[PRE50]'
+  id: totrans-219
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: So, is everything good with this code? Well, no, there is one small problem
+    with the `Save` code. If the user clicked the button, nothing would be saved to
+    the database because the state is not visible in the `Save` method. When we do
+    `onClick={this.Save}`, we are assigning a callback to the `Save` method. What
+    happens internally is that the `this` context is lost, so we cannot use it to
+    get the state. Now, we have two fixes for this; one we have seen a lot of already,
+    which is to use the fat arrow `=>` to capture the context so that our method can
+    cope with it.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，这段代码一切都好吗？嗯，不，`Save`代码有一个小问题。如果用户点击按钮，因为状态在`Save`方法中不可见，所以不会保存到数据库。当我们执行`onClick={this.Save}`时，我们正在为`Save`方法分配一个回调。内部发生的是`this`上下文丢失，所以我们无法使用它来获取状态。现在，我们有两种修复方法；一种是我们已经经常见到的，就是使用箭头函数`=>`来捕获上下文，以便我们的方法可以处理它。
+- en: 'The other way to solve this problem (and the reason we have deliberately coded
+    the `Save` method to not use the fat arrow, so we can see this method in operation)
+    is to add the following code to the constructor to bind the context in:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 解决这个问题的另一种方法（也是我们故意编写`Save`方法不使用箭头函数的原因，这样我们就可以看到这个方法的操作）是在构造函数中添加以下代码来绑定上下文：
+- en: '[PRE51]'
+  id: totrans-222
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: Well, that's our code in place to add an address in. I hope you will agree that
+    it's a simple enough piece of code; time and again, people create unnecessarily
+    complicated code where, in general, simplicity is a much more attractive option.
+    I am a great fan of making code as simple as possible. There is a habit in the
+    industry of trying to make code more complicated than it needs to be, simply to
+    impress other developers. I urge people to avoid that temptation as clean code
+    is much more impressive.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 好了，这就是我们添加地址的代码。我希望您会同意这是一个足够简单的代码；一次又一次，人们创造了不必要复杂的代码，而一般来说，简单是一个更有吸引力的选择。我非常喜欢使代码尽可能简单。行业中有一种习惯，就是试图使代码变得比必要复杂，只是为了给其他开发人员留下印象。我敦促人们避免这种诱惑，因为清晰的代码更加令人印象深刻。
+- en: The user interface we use for managing our addresses is tabbed, so we have one
+    tab responsible for adding the address, while the other tab displays a grid containing
+    all of the addresses we have currently added in. It's now time for us to add the
+    tab and grid code. We are going to create a new component called `addresses.tsx`,
+    which does this for us.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们用于管理地址的用户界面是分页的，所以我们有一个标签页负责添加地址，而另一个标签页显示一个包含我们当前添加的所有地址的网格。现在是时候添加标签页和网格代码了。我们将创建一个名为`addresses.tsx`的新组件，它为我们完成这些工作。
+- en: 'Again, we start off by creating our class. This time, we are going to set the
+    `state` to an empty array. We do this because we are going to populate it later
+    on from our address microservice:'
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，我们首先创建我们的类。这次，我们将`state`设置为空数组。我们这样做是因为我们将稍后从我们的地址微服务中填充它：
+- en: '[PRE52]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'In order to load the data from our microservice, we need a method to handle
+    this for us. We are going to make use of Axios again, but this time we are going
+    to use the promise features to set the state when it is returned from the server:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了从我们的微服务加载数据，我们需要一个处理这个任务的方法。我们将再次使用Axios，但这次我们将使用promise功能在从服务器返回时设置状态：
+- en: '[PRE53]'
+  id: totrans-228
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'The question now, is when do we want to call the `Load` method? We don''t want
+    to try to get the state during the constructor as that will slow down the construction
+    of the component, so we need another point to retrieve this data. The answer to
+    this lies in the React component life cycle. Components go through several methods
+    when they are being created. The order that they go through is as follows:'
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在的问题是，我们何时想要调用`Load`方法？我们不想在构造函数中尝试获取状态，因为那会减慢组件的构建速度，所以我们需要另一个点来检索这些数据。答案在于React组件的生命周期。组件在创建时经历几种方法。它们的顺序如下：
+- en: '`constructor();`'
+  id: totrans-230
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`constructor();`'
+- en: '`getDerivedStateFromProps();`'
+  id: totrans-231
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`getDerivedStateFromProps();`'
+- en: '`render();`'
+  id: totrans-232
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`render();`'
+- en: '`componentDidMount();`'
+  id: totrans-233
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`componentDidMount();`'
+- en: 'The effect we are going to go for is to display the component using `render`,
+    then use binding to update the values to display in the table. That tells us that
+    we want to load our state inside `componentDidMount`:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们要实现的效果是使用`render`显示组件，然后使用绑定更新要在表格中显示的值。这告诉我们我们想要在`componentDidMount`中加载我们的状态：
+- en: '[PRE54]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'We do have another potential point to trigger the update. If the user adds
+    an address and then switches the tab back to the one displaying the table, we''ll
+    want to automatically retrieve the updated list of addresses. Let''s add a method
+    to cope with this:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们确实有另一个潜在的触发更新的点。如果用户添加了一个地址，然后切换标签回到显示表格的标签，我们将希望自动检索更新后的地址列表。让我们添加一个方法来处理这个问题：
+- en: '[PRE55]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: It's time for us to add our `render` method. To keep things simple, we are going
+    to add this in two stages; the first is to add the `Tab` and `AddAddress` components.
+    In the second stage, we'll add the `Table`.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是时候添加我们的`render`方法了。为了保持简单，我们将分两个阶段添加；第一阶段是添加`Tab`和`AddAddress`组件。在第二阶段，我们将添加`Table`。
+- en: 'Adding the tab requires us to bring in the *Reactified* Bootstrap tab component.
+    Inside our `render` method, add the following code:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 添加标签需要我们引入*Reactified* Bootstrap标签组件。在我们的`render`方法中，添加以下代码：
+- en: '[PRE56]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: We have a `Tabs` component, which contains two individual `Tab` items. Each
+    tab is given an `eventKey`, which we can use to set the default active key (in
+    this case, we set it to `show`). When a tab is selected, we trigger the loading
+    of the data. We will see that our `AddAddress` component has been added in the
+    `Add Address` tab.
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们有一个`Tabs`组件，其中包含两个单独的`Tab`项。每个标签都被赋予一个`eventKey`，我们可以使用它来设置默认的活动键（在这种情况下，我们将其设置为`show`）。当选择一个标签时，我们触发数据的加载。我们将看到我们的`AddAddress`组件已经添加到`Add
+    Address`标签中。
+- en: 'All that we have left to do here is add the table that we are going to use
+    to display the list of addresses. We are going to create a list of columns that
+    we want to display in our table. We use the following syntax to create the columns
+    list, where `Header` is the title that will be displayed at the top of the column. `accessor`
+    tells React what property to pick off the data row:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在这里要做的所有事情就是添加我们将用来显示地址列表的表格。我们将创建一个我们想要在表格中显示的列的列表。我们使用以下语法创建列列表，其中`Header`是将显示在列顶部的标题，`accessor`告诉React从数据行中选择哪个属性：
+- en: '[PRE57]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'Finally, we need to add the table in our `Addresses` tab. We are going to use
+    the popular `ReactTable` component to display the table. Put the following code
+    inside the `<Row></Row>` section to add it:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们需要在我们的`Addresses`标签中添加表格。我们将使用流行的`ReactTable`组件来显示表格。将以下代码放入`<Row></Row>`部分以添加它：
+- en: '[PRE58]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: There are a number of interesting parameters in here. We bind `data` to `this.state.data`
+    to automatically update it when the state changes. The columns that we created
+    are bound to the `columns` attribute. I like the fact that we can control how
+    many rows a person sees per page using `defaultPageSize`, and the fact that we
+    can let the user choose to override the number of rows using `pageSizeOptions`.
+    We set `className` to `-striped -highlight` so that the display is striped between
+    gray and white, with row highlighting used to show which row the mouse is over
+    when the mouse moves over the table.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里有一些有趣的参数。我们将`data`绑定到`this.state.data`，以便在状态改变时自动更新它。我们创建的列与`columns`属性绑定。我喜欢我们可以使用`defaultPageSize`控制每页显示多少行，以及让用户使用`pageSizeOptions`选择覆盖行数的功能。我们将`className`设置为`-striped
+    -highlight`，这样显示就会在灰色和白色之间有条纹，当鼠标移动到表格上时，行高亮会显示鼠标停留在哪一行。
+- en: Using a select control to select an address when adding a person
+  id: totrans-247
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在添加一个人时使用选择控件选择地址
+- en: When the user wants to add a person, they only need to type in their first and
+    last name. We display a selection box to the user, which is populated with the
+    list of previously entered addresses. Let's see how we handle a more complicated
+    scenario like this with React.
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当用户想要添加一个人时，他们只需要输入他们的名字和姓氏。我们向用户显示一个选择框，其中填充了先前输入的地址列表。让我们看看如何使用React处理这样一个更复杂的场景。
+- en: The first thing we need to do is create two separate components. We have an
+    `AddPerson` component to type the first name and last name in, and we have an
+    `AddressChoice` component, which retrieves and displays the complete list of addresses
+    for the user to select from. We will start with the `AddressChoice` component.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要做的第一件事是创建两个单独的组件。我们有一个`AddPerson`组件用于输入名字和姓氏，还有一个`AddressChoice`组件，用于检索和显示用户可以选择的完整地址列表。我们将从`AddressChoice`组件开始。
+- en: 'This component uses a custom `IAddressProperty`, which provides us with access
+    back to the parent component so that we can trigger the update to the currently
+    selected address when this component changes value:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个组件使用了一个自定义的`IAddressProperty`，它为我们提供了访问父组件的能力，这样我们就可以在这个组件改变值时触发当前选择的地址的更新：
+- en: '[PRE59]'
+  id: totrans-251
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: 'We have told React that our component accepts `IAddressProperty` as the props
+    to our component and has `Map<string, string>` as the state. When we retrieve
+    the list of addresses from the server, we populate this map with the addresses;
+    the key is used to hold `ServerID`, and the value holds a formatted version of
+    the address. As the logic behind this looks a little bit complicated, we will
+    start with the method to load the addresses, and then we will go back to the constructor:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们告诉React，我们的组件接受`IAddressProperty`作为组件的props，并且`Map<string, string>`作为状态。当我们从服务器检索地址列表时，我们用这个地图填充地址；键用于保存`ServerID`，值保存地址的格式化版本。由于这背后的逻辑看起来有点复杂，我们将从加载地址的方法开始，然后再回到构造函数：
+- en: '[PRE60]'
+  id: totrans-253
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: We start off by issuing a call to the server to get the complete list of addresses.
+    When we get the list back, we are going to iterate over the addresses to build
+    up the formatted map that we just discussed. We fill the state with the formatted
+    map and copy the unformatted address into a separate addresses field; the reason
+    we do this is that while we want to display the formatted version to the display,
+    we want to send the unformatted version back to the caller when the selection
+    changes. There are other ways that we could have achieved this, but this is a
+    useful little hack that keeps things simple.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先向服务器发出请求，获取完整的地址列表。当我们收到列表后，我们将遍历地址，构建我们刚刚讨论过的格式化地图。我们用格式化地图填充状态，并将未格式化的地址复制到一个单独的地址字段中；我们这样做的原因是，虽然我们希望将格式化版本显示到显示器上，但当选择改变时，我们希望将未格式化的版本发送回给调用者。我们还可以通过其他方式实现这一点，但这是一个简单的有用的小技巧。
+- en: 'With the load functionality in place, we can now add our constructor and fields:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了加载功能，我们现在可以添加我们的构造函数和字段：
+- en: '[PRE61]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'Note that we have a changed binding in here, in keeping with the `bind` code
+    we discussed in the previous section. Loading the data happens, again, in `componentDidMount`:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们在这里有一个`changed`绑定，与我们在前一节讨论的`bind`代码保持一致。数据加载再次发生在`componentDidMount`中：
+- en: '[PRE62]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'We are ready to build our render method now. To simplify the visualization
+    of what goes on inside the building up of the entries that make up the selection
+    items, we separate that code out into a separate method. This simply iterates
+    over the list of `this.options` to create options to be added to the `select`
+    control:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们准备构建我们的渲染方法。为了简化构建选择项的条目的可视化，我们将这段代码分离成一个单独的方法。这个方法简单地遍历`this.options`列表，创建要添加到`select`控件的选项：
+- en: '[PRE63]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'Our render method uses a select `Form.Control`, which displays `Select...`
+    as the first option and then renders out the list from `RenderList`:'
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的渲染方法使用了一个选择`Form.Control`，它将`Select...`显示为第一个选项，然后从`RenderList`中渲染出列表：
+- en: '[PRE64]'
+  id: totrans-262
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: 'Eagle-eyed readers will notice that we have referenced a `Changed` method twice
+    now, without actually adding it. This method takes the selection value and uses
+    it to look up the unformatted address and, if it finds it, uses the `props` to
+    trigger the `CurrentSelection` method:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 细心的读者会注意到，我们已经两次引用了`Changed`方法，但实际上并没有添加它。这个方法接受选择值并使用它来查找未格式化的地址，如果找到了，就使用`props`来触发`CurrentSelection`方法：
+- en: '[PRE65]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'In our `AddPerson` code, `AddressesChoice` is referenced in the render like
+    this:'
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的`AddPerson`代码中，`AddressesChoice`在渲染中被引用如下：
+- en: '[PRE66]'
+  id: totrans-266
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: We aren't going to cover the rest of the content inside `AddPerson`. I would
+    suggest following the downloaded code to see this in place. We also aren't going
+    to cover the other components; this chapter could turn into a hundred-page monster
+    if we were to continue dissecting the other components, especially since they
+    largely follow the same formats as the controls we have just covered.
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不打算覆盖`AddPerson`内部的其余内容。我建议跟随下载的代码来查看这个位置。我们也不打算覆盖其他组件；如果我们继续剖析其他组件，特别是因为它们大部分都遵循我们刚刚讨论过的控件的相同格式，这一章可能会变成一个长达一百页的怪物。
+- en: Adding our navigation
+  id: totrans-268
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加我们的导航
+- en: 'The last bit of code we want to add to our client code base is the ability
+    to handle client-side navigation. We saw how to do this when we covered Angular,
+    so it''s time for us to see how to display different pages based on the link the
+    user selects. We are going to use a combination of Bootstrap navigation and React
+    route manipulation. We start off by creating a router that contains our navigation:'
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们想要添加到我们客户端代码库的最后一部分代码是处理客户端导航的能力。我们在讨论Angular时已经看到了如何做到这一点，现在是时候看看如何根据用户选择的链接显示不同的页面。我们将使用Bootstrap导航和React路由操作的组合。我们首先创建一个包含我们导航的路由器：
+- en: '[PRE67]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'We have left a home page in place so that we can add appropriate documentation
+    and images if we wanted to *jazz* it up to make it look like a commercial CRM
+    system. The other `href` elements will tie back to the router to show the appropriate
+    React components. Inside the `Router`, we add `Route` entries that map the `path`
+    to the `component` so that, if the user selects `Addresses`, for instance, the
+    `Addresses` component will be shown:'
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们留下了一个主页，这样我们就可以添加适当的文档和图片，如果我们想要*装饰*它，使它看起来像一个商业CRM系统。其他`href`元素将与路由器绑定，以显示适当的React组件。在`Router`内部，我们添加了将`path`映射到`component`的`Route`条目，因此，如果用户选择`Addresses`，例如，将显示`Addresses`组件：
+- en: '[PRE68]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'Our `routing` code now looks like this:'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的`routing`代码现在看起来像这样：
+- en: '[PRE69]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'In order to add our navigation, complete with routing, we do the following:'
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了添加我们的导航，包括路由，我们进行了以下操作：
+- en: '[PRE70]'
+  id: totrans-276
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: That's it. We now have a client application that can talk to our microservices
+    and orchestrate their results together so that they work together, even though
+    their implementations are independent of each other.
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样。我们现在有一个客户端应用程序，可以与我们的微服务进行通信，并协调它们的结果，使它们一起工作，即使它们的实现是相互独立的。
+- en: Summary
+  id: totrans-278
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: At this point, we have created a series of microservices. We started off by
+    defining a series of shared functionality, which we used as a basis for creating
+    specialist services. These services all used the same port in Node.js, which would
+    have presented us with a problem, but we solved this problem by creating a series
+    of Docker containers to start up our services and redirected the internal ports
+    to different external ports. We saw how to create the relevant Docker files and
+    Docker compose files to start up the services.
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一点上，我们已经创建了一系列微服务。我们首先定义了一系列共享功能，然后以此为基础创建专业服务。这些服务都在Node.js中使用了相同的端口，这本应该给我们带来问题，但我们通过创建一系列Docker容器来解决了这个问题，启动我们的服务并将内部端口重定向到不同的外部端口。我们看到了如何创建相关的Docker文件和Docker组合文件来启动服务。
+- en: Then, we created a React-based client application that used a more advanced
+    layout by introducing tabs to separate viewing results from the microservices
+    from the ability to add records to the services. Along the way, we also used Axios
+    to manage our REST calls.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们创建了一个基于React的客户端应用程序，通过引入选项卡来使用更高级的布局，以将微服务的查看结果与向服务添加记录的能力分开。在这个过程中，我们还使用了Axios来管理我们的REST调用。
+- en: When it came to REST calls, we saw how we could use Swagger to define our REST
+    API and talked about whether or not to use the API code that Swagger provided
+    inside our services.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在进行REST调用时，我们看到了如何使用Swagger来定义我们的REST API，并讨论了是否在我们的服务中使用Swagger提供的API代码。
+- en: In the next chapter, we are going to move away from React and look at how to
+    create a Vue client that works with TensorFlow to automatically perform image
+    classification.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将远离React，看看如何创建一个与TensorFlow一起工作的Vue客户端，以自动执行图像分类。
+- en: Questions
+  id: totrans-283
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题
+- en: What is a Docker container?
+  id: totrans-284
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 什么是Docker容器？
+- en: What do we use to group Docker containers together to start them up, and what
+    commands can we use to start them?
+  id: totrans-285
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们用什么来将Docker容器分组在一起启动它们，我们可以使用什么命令来启动它们？
+- en: How do we map an internal port to a different external port with Docker?
+  id: totrans-286
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们如何使用Docker将内部端口映射到不同的外部端口？
+- en: What features does Swagger provide for us?
+  id: totrans-287
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Swagger为我们提供了哪些功能？
+- en: What do we need to do if a method can't see state in React?
+  id: totrans-288
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果一个方法在React中看不到状态，我们需要做什么？
+- en: Further reading
+  id: totrans-289
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 进一步阅读
+- en: If you want to know more about Docker, *Docker Quick Start Guide* by Earl Waud
+    ([https://www.packtpub.com/in/networking-and-servers/docker-quick-start-guide](https://www.packtpub.com/in/networking-and-servers/docker-quick-start-guide))
+    is a good place to start.
+  id: totrans-290
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果您想了解有关Docker的更多信息，Earl Waud的《Docker快速入门指南》（[https://www.packtpub.com/in/networking-and-servers/docker-quick-start-guide](https://www.packtpub.com/in/networking-and-servers/docker-quick-start-guide)）是一个很好的起点。
+- en: If you are running Docker on Windows, *Docker on Windows - Second Edition* ([https://www.packtpub.com/virtualization-and-cloud/docker-windows-second-edition](https://www.packtpub.com/virtualization-and-cloud/docker-windows-second-edition))
+    by Elton Stoneman is a great help.
+  id: totrans-291
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果您在Windows上运行Docker，Elton Stoneman的《Windows上的Docker-第二版》（[https://www.packtpub.com/virtualization-and-cloud/docker-windows-second-edition](https://www.packtpub.com/virtualization-and-cloud/docker-windows-second-edition)）将是一个很大的帮助。
+- en: At this stage, I would hope that your appetite for microservices has been well
+    and truly whetted. If that's the case, *Microservices Development Cookbook* by
+    Paul Osman ([https://www.packtpub.com/in/application-development/microservices-development-cookbook](https://www.packtpub.com/in/application-development/microservices-development-cookbook))
+    should be just what you need to carry on.
+  id: totrans-292
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在这个阶段，我希望您对微服务的兴趣已经被激起。如果是这样，Paul Osman的《微服务开发食谱》（[https://www.packtpub.com/in/application-development/microservices-development-cookbook](https://www.packtpub.com/in/application-development/microservices-development-cookbook)）应该是您继续前进所需要的。

@@ -1,0 +1,972 @@
+- en: Making Your Own Directives and Plugins
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 制作您自己的指令和插件
+- en: In this chapter, we will look at ways of extending Vue. First, we will code
+    our own directives and see how we can use them. Next, we will make a custom Vue
+    plugin.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一章中，我们将看看扩展Vue的方法。首先，我们将编写自己的指令并看看如何使用它们。接下来，我们将制作一个自定义的Vue插件。
+- en: 'More specifically, in this chapter, we will examine the following:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更具体地，在这一章中，我们将研究以下内容：
+- en: The structure of custom directives and how to make them
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自定义指令的结构以及如何制作它们
+- en: Using global and local custom directives
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用全局和本地自定义指令
+- en: Passing values to custom directives
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 向自定义指令传递值
+- en: Authoring Vue plugins
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 编写Vue插件
+- en: Publishing Vue plugins
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 发布Vue插件
+- en: Making our own directives
+  id: totrans-8
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 制作我们自己的指令
+- en: In Vue 2, components are the go-to strategy to use, be it keeping things DRY
+    or abstracting away some functionality. However, another approach that you can
+    take is to utilize custom directives.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Vue 2中，组件是使用的主要策略，无论是保持DRY还是抽象化一些功能。然而，你可以采取的另一种方法是利用自定义指令。
+- en: Understanding custom directives
+  id: totrans-10
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解自定义指令
+- en: As we discussed earlier in this book, directives help us explain to Vue what
+    kind of behavior we would like to attach to a piece of markup. As we have previously
+    seen, there are a number of directives that come built-in with Vue. Some examples
+    are `v-on`, `v-if`, `v-model`, and so on. As a quick refresher, a directive is
+    an HTML attribute that starts with `v-`.
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们在本书中之前讨论过的，指令帮助我们解释给Vue什么样的行为我们想要附加到一段标记上。正如我们之前看到的，Vue内置了许多指令。一些例子是`v-on`，`v-if`，`v-model`等等。简单回顾一下，指令是以`v-`开头的HTML属性。
+- en: 'When we need to build a custom directive, we simply provide a custom word after
+    the hyphen. For example, we could create a custom directive, which we''ll call `v-custom-directive`,
+    and we can then use this name in our markup, for example, like this:'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们需要构建一个自定义指令时，我们只需在连字符后面提供一个自定义单词。例如，我们可以创建一个自定义指令，我们将其称为`v-custom-directive`，然后我们可以在我们的标记中使用这个名称，例如，像这样：
+- en: '[PRE0]'
+  id: totrans-13
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Note that it is perfectly normal to have a directive without a value, just
+    like it is to provide it a value, like so:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，拥有一个没有值的指令是完全正常的，就像为它提供一个值一样，就像这样：
+- en: '[PRE1]'
+  id: totrans-15
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Next, in our JS code, we would need to register this directive, as follows:'
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，在我们的JS代码中，我们需要注册这个指令，如下所示：
+- en: '[PRE2]'
+  id: totrans-17
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: So, as we can see, the first argument provided to `Vue.directive` is the name
+    of our custom directive. Note that the Vue convention of using kebab-case in HTML
+    and lowerCamelCase in JS is also applied to custom directives.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，正如我们所看到的，提供给`Vue.directive`的第一个参数是我们自定义指令的名称。请注意，Vue在HTML中使用kebab-case，而在JS中使用lowerCamelCase的约定也适用于自定义指令。
+- en: The second argument provided to our custom directive is an object that holds
+    all of the directive's functionality.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提供给我们自定义指令的第二个参数是一个包含所有指令功能的对象。
+- en: As you might infer by now, the previous code gives an example of registering
+    a directive globally. If you would like to register a directive locally, you would
+    need to specify a `directives` option to a specific component.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如你现在可能推断的那样，前面的代码给出了全局注册指令的一个例子。如果你想要本地注册一个指令，你需要为特定组件指定一个`directives`选项。
+- en: 'For example, we could register a local component as follows:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，我们可以注册一个本地组件如下：
+- en: '[PRE3]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Just like components, directives use hooks too, which allows us to control
+    when their functionality will be called. There are five directive hooks: `bind`,
+    `inserted`, `update`, `componentUpdated`, and `unbind`.'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就像组件一样，指令也使用钩子，这允许我们控制它们的功能何时被调用。有五个指令钩子：`bind`，`inserted`，`update`，`componentUpdated`和`unbind`。
+- en: For a full list of arguments that some of these hooks can take, you can refer
+    to [https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments](https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments).
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关某些这些钩子可以接受的参数的完整列表，您可以参考[https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments](https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments)。
+- en: Building a simple custom directive
+  id: totrans-25
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 构建一个简单的自定义指令
+- en: 'The full code for this example is available here: [https://codepen.io/AjdinImsirovic/pen/yxWObV](https://codepen.io/AjdinImsirovic/pen/yxWObV).'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例的完整代码在此处可用：[https://codepen.io/AjdinImsirovic/pen/yxWObV](https://codepen.io/AjdinImsirovic/pen/yxWObV)。
+- en: 'In our HTML, we will add the following simple code:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的HTML中，我们将添加以下简单代码：
+- en: '[PRE4]'
+  id: totrans-28
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'In our JS, we will add our `customDirective` globally:'
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的JS中，我们将全局添加我们的`customDirective`：
+- en: '[PRE5]'
+  id: totrans-30
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: In the previous code, we are using the `inserted` directive hook. With this
+    hook, the directive's code will be run when the element that the directive is
+    bound to is *inserted* into its parent node.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在先前的代码中，我们使用了`inserted`指令钩子。使用此钩子，当将指令绑定到的元素*插入*到其父节点中时，将运行指令的代码。
+- en: When this occurs, the element will be styled according to the values we assigned
+    to `el.style.cssText`.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当这种情况发生时，该元素将根据我们分配给`el.style.cssText`的值进行样式设置。
+- en: Of course, there is nothing preventing us from using more than one custom directive
+    on an element. For example, we could specify several custom directives, and then
+    mix and match them as suitable.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，没有什么能阻止我们在一个元素上使用多个自定义指令。例如，我们可以指定几个自定义指令，然后根据需要混合和匹配它们。
+- en: In the next section, we are going to rewrite the global custom directive as
+    a local one.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将重写全局自定义指令为本地自定义指令。
+- en: Using local directives
+  id: totrans-35
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用本地指令
+- en: Let's now look at how we could rewrite the previous code so that our directive
+    uses local directives instead of a global one.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们看看如何重写先前的代码，使我们的指令使用本地指令而不是全局指令。
+- en: In this section, we will build a very simple custom directive. We will use an
+    example from [Chapter 4](47cb5109-67ad-44b5-8d5c-31343859b6ae.xhtml), *Filters
+    and Mixins*, and we will build on it, so that we can easily compare the differences
+    to the previous example, only this time with a simple local custom directive.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将构建一个非常简单的自定义指令。我们将使用[第4章](47cb5109-67ad-44b5-8d5c-31343859b6ae.xhtml)中的一个示例，*过滤器和混合*，并在此基础上构建，以便我们可以轻松地将其与先前的示例进行比较，只是这次使用一个简单的本地自定义指令。
+- en: The code for this example is available here: [https://codepen.io/AjdinImsirovic/pen/yxWJNp](https://codepen.io/AjdinImsirovic/pen/yxWJNp).
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例的代码在此处可用：[https://codepen.io/AjdinImsirovic/pen/yxWJNp](https://codepen.io/AjdinImsirovic/pen/yxWJNp)。
+- en: 'In our HTML, we will specify the following code:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的HTML中，我们将指定以下代码：
+- en: '[PRE6]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'In our JS, we will specify the following code:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的JS中，我们将指定以下代码：
+- en: '[PRE7]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: In the next section, we will see how to pass values to custom directives.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将看到如何将值传递给自定义指令。
+- en: Passing values to custom directives
+  id: totrans-44
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将值传递给自定义指令
+- en: 'We will improve on this chapter''s initial example by allowing our custom directives
+    to receive arguments. The code for this example is available in this pen: [https://codepen.io/AjdinImsirovic/pen/xaNgPN](https://codepen.io/AjdinImsirovic/pen/xaNgPN).'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将通过允许我们的自定义指令接收参数来改进本章的初始示例。此示例的代码在此笔中可用：[https://codepen.io/AjdinImsirovic/pen/xaNgPN](https://codepen.io/AjdinImsirovic/pen/xaNgPN)。
+- en: 'This is the HTML for our example of passing values to custom directives:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们示例中将值传递给自定义指令的HTML：
+- en: '[PRE8]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: 'And here is the JavaScript:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是JavaScript代码：
+- en: '[PRE9]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'Finally, still in JS, we add the Vue constructor with the `options` object:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在JS中，我们添加带有`options`对象的Vue构造函数：
+- en: '[PRE10]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Note that the specific settings for directive hook arguments can be found at [https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments](https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments).
+    The one argument that is of most interest to us is `binding`, which is an object
+    with these properties: `name`, `value`, `oldValue`, `expression`, `arg`, and `modifiers`.'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，指令钩子参数的具体设置可以在[https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments](https://vuejs.org/v2/guide/custom-directive.html#Directive-Hook-Arguments)找到。对我们最感兴趣的一个参数是`binding`，它是一个带有这些属性的对象：`name`、`value`、`oldValue`、`expression`、`arg`和`modifiers`。
+- en: In the previous code, we see an example of passing two different values that
+    give us different results based on the values passed. We also see an example of
+    what happens when we pass a nonsensical value (one that utilizes the `switch`
+    statement's `default` branch).
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上面的代码中，我们看到了传递两个不同值的示例，这些值根据传递的值给出了不同的结果。我们还看到了当我们传递一个无意义的值（利用`switch`语句的`default`分支）时会发生什么。
+- en: In the next section, we will discuss ways in which we can further extend Vue
+    functionality by building Vue plugins.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将讨论通过构建Vue插件来进一步扩展Vue功能的方法。
+- en: Working with Vue plugins
+  id: totrans-55
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Vue插件。
+- en: 'Some popular Vue plugins are Vuex and Vue-router. A Vue plugin is used when
+    we need to give additional functionality to Vue globally. There are a few very
+    common scenarios where Vue plugins might be useful: adding global methods, adding
+    global assets, adding instance methods on `Vue.prototype`, or adding global mixins.'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些流行的Vue插件是Vuex和Vue-router。当我们需要为Vue全局提供额外的功能时，就会使用Vue插件。有一些非常常见的情况下，Vue插件可能会有用：添加全局方法，添加全局资产，添加`Vue.prototype`上的实例方法，或者添加全局混合。
+- en: 'Where Vue plugins shine is the ability to share them with the community. To
+    get an idea of the vastness of Vue''s plugin system, navigate to the following
+    URLs: [https://github.com/vuejs/awesome-vue#components--libraries](https://github.com/vuejs/awesome-vue#components--libraries) and [https://vuejsexamples.com/](https://vuejsexamples.com/).'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue插件的亮点在于能够与社区共享。要了解Vue插件系统的广泛性，可以导航到以下网址：[https://github.com/vuejs/awesome-vue#components--libraries](https://github.com/vuejs/awesome-vue#components--libraries)和[https://vuejsexamples.com/](https://vuejsexamples.com/)。
+- en: Next, we'll create a simple Vue plugin.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将创建一个简单的Vue插件。
+- en: Creating the simplest possible Vue plugin
+  id: totrans-59
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建最简单的Vue插件
+- en: We'll begin by creating the simplest possible Vue plugin. In order to do that,
+    we'll again use Vue CLI, version 3\. The instructions for setting up Vue CLI are
+    available in [Chapter 3](dc944b0b-91b8-462b-a64b-5d92621565ac.xhtml), *Working
+    with Vue-CLI, Components, Props, and Slots*.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从创建最简单的Vue插件开始。为了做到这一点，我们将再次使用Vue CLI，版本3。设置Vue CLI的说明在[第3章](dc944b0b-91b8-462b-a64b-5d92621565ac.xhtml)中可用，*使用Vue-CLI、组件、Props和Slots*。
+- en: 'First, we will need to initialize a new project. Navigate your console to the
+    parent folder in which you want to create a new Vue project, and run the following
+    commands:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要初始化一个新项目。将控制台导航到要创建新Vue项目的父文件夹，并运行以下命令：
+- en: '[PRE11]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: When we run the first of these three commands, we will be asked a few questions,
+    and after that, a large number of packages will be run. This can take some time—a
+    nice opportunity for a short break. Once done, and we have run the other two commands
+    listed before, our boilerplate Vue app will be available at `localhost:8080`.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们运行这三个命令中的第一个时，会有一些问题，之后会运行大量的软件包。这可能需要一些时间——一个休息的好机会。一旦完成，并且我们已经运行了前面列出的另外两个命令，我们的样板Vue应用将在`localhost:8080`上可用。
+- en: To start off, let's create a new folder inside the `src` folder and call it
+    `plugins`. Next, inside the `plugins` folder, let's make another folder, which
+    we'll call `SimplePlugin`. Inside the `SimplePlugin` folder, let's make a new
+    file and call it `index.js`.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，让我们在`src`文件夹内创建一个新的文件夹，并将其命名为`plugins`。接下来，在`plugins`文件夹内，让我们创建另一个文件夹，我们将其称为`SimplePlugin`。在`SimplePlugin`文件夹内，让我们创建一个新文件，并将其命名为`index.js`。
+- en: 'A Vue plugin is an object. For our plugin object to be accessible to our Vue
+    app, we need to make it available by exporting it. Therefore, let''s add this
+    export code to our `index.js` file:'
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue插件是一个对象。为了让我们的Vue应用程序可以访问插件对象，我们需要通过导出来使其可用。因此，让我们将这个导出代码添加到我们的`index.js`文件中：
+- en: '[PRE12]'
+  id: totrans-66
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'A Vue''s plugin object has an `install` method. The `install` method takes
+    in two arguments. The first argument is the `Vue` object, and the second argument
+    is the `options` object. Therefore, we''ll add the `install` method inside the
+    `plugin` object:'
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue的插件对象有一个`install`方法。`install`方法接受两个参数。第一个参数是`Vue`对象，第二个参数是`options`对象。因此，我们将在`plugin`对象内添加`install`方法：
+- en: '[PRE13]'
+  id: totrans-68
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Currently, inside our `install` method, we are only alerting a message to the
+    browser. This is the absolute minimum of functionality our plugin can have. With
+    this functionality in place, it's time to use our plugin inside our app.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，在我们的`install`方法内，我们只是向浏览器发出警报消息。这是我们的插件可以具有的功能的绝对最小值。有了这个功能，现在是时候在我们的应用程序中使用我们的插件了。
+- en: Note that we are also concatenating the `options` argument to our alert message.
+    If we didn't do it, our Vue-cli would throw an error, stating that <q>options
+    is defined but never used</q>. Apparently, it favors the <q>(no-unused-vars)</q>
+    scenarios.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们还将`options`参数连接到我们的警报消息中。如果我们不这样做，我们的Vue-cli将抛出一个错误，指出<q>options已定义但从未使用</q>。显然，它更青睐于<q>(no-unused-vars)</q>的情况。
+- en: 'To use the plugin, we need to open our `main.js` file and import the plugin
+    by adding these two lines of code on line three of the `main.js` file:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要使用插件，我们需要打开我们的`main.js`文件，并通过在`main.js`文件的第三行添加这两行代码来导入插件：
+- en: '[PRE14]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: First, we import the plugin and we specify the import path. Next, we add our
+    plugin as an argument to the `Vue.use` method.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们导入插件并指定导入路径。接下来，我们将我们的插件作为参数添加到`Vue.use`方法中。
+- en: 'With this, we have successfully authored the simplest possible plugin. Open
+    your local project at `localhost:8080` and you''ll be greeted with the alert message,
+    stating this:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这个，我们已经成功地创建了最简单的插件。打开本地项目`localhost:8080`，你将看到一个警报消息，其中说明：
+- en: '[PRE15]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Next, we'll see how to add the options object to our plugins.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将看到如何将选项对象添加到我们的插件中。
+- en: Creating a plugin with options defined
+  id: totrans-77
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 创建带有定义选项的插件
+- en: Due to the way we have set up our project, we will leave `SimplePlugin` as is
+    and, in this section of our exploration of plugins in Vue, we'll add another folder
+    inside our `plugins` folder in our project. We'll call this folder `OptionsPlugin`
+    and inside of it, we'll again create an `index.js` file.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们设置项目的方式，我们将保持`SimplePlugin`不变，在Vue插件探索的这一部分，我们将在项目的`plugins`文件夹内添加另一个文件夹。我们将称这个文件夹为`OptionsPlugin`，并在其中再次创建一个`index.js`文件。
+- en: 'Next, let''s update the `main.js` file, so that now it looks like this:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们更新`main.js`文件，使其看起来像这样：
+- en: '[PRE16]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Now, back in `OptionsPlugin/index.js`, we will add the following code:'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，回到`OptionsPlugin/index.js`，我们将添加以下代码：
+- en: '[PRE17]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Notice that we have completely omitted the `options` object in the `install`
+    method. The reason is simple: the `options` object is optional, and not providing
+    it will not break our code.'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们在`install`方法中完全省略了`options`对象。原因很简单：`options`对象是可选的，不提供它不会破坏我们的代码。
+- en: In the previous plugin definition, we are getting the length of the `el.innerText`
+    string, and then we are logging it out to the console. Additionally, the `el` that
+    has our plugin's custom `v-text-length` directive applied will also be made more
+    noticeable with a red border.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在先前的插件定义中，我们获取了`el.innerText`字符串的长度，然后将其记录到控制台中。此外，应用了我们插件自定义的`v-text-length`指令的`el`也将通过红色边框更加显眼。
+- en: 'Next, let''s use the functionality from our plugin in a  component''s template.
+    Specifically, we''ll use it at the beginning of the `HelloWorld.vue` file inside
+    the `src/components` folder:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们在组件的模板中使用来自我们的插件的功能。具体来说，我们将在`src/components`文件夹中的`HelloWorld.vue`文件的开头使用它：
+- en: '[PRE18]'
+  id: totrans-86
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Running our app in the browser at this point will produce the following message
+    in the console:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时在浏览器中运行我们的应用程序将在控制台中产生以下消息：
+- en: '[PRE19]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Now, we can introduce our `options` object. The purpose of the `options` object
+    will be to allow us to customize the way in which the HTML element that is affected
+    by the `v-text-length` directive is displayed. In other words, we can decide to
+    give the users of our plugin the option to choose between different kinds of styles
+    based on options that we pass in.
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以引入我们的`options`对象。`options`对象的目的是允许我们自定义受`v-text-length`指令影响的HTML元素的显示方式。换句话说，我们可以决定让我们的插件的用户根据我们传递的选项来选择不同类型的样式。
+- en: 'So, let''s update our plugin with the following code:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，让我们使用以下代码更新我们的插件：
+- en: '[PRE20]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: There are a few things happening in the previous code. First, we are creating
+    an object on the fly and we are assigning it to `const OptionsPlugin`. At the
+    bottom of the file, we are exporting the `OptionsPlugin` we have just defined.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码中发生了一些事情。首先，我们正在即时创建一个对象，并将其分配给`const OptionsPlugin`。在文件底部，我们正在导出我们刚刚定义的`OptionsPlugin`。
+- en: Inside the `optionsPlugin` object, we are using a couple of if statements to
+    serve different styles based on the length of text found in the text node of the
+    `el` element. If the length of text is less than 40 characters, then we will assign
+    the value `options.selectedOption
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`optionsPlugin`对象内部，我们使用了一些if语句，根据`el`元素的文本节点中找到的文本长度来提供不同的样式。如果文本长度小于40个字符，那么我们将为`options.selectedOption`赋值
+- en: .plum` to the `border` CSS property.
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将`.plum`赋给`border` CSS属性。
+- en: Otherwise, if the length of text is equal to or greater than 40 characters,
+    we will assign the value of `options.selectedOption.orange` to the `border` CSS
+    property inside the inline `style` attribute of the element in question.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 否则，如果文本长度等于或大于40个字符，我们将在问题元素的内联`style`属性中的`border` CSS属性赋值为`options.selectedOption.orange`的值。
+- en: 'Next, let''s set these option values. We''ll do that in our `main.js` file.
+    We''ll update the section where we use the plugin to the following code:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们设置这些选项值。我们将在我们的`main.js`文件中进行。我们将更新使用插件的部分为以下代码：
+- en: '[PRE21]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Finally, in the `HelloWorld.vue` file, we made only a slight update. We add
+    the plugin-defined directive to the `p` tag that follows right after the `h1`
+    tag:'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在`HelloWorld.vue`文件中，我们只进行了轻微的更新。我们将插件定义的指令添加到紧随`h1`标签之后的`p`标签中：
+- en: '[PRE22]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Now, when we run our app, we''ll get the following text logged to the console:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，当我们运行我们的应用程序时，我们将在控制台中看到以下文本：
+- en: '[PRE23]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: In our viewport, this plugin will add a dashed purple border around the `h1`
+    tag and a double orange border around the `p` tag.
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的视口中，这个插件将在`h1`标签周围添加一个虚线紫色边框，并在`p`标签周围添加一个双层橙色边框。
+- en: 'Now that we understand the basic way in which plugins can be created and used,
+    we can think of creative ways to make our plugin do something more useful. For
+    example, we could improve the existing plugin by adding a tooltip that would display
+    the number of words that are present in different elements on the page. We could
+    also add color intensity: the more words there are, the more color we could give
+    to this "character count" badge.'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们了解了插件可以被创建和使用的基本方式，我们可以想出创造性的方法让我们的插件做一些更有用的事情。例如，我们可以通过添加一个工具提示来改进现有的插件，该工具提示将显示页面上不同元素中存在的单词数量。我们还可以添加颜色强度：单词越多，我们可以给这个“字符计数”徽章更多的颜色。
+- en: Alternatively, we could list the values present in the style attribute, or the
+    class attribute, or both. This plugin would be useful for the quick inspection
+    of styles without opening the dev tools, which could prove useful on smaller screens
+    or workstations that have only one screen available.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，我们可以列出样式属性或类属性中存在的值，或者两者都有。这个插件对于快速检查样式而不用打开开发工具可能会很有用，这在较小的屏幕或只有一个屏幕的工作站上可能会很有用。
+- en: Next, we'll discuss how we can publish a Vue plugin. Specifically, we will publish
+    the OptionsPlugin we just made.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将讨论如何发布一个 Vue 插件。具体来说，我们将发布我们刚刚制作的 OptionsPlugin。
+- en: Publishing a Vue plugin
+  id: totrans-106
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 发布一个 Vue 插件
+- en: A prerequisite to authoring an `npm` plugin is registering on the website and
+    verifying your email address. Hence, the first step in authoring your Vue plugin
+    on `npm` is to visit [https://www.npmjs.com](https://www.npmjs.com) and register
+    an account.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 撰写一个 `npm` 插件的先决条件是在网站上注册并验证你的电子邮件地址。因此，在 `npm` 上撰写你的 Vue 插件的第一步是访问 [https://www.npmjs.com](https://www.npmjs.com)
+    并注册一个账户。
+- en: 'We will publish our Vue plugin on `npm`. First, let''s check whether we already
+    have a user. Run the following command in your console:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在 `npm` 上发布我们的 Vue 插件。首先，让我们检查是否已经有一个用户。在控制台中运行以下命令：
+- en: '[PRE24]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'If that throws an error, you will need to create a new user by running this
+    command:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果出现错误，您需要通过运行此命令创建一个新用户：
+- en: '[PRE25]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Then, just follow the instructions to add yourself as the user.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，只需按照说明将自己添加为用户。
+- en: Adding a simple plugin
+  id: totrans-113
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 添加一个简单的插件
+- en: To add a simple, one-file plugin, simply run `npm init` in the folder of your 
+    choice. This command will help you create a `package.json` file.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 添加一个简单的、单文件插件，只需在您选择的文件夹中运行 `npm init`。这个命令将帮助您创建一个 `package.json` 文件。
+- en: 'This is the list of questions and answers provided:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是提供的问题和答案列表：
+- en: '[PRE26]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: The default answers that the `npm init` utility provides are listed in round
+    brackets. To accept the defaults, simply press the *Enter* key. Otherwise, simply
+    type the desired answer.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`npm init` 实用程序提供的默认答案列在圆括号中。要接受默认值，只需按 *Enter* 键。否则，只需输入所需的答案。'
+- en: 'There is also the concept of scope for `npm` authors. Scope is simply your
+    username. The best approach to not having to worry about scope is to have it set
+    in your `.npmrc` file, via the command line, by running the following command:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`npm` 作者还有一个作用域的概念。作用域就是你的用户名。不用担心作用域的最佳方法是在你的 `.npmrc` 文件中设置它，通过命令行运行以下命令：'
+- en: '[PRE27]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Of course, you need to replace the word `username` with your actual username.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，您需要用您的实际用户名替换 `username` 这个词。
+- en: 'Once done, run the `dir` command to list the contents of the folder. It should
+    list only one file: `package.json`. Now, we can create another file, named `OptionsPlugin.vue`:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，运行 `dir` 命令列出文件夹的内容。它应该只列出一个文件：`package.json`。现在，我们可以创建另一个文件，命名为 `OptionsPlugin.vue`：
+- en: '[PRE28]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: 'Let''s quickly verify that our `package.json` file looks like this:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们快速验证我们的 `package.json` 文件是否像这样：
+- en: '[PRE29]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Next, let''s update the `OptionsPlugin.vue` file with this code:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，让我们用这段代码更新 `OptionsPlugin.vue` 文件：
+- en: '[PRE30]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Finally, let''s add a `README.md` file. The `md` file extension stands for
+    Markdown, which is a format that makes it very easy to author content online.
+    We will add the following contents to the `README`:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，让我们添加一个`README.md`文件。`md`文件扩展名代表Markdown，这是一种使在线内容编写变得非常容易的格式。我们将向`README`添加以下内容：
+- en: '[PRE31]bash'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE31]bash'
+- en: npm install --save optionsplugin
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: npm install --save optionsplugin
+- en: '[PRE32]javascript'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[PRE32]javascript'
+- en: import Vue from 'vue';
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: import Vue from 'vue';
+- en: import OptionsPlugin from 'optionsplugin'
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: import OptionsPlugin from 'optionsplugin'
+- en: Vue.use(OptionsPlugin, {
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vue.use(OptionsPlugin, {
+- en: 'selectedOption: {'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'selectedOption: {'
+- en: 'plum: "5px dashed purple",'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'plum: "5px dashed purple",'
+- en: 'orange: "10px double orange"'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'orange: "10px double orange"'
+- en: '}'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '}'
+- en: '})'
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '})'
+- en: '[PRE33]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'This should be a good starting point for our plugin''s description. We can
+    always improve the `README` later. Now that we have `package.json`, `README.md`,
+    and `OptionsPlugin.vue` ready, we can publish our plugin simply by running this:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这应该是我们插件描述的一个很好的起点。我们随时可以稍后改进`README`。现在我们已经准备好`package.json`，`README.md`和`OptionsPlugin.vue`，我们可以通过运行以下命令简单地发布我们的插件：
+- en: '[PRE34]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: We need to provide the `--access=public` flag to our `npm publish` command,
+    because scope packages default to private access and we need to explicitly override
+    this setting.
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要为我们的`npm publish`命令提供`--access=public`标志，因为作用域包默认为私有访问，我们需要明确覆盖此设置。
+- en: 'Once published, our console will log out the following information:'
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦发布，我们的控制台将输出以下信息：
+- en: '[PRE35]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'This is the sign that we have successfully published our plugin. Our new plugin
+    now has its very own home, at the following URL:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们成功发布插件的标志。我们的新插件现在有了自己的主页，位于以下URL：
+- en: '[https://www.npmjs.com/package/vue-options-plugin](https://www.npmjs.com/package/vue-options-plugin).'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '[https://www.npmjs.com/package/vue-options-plugin](https://www.npmjs.com/package/vue-options-plugin)。'
+- en: Finally, let's look how to install our newly added plugin to another project.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，让我们看看如何将我们新添加的插件安装到另一个项目中。
+- en: Installing our NPM plugin in a Vue project using Vue CLI 3
+  id: totrans-148
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Vue CLI 3中安装我们的NPM插件
+- en: 'To install our Vue plugin from `npm`, we need to first create a new project.
+    Let''s run these commands:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从`npm`安装我们的Vue插件，我们需要首先创建一个新项目。让我们运行这些命令：
+- en: '[PRE36]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Now, we can add our `npm` plugin by running this:'
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以通过运行以下命令添加我们的`npm`插件：
+- en: '[PRE37]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'That''s all there is to it; now, our plugin is available in our project and
+    we can use it as described earlier, by importing it like this:'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 就是这样；现在，我们的插件已经在我们的项目中可用，我们可以像之前描述的那样导入它来使用：
+- en: '[PRE38]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: And now, we can use our plugin's functionality as needed.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以根据需要使用我们插件的功能。
+- en: Additional plugins to learn from
+  id: totrans-156
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 要学习的其他插件
+- en: 'It is always good to look at well-coded examples of other people''s code, so
+    that we can learn from them. Some useful plugins that we can learn from and possibly
+    contribute to are these:'
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看其他人的代码的良好编码示例总是很有益的，这样我们就可以从中学习。我们可以学习并可能贡献的一些有用的插件包括：
+- en: A guided tour plugin, vue-tour: [https://github.com/pulsardev/vue-tour](https://github.com/pulsardev/vue-tour)
+  id: totrans-158
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个引导游览插件，vue-tour：[https://github.com/pulsardev/vue-tour](https://github.com/pulsardev/vue-tour)
+- en: Multi-select plugin, vue-multiselect: [https://vue-multiselect.js.org/](https://vue-multiselect.js.org/)
+  id: totrans-159
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 多选插件，vue-multiselect：[https://vue-multiselect.js.org/](https://vue-multiselect.js.org/)
+- en: A tooltip plugin, v-tooltip: [https://akryum.github.io/v-tooltip](https://akryum.github.io/v-tooltip)
+  id: totrans-160
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个工具提示插件，v-tooltip：[https://akryum.github.io/v-tooltip](https://akryum.github.io/v-tooltip)
+- en: Summary
+  id: totrans-161
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, we looked at creating custom directives and custom plugins
+    in Vue. We covered how to structure custom directives, and how to make global
+    and local custom directives. We also looked at passing values to custom directives
+    and working with Vue plugins. We looked at how to create a couple of custom Vue
+    plugins. Finally, we have seen how to publish our plugin to `npm` and how to install
+    it in our projects from NPM.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们讨论了在Vue中创建自定义指令和自定义插件。我们介绍了如何构建自定义指令，以及如何创建全局和局部自定义指令。我们还讨论了如何向自定义指令传递数值以及如何使用Vue插件。我们还介绍了如何创建一些自定义Vue插件。最后，我们看到了如何将我们的插件发布到`npm`，以及如何从NPM在我们的项目中安装它。
+- en: In the chapter that follows, we will examine how to make our apps feel more
+    interactive with the help of transitions and animations.
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的章节中，我们将探讨如何通过过渡和动画使我们的应用程序更具交互性。

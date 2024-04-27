@@ -1,0 +1,1663 @@
+- en: Frontend Decentralized Application
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 前端分散式应用程序
+- en: In this chapter, we are going to learn how to write a decentralized application
+    that has a GUI frontend. This is a desktop decentralized application. People can
+    interact with a smart contract using buttons and text fields. It is a step forward
+    from the Truffle console or a `web3.py` script. While writing this GUI frontend,
+    we will learn about the best practices when dealing with a smart contract, which
+    are how to deal with latency and how to provide added value in a decentralized
+    application.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习如何编写具有GUI前端的分散式应用程序。这是一个桌面分散式应用程序。人们可以使用按钮和文本字段与智能合约进行交互。这比Truffle控制台或`web3.py`脚本更进一步。在编写此GUI前端时，我们将学习处理智能合约的最佳实践，包括如何处理延迟以及如何在分散式应用程序中提供附加值。
+- en: 'We are going to learn about the following topics in this chapter:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习以下主题：
+- en: Setting up the Qt GUI library
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 设置Qt GUI库
+- en: Installing Qt for Python
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安装Qt for Python
+- en: Crash course on Qt for Python
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Qt for Python速成课程
+- en: Writing the smart contract for the Twitter-like application
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为类似Twitter的应用程序编写智能合约
+- en: Building the GUI for the Twitter-like application
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 为类似Twitter的应用程序构建GUI
+- en: Setting up the Qt GUI library
+  id: totrans-8
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置Qt GUI库
+- en: The Qt library is a C++ framework that was designed to create a multi-platform
+    application. In Linux, this library is the foundation for the KDE desktop. Its
+    counterpart is the GTK+ library, the foundation for Gnome desktop. However, the
+    Qt library has stepped up its game. You can use the Qt library to create applications
+    on Android and iOS. People have sometimes mistaken the Qt library as a library
+    that only creates GUI applications. However, the Qt library comprises non-GUI
+    libraries as well, for example, data storage, multimedia, and networking. The
+    Qt library even contains a threading library! In the past, you could create an
+    open source application for free with the Qt library. However, if you want to
+    create a proprietary application with the Qt library, you must pay for the license.
+    You can now have a bit more flexibility when it comes to using the Qt library.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Qt库是一个设计用于创建多平台应用程序的C++框架。在Linux中，该库是KDE桌面的基础。它的对应物是GTK+库，是Gnome桌面的基础。然而，Qt库已经提升了自己的游戏。您可以使用Qt库在Android和iOS上创建应用程序。有时人们错误地认为Qt库只能创建GUI应用程序。然而，Qt库还包括非GUI库，例如数据存储、多媒体和网络。Qt库甚至包含一个线程库！过去，您可以免费使用Qt库创建开源应用程序。但是，如果您想使用Qt库创建专有应用程序，您必须支付许可费。现在，在使用Qt库时，您可以有更多的灵活性。
+- en: You can create a proprietary application with the Qt library for free, but only
+    if you provide a relinking mechanism for Qt libraries, provide a license copy,
+    and explicitly acknowledge Qt usage, among other things, as described at [https://www.qt.io/download](https://www.qt.io/download).
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以免费使用Qt库创建专有应用程序，但只有在为Qt库提供重新链接机制、提供许可证副本并明确承认Qt使用等情况下才可以。详情请参阅[https://www.qt.io/download](https://www.qt.io/download)。
+- en: Choosing a GUI library
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 选择GUI库
+- en: Python has a plethora of GUI libraries to choose from. This includes Tkinter,
+    Phoenix (wxPython), PyGObject, PyQt, Qt for Python (PySide2), among many others.
+    Deciding which GUI library should be used for a Python application is sometimes
+    subjective.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Python有大量可供选择的GUI库。其中包括Tkinter、Phoenix（wxPython）、PyGObject、PyQt、Qt for Python（PySide2）等。决定为Python应用程序使用哪个GUI库有时是主观的。
+- en: Tkinter is a Python GUI library, but the UI is not slick and polished. PyGObject
+    is a good choice only if you want to write a desktop application in Linux, because
+    it uses GTK+. There is support for GTK+ in Windows and Mac, but it's not native.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Tkinter是一个Python GUI库，但UI不够流畅和精致。PyGObject只有在您想要在Linux中编写桌面应用程序时才是一个不错的选择，因为它使用GTK+。在Windows和Mac中也支持GTK+，但不是本地支持。
+- en: I am going to choose the Qt for Python ([https://www.qt.io/qt-for-python](https://www.qt.io/qt-for-python))
+    library. This is the official Python binding for the Qt library from Qt itself.
+    Be careful, though; there is another Python binding for the Qt library from another
+    company. This library is called PyQt, and the company is Riverbank. These libraries
+    both support the latest Qt library, which is Qt 5.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我将选择Qt for Python（[https://www.qt.io/qt-for-python](https://www.qt.io/qt-for-python)）库。这是Qt自己的官方Python绑定Qt库。不过要小心，还有另一家公司提供的Qt库的Python绑定。这个库叫做PyQt，公司是Riverbank。这两个库都支持最新的Qt库，即Qt
+    5。
+- en: There are differences between these two libraries. If you want to write and
+    sell a proprietary application using PyQt, you must purchase a license from Riverbank.
+    However, you don't need to do that with Qt for Python, although that comes with
+    its own set of restrictions. For example, you must provide a relinking mechanism
+    for Qt libraries. There are books written covering PyQt, but there are none for
+    Qt for Python at the time of writing this book.
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这两个库之间存在差异。如果您想使用PyQt编写和销售专有应用程序，必须从Riverbank购买许可证。然而，对于Qt for Python，您不需要这样做，尽管它有自己的一套限制。例如，您必须为Qt库提供重新链接机制。有关PyQt的书籍已经出版，但在撰写本书时，Qt
+    for Python还没有相关书籍。
+- en: Previously, the reliable Python binding for Qt could only be obtained from Riverbank.
+    However, in the middle of this year, Qt announced its Python binding for its latest
+    Qt library (Qt 5.11). Qt is quite serious about promoting this Python binding.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以前，可靠的Python绑定Qt只能从Riverbank获得。然而，在今年中期，Qt宣布了其最新Qt库（Qt 5.11）的Python绑定。Qt非常重视推广这个Python绑定。
+- en: Installing Qt for Python
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安装Qt for Python
+- en: 'First, you must install Qt 5.11\. Go to [https://www.qt.io/download](https://www.qt.io/download).
+    While downloading the library, you have two types of license to choose from—commercial
+    and open source. In this case, you must choose the open source option:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，您必须安装Qt 5.11。转到[https://www.qt.io/download](https://www.qt.io/download)。在下载库时，您有两种许可证可供选择——商业和开源。在这种情况下，您必须选择开源选项。
+- en: 'If you are on the Linux platform, you will download the following file: `qt-unified-linux-x64-3.0.5-online.run`.'
+  id: totrans-19
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果你在Linux平台上，你将下载以下文件：`qt-unified-linux-x64-3.0.5-online.run`。
+- en: 'This is an installer. If you run it, you will get the following screen:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个安装程序。如果你运行它，你会看到以下屏幕：
+- en: '![](assets/d60f27ee-0d99-4025-9ba1-4b4d3437bac1.png)'
+  id: totrans-21
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/d60f27ee-0d99-4025-9ba1-4b4d3437bac1.png)'
+- en: 'Click Next. You will then be greeted with a login screen. Create a new account
+    if you don''t have one; it''s free. After that, log in through the following screen:'
+  id: totrans-22
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 点击下一步。然后你将会看到一个登录屏幕。如果你还没有账户，创建一个；这是免费的。之后，通过以下屏幕登录：
+- en: '![](assets/f84f73ff-6695-4b22-bc40-8188bbd00527.png)'
+  id: totrans-23
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/f84f73ff-6695-4b22-bc40-8188bbd00527.png)'
+- en: 'Then, you will see the installer''s welcome screen. From here, click Next:'
+  id: totrans-24
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后，你会看到安装程序的欢迎屏幕。从这里，点击下一步：
+- en: '![](assets/fb5b7151-45e7-4929-b1e0-f9b1bf4127ab.png)'
+  id: totrans-25
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/fb5b7151-45e7-4929-b1e0-f9b1bf4127ab.png)'
+- en: 'Specify where you want to install the Qt library:'
+  id: totrans-26
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 指定你想要安装Qt库的位置：
+- en: '![](assets/87570186-4634-4eda-b86e-3ff6e7f42090.png)'
+  id: totrans-27
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/87570186-4634-4eda-b86e-3ff6e7f42090.png)'
+- en: 'Then choose Qt 5.11.2 or the latest stable release:'
+  id: totrans-28
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后选择Qt 5.11.2或最新的稳定版本：
+- en: '![](assets/a071062f-b3e1-473d-8de6-e07fa933ffd9.png)'
+  id: totrans-29
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/a071062f-b3e1-473d-8de6-e07fa933ffd9.png)'
+- en: It will be a while before the installer finishes doing its job.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装程序完成工作之前还需要一段时间。
+- en: 'Once the Qt 5 installation process is finished, you can install the Python
+    binding to Qt using the following command lines:'
+  id: totrans-31
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 一旦Qt 5安装过程完成，你可以使用以下命令行安装Python绑定到Qt：
+- en: '[PRE0]'
+  id: totrans-32
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'We are going to write a smart contract and a decentralized application with
+    this virtual environment. We need to install the `populus`, `vyper`, and `web3`
+    libraries as usual:'
+  id: totrans-33
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们将使用这个虚拟环境编写一个智能合约和一个去中心化应用程序。我们需要像往常一样安装`populus`，`vyper`和`web3`库：
+- en: '[PRE1]'
+  id: totrans-34
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Add Vyper support to `project.json` by changing the value of the `"compilation"` key
+    to the following:'
+  id: totrans-35
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将Vyper支持添加到`project.json`中，方法是将`"compilation"`键的值更改为以下内容：
+- en: '[PRE2]'
+  id: totrans-36
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: The latest version of Vyper is 0.1.0b6, and it breaks Populus. The developer
+    needs some time to fix it. If the bug has not been fixed while you are reading
+    this book, you could patch Populus yourself.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vyper的最新版本是0.1.0b6，它破坏了Populus。开发者需要一些时间来修复它。如果在你阅读本书时错误还没有被修复，你可以自己修补Populus。
+- en: 'Check whether the bug has been fixed or not using the following command:'
+  id: totrans-38
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令检查错误是否已经被修复：
+- en: '[PRE3]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: In our case, the bug has not been fixed.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的情况下，错误尚未被修复。
+- en: 'So, let''s patch Populus to fix the bug using the following command lines.
+    Make sure you are still in the same directory (`qt-venv/src/populus`):'
+  id: totrans-41
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 因此，让我们使用以下命令行修补Populus以修复错误。确保你仍然在同一个目录下（`qt-venv/src/populus`）：
+- en: '[PRE4]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Crash course on Qt for Python
+  id: totrans-43
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Qt for Python速成课程
+- en: 'Let''s write a simple application using our GUI library:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们使用我们的GUI库编写一个简单的应用程序：
+- en: 'Create a file named `hello.py`:'
+  id: totrans-45
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`hello.py`的文件：
+- en: '[PRE5]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Then run it using the following command:'
+  id: totrans-47
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后使用以下命令运行它：
+- en: '[PRE6]'
+  id: totrans-48
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'You will now see a blank window:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你会看到一个空白窗口：
+- en: '![](assets/235e96c8-e28b-4cf0-915e-a4c9f8138b4b.png)'
+  id: totrans-50
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/235e96c8-e28b-4cf0-915e-a4c9f8138b4b.png)'
+- en: 'Let''s go through this file to better understand Qt for Python:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过这个文件更好地理解Qt for Python：
+- en: '[PRE7]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: The `sys` import is from the standard Python library. This is required because
+    we want to get the arguments from the command line when we launch this GUI application
+    script. Then we import `QApplication` and `QWidget` from `PySide2.QtWidgets`.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`sys`导入自标准Python库。这是必需的，因为我们想要在启动这个GUI应用程序脚本时从命令行获取参数。然后我们从`PySide2.QtWidgets`中导入`QApplication`和`QWidget`。'
+- en: What is `PySide2`? It comes from `PySide`, which is a Python binding for Qt
+    4\. `PySide2` is a Python binding for Qt 5\. `PySide` was released in 2009 by
+    Nokia (the former owner of Qt). Previously, Nokia failed to reach an agreement
+    with Riverbank to make the `PyQt` license LGPL. Consequently, Nokia decided to
+    create its own Python binding for Qt and named it `PySide`. The ownership of Qt
+    moved from Nokia to the Qt company. The Qt company decided to beef up their effort
+    to develop this Python binding for Qt, especially after Qt 5 was released.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 什么是`PySide2`？它来自`PySide`，这是Qt 4的Python绑定。`PySide2`是Qt 5的Python绑定。`PySide`于2009年由Nokia（Qt的前任所有者）发布。此前，诺基亚未能与Riverbank达成`PyQt`许可证LGPL的协议。因此，诺基亚决定创建自己的Python绑定用于Qt，并将其命名为`PySide`。Qt的所有权从诺基亚转移到了Qt公司。Qt公司决定加强他们的努力来开发这个Python绑定用于Qt，特别是在Qt
+    5发布后。
+- en: 'There are two classes we import from `PySide2.QtWidgets`, which are `QApplication`
+    and `QWidget`:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从`PySide2.QtWidgets`中导入的两个类是`QApplication`和`QWidget`：
+- en: '`QApplication` is a class designed to manage GUI application flows and its
+    settings. It checks your desktop configuration, such as the font, and passes it
+    to the GUI. It also understands the incoming objects from the desktop, for example,
+    when you copy text from the text editor and paste it to the GUI application. There
+    can only be one `QApplication` in your GUI script:'
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`QApplication`是一个设计用来管理GUI应用程序流程和其设置的类。它检查你的桌面配置，比如字体，并将其传递给GUI。它还理解来自桌面的传入对象，例如当你从文本编辑器复制文本并粘贴到GUI应用程序时。在你的GUI脚本中只能有一个`QApplication`：'
+- en: '[PRE8]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: We create an instance of `QApplication` and pass the command-line argument.
+    Most of the time, you would not use any command-line argument. You could pass
+    the command-line argument if you want to tell the GUI application to use a different
+    style or display text from right to left to cater to Arabic users, for example.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们创建一个`QApplication`的实例，并传递命令行参数。大多数情况下，你不会使用任何命令行参数。例如，如果你想要告诉GUI应用程序使用不同的样式或从右到左显示文本以满足阿拉伯用户的需求，你可以传递命令行参数。
+- en: 'The second class we import from `PySide2.QtWidgets` is `QWidget`. This is the
+    base class of any widget you will ever use when creating a GUI application, such
+    as a button, a text field, a slider, or a label. If you construct the base class,
+    you would get an empty window. This is similar to UIView in iOS. We then resize
+    the window:'
+  id: totrans-59
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们从`PySide2.QtWidgets`中导入的第二个类是`QWidget`。这是你在创建GUI应用程序时将要使用的任何小部件的基类，比如按钮、文本字段、滑块或标签。如果你构造基类，你会得到一个空窗口。这类似于iOS中的UIView。然后我们调整窗口大小：
+- en: '[PRE9]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'With the `window.show()` method, we display the window object and then enter
+    the main loop with `app.exec_(*)*`. This is where the `QApplication` will dispatch
+    all events from the desktop to the GUI. We wrap this process inside `sys.exit()`
+    so we can get the return code from `QApplication`:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`window.show()`方法，我们显示了窗口对象，然后使用`app.exec_()`进入了主循环。这是`QApplication`将所有来自桌面的事件分发到GUI的地方。我们使用`sys.exit()`将这个过程包装起来，这样我们就可以从`QApplication`中获取返回代码：
+- en: '[PRE10]'
+  id: totrans-62
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Layout
+  id: totrans-63
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 布局
+- en: 'Before we add another widget, we must learn about the concept of layout. We
+    will use two layouts, which are `QHBoxLayout` and `QVBoxLayout`. These two layouts
+    are enough to create a GUI application. There are other layouts, such as `QGridLayout` and `QFormLayout`,
+    among many others, but we do not need them. `QHBoxLayout` and `QVBoxLayout` are
+    like flexbox in CSS. You place widgets in a container that uses `QHBoxLayout`,
+    and then all widgets will be put in a horizontal line. Let''s take a look at an
+    example. Name this script `hello_horizontal_layout.py`:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在添加另一个小部件之前，我们必须了解布局的概念。我们将使用两种布局，即`QHBoxLayout`和`QVBoxLayout`。这两种布局足以创建一个GUI应用程序。还有其他布局，比如`QGridLayout`和`QFormLayout`等等，但我们不需要它们。`QHBoxLayout`和`QVBoxLayout`就像CSS中的flexbox。你可以将小部件放在使用`QHBoxLayout`的容器中，然后所有小部件将被放在一条水平线上。让我们看一个例子。将此脚本命名为`hello_horizontal_layout.py`：
+- en: '[PRE11]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'I''ll explain the code line by line. We start by importing the libraries:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我将逐行解释代码。我们首先导入库：
+- en: '[PRE12]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'Other than the classes we imported in the previous script, we import `QHBoxLayout`
+    (the horizontal layout) and two widgets (`QPushButton` and `QLabel`):'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了我们在之前的脚本中导入的类之外，我们还导入了`QHBoxLayout`（水平布局）和两个小部件（`QPushButton`和`QLabel`）：
+- en: '[PRE13]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'We initialize `QApplication` followed by four widgets (two buttons and two
+    labels). `QPushButton` and `QLabel` receives a string as first argument for their
+    label. Here, we just constructed four widgets, but we haven''t displayed them:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们初始化了`QApplication`，然后是四个小部件（两个按钮和两个标签）。`QPushButton`和`QLabel`的第一个参数是它们的标签字符串。在这里，我们只是构建了四个小部件，但是还没有显示它们：
+- en: '[PRE14]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'The preceding code constructs the horizontal layout with the `QHBoxLayout`
+    class. Then we will fill the layout with four widgets that we have previously constructed.
+    In this situation, `hello_button` will be the leftmost widget in the layout while
+    `world_label` will be the rightmost widget. Then, we construct a `window` object
+    and tell it to use our horizontal layout:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上面的代码使用`QHBoxLayout`类构建了水平布局。然后我们将填充布局，使用我们之前构建的四个小部件。在这种情况下，`hello_button`将是布局中最左边的小部件，而`world_label`将是最右边的小部件。然后，我们构建了一个`window`对象，并告诉它使用我们的水平布局：
+- en: '[PRE15]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'This statement will put our widgets inside the window:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个语句将把我们的小部件放在窗口内：
+- en: '[PRE16]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'Then, we display the window, execute the `QApplication` instance, and run it
+    using the following command:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们显示窗口，执行`QApplication`实例，并使用以下命令运行它：
+- en: '[PRE17]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'You will then see the following result, four widgets displayed from left to
+    right:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后你将会看到以下结果，从左到右显示了四个小部件：
+- en: '![](assets/b85254b2-eda6-48ca-b1e4-96d0b2c50812.png)'
+  id: totrans-79
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/b85254b2-eda6-48ca-b1e4-96d0b2c50812.png)'
+- en: 'To get a vertical layout, create another script and name it `hello_vertical_layout.py`:'
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要获得垂直布局，创建另一个脚本并将其命名为`hello_vertical_layout.py`：
+- en: '[PRE18]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Here, instead of `HBoxLayout`, you use `QVBoxLayout` to get a vertical layout.
+    Run the script using the following command:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，你可以使用`QVBoxLayout`而不是`HBoxLayout`来获得垂直布局。使用以下命令运行脚本：
+- en: '[PRE19]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'You will then see four widgets displayed in the window from top to bottom:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后你将会看到四个小部件从上到下显示在窗口中：
+- en: '![](assets/ec67b26b-72b6-4180-9ca5-3998417b474b.png)'
+  id: totrans-85
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ec67b26b-72b6-4180-9ca5-3998417b474b.png)'
+- en: 'If you want to combine horizontal and vertical layout, you can embed a horizontal
+    layout inside of the vertical layout, and vice versa. To do this, create a script
+    named `hello_vertical_horizontal_layout.py`. Refer to the code file in the following
+    GitLab link for the full code: [https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_vertical_horizontal_layout.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_vertical_horizontal_layout.py):'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想要结合水平和垂直布局，你可以将水平布局嵌入到垂直布局中，反之亦然。为此，请创建一个名为`hello_vertical_horizontal_layout.py`的脚本。请参考以下GitLab链接中的代码文件获取完整的代码：[https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_vertical_horizontal_layout.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_vertical_horizontal_layout.py)：
+- en: '[PRE20]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'The thing you need to notice here is that you need to add a nested layout with
+    the `addLayout` method from a layout:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里需要注意的是，你需要使用`addLayout`方法从一个布局中添加一个嵌套布局：
+- en: '[PRE21]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Be careful here! You embed a layout into another layout using the `addLayout`
+    method, not `addWidget`.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里要注意！你使用`addLayout`方法将一个布局嵌入到另一个布局中，而不是`addWidget`。
+- en: 'Run the following script to view the nested layout:'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行以下脚本以查看嵌套布局：
+- en: '[PRE22]'
+  id: totrans-92
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Doing this will give you the following screen:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行此操作将会给你以下的屏幕：
+- en: '![](assets/c23bbbe3-9723-4a64-9cf5-7fc52b559a0e.png)'
+  id: totrans-94
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/c23bbbe3-9723-4a64-9cf5-7fc52b559a0e.png)'
+- en: Other widgets
+  id: totrans-95
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 其他小部件
+- en: 'Let''s create a script to show more varieties of widgets. To begin, name the
+    script `hello_varieties.py`. Refer to the code file in the following GitLab link
+    for the full code: [https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_varieties.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_varieties.py).'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个脚本来展示更多种类的小部件。首先，将脚本命名为`hello_varieties.py`。请参考以下GitLab链接中的代码文件获取完整的代码：[https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_varieties.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/crash_course_qt_for_python/hello_varieties.py)。
+- en: 'The content of the script can be viewed in the following code block:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 脚本的内容可以在以下代码块中查看：
+- en: '[PRE23]'
+  id: totrans-98
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Let''s dissect the code line by line. We start by importing libraries using
+    the following lines:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们逐行解析代码。我们首先使用以下行导入库：
+- en: '[PRE24]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'Here, we import many new types of widgets, such as `QGroupBox`, `QSpinBox`,
+    `QLineEdit`, `QRadioButton`, and `QComboBox`. There are a lot of widgets in Qt,
+    we just don''t have time to discuss all of them. Then, we initialize all of the
+    widgets:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们导入了许多新类型的小部件，例如`QGroupBox`、`QSpinBox`、`QLineEdit`、`QRadioButton`和`QComboBox`。Qt中有很多小部件，我们只是没有时间讨论所有的小部件。然后，我们初始化所有小部件：
+- en: '[PRE25]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'These are new types of widget. Let''s discuss these new widgets and their unique
+    properties. `QSpinBox` is a box that you use to choose a number. You can spin
+    this widget by clicking the top or bottom arrow. `QLineEdit` is a text field,
+    while `QRadioButton` is a radio button and `QComboBox` is a select box. Then,
+    we initialize the horizontal layout and the vertical layout:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些是新类型的小部件。让我们讨论这些新小部件及其独特属性。`QSpinBox`是一个用于选择数字的框。您可以通过单击上箭头或下箭头来旋转此小部件。`QLineEdit`是一个文本字段，而`QRadioButton`是一个单选按钮，`QComboBox`是一个选择框。然后，我们初始化水平布局和垂直布局：
+- en: '[PRE26]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'We put some widgets into the vertical layout and put some other widgets into
+    the horizontal layout. Then, we need to put these layouts in a bigger container:'
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将一些小部件放入垂直布局中，并将其他一些小部件放入水平布局中。然后，我们需要将这些布局放入一个更大的容器中：
+- en: '[PRE27]'
+  id: totrans-106
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'We now create two group boxes with the `QGroupBox` class. The first group box
+    got a vertical layout, while the other group box got a horizontal layout. A group
+    box is like a container with a border. This is similar to `<div>` in HTML:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在使用`QGroupBox`类创建了两个分组框。第一个分组框有一个垂直布局，而另一个分组框有一个水平布局。分组框类似于带有边框的容器。这类似于HTML中的`<div>`：
+- en: '[PRE28]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: To contain these two group boxes, we need another layout. Here, we use a vertical
+    layout. The rest is as usual. We construct a window, give it a layout, then display
+    it before launching the `QApplication` instance.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了容纳这两个分组框，我们需要另一个布局。在这里，我们使用垂直布局。其余部分与往常一样。我们构建一个窗口，给它一个布局，然后在启动`QApplication`实例之前显示它。
+- en: 'Run the following script to see many different types of widget:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行以下脚本以查看许多不同类型的小部件：
+- en: '[PRE29]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'You would then see a screen that looks like this:'
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您将看到一个看起来像这样的屏幕：
+- en: '![](assets/786f68a9-db6a-4d58-a7a6-d3c336a8c2f3.png)'
+  id: totrans-113
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/786f68a9-db6a-4d58-a7a6-d3c336a8c2f3.png)'
+- en: Callback
+  id: totrans-114
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 回调
+- en: At this point, we have created many widgets and layouts.Now we need to give
+    a widget a job to do, by which I mean what we want a button to do when it is being
+    clicked. Currently, a button would not do anything if it is clicked.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，我们已经创建了许多小部件和布局。现在我们需要给一个小部件一个工作要做，我的意思是当按钮被点击时我们想要按钮做什么。当前，如果点击按钮，按钮将不会执行任何操作。
+- en: Let's create a simple script to explain how we can give a callback to a button
+    for the clicking event. Name it `hello_connect_simple.py`.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个简单的脚本来解释如何为按钮的点击事件提供回调。将其命名为`hello_connect_simple.py`。
+- en: 'The script contains the following lines of code:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 脚本包含以下代码行：
+- en: '[PRE30]'
+  id: totrans-118
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Let''s go through this code line by line:'
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们逐行查看这段代码：
+- en: '[PRE31]'
+  id: totrans-120
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'Other than the usual libraries you import, you must import `QtCore`. `QtCore`
+    provides a way for widgets to communicate. So, if you want to enable a button
+    to communicate with a label such as "After I have been clicked, please set your
+    label to this string", you need to import `QtCore`. Then you create widgets and
+    put the widgets inside a layout:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了您导入的通常库之外，您还必须导入`QtCore`。`QtCore`提供了小部件进行通信的一种方式。因此，如果您想要使按钮能够与标签通信，比如“在我被点击后，请将您的标签设置为此字符串”，您需要导入`QtCore`。然后创建小部件并将小部件放入布局中：
+- en: '[PRE32]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: You instantiate the `QApplication` class, create a button and a label, then
+    put the widgets inside a vertical layout.
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您实例化`QApplication`类，创建一个按钮和一个标签，然后将小部件放入垂直布局中。
+- en: '[PRE33]'
+  id: totrans-124
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: 'In the preceding lines of code, we create a function to set the text in a label.
+    `setText` is a method of `QLabel` for changing the label. In the next line, we
+    connect a clicked signal of a button to this function. This means that if we click
+    `QPushButton`, `set_text_in_world_label` will be executed. `QPushButton` has signals
+    other than clicked, such as pressed and released. Then, we create a window widget,
+    and show it with the following lines of code:'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述代码行中，我们创建一个函数来设置标签中的文本。`setText`是`QLabel`的一个用于更改标签的方法。在下一行中，我们将按钮的`clicked`信号连接到此函数。这意味着如果我们点击`QPushButton`，`set_text_in_world_label`将被执行。`QPushButton`除了`clicked`之外还有其他信号，例如`pressed`和`released`。然后，我们创建一个窗口小部件，并使用以下代码显示它：
+- en: '[PRE34]'
+  id: totrans-126
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: 'Run the script to test the callback that we have created:'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行脚本以测试我们创建的回调：
+- en: '[PRE35]'
+  id: totrans-128
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'After running the script, you will get the following screen:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行脚本后，您将得到以下屏幕：
+- en: '![](assets/bc900870-ade7-4bfa-95dd-e803b4c503f4.png)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/bc900870-ade7-4bfa-95dd-e803b4c503f4.png)'
+- en: 'If you then click the button, the label widget will change the text:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，如果您点击按钮，标签小部件将更改文本：
+- en: '![](assets/b963ca54-d6dc-4772-a6e6-3e722dc642ef.png)'
+  id: totrans-132
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/b963ca54-d6dc-4772-a6e6-3e722dc642ef.png)'
+- en: The button does not have a parameter to be sent to the callback function. But
+    another widget may have parameters to be sent to the callback function.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按钮没有参数发送到回调函数。但是另一个小部件可能有参数发送到回调函数。
+- en: 'Let''s create a script to illustrate this option. Name the script `hello_connect_param.py`.
+    The content of the script can be viewed in the following code block:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个脚本来说明这个选项。将脚本命名为`hello_connect_param.py`。脚本的内容可以在以下代码块中查看：
+- en: '[PRE36]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'Focus on these lines to see how we can have a parameter in a callback that
+    a widget has:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关注这些行，看看我们如何在小部件的回调中使用参数：
+- en: '[PRE37]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: Our callback function has a parameter. The `textChanged` signal of the line
+    edit widget has a parameter. When we change the text in the line edit widget,
+    the text will be sent to the callback function.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的回调函数有一个参数。行编辑小部件的`textChanged`信号有一个参数。当我们更改行编辑小部件中的文本时，文本将被发送到回调函数。
+- en: This line, `hello_line_edit.textChanged.connect(set_world_label)`, is equivalent
+    to `hello_line_edit.connect(QtCore.SIGNAL('textChanged(QString)'), set_world_label)`.
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这行代码`hello_line_edit.textChanged.connect(set_world_label)`相当于`hello_line_edit.connect(QtCore.SIGNAL('textChanged(QString)'),
+    set_world_label)`。
+- en: 'Run the script to test the callback that has a parameter:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行脚本以测试具有参数的回调：
+- en: '[PRE38]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: 'As you type in the line edit, the text in the label widget changes as well:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您在行编辑中输入时，标签小部件中的文本也会更改：
+- en: '![](assets/59b87d5e-2426-434b-95e7-0c3333042c03.png)'
+  id: totrans-143
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/59b87d5e-2426-434b-95e7-0c3333042c03.png)'
+- en: We use a callback because we want to manipulate the text before we set it to
+    a label widget. However, if you want to send the text parameter from the line
+    edit widget to the label widget directly, you don't have to create a dedicated
+    function, you can use `signal` and `slot`.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用回调是因为我们希望在将文本设置到标签小部件之前对其进行操作。但是，如果你想直接将文本参数从行编辑小部件发送到标签小部件，你不必创建一个专门的函数，你可以使用“信号”和“槽”。
+- en: To do this, remove the callback, then change this `line hello_line_edit.textChanged.connect(set_world_label)` to
+    `hello_line_edit.connect(QtCore.SIGNAL('textChanged(QString)'), world_label, QtCore.SLOT('setText(QString)'))`.
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，删除回调，然后将`line hello_line_edit.textChanged.connect(set_world_label)`更改为`hello_line_edit.connect(QtCore.SIGNAL('textChanged(QString)'),
+    world_label, QtCore.SLOT('setText(QString)'))`。
+- en: As you type the text in the line edit, your text will be displayed in the label
+    directly.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你在行编辑中输入文本时，你的文本将直接显示在标签中。
+- en: You can also change that line to `QtCore.QObject.connect(hello_line_edit, QtCore.SIGNAL('textChanged(QString)'),
+    world_label, QtCore.SLOT('setText(QString)'))`.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你也可以将那一行更改为`QtCore.QObject.connect(hello_line_edit, QtCore.SIGNAL('textChanged(QString)'),
+    world_label, QtCore.SLOT('setText(QString)'))`。
+- en: I hope you see the pattern here. If widget A wants to communicate with widget
+    B, widget A will use `signal` to connect with widget B's `slot`. Of course, you
+    can swap the `slot` part with a custom callback on which you call the API of widget
+    B.
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我希望你能看到这里的模式。如果小部件A想要与小部件B通信，小部件A将使用“信号”与小部件B的“槽”连接。当然，你也可以将“槽”部分替换为一个自定义的回调，通过它调用小部件B的API。
+- en: This `signal` and `slot` concept is general and not limited to GUI widgets.
+    It means that you can define a custom `signal` and custom `slot`.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个“信号”和“槽”概念是通用的，不仅限于GUI小部件。这意味着你可以定义自定义的“信号”和自定义的“槽”。
+- en: 'Let''s create a script to illustrate this new concept:'
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个脚本来说明这个新概念：
+- en: '[PRE39]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'Let''s dissect this script. We import the libraries:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们解剖这个脚本。我们导入了库：
+- en: '[PRE40]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Slot and signal functionality comes from the `QtCore` class. You can create
+    a `slot` function with the `Slot` decorator:'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 槽和信号功能来自`QtCore`类。你可以使用`Slot`装饰器创建一个`槽`函数：
+- en: '[PRE41]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'You can also create a class that is a child of `QObject` in order to create
+    a `signal` object:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你也可以创建一个`QObject`的子类来创建一个“信号”对象：
+- en: '[PRE42]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: 'You must instantiate this class. `signal` must be part of an instance, not
+    a class. You can then connect it with a `slot` function as follows:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你必须实例化这个类。“信号”必须是实例的一部分，而不是一个类。然后你可以将它与一个“槽”函数连接如下：
+- en: '[PRE43]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: The last part is to send the parameter from `signal` to `slot`.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后一部分是将参数从“信号”发送到“槽”。
+- en: 'Run the script to test whether the callback still works:'
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行脚本以测试回调是否仍然有效：
+- en: '[PRE44]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: Threading
+  id: totrans-163
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 线程
+- en: To use a thread in Qt, we can use the `QThread` class from `QtCore`. Hopefully,
+    you can see a pattern here. `QtCore` has many functionalities beyond creating
+    widgets. Threading is important because when building a decentralized application
+    we will have to wait for quite some time for the transaction to be confirmed.
+    Depending on how generous you are with the gas and the traffic in Ethereum, the
+    wait could be anything from a few minutes to half an hour. We don't want the GUI
+    application to freeze for a minute, let alone half an hour.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在Qt中使用线程，我们可以使用`QtCore`中的`QThread`类。希望你能看到这里有一个模式。`QtCore`除了创建小部件之外还有许多功能。线程很重要，因为在构建去中心化应用程序时，我们将不得不等待相当长的时间来确认交易。根据你在以太坊中的燃气和交通慷慨程度，等待时间可能从几分钟到半个小时不等。我们不希望GUI应用程序冻结一分钟，更不用说半个小时了。
+- en: Let's create a simple script to demonstrate how we create a thread using `QThread`.
+    Name the script `hello_thread.py`*:*
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们创建一个简单的脚本来演示如何使用`QThread`创建一个线程。将脚本命名为`hello_thread.py`：
+- en: '[PRE45]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: You will then subclass `QThread` inside the class where you write what you want
+    to do inside the `run` method. To utilize this threading class, you instantiate
+    the class and then call the `start` method. Then you can do all the things you
+    want to do in the main application while waiting for the threading class to do
+    its job. If you want to wait for the threading class to finish the job, you can
+    call its `wait` method from the threading class.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，你将在编写`run`方法内部的类中对`QThread`进行子类化。要使用这个线程类，你需要实例化这个类，然后调用`start`方法。然后你可以在主应用程序中做所有你想做的事情，同时等待线程类完成它的工作。如果你想等待线程类完成工作，你可以从线程类中调用它的`wait`方法。
+- en: Threading is a vast subject. We haven't discussed mutex or thread safety, but
+    we will not need to for our decentralized application.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 线程是一个广泛的主题。我们还没有讨论互斥锁或线程安全，但对于我们的去中心化应用程序来说，我们不需要讨论这些。
+- en: Some people feel dread at the thought of using threading in their application.
+    The alternative is using single-threaded concurrent code using the `asyncio` library.
+    That's perfectly fine, but in this case, we will use threading.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有些人对在他们的应用程序中使用线程感到恐惧。另一种选择是使用`asyncio`库使用单线程并发代码。这完全没问题，但在这种情况下，我们将使用线程。
+- en: We have everything we need to know about how to use Qt library to build a Python
+    desktop application. Before we write our GUI decentralized application, we need
+    to write a smart contract because without this, there would be no decentralized
+    application.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经知道如何使用Qt库来构建Python桌面应用程序的所有必要知识。在编写GUI去中心化应用程序之前，我们需要编写一个智能合约，因为没有这个，就不会有去中心化应用程序。
+- en: Writing the smart contract for the Twitter–like application
+  id: totrans-171
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 编写Twitter样应用程序的智能合约
+- en: We are now going to build a censorship resistant, Twitter-like application.
+    This means that even the owner of the smart contract could not delete a tweet
+    from the user of the smart contract. This Twitter-like application is very simple;
+    there is no option of following, liking, or retweeting; it just consists of tweets.
+    In addition, the user cannot delete their tweets and they must be less than 32
+    bytes, which is even shorter than the original tweet limit in Twitter!
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在要构建一个抗审查的类似Twitter的应用程序。这意味着即使智能合约的所有者也无法删除用户的推文。这个类似Twitter的应用程序非常简单；没有关注、点赞或转发的选项；它只包括推文。此外，用户无法删除他们的推文，推文必须少于32个字节，这甚至比Twitter原始推文限制还要短！
+- en: 'We now come back to our Populus project to modify our `project.json` file.
+    Add this to `project.json`:'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们回到我们的Populus项目，修改我们的`project.json`文件。将这个添加到`project.json`中：
+- en: '[PRE46]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: This is the smart contract. Create a `TwitterOnBlockchain.vy` file inside the `twitter_like_projects/contracts`
+    directory*:*
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是智能合约。在`twitter_like_projects/contracts`目录中创建一个`TwitterOnBlockchain.vy`文件*：*
+- en: '[PRE47]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: This is a very short smart contract.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个非常简短的智能合约。
+- en: 'We start from the struct data type variable declaration and the mapping of
+    the address to this struct data type variable:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从结构数据类型变量声明和地址到该结构数据类型变量的映射开始：
+- en: '[PRE48]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: The `tweets` variable is a mapping data type from an address to an array of
+    `messages` and `index`. An array of `messages` has the length of 10 `bytes32`
+    data type variables, which means that each account or address can have a maximum
+    of 10 tweets in this smart contract. `index` is a pointer to the array of `messages`.
+    Each time we create a tweet, `index` is increased by 1 so it can point to the
+    next slot in the array of `messages`.
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`tweets`变量是从地址到`messages`和`index`数组的映射数据类型。`messages`数组的长度为10个`bytes32`数据类型变量，这意味着每个账户或地址在这个智能合约中最多可以有10条推文。`index`是指向`messages`数组的指针。每次创建一条推文，`index`增加1，这样它就可以指向`messages`数组中的下一个槽。'
+- en: '[PRE49]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: The `write_a_tweet` function is a method to create a tweet. This simply consists
+    of inserting a tweet inside an array of `messages` with some guards to avoid an
+    overbound error.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`write_a_tweet`函数是创建一条推文的方法。这只是将一条推文插入到`messages`数组中，并加入一些保护措施以避免越界错误。'
+- en: Test
+  id: totrans-183
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 测试
+- en: This is the test for this smart contract. You can save the test file in `tests/test_twitter_on_blockchain.py`.
+    Refer to the code file in the following GitLab link for the full code: [https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/twitter_on_blockchain/tests/test_twitter_on_blockchain.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/twitter_on_blockchain/tests/test_twitter_on_blockchain.py).
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是对这个智能合约的测试。您可以将测试文件保存在`tests/test_twitter_on_blockchain.py`中。有关完整代码，请参考以下GitLab链接中的代码文件：[https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/twitter_on_blockchain/tests/test_twitter_on_blockchain.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/twitter_on_blockchain/tests/test_twitter_on_blockchain.py)。
+- en: 'The following code block shows the code:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下代码块显示了代码：
+- en: '[PRE50]'
+  id: totrans-186
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: This test ensures that the `index` starts at zero and will be increased by one
+    after the user tweets in this smart contract. It also checks that the tweet is
+    kept inside the array of `messages`.
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个测试确保`index`从零开始，并且在用户在这个智能合约中发推文后会增加一。它还检查推文是否保留在`messages`数组中。
+- en: Let's reflect on that for a moment. If you look at the smart contract, the owner
+    could not censor the tweets from anyone. The owner could not even delete the smart
+    contract, so neither the government nor the mafia could pressure the owner of
+    the smart contract to censor tweets. Compare this situation to one in which the
+    owner of an application uses a traditional web application. The owner of the application
+    could censor tweets by deleting entries from the database. Alternatively, the
+    government or the mafia could apply pressure to the owner of the application to
+    censor the tweets, or the government or the mafia could take down the hosting
+    server. In the case of blockchain, this means that people need to take down half
+    of the 10,000 nodes to be able to disrupt the Ethereum blockchain in order to
+    destroy the smart contract.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们思考一下。如果你看看智能合约，所有者无法审查任何人的推文。所有者甚至无法删除智能合约，因此政府或黑手党都无法向智能合约的所有者施加压力来审查推文。将这种情况与应用程序所有者使用传统网络应用程序的情况进行比较。应用程序所有者可以通过从数据库中删除条目来审查推文。另外，政府或黑手党可以向应用程序所有者施加压力来审查推文，或者政府或黑手党可以关闭托管服务器。在区块链的情况下，这意味着人们需要关闭一半的10,000个节点才能破坏以太坊区块链，以摧毁智能合约。
+- en: This is one of the things that makes blockchain special—**censorship resistance**.
+    This does not mean it cannot be censored, but it is very hard to be censored.
+    In order to shut down this smart contract, the government would have to ban the
+    Ethereum network itself. Alternatively, they could install spyware in all citizens' computers
+    and make sure they don't access this smart contract. On top of that, censorship
+    resistance does not mean it protects privacy. The government can still figure
+    out who writes what.
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是区块链特有的一种特性——**抗审查**。这并不意味着它不能被审查，但很难被审查。为了关闭这个智能合约，政府必须禁止以太坊网络本身。另外，他们可以在所有公民的计算机上安装间谍软件，并确保他们不访问这个智能合约。此外，抗审查并不意味着它保护隐私。政府仍然可以弄清楚谁写了什么。
+- en: 'To deploy the smart contract, run Ganache, compile the smart contract, and
+    then deploy the smart contract to Ganache using the following command:'
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要部署智能合约，运行Ganache，编译智能合约，然后使用以下命令将智能合约部署到Ganache：
+- en: '[PRE51]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: Fixtures
+  id: totrans-192
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 固定装置
+- en: 'Before we develop a decentralized GUI application, let''s write a script to
+    put some fixtures in the smart contract. Fixtures are like sample data. This makes
+    developing an application a more pleasurable experience. Call the script `fixtures.py`.
+    Refer to the code file in the following GitLab for the full code: [https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/fixtures.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/fixtures.py):'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们开发一个去中心化的GUI应用之前，让我们先写一个脚本来在智能合约中放一些固定数据。固定数据就像样本数据。这样可以让应用的开发体验更加愉快。将脚本命名为`fixtures.py`。完整的代码请参考以下GitLab链接中的代码文件：[https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/fixtures.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/fixtures.py)：
+- en: '[PRE52]'
+  id: totrans-194
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'Let''s dissect this script line by line. We import the `Web3` class and the `HTTPProvider` class
+    from `web3`. We use `HTTPProvider` because we want to use Ganache. Then we import `wait_for_transaction_receipt` from
+    the `populus` library:'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们逐行解析这个脚本。我们从`web3`中导入`Web3`类和`HTTPProvider`类。我们使用`HTTPProvider`是因为我们想使用Ganache。然后我们从`populus`库中导入`wait_for_transaction_receipt`：
+- en: '[PRE53]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'Then we have the private keys from the first three accounts:'
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后我们有了前三个账户的私钥：
+- en: '[PRE54]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: 'We don''t need the private key of the first account or the account that launched
+    the smart contract; we only need the second and the third account:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们不需要第一个账户的私钥或启动智能合约的账户；我们只需要第二个和第三个账户：
+- en: '[PRE55]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'This is the `abi` that you can get from the compilation of the smart contract:'
+  id: totrans-201
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是你可以从智能合约的编译中得到的`abi`：
+- en: '[PRE56]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: You put the address of the smart contract in the `address.txt` file. You received
+    the address when you deployed the smart contract through Populus.
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你将智能合约的地址放在`address.txt`文件中。在通过Populus部署智能合约时，你会收到这个地址。
+- en: 'Then you construct a smart contract object based on the smart contract''s address
+    and `abi`:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，根据智能合约的地址和`abi`构建一个智能合约对象：
+- en: '[PRE57]'
+  id: totrans-205
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: For each account, you create 10 tweets. Each tweet is something like 'Tweet
+    1', 'Tweet 2', and so on. These fixtures enable us to check the tweets without
+    having to create one first. It's beneficial to check the functionality of the
+    application.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于每个账户，你创建10条推文。每条推文都是像'Tweet 1'，'Tweet 2'这样的。这些固定数据使我们能够在不必先创建推文的情况下检查推文。这对检查应用的功能是有益的。
+- en: Building the GUI frontend for the Twitter–like application
+  id: totrans-207
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为Twitter类似应用构建GUI前端
+- en: Now let's build a decentralized GUI application. Name the script `twitter_dapp.py`.
+    Refer to the code file in the following GitLab link for the full code: [https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/twitter_dapp.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/twitter_dapp.py)[:](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/twitter_dapp.py)
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们构建一个去中心化的GUI应用。将脚本命名为`twitter_dapp.py`。完整的代码请参考以下GitLab链接中的代码文件：[https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/twitter_dapp.py](https://gitlab.com/arjunaskykok/hands-on-blockchain-for-python-developers/blob/master/chapter_07/dapp/twitter_dapp.py)：
+- en: '[PRE58]'
+  id: totrans-209
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: 'Let''s dissect this script line by line. Here, we import the necessary classes
+    and set our `web3` object to Ganache, which serves the smart contract in port `7545` of
+    localhost:'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们逐行解析这个脚本。在这里，我们导入必要的类并将我们的`web3`对象设置为Ganache，它在本地主机的端口`7545`上提供智能合约。
+- en: '[PRE59]'
+  id: totrans-211
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: 'Then, we define the `abi` as usual:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们像往常一样定义`abi`：
+- en: '[PRE60]'
+  id: totrans-213
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: We then create a smart contract object by providing the address of the smart
+    contract and the `abi`.
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们通过提供智能合约的地址和`abi`来创建一个智能合约对象。
+- en: 'This is a helper function that removes `''\x00''` from a string:'
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个辅助函数，用于从字符串中移除`'\x00'`：
+- en: '[PRE61]'
+  id: totrans-216
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: 'Remember, our tweet data type in a smart contract is `bytes32`, which will
+    append `\x00` until it reaches 32 bytes. Consequently, if you set this `bytes32`
+    variable a `''messi''` string that has 5 bytes, it will be `''messi\x00\x00\x00\x00...\x00''`.
+    This utility function will strip `\x00` from the string so that we can get `''messi''`
+    back. Then , we move into the threading class definition:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记住，我们在智能合约中的推文数据类型是`bytes32`，它会一直添加`\x00`直到达到32个字节。因此，如果你将一个长度为5个字节的`'messi'`字符串设置为这个`bytes32`变量，它将变成`'messi\x00\x00\x00\x00...\x00'`。这个实用函数将从字符串中去掉`\x00`，这样我们就可以得到`'messi'`。然后，我们进入线程类的定义：
+- en: '[PRE62]'
+  id: totrans-218
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: This is a thread class that aims to read the data from the blockchain. But isn't
+    reading data supposed to be fast, because we are using Ganache and we don't need
+    to involve the miners? If your blockchain node is in the same computer as your
+    GUI frontend script, then this threading class is not needed. However, what if
+    you put your blockchain node in the cloud? Perhaps you don't have enough space
+    in your local computer, and that makes you do this. This kind of setup will introduce
+    latency in your program, so it is a good idea to use a thread to wait for the
+    result from the blockchain in the cloud.
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个线程类，旨在从区块链中读取数据。但是读取数据不应该很快吗，因为我们使用的是Ganache，不需要涉及矿工？如果你的区块链节点和GUI前端脚本在同一台计算机上，那么这个线程类是不需要的。但是，如果你将区块链节点放在云上呢？也许你的本地计算机没有足够的空间，这就是你这样做的原因。这种设置会在你的程序中引入延迟，所以最好使用一个线程来等待来自云端区块链的结果。
+- en: '`fetched_posts` is a signal that will send the list of tweets to a slot that
+    we will define later. Inside the `run` method, we get the index first so we know
+    how many tweets the tweeter has posted. Due to the fact that what we get from
+    the smart contract is a byte, we decode it first before we send the tweet to the
+    `slot` function.'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`fetched_posts`是一个信号，将把推文列表发送到我们稍后将定义的槽中。在`run`方法中，我们首先获取索引，这样我们就知道推特发布了多少条。由于我们从智能合约中得到的是一个字节，所以在将推文发送到`slot`函数之前，我们首先对其进行解码。'
+- en: 'The following code is a thread class that we use for creating a transaction
+    in the smart contract. To use this thread class, we need a private key. Remember,
+    we need to sign a transaction with a private key. However, we also need the address
+    so we can get the nonce. We can ask the user to input the address as well, but
+    it will be superfluous. We can derive the address from the private key by using
+    the `account = w3.eth.account.privateKeyToAccount(''0x''+self.private_key)` method:'
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下代码是一个线程类，我们用它来创建智能合约中的交易。要使用这个线程类，我们需要一个私钥。请记住，我们需要用私钥签署交易。然而，我们还需要地址以便获取nonce。我们也可以要求用户输入地址，但这将是多余的。我们可以通过使用`account
+    = w3.eth.account.privateKeyToAccount('0x'+self.private_key)`方法从私钥中派生地址：
+- en: '[PRE63]'
+  id: totrans-222
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'After getting the address, we get the `nonce` with this line:'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 获取地址后，我们用这行获取`nonce`：
+- en: '[PRE64]'
+  id: totrans-224
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: As usual, we then build the transaction, sign the transaction, and send the
+    transaction to the blockchain. We then wait for the transaction to be confirmed.
+    After that, we emit the signal to the `slot` function, which we will define later.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后像往常一样构建交易，签署交易，并发送交易到区块链。然后，我们等待交易确认。之后，我们向`slot`函数发出信号，稍后我们将定义该函数。
+- en: '[PRE65]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'Now, it''s time to create a GUI. We set the window title, subclass the `QWidget`,
+    and set up the private group box where we will request private key from a user.
+    We will add a writing button widget and configure a group box to display tweets.
+    We then prepare a group box to display bookmarks and add all of them to a vertical
+    layout. In addition, we create two threading instances. For each threading instance,
+    we connect their signals to the `slot` functions:'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，是时候创建一个GUI了。我们设置窗口标题，子类化`QWidget`，并设置私人分组框，我们将从用户那里请求私钥。我们将添加一个写入按钮小部件，并配置一个用于显示推文的分组框。然后准备一个用于显示书签的分组框，并将它们全部添加到垂直布局中。此外，我们创建了两个线程实例。对于每个线程实例，我们将它们的信号连接到`slot`函数：
+- en: '[PRE66]'
+  id: totrans-228
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: In this method, we create a group box on which we place line edits to receive
+    the private key. We also put a label to display a notice when the private key
+    that's entered is valid. Here, we use `QFormLayout`, not `QHBoxLayout` or `QVBoxLayout`.
+    `QFormLayout` is very useful for creating a two-column layout. The first column
+    is usually used as a container for labels, while the second column is usually
+    used as container for inputs, such as line edits. So with this layout, we use
+    the `addRow` method, and this accepts one or two arguments. If the number of arguments
+    is two, then the arguments will be the widget on the left column and the widget
+    on the right column. We then add a private key label and a line edit, followed
+    by an OK dialog button and a notice label. For the dialog button, we connect the
+    clicked signal to a method called `checkPrivateKey`.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个方法中，我们创建一个分组框，放置行编辑器以接收私钥。我们还放置一个标签，用于在输入有效的私钥时显示通知。在这里，我们使用`QFormLayout`，而不是`QHBoxLayout`或`QVBoxLayout`。`QFormLayout`非常适用于创建两列布局。第一列通常用作标签的容器，而第二列通常用作输入的容器，例如行编辑器。因此，使用这个布局，我们使用`addRow`方法，它接受一个或两个参数。如果参数数量为两个，则参数将是左列上的小部件和右列上的小部件。然后我们添加一个私钥标签和一个行编辑器，然后是一个确定对话框按钮和一个通知标签。对于对话框按钮，我们将点击信号连接到一个名为`checkPrivateKey`的方法。
+- en: 'In the following method, we create a push button inside a horizontal layout.
+    We connect the clicked signal to a method called `writeANewTweet`:'
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的方法中，我们在水平布局中创建一个按钮。我们将点击信号连接到一个名为`writeANewTweet`的方法：
+- en: '[PRE67]'
+  id: totrans-231
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'In the following method, we create a group box to show tweets. First, there
+    is a line edit to accept the address of the tweeter. This is accompanied by a
+    button for fetching tweets and bookmarking the address. The callbacks will be
+    defined later. We also put a layout inside the layout to display all the tweets:'
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的方法中，我们创建一个分组框来显示推文。首先有一个行编辑器来接受推特的地址。这旁边有一个按钮用于获取推文和将地址加入书签。回调函数将稍后定义。我们还在布局内放置了一个布局来显示所有推文：
+- en: '[PRE68]'
+  id: totrans-233
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'In the following method, we create a group box to display bookmarks. This bookmarks
+    layout is just a normal vertical layout. We read the bookmarks from the text file,
+    and then we process the lines. Basically, the process is to remove the new lines
+    from the text line:'
+  id: totrans-234
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的方法中，我们创建一个分组框来显示书签。这个书签布局只是一个普通的垂直布局。我们从文本文件中读取书签，然后处理这些行。基本上，处理是从文本行中删除换行符：
+- en: '[PRE69]'
+  id: totrans-235
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'This is the `slot` function for fetching the tweets. It uses threading to do
+    the job:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是用于获取推文的`slot`函数。它使用线程来完成任务。
+- en: '[PRE70]'
+  id: totrans-237
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'This is the `slot` function that adds the address of the tweeter to the bookmark
+    text file. After adding the bookmark to the bookmark the text file, it updates
+    the bookmark layout:'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是`slot`函数，它将推特的地址添加到书签文本文件中。在将书签添加到书签文本文件后，它会更新书签布局：
+- en: '[PRE71]'
+  id: totrans-239
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: 'In this method, we launch an input dialog that has only one line edit. After
+    getting the input, we send the input to the threading class before running it:'
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个方法中，我们启动一个只有一个行编辑器的输入对话框。获取输入后，我们在运行之前将输入发送到线程类：
+- en: '[PRE72]'
+  id: totrans-241
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'This is a callback function that checks whether the private key is valid or
+    not. If it is valid (the address can be derived from the private key), we set
+    the notice label to success:'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个回调函数，用于检查私钥是否有效。如果有效（地址可以从私钥中派生），我们将通知标签设置为成功：
+- en: '[PRE73]'
+  id: totrans-243
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'These two methods are to be used to fill tweets in the tweets layout. First,
+    we clear the tweets in the vertical layout. We can get each widget from the layout
+    with `takeAt` method. There is no method to delete all child widgets of the layout;
+    we have to iterate them one by one. If the widget exists, we can delete it. After
+    clearing all the tweets from the layout, we fill the layout with new tweets using
+    the `addWidget` method. The same strategy is being used when dealing with bookmarks:'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这两个方法用于填充推文到推文布局中。首先，我们清除垂直布局中的推文。我们可以使用`takeAt`方法从布局中获取每个小部件。没有方法可以删除布局的所有子小部件；我们必须逐个迭代它们。如果小部件存在，我们可以删除它。清除布局中的所有推文后，我们使用`addWidget`方法填充布局以显示新的推文。处理书签时也使用了相同的策略：
+- en: '[PRE74]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: The same strategy is used in the two following methods. We clear the bookmark
+    widgets from the bookmarks layout by iterating them one by one and deleting the
+    widget. Then we fill the bookmarks inside the bookmarks layout through the `addWidget` method.
+    One difference between dealing with tweets and bookmarks is that we configure
+    the label in the bookmark section so it can be selected using the mouse. The method
+    responsible for this is the `setTextInteractionFlags` method.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的两种方法中使用相同的策略。我们通过逐个迭代并删除小部件来清除书签布局中的书签小部件。然后，我们通过`addWidget`方法在书签布局中填充书签。处理推文和书签的一个区别是，我们配置了书签部分中的标签，以便可以使用鼠标进行选择。负责此操作的方法是`setTextInteractionFlags`方法。
+- en: 'The parameter is the current flag of the label that''s masked with the `Qt.TextSelectableByMouse` flag.
+    If you use this code without masking it with the previous value, `label_field.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)`,
+    you can delete all current label selection configuration flags that the label
+    widget has. Most of the time, you don''t want to do that:'
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 参数是标签的当前标志，该标志与`Qt.TextSelectableByMouse`标志掩码。如果您在不使用前一个值掩码的情况下使用此代码，`label_field.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)`，则可以删除标签小部件具有的所有当前标签选择配置标志。大多数情况下，您不希望这样做：
+- en: '[PRE75]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'This is a callback to set the success message in the label widget:'
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是设置标签小部件中成功消息的回调：
+- en: '[PRE76]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: 'Then, finally we launch the GUI frontend:'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们启动GUI前端：
+- en: '[PRE77]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'Type the second address into Ganache to fetch the tweets that we set when executing
+    the fixtures script:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Ganache中输入第二个地址以获取执行固定脚本时设置的推文：
+- en: '![](assets/eccfeb78-199b-4329-bd8e-952e27de8d5e.png)'
+  id: totrans-254
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/eccfeb78-199b-4329-bd8e-952e27de8d5e.png)'
+- en: 'Type the private key and click OK:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输入私钥并单击确定：
+- en: '![](assets/5fb32e88-8755-48ff-97f7-3413f31e2e20.png)'
+  id: totrans-256
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/5fb32e88-8755-48ff-97f7-3413f31e2e20.png)'
+- en: 'Click on Write a new tweet button. It will launch a dialog box. Then type in
+    your tweet and click on OK:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单击“撰写新推文”按钮。它将启动对话框。然后输入您的推文并单击确定：
+- en: '![](assets/c26c07c0-3654-49ad-8886-244c215e91b8.png)'
+  id: totrans-258
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/c26c07c0-3654-49ad-8886-244c215e91b8.png)'
+- en: 'After typing a new tweet and confirming it, you will get a success message.
+    Then you can click the button (Bookmark it!) to save the address into the `bookmarks`
+    text file:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输入新推文并确认后，您将收到成功消息。然后，您可以单击按钮（收藏！）将地址保存到`bookmarks`文本文件中：
+- en: '![](assets/7461dd09-d39a-44d5-baaa-e282dcb70e94.png)'
+  id: totrans-260
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/7461dd09-d39a-44d5-baaa-e282dcb70e94.png)'
+- en: If you want to build a frontend for a smart contract or a decentralized application,
+    you need to keep two things in mind. First, handle the blocking function (sending
+    transactions to the blockchain and waiting for them) gracefully either using threading
+    or single-threaded coroutines (using the `asyncio` library). Secondly, while the
+    smart contract handles the core things (censorship resistance messages), you could
+    add more value to your decentralized application. The added value in our example
+    application is the bookmark utility. Can you add a bookmark functionality in the
+    smart contract? Of course you can. But if you put the functionality in the smart
+    contract, you lose privacy, because everyone can read your bookmarks.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想为智能合约或去中心化应用程序构建前端，需要牢记两件事。首先，要优雅地处理阻塞功能（向区块链发送交易并等待），可以使用线程或单线程协程（使用`asyncio`库）。其次，虽然智能合约处理核心事务（审查抵抗消息），但您可以为去中心化应用程序增加更多价值。在我们的示例应用程序中，增加的价值是书签实用程序。您可以在智能合约中添加书签功能吗？当然可以。但是，如果将功能放在智能合约中，就会失去隐私，因为每个人都可以阅读您的书签。
+- en: In a nutshell, you cannot put every feature in the smart contract because of
+    the limitations of the smart contract. So if you want to add sentiment analysis
+    using machine learning, it is best to do this outside the smart contract.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，由于智能合约的限制，您无法将每个功能都放在智能合约中。因此，如果要使用机器学习添加情感分析，最好在智能合约之外进行此操作。
+- en: Summary
+  id: totrans-263
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we learned how to build a GUI frontend for a smart contract
+    and how to use Qt for Python or the `PySide2` library, which utilizes the Qt 5
+    library. We set time aside to learn how to build a GUI application using Qt for
+    Python. Starting with a simple application, we took into the layout, various widgets,
+    signals and slots, and threading, and we finally gained an understanding of how
+    to use the `PySide2` library. We built our smart contract to simulate Twitter
+    in a simple way, delighting in the censorship resistance of this Twitter-like
+    application. Next, we built the GUI frontend. This GUI application uses all the
+    concepts you have learned so far. We used threading to connect to the blockchain
+    so that the GUI would not freeze. We also added additional value through the ability
+    to bookmark in our GUI application.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们学习了如何为智能合约构建GUI前端，以及如何使用Qt for Python或`PySide2`库，该库利用了Qt 5库。我们抽出时间学习如何使用Qt
+    for Python构建GUI应用程序。从一个简单的应用程序开始，我们了解了布局、各种小部件、信号和插槽以及线程，最终了解了如何使用`PySide2`库。我们构建了我们的智能合约，以简单的方式模拟Twitter，享受这种类似Twitter应用程序的审查抵抗。接下来，我们构建了GUI前端。此GUI应用程序使用了迄今为止学到的所有概念。我们使用线程连接到区块链，以便GUI不会冻结。我们还通过在GUI应用程序中添加书签功能来增加附加值。
+- en: In the next chapter, you are going to learn how to create an ERC20 token. This
+    is what makes Ethereum popular among developers. Tokens can be used as a substitute
+    for money in certain environments.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，您将学习如何创建ERC20代币。这是使以太坊在开发人员中受欢迎的原因。代币可以在某些环境中用作货币的替代品。

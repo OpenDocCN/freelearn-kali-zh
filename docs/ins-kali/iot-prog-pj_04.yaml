@@ -1,0 +1,802 @@
+- en: Subscribing to Web Services
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 订阅Web服务
+- en: Many of us take the technologies that the internet is built on top of for granted.
+    When we visit our favorite websites, we care little that the web pages we are
+    viewing are crafted for our eyes. However, lying underneath is the internet protocol
+    suite of communication protocols. Machines can also take advantage of these protocols
+    and communicate machine to machine through web services.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们许多人都认为互联网建立在其上的技术是理所当然的。当我们访问我们喜爱的网站时，我们很少关心我们正在查看的网页是为我们的眼睛而制作的。然而，在底层是通信协议的互联网协议套件。机器也可以利用这些协议，通过Web服务进行机器之间的通信。
+- en: In this chapter, we will continue our journey toward connecting devices through
+    the **Internet of Things** (**IoT**). We will explore web services and the various
+    technologies behind them. We will conclude our chapter with some Python code where
+    we call a live weather service and extract information in real time.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将继续我们的连接设备通过**物联网**（**IoT**）的旅程。我们将探索Web服务和它们背后的各种技术。我们将以一些Python代码结束我们的章节，其中我们调用一个实时天气服务并提取信息。
+- en: 'The following topics will be covered in this chapter:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下主题：
+- en: Cloud services for IoT
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 物联网的云服务
+- en: Writing a Python program to extract live weather data
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 编写Python程序提取实时天气数据
+- en: Prerequisites
+  id: totrans-6
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 先决条件
+- en: The reader should have a working knowledge of the Python programming language
+    to complete this chapter as well as an understanding of basic object-oriented
+    programming. This will serve the reader well, as we will be separating our code
+    into objects.
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 读者应该具有Python编程语言的工作知识，以完成本章，以及对基本面向对象编程的理解。这将为读者服务良好，因为我们将把我们的代码分成对象。
+- en: Project overview
+  id: totrans-8
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 项目概述
+- en: In this project, we will explore the various web services that are available
+    and touch on their core strengths. We will then write code that calls the Yahoo!
+    Weather web service. We will conclude by having a "ticker" display of real-time
+    weather data using the Raspberry Pi Sense HAT emulator.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个项目中，我们将探索各种可用的Web服务，并涉及它们的核心优势。然后，我们将编写调用Yahoo! Weather Web服务的代码。最后，我们将使用树莓派Sense
+    HAT模拟器显示实时天气数据的“滚动”显示。
+- en: This chapter should take a morning or afternoon to complete.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章应该需要一个上午或下午来完成。
+- en: Getting started
+  id: totrans-11
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 入门
+- en: 'To complete this project, the following will be required:'
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要完成这个项目，需要以下内容：
+- en: A Raspberry Pi Model 3 (2015 model or newer)
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 树莓派3型号（2015年或更新型号）
+- en: A USB power supply
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: USB电源适配器
+- en: A computer monitor (with HDMI support)
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 计算机显示器（支持HDMI）
+- en: A USB keyboard
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: USB键盘
+- en: A USB mouse
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: USB鼠标
+- en: Internet access
+  id: totrans-18
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 互联网接入
+- en: Cloud services for IoT
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 物联网的云服务
+- en: There are many cloud services that we may use for IoT development. Some of the
+    biggest companies in technology have thrown their weight behind IoT and in particular
+    IoT with artificial intelligence.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多云服务可供我们用于物联网开发。一些科技界最大的公司已经全力支持物联网，特别是具有人工智能的物联网。
+- en: The following are the details of some of these services.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一些这些服务的详细信息。
+- en: Amazon Web Services IoT
+  id: totrans-22
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 亚马逊网络服务IoT
+- en: The Amazon Web Services IoT is a cloud platform that allows connected devices
+    to securely interact with other devices or cloud applications. These are offered
+    as pay-as-you-go services without the need for a server, thereby simplifying deployment
+    and scalability.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 亚马逊网络服务IoT是一个云平台，允许连接设备与其他设备或云应用程序安全地交互。这些是按需付费的服务，无需服务器，从而简化了部署和可扩展性。
+- en: '**Amazon Web Services** (**AWS**) services that may be used by the AWS IoT
+    Core are as follows:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**亚马逊网络服务**（**AWS**）的服务，AWS IoT核心可以使用如下：'
+- en: AWS Lambda
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: AWS Lambda
+- en: Amazon Kinesis
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊Kinesis
+- en: Amazon S3
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊S3
+- en: Amazon Machine Learning
+  id: totrans-28
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊机器学习
+- en: Amazon DynamoDB
+  id: totrans-29
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊DynamoDB
+- en: Amazon CloudWatch
+  id: totrans-30
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊CloudWatch
+- en: AWS CloudTrail
+  id: totrans-31
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: AWS CloudTrail
+- en: Amazon Elasticsearch Service
+  id: totrans-32
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 亚马逊Elasticsearch服务
+- en: AWS IoT Core applications allow for the gathering, processing, and analysis
+    of data generated by connected devices without the need to manage infrastructure.
+    Pricing is per messages sent and received.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AWS IoT核心应用程序允许收集、处理和分析由连接设备生成的数据，无需管理基础设施。定价是按发送和接收的消息计费。
+- en: 'The following is a diagram of how AWS IoT may be used. In this scenario, road
+    conditions data from a car is sent to the cloud and stored within an S3 Cloud
+    Storage service. The AWS service broadcasts this data to other cars, warning them
+    of potential hazardous road conditions:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是AWS IoT的使用示意图。在这种情况下，汽车的道路状况数据被发送到云端并存储在S3云存储服务中。AWS服务将这些数据广播给其他汽车，警告它们可能存在危险的道路状况：
+- en: '![](assets/ec770430-be8c-48e1-b7d6-52bc9189240e.png)'
+  id: totrans-35
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/ec770430-be8c-48e1-b7d6-52bc9189240e.png)'
+- en: IBM Watson platform
+  id: totrans-36
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: IBM Watson平台
+- en: IBM Watson is a system capable of answering questions posted in natural language.
+    Originally designed to compete on the TV game show *Jeopardy!*, Watson was named
+    after IBM's first CEO, Thomas J. Watson. In 2011, Watson took on *Jeopardy!* champions
+    Brad Rutter and Ken Jennings and won.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IBM Watson是一个能够用自然语言回答问题的系统。最初设计用来参加电视游戏节目*Jeopardy!*，Watson以IBM的第一任CEO Thomas
+    J. Watson的名字命名。2011年，Watson挑战了*Jeopardy!*冠军Brad Rutter和Ken Jennings并获胜。
+- en: Applications using the IBM Watson Developer Cloud may be created with API calls.
+    The potential for processing IoT information with Watson is immense.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用IBM Watson开发者云的应用程序可以通过API调用来创建。使用Watson处理物联网信息的潜力是巨大的。
+- en: To put it bluntly, Watson is a supercomputer from IBM that may be accessed over
+    the web through API calls.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 直白地说，Watson是IBM的一台超级计算机，可以通过API调用在网上访问。
+- en: 'One such use of Watson with IoT is the IBM Watson Assistant for Automotive,
+    an integrated solution provided to manufacturers for use in cars. Through this
+    technology, the driver and passengers may interact with the outside world for
+    such things as booking reservations at restaurants and checking on appointments
+    in their calendars. Sensors in the car may be integrated, providing IBM Watson
+    Assistant with information on the state of the car such as tire pressure. The
+    following is a diagram illustrating a scenario where Watson warns the driver of
+    low tire pressure, suggests having it fixed, and then books an appointment at
+    the garage:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Watson与IoT的一个应用是IBM Watson助手汽车版，这是为汽车制造商提供的集成解决方案。通过这项技术，驾驶员和乘客可以与外界互动，例如预订餐厅和检查日历中的约会。车辆中的传感器可以集成，向IBM
+    Watson助手提供车辆状态的信息，如轮胎压力。以下是一个图表，说明了Watson如何警告驾驶员轮胎压力过低，建议修理，并预约车库：
+- en: '![](assets/aae158bc-7e55-4d14-af47-1db370364d77.png)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/aae158bc-7e55-4d14-af47-1db370364d77.png)'
+- en: IBM Watson Assistant for Automotive is sold as a white-label service so that
+    manufacturers may label it to suit their needs. The success of IBM Watson Assistant
+    for Automotive will depend on how well it competes with other AI assistant services
+    such as Amazon's Alexa and Google's AI assistant. Integration with popular services
+    such as Spotify for music and Amazon for shopping will also play a role in future
+    success.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IBM Watson助手汽车版作为白标服务出售，以便制造商可以将其标记为适合自己的需求。IBM Watson助手汽车版的成功将取决于它与亚马逊的Alexa和谷歌的AI助手等其他AI助手服务的竞争情况。与Spotify音乐和亚马逊购物等热门服务的整合也将在未来的成功中发挥作用。
+- en: Google Cloud platform
+  id: totrans-43
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 谷歌云平台
+- en: Although not as extensive and well-documented as AWS IoT, Google is taking on
+    IoT with a lot of interest. A developer may take advantage of Google's processing,
+    analytics, and machine intelligence technologies through the use of Google Cloud
+    Services.
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然谷歌的IoT并不像AWS IoT那样广泛和有文档记录，但谷歌对IoT的兴趣很大。开发人员可以通过使用谷歌云服务来利用谷歌的处理、分析和机器智能技术。
+- en: 'The following is a list of some of the services offered through Google Cloud
+    Services:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是谷歌云服务提供的一些服务列表：
+- en: '**App engine**: Application hosting service'
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: App Engine：应用程序托管服务
+- en: '**BigQuery**: Large-scale database analytics service'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: BigQuery：大规模数据库分析服务
+- en: '**Bigtable**: Scalable database service'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Bigtable：可扩展的数据库服务
+- en: '**Cloud AutoML**: Machine learning services that allow developers access to
+    Google''s Neural Architecture Search technology'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Cloud AutoML：允许开发人员访问谷歌神经架构搜索技术的机器学习服务
+- en: '**Cloud machine learning engine**: Machine learning service for TensorFlow
+    models'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 云机器学习引擎：用于TensorFlow模型的机器学习服务
+- en: '**Google video intelligence**: Service to analyze videos and create metadata'
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 谷歌视频智能：分析视频并创建元数据的服务
+- en: '**Cloud Vision API**: Service to return data on images through the use of machine
+    learning'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 云视觉API：通过机器学习返回图像数据的服务
+- en: 'The following is a diagram of how the Google Cloud Vision API may be used.
+    An image of a dog standing next to an upside-down flowerpot is passed to the service
+    through the API. The image is scanned and, using machine learning, objects are
+    identified in the photo. The returning JSON file contains the results in percentages:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是谷歌云视觉API的使用图表。一张狗站在一个颠倒的花盆旁边的图片通过API传递给服务。图像被扫描，并且使用机器学习在照片中识别物体。返回的JSON文件包含结果的百分比：
+- en: '![](assets/1699693d-94f5-49ec-91f7-180558df180d.png)'
+  id: totrans-54
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/1699693d-94f5-49ec-91f7-180558df180d.png)'
+- en: Google's focus on keeping things easy and fast gives developers access to Google's
+    own private global network. Pricing for the Google Cloud Platform is lower than
+    AWS IoT.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 谷歌专注于使事情简单快捷，使开发人员可以访问谷歌自己的全球私人网络。谷歌云平台的定价低于AWS IoT。
+- en: Microsoft Azure
+  id: totrans-56
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 微软Azure
+- en: Microsoft Azure (known formerly as Windows Azure) is a cloud-based service from
+    Microsoft that allows developers to build, test, deploy, and manage applications
+    using Microsoft's vast array of data centers. It supports many different programming
+    languages, which are both Microsoft-specific and from outside third parties.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微软Azure（以前称为Windows Azure）是微软的基于云的服务，允许开发人员使用微软庞大的数据中心构建、测试、部署和管理应用程序。它支持许多不同的编程语言，既是微软特有的，也来自外部第三方。
+- en: 'Azure Sphere, part of the Microsoft Azure framework, was launched in April
+    of 2018 and is Azure''s IoT solution. The following is a scenario where Azure
+    Sphere (or Azure IoT, as shown in the diagram) may be used. In this scenario,
+    a robot arm located in a remote factory is monitored and controlled by a cellphone
+    app somewhere else:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Azure Sphere是微软Azure框架的一部分，于2018年4月推出，是Azure的IoT解决方案。以下是Azure Sphere（或如图表所示的Azure
+    IoT）可能被使用的场景。在这种情况下，远程工厂中的机器人手臂通过手机应用程序进行监控和控制：
+- en: '![](assets/71cf93b4-2b0e-46e1-a77b-190e426a4551.png)'
+  id: totrans-59
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/71cf93b4-2b0e-46e1-a77b-190e426a4551.png)'
+- en: You may have noticed that the previous examples could be set up with any of
+    the competing cloud services, and that really is the point. By competing with
+    each other, the services become better and cheaper, and as a result, more accessible.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，前面的例子可以使用任何竞争对手的云服务来设置，这确实是重点。通过相互竞争，服务变得更好、更便宜，因此更易获得。
+- en: With these large companies such as IBM, Amazon, Google, and Microsoft taking
+    on the processing of IoT data, the future of IoT is boundless.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 随着IBM、亚马逊、谷歌和微软等大公司参与IoT数据处理，IoT的未来是无限的。
+- en: Weather Underground
+  id: totrans-62
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Weather Underground
+- en: Although not heavyweight like the Googles and IBMs of the world, Weather Underground
+    offers a web service of weather information that developers may tie their applications
+    into. Through the use of a developer account, IoT applications utilizing current
+    weather conditions may be built.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然不像谷歌和IBM那样重量级，Weather Underground提供了一个天气信息的网络服务，开发人员可以将他们的应用程序与之联系起来。通过使用开发人员账户，可以构建利用当前天气条件的IoT应用程序。
+- en: At the time of writing this chapter, the Weather Underground network offered
+    APIs for developers to use to access weather information. An end-of-service notice
+    has been posted to the Weather Underground API site since. To keep up to date
+    on the state of this service, visit [https://www.wunderground.com/weather/api/](https://www.wunderground.com/weather/api/).
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在撰写本章时，Weather Underground网络为开发人员提供了API以访问天气信息。自那时起，Weather Underground API网站发布了服务终止通知。要了解此服务的状态，请访问[https://www.wunderground.com/weather/api/](https://www.wunderground.com/weather/api/)。
+- en: A basic Python program to pull data from the cloud
+  id: totrans-65
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从云中提取数据的基本Python程序
+- en: In [Chapter 2](f310884c-55e6-48a4-8329-05ff04e48e19.xhtml), *Writing Python
+    Programs Using Raspberry Pi*, we introduced a package called `weather-api` that
+    allows us to access the Yahoo! Weather web service. In this section, we will wrap
+    up the `Weather` object from the `weather-api` package in our own class. We will
+    reuse the name `CurrentWeather` for our class. After testing out our `CurrentWeather`
+    class, we will utilize the Sense Hat Emulator in Raspbian and build a weather
+    information ticker.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第2章](f310884c-55e6-48a4-8329-05ff04e48e19.xhtml)中，*使用树莓派编写Python程序*，我们介绍了一个名为`weather-api`的包，它允许我们访问Yahoo!
+    Weather Web服务。在本节中，我们将在我们自己的类中包装`weather-api`包中的`Weather`对象。我们将重用我们的类名称`CurrentWeather`。在测试我们的`CurrentWeather`类之后，我们将在Raspbian中利用Sense
+    Hat模拟器并构建一个天气信息滚动条。
+- en: Accessing the web service
+  id: totrans-67
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 访问Web服务
+- en: 'We will start out by modifying our `CurrentWeather` class to make web service
+    calls to Yahoo! Weather through the `weather-api` package:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将首先修改我们的`CurrentWeather`类，以通过`weather-api`包对Yahoo! Weather进行Web服务调用：
+- en: Open up Thonny from Application Menu | Programming | Thonny Python IDE.
+  id: totrans-69
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从应用程序菜单|编程|Thonny Python IDE打开Thonny。
+- en: Click on the New icon to create a new file.
+  id: totrans-70
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击新图标创建新文件。
+- en: 'Type the following:'
+  id: totrans-71
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 输入以下内容：
+- en: '[PRE0]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Save the file as `CurrentWeather.py`.
+  id: totrans-73
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将文件保存为`CurrentWeather.py`。
+- en: Run the code.
+  id: totrans-74
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行代码。
+- en: 'You should see weather information from the web service printed to the shell
+    in Thonny. When I ran the program, I saw the following:'
+  id: totrans-75
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您应该在Thonny的shell中看到来自Web服务的天气信息打印出来。当我运行程序时，我看到了以下内容：
+- en: '[PRE1]'
+  id: totrans-76
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'Now, let''s take a closer look at the code to see what is going on. We start
+    off by importing the resources from packages we need for our program:'
+  id: totrans-77
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，让我们仔细看看代码，看看发生了什么。我们首先从我们需要的程序包中导入资源：
+- en: '[PRE2]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'We then define our class name, `CurrentWeather`, and set the class variables
+    (`temperature`, `weather_conditions`, `wind_speed`, and `city`) to initial values:'
+  id: totrans-79
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后我们定义我们的类名`CurrentWeather`，并将类变量（`temperature`、`weather_conditions`、`wind_speed`和`city`）设置为初始值：
+- en: '[PRE3]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'In the `init` method, we set our class variables based on the `city` that is
+    passed into the method. We do this by instantiating a variable we call `weather`
+    as a `Weather` object with the `unit` set to `CELSIUS`. The `lookup` variable
+    is created based on the `city` name we pass in. From there, it is a simple matter
+    of setting our class variables (`temperature`, `weather_conditions`, and `wind_speed`)
+    from values we extract from `lookup`. The `weather-api` does all of the heavy
+    lifting for us as we are able to access values with dot notation. There is no
+    need for us to parse XML or JSON data:'
+  id: totrans-81
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`init`方法中，我们根据传入方法的`city`设置我们的类变量。我们通过将一个名为`weather`的变量实例化为`Weather`对象，并将`unit`设置为`CELSIUS`来实现这一点。`lookup`变量是基于我们传入的`city`名称创建的。从那里，简单地设置我们的类变量（`temperature`、`weather_conditions`和`wind_speed`）从我们从`lookup`中提取的值。`weather-api`为我们完成了所有繁重的工作，因为我们能够使用点表示法访问值。我们无需解析XML或JSON数据：
+- en: '[PRE4]'
+  id: totrans-82
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'With the class variables set in the `init` method, we use method calls to return
+    these class variables:'
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`init`方法中设置类变量后，我们使用方法调用来返回这些类变量：
+- en: '[PRE5]'
+  id: totrans-84
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Since we are running `CurrentWeather.py` as a program in Thonny, we are able
+    to use the `if __name__=="__main__"` method and utilize the `CurrentWeather` class.
+    Note that the `if __name__=="__main__"` method has the same indentation as the
+    class name. It would not work if it didn't.
+  id: totrans-85
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 由于我们在Thonny中作为程序运行`CurrentWeather.py`，我们可以使用`if __name__=="__main__"`方法并利用`CurrentWeather`类。请注意，`if
+    __name__=="__main__"`方法的缩进与类名相同。如果不是这样，它将无法工作。
+- en: With every module in Python, there is an attribute called `__name__`. If you
+    were to check this attribute for a module you have imported into your program,
+    you would get the name of the module returned. For example, if we were to put
+    the line `print(Weather.__name__)` in the preceding code, we would get the name
+    `Weather` returned. Checking for `__name__` in a file we are running returns the `__main__` value.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Python的每个模块中，都有一个名为`__name__`的属性。如果您要检查已导入到程序中的模块的此属性，您将得到返回的模块名称。例如，如果我们在前面的代码中放置行`print(Weather.__name__)`，我们将得到名称`Weather`。在运行文件时检查`__name__`返回`__main__`值。
+- en: 'In the `if __name__=="__main__"` method, we create an object called `current_weather`
+    of type `CurrentWeather`, passing in the city name `Montreal`. We then print out
+    the values for `city`, `temperature`, `weather conditions`, and `wind speed` using the appropriate
+    method calls:'
+  id: totrans-87
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`if __name__=="__main__"`方法中，我们创建一个名为`current_weather`的`CurrentWeather`类型的对象，传入城市名`Montreal`。然后，我们使用适当的方法调用打印出`city`、`temperature`、`weather
+    conditions`和`wind speed`的值：
+- en: '[PRE6]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Using the Sense HAT Emulator
+  id: totrans-89
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用Sense HAT模拟器
+- en: 'Now, let''s use the Raspberry Pi Sense HAT Emulator to display weather data.
+    We will utilize the `CurrentWeather` class we just created. To see weather information
+    displayed in the Sense HAT Emulator, do the following:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们使用树莓派Sense HAT模拟器来显示天气数据。我们将利用我们刚刚创建的`CurrentWeather`类。要在Sense HAT模拟器中看到显示的天气信息，请执行以下操作：
+- en: Open up Thonny from Application Menu | Programming | Thonny Python IDE
+  id: totrans-91
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从应用程序菜单|编程|Thonny Python IDE打开Thonny
+- en: Click on the New icon to create a new file
+  id: totrans-92
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 单击新图标创建新文件
+- en: 'Type the following:'
+  id: totrans-93
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 输入以下内容：
+- en: '[PRE7]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Save the file as `DisplayWeather.py`
+  id: totrans-95
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将文件保存为`DisplayWeather.py`
+- en: Load the Sense HAT Emulator from Application Menu | Programming | Sense HAT
+    Emulator
+  id: totrans-96
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从应用程序菜单|编程|Sense HAT模拟器加载Sense HAT模拟器
+- en: Position the Sense HAT Emulator so that you can see the display
+  id: totrans-97
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将Sense HAT模拟器定位到可以看到显示的位置
+- en: Run the code
+  id: totrans-98
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行代码
+- en: 'You should see a ticker of the weather information for `Toronto` on the Sense
+    HAT Emulator display, similar to the following screenshot:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该在Sense HAT模拟器显示器上看到`多伦多`的天气信息滚动条，类似于以下截图：
+- en: '![](assets/9cfaaa47-606f-426e-a44c-1c86b418d7dd.png)'
+  id: totrans-100
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/9cfaaa47-606f-426e-a44c-1c86b418d7dd.png)'
+- en: 'So, how did we accomplish this? The `init` and `message` methods are at the
+    heart of this program. We initialize the `DisplayWeather` class by setting the
+    class variable `current_weather`. Once `current_weather` is set, we extract values
+    from it in the `display` method in order to build a message we call `message`.
+    We then create a `SenseHat` emulator object in the `display` method as well and
+    call it `sense_hat_emulator`. We pass in our message to the `show_message` method
+    of the `SenseHat` emulator through the line `sense_hat_emulator.show_message(message)`:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，我们是如何做到这一点的呢？`init`和`message`方法是这个程序的核心。我们通过设置类变量`current_weather`来初始化`DisplayWeather`类。一旦`current_weather`被设置，我们就在`display`方法中从中提取值，以便构建我们称之为`message`的消息。然后我们也在`display`方法中创建一个`SenseHat`模拟器对象，并将其命名为`sense_hat_emulator`。我们通过`sense_hat_emulator.show_message(message)`这一行将我们的消息传递给`SenseHat`模拟器的`show_message`方法：
+- en: '[PRE8]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Summary
+  id: totrans-103
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: We began this chapter by discussing some of the various web services that are
+    available. We discussed the work of some of the biggest companies in information
+    technology in the fields of artificial intelligence and IoT.
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从讨论一些可用的各种网络服务开始了本章。我们讨论了一些在人工智能和物联网领域中最大的信息技术公司的工作。
+- en: Both Amazon and Google are aiming to become the platforms that IoT devices connect
+    with. Using its vast resources, Amazon, through its Amazon Web Services, provides
+    significant documentation and support for its offerings. Not to be outdone, Google
+    is also building a powerful platform for IoT. Which platform wins out remains
+    to be seen.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 亚马逊和谷歌都致力于成为物联网设备连接的平台。亚马逊通过其亚马逊网络服务提供了大量的文档和支持。谷歌也在建立一个强大的物联网平台。哪个平台会胜出还有待观察。
+- en: IBM's foray into artificial intelligence centers on Watson, their *Jeopardy!*
+    playing champion. Winning game shows against the best human players is of course
+    not the ultimate goal for Watson. However, the knowledge and technology built
+    from such pursuits will find its way into areas we can only imagine today. Watson
+    may prove to be the so-called killer app for the IoT world.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IBM在人工智能领域的涉足集中在Watson上，他们的*Jeopardy!*游戏冠军。当然，赢得游戏秀并不是Watson的最终目标。然而，从这些追求中建立的知识和技术将会进入我们今天只能想象的领域。Watson可能会被证明是物联网世界的所谓杀手应用程序。
+- en: There is probably nothing that people talk about more than the weather. In this
+    chapter, we used the `weather-api` package to build a weather information ticker
+    by utilizing the Raspberry Pi Sense HAT Emulator that's built into the Raspbian
+    operating system.
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也许没有什么比天气更多人谈论的了。在本章中，我们使用`weather-api`包利用内置在Raspbian操作系统中的树莓派Sense HAT模拟器构建了一个天气信息滚动条。
+- en: In [Chapter 5](a180e8ce-8d3b-4158-b260-981ee3697af4.xhtml), *Controlling a Servo
+    with Python*, we will explore other ways to communicate with the outside world
+    by using servo motors to provide an analog display.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第5章](a180e8ce-8d3b-4158-b260-981ee3697af4.xhtml)中，*使用Python控制舵机*，我们将探索使用舵机以提供模拟显示的其他通信方式。
+- en: Questions
+  id: totrans-109
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 问题
+- en: What is IBM Watson?
+  id: totrans-110
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: IBM Watson是什么？
+- en: True or false? Amazon's IoT web services allows access to other cloud-based
+    services from Amazon.
+  id: totrans-111
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 真的还是假的？亚马逊的物联网网络服务允许访问亚马逊的其他基于云的服务。
+- en: True or false? Watson is a champion of the game show *Jeopardy!*
+  id: totrans-112
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 真的还是假的？Watson是*Jeopardy!*游戏秀的冠军吗？
+- en: True or false? Google has their own global private network.
+  id: totrans-113
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 真的还是假的？谷歌有他们自己的全球私人网络。
+- en: True or false? We need to change the names of our functions such as `getTemperature`
+    when we introduce web service data.
+  id: totrans-114
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 真的还是假的？当我们引入网络服务数据时，我们需要更改函数的名称，比如`getTemperature`。
+- en: True or false? It is a good idea to use test code in your classes in order to
+    isolate the functionality of that class.
+  id: totrans-115
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 真的还是假的？在你的类中使用测试代码以隔离该类的功能是一个好主意。
+- en: What is the purpose of the `DisplayWeather` class in our code?
+  id: totrans-116
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在我们的代码中，`DisplayWeather`类的目的是什么？
+- en: Which method of the `SenseHat` object do we use to display weather information
+    in the Sense HAT Emulator?
+  id: totrans-117
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在我们的代码中，我们使用`SenseHat`对象的哪种方法来在Sense HAT模拟器中显示天气信息？
+- en: Further reading
+  id: totrans-118
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 进一步阅读
+- en: A Google search on the various web services that are available is a good place
+    to start in order to expand your knowledge of web services.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在扩展你对网络服务的知识时，通过谷歌搜索可用的各种网络服务是一个很好的起点。

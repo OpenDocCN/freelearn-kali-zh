@@ -1,0 +1,4370 @@
+- en: Chapter 7. Customizing Concurrency Classes
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第7章。自定义并发类
+- en: 'In this chapter, we will cover:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖：
+- en: Customizing the `ThreadPoolExecutor` class
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自定义`ThreadPoolExecutor`类
+- en: Implementing a priority-based `Executor` class
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现基于优先级的`Executor`类
+- en: Implementing the `ThreadFactory` interface to generate custom threads
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现`ThreadFactory`接口以生成自定义线程
+- en: Using our `ThreadFactory` in an `Executor` object
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在`Executor`对象中使用我们的`ThreadFactory`
+- en: Customizing tasks running in a scheduled thread pool
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自定义在计划线程池中运行的任务
+- en: Implementing the `ThreadFactory` interface to generate custom threads for the
+    Fork/Join framework
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现`ThreadFactory`接口以为Fork/Join框架生成自定义线程
+- en: Customizing tasks running in the Fork/Join framework
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自定义在Fork/Join框架中运行的任务
+- en: Implementing a custom `Lock` class
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现自定义`Lock`类
+- en: Implementing a transfer queue based on priorities
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 基于优先级实现传输队列
+- en: Implementing your own atomic object
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现自己的原子对象
+- en: Introduction
+  id: totrans-12
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍
+- en: Java concurrency API provides a lot of interfaces and classes to implement concurrent
+    applications. They provide low-level mechanisms, such as the `Thread` class, the
+    `Runnable` or `Callable` interfaces, or the `synchronized` keyword, and also high-level
+    mechanisms, such as the Executor framework and the Fork/Join framework added in
+    the Java 7 release. Despite this, you may find yourself developing a program where
+    none of the java classes meet your needs.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java并发API提供了许多接口和类来实现并发应用程序。它们提供低级机制，如`Thread`类、`Runnable`或`Callable`接口或`synchronized`关键字，以及高级机制，如Executor框架和Java
+    7版本中添加的Fork/Join框架。尽管如此，您可能会发现自己正在开发一个程序，其中没有任何java类满足您的需求。
+- en: 'In this case, you may need to implement your own custom-concurrent utilities
+    based on the ones provided by Java. Basically, you can:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，您可能需要基于Java提供的工具来实现自己的自定义并发工具。基本上，您可以：
+- en: Implement an interface to provide the functionality defined by that interface.
+    For example, the `ThreadFactory` interface.
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现一个接口以提供该接口定义的功能。例如，`ThreadFactory`接口。
+- en: Override some methods of a class to adapt its behavior to your needs. For example,
+    overriding the `run()` method of the `Thread` class which, by default, does nothing
+    useful and is supposed to be overridden to offer some functionality.
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 重写类的一些方法以使其行为适应您的需求。例如，重写`Thread`类的`run()`方法，默认情况下不执行任何有用的操作，应该重写以提供一些功能。
+- en: Through the recipes of this chapter, you will learn how to change the behavior
+    of some Java concurrency API classes without the need to design a concurrency
+    framework from scratch. You can use these recipes as an initial point to implement
+    your own customizations.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过本章的示例，您将学习如何更改一些Java并发API类的行为，而无需从头设计并发框架。您可以将这些示例作为实现自定义的初始点。
+- en: Customizing the ThreadPoolExecutor class
+  id: totrans-18
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 自定义ThreadPoolExecutor类
+- en: 'The Executor framework is a mechanism that allows you to separate the thread
+    creation from its execution. It''s based on the `Executor` and `ExecutorService`
+    interfaces with the `ThreadPoolExecutor` class that implements both interfaces.
+    It has an internal pool of threads and provides methods that allow you to send
+    two kinds of tasks for their execution in the pooled threads. These tasks are:'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Executor框架是一种允许您将线程创建与其执行分离的机制。它基于`Executor`和`ExecutorService`接口，使用实现了这两个接口的`ThreadPoolExecutor`类。它具有内部线程池，并提供方法，允许您发送两种类型的任务以在池化线程中执行。这些任务是：
+- en: The `Runnable` interface to implement tasks that don't return a result
+  id: totrans-20
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`Runnable`接口以实现不返回结果的任务'
+- en: The `Callable` interface to implement tasks that return a result
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`Callable`接口以实现返回结果的任务'
+- en: In both cases, you only send the task to the executor. The executor uses one
+    of its pooled threads or creates a new one to execute those tasks. The executor
+    also decides the moment in which the task is executed.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这两种情况下，您只需将任务发送到执行器。执行器使用其池化线程之一或创建一个新线程来执行这些任务。执行器还决定任务执行的时机。
+- en: In this recipe, you will learn how to override some methods of the `ThreadPoolExecutor`
+    class to calculate the execution time of the tasks that you execute in the executor
+    and to write in the console statistics about the executor when it completes its
+    execution.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本示例中，您将学习如何重写`ThreadPoolExecutor`类的一些方法，以计算在执行器中执行的任务的执行时间，并在执行器完成执行时在控制台中写入有关执行器的统计信息。
+- en: Getting ready
+  id: totrans-24
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or other IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本示例的示例是使用Eclipse IDE实现的。如果您使用Eclipse或其他IDE（如NetBeans），请打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-26
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做…
+- en: 'Follow the steps described below to implement the example:'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照下面描述的步骤实现示例：
+- en: Create a class named `MyExecutor` that extends the `ThreadPoolExecutor` class.
+  id: totrans-28
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyExecutor`的类，它扩展了`ThreadPoolExecutor`类。
+- en: '[PRE0]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Declare a private `ConcurrentHashMap` attribute parameterized with the `String`
+    and `Date` classes named `startTimes`.
+  id: totrans-30
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`ConcurrentHashMap`属性，参数化为`String`和`Date`类，命名为`startTimes`。
+- en: '[PRE1]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Implement the constructor for the class. Call a constructor of the parent class
+    using the `super` keyword and initialize the `startTime` attribute.
+  id: totrans-32
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现该类的构造函数。使用`super`关键字调用父类的构造函数并初始化`startTime`属性。
+- en: '[PRE2]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Override the `shutdown()` method. Write in the console information about the
+    executed tasks, the running tasks, and the pending tasks. Then, call the `shutdown()`
+    method of the parent class using the `super` keyword.
+  id: totrans-34
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重写`shutdown()`方法。在控制台中写入有关已执行任务、正在运行任务和待处理任务的信息。然后，使用`super`关键字调用父类的`shutdown()`方法。
+- en: '[PRE3]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Override the `shutdownNow()` method. Write in the console information about
+    the executed tasks, the running tasks, and the pending tasks. Then, call the `shutdownNow()`
+    method of the parent class using the `super` keyword.
+  id: totrans-36
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重写`shutdownNow()`方法。在控制台中写入有关已执行任务、正在运行任务和待处理任务的信息。然后，使用`super`关键字调用父类的`shutdownNow()`方法。
+- en: '[PRE4]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: Override the `beforeExecute()` method. Write a message in the console with the
+    name of the thread that is going to execute the task and the hash code of the
+    task. Store the start date in `HashMap` using the hash code of the task as the
+    key.
+  id: totrans-38
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 覆盖`beforeExecute()`方法。在控制台中写入将执行任务的线程的名称和任务的哈希码的消息。使用任务的哈希码作为键，将开始日期存储在`HashMap`中。
+- en: '[PRE5]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Override the `afterExecute()` method. Write a message in the console with the
+    result of the task and calculate the running time of the task subtracting the
+    start date of the task stored in `HashMap` of the current date.
+  id: totrans-40
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 覆盖`afterExecute()`方法。在控制台中写入任务的结果，并计算任务的运行时间，减去存储在`HashMap`中的任务的开始日期。
+- en: '[PRE6]'
+  id: totrans-41
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Create a class named `SleepTwoSecondsTask`that implements the `Callable` interface
+    parameterized with the `String` class. Implement the `call()` method. Put the
+    current thread to sleep for 2 seconds and return the current date converted to
+    a `String` type.
+  id: totrans-42
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`SleepTwoSecondsTask`的类，实现带有`String`类参数的`Callable`接口。实现`call()`方法。将当前线程休眠2秒，并返回转换为`String`类型的当前日期。
+- en: '[PRE7]'
+  id: totrans-43
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-44
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的主类来实现示例的主要类，其中包含一个`main()`方法。
+- en: '[PRE8]'
+  id: totrans-45
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Create a `MyExecutor` object named `myExecutor`.
+  id: totrans-46
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`myExecutor`的`MyExecutor`对象。
+- en: '[PRE9]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Create a list of `Future` objects parameterized with the `String` class to store
+    the resultant objects of the tasks you're going to send to the executor.
+  id: totrans-48
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个带有`String`类参数的`Future`对象列表，用于存储您要发送到执行器的任务的结果对象。
+- en: '[PRE10]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Submit 10 `Task` objects.
+  id: totrans-50
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 提交10个`Task`对象。
+- en: '[PRE11]'
+  id: totrans-51
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: Get the result of the execution of the first five tasks using the `get()` method.
+    Write them in the console.
+  id: totrans-52
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`get()`方法获取前五个任务的执行结果。在控制台中写入它们。
+- en: '[PRE12]'
+  id: totrans-53
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: Finish the execution of the executor using the `shutdown()` method.
+  id: totrans-54
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`shutdown()`方法结束执行器的执行。
+- en: '[PRE13]'
+  id: totrans-55
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: Get the result of the execution of the last five tasks using the `get()` method.
+    Write them in the console.
+  id: totrans-56
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`get()`方法获取最后五个任务的执行结果。在控制台中写入它们。
+- en: '[PRE14]'
+  id: totrans-57
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: Wait for the completion of the executor using the `awaitTermination()` method.
+  id: totrans-58
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`awaitTermination()`方法等待执行器的完成。
+- en: '[PRE15]'
+  id: totrans-59
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Write a message indicating the end of the execution of the program.
+  id: totrans-60
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 写一条消息指示程序执行结束。
+- en: '[PRE16]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: How it works...
+  id: totrans-62
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'In this recipe, we have implemented our custom executor extending the `ThreadPoolExecutor`
+    class and overriding four of its methods. The `beforeExecute()` and `afterExecute()`
+    methods were used to calculate the execution time of a task. The `beforeExecute()`
+    method is executed before the execution of a task. In this case, we have used
+    `HashMap` to store in it the start date of the task. The `afterExecute()` method
+    is executed after the execution of a task. You get `startTime` of the task that
+    has finished from `HashMap` and then, calculate the difference between the actual
+    date and that date to get the execution time of the task. You have also overridden
+    the `shutdown()` and `shutdownNow()` methods to write statistics about the tasks
+    executed in the executor to the console:'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个配方中，我们扩展了`ThreadPoolExecutor`类来实现我们的自定义执行器，并覆盖了它的四个方法。`beforeExecute()`和`afterExecute()`方法用于计算任务的执行时间。`beforeExecute()`方法在任务执行之前执行。在这种情况下，我们使用`HashMap`来存储任务的开始日期。`afterExecute()`方法在任务执行后执行。您可以从`HashMap`中获取已完成任务的`startTime`，然后计算实际日期与该日期之间的差异，以获取任务的执行时间。您还覆盖了`shutdown()`和`shutdownNow()`方法，以将执行器中执行的任务的统计信息写入控制台：
+- en: The executed tasks, using the `getCompletedTaskCount()` method
+  id: totrans-64
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`getCompletedTaskCount()`方法执行的任务
+- en: The tasks that are running at this time, using the `getActiveCount()` method
+  id: totrans-65
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`getActiveCount()`方法获取当前正在运行的任务
+- en: The pending tasks, using the `size()` method of the blocking queue where the
+    executor stores the pending tasks. The `SleepTwoSecondsTask` class that implements
+    the `Callable` interface puts its execution thread to sleep for 2 seconds and
+    the `Main` class, where you send 10 tasks to your executor that uses it and the
+    other classes to demo their features.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用阻塞队列的`size()`方法来存储待处理任务的执行器。实现`Callable`接口的`SleepTwoSecondsTask`类将其执行线程休眠2秒，`Main`类中，您向执行器发送10个任务，使用它和其他类来演示它们的特性。
+- en: Execute the program and you will see how the program shows the time span of
+    each task that is running and the statistics of the executor upon calling the
+    `shutdown()` method.
+  id: totrans-67
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行程序，您将看到程序显示每个正在运行的任务的时间跨度以及在调用`shutdown()`方法时执行器的统计信息。
+- en: See also
+  id: totrans-68
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Creating a Thread executor* recipe in [Chapter 4](ch04.html "Chapter 4. Thread
+    Executors"), *Thread Executors*
+  id: totrans-69
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第4章](ch04.html "第4章 线程执行器")中的*创建线程执行器*配方，*线程执行器*'
+- en: The *Using our ThreadFactory in an Executor* object recipe in [Chapter 7](ch07.html
+    "Chapter 7. Customizing Concurrency Classes"), *Customizing Concurrency Classes*
+  id: totrans-70
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第7章](ch07.html "第7章 自定义并发类")中的*在执行器中使用我们的ThreadFactory*对象配方，*自定义并发类*'
+- en: Implementing a priority-based Executor class
+  id: totrans-71
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现基于优先级的执行器类
+- en: In the first versions of the Java concurrency API, you had to create and run
+    all the threads of your application. In Java Version 5, with the appearance of
+    the Executor framework, a new mechanism was introduced for the execution of concurrency
+    tasks.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Java并发API的早期版本中，您必须创建和运行应用程序的所有线程。在Java版本5中，随着执行器框架的出现，引入了一种新的机制来执行并发任务。
+- en: With the Executor framework, you only have to implement your tasks and send
+    them to the executor. The executor is responsible for the creation and execution
+    of the threads that execute your tasks.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用执行器框架，您只需实现您的任务并将其发送到执行器。执行器负责创建和执行执行您的任务的线程。
+- en: Internally, an executor uses a blocking queue to store pending tasks. These
+    are stored in the order of their arrival to the executor. One possible alternative
+    is the use of a priority queue to store new tasks. In this way, if a new task
+    with high priority arrives to the executor, it will be executed before other threads
+    that have already been waiting for a thread to execute, but have lower priority.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在内部，执行程序使用阻塞队列来存储待处理任务。这些任务按照它们到达执行程序的顺序进行存储。一种可能的替代方案是使用优先级队列来存储新任务。这样，如果具有高优先级的新任务到达执行程序，它将在已经等待线程执行的其他线程之前执行，但具有较低优先级。
+- en: In this recipe, you will learn how to implement an executor that will use a
+    priority queue to store the tasks you send for execution.
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本示例中，您将学习如何实现一个执行程序，该执行程序将使用优先级队列来存储您发送的任务以供执行。
+- en: Getting ready
+  id: totrans-76
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or other IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本示例已使用Eclipse IDE实现。如果您使用Eclipse或其他IDE（如NetBeans），请打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-78
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤实现示例：
+- en: Create a class named `MyPriorityTask` that implements the `Runnable` and `Comparable`
+    interfaces parameterized with the `MyPriorityTask` class interface.
+  id: totrans-80
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyPriorityTask`的类，该类实现了`Runnable`和`Comparable`接口，参数化为`MyPriorityTask`类接口。
+- en: '[PRE17]'
+  id: totrans-81
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Declare a private `int` attribute named `priority`.
+  id: totrans-82
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`priority`的私有`int`属性。
+- en: '[PRE18]'
+  id: totrans-83
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Declare a private `String` attribute named `name`.
+  id: totrans-84
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`name`的私有`String`属性。
+- en: '[PRE19]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Implement the constructor of the class to initialize its attributes.
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过实现类的构造函数来初始化其属性。
+- en: '[PRE20]'
+  id: totrans-87
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: Implement a method to return the value of the priority attribute.
+  id: totrans-88
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个方法来返回优先级属性的值。
+- en: '[PRE21]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Implement the `compareTo()` method declared in the `Comparable` interface. It
+    receives a `MyPriorityTask` object as a parameter and compares the priorities
+    of the two objects, the current one and the parameter. You let the tasks with
+    higher priority execute before the tasks with lower priority.
+  id: totrans-90
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`Comparable`接口中声明的`compareTo()`方法。它接收一个`MyPriorityTask`对象作为参数，并比较两个对象的优先级，当前对象和参数对象。您让具有更高优先级的任务在具有较低优先级的任务之前执行。
+- en: '[PRE22]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: Implement the `run()` method. Put the current thread to sleep for 2 seconds.
+  id: totrans-92
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`run()`方法。将当前线程休眠2秒。
+- en: '[PRE23]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-94
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类并实现一个`main()`方法来实现示例的主类。
+- en: '[PRE24]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: Create a `ThreadPoolExecutor` object named `executor`. Use `PriorityBlockingQueue`
+    parameterized with the `Runnable` interface as the queue that this executor will
+    use to store its pending tasks.
+  id: totrans-96
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建名为`executor`的`ThreadPoolExecutor`对象。使用`PriorityBlockingQueue`参数化为`Runnable`接口作为此执行程序将用于存储其待处理任务的队列。
+- en: '[PRE25]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: Send four tasks to the executor using the counter of the loop as priority of
+    the tasks. Use the `execute()` method to send the tasks to the executor.
+  id: totrans-98
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用循环的计数器作为任务的优先级，向执行程序发送四个任务。使用`execute()`方法将任务发送到执行程序。
+- en: '[PRE26]'
+  id: totrans-99
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Put the current thread to sleep for 1 second.
+  id: totrans-100
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将当前线程休眠1秒。
+- en: '[PRE27]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: Send four additional tasks to the executor using the counter of the loop as
+    priority of the tasks. Use the `execute()` method to send the tasks to the executor.
+  id: totrans-102
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用循环的计数器作为任务的优先级，向执行程序发送四个额外的任务。使用`execute()`方法将任务发送到执行程序。
+- en: '[PRE28]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: Shut down the executor using the `shutdown()` method.
+  id: totrans-104
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`shutdown()`方法关闭执行程序。
+- en: '[PRE29]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: Wait for the finalization of the executor using the `awaitTermination()` method.
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`awaitTermination()`方法等待执行程序的完成。
+- en: '[PRE30]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: Write a message in the console indicating the finalization of the program.
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中写入一条消息，指示程序的完成。
+- en: '[PRE31]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: How it works...
+  id: totrans-110
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: To convert an executor to a priority-based one is simple. You only have to pass
+    a `PriorityBlockingQueue` object parameterized with the `Runnable` interface as
+    a parameter. But with the executor, you should know that all the objects stored
+    in a priority queue have to implement the `Comparable` interface.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将执行程序转换为基于优先级的执行程序很简单。您只需传递一个使用`Runnable`接口参数化的`PriorityBlockingQueue`对象作为参数。但是对于执行程序，您应该知道存储在优先级队列中的所有对象都必须实现`Comparable`接口。
+- en: You have implemented the `MyPriorityTask` class that implements the `Runnable`
+    interface, to be a task, and the `Comparable` interface, to be stored in the priority
+    queue. This class has a `Priority` attribute that is used to store the priority
+    of the tasks. If a task has a higher value for this attribute, it will be executed
+    earlier. The `compareTo()` method determines the order of the tasks in the priority
+    queue. In the `Main` class, you sent eight tasks to the executor with different
+    priorities. The first tasks you sent to the executor are the first tasks that
+    are executed. As the executor is idle waiting for tasks to be executed, and as
+    the first tasks arrive to the executor, it executes them immediately. You have
+    created the executor with two execution threads, so the first two tasks will be
+    the first ones that are executed. Then, the rest of the tasks are executed based
+    on their priority.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您已经实现了`MyPriorityTask`类，该类实现了`Runnable`接口，用作任务，并实现了`Comparable`接口，用于存储在优先级队列中。该类具有一个`Priority`属性，用于存储任务的优先级。如果任务的这个属性具有更高的值，它将更早执行。`compareTo()`方法确定了优先级队列中任务的顺序。在`Main`类中，您向执行程序发送了八个具有不同优先级的任务。您发送给执行程序的第一个任务是最先执行的任务。当执行程序空闲等待要执行的任务时，随着第一个任务到达执行程序，它立即执行它们。您使用两个执行线程创建了执行程序，因此前两个任务将是最先执行的任务。然后，其余的任务将根据它们的优先级执行。
+- en: 'The following screenshot shows one execution of this example:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了此示例的一个执行：
+- en: '![How it works...](img/7881_07_01.jpg)'
+  id: totrans-114
+  prefs: []
+  type: TYPE_IMG
+  zh: '![它是如何工作的...](img/7881_07_01.jpg)'
+- en: There's more...
+  id: totrans-115
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: You can configure `Executor` to use any implementation of the `BlockingQueue`
+    interface. One interesting implementation is `DelayQueue`. This class is used
+    to store elements with a delayed activation. It provides methods that only return
+    the active objects. You can use this class to implement your own version of the
+    `ScheduledThreadPoolExecutor` class.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以配置`Executor`以使用`BlockingQueue`接口的任何实现。一个有趣的实现是`DelayQueue`。这个类用于存储延迟激活的元素。它提供了只返回活动对象的方法。您可以使用这个类来实现自己版本的`ScheduledThreadPoolExecutor`类。
+- en: See also
+  id: totrans-117
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Creating a Thread Executor* recipe in [Chapter 4](ch04.html "Chapter 4. Thread
+    Executors"), *Thread Executors*
+  id: totrans-118
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第4章](ch04.html "第4章 线程执行器")中的*创建线程执行器*配方，*线程执行器*'
+- en: The *Customizing the ThreadPoolExecutor* class recipe in [Chapter 7](ch07.html
+    "Chapter 7. Customizing Concurrency Classes"), *Customizing Concurrency Classes*
+  id: totrans-119
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第7章](ch07.html "第7章 自定义并发类")中的*自定义ThreadPoolExecutor类*配方，*自定义并发类*'
+- en: The *Using blocking thread-safe lists ordered by priority* recipe in [Chapter
+    6](ch06.html "Chapter 6. Concurrent Collections"), *Concurrent Collections*
+  id: totrans-120
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第6章](ch06.html "第6章 并发集合")中的*使用按优先级排序的阻塞线程安全列表*配方，*并发集合*'
+- en: Implementing the ThreadFactory interface to generate custom threads
+  id: totrans-121
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现ThreadFactory接口以生成自定义线程
+- en: The **factory pattern** is a widely used design pattern in the object-oriented
+    programming world. It is a creational pattern and its objective is to develop
+    a class whose mission will be creating objects of one or several classes. Then,
+    when we want to create an object of one of those classes, we use the factory instead
+    of using the new operator.
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**工厂模式**是面向对象编程世界中广泛使用的设计模式。它是一个创建模式，其目标是开发一个类，其任务是创建一个或多个类的对象。然后，当我们想要创建这些类中的一个对象时，我们使用工厂而不是使用`new`运算符。'
+- en: With this factory, we centralize the creation of objects gaining an advantage
+    of easily changing the class of objects created or the way we create these objects
+    that are easily limiting the creation of objects for limited resources. For example,
+    we can only have *N* objects of a type that is easily generating statistical data
+    about the creation of objects.
+  id: totrans-123
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用这个工厂，我们集中了对象的创建，从而方便地改变创建的对象的类或创建这些对象的方式，从而轻松限制了有限资源的对象创建。例如，我们可以只有*N*个对象，这些对象很容易生成有关对象创建的统计数据。
+- en: Java provides the `ThreadFactory` interface to implement a `Thread` object factory.
+    Some advanced utilities of the Java concurrency API, as the Executor framework
+    or the Fork/Join framework, use thread factories to create threads.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java提供了`ThreadFactory`接口来实现`Thread`对象工厂。Java并发API的一些高级工具，如Executor框架或Fork/Join框架，使用线程工厂来创建线程。
+- en: Another example of the factory pattern in the Java Concurrency API is the `Executors`
+    class. It provides a lot of methods to create different kinds of `Executor` objects.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java并发API中工厂模式的另一个例子是`Executors`类。它提供了许多方法来创建不同类型的`Executor`对象。
+- en: In this recipe, you will extend the `Thread` class by adding new functionalities
+    and you will implement a thread factory class to generate threads of that new
+    class.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个配方中，您将通过添加新功能来扩展`Thread`类，并实现一个线程工厂类来生成该新类的线程。
+- en: Getting ready
+  id: totrans-127
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or another IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个配方的示例是使用Eclipse IDE实现的。如果您使用Eclipse或其他IDE，如NetBeans，打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-129
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤实现示例：
+- en: Create a class named `MyThread` that extends the `Thread` class.
+  id: totrans-131
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyThread`的类，它继承`Thread`类。
+- en: '[PRE32]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Declare three private `Date` attributes named `creationDate`, `startDate`, and
+    `finishDate`.
+  id: totrans-133
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明三个私有的`Date`属性，分别命名为`creationDate`、`startDate`和`finishDate`。
+- en: '[PRE33]'
+  id: totrans-134
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: Implement a constructor of the class. It receives the name and the `Runnable`
+    object to execute as parameters. Store the creation date of the thread.
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数。它接收名称和`Runnable`对象作为参数。存储线程的创建日期。
+- en: '[PRE34]'
+  id: totrans-136
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: Implement the `run()` method. Store the start date of the thread, call the `run()`
+    method of the parent class, and store the finish date of the execution.
+  id: totrans-137
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`run()`方法。存储线程的开始日期，调用父类的`run()`方法，并存储执行的完成日期。
+- en: '[PRE35]'
+  id: totrans-138
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: Implement a method to establish the value of the `creationDate` attribute.
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个方法来建立`creationDate`属性的值。
+- en: '[PRE36]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: Implement a method to establish the value of the `startDate` attribute.
+  id: totrans-141
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个方法来建立`startDate`属性的值。
+- en: '[PRE37]'
+  id: totrans-142
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: Implement a method to establish the value of the `finishDate` attribute.
+  id: totrans-143
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个方法来建立`finishDate`属性的值。
+- en: '[PRE38]'
+  id: totrans-144
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Implement a method named`getExecutionTime()` that calculates the execution time
+    of the thread as the difference between the start date and the finish date.
+  id: totrans-145
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个名为`getExecutionTime()`的方法，它计算线程的执行时间，即开始日期和完成日期之间的差异。
+- en: '[PRE39]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Override the `toString()` method to return the creation date and the execution
+    time of the thread.
+  id: totrans-147
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重写`toString()`方法以返回线程的创建日期和执行时间。
+- en: '[PRE40]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: Create a class named `MyThreadFactory` that implements the `ThreadFactory` interface.
+  id: totrans-149
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyThreadFactory`的类，它实现`ThreadFactory`接口。
+- en: '[PRE41]'
+  id: totrans-150
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: Declare a private `int` attribute named `counter`.
+  id: totrans-151
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`int`属性，命名为`counter`。
+- en: '[PRE42]'
+  id: totrans-152
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: Declare a private `String` attribute named `prefix`.
+  id: totrans-153
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`String`属性，命名为`prefix`。
+- en: '[PRE43]'
+  id: totrans-154
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Implement the constructor of the class to initialize its attributes.
+  id: totrans-155
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE44]'
+  id: totrans-156
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: Implement the `newThread()` method. Create a `MyThread` object and increment
+    the `counter` attribute.
+  id: totrans-157
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`newThread()`方法。创建一个`MyThread`对象并增加`counter`属性。
+- en: '[PRE45]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: Create a class named `MyTask` that implements the `Runnable` interface. Implement
+    the `run()` method. Put the current thread to sleep for 2 seconds.
+  id: totrans-159
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyTask`的类，它实现`Runnable`接口。实现`run()`方法。让当前线程休眠2秒。
+- en: '[PRE46]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-161
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类并添加一个`main()`方法来实现示例的主类。
+- en: '[PRE47]'
+  id: totrans-162
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: Create a `MyThreadFactory` object.
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个`MyThreadFactory`对象。
+- en: '[PRE48]'
+  id: totrans-164
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: Create a `Task` object.
+  id: totrans-165
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个`Task`对象。
+- en: '[PRE49]'
+  id: totrans-166
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: Create a `MyThread` object to execute the task using the `newThread()` method
+    of the factory.
+  id: totrans-167
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个`MyThread`对象，使用工厂的`newThread()`方法来执行任务。
+- en: '[PRE50]'
+  id: totrans-168
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Start the thread and wait for its finalization.
+  id: totrans-169
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 启动线程并等待其完成。
+- en: '[PRE51]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: Write information about the thread using the `toString()` method.
+  id: totrans-171
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`toString()`方法编写有关线程的信息。
+- en: '[PRE52]'
+  id: totrans-172
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: How it works...
+  id: totrans-173
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: In this recipe, you have implemented a custom `MyThread` class extending the
+    `Thread` class. The class has three attributes to store the creation date, the
+    start date of its execution, and the end date of its execution. Using the start
+    date and the end date attributes, you have implemented the `getExecutionTime()`
+    method that returns the time that the thread has been executing its task. Finally,
+    you have overridden the `toString()` method to generate information about a thread.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本篇文章中，您已经实现了一个自定义的`MyThread`类，该类扩展了`Thread`类。该类有三个属性，用于存储创建日期、执行开始日期和执行结束日期。使用开始日期和结束日期属性，您已经实现了`getExecutionTime()`方法，该方法返回线程执行任务的时间。最后，您已重写了`toString()`方法以生成有关线程的信息。
+- en: Once you had your own thread class, you have implemented a factory to create
+    objects of that class implementing the `ThreadFactory` interface. It's not mandatory
+    to make use of the interface if you're going to use your factory as an independent
+    object, but if you want to use this factory with other classes of the Java concurrency
+    API, you must construct your factory by implementing that interface. The `ThreadFactory`
+    interface only has one method, the `newThread()` method that receives a `Runnable`
+    object as a parameter and returns a `Thread` object to execute that `Runnable`
+    object. In your case, you return a `MyThread` object.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您拥有自己的线程类，您就实现了一个工厂来创建实现`ThreadFactory`接口的该类的对象。如果您要将工厂用作独立对象，则不一定要使用接口，但是如果您想要将此工厂与Java并发API的其他类一起使用，则必须通过实现该接口来构建您的工厂。`ThreadFactory`接口只有一个方法，即`newThread()`方法，该方法接收一个`Runnable`对象作为参数，并返回一个`Thread`对象来执行该`Runnable`对象。在您的情况下，您返回一个`MyThread`对象。
+- en: To check these two classes, you have implemented the `MyTask` class that implements
+    the `Runnable` object. This is the task to be executed in threads managed by the
+    `MyThread` object. A `MyTask` instance puts its execution thread to sleep for
+    2 seconds.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要检查这两个类，您已经实现了实现`Runnable`对象的`MyTask`类。这是由`MyThread`对象管理的线程要执行的任务。`MyTask`实例将其执行线程休眠2秒。
+- en: In the main method of the example, you have created a `MyThread` object using
+    a `MyThreadFactory` factory to execute a `Task` object. Execute the program and
+    you will see a message with the start date and the execution time of the thread
+    executed.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在示例的主方法中，您使用`MyThreadFactory`工厂创建了一个`MyThread`对象来执行一个`Task`对象。执行程序，您将看到一个带有线程开始日期和执行时间的消息。
+- en: 'The following screenshot shows the output generated by this example:'
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了此示例生成的输出：
+- en: '![How it works...](img/7881_07_02.jpg)'
+  id: totrans-179
+  prefs: []
+  type: TYPE_IMG
+  zh: '![它是如何工作的...](img/7881_07_02.jpg)'
+- en: There's more...
+  id: totrans-180
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The Java Concurrency API provides the `Executors` class to generate thread executors,
+    usually objects of the `ThreadPoolExecutor` class. You can also use this class
+    to obtain the most basic implementation of the `ThreadFactory` interface using
+    the `defaultThreadFactory()` method. The factory generated by this method generates
+    basic `Thread` objects belonging to all of them to the same `ThreadGroup` object.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java并发API提供了`Executors`类来生成线程执行器，通常是`ThreadPoolExecutor`类的对象。您还可以使用此类来获取`ThreadFactory`接口的最基本实现，使用`defaultThreadFactory()`方法。此方法生成的工厂生成基本的`Thread`对象，它们都属于同一个`ThreadGroup`对象。
+- en: You can use the `ThreadFactory` interface in your program for any purposes,
+    not necessarily related to the Executor framework.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在程序中使用`ThreadFactory`接口进行任何目的，不一定与Executor框架相关。
+- en: Using our ThreadFactory in an Executor object
+  id: totrans-183
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在Executor对象中使用我们的ThreadFactory
+- en: In the previous recipe, *Implementing the ThreadFactory interface to generate
+    custom threads*, we introduced the factory pattern and provided an example of
+    how to implement a factory of threads implementing the `ThreadFactory` interface.
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前一篇文章中，*实现ThreadFactory接口以生成自定义线程*，我们介绍了工厂模式，并提供了如何实现实现`ThreadFactory`接口的线程工厂的示例。
+- en: 'The Executor framework is a mechanism that allows you the separation of the
+    thread creation and its execution. It''s based on the `Executor` and `ExecutorService`
+    interfaces and in the `ThreadPoolExecutor` class that implements both interfaces.
+    It has an internal pool of threads and provides methods that allow you to send
+    two kinds of tasks for their execution in the pooled threads. These two kinds
+    of tasks are:'
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Executor框架是一种允许您分离线程创建和执行的机制。它基于`Executor`和`ExecutorService`接口以及实现这两个接口的`ThreadPoolExecutor`类。它具有内部线程池，并提供方法，允许您将两种类型的任务发送到池化线程中进行执行。这两种类型的任务是：
+- en: Classes that implement the `Runnable` interface, to implement tasks that don't
+    return a result
+  id: totrans-186
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现`Runnable`接口的类，以实现不返回结果的任务
+- en: Classes that implement the `Callable` interface, to implement tasks that return
+    a result
+  id: totrans-187
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现`Callable`接口的类，以实现返回结果的任务
+- en: Internally, an Executor framework uses a `ThreadFactory` interface to create
+    the threads that it uses to generate the new threads. In this recipe, you will
+    learn how to implement your own thread class, a thread factory to create threads
+    of that class, and how to use that factory in an executor, so the executor will
+    execute your threads.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在内部，Executor框架使用`ThreadFactory`接口来创建它用于生成新线程的线程。在本篇文章中，您将学习如何实现自己的线程类、线程工厂来创建该类的线程，以及如何在执行器中使用该工厂，以便执行器将执行您的线程。
+- en: Getting ready...
+  id: totrans-189
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备就绪...
+- en: Read the previous recipe, *Implementing a ThreadFactory interface to generate
+    custom threads*, and implement its example.
+  id: totrans-190
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 阅读前一篇文章，*实现ThreadFactory接口以生成自定义线程*，并实现其示例。
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or another IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例已使用Eclipse IDE实现。如果您使用Eclipse或其他IDE，如NetBeans，请打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-192
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤来实现示例：
+- en: Copy into the project the classes `MyThread`, `MyThreadFactory`, and `MyTask`
+    implemented in the recipe *Implementing a ThreadFactory interface to generate
+    custom threads*, so you are going to use them in this example.
+  id: totrans-194
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将在*实现ThreadFactory接口以生成自定义线程*中实现的`MyThread`、`MyThreadFactory`和`MyTask`类复制到项目中，以便在此示例中使用它们。
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-195
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类并实现一个`main()`方法来实现示例的主类。
+- en: '[PRE53]'
+  id: totrans-196
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: Create a new `MyThreadFactory` object named `threadFactory`.
+  id: totrans-197
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`threadFactory`的新`MyThreadFactory`对象。
+- en: '[PRE54]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: Create a new `Executor` object using the `newCachedThreadPool()` method of the
+    `Executors` class. Pass the factory object created earlier as a parameter. The
+    new `Executor` object will use that factory to create the necessary threads, so
+    it will execute `MyThread` threads.
+  id: totrans-199
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`Executors`类的`newCachedThreadPool()`方法创建一个新的`Executor`对象。将之前创建的工厂对象作为参数传递。新的`Executor`对象将使用该工厂来创建必要的线程，因此它将执行`MyThread`线程。
+- en: '[PRE55]'
+  id: totrans-200
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: Create a new `Task` object and send it to the executor using the `submit()`
+    method.
+  id: totrans-201
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个新的`Task`对象，并使用`submit()`方法将其发送到执行器。
+- en: '[PRE56]'
+  id: totrans-202
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: Shut down the executor using the `shutdown()` method.
+  id: totrans-203
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`shutdown()`方法关闭执行器。
+- en: '[PRE57]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: Wait for the finalization of the executor using the `awaitTermination()` method.
+  id: totrans-205
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`awaitTermination()`方法等待执行器的完成。
+- en: '[PRE58]'
+  id: totrans-206
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: Write a message to indicate the end of the program.
+  id: totrans-207
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 写一条消息来指示程序的结束。
+- en: '[PRE59]'
+  id: totrans-208
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: How it works...
+  id: totrans-209
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: In the *How it works...* section of the previous recipe, *Implementing a ThreadFactory
+    interface to generate custom threads*, you can read a detailed explanation of
+    how the `MyThread`, `MyThreadFactory`, and `MyTask` classes works.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前一个示例的*How it works...*部分，*实现ThreadFactory接口以生成自定义线程*中，您可以阅读有关`MyThread`、`MyThreadFactory`和`MyTask`类如何工作的详细解释。
+- en: In the `main()` method of the example, you have created an `Executor` object
+    using the `newCachedThreadPool()` method of the `Executors` class. You have passed
+    the factory object created earlier as a parameter, so the `Executor` object created
+    will use that factory to create the threads it needs and it will execute threads
+    of the `MyThread` class.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在示例的`main()`方法中，使用`Executors`类的`newCachedThreadPool()`方法创建了一个`Executor`对象。您已将之前创建的工厂对象作为参数传递，因此创建的`Executor`对象将使用该工厂来创建所需的线程，并执行`MyThread`类的线程。
+- en: 'Execute the program and you will see a message with information about the thread''s
+    start date and its execution time. The following screenshot shows the output generated
+    by this example:'
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行程序，您将看到一个关于线程启动日期和执行时间的信息。以下截图显示了此示例生成的输出：
+- en: '![How it works...](img/7881_07_03.jpg)'
+  id: totrans-213
+  prefs: []
+  type: TYPE_IMG
+  zh: '![它是如何工作的...](img/7881_07_03.jpg)'
+- en: See also
+  id: totrans-214
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Implementing a ThreadFactory interface to generate custom threads* recipe
+    in [Chapter 7](ch07.html "Chapter 7. Customizing Concurrency Classes"), *Customizing
+    Concurrency Classes*
+  id: totrans-215
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在[第7章](ch07.html "第7章。自定义并发类")的*自定义并发类*中的*实现ThreadFactory接口以生成自定义线程*食谱中
+- en: Customizing tasks running in a scheduled thread pool
+  id: totrans-216
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 自定义在定时线程池中运行的任务
+- en: 'The **scheduled thread pool** is an extension of the basic thread pool of the
+    Executor framework that allows you to schedule the execution of tasks to be executed
+    after a period of time. It''s implemented by the `ScheduledThreadPoolExecutor`
+    class and it permits the execution of the following two kinds of tasks:'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**定时线程池**是Executor框架的基本线程池的扩展，允许您安排任务在一段时间后执行。它由`ScheduledThreadPoolExecutor`类实现，并允许执行以下两种类型的任务：'
+- en: '**Delayed tasks**: These kinds of tasks are executed only once after a period
+    of time'
+  id: totrans-218
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**延迟任务**：这种类型的任务在一段时间后只执行一次'
+- en: '**Periodic tasks**: These kinds of tasks are executed after a delay and then
+    periodically every so often'
+  id: totrans-219
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**周期性任务**：这种类型的任务在延迟后定期执行'
+- en: Delayed tasks can execute both, the `Callable` and `Runnable` objects, but the
+    periodic tasks can only execute `Runnable` objects. All the tasks executed by
+    a scheduled pool are an implementation of the `RunnableScheduledFuture` interface.
+    In this recipe, you will learn how to implement your own implementation of the
+    `RunnableScheduledFuture` interface to execute delayed and periodic tasks.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 延迟任务可以执行`Callable`和`Runnable`对象，但周期性任务只能执行`Runnable`对象。定时池执行的所有任务都是`RunnableScheduledFuture`接口的实现。在此示例中，您将学习如何实现自己的`RunnableScheduledFuture`接口的实现来执行延迟和周期性任务。
+- en: Getting ready
+  id: totrans-221
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or other IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例已使用Eclipse IDE实现。如果您使用Eclipse或其他IDE，如NetBeans，请打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-223
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps described below to implement the example:'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照下面描述的步骤来实现示例：
+- en: Create a class named `MyScheduledTask` parameterized with a generic type named
+    `V`. It extends the `FutureTask` class and implements the `RunnableScheduledFuture`
+    interface.
+  id: totrans-225
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyScheduledTask`的类，参数化为一个名为`V`的泛型类型。它扩展了`FutureTask`类并实现了`RunnableScheduledFuture`接口。
+- en: '[PRE60]'
+  id: totrans-226
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: Declare a private `RunnableScheduledFuture` attribute named `task`.
+  id: totrans-227
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`task`的私有`RunnableScheduledFuture`属性。
+- en: '[PRE61]'
+  id: totrans-228
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: Declare a private `ScheduledThreadPoolExecutor` named `executor`.
+  id: totrans-229
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`executor`的私有`ScheduledThreadPoolExecutor`。
+- en: '[PRE62]'
+  id: totrans-230
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: Declare a private `long` attribute named `period`.
+  id: totrans-231
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`period`的私有`long`属性。
+- en: '[PRE63]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: Declare a private `long` attribute named `startDate`.
+  id: totrans-233
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`startDate`的私有`long`属性。
+- en: '[PRE64]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: Implement a constructor of the class. It receives the `Runnable` object that
+    is going to be executed by a task, the result that will be returned by this task,
+    the `RunnableScheduledFuture` task that will be used to create the `MyScheduledTask`
+    object, and the `ScheduledThreadPoolExecutor` object that is going to execute
+    the task. Call the constructor of its parent class and store the task and `executor`
+    attributes.
+  id: totrans-235
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个类的构造函数。它接收一个将由任务执行的`Runnable`对象，将由此任务返回的结果，将用于创建`MyScheduledTask`对象的`RunnableScheduledFuture`任务，以及将执行任务的`ScheduledThreadPoolExecutor`对象。调用其父类的构造函数并存储任务和`executor`属性。
+- en: '[PRE65]'
+  id: totrans-236
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: Implement the `getDelay()` method. If the task is a periodic task and the `startDate`
+    attribute has a value different from zero, calculate the returned value as the
+    difference between the `startDate` attribute and the actual date. Otherwise, return
+    the delay of the original task stored in the `task` attribute. Don't forget that
+    you have to return the result in the time unit passed as a parameter.
+  id: totrans-237
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`getDelay()`方法。如果任务是一个周期性任务，并且`startDate`属性的值不为零，则计算返回值为`startDate`属性和实际日期之间的差值。否则，返回存储在`task`属性中的原始任务的延迟。不要忘记以参数传递的时间单位返回结果。
+- en: '[PRE66]'
+  id: totrans-238
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: Implement the `compareTo()` method. Call the `compareTo()` method of the original
+    task.
+  id: totrans-239
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`compareTo()`方法。调用原始任务的`compareTo()`方法。
+- en: '[PRE67]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: Implement the `isPeriodic()` method. Call the `isPeriodic()` method of the original
+    task.
+  id: totrans-241
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`isPeriodic()`方法。调用原始任务的`isPeriodic()`方法。
+- en: '[PRE68]'
+  id: totrans-242
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: Implement the `run()` method. If it's a periodic task, you have to update its
+    `startDate` attribute with the start date of the next execution of the task. Calculate
+    it as the sum of the actual date and the period. Then, add the task again to the
+    queue of the `ScheduledThreadPoolExecutor` object.
+  id: totrans-243
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`run()`方法。如果是一个周期性任务，你必须更新它的`startDate`属性，以便将来执行任务的开始日期。计算方法是将实际日期和周期相加。然后，再次将任务添加到`ScheduledThreadPoolExecutor`对象的队列中。
+- en: '[PRE69]'
+  id: totrans-244
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: Print a message with the actual date to the console, execute the task calling
+    the `runAndReset()` method, and then print another message with the actual date
+    to the console.
+  id: totrans-245
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中打印一条带有实际日期的消息，调用`runAndReset()`方法执行任务，然后再次在控制台中打印一条带有实际日期的消息。
+- en: '[PRE70]'
+  id: totrans-246
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: Implement the `setPeriod()` method to establish the period of this task.
+  id: totrans-247
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`setPeriod()`方法来设定该任务的周期。
+- en: '[PRE71]'
+  id: totrans-248
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: Create a class named `MyScheduledThreadPoolExecutor` to implement a `ScheduledThreadPoolExecutor`
+    object that executes `MyScheduledTask` tasks. Specify that this class extends
+    the `ScheduledThreadPoolExecutor` class.
+  id: totrans-249
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyScheduledThreadPoolExecutor`的类，以实现执行`MyScheduledTask`任务的`ScheduledThreadPoolExecutor`对象。指定该类扩展`ScheduledThreadPoolExecutor`类。
+- en: '[PRE72]'
+  id: totrans-250
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: Implement a constructor of the class which merely calls the constructor of its
+    parent class.
+  id: totrans-251
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个类的构造函数，它仅调用其父类的构造函数。
+- en: '[PRE73]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: Implement the `decorateTask()` method. It receives as a parameter the `Runnable`
+    object that is going to be executed and the `RunnableScheduledFuture` task that
+    will execute that `Runnable` object. Create and return a `MyScheduledTask` task
+    using those objects to construct them.
+  id: totrans-253
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`decorateTask()`方法。它接收一个将要执行的`Runnable`对象和将执行该`Runnable`对象的`RunnableScheduledFuture`任务作为参数。使用这些对象创建并返回一个`MyScheduledTask`任务。
+- en: '[PRE74]'
+  id: totrans-254
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: Override the `scheduledAtFixedRate()` method. Call the method of its parent
+    class, convert the returned object into a `MyScheduledTask` object, and establish
+    the period of that task using the `setPeriod()` method.
+  id: totrans-255
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重写`scheduledAtFixedRate()`方法。调用其父类的方法，将返回的对象转换为`MyScheduledTask`对象，并使用`setPeriod()`方法设定该任务的周期。
+- en: '[PRE75]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: Create a class named `Task` that implements the `Runnable` interface.
+  id: totrans-257
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`Task`的类，实现`Runnable`接口。
+- en: '[PRE76]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: Implement the `run()` method. Print a message at the start of the task, put
+    the current thread to sleep 2 seconds, and print another message at the end of
+    the task.
+  id: totrans-259
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`run()`方法。在任务开始时打印一条消息，让当前线程休眠2秒，然后在任务结束时再打印一条消息。
+- en: '[PRE77]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-261
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类和一个`main()`方法来实现示例的主类。
+- en: '[PRE78]'
+  id: totrans-262
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: Create a `MyScheduledThreadPoolExecutor` object named `executor`. Use `2` as
+    a parameter to have two threads in the pool.
+  id: totrans-263
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`executor`的`MyScheduledThreadPoolExecutor`对象。使用`2`作为参数，在池中有两个线程。
+- en: '[PRE79]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: Create a `Task` object named `task`. Write the actual date in the console.
+  id: totrans-265
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`task`的`Task`对象。在控制台中写下实际日期。
+- en: '[PRE80]'
+  id: totrans-266
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: Send a delayed task to the executor using the `schedule()` method. The task
+    will be executed after a 1 second delay.
+  id: totrans-267
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`schedule()`方法向执行器发送一个延迟任务。该任务将在1秒延迟后执行。
+- en: '[PRE81]'
+  id: totrans-268
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: Put the main thread to sleep for 3 seconds.
+  id: totrans-269
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让主线程休眠3秒。
+- en: '[PRE82]'
+  id: totrans-270
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: Create another `Task` object. Print the actual date in the console again.
+  id: totrans-271
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建另一个`Task`对象。再次在控制台中打印实际日期。
+- en: '[PRE83]'
+  id: totrans-272
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: Send a periodic task to the executor using the `scheduleAtFixedRate()` method.
+    The task will be executed after a 1 second delay and then will be executed every
+    3 seconds.
+  id: totrans-273
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`scheduleAtFixedRate()`方法向执行器发送一个周期性任务。该任务将在1秒延迟后执行，然后每3秒执行一次。
+- en: '[PRE84]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: Put the main thread to sleep for 10 seconds.
+  id: totrans-275
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让主线程休眠10秒。
+- en: '[PRE85]'
+  id: totrans-276
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: Shut down the executor using the `shutdown()` method. Wait for the finalization
+    of the executor using the `awaitTermination()` method.
+  id: totrans-277
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`shutdown()`方法关闭执行器。使用`awaitTermination()`方法等待执行器的完成。
+- en: '[PRE86]'
+  id: totrans-278
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: Write a message in the console indicating the end of the program.
+  id: totrans-279
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中写一条消息，指示程序结束。
+- en: '[PRE87]'
+  id: totrans-280
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: How it works...
+  id: totrans-281
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: In this recipe, you have implemented the `MyScheduledTask` class to implement
+    a custom task that can execute on a `ScheduledThreadPoolExecutor` executor. This
+    class extends the `FutureTask` class and implements the `RunnableScheduledFuture`
+    interface. It implements the `RunnableScheduledFuture` interface, because all
+    the tasks executed in a scheduled executor must implement that interface and extend
+    the `FutureTask` class, because this class provides valid implementations of the
+    methods declared in the `RunnableScheduledFuture` interface. All the interfaces
+    and classes mentioned earlier are parameterized classes, with the type of data
+    that will be returned by the tasks.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，您已经实现了`MyScheduledTask`类，以实现可以在`ScheduledThreadPoolExecutor`执行器上执行的自定义任务。该类扩展了`FutureTask`类并实现了`RunnableScheduledFuture`接口。它实现了`RunnableScheduledFuture`接口，因为在计划的执行器中执行的所有任务都必须实现该接口并扩展`FutureTask`类，因为该类提供了在`RunnableScheduledFuture`接口中声明的方法的有效实现。之前提到的所有接口和类都是参数化类，具有将由任务返回的数据类型。
+- en: To use a `MyScheduledTask` task in a scheduled executor, you have overridden
+    the `decorateTask()` method in the `MyScheduledThreadPoolExecutor` class. This
+    class extends the `ScheduledThreadPoolExecutor` executor and that method provides
+    a mechanism to convert the default scheduled tasks implemented by the `ScheduledThreadPoolExecutor`
+    executor to `MyScheduledTask` tasks. So, when you implement your own version of
+    scheduled tasks, you have to implement your own version of a scheduled executor.
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在计划的执行器中使用`MyScheduledTask`任务，您已经覆盖了`MyScheduledThreadPoolExecutor`类中的`decorateTask()`方法。该类扩展了`ScheduledThreadPoolExecutor`执行器，该方法提供了一种将`ScheduledThreadPoolExecutor`执行器实现的默认计划任务转换为`MyScheduledTask`任务的机制。因此，当您实现自己的计划任务版本时，必须实现自己的计划执行器的版本。
+- en: The `decorateTask()` method simply creates a new `MyScheduledTask` object with
+    the parameter; a `Runnable` object that is going to be executed in the task. A
+    resultant object that is going to be returned by that task. In this case, the
+    task won't return a result, so you used the `null` value. An original task is
+    used to execute the `Runnable` object. This is the task that the new object is
+    going to replace in the pool; an executor that is going to execute the task. In
+    this case, you use the `this` keyword to reference the executor that is creating
+    the task.
+  id: totrans-284
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`decorateTask()`方法只是使用参数创建一个新的`MyScheduledTask`对象；一个将在任务中执行的`Runnable`对象。该任务将返回一个结果。在这种情况下，任务不会返回结果，因此使用了`null`值。原始任务用于执行`Runnable`对象。这是新对象将在池中替换的任务；将执行任务的执行器。在这种情况下，您使用`this`关键字引用创建任务的执行器。'
+- en: The `MyScheduledTask` class can execute delayed and periodic tasks. You have
+    implemented two methods with all the necessary logic to execute both kinds of
+    tasks. They are the `getDelay()` and the `run()` methods.
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`MyScheduledTask`类可以执行延迟和周期性任务。您已经实现了两种任务的所有必要逻辑的两种方法，它们是`getDelay()`和`run()`方法。'
+- en: The `getDelay()` method is called by the scheduled executor to know if it has
+    to execute a task. The behavior of this method changes in delayed and periodic
+    tasks. As we mentioned earlier, the constructor of the `MyScheduledClass` class
+    receives the original `ScheduledRunnableFuture` object that was going to execute
+    the `Runnable` object and stores it as an attribute of the class to have access
+    to its methods and its data. When we are going to execute a delayed task, the
+    `getDelay()` method returns the delay of the original task, but in the case of
+    the periodic task, the `getDelay()` method returns the difference between the
+    `startDate` attribute and the actual date.
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`scheduled executor`调用`getDelay()`方法来确定是否执行任务。此方法在延迟和周期性任务中的行为不同。正如我们之前提到的，`MyScheduledClass`类的构造函数接收原始的`ScheduledRunnableFuture`对象，该对象将执行`Runnable`对象，并将其存储为类的属性，以便访问其方法和数据。当要执行延迟任务时，`getDelay()`方法返回原始任务的延迟，但是对于周期性任务，`getDelay()`方法返回`startDate`属性与实际日期之间的差异。'
+- en: The `run()` method is the one that executes the task. One particularity of the
+    periodic tasks is that you have to put the next execution of the task in the queue
+    of the executor as a new task if you want the task to be executed again. So, if
+    you're executing a periodic task, you establish the `startDate` attribute value
+    adding to the actual date and the period of execution of the task and store the
+    task again in the queue of the executor. The `startDate` attribute stores the
+    date when the next execution of the task will begin. Then, you execute the task
+    using the `runAndReset()` method provided by the `FutureTask` class. In the case
+    of the delayed tasks, you don't have to put them in the queue of the executor,
+    because they only execute once.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`run()`方法是执行任务的方法。周期性任务的一个特点是，如果要再次执行任务，您必须将任务的下一次执行放入执行器的队列中作为新任务。因此，如果要执行周期性任务，您要确定`startDate`属性的值，将其添加到实际日期和任务执行的周期，并将任务再次存储在执行器的队列中。`startDate`属性存储了任务的下一次执行将开始的日期。然后，您使用`FutureTask`类提供的`runAndReset()`方法执行任务。对于延迟任务，您不必将它们放入执行器的队列中，因为它们只执行一次。'
+- en: Note
+  id: totrans-288
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: You have also to take into account if the executor has been shutdown. In that
+    case, you don't have to store again the periodic tasks into the queue of the executor.
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还必须考虑执行器是否已关闭。在这种情况下，您不必再将周期性任务存储到执行器的队列中。
+- en: Finally, you have overridden the `scheduleAtFixedRate()` method in the `MyScheduledThreadPoolExecutor`
+    class. We mentioned earlier that, for periodic tasks, you establish the value
+    of the `startDate` attribute using the period of the task, but you haven't initialized
+    that period yet. You have to override this method that receives that period as
+    a parameter, to pass it to the `MyScheduledTask` class so it can use it.
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，您已经覆盖了`MyScheduledThreadPoolExecutor`类中的`scheduleAtFixedRate()`方法。我们之前提到，对于周期性任务，您要使用任务的周期来确定`startDate`属性的值，但是您还没有初始化该周期。您必须覆盖此方法，该方法接收该周期作为参数，然后将其传递给`MyScheduledTask`类，以便它可以使用它。
+- en: 'The example is complete with the `Task` class that implements the `Runnable`
+    interface and is the task executed in the scheduled executor. The main class of
+    the example creates a `MyScheduledThreadPoolExecutor` executor and sends the following
+    two tasks to them:'
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该示例包括实现了`Runnable`接口的`Task`类，并且是在计划执行程序中执行的任务。示例的主类创建了一个`MyScheduledThreadPoolExecutor`执行程序，并将以下两个任务发送给它们：
+- en: A delayed task, to be executed 1 second after the actual date
+  id: totrans-292
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个延迟任务，1秒后执行。
+- en: A periodic task, to be executed for the first time 1 second after the actual
+    date and then every 3 seconds
+  id: totrans-293
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个周期性任务，首次在实际日期后1秒执行，然后每3秒执行一次
+- en: 'The following screenshot shows part of the execution of this example. You can
+    check as the two kinds of tasks are executed properly:'
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了此示例的部分执行。您可以检查两种类型的任务是否被正确执行：
+- en: '![How it works...](img/7881_07_04.jpg)'
+  id: totrans-295
+  prefs: []
+  type: TYPE_IMG
+  zh: '![它是如何工作的...](img/7881_07_04.jpg)'
+- en: There's more...
+  id: totrans-296
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The `ScheduledThreadPoolExecutor` class provides another version of the `decorateTask()`
+    method that receives a `Callable` object as a parameter instead of a `Runnable`
+    object.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ScheduledThreadPoolExecutor`类提供了`decorateTask()`方法的另一个版本，该方法接收`Callable`对象作为参数，而不是`Runnable`对象。'
+- en: See also
+  id: totrans-298
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Running a task in an executor after a delay* recipe in [Chapter 4](ch04.html
+    "Chapter 4. Thread Executors"), *Thread Executors*
+  id: totrans-299
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在延迟后在执行者中运行任务*配方[第4章](ch04.html "第4章。线程执行者"), *线程执行者*'
+- en: The *Running a task in an executor periodically* recipe [Chapter 4](ch04.html
+    "Chapter 4. Thread Executors"), *Thread Executors*
+  id: totrans-300
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在执行者中定期运行任务*配方[第4章](ch04.html "第4章。线程执行者"), *线程执行者*'
+- en: Implementing the ThreadFactory interface to generate custom threads for the
+    Fork/Join framework
+  id: totrans-301
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现ThreadFactory接口以为Fork/Join框架生成自定义线程
+- en: One of the most interesting features of Java 7 is the Fork/Join framework. It's
+    an implementation of the `Executor` and `ExecutorService` interfaces that allow
+    you the execution of the `Callable` and `Runnable` tasks without managing the
+    threads that execute them.
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java 7最有趣的特性之一是Fork/Join框架。它是`Executor`和`ExecutorService`接口的实现，允许您执行`Callable`和`Runnable`任务，而无需管理执行它们的线程。
+- en: 'This executor is oriented to execute tasks that can be divided into smaller
+    parts. Its main components are as follows:'
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个执行器旨在执行可以分成更小部分的任务。其主要组件如下：
+- en: A special kind of task, implemented by the `ForkJoinTask` class.
+  id: totrans-304
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`ForkJoinTask`类实现的一种特殊类型的任务。'
+- en: Two operations for dividing a task into subtasks (the `fork` operation) and
+    to wait for the finalization of those subtasks (the `join` operation).
+  id: totrans-305
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 将任务分成子任务的两个操作（`fork`操作）和等待这些子任务完成（`join`操作）。
+- en: An algorithm, denominating the work-stealing algorithm, that optimizes the use
+    of the threads of the pool. When a task is waiting for its subtasks, the thread
+    that was executing it is used to execute another thread.
+  id: totrans-306
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一种算法，称为工作窃取算法，它优化了线程池中线程的使用。当一个任务正在等待其子任务时，执行它的线程被用来执行另一个线程。
+- en: 'The main class of the Fork/Join framework is the `ForkJoinPool` class. Internally,
+    it has the following two elements:'
+  id: totrans-307
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Fork/Join框架的主类是`ForkJoinPool`类。在内部，它有以下两个元素：
+- en: A queue of tasks that are waiting to be executed
+  id: totrans-308
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个等待执行的任务队列
+- en: A pool of threads that execute the tasks
+  id: totrans-309
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 执行任务的线程池
+- en: In this recipe, you will learn how to implement a customized worker thread to
+    be used in a `ForkJoinPool` class and how to use it using a factory.
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本示例中，您将学习如何实现一个自定义的工作线程，用于`ForkJoinPool`类，并使用工厂来使用它。
+- en: Getting ready
+  id: totrans-311
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or other IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个示例的实现是使用Eclipse IDE完成的。如果您使用Eclipse或其他IDE，如NetBeans，打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-313
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤实现示例：
+- en: Create a class named `MyWorkerThread` that extends the `ForkJoinWorkerThread`
+    class.
+  id: totrans-315
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyWorkerThread`的类，它扩展了`ForkJoinWorkerThread`类。
+- en: '[PRE88]'
+  id: totrans-316
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: Declare and create a private `ThreadLocal` attribute parameterized with the
+    `Integer` class named `taskCounter`.
+  id: totrans-317
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明并创建一个私有的`ThreadLocal`属性，参数为`Integer`类，命名为`taskCounter`。
+- en: '[PRE89]'
+  id: totrans-318
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: Implement a constructor of the class.
+  id: totrans-319
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个类的构造函数。
+- en: '[PRE90]'
+  id: totrans-320
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: Override the `onStart()` method. Call the method on its parent class, print
+    a message to the console, and set the value of the `taskCounter` attribute for
+    this thread to zero.
+  id: totrans-321
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重写`onStart()`方法。调用其父类的方法，在控制台中打印一条消息，并将此线程的`taskCounter`属性的值设置为零。
+- en: '[PRE91]'
+  id: totrans-322
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: Override the `onTermination()` method. Write the value of the `taskCounter`
+    attribute for this thread in the console.
+  id: totrans-323
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重写`onTermination()`方法。在控制台中写入此线程的`taskCounter`属性的值。
+- en: '[PRE92]'
+  id: totrans-324
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: Implement the `addTask()` method. Increment the value of the `taskCounter` attribute.
+  id: totrans-325
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`addTask()`方法。增加`taskCounter`属性的值。
+- en: '[PRE93]'
+  id: totrans-326
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: Create a class named `MyWorkerThreadFactory` that implements the `ForkJoinWorkerThreadFactory`
+    interface. Implement the `newThread()` method. Create and return a `MyWorkerThread`
+    object.
+  id: totrans-327
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyWorkerThreadFactory`的类，它实现了`ForkJoinWorkerThreadFactory`接口。实现`newThread()`方法。创建并返回一个`MyWorkerThread`对象。
+- en: '[PRE94]'
+  id: totrans-328
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: Create a class named `MyRecursiveTask` that extends the `RecursiveTask` class
+    parameterized with the `Integer` class.
+  id: totrans-329
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyRecursiveTask`的类，它扩展了`Integer`类参数化的`RecursiveTask`类。
+- en: '[PRE95]'
+  id: totrans-330
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: Declare a private `int` array named `array`.
+  id: totrans-331
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`array`的私有`int`数组。
+- en: '[PRE96]'
+  id: totrans-332
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: Declare two private `int` attributes named `start` and `end`.
+  id: totrans-333
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明两个私有的`int`属性，命名为`start`和`end`。
+- en: '[PRE97]'
+  id: totrans-334
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: Implement the constructor of the class that initializes its attributes.
+  id: totrans-335
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现初始化其属性的类的构造函数。
+- en: '[PRE98]'
+  id: totrans-336
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE98]'
+- en: Implement the `compute()` method to sum all the elements of the array between
+    the start and end positions. First, convert the thread that is executing the task
+    into a `MyWorkerThread` object and use the `addTask()` method to increment the
+    counter of tasks for that thread.
+  id: totrans-337
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`compute()`方法，对数组在开始和结束位置之间的所有元素求和。首先，将执行任务的线程转换为`MyWorkerThread`对象，并使用`addTask()`方法增加该线程的任务计数器。
+- en: '[PRE99]'
+  id: totrans-338
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE99]'
+- en: Implement the `addResults()` method. Calculate and return the sum of the results
+    of the two tasks received as parameters.
+  id: totrans-339
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`addResults()`方法。计算并返回作为参数接收的两个任务结果的总和。
+- en: '[PRE100]'
+  id: totrans-340
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE100]'
+- en: Put the thread to sleep for 10 milliseconds and return the result of the task.
+  id: totrans-341
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 让线程休眠10毫秒，并返回任务的结果。
+- en: '[PRE101]'
+  id: totrans-342
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE101]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-343
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类和一个`main()`方法来实现示例的主类。
+- en: '[PRE102]'
+  id: totrans-344
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE102]'
+- en: Create a `MyWorkerThreadFactory` object named `factory`.
+  id: totrans-345
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`factory`的`MyWorkerThreadFactory`对象。
+- en: '[PRE103]'
+  id: totrans-346
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE103]'
+- en: Create a `ForkJoinPool` object named `pool`. Pass to the constructor the factory
+    object created earlier.
+  id: totrans-347
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`pool`的`ForkJoinPool`对象。将之前创建的工厂对象传递给构造函数。
+- en: '[PRE104]'
+  id: totrans-348
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE104]'
+- en: Create an array of 100,000 integers. Initialize all the elements to `1`.
+  id: totrans-349
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个包含100,000个整数的数组。将所有元素初始化为`1`。
+- en: '[PRE105]'
+  id: totrans-350
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE105]'
+- en: Create a new `Task` object to sum all the elements of the array.
+  id: totrans-351
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个新的`Task`对象来对数组的所有元素求和。
+- en: '[PRE106]'
+  id: totrans-352
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE106]'
+- en: Send the task to the pool using the `execute()` method.
+  id: totrans-353
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`execute()`方法将任务发送到池中。
+- en: '[PRE107]'
+  id: totrans-354
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE107]'
+- en: Wait for the end of the task using the `join()` method.
+  id: totrans-355
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`join()`方法等待任务结束。
+- en: '[PRE108]'
+  id: totrans-356
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE108]'
+- en: Shut down the pool using the `shutdown()` method.
+  id: totrans-357
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`shutdown()`方法关闭池。
+- en: '[PRE109]'
+  id: totrans-358
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE109]'
+- en: Wait for the finalization of the executor using the `awaitTermination()` method.
+  id: totrans-359
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`awaitTermination()`方法等待执行器的完成。
+- en: '[PRE110]'
+  id: totrans-360
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE110]'
+- en: Write in the console the result of the task using the `get()` method.
+  id: totrans-361
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`get()`方法在控制台中写入任务的结果。
+- en: '[PRE111]'
+  id: totrans-362
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE111]'
+- en: Write a message in the console indicating the end of the example.
+  id: totrans-363
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中写入一条消息，指示示例的结束。
+- en: '[PRE112]'
+  id: totrans-364
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE112]'
+- en: How it works...
+  id: totrans-365
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: Threads used by the Fork/Join framework are called worker threads. Java includes
+    the `ForkJoinWorkerThread` class that extends the `Thread` class and implements
+    the worker threads used by the Fork/Join framework.
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Fork/Join框架使用的线程称为工作线程。Java包括`ForkJoinWorkerThread`类，该类扩展了`Thread`类并实现了Fork/Join框架使用的工作线程。
+- en: In this recipe, you have implemented the `MyWorkerThread` class that extends
+    the `ForkJoinWorkerThread` class and overrides two methods of that class. Your
+    objective is to implement a counter of tasks in each worker thread so you can
+    know how many tasks a worker thread has executed. You have implemented the counter
+    with a `ThreadLocal` attribute. This way, each thread will have its own counter
+    in a transparent way for you, the programmer.
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个配方中，您已经实现了`MyWorkerThread`类，该类扩展了`ForkJoinWorkerThread`类并重写了该类的两个方法。您的目标是在每个工作线程中实现一个任务计数器，以便您知道每个工作线程执行了多少任务。您使用`ThreadLocal`属性实现了计数器。这样，每个线程都将以对程序员透明的方式拥有自己的计数器。
+- en: You have overridden the `onStart()` method of the `ForkJoinWorkerThread` class
+    to initialize the task counter. This method is called when the worker thread begins
+    its execution. You also have overridden the `onTermination()` method to print
+    the value of the task counter to the console. This method is called when the worker
+    thread finishes its execution. You have also implemented a method in the `MyWorkerThread`
+    class. The `addTask()` method increments the task counter of each thread.
+  id: totrans-368
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您已经重写了`ForkJoinWorkerThread`类的`onStart()`方法，以初始化任务计数器。当工作线程开始执行时，将调用此方法。您还重写了`onTermination()`方法，以将任务计数器的值打印到控制台。当工作线程完成执行时，将调用此方法。您还在`MyWorkerThread`类中实现了一个方法。`addTask()`方法增加每个线程的任务计数器。
+- en: The `ForkJoinPool` class, as all the executors in the Java concurrency API,
+    creates its threads using a factory, so if you want to use the `MyWorkerThread`
+    threads in a `ForkJoinPool` class, you have to implement your thread factory.
+    For the Fork/Join framework, this factory has to implement the `ForkJoinPool.ForkJoinWorkerThreadFactory`
+    class. You have implemented the `MyWorkerThreadFactory` class for this purpose.
+    This class only has one method that creates a new `MyWorkerThread` object.
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ForkJoinPool`类，与Java并发API中的所有执行程序一样，使用工厂创建其线程，因此如果要在`ForkJoinPool`类中使用`MyWorkerThread`线程，必须实现自己的线程工厂。对于Fork/Join框架，此工厂必须实现`ForkJoinPool.ForkJoinWorkerThreadFactory`类。您已经为此目的实现了`MyWorkerThreadFactory`类。这个类只有一个方法，用于创建一个新的`MyWorkerThread`对象。'
+- en: Finally, you only have to initialize a `ForkJoinPool` class with the factory
+    you have created. You have done this in the `Main` class, using the constructor
+    of the `ForkJoinPool` class.
+  id: totrans-370
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，您只需使用您创建的工厂初始化一个`ForkJoinPool`类。您已经在`Main`类中使用`ForkJoinPool`类的构造函数完成了这一点。
+- en: 'The following screenshot shows part of the output of the program:'
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了程序输出的一部分：
+- en: '![How it works...](img/7881_07_05.jpg)'
+  id: totrans-372
+  prefs: []
+  type: TYPE_IMG
+  zh: '![它是如何工作...](img/7881_07_05.jpg)'
+- en: You can see how the `ForkJoinPool` object has executed four worker threads and
+    how many tasks have executed each of them.
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到`ForkJoinPool`对象已经执行了四个工作线程，以及每个工作线程执行了多少任务。
+- en: There's more...
+  id: totrans-374
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: Take into account that the `onTermination()` method provided by the `ForkJoinWorkerThread`
+    class is called when a thread finishes normally or throws an `Exception` exception.
+    The method receives a `Throwable` object as a parameter. If the parameter takes
+    the `null` value, the worker thread finishes normally, but if the parameter takes
+    a value, the thread throws an exception. You have to include the necessary code
+    to process that situation.
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，`ForkJoinWorkerThread`类提供的`onTermination()`方法在线程正常完成或抛出`Exception`异常时调用。该方法接收一个`Throwable`对象作为参数。如果参数取`null`值，则工作线程正常完成，但如果参数取值，则线程抛出异常。您必须包含必要的代码来处理这种情况。
+- en: See also
+  id: totrans-376
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Create a Fork/Join pool* recipe in [Chapter 5](ch05.html "Chapter 5. Fork/Join
+    Framework"), *Fork/Join Framework*
+  id: totrans-377
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在[第5章](ch05.html "第5章 Fork/Join框架")的*创建Fork/Join池*配方中，*Fork/Join框架*
+- en: The *Creating Threads through a factory* recipe in [Chapter 1](ch01.html "Chapter 1. Thread
+    Management"), *Thread Management*
+  id: totrans-378
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在[第1章](ch01.html "第1章 线程管理")的*通过工厂创建线程*配方中，*线程管理*
+- en: Customizing tasks running in the Fork/Join framework
+  id: totrans-379
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 自定义在Fork/Join框架中运行的任务
+- en: The Executor framework separates the task creation and its execution. With it,
+    you only have to implement the `Runnable` objects and use an `Executor` object.
+    You send the `Runnable` tasks to the executor and it creates, manages, and finalizes
+    the necessary threads to execute those tasks.
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 执行器框架将任务的创建和执行分开。您只需实现`Runnable`对象并使用`Executor`对象。将`Runnable`任务发送到执行器，它将创建、管理和完成执行这些任务所需的线程。
+- en: Java 7 provides a special kind of executor in the Fork/Join framework. This
+    framework is designed to solve those problems that can be broken into smaller
+    tasks using the divide and conquer technique. Inside a task, you have to check
+    the size of the problem you want to resolve and, if it's bigger than an established
+    size, you divide the problem in two or more tasks and execute those tasks using
+    the framework. If the size of the problem is smaller than the established size,
+    you resolve the problem directly in the task and then, optionally, it returns
+    a result. The Fork/Join framework implements the work-stealing algorithm that
+    improves the overall performance of these kinds of problems.
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java 7提供了Fork/Join框架中的一种特殊的执行器。该框架旨在使用分而治之的技术解决可以分解为较小任务的问题。在任务内部，您必须检查要解决的问题的大小，如果大于设定的大小，则将问题分成两个或更多任务，并使用框架执行这些任务。如果问题的大小小于设定的大小，则直接在任务中解决问题，然后可选择地返回结果。Fork/Join框架实现了改进这类问题整体性能的工作窃取算法。
+- en: 'The main class of the Fork/Join framework is the `ForkJoinPool` class. Internally,
+    it has the following two elements:'
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Fork/Join框架的主要类是`ForkJoinPool`类。在内部，它具有以下两个元素：
+- en: A queue of tasks that are waiting to be executed
+  id: totrans-383
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 等待执行的任务队列
+- en: A pool of threads that execute the tasks
+  id: totrans-384
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 执行任务的线程池
+- en: 'By default, the tasks executed by a `ForkJoinPool` class are objects of the
+    `ForkJoinTask` class. You also can send to a `ForkJoinPool` class the `Runnable`
+    and `Callable` objects, but they can''t take advantage of all the benefits of
+    the Fork/Join framework. Normally, you will send to the `ForkJoinPool` objects
+    one of two subclasses of the `ForkJoinTask` class:'
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，由`ForkJoinPool`类执行的任务是`ForkJoinTask`类的对象。您还可以将`Runnable`和`Callable`对象发送到`ForkJoinPool`类，但它们无法充分利用Fork/Join框架的所有优势。通常，您将向`ForkJoinPool`对象发送`ForkJoinTask`类的两个子类之一的对象：
+- en: '`RecursiveAction`: If your tasks don''t return a result'
+  id: totrans-386
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`RecursiveAction`：如果您的任务不返回结果'
+- en: '`RecursiveTask`: If your tasks return a result'
+  id: totrans-387
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`RecursiveTask`：如果您的任务返回结果'
+- en: In this recipe, you will learn how to implement your own tasks for the Fork/Join
+    framework implementing a task that extends the `ForkJoinTask` class. The task
+    you're going to implement measures and writes in the console its execution time,
+    so you can control its evolution. You can also implement your own Fork/Join task
+    to write log information, to get resources used in the tasks, or to post-process
+    the results of the tasks.
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本示例中，您将学习如何为Fork/Join框架实现自己的任务，实现一个扩展了`ForkJoinTask`类的任务，该任务测量并在控制台中写入其执行时间，以便您可以控制其演变。您还可以实现自己的Fork/Join任务来写入日志信息，获取任务中使用的资源，或者对任务的结果进行后处理。
+- en: How to do it...
+  id: totrans-389
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤实现示例：
+- en: Create a class named `MyWorkerTask` and specify that it extends the `ForkJoinTask`
+    class parameterized with the `Void` type.
+  id: totrans-391
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyWorkerTask`的类，并指定它扩展了参数为`Void`类型的`ForkJoinTask`类。
+- en: '[PRE113]'
+  id: totrans-392
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE113]'
+- en: Declare a private `String` attribute named `name` to store the name of the task.
+  id: totrans-393
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`name`的私有`String`属性，用于存储任务的名称。
+- en: '[PRE114]'
+  id: totrans-394
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE114]'
+- en: Implement the constructor of the class to initialize its attribute.
+  id: totrans-395
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE115]'
+  id: totrans-396
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE115]'
+- en: Implement the `getRawResult()` method. This is one of the abstract methods of
+    the `ForkJoinTask` class. As the `MyWorkerTask` tasks won't return any result,
+    this method must return the `null` value.
+  id: totrans-397
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`getRawResult()`方法。这是`ForkJoinTask`类的抽象方法之一。由于`MyWorkerTask`任务不会返回任何结果，因此此方法必须返回`null`值。
+- en: '[PRE116]'
+  id: totrans-398
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE116]'
+- en: Implement the `setRawResult()` method. This is another abstract method of the
+    `ForkJoinTask` class. As the `MyWorkerTask` tasks won't return any result, leave
+    the body of this method empty.
+  id: totrans-399
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`setRawResult()`方法。这是`ForkJoinTask`类的另一个抽象方法。由于`MyWorkerTask`任务不会返回任何结果，因此将此方法的主体留空。
+- en: '[PRE117]'
+  id: totrans-400
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE117]'
+- en: Implement the `exec()` method. This is the main method of the task. In this
+    case, delegate the logic of the task to the `compute()` method. Calculate the
+    execution time of that method and write it in the console.
+  id: totrans-401
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`exec()`方法。这是任务的主要方法。在这种情况下，将任务的逻辑委托给`compute()`方法。计算该方法的执行时间并将其写入控制台。
+- en: '[PRE118]'
+  id: totrans-402
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE118]'
+- en: Implement the `getName()` method to return the name of the task.
+  id: totrans-403
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`getName()`方法以返回任务的名称。
+- en: '[PRE119]'
+  id: totrans-404
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE119]'
+- en: Declare the abstract method `compute()`. As we mentioned earlier, this method
+    will implement the logic of the tasks and must be implemented by the child classes
+    of the `MyWorkerTask` class.
+  id: totrans-405
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明抽象方法`compute()`。如前所述，此方法将实现任务的逻辑，并且必须由`MyWorkerTask`类的子类实现。
+- en: '[PRE120]'
+  id: totrans-406
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE120]'
+- en: Create a class named `Task` that extends the `MyWorkerTask` class.
+  id: totrans-407
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`Task`的类，该类扩展了`MyWorkerTask`类。
+- en: '[PRE121]'
+  id: totrans-408
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE121]'
+- en: Declare a private array of `int` values named `array`.
+  id: totrans-409
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`array`的私有`int`值数组。
+- en: '[PRE122]'
+  id: totrans-410
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE122]'
+- en: Implement a constructor of the class that initializes its attributes.
+  id: totrans-411
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个初始化其属性的类的构造函数。
+- en: '[PRE123]'
+  id: totrans-412
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE123]'
+- en: Implement the `compute()` method. This method increments the block of elements
+    of the array determined by the start and end attributes. If this block of elements
+    has more than 100 elements, divide the block in two parts and create two `Task`
+    objects to process each part. Send those tasks to the pool using the `invokeAll()`
+    method.
+  id: totrans-413
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`compute()`方法。此方法增加由开始和结束属性确定的数组元素块。如果此元素块的元素超过100个，则将该块分成两部分，并创建两个`Task`对象来处理每个部分。使用`invokeAll()`方法将这些任务发送到池中。
+- en: '[PRE124]'
+  id: totrans-414
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE124]'
+- en: If the block of elements has less than 100 elements, increment all the elements
+    using a `for` loop.
+  id: totrans-415
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果元素块少于100个，则使用`for`循环增加所有元素。
+- en: '[PRE125]'
+  id: totrans-416
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE125]'
+- en: Finally, put the thread that is executing the task to sleep for 50 milliseconds.
+  id: totrans-417
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，让执行任务的线程休眠50毫秒。
+- en: '[PRE126]'
+  id: totrans-418
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE126]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main(`) method.
+  id: totrans-419
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类并实现一个`main()`方法来实现示例的主类。
+- en: '[PRE127]'
+  id: totrans-420
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE127]'
+- en: Create an `int` array of 10,000 elements.
+  id: totrans-421
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个包含10,000个元素的`int`数组。
+- en: '[PRE128]'
+  id: totrans-422
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE128]'
+- en: Create a `ForkJoinPool` object named `pool`.
+  id: totrans-423
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`pool`的`ForkJoinPool`对象。
+- en: '[PRE129]'
+  id: totrans-424
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE129]'
+- en: Create a `Task` object to increment all the elements of the array. The parameters
+    of the constructor are `Task` as the name of the task, the array object, and the
+    values `0` and `10000` to indicate to this task that it has to process the entire
+    array.
+  id: totrans-425
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个`Task`对象来增加数组的所有元素。构造函数的参数是`Task`作为任务的名称，数组对象和值`0`和`10000`，以指示该任务必须处理整个数组。
+- en: '[PRE130]'
+  id: totrans-426
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE130]'
+- en: Send the task to the pool using the `execute()` method.
+  id: totrans-427
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`execute()`方法将任务发送到池中。
+- en: '[PRE131]'
+  id: totrans-428
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE131]'
+- en: Shut down the pool using the `shutdown()` method.
+  id: totrans-429
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`shutdown()`方法关闭池。
+- en: '[PRE132]'
+  id: totrans-430
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE132]'
+- en: Write a message in the console indicating the end of the program.
+  id: totrans-431
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中写入一条消息，指示程序的结束。
+- en: '[PRE133]'
+  id: totrans-432
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE133]'
+- en: How it works...
+  id: totrans-433
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: In this recipe, you have implemented the `MyWorkerTask` class that extends the
+    `ForkJoinTask` class. It's your own base class to implement tasks that can be
+    executed in a `ForkJoinPool` executor and that can take advantage of all the benefits
+    of that executor, as the work-stealing algorithm. This class is equivalent to
+    the `RecursiveAction` and `RecursiveTask` classes.
+  id: totrans-434
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此配方中，您已实现了`MyWorkerTask`类，该类扩展了`ForkJoinTask`类。这是您自己的基类，用于实现可以在`ForkJoinPool`执行程序中执行并且可以利用该执行程序的所有优势的任务，如工作窃取算法。该类相当于`RecursiveAction`和`RecursiveTask`类。
+- en: 'When you extend the `ForkJoinTask` class, you have to implement the following
+    three methods:'
+  id: totrans-435
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您扩展`ForkJoinTask`类时，您必须实现以下三种方法：
+- en: '`setRawResult()`: This method is used to establish the result of the task.
+    As your tasks don''t return any results, you leave this method empty.'
+  id: totrans-436
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`setRawResult()`: 此方法用于设置任务的结果。由于您的任务不返回任何结果，因此您将此方法留空。'
+- en: '`getRawResult()`: This method is used to return the result of the task. As
+    your tasks don''t return any results, this method returns the `null` value.'
+  id: totrans-437
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`getRawResult()`: 此方法用于返回任务的结果。由于您的任务不返回任何结果，因此此方法返回`null`值。'
+- en: '`exec()`: This method implements the logic of the task. In your case, you have
+    delegated the logic in the abstract method `compute()` (as the `RecursiveAction`
+    and `RecursiveTask` classes) and in the `exec()` method you measure the execution
+    time of that method, writing it in the console.'
+  id: totrans-438
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`exec()`: 此方法实现任务的逻辑。在您的情况下，您已将逻辑委托给抽象方法`compute()`（如`RecursiveAction`和`RecursiveTask`类），并且在`exec()`方法中测量该方法的执行时间，并将其写入控制台。'
+- en: Finally, in the main class of the example, you have created an array of 10,000
+    elements, a `ForkJoinPool` executor, and a `Task` object to process the whole
+    array. Execute the program and you'll see how the different tasks that are executed
+    write their execution time in the console.
+  id: totrans-439
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，在示例的主类中，您已创建了一个包含10,000个元素的数组，一个`ForkJoinPool`执行程序和一个`Task`对象来处理整个数组。执行程序，您将看到执行的不同任务如何在控制台中写入它们的执行时间。
+- en: See also
+  id: totrans-440
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Creating a Fork/Join pool* recipe in [Chapter 5](ch05.html "Chapter 5. Fork/Join
+    Framework"), *Fork/Join Framework*
+  id: totrans-441
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第5章](ch05.html "第5章。Fork/Join Framework")中的*创建Fork/Join池*配方，*Fork/Join Framework*'
+- en: The *Implementing the ThreadFactory interface to generate custom threads for
+    the Fork/Join framework* recipe in [Chapter 7](ch07.html "Chapter 7. Customizing
+    Concurrency Classes"), *Customizing Concurrency Classes*
+  id: totrans-442
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第7章](ch07.html "第7章。自定义并发类")中的*实现ThreadFactory接口以为Fork/Join框架生成自定义线程*配方，*自定义并发类*'
+- en: Implementing a custom Lock class
+  id: totrans-443
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现自定义锁类
+- en: 'Locks are one of the basic synchronization mechanisms provided by the Java
+    concurrency API. It allows the programmers to protect a critical section of code,
+    so only one thread can execute that block of code at a time. It provides the following
+    two operations:'
+  id: totrans-444
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 锁是Java并发API提供的基本同步机制之一。它允许程序员保护代码的临界区，因此只有一个线程可以一次执行该代码块。它提供以下两个操作：
+- en: '`lock()`: You call this operation when you want to access a critical section.
+    If there is another thread running that critical section, other threads are blocked
+    until they''re woken up by the lock to get the access to the critical section.'
+  id: totrans-445
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`lock()`: 当您想要访问临界区时，调用此操作。如果有另一个线程正在运行该临界区，则其他线程将被阻塞，直到它们被锁唤醒以访问临界区。'
+- en: '`unlock()`: You call this operation at the end of the critical section, to
+    allow other threads to access the critical section.'
+  id: totrans-446
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`unlock()`: 在临界区的末尾调用此操作，以允许其他线程访问临界区。'
+- en: In the Java Concurrency API, locks are declared in the `Lock` interface and
+    implemented in some classes, for example, the `ReentrantLock` class.
+  id: totrans-447
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Java并发API中，锁在`Lock`接口中声明，并在一些类中实现，例如`ReentrantLock`类。
+- en: In this recipe, you will learn how to implement your own `Lock` object implementing
+    a class that implements the `Lock` interface that can be used to protect a critical
+    section.
+  id: totrans-448
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此配方中，您将学习如何实现自己的`Lock`对象，该对象实现了实现`Lock`接口的类，可用于保护临界区。
+- en: Getting ready
+  id: totrans-449
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or other IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-450
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此示例已使用Eclipse IDE实现。如果您使用Eclipse或其他IDE（如NetBeans），请打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-451
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-452
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤实现示例：
+- en: Create a class named `MyQueuedSynchronizer` that extends the `AbstractQueuedSynchronizer`
+    class.
+  id: totrans-453
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyQueuedSynchronizer`的类，它继承`AbstractQueuedSynchronizer`类。
+- en: '[PRE134]'
+  id: totrans-454
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE134]'
+- en: Declare a private `AtomicInteger` attribute named `state`.
+  id: totrans-455
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`state`的私有`AtomicInteger`属性。
+- en: '[PRE135]'
+  id: totrans-456
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE135]'
+- en: Implement the constructor of the class to initialize its attribute.
+  id: totrans-457
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE136]'
+  id: totrans-458
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE136]'
+- en: Implement the`tryAcquire()` method. This method tries to change the value of
+    the state variable from zero to one. If it can, it returns the `true` value else
+    it returns `false`.
+  id: totrans-459
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`tryAcquire()`方法。此方法尝试将状态变量的值从零更改为一。如果可以，它返回`true`值，否则返回`false`。
+- en: '[PRE137]'
+  id: totrans-460
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE137]'
+- en: Implement the `tryRelease()` method. This method tries to change the value of
+    the state variable from one to zero. If it can, it returns the `true` value else
+    it returns the `false` value.
+  id: totrans-461
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`tryRelease()`方法。此方法尝试将状态变量的值从一更改为零。如果可以，则返回`true`值，否则返回`false`值。
+- en: '[PRE138]'
+  id: totrans-462
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE138]'
+- en: Create a class named `MyLock` and specify that it implements the `Lock` interface.
+  id: totrans-463
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyLock`的类，并指定它实现`Lock`接口。
+- en: '[PRE139]'
+  id: totrans-464
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE139]'
+- en: Declare a private `AbstractQueuedSynchronizer` attribute named `sync`.
+  id: totrans-465
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`sync`的私有`AbstractQueuedSynchronizer`属性。
+- en: '[PRE140]'
+  id: totrans-466
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE140]'
+- en: Implement the constructor of the class to initialize the `sync` attribute with
+    a new `MyAbstractQueueSynchronizer` object.
+  id: totrans-467
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过使用新的`MyAbstractQueueSynchronizer`对象初始化`sync`属性来实现类的构造函数。
+- en: '[PRE141]'
+  id: totrans-468
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE141]'
+- en: Implement the `lock()` method. Call the `acquire()` method of the `sync` object.
+  id: totrans-469
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`lock()`方法。调用`sync`对象的`acquire()`方法。
+- en: '[PRE142]'
+  id: totrans-470
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE142]'
+- en: Implement the `lockInterruptibly()` method. Call the `acquireInterruptibly()`
+    method of the `sync` object.
+  id: totrans-471
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`lockInterruptibly()`方法。调用`sync`对象的`acquireInterruptibly()`方法。
+- en: '[PRE143]'
+  id: totrans-472
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE143]'
+- en: Implement the `tryLock()` method. Call the `tryAcquireNanos()` method of the
+    `sync` object.
+  id: totrans-473
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`tryLock()`方法。调用`sync`对象的`tryAcquireNanos()`方法。
+- en: '[PRE144]'
+  id: totrans-474
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE144]'
+- en: Implement another version of the `tryLock()` method with two parameters. A long
+    parameter named `time` and a `TimeUnit` parameter named `unit`. Call the `tryAcquireNanos()`
+    method of the `sync` object.
+  id: totrans-475
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用两个参数实现`tryLock()`方法的另一个版本。一个名为`time`的长参数和一个名为`unit`的`TimeUnit`参数。调用`sync`对象的`tryAcquireNanos()`方法。
+- en: '[PRE145]'
+  id: totrans-476
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE145]'
+- en: Implement the `unlock()` method. Call the `release()` method of the `sync` object.
+  id: totrans-477
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`unlock()`方法。调用`sync`对象的`release()`方法。
+- en: '[PRE146]'
+  id: totrans-478
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE146]'
+- en: Implement the `newCondition()` method. Create a new object of the internal class
+    of the `sync` object `ConditionObject`.
+  id: totrans-479
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`newCondition()`方法。创建`sync`对象的内部类`ConditionObject`的新对象。
+- en: '[PRE147]'
+  id: totrans-480
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE147]'
+- en: Create a class named `Task` and specify that it implements the `Runnable` interface.
+  id: totrans-481
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`Task`的类，并指定它实现`Runnable`接口。
+- en: '[PRE148]'
+  id: totrans-482
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE148]'
+- en: Declare a private `MyLock` attribute named `lock`.
+  id: totrans-483
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`lock`的私有`MyLock`属性。
+- en: '[PRE149]'
+  id: totrans-484
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE149]'
+- en: Declare a private `String` attribute named `name`.
+  id: totrans-485
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`name`的私有`String`属性。
+- en: '[PRE150]'
+  id: totrans-486
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE150]'
+- en: Implement the constructor of the class to initialize its attributes.
+  id: totrans-487
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE151]'
+  id: totrans-488
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE151]'
+- en: Implement the`run()` method of the class. Acquire the lock, put the thread to
+    sleep for 2 seconds and then, release the `lock` object.
+  id: totrans-489
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的`run()`方法。获取锁，使线程休眠2秒，然后释放`lock`对象。
+- en: '[PRE152]'
+  id: totrans-490
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE152]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-491
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类并实现一个`main()`方法来实现示例的主类。
+- en: '[PRE153]'
+  id: totrans-492
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE153]'
+- en: Create a `MyLock` object named `lock`.
+  id: totrans-493
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`lock`的`MyLock`对象。
+- en: '[PRE154]'
+  id: totrans-494
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE154]'
+- en: Create and execute 10 `Task` tasks.
+  id: totrans-495
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建并执行10个`Task`任务。
+- en: '[PRE155]'
+  id: totrans-496
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE155]'
+- en: Try to get the lock using the `tryLock()` method. Wait for a second and if you
+    don't get the lock, write a message and try again.
+  id: totrans-497
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 尝试使用`tryLock()`方法获取锁。等待一秒钟，如果没有获得锁，则写一条消息并重试。
+- en: '[PRE156]'
+  id: totrans-498
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE156]'
+- en: Write a message indicating that you got the lock and release it.
+  id: totrans-499
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 写一条消息指示您已获得锁并释放它。
+- en: '[PRE157]'
+  id: totrans-500
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE157]'
+- en: Write a message indicating the end of the program.
+  id: totrans-501
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 写一条消息指示程序结束。
+- en: '[PRE158]'
+  id: totrans-502
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE158]'
+- en: How it works...
+  id: totrans-503
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'Java Concurrency API provides a class that can be used to implement synchronization
+    mechanisms with features of locks or semaphores. It''s `AbstractQueuedSynchronizer`
+    and, as its name suggests, it''s an abstract class. It provides operations to
+    control access to a critical section and to manage a queue of threads that are
+    blocked awaiting access to the critical section. The operations are based on two
+    abstract methods:'
+  id: totrans-504
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java并发API提供了一个类，可用于实现具有锁或信号量特性的同步机制。它是`AbstractQueuedSynchronizer`，正如其名称所示，它是一个抽象类。它提供了控制对临界区的访问以及管理被阻塞等待对临界区的访问的线程队列的操作。这些操作基于两个抽象方法：
+- en: '`tryAcquire()`: This method is called to try to get access to a critical section.
+    If the thread that calls it can access the critical section, the method returns
+    the `true` value. Otherwise, the method returns the `false` value.'
+  id: totrans-505
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`tryAcquire()`:调用此方法尝试访问临界区。如果调用它的线程可以访问临界区，则该方法返回`true`值。否则，该方法返回`false`值。'
+- en: '`tryRelease()`: This method is called to try to release access to a critical
+    section. If the thread that calls it can release the access, the method returns
+    the `true` value. Else, the method returns the `false` value.'
+  id: totrans-506
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`tryRelease()`:调用此方法尝试释放对临界区的访问。如果调用它的线程可以释放访问，则该方法返回`true`值。否则，该方法返回`false`值。'
+- en: In these methods, you have to implement the mechanism you use to control the
+    access to the critical section. In your case, you have implemented the `MyQueuedSynchonizer`
+    class that extends the `AbstractQueuedSyncrhonizer` class and implements the abstract
+    methods using an `AtomicInteger` variable to control the access of the critical
+    section. That variable will store the `0` value if the lock is free, so a thread
+    can have access to the critical section, and the `1` value if the lock is blocked,
+    so a thread can't have access to the critical section.
+  id: totrans-507
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这些方法中，您必须实现用于控制对临界区的访问的机制。在您的情况下，您已经实现了`MyQueuedSynchonizer`类，该类扩展了`AbstractQueuedSyncrhonizer`类，并使用`AtomicInteger`变量实现了抽象方法，以控制对临界区的访问。如果锁是空闲的，该变量将存储`0`值，因此线程可以访问临界区，如果锁被阻塞，该变量将存储`1`值，因此线程无法访问临界区。
+- en: You have used the `compareAndSet()` method provided by the `AtomicInteger` class
+    that tries to change the value you specify as the first parameter for the value
+    you specify as the second parameter. To implement the `tryAcquire()` method, you
+    try to change the value of the atomic variable from zero to one. Similarly, to
+    implement the `tryRelease()` method, you try to change the value of the atomic
+    variable from one to zero.
+  id: totrans-508
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您已经使用了`AtomicInteger`类提供的`compareAndSet()`方法，该方法尝试将您指定为第一个参数的值更改为您指定为第二个参数的值。要实现`tryAcquire()`方法，您尝试将原子变量的值从零更改为一。同样，要实现`tryRelease()`方法，您尝试将原子变量的值从一更改为零。
+- en: You have to implement this class because other implementations of the `AbstractQueuedSynchronizer`
+    class (for example, the one used by the `ReentrantLock` class), are implemented
+    as private classes internally in the class that uses it, so you don't have access
+    to it.
+  id: totrans-509
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你必须实现这个类，因为`AbstractQueuedSynchronizer`类的其他实现（例如`ReentrantLock`类使用的实现）是作为私有类在使用它的类内部实现的，所以你无法访问它。
+- en: Then, you have implemented the `MyLock` class. This class implements the `Lock`
+    interface and has a `MyQueuedSynchronizer` object as an attribute. To implement
+    all the methods of the `Lock` interface, you have used methods of the `MyQueuedSynchronizer`
+    object.
+  id: totrans-510
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，你已经实现了`MyLock`类。这个类实现了`Lock`接口，并有一个`MyQueuedSynchronizer`对象作为属性。为了实现`Lock`接口的所有方法，你使用了`MyQueuedSynchronizer`对象的方法。
+- en: Finally, you have implemented the `Task` class, that implements the `Runnable`
+    interface and uses a `MyLock` object to get the access to a critical section.
+    That critical section puts the thread to sleep for 2 seconds. The main class creates
+    a `MyLock` object and runs 10 `Task` objects that share that lock. The main class
+    also tries to get the access to the lock using the `tryLock()` method.
+  id: totrans-511
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，你已经实现了`Task`类，它实现了`Runnable`接口，并使用`MyLock`对象来访问临界区。该临界区使线程休眠2秒。主类创建了一个`MyLock`对象，并运行了10个共享该锁的`Task`对象。主类还尝试使用`tryLock()`方法来访问锁。
+- en: When you execute the example, you can see how only one thread has access to
+    the critical section and when that thread finishes, another one gets the access
+    to it.
+  id: totrans-512
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你执行示例时，你会看到只有一个线程可以访问临界区，当该线程完成时，另一个线程将获得访问权限。
+- en: You can use your own `Lock` to write log messages about its utilization, control
+    the time that is locked, or implement advanced synchronization mechanisms, to
+    control, for example, the access to a resource so that it's only available at
+    certain times.
+  id: totrans-513
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以使用自己的`Lock`来编写关于其使用情况的日志消息，控制锁定的时间，或实现高级的同步机制，例如控制对资源的访问，使其只在特定时间可用。
+- en: There's more...
+  id: totrans-514
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: The `AbstractQueuedSynchronizer` class provides two methods that can be used
+    to manage the state of the lock. They are the `getState()` and `setState()` methods.
+    These methods receive and return an integer value with the state of the lock.
+    You could have used those methods instead of the `AtomicInteger` attribute to
+    store the state of the lock.
+  id: totrans-515
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`AbstractQueuedSynchronizer`类提供了两个方法来管理锁的状态。它们是`getState()`和`setState()`方法。这些方法接收并返回一个整数值，表示锁的状态。你可以使用这些方法来代替`AtomicInteger`属性来存储锁的状态。'
+- en: Java concurrency API provides another class to implement synchronization mechanisms.
+    It's the `AbstractQueuedLongSynchronizer` class, that is equivalent to the `AbstractQueuedSynchronizer`
+    class, but uses a `long` attribute to store the state of the threads.
+  id: totrans-516
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java并发API提供了另一个类来实现同步机制。它是`AbstractQueuedLongSynchronizer`类，它相当于`AbstractQueuedSynchronizer`类，但使用`long`属性来存储线程的状态。
+- en: See also
+  id: totrans-517
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Synchronizing a block of code with locks* recipe in [Chapter 2](ch02.html
+    "Chapter 2. Basic Thread Synchronization"), *Basic Thread Synchronization*
+  id: totrans-518
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在[第2章](ch02.html "第2章.基本线程同步")的*Synchronizing a block of code with locks*食谱中，*基本线程同步*
+- en: Implementing a transfer Queue based on priorities
+  id: totrans-519
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 基于优先级实现传输队列
+- en: 'Java 7 API provides several data structures to work with concurrent applications.
+    From these, we want to highlight the following two data structures:'
+  id: totrans-520
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Java 7 API提供了几种数据结构来处理并发应用程序。其中，我们想要强调以下两种数据结构：
+- en: '`LinkedTransferQueue`: This data structure is supposed to be used in those
+    programs that have a producer/consumer structure. In those applications, you have
+    one or more producers of data and one or more consumers of data and a data structure
+    is shared by all of them. The producers put data in the data structure and the
+    consumers take data from the data structure. If the data structure is empty, the
+    consumers are blocked until they have data to consume. If the data structure is
+    full, the producers are blocked until they have space to put their data.'
+  id: totrans-521
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`LinkedTransferQueue`：这种数据结构应该在具有生产者/消费者结构的程序中使用。在这些应用程序中，你有一个或多个数据的生产者和一个或多个数据的消费者，一个数据结构被所有人共享。生产者将数据放入数据结构，消费者从数据结构中取数据。如果数据结构为空，消费者将被阻塞，直到有数据可供消费。如果数据结构已满，生产者将被阻塞，直到有空间放置他们的数据。'
+- en: '`PriorityBlockingQueue`: In this data structure, elements are stored in an
+    ordered way. The elements have to implement the `Comparable` interface with the
+    `compareTo()` method. When you insert an element in the structure, it''s compared
+    to the elements of the structure until it finds its position.'
+  id: totrans-522
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`PriorityBlockingQueue`：在这种数据结构中，元素以有序方式存储。元素必须实现带有`compareTo()`方法的`Comparable`接口。当你将一个元素插入结构中时，它会与结构中的元素进行比较，直到找到它的位置。'
+- en: Elements of the `LinkedTransferQueue` are stored in the same order as they arrive,
+    so earlier arrivals are consumed first. It may be the case when you want to develop
+    a producer/consumer program, where data is consumed according to some priority
+    instead of arrival time. In this recipe, you will learn how to implement a data
+    structure to be used in the producer/consumer problem, whose elements will be
+    ordered by their priority. Those elements with higher priority will be consumed
+    first.
+  id: totrans-523
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`LinkedTransferQueue`的元素按照它们到达的顺序存储，所以先到达的元素先被消耗。当你想要开发一个生产者/消费者程序时，数据根据某种优先级而不是到达时间进行消耗时，可能会出现这种情况。在这个示例中，你将学习如何实现一个数据结构，用于解决生产者/消费者问题，其元素将按照它们的优先级进行排序。具有更高优先级的元素将首先被消耗。'
+- en: Getting ready
+  id: totrans-524
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or other IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-525
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个示例已经在Eclipse IDE中实现。如果你使用Eclipse或其他IDE，比如NetBeans，打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-526
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-527
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤实现示例：
+- en: Create a class named `MyPriorityTransferQueue` that extends the `PriorityBlockingQueue`
+    class and implements the `TransferQueue` interface.
+  id: totrans-528
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`MyPriorityTransferQueue`的类，该类扩展了`PriorityBlockingQueue`类并实现了`TransferQueue`接口。
+- en: '[PRE159]'
+  id: totrans-529
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE159]'
+- en: Declare a private `AtomicInteger` attribute named `counter` to store the number
+    of consumers that are waiting for elements to consume.
+  id: totrans-530
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`AtomicInteger`属性，名为`counter`，用于存储等待消费元素的消费者数量。
+- en: '[PRE160]'
+  id: totrans-531
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE160]'
+- en: Declare a private `LinkedBlockingQueue` attribute named `transferred`.
+  id: totrans-532
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`LinkedBlockingQueue`属性，名为`transferred`。
+- en: '[PRE161]'
+  id: totrans-533
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE161]'
+- en: Declare a private `ReentrantLock` attribute named `lock`.
+  id: totrans-534
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`ReentrantLock`属性，名为`lock`。
+- en: '[PRE162]'
+  id: totrans-535
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE162]'
+- en: Implement the constructor of the class to initialize its attributes.
+  id: totrans-536
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE163]'
+  id: totrans-537
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE163]'
+- en: Implement the `tryTransfer()` method. This method tries to send the element
+    to a waiting consumer immediately, if possible. If there isn't any waiting consumer,
+    the method returns the `false` value.
+  id: totrans-538
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`tryTransfer()`方法。该方法尝试立即将元素发送给等待的消费者，如果可能的话。如果没有等待的消费者，该方法返回`false`值。
+- en: '[PRE164]'
+  id: totrans-539
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE164]'
+- en: Implement the `transfer()` method. This method tries to send the element to
+    a waiting consumer immediately, if possible. If there isn't a waiting consumer,
+    the method stores the element in a special queue to be sent to the first consumer
+    that tries to get an element and blocks the thread until the element is consumed.
+  id: totrans-540
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`transfer()`方法。该方法尝试立即将元素发送给等待的消费者，如果可能的话。如果没有等待的消费者，该方法将元素存储在一个特殊的队列中，以便发送给尝试获取元素并阻塞线程直到元素被消费的第一个消费者。
+- en: '[PRE165]'
+  id: totrans-541
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE165]'
+- en: 'Implement the `tryTransfer()` method that receives three parameters: The element,
+    the time to wait for a consumer, if there is none, and the unit of time used to
+    specify that time. If there is a consumer waiting, it sends the element immediately.
+    Otherwise, convert the time specified to milliseconds and use the `wait()` method
+    to put the thread to sleep. When the consumer takes the element, if the thread
+    is sleeping in the `wait()` method, you are going to wake it up using the `notify()`
+    method as you''ll see in a moment.'
+  id: totrans-542
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`tryTransfer()`方法，该方法接收三个参数：元素、等待消费者的时间（如果没有）和用于指定时间的时间单位。如果有等待的消费者，它立即发送元素。否则，将指定的时间转换为毫秒，并使用`wait()`方法使线程进入休眠状态。当消费者取走元素时，如果线程正在`wait()`方法中休眠，你将使用`notify()`方法唤醒它，稍后会看到。
+- en: '[PRE166]'
+  id: totrans-543
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE166]'
+- en: Implement the `hasWaitingConsumer()` method. Use the value of the counter attribute
+    to calculate the return value of this method. If the counter has a value bigger
+    than zero, return `true`. Else, return `false`.
+  id: totrans-544
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`hasWaitingConsumer()`方法。使用计数属性的值来计算该方法的返回值。如果计数大于零，则返回`true`。否则，返回`false`。
+- en: '[PRE167]'
+  id: totrans-545
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE167]'
+- en: Implement the `getWaitingConsumerCount()` method. Return the value of the `counter`
+    attribute.
+  id: totrans-546
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`getWaitingConsumerCount()`方法。返回`counter`属性的值。
+- en: '[PRE168]'
+  id: totrans-547
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE168]'
+- en: Implement the `take()` method. This `method` is called by the consumers when
+    they want an element to consume. First, get the lock defined earlier and increment
+    the number of waiting consumers.
+  id: totrans-548
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`take()`方法。消费者想要消费元素时调用此方法。首先获取之前定义的锁，并增加等待消费者的数量。
+- en: '[PRE169]'
+  id: totrans-549
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE169]'
+- en: If there aren't any elements in the transferred queue, free the lock and try
+    to get an element from the queue using the `take()` element and get the lock again.
+    If there aren't any elements in the queue, this method will put the thread to
+    sleep until there are elements to consume.
+  id: totrans-550
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果在转移队列中没有任何元素，则释放锁并尝试从队列中获取元素，使用`take()`方法，并再次获取锁。如果队列中没有任何元素，该方法将使线程进入休眠状态，直到有元素可供消费。
+- en: '[PRE170]'
+  id: totrans-551
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE170]'
+- en: Otherwise, take the element from the transferred queue and wake up the thread
+    that is waiting for the consummation of that element, if there is one.
+  id: totrans-552
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 否则，从转移队列中取出元素，并唤醒正在等待消费该元素的线程（如果有的话）。
+- en: '[PRE171]'
+  id: totrans-553
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE171]'
+- en: Finally, decrement the counter of waiting consumers and free the lock.
+  id: totrans-554
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最后，减少等待消费者的计数并释放锁。
+- en: '[PRE172]'
+  id: totrans-555
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE172]'
+- en: Implement a class named `Event` that extends the `Comparable` interface parameterized
+    with the `Event` class.
+  id: totrans-556
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个名为`Event`的类，该类实现了参数化为`Event`类的`Comparable`接口。
+- en: '[PRE173]'
+  id: totrans-557
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE173]'
+- en: Declare a private `String` attribute named `thread` to store the name of the
+    thread that creates the event.
+  id: totrans-558
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`String`属性，名为`thread`，用于存储创建事件的线程的名称。
+- en: '[PRE174]'
+  id: totrans-559
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE174]'
+- en: Declare a private `int` attribute named `priority` to store the priority of
+    the event.
+  id: totrans-560
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`int`属性，名为`priority`，用于存储事件的优先级。
+- en: '[PRE175]'
+  id: totrans-561
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE175]'
+- en: Implement the constructor of the class to initialize its attributes.
+  id: totrans-562
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE176]'
+  id: totrans-563
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE176]'
+- en: Implement a method to return the value of the thread attribute.
+  id: totrans-564
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个方法来返回`thread`属性的值。
+- en: '[PRE177]'
+  id: totrans-565
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE177]'
+- en: Implement a method to return the value of the priority attribute.
+  id: totrans-566
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个方法来返回`priority`属性的值。
+- en: '[PRE178]'
+  id: totrans-567
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE178]'
+- en: Implement the `compareTo()` method. This method compares the actual event with
+    an event received as a parameter. Return `-1` if the actual event has a bigger
+    priority than the parameter, `1` if the actual event has a lower priority than
+    the parameter, and `0` if both events have the same priority. You will get the
+    list ordered by priority in the descending order. Events with higher priority
+    will be stored first in the queue.
+  id: totrans-568
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`compareTo()`方法。该方法将实际事件与作为参数接收的事件进行比较。如果实际事件的优先级高于参数，则返回`-1`，如果实际事件的优先级低于参数，则返回`1`，如果两个事件具有相同的优先级，则返回`0`。你将按优先级降序获得列表。优先级较高的事件将首先存储在队列中。
+- en: '[PRE179]'
+  id: totrans-569
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE179]'
+- en: Implement a class named `Producer` that implements the `Runnable` interface.
+  id: totrans-570
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个名为`Producer`的类，该类实现了`Runnable`接口。
+- en: '[PRE180]'
+  id: totrans-571
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE180]'
+- en: Declare a private `MyPriorityTransferQueue` attribute parameterized with the
+    `Event` class named `buffer` to store the events generated by this producer.
+  id: totrans-572
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`MyPriorityTransferQueue`属性，参数化为`Event`类，名为`buffer`，用于存储生产者生成的事件。
+- en: '[PRE181]'
+  id: totrans-573
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE181]'
+- en: Implement the constructor of the class to initialize its attributes.
+  id: totrans-574
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE182]'
+  id: totrans-575
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE182]'
+- en: Implement the `run()` method of the class. Create 100 `Event` objects using
+    its order of creation as priority (the latest event will have the highest priority)
+    and insert them in the queue using the `put()` method.
+  id: totrans-576
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的`run()`方法。使用创建顺序作为优先级创建100个`Event`对象（最新的事件将具有最高优先级），并使用`put()`方法将它们插入队列。
+- en: '[PRE183]'
+  id: totrans-577
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE183]'
+- en: Implement a class named `Consumer` that implements the `Runnable` interface.
+  id: totrans-578
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现一个名为`Consumer`的类，该类实现了`Runnable`接口。
+- en: '[PRE184]'
+  id: totrans-579
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE184]'
+- en: Declare a private `MyPriorityTransferQueue` attribute parameterized with the
+    `Event` class named buffer to get the events consumed by this class.
+  id: totrans-580
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个私有的`MyPriorityTransferQueue`属性，参数化为`Event`类，命名为buffer，以获取此类消耗的事件。
+- en: '[PRE185]'
+  id: totrans-581
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE185]'
+- en: Implement the constructor of the class to initialize its attribute.
+  id: totrans-582
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE186]'
+  id: totrans-583
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE186]'
+- en: Implement the `run()` method. It consumes 1002 `Events` (all the events generated
+    in the example) using the `take()` method and write the number of the thread that
+    generated the event and its priority in the console.
+  id: totrans-584
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`run()`方法。它使用`take()`方法消耗1002个`Events`（在示例中生成的所有事件），并在控制台中写入生成事件的线程编号和其优先级。
+- en: '[PRE187]'
+  id: totrans-585
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE187]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-586
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类和一个`main()`方法来实现示例的主类。
+- en: '[PRE188]'
+  id: totrans-587
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE188]'
+- en: Create a `MyPriorityTransferQueue` object named `buffer`.
+  id: totrans-588
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`buffer`的`MyPriorityTransferQueue`对象。
+- en: '[PRE189]'
+  id: totrans-589
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE189]'
+- en: Create a `Producer` task and launch 10 threads to execute that task.
+  id: totrans-590
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个`Producer`任务并启动10个线程来执行该任务。
+- en: '[PRE190]'
+  id: totrans-591
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE190]'
+- en: Create and launch a `Consumer` task.
+  id: totrans-592
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建并启动一个`Consumer`任务。
+- en: '[PRE191]'
+  id: totrans-593
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE191]'
+- en: Write in the console the actual consumer count.
+  id: totrans-594
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中写入实际消费者计数。
+- en: '[PRE192]'
+  id: totrans-595
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE192]'
+- en: Transfer an event to the consumer using the `transfer()` method.
+  id: totrans-596
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`transfer()`方法向消费者传输事件。
+- en: '[PRE193]'
+  id: totrans-597
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE193]'
+- en: Wait for the finalization of the producers using the `join()` method.
+  id: totrans-598
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`join()`方法等待生产者的完成。
+- en: '[PRE194]'
+  id: totrans-599
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE194]'
+- en: Put the thread to sleep for 1 second.
+  id: totrans-600
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使线程休眠1秒。
+- en: '[PRE195]'
+  id: totrans-601
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE195]'
+- en: Write the actual consumer count.
+  id: totrans-602
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 写入实际消费者计数。
+- en: '[PRE196]'
+  id: totrans-603
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE196]'
+- en: Transfer another event using the `transfer()` method.
+  id: totrans-604
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`transfer()`方法传输另一个事件。
+- en: '[PRE197]'
+  id: totrans-605
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE197]'
+- en: Wait for the finalization of the consumer using the `join()` method.
+  id: totrans-606
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`join()`方法等待消费者的完成。
+- en: '[PRE198]'
+  id: totrans-607
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE198]'
+- en: Write a message indicating the end of the program.
+  id: totrans-608
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 写一条消息指示程序的结束。
+- en: '[PRE199]'
+  id: totrans-609
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE199]'
+- en: How it works...
+  id: totrans-610
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: In this recipe, you have implemented the `MyPriorityTransferQueue` data structure.
+    It's a data structure to be used in the producer/consumer problem, but its elements
+    are ordered by priority, not by their arrival order. As Java doesn't allow multiple
+    inheritance, the first decision you have taken is the base class of the `MyPriorityTransferQueue`
+    class. You have extended the `PriorityBlockingQueue` class, to have implemented
+    the operations that insert the elements in the structure ordered by priority.
+    You also have implemented the `TransferQueue` interface to add the methods related
+    with the producer/consumer.
+  id: totrans-611
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个示例中，您已经实现了`MyPriorityTransferQueue`数据结构。这是一个用于生产者/消费者问题的数据结构，但其元素按优先级而不是到达顺序排序。由于Java不允许多重继承，您的第一个决定是`MyPriorityTransferQueue`类的基类。您扩展了`PriorityBlockingQueue`类，以实现按优先级将元素插入结构的操作。您还实现了`TransferQueue`接口以添加与生产者/消费者相关的方法。
+- en: 'The `MyPriortyTransferQueue` class have the following three attributes:'
+  id: totrans-612
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`MyPriortyTransferQueue`类具有以下三个属性：'
+- en: 'An `AtomicInteger` attribute, named `counter`: This attribute stores the number
+    of consumers that are waiting for taking an element for the data structure. When
+    a consumer calls the `take()` operation to take an element from the data structure,
+    the counter is incremented. When the consumer finishes the execution of the `take()`
+    operation, the counter is decremented again. This counter is used in the implementation
+    of the `hasWaitingConsumer()` and `getWaitingConsumerCount()` methods.'
+  id: totrans-613
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一个名为`counter`的`AtomicInteger`属性：此属性存储等待从数据结构中获取元素的消费者数量。当消费者调用`take()`操作从数据结构中获取元素时，计数器会递增。当消费者完成`take()`操作的执行时，计数器再次递减。此计数器用于实现`hasWaitingConsumer()`和`getWaitingConsumerCount()`方法。
+- en: 'A `ReentrantLock` attribute named `lock`: This attribute is used to control
+    the access to the implemented operations. Only one thread can be working with
+    the data structure.'
+  id: totrans-614
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 名为`lock`的`ReentrantLock`属性：此属性用于控制对实现的操作的访问。只有一个线程可以使用数据结构。
+- en: Finally, a `LinkedBlockingQueue` list to store the transferred elements.
+  id: totrans-615
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 最后，创建一个`LinkedBlockingQueue`列表来存储传输的元素。
+- en: 'You have implemented some methods in the `MyPriorityTransferQueue`. All the
+    methods are declared in the `TransferQueue` interface and the `take()` method
+    implemented in the `PriorityBlockingQueue` interface. Two of them were described
+    before. Here is a description of the rest:'
+  id: totrans-616
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您已经在`MyPriorityTransferQueue`中实现了一些方法。所有这些方法都在`TransferQueue`接口中声明，并且`take()`方法在`PriorityBlockingQueue`接口中实现。其中两个已在前面描述过。以下是其余方法的描述：
+- en: '`tryTransfer(E``e)`: This method tries to send an element directly to a consumer.
+    If there is a consumer waiting, the method stores the element in the priority
+    queue to be consumed immediately by the consumer and then returns the `true` value.
+    If there isn''t a consumer waiting, the method returns the `false` value.'
+  id: totrans-617
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`tryTransfer(E``e)`:此方法尝试直接将一个元素发送给消费者。如果有消费者在等待，该方法将元素存储在优先级队列中，以便立即被消费者消费，然后返回`true`值。如果没有消费者在等待，该方法返回`false`值。'
+- en: '`transfer(E``e)`: This method transfers an element directly to a consumer.
+    It there is a consumer waiting, the method stores the element in the priority
+    queue to be consumed immediately by the consumer. Otherwise, the element is stored
+    in the list for transferred elements and the thread is blocked until the element
+    is consumed. While the thread is put to sleep, you have to free the lock because
+    if not, you block the queue.'
+  id: totrans-618
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`transfer(E``e)`:此方法直接将一个元素传输给消费者。如果有消费者在等待，该方法将元素存储在优先级队列中，以便立即被消费者消费。否则，该元素将存储在传输元素的列表中，并且线程将被阻塞，直到元素被消费。当线程处于休眠状态时，您必须释放锁，否则会阻塞队列。'
+- en: '`tryTransfer(E``e,``long``timeout,``TimeUnit``unit)`: This method is similar
+    to the `transfer()` method, but the thread blocks the period of time determined
+    by its parameters. While the thread is put to sleep, you have to free the lock
+    because, if not, you block the queue.'
+  id: totrans-619
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`tryTransfer(E``e,``long``timeout,``TimeUnit``unit)`:此方法类似于`transfer()`方法，但线程会阻塞由其参数确定的时间段。当线程处于休眠状态时，您必须释放锁，否则会阻塞队列。'
+- en: '`take()`: This method returns the next element to be consumed. If there are
+    elements in the list of transferred elements, the element to be consumed is taken
+    from that list. Otherwise, it is taken from the priority queue.'
+  id: totrans-620
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`take()`: 该方法返回要消耗的下一个元素。如果传输元素列表中有元素，则要消耗的元素将从该列表中取出。否则，它将从优先级队列中取出。'
+- en: Once you have implemented the data structure, you have implemented the `Event`
+    class. It is the class of the elements you have stored in the data structure.
+    The `Event` class has two attributes to store the ID of the producer and the priority
+    of the event, and implements the `Comparable` interface, because it is a requirement
+    of your data structure.
+  id: totrans-621
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实现数据结构后，您已经实现了`Event`类。这是您在数据结构中存储的元素的类。`Event`类有两个属性，用于存储生产者的ID和事件的优先级，并实现了`Comparable`接口，因为这是数据结构的要求。
+- en: Then, you have implemented the `Producer` and the `Consumer` classes. In the
+    example, you have 10 producers and a consumer and they share the same buffer.
+    Each producer generates 100 events with incremental priority, so the events with
+    higher priority are the last generated ones.
+  id: totrans-622
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，您已经实现了`Producer`和`Consumer`类。在示例中，您有10个生产者和一个消费者，它们共享相同的缓冲区。每个生产者生成100个具有增量优先级的事件，因此具有更高优先级的事件是最后生成的。
+- en: The main class of example creates a `MyPriorityTransferQueue` object, 10 producers,
+    and a consumer and uses the `transfer()` method of the `MyPriorityTransferQueue`
+    buffer to transfer two events to the buffer.
+  id: totrans-623
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 示例的主类创建了一个`MyPriorityTransferQueue`对象，10个生产者和一个消费者，并使用`MyPriorityTransferQueue`缓冲区的`transfer()`方法将两个事件传输到缓冲区。
+- en: 'The following screenshot shows part of the output of an execution of the program:'
+  id: totrans-624
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了程序执行的部分输出：
+- en: '![How it works...](img/7881_07_06.jpg)'
+  id: totrans-625
+  prefs: []
+  type: TYPE_IMG
+  zh: '![工作原理...](img/7881_07_06.jpg)'
+- en: You can see how the events with higher priority are consumed first, and that
+    a consumer consumes the transferred event.
+  id: totrans-626
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到，具有更高优先级的事件首先被消耗，并且消费者消耗了传输的事件。
+- en: See also
+  id: totrans-627
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Using blocking thread-safe lists ordered by priority* recipe in [Chapter
+    6](ch06.html "Chapter 6. Concurrent Collections"), *Concurrent Collections*
+  id: totrans-628
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第6章](ch06.html "第6章 并发集合")中的*使用按优先级排序的阻塞线程安全列表*配方，*并发集合*'
+- en: The *Using blocking thread-safe lists* recipe in [Chapter 6](ch06.html "Chapter 6. Concurrent
+    Collections"), *Concurrent Collections*
+  id: totrans-629
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[第6章](ch06.html "第6章 并发集合")中的*使用阻塞线程安全列表*配方，*并发集合*'
+- en: Implementing your own atomic object
+  id: totrans-630
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现自己的原子对象
+- en: Atomic variables were introduced in Java Version 5 and provide atomic operations
+    on single variables. When a thread is doing an operation with an atomic variable,
+    the implementation of the class includes a mechanism to check that the operation
+    is done in one step. Basically, the operation gets the value of the variable,
+    changes the value in a local variable, and then tries to change the old value
+    for the new one. If the old value is still the same, it does the change. If not,
+    the method begins the operation again.
+  id: totrans-631
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 原子变量是在Java版本5中引入的，它们对单个变量提供原子操作。当线程对原子变量进行操作时，类的实现包括一个机制来检查操作是否在一步中完成。基本上，该操作获取变量的值，将值更改为本地变量，然后尝试将旧值更改为新值。如果旧值仍然相同，则进行更改。如果不是，则该方法重新开始操作。
+- en: In this recipe, you will learn how to extend an atomic object and how to implement
+    two operations that follow the mechanisms of the atomic objects to guarantee that
+    all the operations are done in one step.
+  id: totrans-632
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本配方中，您将学习如何扩展原子对象以及如何实现遵循原子对象机制的两个操作，以确保所有操作都在一步中完成。
+- en: Getting ready
+  id: totrans-633
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: The example of this recipe has been implemented using the Eclipse IDE. If you
+    use Eclipse or other IDE such as NetBeans, open it and create a new Java project.
+  id: totrans-634
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本配方的示例是使用Eclipse IDE实现的。如果您使用Eclipse或其他IDE（如NetBeans），请打开它并创建一个新的Java项目。
+- en: How to do it...
+  id: totrans-635
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 操作步骤...
+- en: 'Follow these steps to implement the example:'
+  id: totrans-636
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤实现示例：
+- en: Create a class named `ParkingCounter` and specify that it extends the `AtomicInteger`
+    class.
+  id: totrans-637
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`ParkingCounter`的类，并指定它扩展`AtomicInteger`类。
+- en: '[PRE200]'
+  id: totrans-638
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE200]'
+- en: Declare a private `int` attribute named `maxNumber` to store the maximum number
+    of cars admitted in the parking lot.
+  id: totrans-639
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`maxNumber`的私有`int`属性，以存储停车场中允许的最大汽车数量。
+- en: '[PRE201]'
+  id: totrans-640
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE201]'
+- en: Implement the constructor of the class to initialize its attributes.
+  id: totrans-641
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE202]'
+  id: totrans-642
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE202]'
+- en: Implement the `carIn()` method. This method increments the counter of cars if
+    it has a value smaller than the established maximum value. Construct an infinite
+    loop and get the value of the internal counter using the `get()` method.
+  id: totrans-643
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`carIn()`方法。如果计数器的值小于设定的最大值，则该方法递增汽车的计数器。构建一个无限循环，并使用`get()`方法获取内部计数器的值。
+- en: '[PRE203]'
+  id: totrans-644
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE203]'
+- en: If the value is equal to the `maxNumber` attribute, the counter can't be incremented
+    (the parking lot is full and the car can't enter). The method returns the `false`
+    value.
+  id: totrans-645
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果该值等于`maxNumber`属性，则无法递增计数器（停车场已满，汽车无法进入）。该方法返回`false`值。
+- en: '[PRE204]'
+  id: totrans-646
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE204]'
+- en: Otherwise, increment the value and use the `compareAndSet()` method to change
+    the old value to the new one. This method returns the `false` value; the counter
+    was not incremented, so you have to begin the loop again. If it returns the `true`
+    value, it means the change was made and then, you return the `true` value.
+  id: totrans-647
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 否则，增加该值并使用`compareAndSet()`方法将旧值更改为新值。该方法返回`false`值；计数器未递增，因此必须重新开始循环。如果返回`true`值，则表示已进行更改，然后返回`true`值。
+- en: '[PRE205]'
+  id: totrans-648
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE205]'
+- en: Implement the `carOut()` method. This method decrements the counter of cars
+    if it has a value bigger than `0`. Construct an infinite loop and get the value
+    of the internal counter using the `get()` method.
+  id: totrans-649
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`carOut()`方法。如果计数器的值大于`0`，则该方法递减汽车的计数器。构建一个无限循环，并使用`get()`方法获取内部计数器的值。
+- en: '[PRE206]'
+  id: totrans-650
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE206]'
+- en: Create a class named `Sensor1` that implements the `Runnable` interface.
+  id: totrans-651
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`Sensor1`的类，该类实现`Runnable`接口。
+- en: '[PRE207]'
+  id: totrans-652
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE207]'
+- en: Declare a private `ParkingCounter` attribute named `counter`.
+  id: totrans-653
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`counter`的私有`ParkingCounter`属性。
+- en: '[PRE208]'
+  id: totrans-654
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE208]'
+- en: Implement the constructor of the class to initialize its attribute.
+  id: totrans-655
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE209]'
+  id: totrans-656
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE209]'
+- en: Implement the `run()` method. Call the `carIn()` and `carOut()` operations several
+    times.
+  id: totrans-657
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`run()`方法。多次调用`carIn()`和`carOut()`操作。
+- en: '[PRE210]'
+  id: totrans-658
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE210]'
+- en: Create a class named `Sensor2` that implements the `Runnable` interface.
+  id: totrans-659
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`Sensor2`的类，实现`Runnable`接口。
+- en: '[PRE211]'
+  id: totrans-660
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE211]'
+- en: Declare a private `ParkingCounter` attribute named `counter`.
+  id: totrans-661
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 声明一个名为`counter`的私有`ParkingCounter`属性。
+- en: '[PRE212]'
+  id: totrans-662
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE212]'
+- en: Implement the constructor of the class to initialize its attribute.
+  id: totrans-663
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现类的构造函数以初始化其属性。
+- en: '[PRE213]'
+  id: totrans-664
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE213]'
+- en: Implement the `run()` method. Call the `carIn()` and `carOut()` operations several
+    times.
+  id: totrans-665
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 实现`run()`方法。多次调用`carIn()`和`carOut()`操作。
+- en: '[PRE214]'
+  id: totrans-666
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE214]'
+- en: Implement the main class of the example by creating a class named `Main` with
+    a `main()` method.
+  id: totrans-667
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过创建一个名为`Main`的类并实现一个`main()`方法来实现示例的主类。
+- en: '[PRE215]'
+  id: totrans-668
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE215]'
+- en: Create a `ParkingCounter` object named `counter`.
+  id: totrans-669
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建名为`counter`的`ParkingCounter`对象。
+- en: '[PRE216]'
+  id: totrans-670
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE216]'
+- en: Create and launch a `Sensor1` task and a `Sensor2` task.
+  id: totrans-671
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建并启动一个`Sensor1`任务和一个`Sensor2`任务。
+- en: '[PRE217]'
+  id: totrans-672
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE217]'
+- en: Wait for the finalization of both tasks.
+  id: totrans-673
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 等待两个任务的最终确定。
+- en: '[PRE218]'
+  id: totrans-674
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE218]'
+- en: Write in the console the actual value of the counter.
+  id: totrans-675
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中写入计数器的实际值。
+- en: '[PRE219]'
+  id: totrans-676
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE219]'
+- en: Write in the console a message indicating the end of the program.
+  id: totrans-677
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中写入指示程序结束的消息。
+- en: '[PRE220]'
+  id: totrans-678
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE220]'
+- en: How it works...
+  id: totrans-679
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: The `ParkingCounter` class extends the `AtomicInteger` class with two atomic
+    operations, `carIn()` and `carOut()`. The example simulates a system that controls
+    the number of cars inside a parking lot. The parking lot can admit a number of
+    cars, represented by the `maxNumber` attribute.
+  id: totrans-680
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ParkingCounter`类扩展了`AtomicInteger`类，具有两个原子操作`carIn()`和`carOut()`。该示例模拟了一个控制停车场内汽车数量的系统。停车场可以容纳一定数量的汽车，由`maxNumber`属性表示。'
+- en: 'The `carIn()` operation compares the actual number of cars in the parking lot
+    with the maximum value. If they are equal, the car can''t enter the parking lot
+    and the method returns the `false` value. Otherwise, it uses the following structure
+    of the atomic operations:'
+  id: totrans-681
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`carIn()`操作将停车场内的实际汽车数量与最大值进行比较。如果它们相等，则汽车无法进入停车场，该方法返回`false`值。否则，它使用原子操作的以下结构：'
+- en: Get the value of the atomic object in a local variable.
+  id: totrans-682
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将原子对象的值存储在本地变量中。
+- en: Store the new value in a different variable.
+  id: totrans-683
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将新值存储在不同的变量中。
+- en: Use the `compareAndSet()` method to try to replace the old value by the new
+    one. If this method returns the `true` value, the old value you sent as a parameter
+    was the value of the variable, so it makes the change of values. The operation
+    was made in an atomic way as the `carIn()` method returns the `true` value. If
+    the `compareAndSet()` method returns the `false` value, the old value you sent
+    as a parameter is not the value of the variable (the other thread modified it),
+    so the operation can't be done in an atomic way. The operation begins again until
+    it can be done in an atomic way.
+  id: totrans-684
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`compareAndSet()`方法尝试用新值替换旧值。如果此方法返回`true`值，则您发送的旧值作为参数是变量的值，因此它会更改值。该操作以原子方式执行，因为`carIn()`方法返回`true`值。如果`compareAndSet()`方法返回`false`值，则您发送的旧值不是变量的值（其他线程对其进行了修改），因此该操作无法以原子方式执行。操作将重新开始，直到可以以原子方式执行为止。
+- en: The `carOut()` method is analogous to the `carIn()` method. You have also implemented
+    two `Runnable` objects that use the `carIn()` and `carOut()` methods to simulate
+    the activity of the parking. When you execute the program, you can see that the
+    parking lot never overcomes the maximum value of cars in the parking lot.
+  id: totrans-685
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`carOut()`方法类似于`carIn()`方法。您还实现了两个使用`carIn()`和`carOut()`方法来模拟停车活动的`Runnable`对象。当您执行程序时，您会发现停车场从未超过停车场内汽车的最大值。'
+- en: See also
+  id: totrans-686
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The *Using atomic variables* recipe in [Chapter 6](ch06.html "Chapter 6. Concurrent
+    Collections"), *Concurrent Collections*
+  id: totrans-687
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*在[第6章](ch06.html "第6章.并发集合")中使用原子变量*中的配方，*并发集合*'

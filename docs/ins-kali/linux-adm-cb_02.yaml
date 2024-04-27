@@ -1,0 +1,4986 @@
+- en: Remote Administration with SSH
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用SSH进行远程管理
+- en: 'The following recipes will be covered in this chapter:'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将涵盖以下配方：
+- en: Generating and using key pairs with ssh-keygen
+  id: totrans-2
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用ssh-keygen生成和使用密钥对
+- en: SSH client arguments and options
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: SSH客户端参数和选项
+- en: Using a client-side SSH configuration file
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用客户端端SSH配置文件
+- en: Modifying the server-side SSH configuration file
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 修改服务器端SSH配置文件
+- en: Rotating host keys and updating `known_hosts`
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 旋转主机密钥和更新`known_hosts`
+- en: Using local forwarding
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用本地转发
+- en: Using remote forwarding
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用远程转发
+- en: ProxyJump and bastion hosts
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: ProxyJump和堡垒主机
+- en: Using SSH to create a SOCKS Proxy
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用SSH创建SOCKS代理
+- en: Understanding and using SSH agents
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解和使用SSH代理
+- en: Running multiple SSH servers on one box
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在一台主机上运行多个SSH服务器
+- en: Introduction
+  id: totrans-13
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 介绍
+- en: 'In the first chapter, we SSH''d to our VM using one command:'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第一章中，我们使用了一个命令连接到我们的虚拟机：
+- en: '[PRE0]'
+  id: totrans-15
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: In this chapter, we're going to expand on this, looking at making connecting
+    easier with SSH key pairs; running over the security benefits of SSH; making changes
+    to both the client and server side configuration; setting up a port forward and
+    reverse port forward connections; learning about ProxyJump and bastion hosts,
+    as well as setting up a temporary proxy with SSH; and finally, we're going to
+    look at SSH agents and setting up an additional SSH server on our VM.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将扩展这一点，探讨使用SSH密钥对使连接更容易；介绍SSH的安全优势；对客户端和服务器端配置进行更改；设置端口转发和反向端口转发连接；学习ProxyJump和堡垒主机的设置，以及使用SSH设置临时代理；最后，我们将研究SSH代理并在我们的虚拟机上设置额外的SSH服务器。
+- en: This chapter assumes that you have a rudimentary understanding of SSH.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章假定您对SSH有基本的了解。
+- en: Technical requirements
+  id: totrans-18
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: As introduced in the first chapter, we're going to use Vagrant and VirtualBox
+    for all of our work in this chapter and those going forward. This allows us to
+    quickly provision infrastructure for testing, and saves you the manual job of
+    creating multiple VMs each time.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如在第一章中介绍的，我们将在本章和以后的所有工作中使用Vagrant和VirtualBox。这使我们能够快速配置基础设施进行测试，并节省了您每次创建多个虚拟机的手动工作。
+- en: If you really, really, don't want to use VirtualBox or Vagrant, then you don't
+    have to, and I've tried to keep the examples as generic as possible, but you will
+    probably find it much easier if you do.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您真的不想使用VirtualBox或Vagrant，那么您不必使用，我已经尽量使示例尽可能通用，但如果您使用它会更容易一些。
+- en: 'I''ve put together the following `Vagrantfile` for use in this chapter:'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我已经准备了以下`Vagrantfile`供本章使用：
+- en: '[PRE1]'
+  id: totrans-22
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Note something new about this `Vagrantfile`. We've included a provision step,
+    which runs the code assigned to the variable at the top of the file. In this case,
+    we're making some changes to the SSH configuration of the default CentOS image,
+    so our examples work as we expect. We've put all three VMs on their own private
+    network.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 关于这个`Vagrantfile`有一些新的东西。我们在文件顶部包含了一个provision步骤，该步骤运行分配给变量的代码。在这种情况下，我们对默认的CentOS镜像的SSH配置进行了一些更改，以便我们的示例按照我们的期望工作。我们将所有三个虚拟机放在它们自己的私有网络上。
+- en: It would be advisable to create a folder called `Chapter Two` and copy this
+    code into a file called `Vagrantfile` or if you're using the code from GitHub,
+    navigating into the right folder.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 建议创建一个名为`第二章`的文件夹，并将此代码复制到名为`Vagrantfile`的文件中，或者如果您正在使用GitHub上的代码，则导航到正确的文件夹。
+- en: Running `vagrant up` from inside the folder containing your `Vagrantfile` should
+    configure two VMs for testing.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从包含您的`Vagrantfile`的文件夹中运行`vagrant up`应该配置两个虚拟机进行测试。
+- en: 'Once provisioned, make sure that you can connect to the first by running the
+    following:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦配置完成，请确保您可以通过运行以下命令连接到第一个：
+- en: '[PRE2]'
+  id: totrans-27
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: Vagrant is great for testing purposes, but you shouldn't use it in a production
+    environment for deploying machines. Some of the decisions that are made are for
+    ease of use (such as those around the default `vagrant` user in our image) and
+    as a result, are not best practices for a secure deployment.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vagrant非常适合测试，但不应在生产环境中用于部署机器。一些决定是为了方便使用（比如我们镜像中的默认`vagrant`用户），因此并不是安全部署的最佳实践。
+- en: Generating and using key pairs with ssh-keygen
+  id: totrans-29
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用ssh-keygen生成和使用密钥对
+- en: Passwords are great, but they're also terrible.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 密码很棒，但也很糟糕。
+- en: Most people use weak passwords, and while I hope that's not you, there's always
+    the chance that someone in your team doesn't have the discipline you do, and resorts
+    to `football99` or similar for connecting to your shared remote host.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大多数人使用弱密码，虽然我希望您不是其中之一，但是您团队中总有可能有人没有您的纪律，而是使用类似`football99`的密码连接到您共享的远程主机。
+- en: With password access enabled, anyone might be able to connect to your server
+    from any country by brute-forcing their way into your machine, given enough time
+    and enough processing power.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启用密码访问后，任何人都可能通过暴力破解的方式从任何国家连接到您的服务器，只要有足够的时间和足够的处理能力。
+- en: I say "might" because as long as you use secure passwords of a decent length,
+    passwords can be hard to guess, even with the power of a sun. Consult your company
+    security policy when deciding these things, or read up on the best practices at
+    the time you're writing the policy yourself.
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我说“可能”是因为只要您使用安全密码并且长度足够长，即使在太阳的力量下，密码也很难被猜到。在决定这些事情时，请参考您公司的安全政策，或者在编写自己的政策时了解最佳实践。
+- en: Here's where keys come in.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是密钥的用武之地。
+- en: 'SSH keys are based on the concept of public key cryptography. They come in
+    two parts: a `public` half, and a `private` half, the public part of which you
+    can place onto servers, and the private part of which you keep about your person,
+    either on your laptop, or maybe a secure USB stick (one that is itself encrypted
+    and password protected).'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH密钥基于公钥加密的概念。它们由两部分组成：`公共`部分和`私有`部分，其中的公共部分可以放在服务器上，而私有部分则由您保管，可以放在您的笔记本电脑上，或者可能是一个安全的USB存储设备（本身已加密并受密码保护）。
+- en: Despite the obvious suggestion of public and private half, I have frequently
+    seen people misunderstand this concept and share their private half instead of
+    the public one. This generally results in the key being labelled as compromised,
+    and the individual in question being asked to generate a new pair, with a short
+    chat about the definition of `private` and `public` in the meantime.
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管公共和私有一半的概念很明显，但我经常看到人们误解这个概念，分享他们的私有一半而不是公共一半。这通常会导致密钥被标记为受损，并要求相关人员生成一个新的密钥对，并在此期间简要讨论“私有”和“公共”的定义。
+- en: Once your public half of a key is on your server, you can SSH to your remote
+    host using the local, private half of your key for authentication.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您的密钥的公共一半在服务器上，您就可以使用密钥的本地私有一半进行身份验证，从而SSH到远程主机。
+- en: SSH keys can even offer a degree of ease, as most operating systems come with
+    a keychain of some sort that can be automatically unlocked on user-login, and
+    which has the private parts of your key safely stored. SSH'ing to a machine then
+    becomes a trivial affair where you can securely connect without being prompted
+    at all!
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH密钥甚至可以提供一定程度的便利，因为大多数操作系统都配备了某种类型的钥匙链，可以在用户登录时自动解锁，并且安全地存储了密钥的私有部分。然后，通过SSH连接到一台机器变得非常简单，您可以在不被提示的情况下安全连接！
+- en: We're going to generate an SSH key pair and use that pair to SSH between our
+    machines.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将生成一个SSH密钥对，并使用该对在我们的机器之间进行SSH。
+- en: Getting ready
+  id: totrans-40
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: To begin, ensure that you have two VMs configured with a private network between
+    each.
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先确保您已经配置了两个VM，并在它们之间建立了一个私有网络。
+- en: You can use the `Vagrantfile` in the *Technical requirements* section to accomplish
+    this.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用*技术要求*部分的`Vagrantfile`来完成此操作。
+- en: 'Connect to the first of your machines:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到您的第一台机器：
+- en: '[PRE3]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: Check that the IP address of `centos1` is correctly configured, using the command
+    `ip a` from [Chapter 1](e2264f18-69d3-4ff4-af6c-dc8fe152b3e0.xhtml), *Introduction
+    and Environment Setup*.
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`ip a`命令从[第1章](e2264f18-69d3-4ff4-af6c-dc8fe152b3e0.xhtml) *介绍和环境设置*检查`centos1`的IP地址是否正确配置。
+- en: 'We expect it to be `192.168.33.10`, under the `eth1` device:'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们期望它是`192.168.33.10`，在`eth1`设备下：
+- en: '[PRE4]'
+  id: totrans-47
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'You can also use `hostname -I` to get the IP address of a box, as seen below,
+    but you should note that you won''t get an obvious interface designation:'
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以使用`hostname -I`来获取框的IP地址，如下所示，但是您应该注意到您不会得到一个明显的接口标识：
+- en: '[PRE5]'
+  id: totrans-49
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: Check that you can ping the IP address of `centos2` from within `centos1`.
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查您是否可以从`centos1`内部ping通`centos2`的IP地址。
+- en: 'We set the second IP to `192.168.33.11`:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将第二个IP设置为`192.168.33.11`：
+- en: '[PRE6]'
+  id: totrans-52
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: We have network connectivity between our VMs!
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的VM之间有网络连接！
+- en: If you're unable to ping between machines, start by checking your network settings
+    within VirtualBox, and connect to each of your machines using the `vagrant ssh`
+    command to check the assigned IP address.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您无法在机器之间进行ping，请首先检查VirtualBox中的网络设置，并使用`vagrant ssh`命令连接到每台机器，以检查分配的IP地址。
+- en: How to do it...
+  id: totrans-55
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: We're going to go over the steps to generate and copy a key to a remote host,
+    using two types of key.
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将逐步介绍如何生成并复制密钥到远程主机，使用两种类型的密钥。
+- en: First, we're going to generate a more traditional **Rivest-Shamir-Adleman**
+    (**RSA**) key, and then we're going to generate a newer type of key, the `Ed25519`
+    key.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将生成一个更传统的**Rivest-Shamir-Adleman**（**RSA**）密钥，然后我们将生成一个更新类型的密钥，即`Ed25519`密钥。
+- en: RSA example
+  id: totrans-58
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: RSA示例
+- en: 'First, we''re going to generate our key, confirming the default location in
+    which to save the key, and providing a passphrase when prompted:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将生成我们的密钥，确认保存密钥的默认位置，并在提示时提供一个密码：
+- en: '[PRE7]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: The randomart image in the preceding code is mostly for humans so that keys
+    can be validated by sight. Personally, I've never used it (other than a little
+    further along in this chapter,) but you might.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面代码中的随机艺术图主要是为了让人们可以通过视觉验证密钥。就我个人而言，我从来没有使用过它（除了在本章稍后的一点，）但您可能会用到。
+- en: 'Next, we''re going to copy our newly generated RSA key to `centos2`, providing
+    the password for `centos2` when prompted:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将把新生成的RSA密钥复制到`centos2`，在提示时提供`centos2`的密码：
+- en: The default password for the `vagrant` user on these boxes is `vagrant`.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些框上`vagrant`用户的默认密码是`vagrant`。
+- en: '[PRE8]'
+  id: totrans-64
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Finally, we're going to check that we can access `centos2`, by means of the
+    key we just generated.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们将检查我们是否可以通过刚刚生成的密钥访问`centos2`。
+- en: 'We will be prompted for the passphrase we set when the key was generated. Type
+    it in when required:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在需要时，我们将输入生成密钥时设置的密码。
+- en: '[PRE9]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Ed25519 example
+  id: totrans-68
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Ed25519示例
+- en: As with our RSA example, we will start by generating a new key, this time specifying
+    the type as 'ed25519'.
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与RSA示例一样，我们将首先生成一个新的密钥，这次指定类型为'ed25519'。
+- en: Ed25519 keys are elliptical-curve based and a lot of very clever people believe
+    they offer superior security to RSA. The keys themselves are also much shorter
+    (which we'll touch on later,) meaning if you've ever got to type one out, it's
+    a lot less work. Annoyingly you can't use the public half of an Ed25519 key for
+    encrypting files, as you can with an RSA public half, so there's a trade off but
+    it depends on your needs.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Ed25519密钥是基于椭圆曲线的，许多非常聪明的人认为它们比RSA提供更高级的安全性。这些密钥本身也要短得多（我们稍后会提到），这意味着如果您必须输入一个密钥，那么工作量要少得多。令人讨厌的是，您不能像RSA公钥那样使用Ed25519公钥的一半来加密文件，因此存在一些权衡，但这取决于您的需求。
+- en: 'We will again accept the default location for where to save our key, and provide
+    a passphrase:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将再次接受保存密钥的默认位置，并提供一个密码：
+- en: '[PRE10]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'We''re going to copy our new key over to `centos2`. Note that we''re also specifying
+    the `id_ed25519.pub` file as the one to copy over:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将复制我们的新密钥到`centos2`。请注意，我们还指定了要复制的文件为`id_ed25519.pub`：
+- en: Again, the default password for these boxes is `vagrant`.
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，这些框上的默认密码是`vagrant`。
+- en: '[PRE11]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: If you've run this example straight after the one before it, you may be asked
+    for the passphrase to your RSA key, instead of the password to the box itself.
+    This is fine, and it highlights the fact that key-based authentication is attempted
+    first. If this is the case for you, simply provide the passphrase to your RSA
+    key.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您在之前的示例之后立即运行此示例，则可能会要求输入RSA密钥的密码短语，而不是密码本身。这没问题，这突显了首先尝试基于密钥的身份验证。如果是这种情况，请简单地提供RSA密钥的密码短语。
+- en: 'Once installed, attempt to SSH to `centos2`, specifying the private half of
+    the `Ed25519` key:'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装完成后，尝试使用私有部分的`Ed25519`密钥连接到`centos2`。
+- en: '[PRE12]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: How it works...
+  id: totrans-79
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: The principle of asynchronous keys and public key cryptography can be awkward
+    for people to get their head around. For the most part, you won't need to worry
+    about the mathematics of key generation—you should just know that you will always
+    end up with two keys, a public one and a private one.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 异步密钥和公钥加密的原则可能让人们难以理解。在大多数情况下，您不需要担心密钥生成的数学问题——您只需要知道您最终会得到两个密钥，一个公钥和一个私钥。
+- en: Dimble, an entirely fictional engineer who thinks it's a good idea to store
+    his `private` SSH key on a public `GitLab` server in a repository named `my stuff`
+    is a security risk, because he never owned a dictionary, and believes that the
+    word private means "share it with the world", which it doesn't. He also disabled
+    the passphrase on his `private` key because he didn't like the fact there was
+    an extra step between him and his server. Don't be like Dimble—keep your `private`
+    key safe and secure.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Dimble是一个完全虚构的工程师，他认为在名为`my stuff`的存储库中将他的`私有`SSH密钥存储在公共`GitLab`服务器上是一个安全风险，因为他从未拥有过字典，并且认为私有一词意味着“与世界分享”，实际上并非如此。他还禁用了`私有`密钥上的密码短语，因为他不喜欢在他和服务器之间多出一步。不要像Dimble一样——保护好您的`私有`密钥。
+- en: The public and private key files
+  id: totrans-82
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 公钥和私钥文件
+- en: As hinted at previously, what we've done here is create two files, one half
+    of which can be freely passed around (the public half) and one half of which we
+    keep safe somewhere else (the private half).
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如之前暗示的，我们在这里创建了两个文件，其中一个可以自由传递（公共部分），另一个我们在其他地方安全保管（私有部分）。
+- en: 'By default, these files are located in the home directory of your user, in
+    the hidden `.ssh` folder:'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，这些文件位于用户的主目录中，即隐藏的`.ssh`文件夹中：
+- en: '[PRE13]'
+  id: totrans-85
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: The public halves of our keys end in `.pub`, and the private halves don't have
+    a file extension.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的密钥的公共部分以`.pub`结尾，而私有部分没有文件扩展名。
+- en: 'Let''s take a look at each of the four files:'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看看这四个文件：
+- en: '[PRE14]'
+  id: totrans-88
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: The private half of our RSA key is a file that's sensitive, and as we made it
+    `4096` bits when we generated it, this file will be very long (hence my snip).
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的RSA密钥的私有部分是一个敏感的文件，当我们生成它时，我们将其设为`4096`位，因此这个文件会非常长（因此我剪辑了一部分）。
+- en: The public half of our RSA key is the file that's placed on remote machines.
+    It is still affected by the bit-length we specified, though it's nowhere near
+    as lengthy as the private half.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的RSA密钥的公共部分是放在远程机器上的文件。尽管受到我们指定的位长度的影响，但它远没有私有部分那么长。
+- en: '[PRE15]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: Note that we've also got a comment at the end, `Example RSA Key`, which we specified
+    at generation time. This will usually be the user and machine hostname of the
+    box it's generated on, when no comment is explicitly passed.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们在末尾还有一个注释，`示例RSA密钥`，这是我们在生成时指定的。当没有显式传递注释时，这通常是生成它的用户和机器主机名。
+- en: '[PRE16]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Then, there is our private (sensitive) `Ed25519` key. Note that this file is
+    much shorter than its RSA counterpart, and this is because `Ed25519` keys have
+    a fixed length (this also means that the `-b` flag is ignored at generation time).
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们有我们的私有（敏感的）`Ed25519`密钥。请注意，这个文件比其RSA对应文件要短得多，这是因为`Ed25519`密钥具有固定长度（这也意味着在生成时忽略了`-b`标志）。
+- en: '[PRE17]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Here, we have our public `Ed25519` file, so short that you could conceivably
+    write it onto a bit of paper and hand it to your colleague to copy onto a server
+    (though they really, really won't thank you for it, and will most likely not offer
+    to make you a cup of tea any time soon).
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们有我们的公共`Ed25519`文件，它非常短，您可以想象将其写在一张纸上，然后递给您的同事复制到服务器上（尽管他们真的不会感谢您，并且很可能不会很快为您泡一杯茶）。
+- en: We also have our comment, `Example Ed25519 key`.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还有我们的注释，`示例Ed25519密钥`。
+- en: Obviously, printing the private halves of the keys that I've just generated
+    flies in the face of what I said about passing around private keys, although it's
+    for documentation, and I'm going to destroy these VMs once I'm finished with them,
+    so I felt adding them here for clarity was important. DO NOT USE THESE KEYS.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，打印我刚刚生成的密钥的私有部分与我关于传递私有密钥的说法相矛盾，尽管这是为了文档目的，我将在完成后销毁这些虚拟机，所以我觉得在这里添加它们是很重要的。请不要使用这些密钥。
+- en: The authorized_keys file
+  id: totrans-99
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: authorized_keys文件
+- en: When you connect to your remote host, SSH validates the key ID you're providing
+    against a list of `authorized_keys`.
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您连接到远程主机时，SSH会验证您提供的密钥ID是否在`authorized_keys`列表中。
+- en: In our example, we used the `ssh-copy-id` command to place our key on the remote
+    server. What this actually does is put it in a specific file of the home user
+    you're connecting to.
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的示例中，我们使用`ssh-copy-id`命令将我们的密钥放在远程服务器上。实际上，这是将其放在您要连接的主目录用户的特定文件中。
+- en: 'On our `centos2` host, we can find this file in the user''s home directory,
+    under `.ssh`:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的`centos2`主机上，我们可以在用户的主目录下的`.ssh`文件夹中找到这个文件：
+- en: '[PRE18]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Looking inside this file reveals the following:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看此文件的内容会显示如下内容：
+- en: '[PRE19]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Here, we can see three keys, over three lines.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到三个密钥，分布在三行上。
+- en: 'The first key is as follows:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一个密钥如下：
+- en: '[PRE20]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: This is the key that Vagrant uses to connect to the VMs. It's not one we created.
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是Vagrant用来连接虚拟机的密钥。这不是我们创建的密钥。
+- en: 'The second is as follows:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二个密钥如下：
+- en: '[PRE21]'
+  id: totrans-111
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: This is our generated RSA key. Note that it's longer than the Vagrant default,
+    owing to the custom `4096` bit-length that we specified.
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们生成的RSA密钥。请注意，由于我们指定了自定义的`4096`位长度，它比Vagrant默认值要长。
+- en: 'Our third key is as follows:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的第三个密钥如下：
+- en: '[PRE22]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: This is our `Ed25519` key.
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们的`Ed25519`密钥。
+- en: You could, if you so wished, manually copy public keys into the `authorized_keys`
+    file on the host you're connecting to. The `ssh-copy-id` command we used is simply
+    a convenient way of cutting out a few of the extra steps.
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你愿意的话，你可以手动将公钥复制到你要连接的主机上的`authorized_keys`文件中。我们使用的`ssh-copy-id`命令只是一种方便的方式，可以省略一些额外的步骤。
+- en: There's more...
+  id: totrans-117
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: SSH is sensitive about the **permissions** that its files have.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH对其文件的**权限**非常敏感。
+- en: You don't want your private key to be readable by any random user who might
+    be on your system, so as a result, plain SSH won't work if it thinks you have
+    bad permissions set.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你不希望你的私钥可以被任何可能在你的系统上的随机用户读取，因此，如果它认为你设置了错误的权限，普通的SSH就不会起作用。
+- en: Generally, this won't be an issue if you've just generated your keys, but if
+    you later move them between computers, you might find that you've spoiled the
+    permissions slightly.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一般来说，如果你刚刚生成了你的密钥，这不会是一个问题，但是如果你以后将它们移动到其他计算机上，你可能会发现你稍微破坏了权限。
+- en: 'A good rule of thumb is to assume locked-down settings:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个很好的经验法则是假设设置是锁定的：
+- en: '[PRE23]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: In the above command, we can see that the public and private halves of the keys
+    (id_rsa keys and id_ed25519 keys) have different values.
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上面的命令中，我们可以看到密钥的公共部分和私有部分（id_rsa密钥和id_ed25519密钥）具有不同的值。
+- en: 'The public halves of the keys (`*.pub`) have the value `644` (read/write, read,
+    read):'
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 密钥的公共部分（`*.pub`）的值为`644`（读/写，读，读）：
+- en: '[PRE24]'
+  id: totrans-125
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'The private halved of the keys have the value 600 (read/write, none, none):'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 密钥的私有部分的值为600（读/写，无，无）：
+- en: '[PRE25]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: To passphrase or not to passphrase
+  id: totrans-128
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 是否需要密码
+- en: While you can generate a key without a passphrase, and there are valid use cases
+    for doing so (for example, in the case of automated deployments), it is considered
+    a best practice to generate your own key with a passphrase.
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然你可以生成一个没有密码的密钥，并且有一些有效的用例（例如，在自动部署的情况下），但是最好的做法是生成一个带有密码的密钥。
+- en: This does mean that if your key isn't unlocked in your keychain (which itself
+    might be unlocked when you log into your machine), you will be prompted for the
+    passphrase to unlock the key. You might consider this a hassle, but think of it
+    in terms of the security onion (multiple layers of security... it's not a great
+    analogy, unless security makes you cry.) If you lost your private key, the malicious
+    person that picks it up won't be able to use it to access your stuff.
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着如果你的密钥没有在你的钥匙链中解锁（当你登录到你的机器时，它本身可能已经解锁），你将被提示输入密码来解锁密钥。你可能认为这很麻烦，但从安全的角度来看（多层安全...这不是一个很好的类比，除非安全让你哭泣。）如果你丢失了你的私钥，那么捡起它的恶意人士将无法使用它来访问你的东西。
+- en: If you do lose a private key, or leave it on a USB stick on a bus, you should
+    immediately rotate your keys by revoking the old one from any location where the
+    public half is installed, and generating a new pair to use.
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你丢失了私钥，或者把它留在了公共汽车上的U盘上，你应该立即通过撤销安装了公钥的任何位置来旋转你的密钥，并生成一个新的密钥对来使用。
+- en: Additional flags
+  id: totrans-132
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 附加标志
+- en: When we generated our keys, we also added a couple of flags.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们生成我们的密钥时，我们还添加了一些标志。
+- en: 'As with any software, checking the manual page for the command you''re running
+    can provide a sometimes overwhelming amount of additional detail:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与任何软件一样，查看你运行的命令的手册页面可能会提供一些额外的细节，有时可能会有点压倒性：
+- en: '[PRE26]'
+  id: totrans-135
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'To save a little bit of a headache, I''m going to highlight some options that
+    may be of interest to you, starting with `-b`:'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了节省一点麻烦，我将重点介绍一些可能对你有兴趣的选项，首先是`-b`：
+- en: '[PRE27]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: We used the `-b` flag to specify a large amount of bits during the generation
+    of our RSA key. The minimum is `1024` and the default is `2048`. Your place of
+    business may have requirements on the length of RSA keys.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用`-b`标志在生成RSA密钥时指定了大量的位数。最小值是`1024`，默认值是`2048`。你的公司可能对RSA密钥的长度有要求。
+- en: 'Next, we have the comment flag:'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们有评论标志：
+- en: '[PRE28]'
+  id: totrans-140
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: We used this to add a bit of description to our keys. It might be useful if
+    you use different keys for different things (this is my `GitLab` key, this is
+    my personal server key, this is my company server key, and so on).
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们用这个来为我们的密钥添加一些描述。如果你为不同的事情使用不同的密钥（这是我的`GitLab`密钥，这是我的个人服务器密钥，这是我的公司服务器密钥，等等），这可能会很有用。
+- en: 'If you do need multiple keys, you may want to pass the name of your new key
+    within the generation command (as opposed to typing it out when prompted):'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你需要多个密钥，你可能希望在生成命令中传递你的新密钥的名称（而不是在提示时输入）：
+- en: '[PRE29]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'We also have  `-l` to print the fingerprint of a key, and/or the ASCII art
+    if you so wish. This can be very useful for verifying key pairs:'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还有`-l`来打印密钥的指纹，或者如果你愿意的话，打印ASCII艺术。这对于验证密钥对非常有用：
+- en: '[PRE30]'
+  id: totrans-145
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'If you want to change the passphrase of a private half, but don''t want to
+    generate a new key, you can use the `-p` option:'
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想要更改私钥的密码，但又不想生成新的密钥，你可以使用`-p`选项：
+- en: '[PRE31]'
+  id: totrans-147
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'To specify the type of key you wish to generate, you can use the `-t` option:'
+  id: totrans-148
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要指定要生成的密钥类型，可以使用`-t`选项：
+- en: '[PRE32]'
+  id: totrans-149
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: When choosing the type of key to generate, consider your requirements. RSA is
+    generally the most compatible, but your company may have other policies, or you
+    may have a personal preference.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在选择要生成的密钥类型时，请考虑你的要求。RSA通常是最兼容的，但你的公司可能有其他政策，或者你可能有个人偏好。
+- en: I've come across two scenarios where `Ed25519` keys couldn't be used – one was
+    an in-house script that required RSA for encrypting files, and the other was OpenStack,
+    at the time.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我遇到过两种情况，`Ed25519`密钥无法使用——一种是需要RSA加密文件的内部脚本，另一种是当时的OpenStack。
+- en: 'Finally, there''s good old `-v`, providing verbose output since the early days:'
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，还有老式的`-v`，自从早期就提供详细的输出：
+- en: '[PRE33]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: This can be passed multiple times, that is, `-vvv` is also valid, with each
+    `v` increasing the debug level.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可以多次传递，也就是说，`-vvv`也是有效的，每个`v`都会增加调试级别。
+- en: See also
+  id: totrans-155
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: This section deliberately doesn't go into the minutia of SSH key exchange or
+    the different types of key (with the exception of the two used in our example).
+    There are excellent books on SSH that can provide a wealth of information, and
+    the OpenSSH developers themselves are constantly working on improvements to the
+    software. OpenSSH is only one implementation of SSH, but it is by far the most
+    popular. It is the default on every Linux distribution I've used, it's in use
+    on macOS, and it's the standard on the BSDs (especially OpenBSD, where it's developed).
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节故意不涉及SSH密钥交换的细节或密钥的不同类型（例外是我们示例中使用的两种类型）。有关SSH的优秀书籍可以提供丰富的信息，OpenSSH开发人员自己也在不断改进软件。OpenSSH只是SSH的一个实现，但它是迄今为止最受欢迎的。它是我使用的每个Linux发行版的默认值，在macOS上使用，并且是BSD（特别是OpenBSD，在那里开发它）的标准。
+- en: SSH client arguments and options
+  id: totrans-157
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SSH客户端参数和选项
+- en: SSH is a powerful piece of software, as we've already discussed, and while it
+    can be used in a very simple way to enable access to your server, it is also extremely
+    flexible.
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们已经讨论过的那样，SSH是一款功能强大的软件，虽然它可以以非常简单的方式用于启用对服务器的访问，但它也非常灵活。
+- en: In this section, we're going to look at common flags that are used with SSH
+    in environments that may have different requirements.
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将看一下在可能具有不同要求的环境中与SSH一起使用的常见标志。
+- en: We will be using the same Vagrant boxes as before.
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用与之前相同的Vagrant框。
+- en: Getting ready
+  id: totrans-161
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备就绪
+- en: 'As with the previous section, confirm that both of your Vagrant boxes are enabled,
+    and connect to the first using the `vagrant` command:'
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与前一节一样，确认您的两个Vagrant框都已启用，并使用`vagrant`命令连接到第一个：
+- en: '[PRE34]'
+  id: totrans-163
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: How to do it...
+  id: totrans-164
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做到这一点...
+- en: We're going to take a look at the basics of SSH first.
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们首先要了解SSH的基础知识。
+- en: SSH using hostnames instead of IPs
+  id: totrans-166
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用主机名而不是IP的SSH
+- en: In our examples so far, we've been using IP addresses to connect to our remote
+    host.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们一直在使用IP地址连接到远程主机。
+- en: SSH is also capable of connecting to hostnames.
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH还能够连接到主机名。
+- en: 'First, we have to create a quick hosts entry so that we can resolve our name
+    to an IP address:'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们必须创建一个快速的主机条目，以便我们可以将我们的名称解析为IP地址：
+- en: '[PRE35]'
+  id: totrans-170
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: The preceding code is a quick way to make a remote host resolvable to a name.
+    There's no guarantee that it will stick on some systems, especially those where
+    a third party controls the `hosts` file. In a real-world scenario, it is highly
+    likely you'll have some sort of DNS setup that will make connecting to hostnames
+    easier.
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上面的代码是使远程主机可解析为名称的快速方法。不能保证它会在某些系统上保持，特别是在第三方控制`hosts`文件的系统上。在实际情况下，您很可能会有某种DNS设置，使连接到主机名更容易。
+- en: 'We should now be able to SSH using the host''s name:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们应该能够使用主机名进行SSH：
+- en: '[PRE36]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: Note that we once again had to accept the fingerprint of the host we're connecting
+    to.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们再次不得不接受我们要连接的主机的指纹。
+- en: SSHing to a different user
+  id: totrans-175
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SSH到不同的用户
+- en: If the user you're connecting to is different to the one you're using locally
+    (in our examples, it's always `vagrant` and `vagrant`), then you can manually
+    specify the username on the command line.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您要连接的用户与您在本地使用的用户不同（在我们的示例中，它总是`vagrant`和`vagrant`），那么您可以在命令行上手动指定用户名。
+- en: 'The first way to do this is with the following syntax:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样做的第一种方法是使用以下语法：
+- en: '[PRE37]'
+  id: totrans-178
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: 'The second way is with a flag:'
+  id: totrans-179
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二种方法是使用一个标志：
+- en: '[PRE38]'
+  id: totrans-180
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: SSHing to a different port
+  id: totrans-181
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SSH到不同的端口
+- en: If the SSH server you're connecting to is listening on a different port (this
+    is quite common), then you might have to specify the port in question.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您要连接的SSH服务器正在侦听不同的端口（这是相当常见的），那么您可能需要指定相关端口。
+- en: 'The default is `22`, but if you''ve changed this for whatever reason, you could
+    also specify the new port, for example, `2020`:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认值是`22`，但是如果出于某种原因更改了这个值，您也可以指定新端口，例如`2020`：
+- en: '[PRE39]'
+  id: totrans-184
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: Note this example won't work right now, because we haven't changed the port
+    the server is listening on.
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，此示例现在无法正常工作，因为我们尚未更改服务器正在侦听的端口。
+- en: SSHing to an IPv6 address
+  id: totrans-186
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SSH到IPv6地址
+- en: IPv6 addresses look a lot more imposing than they really are, and it's advisable
+    that you get to grips with them sooner rather than later (even if people have
+    been predicting the dominance of IPv6 for over a decade now).
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IPv6地址看起来比它们实际上更为严峻，建议您尽早熟悉它们（即使人们已经预测了IPv6的主导地位已经超过十年了）。
+- en: For this example, we're going to find the IPv6 address of `centos2` and connect
+    to that.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于此示例，我们将查找`centos2`的IPv6地址并连接到该地址。
+- en: 'First, connect to `centos2` and run the `ip a` command:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，连接到`centos2`并运行`ip a`命令：
+- en: '[PRE40]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: I've highlighted the IPv6 address in the preceding code.
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我在上面的代码中突出显示了IPv6地址。
+- en: 'Back on `centos1`, let''s connect using IPv6:'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到`centos1`，让我们使用IPv6连接：
+- en: '[PRE41]'
+  id: totrans-193
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: Note that we've had to specify the network interface on the end of our command.
+    This is only necessary in the case of link-local addresses, and shouldn't be necessary
+    for global IPv6 addresses.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，我们不得不在命令的末尾指定网络接口。这只在链路本地地址的情况下才是必要的，对于全局IPv6地址则不必要。
+- en: A comparison to link-local addresses in the IPv6 world are subnets in the IPv4
+    world, that is, link-local devices are those that can see each other on a local
+    network, via their link-local addresses (which themselves are generated based
+    on factors like the MAC address of the interface that the address is on). They
+    should always have the link-local prefix (`FE80::/10`).
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在IPv6世界中与链路本地地址进行比较的是IPv4世界中的子网，也就是说，链路本地设备是可以通过它们的链路本地地址在本地网络上看到彼此的设备（这些地址本身是基于诸如地址所在接口的MAC地址等因素生成的）。它们应该始终具有链路本地前缀（`FE80::/10`）。
+- en: SSHing before running a command
+  id: totrans-196
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在运行命令之前进行SSH
+- en: While you'll mostly use SSH for connecting to remote boxes, it's also possible
+    to run a command on a remote host without having to linger there.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然您大多数时候会使用SSH连接到远程框，但也可以在远程主机上运行命令，而无需在那里逗留。
+- en: 'Here, we''re running a command to print the hostname file on the remote box,
+    while staying on `centos1`:'
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们正在运行一个命令来打印远程主机上的主机名文件，同时保持在`centos1`上：
+- en: '[PRE42]'
+  id: totrans-199
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: This is especially useful for automation software, or scripts that you want
+    to run locally but which interact with remote machines.
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这对于自动化软件或您想在本地运行但与远程机器交互的脚本特别有用。
+- en: SSH and X11 forwarding
+  id: totrans-201
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: SSH和X11转发
+- en: Not generally used these days, but still useful in some select situations, `X11`
+    forwarding is the act of running a program on a remote box, and displaying said
+    program on your local machine.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在一般不再使用，但在某些特定情况下仍然有用，`X11`转发是在远程主机上运行程序，并在本地机器上显示该程序的行为。
+- en: 'You can set up your session using the following command:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下命令设置您的会话：
+- en: '[PRE43]'
+  id: totrans-204
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: There are security implications of working with `X11` forwarding. Consult your
+    distribution's manual page for information around this, as the default behavior
+    can differ from distribution to distribution.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用`X11`转发存在安全隐患。请查阅您发行版的手册页面，了解相关信息，因为默认行为可能因发行版而异。
+- en: Currently, this is only possible with `X` Window Manager setups, and the more
+    modern Wayland display server protocol doesn't have a similar ability, due in
+    part to wanting to keep things simple.
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前，这只有在`X`窗口管理器设置中才可能，并且更现代的Wayland显示服务器协议没有类似的功能，部分原因是希望保持简单。
+- en: How it works...
+  id: totrans-207
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: SSH is a large and feature-rich program. When you manipulate how it behaves
+    using flags, you're modifying the default behavior to your own ends.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH是一个庞大且功能丰富的程序。当您使用标志来操纵它的行为时，您正在修改默认行为以符合您自己的目的。
+- en: 'As with any command, they can be simple:'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与任何命令一样，它们可能很简单：
+- en: '[PRE44]'
+  id: totrans-210
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: 'But they can also be complex:'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但它们也可能很复杂：
+- en: '[PRE45]'
+  id: totrans-212
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: As an exercise, using the SSH manual page if you need to, see if you can work
+    out what this command will accomplish.
+  id: totrans-213
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为练习，使用SSH手册页面，如果需要，看看您能否弄清楚这个命令将实现什么目的。
+- en: There's more...
+  id: totrans-214
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更多信息...
+- en: SSH escape characters are an important additional element to note.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH转义字符是一个重要的额外元素需要注意。
+- en: Occasionally, you can be connected to a system and your connection times out,
+    locking up your session.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 偶尔，您可能连接到一个系统，然后连接超时，导致会话被锁定。
+- en: This usually manifests in the form of an unblinking and unresponsive Terminal.
+    You generally can't hit *Ctrl* + *D* to log out, and can't type.
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这通常表现为一个不眨眼且无响应的终端。通常无法按下*Ctrl* + *D*退出登录，也无法输入。
+- en: 'You would instead hit the following keys:'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该按下以下按键：
+- en: '[PRE46]'
+  id: totrans-219
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: While the key combination is officially listed as `~.` it actually requires
+    the *Enter* key being pressed first (as in, newline), so it's frequently written
+    as `\n~`.
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然这个键组合官方上标为`~.`，但实际上需要先按下*Enter*键（即换行），所以它经常被写成`\n~`。
+- en: This tip is brought to you by an eagle-eyed technical editor!
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个提示是由一个敏锐的技术编辑提供的！
+- en: That's a tilde character (find it on your keyboard, usually using the S*hift*
+    key), followed by a dot.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个波浪符号（在键盘上找到它，通常使用S*hift*键），后面跟着一个点。
+- en: Your session should immediately disconnect.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您的会话应该立即断开。
+- en: Check out the SSH manual page for more escape characters.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看SSH手册页面以获取更多转义字符。
+- en: See also
+  id: totrans-225
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Again, there's a lot more to SSH options than I've listed in this recipe, and
+    we've yet to cover a few that have their own sections in the rest of this chapter,
+    but still there's a considerable amount we won't be using here.
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与前一节一样，SSH选项比我在本章节中列出的要多得多，而且我们还没有涵盖一些在本章节其余部分有自己章节的选项，但在这里我们不会使用很多。
+- en: Take a look at the manual page for SSH on a boring Tuesday. I did.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在一个无聊的星期二看一下SSH的手册页面。我看过了。
+- en: Using a client-side SSH configuration file
+  id: totrans-228
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用客户端SSH配置文件
+- en: While it's nice to be able to manipulate SSH using command-line arguments, it's
+    also nice to not have to bother.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然能够使用命令行参数来操作SSH很好，但也很好不必费心。
+- en: If you've got a system you work on day in and day out, it can be beneficial
+    to configure your setup with your typical arguments on a permanent basis. This
+    is where the client-side SSH configuration file comes in.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您每天都在一个系统上工作，将您的典型参数配置到永久基础上可能会有益。这就是客户端SSH配置文件的用武之地。
+- en: On our example box, the default `ssh_config` file is located in the `/etc/ssh/`
+    directory. Open this file to have a look if you like, but don't make any changes
+    yet.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的示例框中，默认的`ssh_config`文件位于`/etc/ssh/`目录中。如果您愿意，可以打开此文件查看，但暂时不要进行任何更改。
+- en: Getting ready
+  id: totrans-232
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'As with the previous section, confirm that both of your Vagrant boxes are enabled,
+    and connect to the first using the `vagrant` command:'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与前一节一样，请确认您的两个Vagrant框已启用，并使用`vagrant`命令连接到第一个框：
+- en: '[PRE47]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: To configure different options for our user, we're going to create an SSH configuration
+    file in our home directory.
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了为我们的用户配置不同的选项，我们将在我们的主目录中创建一个SSH配置文件。
+- en: This goes in the same place as most of our SSH files, `~/.ssh/`.
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这与我们大多数SSH文件放置在同一个位置，`~/.ssh/`。
+- en: Whenever you see a `~` character, think of it as **my home** in your head. Expanded,
+    this location is `/home/vagrant/.ssh/`.
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每当您看到一个`~`字符时，把它想象成**我的主目录**。扩展开来，这个位置是`/home/vagrant/.ssh/`。
+- en: Create the file, lock down the permissions, and open it in your editor of choice—I'm
+    going to use `vi`.
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建文件，锁定权限，并在你选择的编辑器中打开它——我将使用`vi`。
+- en: 'Be sure to call it `config`:'
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一定要称它为`config`：
+- en: '[PRE48]'
+  id: totrans-240
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: How to do it...
+  id: totrans-241
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 操作方法...
+- en: Within your `config` file, create the start of four blocks.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在你的`config`文件中，创建四个块的开头。
+- en: 'One should be a wildcard block (using `*`) and the other should be variations
+    on the name `CentOS2` (note the capitals):'
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个应该是通配符块（使用`*`），另一个应该是`CentOS2`名称的变体（注意大写）：
+- en: '[PRE49]'
+  id: totrans-244
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: Note that in the V6 entry, we actually use two percentage signs, instead of
+    the single one we used on the command line. This is so that SSH doesn't misinterpret
+    what we mean and try to read the entry with a `%e` value.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在V6条目中，我们实际上使用了两个百分号，而不是我们在命令行上使用的单个百分号。这是为了避免SSH误解我们的意思，并尝试用`%e`值读取该条目。
+- en: Inside these blocks, we've set a few basic options based on what we did previously
+    on the command line.
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这些块中，我们根据之前在命令行上所做的事情设置了一些基本选项。
+- en: With these settings in place, we can save and exit our configuration file, and
+    try to connect to our specified hosts.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有了这些设置，我们可以保存并退出我们的配置文件，并尝试连接到我们指定的主机。
+- en: 'First, we''re going to connect to our other VM on its IPv4 address:'
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将连接到我们的另一个VM的IPv4地址：
+- en: '[PRE50]'
+  id: totrans-249
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: 'Next, we''re going to use our IPv6 address:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们将使用我们的IPv6地址：
+- en: '[PRE51]'
+  id: totrans-251
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: 'Finally, we''re going to resolve the hostname of the host:'
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们将解析主机的主机名：
+- en: '[PRE52]'
+  id: totrans-253
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: Most systems will also auto complete entries in the SSH config file. Try it
+    out yourself by typing `ssh C` and hitting *Tab* three times.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大多数系统还将自动完成SSH配置文件中的条目。通过键入`ssh C`并连续按*Tab*三次来自行尝试。
+- en: How it works...
+  id: totrans-255
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: 'Starting with the wildcard host entry (`Host *`), this is a global entry. Settings
+    within this block will apply to all hosts (except `CentOS2-V6`, which we''ll get
+    to soon):'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从通配符主机条目（`Host *`）开始，这是一个全局条目。此块中的设置将适用于所有主机（除了`CentOS2-V6`，我们很快就会谈到）：
+- en: '[PRE53]'
+  id: totrans-257
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: 'Here, we''ve said that each and every host in this file will use our `Ed25519`
+    key to connect, and we will always connect on port `22`. This block should be
+    used for global settings in general. You can also omit it entirely if you desire:'
+  id: totrans-258
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们说这个文件中的每个主机都将使用我们的`Ed25519`密钥进行连接，我们将始终在端口`22`上进行连接。这个块应该用于一般的全局设置。如果您愿意，也可以完全省略它：
+- en: '[PRE54]'
+  id: totrans-259
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: In our first specific host block, which we've called `CentOS2-V4`, we specify
+    the IPv4 address of the host, and the user to use.
+  id: totrans-260
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的第一个特定主机块中，我们称之为`CentOS2-V4`，我们指定了主机的IPv4地址和要使用的用户。
+- en: 'Connecting to this entry with verbosity turned up looks like this:'
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以详细模式连接到这个条目看起来像这样：
+- en: '[PRE55]'
+  id: totrans-262
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: Within this blob of noise, we can see some crucial things, emboldened for your
+    convenience.
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一堆噪音中，我们可以看到一些关键的东西，为了您的方便而加粗。
+- en: Firstly, we can see where SSH starts to read the configuration data from our
+    config file. It applies the settings for the wildcard entry, followed by those
+    for this specific host.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们可以看到SSH从我们的配置文件中开始读取配置数据的地方。它应用通配符条目的设置，然后是特定主机的设置。
+- en: Later, we can see the prompt for the `Ed25519` key specified in the host wildcard
+    block.
+  id: totrans-265
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 稍后，我们可以看到在主机通配符块中指定的`Ed25519`密钥的提示。
+- en: Finally, we can see that our session is authenticated to `192.168.33.11` (or
+    the IPv4 address).
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们可以看到我们的会话已经经过身份验证，连接到了`192.168.33.11`（或IPv4地址）。
+- en: 'If we now take a look at the `CentOS-V6` block, we start to see differences:'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们现在看一下`CentOS-V6`块，我们开始看到不同之处：
+- en: '[PRE56]'
+  id: totrans-268
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: Again, note the double percentage signs.
+  id: totrans-269
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次注意双百分号。
+- en: 'First, you''ll notice that we''ve got the port and a different `IdentityFile`
+    entry specified. This is due to the `Host *` block not applying to `CentOS2-V6`,
+    as shown here:'
+  id: totrans-270
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，您会注意到我们已经指定了端口和不同的`IdentityFile`条目。这是因为`Host *`块不适用于`CentOS2-V6`，如下所示：
+- en: '[PRE57]'
+  id: totrans-271
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: This means that no settings from the wildcard block will apply to `CentOS2-V6`.
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着通配符块中的任何设置都不会应用于`CentOS2-V6`。
+- en: 'If we connect to our host, again in a verbose fashion, we see the following:'
+  id: totrans-273
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们以详细模式连接到我们的主机，我们会看到以下内容：
+- en: '[PRE58]'
+  id: totrans-274
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: What's specifically different are the lines about matching config, which this
+    time inform us that the wildcard block won't be applied because of the negated
+    match for `CentOS2-V6`.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 具体不同的是关于匹配配置的行，这次通知我们通配符块不会应用，因为对`CentOS2-V6`的否定匹配。
+- en: We can also see that `id_rsa` is being used this time instead, and we've specifically
+    connected to the IPv6 address of the host.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以看到这次使用的是`id_rsa`，而且我们已经明确连接到了主机的IPv6地址。
+- en: 'Lastly, let''s look at `CentOS2-Hostname`:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，让我们看看`CentOS2-Hostname`：
+- en: '[PRE59]'
+  id: totrans-278
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: Again, note the matching of configuration, and the fact that we're connected
+    to the IPv4 address.
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次注意配置的匹配，以及我们连接到IPv4地址的事实。
+- en: 'We can do one more thing with this, which is up the verbosity on our connection,
+    getting to the next debug level, and hopefully seeing something else of note:'
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以用这个做更多的事情，即增加我们连接的详细程度，达到下一个调试级别，并希望看到其他值得注意的东西：
+- en: '[PRE60]'
+  id: totrans-281
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: Here, we can see the second debug level (`debug2`) and specifically, we can
+    see the moment `centos2` was given in the block and was resolved to an address.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到第二个调试级别（`debug2`），并且特别地，我们可以看到`centos2`在块中被给出并解析为一个地址的时刻。
+- en: There's more...
+  id: totrans-283
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: You might have noticed that in my examples, I used a mixture of upper and lower
+    characters for my names (for example, `CentOS2-V4`). I do this because it means
+    that I know when I'm using my SSH config file, and can be sure at a glance that
+    I'm using the settings I configured.
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能已经注意到，在我的示例中，我对我的名称使用了大写和小写字符的混合（例如`CentOS2-V4`）。我这样做是因为这意味着我知道我何时在使用我的SSH配置文件，并且可以一眼就确定我正在使用我配置的设置。
+- en: 'There''s nothing stopping you from creating a block like so:'
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有什么能阻止您创建这样的块：
+- en: '[PRE61]'
+  id: totrans-286
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: This is perfectly valid, and the settings will be read as normal.
+  id: totrans-287
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是完全有效的，设置将被正常读取。
+- en: 'You can also do clever things such as specific domain matching. If you have
+    to manage two different sets of servers differentiated by their domains, you can
+    do the following:'
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您还可以做一些聪明的事情，比如特定的域匹配。如果您必须管理通过其域区分的两组不同的服务器，您可以这样做：
+- en: '[PRE62]'
+  id: totrans-289
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'Attempting to connect to hosts in either of these domains will result in specific
+    configuration options being used:'
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试连接到这两个域中的主机将导致使用特定的配置选项：
+- en: '[PRE63]'
+  id: totrans-291
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: See also
+  id: totrans-292
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: The `ssh_config` manual page is worth a look, even if you only use it to fall
+    asleep.
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ssh_config`手册页值得一看，即使您只是用它来入睡。'
+- en: Modifying the server-side SSH configuration file
+  id: totrans-294
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 修改服务器端的SSH配置文件
+- en: For the last few sections, we've been focusing on the client configuration.
+    We've tweaked our connection string on the command line and we've written a configuration
+    file to be read automatically by SSH when connecting to our second host.
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在过去的几个部分中，我们一直在关注客户端配置。我们已经在命令行上调整了我们的连接字符串，并且我们已经编写了一个配置文件，当连接到我们的第二个主机时，SSH会自动读取它。
+- en: In this section, we're going to take a look at the `sshd_config` file, or the
+    server-side of the configuration tango, on our second host.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一部分，我们将看一下`sshd_config`文件，或者说是配置探戈的服务器端，我们的第二个主机。
+- en: We're going to make a few example and routine changes to get you familiar with
+    the concept.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将进行一些示例和例行更改，以使您熟悉这个概念。
+- en: Getting ready
+  id: totrans-298
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: 'Connect to both `centos1` and `centos2`. Doing this from outside (in separate
+    windows, and using `vagrant ssh`) is best:'
+  id: totrans-299
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到“centos1”和“centos2”。最好在外部执行此操作（在单独的窗口中，并使用“vagrant ssh”）：
+- en: '[PRE64]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: Place your Terminal windows side by side for easy viewing.
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将您的终端窗口并排放置以便查看。
+- en: There is a chance that you will break SSH access to your server in this section,
+    which is why I advise using Vagrant for your testing. If you do make a mistake,
+    don't worry – simply destroy your VMs and start again.
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，有可能会破坏对服务器的SSH访问，这就是为什么我建议您使用Vagrant进行测试。如果您犯了一个错误，不要担心-只需销毁您的虚拟机并重新开始。
+- en: How to do it...
+  id: totrans-303
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: On your `centos2` machine, open `/etc/ssh/sshd_config` in your favorite editor.
+  id: totrans-304
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的`centos2`机器上，用您喜欢的编辑器打开`/etc/ssh/sshd_config`。
+- en: This file is large, and can seem a little daunting the first time you open it
+    up.
+  id: totrans-305
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个文件很大，第一次打开它可能会有点令人生畏。
+- en: The options listed are most of the settings that the SSH server (`sshd`) will
+    read when it starts up, and apply to your running daemon.
+  id: totrans-306
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 列出的选项是SSH服务器（`sshd`）在启动时将读取的大部分设置，并适用于您正在运行的守护程序。
+- en: Changing the default port
+  id: totrans-307
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更改默认端口
+- en: 'We''re going to start with a simple one, that is, changing the default port
+    on which the SSH daemon runs:'
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从一个简单的开始，也就是更改SSH守护程序运行的默认端口：
+- en: '[PRE65]'
+  id: totrans-309
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: 'Change the preceding code so that the `Port` line is uncommented and now reads
+    `2222`:'
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更改前面的代码，使`Port`行取消注释，并且现在读取`2222`：
+- en: '[PRE66]'
+  id: totrans-311
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: As the handy note before this block informs us, we also have to modify SELinux
+    so that it's aware that the SSH daemon will be trying to use a different port.
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如这个块之前的便利说明所告诉我们的那样，我们还必须修改SELinux，以便它知道SSH守护程序将尝试使用不同的端口。
+- en: This file suggests that we use `semanage`, so let's do just that.
+  id: totrans-313
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个文件建议我们使用`semanage`，所以让我们这样做。
+- en: 'First, we''ll find which package provides semanage:'
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将找到提供semanage的软件包：
+- en: '[PRE67]'
+  id: totrans-315
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Then, we''ll install it:'
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们将安装它：
+- en: '[PRE68]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'Finally, we''ll run the recommended command with our new port:'
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们将使用新端口运行推荐的命令：
+- en: '[PRE69]'
+  id: totrans-319
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: 'Once done, we can safely restart the SSH daemon:'
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成后，我们可以安全地重新启动SSH守护程序：
+- en: '[PRE70]'
+  id: totrans-321
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: This shouldn't kick you off the VM, as `sshd` is designed so that changes won't
+    cause a loss of access, even if those changes will stop you from logging on again
+    (once you've voluntarily disconnected.)
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这不应该将您从虚拟机中踢出来，因为`sshd`是设计成这样的，即使这些更改会阻止您再次登录（一旦您自愿断开连接）。
+- en: Try logging out now, and then logging back in again.
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在尝试注销，然后再次登录。
+- en: 'A forewarning: this should fail!'
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个预警：这应该失败！
+- en: 'Fear not! Instead, connect to `centos1` on your second Terminal (you should
+    have two connections open to `centos1` at this point) and SSH back onto `centos2`
+    like so:'
+  id: totrans-325
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要害怕！相反，连接到您的第二个终端上的`centos1`（此时您应该已经打开了两个连接到`centos1`），然后像这样重新登录到`centos2`：
+- en: '[PRE71]'
+  id: totrans-326
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: Congratulations! SSH is now running on a different port!
+  id: totrans-327
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜！SSH现在在不同的端口上运行！
+- en: You can confirm this from within the OS with the following command (which we'll
+    cover in greater detail later on:)
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以使用以下命令从操作系统内部确认这一点（我们稍后将更详细地介绍）：
+- en: '[PRE72]'
+  id: totrans-329
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: Note that in the preceding code, we're printing both the IPv4 and IPv6 values.
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在前面的代码中，我们打印了IPv4和IPv6的值。
+- en: Changing the listen address
+  id: totrans-331
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更改监听地址
+- en: 'By default, SSH will listen on all addresses and interfaces:'
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，SSH将监听所有地址和接口：
+- en: '[PRE73]'
+  id: totrans-333
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: We're going to change this so that it's listening on only IPv4 and our `eth1`
+    address.
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将更改这样，它只监听IPv4和我们的`eth1`地址。
+- en: 'Change the preceding options to the following:'
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将前面的选项更改为以下内容：
+- en: '[PRE74]'
+  id: totrans-336
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: We've uncommented two of the options and changed their values.
+  id: totrans-337
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经取消注释了两个选项并更改了它们的值。
+- en: In the preceding block, you may have noticed that `ListenAddress ::` is also
+    listed. Here, `::` is the IPv6 equivalent of `0.0.0.0` in IPv4.
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的块中，您可能已经注意到`ListenAddress ::`也被列出。在这里，`::`是IPv6中`0.0.0.0`的等价物。
+- en: 'Restart the SSH daemon:'
+  id: totrans-339
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动SSH守护程序：
+- en: '[PRE75]'
+  id: totrans-340
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'Running our `ss` command from before, you may notice that the IPv6 option has
+    disappeared:'
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行我们之前的“ss”命令，您可能会注意到IPv6选项已经消失：
+- en: '[PRE76]'
+  id: totrans-342
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: 'If we now exit our session to `centos2` (using *Ctrl* + *D*) and try to SSH
+    to the IPv6 link-local address, it will fail:'
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们现在退出到`centos2`的会话（使用*Ctrl* + *D*），然后尝试SSH到IPv6链路本地地址，它将失败：
+- en: '[PRE77]'
+  id: totrans-344
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: A great success—we've squashed any possibility of trend-setters logging into
+    our server on IPv6!
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个巨大的成功-我们已经消除了任何趋势设置者登录到我们的IPv6服务器的可能性！
+- en: On to a serious note for a minute, I've been hearing about the demise of IPv4
+    and the rise of IPv6 for years, pretty much since I started in computing. In that
+    time, not much has changed, and both carriers and service providers have continued
+    to eke everything they can out of IPv4, even introducing horrible things such
+    as Carrier-grade NAT. I do hope that IPv6 picks up steam, not least because we're
+    effectively out of IPv4 addresses to allocate.
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们认真地谈一分钟，我听说IPv4的消亡和IPv6的崛起已经有好几年了，基本上是自从我开始从事计算机工作以来。在这段时间里，几乎没有什么改变，运营商和服务提供商都继续从IPv4中获取尽可能多的东西，甚至引入了可怕的事情，比如Carrier-grade
+    NAT。我真心希望IPv6能够蓬勃发展，至少因为我们已经基本用完了IPv4地址。
+- en: Changing the daemon logging level
+  id: totrans-347
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 更改守护程序日志级别
+- en: 'There are several levels that SSH can log at, dictated by the `LogLevel` setting:'
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH可以记录多个级别，由“LogLevel”设置决定：
+- en: '[PRE78]'
+  id: totrans-349
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: The possibilities are `QUIET`, `FATAL`, `ERROR`, `INFO`, `VERBOSE`, `DEBUG`,
+    `DEBUG1`, `DEBUG2`, and `DEBUG3`.
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可能性有“QUIET”、“FATAL”、“ERROR”、“INFO”、“VERBOSE”、“DEBUG”、“DEBUG1”、“DEBUG2”和“DEBUG3”。
+- en: The SSH daemon manual lists the `DEBUG` options as all violating the privacy
+    of users, and therefore it is not recommended that you use them.
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH守护程序手册将`DEBUG`选项列为违反用户隐私的所有选项，因此不建议您使用它们。
+- en: 'We''re going to bump this up to `VERBOSE`:'
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将把它提升到“VERBOSE”：
+- en: '[PRE79]'
+  id: totrans-353
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: 'Restart the SSH daemon:'
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动SSH守护程序：
+- en: '[PRE80]'
+  id: totrans-355
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: Now, let's have a look at what difference that made.
+  id: totrans-356
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们看看这个改变带来了什么不同。
+- en: 'Here''s our `secure` log at `INFO` level:'
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们在“INFO”级别的“secure”日志：
+- en: '[PRE81]'
+  id: totrans-358
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE81]'
+- en: 'And here''s our `secure` log at `VERBOSE` level:'
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是我们在“VERBOSE”级别的“secure”日志：
+- en: '[PRE82]'
+  id: totrans-360
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE82]'
+- en: Disallowing root login
+  id: totrans-361
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 禁止root登录
+- en: Some distributions deny root login by default, and this is widely considered
+    a good idea. Here, we have a user (vagrant) that we can use to get around so that
+    we don't need to log in as root.
+  id: totrans-362
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些发行版默认禁止root登录，这被广泛认为是一个好主意。在这里，我们有一个用户（vagrant），我们可以用来绕过，这样我们就不需要以root身份登录。
+- en: 'Find the line with `PermitRootLogin`:'
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 找到带有`PermitRootLogin`的行：
+- en: '[PRE83]'
+  id: totrans-364
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE83]'
+- en: 'Change it to `no`:'
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将其更改为`no`：
+- en: '[PRE84]'
+  id: totrans-366
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE84]'
+- en: 'Restart the SSH daemon:'
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动SSH守护程序：
+- en: '[PRE85]'
+  id: totrans-368
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE85]'
+- en: This does not disallow `local` root login, so in a pinch, you can still connect
+    to a console (or plug a keyboard and mouse into the physical machine) and log
+    in with the root user locally.
+  id: totrans-369
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这并不禁止`local` root登录，所以在紧急情况下，您仍然可以连接到控制台（或将键盘和鼠标插入物理机器）并在本地使用root用户登录。
+- en: Disabling passwords (force key use)
+  id: totrans-370
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 禁用密码（强制使用密钥）
+- en: Because we've got our public keys on this host, we no longer need to allow password-based
+    access.
+  id: totrans-371
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因为我们在这台主机上有公钥，所以不再需要允许基于密码的访问。
+- en: 'Find the `PasswordAuthentication` line:'
+  id: totrans-372
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 找到`PasswordAuthentication`行：
+- en: '[PRE86]'
+  id: totrans-373
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE86]'
+- en: 'Change this line to `no`:'
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将此行更改为`no`：
+- en: '[PRE87]'
+  id: totrans-375
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE87]'
+- en: 'Restart the SSH daemon:'
+  id: totrans-376
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动SSH守护程序：
+- en: '[PRE88]'
+  id: totrans-377
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE88]'
+- en: The eagle-eyed among you will have noticed that I already flipped this setting
+    once, in the `Vagrantfile` at the start of this chapter. This was to allow us
+    to use Vagrant as a learning experience, and we are effectively reversing the
+    reversal right now.
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你们中的敏锐者可能已经注意到，我在本章开头的`Vagrantfile`中已经翻转了这个设置一次。这是为了让我们能够将Vagrant用作学习经验，我们现在正在有效地扭转这种逆转。
+- en: Setting a message of the day (motd)
+  id: totrans-379
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置每日消息（motd）
+- en: Providing your `PrintMotd` setting is set to `yes`, you can have users see the
+    contents of `/etc/motd` when they log in.
+  id: totrans-380
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 只要您的`PrintMotd`设置为`yes`，您就可以让用户在登录时看到`/etc/motd`的内容。
+- en: 'First, ensure that it is set to `yes` in the SSH daemon config:'
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，确保在SSH守护程序配置中将其设置为`yes`：
+- en: '[PRE89]'
+  id: totrans-382
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE89]'
+- en: 'Next, restart the SSH daemon, and then modify the `/etc/motd` file to something
+    sensible. Alternatively, you can use the following command:'
+  id: totrans-383
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，重新启动SSH守护程序，然后修改`/etc/motd`文件为合理的内容。或者，您可以使用以下命令：
+- en: '[PRE90]'
+  id: totrans-384
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE90]'
+- en: This message will now be printed whenever you log in.
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在每次您登录时都会打印此消息。
+- en: This feature is usually used by companies to warn bad actors who are attempting
+    to gain access to their systems. Occasionally, it's used by bored system administrators
+    to quote Futurama at you.
+  id: totrans-386
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个功能通常被公司用来警告试图访问他们系统的不良分子。偶尔，无聊的系统管理员也会用它来引用《飞出个未来》。
+- en: The UseDNS setting
+  id: totrans-387
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: UseDNS设置
+- en: 'The last option I''m going to cover is the `UseDNS` entry, as it''s a source
+    of pain for quite a few people:'
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我要讲解的最后一个选项是`UseDNS`条目，因为它是一些人的痛点：
+- en: '[PRE91]'
+  id: totrans-389
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE91]'
+- en: Here, we can see that `UseDNS` has been explicitly set to `no` in our configuration
+    file. This is the default.
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到`UseDNS`在我们的配置文件中已被明确设置为`no`。这是默认设置。
+- en: When set to `no`, the SSH daemon will not look up the remote host name, and
+    check that the remote IP maps back to the expected IP, based on that host name.
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当设置为`no`时，SSH守护程序将不会查找远程主机名，并检查远程IP是否映射回预期的IP，基于该主机名。
+- en: 'To confuse you further, here''s the manual entry of `UseDNS `:'
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了让您更加困惑，这是`UseDNS`的手动输入：
+- en: '"Specifies whether sshd(8) should look up the remote host name, and to check
+    that the resolved host name for the remote IP address maps back to the very same
+    IP address.'
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “指定sshd(8)是否应查找远程主机名，并检查解析的远程主机名是否映射回到相同的IP地址。
+- en: If this option is set to no (the default) then only addresses and not host names
+    may be used in ~/.ssh/authorized_keys from and sshd_config Match Host directives."
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果此选项设置为no（默认值），则只能在~/.ssh/authorized_keys和sshd_config Match Host指令中使用地址而不是主机名。
+- en: What this means is that when `UseDNS` is set to `yes`, and the machine you're
+    connecting from doesn't have a reverse DNS entry set, SSH will try and match the
+    IP it expects with what it's seeing, and likely fail to do so.
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着当`UseDNS`设置为`yes`时，您正在连接的机器没有设置反向DNS条目，SSH将尝试将其期望的IP与其所看到的IP进行匹配，并可能无法这样做。
+- en: In practice, all this means is that if your DNS is broken on the box you're
+    trying to connect to, you have to wait around like a lemon for a bit while the
+    DNS request times out, and eventually let you in. To frustrate matters further,
+    this feature is almost useless out of the box, as highlighted in this mailing
+    list email: [https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html](https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html).
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，这意味着如果您要连接的计算机上的DNS出现问题，您必须像柠檬一样等待一段时间，直到DNS请求超时，并最终让您进入。更让事情变得更加令人沮丧的是，这个功能在开箱即用时几乎没有用处，正如这封邮件列表邮件中所强调的那样：[https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html](https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html)。
+- en: AllowUsers
+  id: totrans-397
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: AllowUsers
+- en: We've already denied the root user access to our system, but what if we wanted
+    to take this a step further and specify the users we want to grant access to?
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经拒绝了root用户访问我们的系统，但是如果我们想进一步指定要授予访问权限的用户呢？
+- en: For that, we need the `AllowUsers` setting.
+  id: totrans-399
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为此，我们需要`AllowUsers`设置。
+- en: 'This is rarely a default setting, or even commented out in the `sshd_config`
+    file, so we''re going to add it to the bottom:'
+  id: totrans-400
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这通常不是默认设置，甚至在`sshd_config`文件中也没有被注释掉，所以我们要将其添加到底部：
+- en: '[PRE92]'
+  id: totrans-401
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE92]'
+- en: 'Restart the SSH daemon:'
+  id: totrans-402
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新启动SSH守护程序：
+- en: '[PRE93]'
+  id: totrans-403
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE93]'
+- en: Now, you've got a system that only the `vagrant` user will be able to SSH to.
+    You can also add multiple names to this list, or even substitute this whitelist
+    for a blacklist, with `DenyUsers`.
+  id: totrans-404
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您有一个只有`vagrant`用户才能SSH到的系统。您还可以将多个名称添加到此列表，甚至用`DenyUsers`替换此白名单为黑名单。
+- en: If we want, we can work on a group basis (instead of individual usernames) with
+    `AllowGroups` and `DenyGroups`.
+  id: totrans-405
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们愿意，我们可以使用`AllowGroups`和`DenyGroups`以组为基础（而不是个人用户名）进行工作。
+- en: How it works...
+  id: totrans-406
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: Now that we've been through and changed a few common settings, we're going to
+    have a quick look at what happens when you restart the SSH daemon.
+  id: totrans-407
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经浏览并更改了一些常见设置，我们将快速查看重新启动SSH守护程序时会发生什么。
+- en: 'SSH''s `systemd` unit file will look similar to this, though your system may
+    vary:'
+  id: totrans-408
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH的`systemd`单元文件看起来类似于这样，尽管您的系统可能有所不同：
+- en: '[PRE94]'
+  id: totrans-409
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE94]'
+- en: By default, we can see that the binary used is `/usr/sbin/sshd` with `$OPTIONS`
+    passed from elsewhere (in this case the `EnvironmentFile` value, as listed previously).
+  id: totrans-410
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，我们可以看到使用的二进制文件是`/usr/sbin/sshd`，并且从其他地方传递了`$OPTIONS`（在这种情况下是`EnvironmentFile`值，如前面所列）。
+- en: 'Reading the manual for `sshd`, we find the following section:'
+  id: totrans-411
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 阅读`sshd`的手册，我们找到了以下部分：
+- en: 'The `-f config_file` option ([https://man.openbsd.org/sshd](https://man.openbsd.org/sshd))
+    is described as follows:'
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`-f config_file`选项（[https://man.openbsd.org/sshd](https://man.openbsd.org/sshd)）的描述如下：'
+- en: '"Specifies the name of the configuration file. The default is /etc/ssh/sshd_config.
+    sshd refuses to start if there is no configuration file."'
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “指定配置文件的名称。默认值为/etc/ssh/sshd_config。如果没有配置文件，sshd将拒绝启动。”
+- en: Here, we have the answer of why `sshd_config` is read by default—it's baked
+    in.
+  id: totrans-414
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们得到了为什么`sshd_config`默认被读取的答案——它是内置的。
+- en: There's more...
+  id: totrans-415
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: We've only covered some of the basic options people tend to change when configuring
+    the SSH daemon for their own environment, but most administrators don't bother
+    making any changes at all, leaving whatever the configured defaults are.
+  id: totrans-416
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们只涵盖了一些人们在配置SSH守护程序时倾向于更改的基本选项，但大多数管理员根本不费心进行任何更改，而是保留配置的默认值。
+- en: See also
+  id: totrans-417
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: To get a better understanding of all the daemon options available to you, read
+    through the `sshd_config` manual page and take a look at the page for the `sshd`
+    executable, too.
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要更好地了解可用于您的所有守护程序选项，请阅读`sshd_config`手册页面，并查看`sshd`可执行文件的页面。
+- en: Rotating host keys and updating known_hosts
+  id: totrans-419
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 旋转主机密钥和更新known_hosts
+- en: One thing we've not mentioned yet are host keys, and the `known_hosts` file.
+  id: totrans-420
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还没有提到的一件事是主机密钥和`known_hosts`文件。
+- en: This is something that is often overlooked, so I'd like to take a few minutes
+    to go over these otherwise-ignored treasures.
+  id: totrans-421
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是一个经常被忽视的事情，所以我想花几分钟时间来讨论这些被忽视的宝藏。
+- en: In this section, we will inspect what happens when you first SSH to a new machine,
+    and then we will change the keys of that machine to see what problems this causes
+    us.
+  id: totrans-422
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将检查第一次SSH到新机器时会发生什么，然后我们将更改该机器的密钥，看看这会给我们带来什么问题。
+- en: Getting ready
+  id: totrans-423
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: 'Connect to `centos1` and `centos2` in different sessions:'
+  id: totrans-424
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在不同的会话中连接到`centos1`和`centos2`：
+- en: '[PRE95]'
+  id: totrans-425
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE95]'
+- en: If you're working on a fresh setup, SSH to `centos2` from `centos1` and accept
+    the host key when you're presented with it.
+  id: totrans-426
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您正在进行新安装，从`centos1` SSH到`centos2`并在出现时接受主机密钥。
+- en: 'Log back out of `centos2`:'
+  id: totrans-427
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从`centos2`注销：
+- en: '[PRE96]'
+  id: totrans-428
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE96]'
+- en: 'We''ve now got an entry in our `known_hosts` file, as shown here:'
+  id: totrans-429
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在在我们的`known_hosts`文件中有一个条目，如下所示：
+- en: '[PRE97]'
+  id: totrans-430
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE97]'
+- en: 'Note that this IP and key are found on `centos2`:'
+  id: totrans-431
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，在`centos2`上找到了此IP和密钥：
+- en: '[PRE98]'
+  id: totrans-432
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE98]'
+- en: We can prove this easily by having a look at the key's fingerprint on both machines,
+    and comparing the ASCII art.
+  id: totrans-433
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过在两台机器上查看密钥的指纹并比较ASCII图来轻松证明这一点。
+- en: 'On `centos2`, this is as follows:'
+  id: totrans-434
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上，操作如下：
+- en: '[PRE99]'
+  id: totrans-435
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE99]'
+- en: 'And from the `known_hosts` file on `centos1` is as follows:'
+  id: totrans-436
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从`centos1`的`known_hosts`文件中如下：
+- en: '[PRE100]'
+  id: totrans-437
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE100]'
+- en: That's genuinely the first time I've ever used the `-v` option to get the ASCII
+    art out of a key for comparison purposes.
+  id: totrans-438
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这真的是我第一次使用`-v`选项来获取密钥的ASCII图进行比较。
+- en: How to do it...
+  id: totrans-439
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何操作...
+- en: Now that we've confirmed our setup, we're going to change the host keys on `centos2`
+    and see what happens.
+  id: totrans-440
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经确认了我们的设置，我们将在`centos2`上更改主机密钥，看看会发生什么。
+- en: 'On `centos2`, run the following:'
+  id: totrans-441
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上，运行以下命令：
+- en: '[PRE101]'
+  id: totrans-442
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE101]'
+- en: We've just moved the keys we accepted as gospel on `centos1`.
+  id: totrans-443
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们刚刚将我们在`centos1`上接受为真理的密钥移动了。
+- en: Our session stays up because we're already authenticated and connected. If we
+    were to disconnect at this point, we would have to accept a different set of keys
+    (we moved the ECDSA keys, but there's still `Ed25519` host keys available, which
+    SSH would pick up instead).
+  id: totrans-444
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的会话保持连接，因为我们已经经过身份验证并连接。如果此时断开连接，我们将不得不接受不同的密钥（我们移动了ECDSA密钥，但仍然有`Ed25519`主机密钥可用，SSH将选择使用它们）。
+- en: 'Now, we''re going to generate a new set of keys by using the catchall `-A`
+    flag:'
+  id: totrans-445
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们将使用通用的`-A`标志生成一组新的密钥：
+- en: '[PRE102]'
+  id: totrans-446
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE102]'
+- en: 'We can confirm these exist by checking the directory:'
+  id: totrans-447
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以通过检查目录来确认这些存在：
+- en: '[PRE103]'
+  id: totrans-448
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE103]'
+- en: 'Log out of `centos2` and try to log back in again:'
+  id: totrans-449
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从`centos2`注销并尝试重新登录：
+- en: '[PRE104]'
+  id: totrans-450
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE104]'
+- en: SSH tries to save you from doing something bad. Because it's already aware of
+    the IP you're trying to connect to, and has a `known_hosts` entry for it, it compares
+    the known key it has on file with that of the box.
+  id: totrans-451
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH试图阻止您做一些坏事。因为它已经知道您要连接的IP，并且有一个`known_hosts`条目，它将文件中的已知密钥与盒子上的密钥进行比较。
+- en: Since we've just regenerated the keys on the box, we've been presented with
+    a horrible-looking error.
+  id: totrans-452
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们刚刚在盒子上重新生成了密钥，我们被呈现了一个看起来很糟糕的错误。
+- en: It's worth getting over the mental block of just scoffing and working around
+    this error. Try to lend yourself five seconds of thought and confirm that the
+    error is expected. Too often, I've seen people immediately grumble when faced
+    with this message and bypass it straight away. If you've already accepted the
+    key on a box once, you shouldn't see a warning about it again, this can mean that
+    the box has been tampered with, or your connection is being "man in the middle'd."
+    Be vigilant!
+  id: totrans-453
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 值得克服心理障碍，不要只是嘲笑并绕过这个错误。试着花五秒钟的时间来确认错误是否符合预期。我经常看到人们一遇到这个消息就立刻抱怨并立即绕过它。如果您已经在某个盒子上接受了密钥，那么您不应该再看到有关它的警告，这可能意味着该盒子已被篡改，或者您的连接被“中间人”攻击。要保持警惕！
+- en: 'Clear the old key (the line location of which is emboldened in the preceding
+    code) from our `known_hosts` file:'
+  id: totrans-454
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从我们的`known_hosts`文件中清除旧密钥（在前面的代码中加粗显示了行位置）：
+- en: '[PRE105]'
+  id: totrans-455
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE105]'
+- en: 'You should now be able to SSH to `centos2` again and accept the new key:'
+  id: totrans-456
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您应该能够再次SSH到`centos2`并接受新密钥：
+- en: '[PRE106]'
+  id: totrans-457
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE106]'
+- en: How it works...
+  id: totrans-458
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: 'The `ssh-keygen` command we used is a quick way of placing expected host keys
+    in the default location. Because we''d removed the key we expected to be there,
+    we would have failed to connect to our host, and been prompted with the horrible
+    error we saw previously:'
+  id: totrans-459
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用的`ssh-keygen`命令是在默认位置放置预期主机密钥的快速方法。因为我们删除了我们期望在那里的密钥，所以我们将无法连接到我们的主机，并且会被提示我们之前看到的可怕错误：
+- en: '[PRE107]'
+  id: totrans-460
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE107]'
+- en: In the preceding snippet, we can see SSH checking our `known_hosts` file, then
+    getting the key from the remote host, and finally throwing a fit.
+  id: totrans-461
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的片段中，我们可以看到SSH检查我们的`known_hosts`文件，然后从远程主机获取密钥，最后引发了一场骚动。
+- en: To reconnect to the host, we simply had to remove the offending entry from the
+    `known_hosts` file on our client-side, and then attempt our connection again.
+  id: totrans-462
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要重新连接到主机，我们只需从客户端的`known_hosts`文件中删除有问题的条目，然后再次尝试我们的连接。
+- en: We used `-R` to remove the offending key, but you can use any method to do so
+    as it's just a text file. If you wish you can even empty the entire `known_hosts`
+    file, but this will also mean you'll have to accept keys for every box you've
+    ever connected to, once again.
+  id: totrans-463
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们使用了`-R`来删除有问题的密钥，但您可以使用任何方法来这样做，因为它只是一个文本文件。如果您愿意，甚至可以清空整个`known_hosts`文件，但这也意味着您将不得不再次接受您曾经连接过的每个盒子的密钥。
+- en: There's more...
+  id: totrans-464
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: So, what happens if you remove all the host keys from the server?
+  id: totrans-465
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 那么，如果您从服务器中删除所有主机密钥会发生什么？
+- en: 'This is what you get:'
+  id: totrans-466
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是你会得到的：
+- en: '[PRE108]'
+  id: totrans-467
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE108]'
+- en: At this point, you can either re-provision your VM, or log on via the console
+    and generate new keys.
+  id: totrans-468
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此时，您可以重新配置您的VM，或者通过控制台登录并生成新的密钥。
+- en: Technical requirements
+  id: totrans-469
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: Confirm that both of your Vagrant boxes are enabled, and connect to both using
+    the `vagrant` command.
+  id: totrans-470
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确认您的两个Vagrant盒子都已启用，并使用`vagrant`命令连接到两个盒子。
+- en: 'If you''ve previously changed the SSH configuration file, it might be an idea
+    to destroy your boxes and re-provision them first:'
+  id: totrans-471
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您之前更改了SSH配置文件，最好先销毁您的盒子并重新配置它们：
+- en: '[PRE109]'
+  id: totrans-472
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE109]'
+- en: Using local forwarding
+  id: totrans-473
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用本地转发
+- en: Local forwarding is the act of mapping local TCP ports or Unix sockets onto
+    remote ports or sockets. It's commonly used when either accessing a system securely
+    (by requiring the user to first SSH to the box, thus encrypting their connection),
+    or for troubleshooting problems.
+  id: totrans-474
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本地转发是将本地TCP端口或Unix套接字映射到远程端口或套接字的行为。当要么安全地访问系统（要求用户首先SSH到盒子，从而加密他们的连接），要么用于解决问题时，它通常被使用。
+- en: In this section, we're going to start a small `webserver` on `centos2`, which
+    we're going to connect to from `centos1`, first by connecting to the IP and port
+    directly, and then by a connection to a mapped local port, utilizing port forwarding.
+  id: totrans-475
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将在`centos2`上启动一个小的`webserver`，我们将首先通过直接连接到IP和端口，然后通过连接到映射的本地端口来从`centos1`连接到它，利用端口转发。
+- en: Getting ready
+  id: totrans-476
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: 'On `centos2`, run the following command:'
+  id: totrans-477
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上运行以下命令：
+- en: '[PRE110]'
+  id: totrans-478
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE110]'
+- en: You've just created a small, Python-based web server, listening on every address
+    at port `8888`.
+  id: totrans-479
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您刚刚创建了一个小型的基于Python的Web服务器，监听端口`8888`上的每个地址。
+- en: 'You can confirm this by running a `curl` command from `centos1`:'
+  id: totrans-480
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以通过从`centos1`运行`curl`命令来确认这一点：
+- en: '[PRE111]'
+  id: totrans-481
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE111]'
+- en: Note the listing of the home directory contents from `centos2`.
+  id: totrans-482
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意从`centos2`列出的主目录内容。
+- en: 'On `centos2`, you should see your connection (`200` response):'
+  id: totrans-483
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上，您应该看到您的连接（`200`响应）：
+- en: '[PRE112]'
+  id: totrans-484
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE112]'
+- en: Python's built-in web server module is very handy for testing. I used it here
+    because it's available out of the box in our installation, but I wouldn't use
+    it in a production environment, as there are better (and faster) alternatives.
+  id: totrans-485
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Python的内置Web服务器模块非常适用于测试。我在这里使用它是因为它在我们的安装中是开箱即用的，但我不会在生产环境中使用它，因为有更好（更快）的替代品。
+- en: 'To confirm we''ve not yet got anything listening locally on port `9999`, perform
+    another `curl` command from `centos1`:'
+  id: totrans-486
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要确认我们尚未在端口`9999`上本地监听任何内容，请从`centos1`执行另一个`curl`命令：
+- en: '[PRE113]'
+  id: totrans-487
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE113]'
+- en: How to do it...
+  id: totrans-488
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: We're going to locally forward connections to the local port `9999` to the remote
+    port `8888`.
+  id: totrans-489
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将本地转发连接到本地端口`9999`到远程端口`8888`。
+- en: On the command line
+  id: totrans-490
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在命令行上
+- en: 'Run the following from `centos1`:'
+  id: totrans-491
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从`centos1`运行以下命令：
+- en: '[PRE114]'
+  id: totrans-492
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE114]'
+- en: You may be prompted for your password (depending on what you've done in terms
+    of key setup) and then be dropped back to the `centos1` prompt.
+  id: totrans-493
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会被提示输入密码（取决于您在密钥设置方面做了什么），然后被放回到`centos1`提示符。
+- en: Our SSH connection will stay up for two minutes.
+  id: totrans-494
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的SSH连接将保持两分钟。
+- en: 'Now, we run a `curl`, checking that our forwarding is working:'
+  id: totrans-495
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们运行一个`curl`，检查我们的转发是否正常工作：
+- en: '[PRE115]'
+  id: totrans-496
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE115]'
+- en: Success! Here, we're curling the localhost IP address of `centos1` on our forwarded
+    port and we're getting the directory listing from `centos2`!
+  id: totrans-497
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 成功！在这里，我们正在从我们转发的端口上的`centos1`的本地主机IP地址进行curl，并且我们正在从`centos2`获取目录列表！
+- en: Using an SSH config file
+  id: totrans-498
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用SSH配置文件
+- en: If we wanted to create this forwarding setup each time we connected to `centos2`,
+    we can add the option to our SSH configuration file.
+  id: totrans-499
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们想要每次连接到`centos2`时创建这种转发设置，我们可以将选项添加到我们的SSH配置文件中。
+- en: 'Add the emboldened line in the following code:'
+  id: totrans-500
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在以下代码中添加加粗的行：
+- en: '[PRE116]'
+  id: totrans-501
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE116]'
+- en: 'Now, if you SSH to the host specified, you will create a forwarded connection
+    without having to specify it:'
+  id: totrans-502
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您SSH到指定的主机，您将创建一个转发连接，而无需指定它：
+- en: '[PRE117]'
+  id: totrans-503
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE117]'
+- en: You're not limited to one `LocalForward` entry per host—you can have several.
+  id: totrans-504
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您不限于每个主机一条`LocalForward`条目 - 您可以有多个。
+- en: How it works...
+  id: totrans-505
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: When you use the `-L` flag with SSH, you're specifying that any connection attempts
+    made to the local machine, on the first port listed, are to be forwarded to the
+    remote host and port.
+  id: totrans-506
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您使用SSH的`-L`标志时，您正在指定任何连接尝试都将转发到远程主机和端口的本地机器上列出的第一个端口。
+- en: 'Let''s break down the command:'
+  id: totrans-507
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们分解一下这个命令：
+- en: '[PRE118]'
+  id: totrans-508
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE118]'
+- en: 'First, the `-f` and `sleep 120` at the end of the command are a quick way to
+    create a session and background it while we perform our test:'
+  id: totrans-509
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，命令末尾的`-f`和`sleep 120`是一种快速创建会话并在我们进行测试时将其后台化的方法：
+- en: '[PRE119]'
+  id: totrans-510
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE119]'
+- en: In the real world, you're not limited to just one Terminal window, and generally,
+    you'll find yourself opening a session to a remote host in one window while you
+    work in another.
+  id: totrans-511
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在现实世界中，您不仅限于一个终端窗口，通常情况下，您会发现自己在一个窗口中连接到远程主机，而在另一个窗口中进行工作。
+- en: 'The second part is the interesting bit:'
+  id: totrans-512
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二部分是有趣的部分：
+- en: '[PRE120]'
+  id: totrans-513
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE120]'
+- en: Here, we're saying that local port `9999` should have any connection requests
+    forwarded to the remote host on `127.0.0.1:8888`.
+  id: totrans-514
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们说本地端口`9999`应将任何连接请求转发到远程主机的`127.0.0.1:8888`。
+- en: 'Because of the way we created our web server, the following is also valid syntax:'
+  id: totrans-515
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们创建Web服务器的方式，以下语法也是有效的：
+- en: '[PRE121]'
+  id: totrans-516
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE121]'
+- en: This is because our remote web server was listening on all addresses, so instead
+    of sending our request to the remote localhost address, we're just using the `eth1`
+    address instead.
+  id: totrans-517
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这是因为我们的远程Web服务器正在监听所有地址，因此我们不是将请求发送到远程本地主机地址，而是使用`eth1`地址。
+- en: I've frequently seen setups where less secure programs are run on the localhost
+    address only, meaning that if you want to access the program, you have to SSH
+    to the remote host first.
+  id: totrans-518
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我经常看到设置，其中不太安全的程序仅在本地主机地址上运行，这意味着如果要访问该程序，必须先SSH到远程主机。
+- en: You're also not limited to cURL and the command line—you could navigate to `http://127.0.0.1:9999`
+    in your web browser, and it would still work.
+  id: totrans-519
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您不仅限于cURL和命令行 - 您可以在Web浏览器中导航到`http://127.0.0.1:9999`，它仍然可以工作。
+- en: There's more...
+  id: totrans-520
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: Tips and tricks for SSH are somewhat endless, but the following can be good
+    to practice.
+  id: totrans-521
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH的技巧和窍门有点无穷无尽，但以下内容可能是很好的练习。
+- en: Watching our SSH session
+  id: totrans-522
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 观察我们的SSH会话
+- en: 'If you want to see when your SSH tunnel has closed, run the following:'
+  id: totrans-523
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果要查看SSH隧道何时关闭，请运行以下命令：
+- en: '[PRE122]'
+  id: totrans-524
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE122]'
+- en: 'Upon disconnection, this process will end:'
+  id: totrans-525
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在断开连接时，此过程将结束：
+- en: '[PRE123]'
+  id: totrans-526
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE123]'
+- en: Connecting to systems beyond the remote host
+  id: totrans-527
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 连接到远程主机之外的系统
+- en: '`LocalForwarding` can even be used to access hosts that the remote machine
+    can see, but your local one can''t.'
+  id: totrans-528
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`LocalForwarding`甚至可以用于访问远程机器可以看到但本地机器看不到的主机。'
+- en: 'Consider the following configuration entry:'
+  id: totrans-529
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑以下配置条目：
+- en: '[PRE124]'
+  id: totrans-530
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE124]'
+- en: In this example, `centos2` can see the host with the IP `192.168.33.12`, and
+    the server it's got listening on port `6666`.
+  id: totrans-531
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此示例中，`centos2`可以看到具有IP`192.168.33.12`的主机，以及在端口`6666`上监听的服务器。
+- en: When we connect to `centos2` and create our tunnel, we can connect locally to
+    `127.0.0.1:7777`, viewing the web server on `192.168.33.12:6666`.
+  id: totrans-532
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们连接到`centos2`并创建我们的隧道时，我们可以在本地连接到`127.0.0.1:7777`，查看`192.168.33.12:6666`上的Web服务器。
+- en: This is widely used in conjunction with bastion hosts, which we will look at
+    soon.
+  id: totrans-533
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这通常与堡垒主机一起使用，我们很快将会看到。
+- en: See also
+  id: totrans-534
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: Forwarding local connection attempts to a remote host can be an extremely useful
+    troubleshooting and access control method.
+  id: totrans-535
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将本地连接尝试转发到远程主机可能是一种非常有用的故障排除和访问控制方法。
+- en: Take a look at the SSH manual page for more detail and expansion on the options
+    listed in this recipe.
+  id: totrans-536
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查看SSH手册页面，以获取有关此处列出的选项的更多详细信息和扩展。
+- en: 'The SSH manual page can be brought up on most Linux systems using the following
+    command:'
+  id: totrans-537
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 可以使用以下命令在大多数Linux系统上打开SSH手册页面：
+- en: '[PRE125]'
+  id: totrans-538
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE125]'
+- en: Using remote forwarding
+  id: totrans-539
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用远程转发
+- en: In the previous section, we looked at the ability to forward local connection
+    attempts to a remote machine.
+  id: totrans-540
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节中，我们看到了将本地连接尝试转发到远程机器的能力。
+- en: 'In this section, we''re going to look at something very similar: remote forwarding.'
+  id: totrans-541
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将看到非常相似的内容：远程转发。
+- en: With remote forwarding, connection attempts made to a specified address and
+    port on a remote machine are passed back through the SSH tunnel you've set up,
+    and are processed on the local machine (your client).
+  id: totrans-542
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过远程转发，对远程机器上指定地址和端口的连接尝试将通过您设置的SSH隧道传回，并在本地机器（客户端）上进行处理。
+- en: Start on `centos1`.
+  id: totrans-543
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从`centos1`开始。
+- en: Before we start it's worth noting that remote forwarding is a great way to punch
+    holes out of networks, which means that it can also be a nightmare for security
+    professionals charged with maintaining a network. With great power comes great
+    etc.
+  id: totrans-544
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始之前值得注意的是，远程转发是打开网络的一种很好的方法，这意味着它也可能是网络维护的安全专业人员的噩梦。伴随着巨大的力量而来的是巨大的责任等等。
+- en: Getting ready
+  id: totrans-545
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: 'Confirm that both of your Vagrant boxes are enabled, and connect to both:'
+  id: totrans-546
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确认您的Vagrant框都已启用，并连接到两者：
+- en: '[PRE126]'
+  id: totrans-547
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE126]'
+- en: How to do it...
+  id: totrans-548
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: First, we're going to start by using our single command at our prompt, and then
+    we'll look at how to set up the connection every time you SSH to a machine using
+    the SSH config file.
+  id: totrans-549
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将从我们的提示符处使用我们的单个命令开始，然后我们将看看如何使用SSH配置文件每次SSH到一台机器时设置连接。
+- en: On the command line
+  id: totrans-550
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在命令行上
+- en: 'On `centos1`, run the following:'
+  id: totrans-551
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos1`上运行以下命令：
+- en: '[PRE127]'
+  id: totrans-552
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE127]'
+- en: 'Once connected to `centos2`, run the following:'
+  id: totrans-553
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到`centos2`后，运行以下命令：
+- en: '[PRE128]'
+  id: totrans-554
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE128]'
+- en: You will probably be prompted to add a host key, and then be prompted for a
+    password. We're connecting back to `centos1`, so provide the default Vagrant password.
+  id: totrans-555
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会提示添加主机密钥，然后提示输入密码。我们正在连接回`centos1`，因此提供默认的Vagrant密码。
+- en: 'You should be left at the `centos1` command-line prompt:'
+  id: totrans-556
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该留在`centos1`命令行提示符处：
+- en: '[PRE129]'
+  id: totrans-557
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE129]'
+- en: Using an SSH config file
+  id: totrans-558
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用SSH配置文件
+- en: 'As with `LocalForward`, we can also use an SSH config file for `RemoteForward`
+    connections, too:'
+  id: totrans-559
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与`LocalForward`一样，我们也可以使用SSH配置文件进行`RemoteForward`连接：
+- en: '[PRE130]'
+  id: totrans-560
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE130]'
+- en: 'Here, you can see the exact setup we used in the command line section, only
+    specified in the config file, so that it''s always available without having to
+    type the flags out each time:'
+  id: totrans-561
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，您可以看到我们在命令行部分中使用的确切设置，只是在配置文件中指定，因此它始终可用，而无需每次键入标志：
+- en: '[PRE131]'
+  id: totrans-562
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE131]'
+- en: How it works...
+  id: totrans-563
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: 'What we actually do here is... odd:'
+  id: totrans-564
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们实际上在这里做的是...奇怪的：
+- en: We SSH to `centos2`, while saying that any connection attempts made to port
+    `5353` on the remote machine (`centos2`) are to be passed back over the SSH session
+    to our client (`centos1`).
+  id: totrans-565
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们SSH到`centos2`，同时指定在远程机器（`centos2`）上对端口`5353`进行的任何连接尝试都将通过SSH会话传回到我们的客户端（`centos1`）。
+- en: We then run SSH on our remote machine (`centos2`), specifying the localhost
+    address and the port that we're passing back to `centos1`, `127.0.0.1:5353`.
+  id: totrans-566
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后我们在我们的远程机器（`centos2`）上运行SSH，指定本地地址和我们传递回`centos1`的端口，`127.0.0.1:5353`。
+- en: The connection attempt is passed back over our established SSH session to `centos1`,
+    where the SSH server accepts the connection request.
+  id: totrans-567
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 连接尝试被传递回我们已建立的SSH会话到`centos1`，SSH服务器接受连接请求。
+- en: As a result, we're locally SSH'ing to `centos1` by specifying the local address
+    and remote forwarded port on `centos2`.
+  id: totrans-568
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 结果是，我们通过在`centos2`上指定本地地址和远程转发端口来本地SSH到`centos1`。
+- en: Confused? I was the first time someone explained this to me.
+  id: totrans-569
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 困惑吗？有人第一次向我解释这个时我也感到困惑。
+- en: To better understand this, we can use the `w` command.
+  id: totrans-570
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了更好地理解这一点，我们可以使用`w`命令。
+- en: 'On `centos1`, this gives us the following:'
+  id: totrans-571
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos1`上，这给我们以下结果：
+- en: '[PRE132]'
+  id: totrans-572
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE132]'
+- en: Here, we can see our default Vagrant connection (from `10.0.2.2`), but we can
+    also see a local connection.
+  id: totrans-573
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到我们的默认Vagrant连接（来自`10.0.2.2`），但我们也可以看到一个本地连接。
+- en: 'Apparently, we''ve SSH''d to our machine from the localhost address (`127.0.0.1`).
+    This is actually the SSH session we established on `centos2` using the following
+    command:'
+  id: totrans-574
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显然，我们已经从本地地址（`127.0.0.1`）SSH到我们的机器。这实际上是我们在`centos2`上使用以下命令建立的SSH会话：
+- en: '[PRE133]'
+  id: totrans-575
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE133]'
+- en: 'On `centos2`, the `w` command gives us the following:'
+  id: totrans-576
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上，`w`命令给出以下结果：
+- en: '[PRE134]'
+  id: totrans-577
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE134]'
+- en: Here, we can see our default Vagrant connection (from `10.0.2.2`), but we can
+    also see the remote connection from `centos1` (`192.168.33.10`).
+  id: totrans-578
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们可以看到我们的默认Vagrant连接（来自`10.0.2.2`），但我们也可以看到从`centos1`（`192.168.33.10`）的远程连接。
+- en: There's more...
+  id: totrans-579
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: It's not just SSH that this can be used with. In the same way, we can forward
+    ports from the remote session to our local machine – we have a wealth of options
+    available to us.
+  id: totrans-580
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不仅仅是SSH可以使用这个。同样，我们可以将远程会话的端口转发到我们的本地机器上 - 我们有许多可用的选项。
+- en: 'Let''s start and background a simple web server on `centos1`:'
+  id: totrans-581
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们在`centos1`上启动并在后台运行一个简单的Web服务器：
+- en: '[PRE135]'
+  id: totrans-582
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE135]'
+- en: 'Now, let''s SSH to `centos2`, while stating that any requests made on the remote
+    machine to `127.0.0.1:7777` are passed back along the established SSH session
+    to `centos1`:'
+  id: totrans-583
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们SSH到`centos2`，同时声明在远程机器上对`127.0.0.1:7777`的任何请求都会沿着已建立的SSH会话传递回`centos1`：
+- en: '[PRE136]'
+  id: totrans-584
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE136]'
+- en: 'On `centos2`, we should now be able to `curl 127.0.0.1:7777` and see the contents
+    of Vagrant''s home directory on `centos1`:'
+  id: totrans-585
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上，我们现在应该能够`curl 127.0.0.1:7777`并查看`centos1`上Vagrant主目录的内容：
+- en: '[PRE137]'
+  id: totrans-586
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE137]'
+- en: Success!
+  id: totrans-587
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 成功！
+- en: See also
+  id: totrans-588
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: While it may seem that this has limited uses, as far as nifty tricks go, you
+    might find some curious cases for it in your career.
+  id: totrans-589
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然看起来似乎用途有限，但就巧妙的技巧而言，您可能会在职业生涯中找到一些奇特的用例。
+- en: I have used this on one or two occasions, when DNS has been broken on a remote
+    machine, and I've instead forwarded DNS requests back over an established SSH
+    connection.
+  id: totrans-590
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我曾在一两个场合使用过这个方法，当远程机器的DNS出现故障时，我反而通过已建立的SSH连接转发DNS请求。
+- en: ProxyJump and bastion hosts
+  id: totrans-591
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 代理跳转和堡垒主机
+- en: We're going to take a look at one very new SSH option, a slightly older SSH
+    option, and the concept of bastion hosts (or jump boxes) in this recipe.
+  id: totrans-592
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个教程中，我们将看一看一个非常新的SSH选项，一个稍老的SSH选项，以及堡垒主机（或跳板机）的概念。
+- en: We need three machines because we're going to use one machine as the "gateway"
+    to another.
+  id: totrans-593
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要三台机器，因为我们将使用一台机器作为到另一台机器的“网关”。
+- en: Getting ready
+  id: totrans-594
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备好了
+- en: Set up your three VMs, preferably using the `Vagrantfile` at the top of this
+    chapter.
+  id: totrans-595
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设置好您的三个VM，最好使用本章开头的`Vagrantfile`。
+- en: 'Connect to each box, and then check that from `centos1`, you can ping `centos2`
+    and `centos3`:'
+  id: totrans-596
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 连接到每个框，然后检查从`centos1`是否可以ping通`centos2`和`centos3`：
+- en: '[PRE138]'
+  id: totrans-597
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE138]'
+- en: These are on `192.168.33.11` and `192.168.33.12` if you're using the supplied
+    `Vagrantfile`.
+  id: totrans-598
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您使用提供的`Vagrantfile`，这些地址是`192.168.33.11`和`192.168.33.12`。
+- en: How to do it...
+  id: totrans-599
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'From `centos1`, run the following command:'
+  id: totrans-600
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从`centos1`，运行以下命令：
+- en: '[PRE139]'
+  id: totrans-601
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE139]'
+- en: You may be prompted to accept keys and also be asked for your password.
+  id: totrans-602
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可能会被提示接受密钥，并被要求输入密码。
+- en: 'You will find yourself on `centos3`, having jumped through `centos2`:'
+  id: totrans-603
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您将发现自己在`centos3`上，已经跳转到`centos2`：
+- en: '[PRE140]'
+  id: totrans-604
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE140]'
+- en: Using an SSH config file
+  id: totrans-605
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用SSH配置文件
+- en: 'The same trick can be used by specifying the `ProxyJump` option in your SSH
+    config file:'
+  id: totrans-606
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过在SSH配置文件中指定`ProxyJump`选项，可以使用相同的技巧：
+- en: '[PRE141]'
+  id: totrans-607
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE141]'
+- en: 'You can now SSH to `centos3` via `centos2`:'
+  id: totrans-608
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您可以通过`centos2` SSH到`centos3`：
+- en: '[PRE142]'
+  id: totrans-609
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE142]'
+- en: How it works...
+  id: totrans-610
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 工作原理...
+- en: The `-J` and `ProxyJump` options are a way to connect through a specified host,
+    to a host beyond.
+  id: totrans-611
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`-J`和`ProxyJump`选项是通过指定的主机连接到更远主机的一种方法。'
+- en: 'The manual entry from the official manual pages ([https://man.openbsd.org/ssh](https://man.openbsd.org/ssh))
+    for `-J [user@]host[:port]` is as follows:'
+  id: totrans-612
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 官方手册页面（[https://man.openbsd.org/ssh](https://man.openbsd.org/ssh)）中`-J [user@]host[:port]`的手动输入如下：
+- en: Connect to the target host by first making a ssh connection to the jump host
+    described by destination and then establishing a TCP forwarding to the ultimate
+    destination from there. Multiple jump hops may be specified separated by comma
+    characters. This is a shortcut to specify a ProxyJump configuration directive.
+  id: totrans-613
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先通过SSH连接到由目标描述的跳转主机，然后从那里建立到最终目的地的TCP转发，连接到目标主机。可以指定多个跳转跳数，用逗号字符分隔。这是指定ProxyJump配置指令的快捷方式。
+- en: 'The manual entry from [https://man.openbsd.org/ssh_config](https://man.openbsd.org/ssh_config) for `ProxyJump` is
+    as follows:'
+  id: totrans-614
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ProxyJump`的手动输入来自[https://man.openbsd.org/ssh_config](https://man.openbsd.org/ssh_config)，如下所示：'
+- en: Specifies one or more jump proxies as either [user@]host[:port] or an ssh URI.
+    Multiple proxies may be separated by comma characters and will be visited sequentially.
+    Setting this option will cause ssh(1) to connect to the target host by first making
+    a ssh(1) connection to the specified ProxyJump host and then establishing a TCP
+    forwarding to the ultimate target from there.
+  id: totrans-615
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 指定一个或多个跳转代理，格式为[user@]host[:port]或ssh URI。多个代理可以用逗号字符分隔，并将按顺序访问。设置此选项将导致ssh(1)首先通过与指定的ProxyJump主机建立ssh(1)连接，然后从那里建立到最终目标的TCP转发。
+- en: 'If we use the `-v` flag with SSH, we can see what happens in more detail:'
+  id: totrans-616
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们使用SSH的`-v`标志，我们可以更详细地看到发生了什么：
+- en: '[PRE143]'
+  id: totrans-617
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE143]'
+- en: 'Emboldened in the preceding output, we can see the key steps that take place
+    during the connection sequence:'
+  id: totrans-618
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的输出中加粗显示，我们可以看到连接序列中发生的关键步骤：
+- en: SSH reads the configuration for the host we're connecting to.
+  id: totrans-619
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: SSH读取我们要连接的主机的配置。
+- en: SSH realises it has to use a `ProxyJump` host to access the specifed box.
+  id: totrans-620
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: SSH意识到它必须使用`ProxyJump`主机来访问指定的主机。
+- en: SSH translates the `ProxyJump` option into the equivalent `ProxyCommand` entry.
+  id: totrans-621
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: SSH将`ProxyJump`选项转换为等效的`ProxyCommand`条目。
+- en: SSH reads the configuration for the `ProxyJump` host.
+  id: totrans-622
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: SSH读取`ProxyJump`主机的配置。
+- en: SSH connects and authenticates against the `ProxyJump` host.
+  id: totrans-623
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: SSH连接并对`ProxyJump`主机进行身份验证。
+- en: SSH uses its established connection to the `ProxyJump` to connect to the destination
+    host.
+  id: totrans-624
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: SSH使用其已建立的连接到`ProxyJump`来连接目标主机。
+- en: SSH notes that it's authenticated to the destination host (via proxy).
+  id: totrans-625
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: SSH注意到它已经通过代理对目标主机进行了身份验证。
+- en: There's more...
+  id: totrans-626
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: Now that you know the basics of `ProxyJump`, let's take a look at some scenarios
+    you may find useful.
+  id: totrans-627
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你已经了解了`ProxyJump`的基础知识，让我们看看一些你可能会发现有用的场景。
+- en: More than once, using `ProxyJump` in the following ways listed has saved me
+    literally milliseconds of time!
+  id: totrans-628
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不止一次，以以下列出的方式使用`ProxyJump`为我节省了几毫秒的时间！
+- en: Multiple hosts
+  id: totrans-629
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 多个主机
+- en: While the example given previously is relatively simple, it's worth noting that
+    you can do some pretty complex things with `ProxyJump`.
+  id: totrans-630
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然先前给出的示例相对简单，但值得注意的是，你可以用`ProxyJump`做一些相当复杂的事情。
+- en: 'You can list hosts, as the manual page suggests, and you can also chain hosts,
+    as follows:'
+  id: totrans-631
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以像手册页建议的那样列出主机，也可以像下面这样链接主机：
+- en: '[PRE144]'
+  id: totrans-632
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE144]'
+- en: 'The advantage of `ProxyJump` itself should be obvious: using this technique,
+    you can create a setup where it only takes one command from your local machine
+    to access a remote and otherwise inaccessible box.'
+  id: totrans-633
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ProxyJump`本身的优势应该是显而易见的：使用这种技术，你可以创建一个只需要从本地机器输入一个命令就能访问远程且其他情况下无法访问的主机的设置。'
+- en: Generally, you might use `ProxyJump` in an environment with one ingress server.
+  id: totrans-634
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，你可能会在只有一个入口服务器的环境中使用`ProxyJump`。
+- en: '`ProxyJump` also makes forwarding ports easier. If you add a `LocalForward`
+    line to `CentOS4-V4` in the preceding code, SSH will take care of handling the
+    traffic through the `ProxyJump` hosts, too! This can be especially handy as it
+    stops you having to forward ports manually, potentially through several hosts.'
+  id: totrans-635
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ProxyJump`还使转发端口变得更容易。如果你在前面的代码中的`CentOS4-V4`中添加了一个`LocalForward`行，SSH也会通过`ProxyJump`主机处理流量！这可能特别方便，因为它可以阻止你手动转发端口，可能需要通过几个主机。'
+- en: ProxyCommand
+  id: totrans-636
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: ProxyCommand
+- en: What we saw in our debug message was SSH translating the fairly simple `ProxyJump`
+    entry into a `ProxyCommand` line.
+  id: totrans-637
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的调试消息中看到的是SSH将相当简单的`ProxyJump`条目转换为`ProxyCommand`行。
+- en: '`ProxyCommand` is the more traditional way of setting up this kind of forwarding,
+    but not only is it syntactically more irritating, it''s also messy.'
+  id: totrans-638
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ProxyCommand`是设置这种转发的更传统的方式，但它不仅在语法上更加恼人，而且也很混乱。'
+- en: 'Consider the following example:'
+  id: totrans-639
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑以下示例：
+- en: '[PRE145]'
+  id: totrans-640
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE145]'
+- en: Looks more awkward, doesn't it? But it works in the same way.
+  id: totrans-641
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 看起来更笨拙，不是吗？但它的工作方式是一样的。
+- en: This can be useful on older distributions, which maybe haven't received the
+    `ProxyJump` feature yet.
+  id: totrans-642
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这在较旧的发行版上可能很有用，这些发行版可能尚未收到`ProxyJump`功能。
+- en: If you ever forget the syntax for `ProxyCommand` and you have a box around that
+    supports `ProxyJump`, remember that the `ProxyCommand` syntax is printed for you
+    in the `SSH -v` debug we created before.
+  id: totrans-643
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你忘记了`ProxyCommand`的语法，并且你有一个支持`ProxyJump`的主机，记住我们之前创建的`SSH -v`调试中已经为你打印了`ProxyCommand`的语法。
+- en: Bastion hosts
+  id: totrans-644
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 堡垒主机
+- en: All of this is great, but why would you need this if you're managing servers?
+    Especially servers you control...
+  id: totrans-645
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些都很棒，但是如果你正在管理服务器，为什么你需要这个呢？尤其是你控制的服务器...
+- en: Consider your environment.
+  id: totrans-646
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑你的环境。
+- en: In the office, you might have access to every machine the company has under
+    its dominion, because you're sat on a LAN segment that has unfettered access to
+    every other network segment.
+  id: totrans-647
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在办公室，你可能可以访问公司在其支配下的每台机器，因为你坐在一个可以无限制访问每个其他网络段的LAN段上。
+- en: Remotely, you might have a VPN machine on the border of your network, to which
+    you need to initially establish a connection before you're able to SSH to other
+    machines.
+  id: totrans-648
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 远程，你可能有一个VPN机器位于你的网络边界上，你需要最初建立连接，然后才能SSH到其他机器。
+- en: Bastion hosts are something you might consider, and they can be used in conjunction
+    with a VPN.
+  id: totrans-649
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 堡垒主机是你可能考虑的东西，它们可以与VPN一起使用。
+- en: You, as the system administrator, can decide that you'd like a single point
+    of ingress for people SSH'ing to machines to easily log traffic and maybe manage
+    keys – perhaps because you're just vindictive and want everyone's config file
+    to be that much longer?
+  id: totrans-650
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为系统管理员，你可以决定你想要一个单一的入口点，让人们轻松地通过SSH连接到机器来记录流量，也许管理密钥——也许是因为你只是恶毒的，想让每个人的配置文件变得更长一些？
+- en: Work with your network team, consult your company's policies, and design a network
+    that you can easily maintain, and that others won't mind using.
+  id: totrans-651
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与你的网络团队合作，咨询你公司的政策，并设计一个你可以轻松维护的网络，而其他人也不会介意使用的网络。
+- en: Your company may have specific security policies in place that limit what you're
+    allowed to do. Remember, it's not about what you *can* do, it's about what you
+    should do. No one will congratulate you for being clever when you're being marched
+    out of the office for bypassing security. By all means highlight security problems
+    when you see them, just don't exploit them.
+  id: totrans-652
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你的公司可能有特定的安全政策限制你可以做什么。记住，问题不在于你*能*做什么，而在于你应该做什么。当你因为绕过安全措施而被赶出办公室时，没有人会因为你聪明而向你祝贺。尽管在发现安全问题时可以指出，但不要利用它们。
+- en: Using SSH to create a SOCKS Proxy
+  id: totrans-653
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用SSH创建SOCKS代理
+- en: SSH is great.
+  id: totrans-654
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH很棒。
+- en: 'I never get tired of talking about how great it is, and it would be remiss
+    of me to not mention one of its best features: the ability to quickly and easily
+    set up a SOCKS proxy.'
+  id: totrans-655
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我永远不会厌倦谈论它有多么棒，而且我不提到它最好的功能之一会是我的疏忽：快速轻松地设置一个SOCKS代理的能力。
+- en: In the previous sections, we forwarded individual ports, but what if we were
+    using a bastion host to connect to a slew of different websites within a network?
+    Would you like to add tens of lines to your SSH config file? Or manually type
+    out each port and mapping every time?
+  id: totrans-656
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在以前的部分中，我们转发了单个端口，但是如果我们使用跳板主机连接网络中的大量不同网站怎么办？您想要在SSH配置文件中添加数十行吗？还是每次手动输入每个端口和映射？
+- en: I didn't think so.
+  id: totrans-657
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我不这么认为。
+- en: That's where the `-D` flag comes in.
+  id: totrans-658
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是`-D`标志的作用。
+- en: 'See `-D [bind_address:]port` in the SSH manual page ([https://man.openbsd.org/ssh](https://man.openbsd.org/ssh)):'
+  id: totrans-659
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请参阅SSH手册页中的`-D [bind_address:]port`（[https://man.openbsd.org/ssh](https://man.openbsd.org/ssh)）：
+- en: Specifies a local "dynamic" application-level port forwarding. This works by
+    allocating a socket to listen to port on the local side, optionally bound to the
+    specified bind_address. Whenever a connection is made to this port, the connection
+    is forwarded over the secure channel, and the application protocol is then used
+    to determine where to connect to from the remote machine. Currently the SOCKS4
+    and SOCKS5 protocols are supported, and ssh will act as a SOCKS server. Only root
+    can forward privileged ports. Dynamic port forwardings can also be specified in
+    the configuration file.
+  id: totrans-660
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 指定本地“动态”应用级端口转发。这通过分配一个套接字来监听本地端口，可选地绑定到指定的bind_address。每当有连接到该端口时，连接将通过安全通道转发，并且然后使用应用程序协议确定从远程计算机连接到何处。当前支持SOCKS4和SOCKS5协议，并且ssh将充当SOCKS服务器。只有root可以转发特权端口。动态端口转发也可以在配置文件中指定。
+- en: IPv6 addresses can be specified by enclosing the address in square brackets.
+    Only the superuser can forward privileged ports. By default, the local port is
+    bound in accordance with the GatewayPorts setting. However, an explicit bind_address
+    may be used to bind the connection to a specific address. The bind_address of
+    "localhost" indicates that the listening port be bound for local use only, while
+    an empty address or '*' indicates that the port should be available from all interfaces.
+  id: totrans-661
+  prefs: []
+  type: TYPE_NORMAL
+  zh: IPv6地址可以通过用方括号括起来指定。只有超级用户才能转发特权端口。默认情况下，本地端口将根据GatewayPorts设置进行绑定。但是，可以使用显式的bind_address将连接绑定到特定地址。
+    "localhost"的bind_address表示监听端口仅绑定供本地使用，而空地址或'*'表示该端口应该从所有接口可用。
+- en: What this means is that with a single command, you can set up a connection that
+    you can then forward traffic through (from a web browser, or other applications
+    that support `SOCKS` proxies). You don't have to punch holes through firewalls,
+    and you don't have to manually map ports.
+  id: totrans-662
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着通过一个命令，您可以建立一个连接，然后可以通过该连接转发流量（从Web浏览器或其他支持`SOCKS`代理的应用程序）。您不必穿透防火墙，也不必手动映射端口。
+- en: '`SOCKS` itself is an internet protocol, and quite an old one at that, though
+    we still actively use `SOCKS5`, which was approved by the Internet Engineering
+    Task Force in 1996! It''s like any other proxy server, allowing you to exchange
+    packets over a connection; in this case, our SSH tunnel. Applications may choose
+    to natively support SOCKS proxies or not, but a lot of commons ones will (Firefox,
+    for example).'
+  id: totrans-663
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`SOCKS`本身是一种互联网协议，而且是相当古老的协议，尽管我们仍然积极使用`SOCKS5`，这是由互联网工程任务组在1996年批准的！它就像任何其他代理服务器一样，允许您通过连接交换数据包；在这种情况下，是我们的SSH隧道。应用程序可以选择本机支持SOCKS代理或不支持，但很多常见的应用程序会支持（例如Firefox）。'
+- en: Let's get started.
+  id: totrans-664
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们开始吧。
+- en: Getting ready
+  id: totrans-665
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: For this section, we're going to be using `centos1` and `centos2`.
+  id: totrans-666
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将使用`centos1`和`centos2`。
+- en: 'Make sure that you have a connection open to both machines:'
+  id: totrans-667
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保您同时连接到两台机器：
+- en: '[PRE146]'
+  id: totrans-668
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE146]'
+- en: 'On `centos2`, let''s set up our small web server again:'
+  id: totrans-669
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上，让我们再次设置我们的小型Web服务器：
+- en: '[PRE147]'
+  id: totrans-670
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE147]'
+- en: How to do it...
+  id: totrans-671
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: Connect to `centos1`, where we'll first set up our SOCKS proxy using just one
+    command, and then look at how to start the proxy each time we SSH to the box.
+  id: totrans-672
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先连接到`centos1`，我们将首先使用一个命令设置我们的SOCKS代理，然后看看如何在每次SSH到该服务器时启动代理。
+- en: On the command line
+  id: totrans-673
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在命令行上
+- en: 'Let''s establish our SSH session and disconnect from the established session
+    at the same time:'
+  id: totrans-674
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们建立我们的SSH会话并同时断开已建立的会话：
+- en: '[PRE148]'
+  id: totrans-675
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE148]'
+- en: Once established (until the sleep runs out), we can use our proxy to query anything
+    and everything that `centos2` can see via the SSH session.
+  id: totrans-676
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦建立（直到休眠结束），我们可以使用我们的代理通过SSH会话查询`centos2`可以看到的任何东西。
+- en: 'Let''s check out our web server on `centos2`, from `centos1`:'
+  id: totrans-677
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从`centos1`上检查我们的Web服务器，到`centos2`上：
+- en: '[PRE149]'
+  id: totrans-678
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE149]'
+- en: Brilliant! We've run a cURL against a localhost address, but by passing it through
+    the proxy, our request has been run against `centos2` instead!
+  id: totrans-679
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 太棒了！我们对本地主机地址运行了一个cURL，但是通过代理传递，我们的请求已经在`centos2`上运行了！
+- en: Using an SSH config file
+  id: totrans-680
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用SSH配置文件
+- en: 'The same can be accomplished, as shown previously, by using an SSH config file:'
+  id: totrans-681
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如以前所示，可以使用SSH配置文件来完成相同的操作：
+- en: '[PRE150]'
+  id: totrans-682
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE150]'
+- en: 'We can now be confident our proxy will be available each time we connect:'
+  id: totrans-683
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以确信我们的代理每次连接时都可用：
+- en: '[PRE151]'
+  id: totrans-684
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE151]'
+- en: 'And again, look at the contents of the web server:'
+  id: totrans-685
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次，查看Web服务器的内容：
+- en: '[PRE152]'
+  id: totrans-686
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE152]'
+- en: 'Just to prove we were really using our proxy, let''s try the `curl` command
+    without an established session (you will have to wait for SSH to time out, or
+    kill the process if it''s not already died):'
+  id: totrans-687
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了证明我们真的在使用我们的代理，让我们尝试`curl`命令而不建立会话（您将不得不等待SSH超时，或者如果进程尚未死亡，则终止该进程）：
+- en: '[PRE153]'
+  id: totrans-688
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE153]'
+- en: How it works...
+  id: totrans-689
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: When you add the `-D` option to SSH, or add the `DynamicForward` option to your
+    SSH config file, you're telling SSH that you want to specify a port on your `local`
+    side that will forward any requests received to it over your SSH connection.
+  id: totrans-690
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您在SSH中添加`-D`选项，或者在SSH配置文件中添加`DynamicForward`选项时，您告诉SSH您要在本地端口上指定一个端口，该端口将通过SSH连接转发收到的任何请求。
+- en: 'Let''s break down our commands:'
+  id: totrans-691
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们分解我们的命令：
+- en: '[PRE154]'
+  id: totrans-692
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE154]'
+- en: 'First, as we did previously, we''ve used `-f` and sleep to keep a connection
+    open, while dropping us back to the `centos1` prompt once a connection is established:'
+  id: totrans-693
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，就像以前一样，我们使用了`-f`和sleep来保持连接打开，一旦建立连接，我们就会回到`centos1`提示符：
+- en: '[PRE155]'
+  id: totrans-694
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE155]'
+- en: 'We''ve also specified our `-D` option, with a randomly chosen port:'
+  id: totrans-695
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还指定了我们的`-D`选项，并选择了一个随机选择的端口：
+- en: '[PRE156]'
+  id: totrans-696
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE156]'
+- en: I use `9999` through force of habit, but occasionally I mix it up a bit by using
+    `7777`, or even `6666` if I'm feeling really wild. You may use whichever port
+    you wish (above `1024`, as those below this can only be used by root.)
+  id: totrans-697
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我习惯使用`9999`，但偶尔也会使用`7777`，甚至在感觉非常疯狂时使用`6666`。您可以使用任何您希望的端口（在`1024`以上，因为低于此值的端口只能由root使用）。
+- en: 'Once we''re established, we use the following command to check our proxy is
+    available for use:'
+  id: totrans-698
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦我们建立，我们使用以下命令来检查我们的代理是否可用：
+- en: '[PRE157]'
+  id: totrans-699
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE157]'
+- en: 'Breaking this down into its two parts, we start with the variable we''re setting
+    for just this run:'
+  id: totrans-700
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将此分解为两部分，我们从设置为此运行的变量开始：
+- en: '[PRE158]'
+  id: totrans-701
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE158]'
+- en: cURL uses `all_proxy` as a way of setting the SOCKS proxy for its run.
+  id: totrans-702
+  prefs: []
+  type: TYPE_NORMAL
+  zh: cURL使用`all_proxy`来设置其运行的SOCKS代理。
+- en: 'In your browser, you may find the option to set a `SOCKS` server under settings,
+    and in some other applications, `SOCKS` proxies can be configured when required.
+    Gnome''s network manager looks like this:'
+  id: totrans-703
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在浏览器中，您可能会在设置下找到设置`SOCKS`服务器的选项，并且在某些其他应用程序中，可以在需要时配置`SOCKS`代理。Gnome的网络管理器如下所示：
+- en: '![](img/5dcbe70c-ae11-4f6b-a090-19800aa7a1a0.png)'
+  id: totrans-704
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/5dcbe70c-ae11-4f6b-a090-19800aa7a1a0.png)'
+- en: 'The other part of our command is `curl`:'
+  id: totrans-705
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们命令的另一部分是`curl`：
+- en: '[PRE159]'
+  id: totrans-706
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE159]'
+- en: With our `all_proxy` setting, cURL knows to use the SOCKS proxy on port `9999`
+    for its connections, meaning that when we query `127.0.0.1:8888`, we're sending
+    that request over our SSH session to resolve on `centos2`.
+  id: totrans-707
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过我们的`all_proxy`设置，cURL知道要在其连接中使用端口`9999`上的SOCKS代理，这意味着当我们查询`127.0.0.1:8888`时，我们将通过我们的SSH会话发送该请求以在`centos2`上解析。
+- en: Neat!
+  id: totrans-708
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 整洁！
+- en: There's more...
+  id: totrans-709
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: 'If you want to take it one step further, have a look at using `tcpdump` on
+    your remote side to check out traffic traversing your network:'
+  id: totrans-710
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您想进一步进行，可以在远程端使用`tcpdump`来检查穿过您的网络的流量：
+- en: '[PRE160]'
+  id: totrans-711
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE160]'
+- en: 'You should see traffic come through:'
+  id: totrans-712
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该看到流量通过：
+- en: '[PRE161]'
+  id: totrans-713
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE161]'
+- en: Understanding and using SSH agents
+  id: totrans-714
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解和使用SSH代理
+- en: One thing we touched on briefly was the concept of an SSH agent.
+  id: totrans-715
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们简要提到的一件事是SSH代理的概念。
+- en: When you SSH to a server (after setting up a key) and you're prompted for a
+    passphrase, what you're actually doing is decrypting the private key part of your
+    public-private key pair (the `id_rsa` file by default), so that it can be used
+    to verify that you are who you say you are against the remote host. It can get
+    tedious to do this each time you SSH to a server, especially if you're managing
+    hundreds or thousands of constantly changing boxes.
+  id: totrans-716
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当您SSH到服务器（设置密钥后）并提示输入密码时，您实际上正在解密公私钥对的私钥部分（默认情况下为`id_rsa`文件），以便用于验证您对远程主机的身份。如果您管理数百或数千个不断变化的服务器，每次SSH到服务器时都这样做可能会变得乏味。
+- en: That's where SSH agents come in. They're somewhere for your now-decrypted private
+    key to live, once you've given it the passphrase, for the duration of your session.
+  id: totrans-717
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这就是SSH代理的作用。一旦您给出了密码，它就是您现在解密的私钥的所在地，直到您的会话结束。
+- en: Once you've got your private key loaded into your agent, the agent is then responsible
+    for presenting the key to any servers you connect to, without you having to type
+    your passphrase again, saving valuable seconds and finger strain.
+  id: totrans-718
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦您将私钥加载到代理中，代理就负责向您连接的任何服务器呈现密钥，而无需再次输入密码，节省宝贵的时间和手指压力。
+- en: Most desktop Linux distributions will start an SSH agent of some sort within
+    your user session, sometimes unlocking your private keys when you log in to your
+    user account.
+  id: totrans-719
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 大多数桌面Linux发行版都会在用户会话中启动某种SSH代理，有时在您登录到用户帐户时解锁您的私钥。
+- en: 'macOS has a specific SSH config file option for `UseKeychain` ([https://developer.apple.com/library/archive/technotes/tn2449/_index.html](https://developer.apple.com/library/archive/technotes/tn2449/_index.html)):'
+  id: totrans-720
+  prefs: []
+  type: TYPE_NORMAL
+  zh: macOS有一个特定的SSH配置文件选项`UseKeychain`（[https://developer.apple.com/library/archive/technotes/tn2449/_index.html](https://developer.apple.com/library/archive/technotes/tn2449/_index.html)）：
+- en: '"On macOS, specifies whether the system should search for passphrases in the
+    user''s keychain when attempting to use a particular key. When the passphrase
+    is provided by the user, this option also specifies whether the passphrase should
+    be stored into the keychain once it has been verified to be correct. The argument
+    must be "yes" or "no". The default is "no"."'
+  id: totrans-721
+  prefs: []
+  type: TYPE_NORMAL
+  zh: “在macOS上，指定系统在尝试使用特定密钥时是否应在用户的钥匙串中搜索密码。当用户提供密码时，此选项还指定密码一经验证正确后是否应存储到钥匙串中。参数必须是“yes”或“no”。默认值为“no”。”
+- en: If you're running macOS on your desktop, you might consider this option.
+  id: totrans-722
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您在桌面上运行macOS，您可能会考虑此选项。
+- en: 'On my Ubuntu laptop installation, looking for a running agent reveals this:'
+  id: totrans-723
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我的Ubuntu笔记本安装中，查找正在运行的代理会显示如下内容：
+- en: '[PRE162]'
+  id: totrans-724
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE162]'
+- en: 'Looking for this process ID shows me what''s running as my `ssh-agent`:'
+  id: totrans-725
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 查找此进程ID会显示我正在运行的`ssh-agent`：
+- en: '[PRE163]'
+  id: totrans-726
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE163]'
+- en: In this section, we're going to start an SSH agent on `centos1` and load a key
+    into it.
+  id: totrans-727
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将在`centos1`上启动一个SSH代理并将密钥加载到其中。
+- en: Getting ready
+  id: totrans-728
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 做好准备
+- en: 'As with the previous section, confirm that both of your Vagrant boxes are enabled
+    and connect to the first using the `vagrant` command:'
+  id: totrans-729
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与上一节一样，请确认您的两个Vagrant框都已启用，并使用`vagrant`命令连接到第一个：
+- en: '[PRE164]'
+  id: totrans-730
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE164]'
+- en: 'Ensure you have an SSH key available on `centos1`. Re-read the previous section
+    on generating an SSH key if you need to:'
+  id: totrans-731
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保在`centos1`上有一个可用的SSH密钥。如果需要，请重新阅读上一节有关生成SSH密钥的内容：
+- en: '[PRE165]'
+  id: totrans-732
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE165]'
+- en: 'Copy your key to `centos2` if you haven''t already, accepting the host key
+    if you need to:'
+  id: totrans-733
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您尚未将密钥复制到`centos2`，则需要接受主机密钥：
+- en: '[PRE166]'
+  id: totrans-734
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE166]'
+- en: 'Check that attempting to log into `centos2` prompts you for your key passphrase:'
+  id: totrans-735
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查尝试登录到`centos2`是否提示您输入密钥密码：
+- en: '[PRE167]'
+  id: totrans-736
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE167]'
+- en: Make sure you're on `centos1` to begin.
+  id: totrans-737
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 确保您在`centos1`上开始。
+- en: How to do it...
+  id: totrans-738
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'Start by running the `ssh-agent` command:'
+  id: totrans-739
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先运行`ssh-agent`命令：
+- en: '[PRE168]'
+  id: totrans-740
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE168]'
+- en: You can see it's printed several environment variables and the process ID it's
+    running on.
+  id: totrans-741
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到它打印了几个环境变量和它正在运行的进程ID。
+- en: 'We can confirm this is the case:'
+  id: totrans-742
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以确认这是事实：
+- en: '[PRE169]'
+  id: totrans-743
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE169]'
+- en: 'Copy the various variables that have been provided for you and paste them into
+    the same window:'
+  id: totrans-744
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 复制为你提供的各种变量，并将它们粘贴到同一个窗口中：
+- en: '[PRE170]'
+  id: totrans-745
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE170]'
+- en: 'Now, run the `ssh-add` command and fill in your key''s passphrase when prompted:'
+  id: totrans-746
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，运行`ssh-add`命令，并在提示时填写你的密钥密码：
+- en: '[PRE171]'
+  id: totrans-747
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE171]'
+- en: You can see that it informs you that it's added your identity.
+  id: totrans-748
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可以看到它通知你已经添加了你的身份。
+- en: 'SSH to `centos2`, and prepare to be amazed when you''re not prompted for your
+    passphrase:'
+  id: totrans-749
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SSH到`centos2`，准备好惊讶，当你不被提示输入你的密码时：
+- en: '[PRE172]'
+  id: totrans-750
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE172]'
+- en: You may think that you don't mind typing in your passphrase once or twice a
+    day, and you'd be fine to think that, but if you're logging into a machine that
+    infrequently, you're probably a very lucky system administrator. Where SSH agents
+    excel is when you want to log into tens or hundreds of machines, or even if you're
+    using a `ProxyJump` box, and don't feel like typing your passphrase any more times
+    than is necessary.
+  id: totrans-751
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能认为每天输入一两次密码并不介意，你可能会认为没问题，但如果你很少登录到一台机器，你可能是一个非常幸运的系统管理员。 SSH代理的优势在于当你想要登录到数十甚至数百台机器时，甚至如果你使用`ProxyJump`框，并且不想比必要的次数输入你的密码。
+- en: 'To kill a running agent, use `-k`:'
+  id: totrans-752
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要终止运行的代理，使用`-k`：
+- en: '[PRE173]'
+  id: totrans-753
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE173]'
+- en: I have seen cases where companies don't like the use of SSH agents, and mandate
+    passwords or passphrases each time. Check you're not violating some obscure security
+    policy to make your life easier.
+  id: totrans-754
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我曾见过一些公司不喜欢使用SSH代理，并且要求每次输入密码或密码。检查一下，确保你没有违反某些晦涩的安全策略以便让你的生活更轻松。
+- en: 'Then, run the suggested unset commands to remove the variables we set before:'
+  id: totrans-755
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，运行建议的取消设置命令来删除我们之前设置的变量：
+- en: '[PRE174]'
+  id: totrans-756
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE174]'
+- en: Simply logging out of your session won't stop the `ssh-agent` program from running.
+    Be mindful of this if you choose to use it. Likewise, you shouldn't run an agent
+    on a remote host shared between multiple people – it's best kept to your personal
+    machine. If you plan on using an SSH agent, read up on current security practices.
+  id: totrans-757
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简单地注销你的会话不会停止`ssh-agent`程序的运行。如果你选择使用它，要注意这一点。同样，你不应该在多人共享的远程主机上运行代理-最好保留在你的个人机器上。如果你打算使用SSH代理，请阅读当前的安全实践。
+- en: How it works...
+  id: totrans-758
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: When we initially run `ssh-agent`, the agent itself is started in the background,
+    and we're given the necessary environment variables for SSH. After they're set,
+    running SSH will cause it to read these variables.
+  id: totrans-759
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们最初运行`ssh-agent`时，代理本身在后台启动，并且我们得到了SSH所需的环境变量。设置后，运行SSH将导致它读取这些变量。
+- en: 'If we add a couple of `-vv` flags to SSH, we can see it find our key in the
+    agent:'
+  id: totrans-760
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果我们在SSH中添加了一些`-vv`标志，我们可以看到它在代理中找到我们的密钥：
+- en: '[PRE175]'
+  id: totrans-761
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE175]'
+- en: 'Without the agent loaded, but with the key present, it looks like this:'
+  id: totrans-762
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有加载代理，但有密钥存在时，看起来是这样的：
+- en: '[PRE176]'
+  id: totrans-763
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE176]'
+- en: 'The SSH environment variables are also read by `ssh-add`, which we used to
+    add our key to the agent. To quote the manual page:'
+  id: totrans-764
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ssh-add`也会读取SSH环境变量，我们用它将我们的密钥添加到代理中。引用手册页：'
+- en: '"The authentication agent must be running and the SSH_AUTH_SOCK environment
+    variable must contain the name of its socket for ssh-add to work."'
+  id: totrans-765
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"认证代理必须正在运行，并且SSH_AUTH_SOCK环境变量必须包含其套接字的名称，以便ssh-add正常工作。"'
+- en: When you've got one key or more in an agent, SSH will try to use these keys
+    to authenticate against remote hosts, removing the need to type your password
+    each time.
+  id: totrans-766
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当你的代理中有一个或多个密钥时，SSH将尝试使用这些密钥对远程主机进行身份验证，从而无需每次输入密码。
+- en: There's more...
+  id: totrans-767
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: If you want to add the agent start command to a script (say `.bashrc`), you
+    may want to automatically evaluate the environment variables given to you. `ssh-agent` assumes
+    you're starting it this way.
+  id: totrans-768
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你想将代理启动命令添加到脚本（比如`.bashrc`），你可能希望自动评估给你的环境变量。 `ssh-agent`假设你是以这种方式启动它的。
+- en: In the manual page for `ssh-agent`, you even get this tip.
+  id: totrans-769
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`ssh-agent`的手册页中，你甚至会得到这个提示。
+- en: '"There are two main ways to get an agent set up: The first is that the agent
+    starts a new sub‐command into which some environment variables are exported, eg
+    ssh-agent xterm &. The second is that the agent prints the needed shell commands
+    (either sh(1) or csh(1) syntax can be generated) which can be evaluated in the
+    calling shell, eg eval ''ssh-agent -s'' for Bourne-type shells such as sh(1) or
+    ksh(1) and eval ''ssh-agent -c'' for csh(1) and derivatives."'
+  id: totrans-770
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '"有两种主要的设置代理的方法：第一种是代理启动一个新的子命令，其中一些环境变量被导出，例如ssh-agent xterm &。第二种是代理打印所需的shell命令（可以生成sh(1)或csh(1)语法），可以在调用shell中进行评估，例如对于Bourne类型的shell，如sh(1)或ksh(1)，可以使用eval
+    ''ssh-agent -s''，对于csh(1)和衍生版本，可以使用eval ''ssh-agent -c''。"'
+- en: 'In practice, this means that it''s easiest to start the agent like so:'
+  id: totrans-771
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，这意味着最容易这样启动代理：
+- en: '[PRE177]'
+  id: totrans-772
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE177]'
+- en: Here, we're using a Bash sub-shell to start and read the agent's output.
+  id: totrans-773
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们使用Bash子shell来启动和读取代理的输出。
+- en: ssh-add
+  id: totrans-774
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: ssh-add
+- en: '`ssh-add` has a few decent options available, some of which are handy to know
+    about.'
+  id: totrans-775
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ssh-add`有一些不错的选项可用，其中一些是很方便知道的。'
+- en: '`-l` will allow you to see loaded identities, along with their fingerprints:'
+  id: totrans-776
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`-l`将允许你查看已加载的身份，以及它们的指纹：'
+- en: '[PRE178]'
+  id: totrans-777
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE178]'
+- en: '`-D` will allow you to remove all identities (and `-d` can be used to remove
+    specific ones):'
+  id: totrans-778
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`-D`将允许你删除所有身份（`-d`可用于删除特定身份）：'
+- en: '[PRE179]'
+  id: totrans-779
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE179]'
+- en: '`-x` will lock an agent, while `-X` will unlock it:'
+  id: totrans-780
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`-x`将锁定代理，而`-X`将解锁代理：'
+- en: '[PRE180]'
+  id: totrans-781
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE180]'
+- en: AddKeysToAgent
+  id: totrans-782
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: AddKeysToAgent
+- en: When using an agent, you might like the SSH config file option `AddKeysToAgent`,
+    which will automatically add used keys to your `ssh-agent` for future use.
+  id: totrans-783
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当使用代理时，你可能会喜欢SSH配置文件选项`AddKeysToAgent`，它将自动将使用的密钥添加到你的`ssh-agent`中以供将来使用。
+- en: 'Consider the following; we''re starting with no keys in our agent:'
+  id: totrans-784
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑以下；我们从没有密钥的代理开始：
+- en: '[PRE181]'
+  id: totrans-785
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE181]'
+- en: Note that the first time, we're prompted for our key's passphrase. The second
+    time, we're not.
+  id: totrans-786
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，第一次，我们被提示输入我们的密钥密码。第二次，我们没有被提示。
+- en: 'It is now loaded into our agent:'
+  id: totrans-787
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在它已经加载到我们的代理中：
+- en: '[PRE182]'
+  id: totrans-788
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE182]'
+- en: 'This is all handled by one config option:'
+  id: totrans-789
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一切都由一个配置选项处理：
+- en: '[PRE183]'
+  id: totrans-790
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE183]'
+- en: See also
+  id: totrans-791
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 另请参阅
+- en: There are other SSH agents, other than the default one supplied with OpenSSH
+    (which we used here.) There are also some systems that use more pieces (such as
+    PAM on most desktop distributions.) Have a read around and see if you can work
+    out how your distro of choice does things.
+  id: totrans-792
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 除了OpenSSH提供的默认SSH代理之外，还有其他SSH代理（我们在这里使用了）。还有一些系统使用更多的组件（例如大多数桌面发行版上的PAM）。四处阅读，看看你是否能弄清楚你选择的发行版是如何做事的。
+- en: Running multiple SSH servers on one box
+  id: totrans-793
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 在一台主机上运行多个SSH服务器
+- en: Sometimes, it can be a requirement to run multiple SSH servers on one box. You
+    may want to use one for regular, day-to-day activities, and the other server for
+    backups or automation.
+  id: totrans-794
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有时，在一台主机上运行多个SSH服务器是一个要求。您可能希望使用一个进行常规的日常活动，另一个用于备份或自动化。
+- en: In this case, it's perfectly possible to run two distinct versions of the SSH
+    server at once.
+  id: totrans-795
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，同时运行两个不同版本的SSH服务器是完全可能的。
+- en: We're going to use `centos2` for this, setting up a secondary SSH server on
+    port `2020`.
+  id: totrans-796
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用`centos2`，在端口`2020`上设置一个辅助SSH服务器。
+- en: Getting ready
+  id: totrans-797
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 准备工作
+- en: If you haven't already, I would advise destroying your previous Vagrant boxes
+    and deploying new ones for this.
+  id: totrans-798
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您还没有这样做，我建议销毁之前的Vagrant盒子，并为此部署新的盒子。
+- en: 'Once new boxes are created, connect to both:'
+  id: totrans-799
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建新的盒子后，连接到两个：
+- en: '[PRE184]'
+  id: totrans-800
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE184]'
+- en: 'Install `policycoreutils-python` on `centos2`, for `semanage` later:'
+  id: totrans-801
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上安装`policycoreutils-python`，以备稍后使用`semanage`：
+- en: '[PRE185]'
+  id: totrans-802
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE185]'
+- en: How to do it...
+  id: totrans-803
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 如何做...
+- en: 'First, we''re going to make a copy of our initial configuration file:'
+  id: totrans-804
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们要复制我们的初始配置文件：
+- en: '[PRE186]'
+  id: totrans-805
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE186]'
+- en: 'Then, we''re going to make a couple of changes:'
+  id: totrans-806
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们要做一些改变：
+- en: '[PRE187]'
+  id: totrans-807
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE187]'
+- en: 'Now, we''re going to copy our `systemd` unit file:'
+  id: totrans-808
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们要复制我们的`systemd`单元文件：
+- en: '[PRE188]'
+  id: totrans-809
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE188]'
+- en: 'Then, we''re going to make some changes here:'
+  id: totrans-810
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们要在这里做一些更改：
+- en: '[PRE189]'
+  id: totrans-811
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE189]'
+- en: 'Copy the old environment file to a new one:'
+  id: totrans-812
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将旧的环境文件复制到新文件：
+- en: '[PRE190]'
+  id: totrans-813
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE190]'
+- en: 'Then, point this environment file to our new configuration file:'
+  id: totrans-814
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，将这个环境文件指向我们的新配置文件：
+- en: '[PRE191]'
+  id: totrans-815
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE191]'
+- en: 'Tell SELinux we''re going to be running an SSH daemon on `2020`:'
+  id: totrans-816
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 告诉SELinux我们将在`2020`上运行SSH守护程序：
+- en: '[PRE192]'
+  id: totrans-817
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE192]'
+- en: 'Tell `systemd` we''ve made changes:'
+  id: totrans-818
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 告诉`systemd`我们已经做出了更改：
+- en: '[PRE193]'
+  id: totrans-819
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE193]'
+- en: 'Start and enable our second server:'
+  id: totrans-820
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启动并启用我们的第二个服务器：
+- en: '[PRE194]'
+  id: totrans-821
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE194]'
+- en: 'Check it''s running by SSH''ing from `centos1`:'
+  id: totrans-822
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过从`centos1`进行SSH连接来检查它是否正在运行：
+- en: '[PRE195]'
+  id: totrans-823
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE195]'
+- en: Remember when we were looking at host keys before? What we can see in the preceding
+    code is that both the port `22` server and `2020` server are sharing host keys,
+    as we were only asked to accept them once.
+  id: totrans-824
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还记得我们之前看主机密钥时吗？在前面的代码中，我们可以看到端口`22`服务器和`2020`服务器共享主机密钥，因为我们只被要求接受一次。
+- en: How it works...
+  id: totrans-825
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 它是如何工作的...
+- en: All we've done here is duplicate a few files and made some sensible changes
+    to ensure that the two processes don't interact with each other very much.
+  id: totrans-826
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们所做的一切只是复制了一些文件，并做了一些明智的更改，以确保这两个进程之间的交互不会太多。
+- en: 'First, we created the following file:'
+  id: totrans-827
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们创建了以下文件：
+- en: '[PRE196]'
+  id: totrans-828
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE196]'
+- en: We then ran a couple of `sed` commands to change some values. Specifically,
+    we modified the port the server would listen on, and the process ID file it would
+    use (the PID modification is frequently overlooked).
+  id: totrans-829
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们运行了一些`sed`命令来更改一些值。具体来说，我们修改了服务器监听的端口，以及它将使用的进程ID文件（PID修改经常被忽视）。
+- en: Next, we copied the `systemd` unit file that comes with the OpenSSH server package
+    on CentOS, tweaking it slightly by changing the description and pointing it to
+    a different environment file.
+  id: totrans-830
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来，我们复制了CentOS OpenSSH服务器软件包中提供的`systemd`单元文件，并稍微调整了它，改变了描述并将其指向不同的环境文件。
+- en: We put the resulting unit file (`sshd_2020.service`) in a different location
+    to the original to differentiate it from a supplied default.
+  id: totrans-831
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将生成的单元文件（`sshd_2020.service`）放在与原始文件不同的位置，以使其与提供的默认文件区分开来。
+- en: 'We copied the environment file and made a modification to pass a new option
+    to the SSH daemon when it''s started. This new option was a different configuration
+    file (the one we started off making):'
+  id: totrans-832
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们复制了环境文件，并对其进行了修改，以便在启动SSH守护程序时传递一个新选项。这个新选项是一个不同的配置文件（我们开始制作的那个）：
+- en: '[PRE197]'
+  id: totrans-833
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE197]'
+- en: We then updated our SELinux policy to make it aware of the new server's intentions,
+    reloaded systemd's running configuration, and both enabled and started our server.
+  id: totrans-834
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们更新了SELinux策略，使其了解新服务器的意图，重新加载了systemd的运行配置，并启用并启动了我们的服务器。
+- en: Your milage may vary in terms of the standard location for configuration and
+    environment files. This can change between major distro releases, and some settings
+    frequently differ between different distributions.
+  id: totrans-835
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在配置和环境文件的标准位置方面，可能会有所不同。这可能会在主要的发行版发布之间发生变化，并且一些设置在不同的发行版之间经常不同。
+- en: There's more...
+  id: totrans-836
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 还有更多...
+- en: If you're interested in seeing both servers running, there's a few methods of
+    doing so.
+  id: totrans-837
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您有兴趣看到两个服务器在运行，有几种方法可以做到这一点。
+- en: 'On `centos2`, start with `ss`:'
+  id: totrans-838
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在`centos2`上，从`ss`开始：
+- en: '[PRE198]'
+  id: totrans-839
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE198]'
+- en: 'We can also use systemd''s built-in commands:'
+  id: totrans-840
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以使用systemd的内置命令：
+- en: '[PRE199]'
+  id: totrans-841
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE199]'
+- en: 'And lastly, we can use good old `ps`:'
+  id: totrans-842
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们可以使用老式的`ps`：
+- en: '[PRE200]'
+  id: totrans-843
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE200]'
+- en: Summary
+  id: totrans-844
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: While I've spent this chapter describing some brilliant things that SSH is capable
+    of and singing its praises throughout, it's worth highlighting that it's still
+    software, and it's also constantly evolving. Because it's software, it can have
+    bugs and unexpected behavior, though the developers behind it are some of the
+    best, what with it being part of the OpenBSD suite of software.
+  id: totrans-845
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然我在本章中描述了SSH的一些出色功能，并一直在赞扬它，但值得注意的是，它仍然是软件，并且不断在发展。因为它是软件，它可能会有错误和意外行为，尽管背后的开发人员是最好的，因为它是OpenBSD软件套件的一部分。
+- en: 'If you take anything away from this chapter, make it the following:'
+  id: totrans-846
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你从本章中学到了什么，那就是：
+- en: Use key-based authentication
+  id: totrans-847
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用基于密钥的身份验证
+- en: Disable root login over SSH
+  id: totrans-848
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 禁用SSH上的root登录
+- en: Use a local SSH config file for connecting to remote machines
+  id: totrans-849
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用本地SSH配置文件连接到远程机器
+- en: I'd highly recommend signing up to the various SSH mailing lists if you're a
+    bit sad like I am, and keeping an eye out for new features that might capture
+    your imagination. `ProxyJump` hasn't been around for long, and it's very handy.
+  id: totrans-850
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你像我一样有点悲伤，我强烈建议你注册各种SSH邮件列表，并密切关注可能吸引你注意的新功能。`ProxyJump`还没有出现很久，但非常方便。
+- en: I do recall instances that SSH wound me up in some form or other, such as the
+    time I spent a long hour or two bashing my head against a desk, trying to work
+    out why SSH just wouldn't read a private RSA file, only to discover that it needed
+    the public half to be in the same folder too, on the local machine. That's a considerable
+    amount of time I won't get back, but it's a mistake I won't make twice.
+  id: totrans-851
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我确实记得有时SSH以某种形式或其他让我困扰，比如有一次我花了很长时间在桌子上砸头，试图弄清楚为什么SSH就是无法读取私有RSA文件，最后才发现它需要公钥也在本地机器的同一个文件夹中。这是我不会再浪费的相当长的一段时间，但这是一个我不会再犯的错误。
+- en: That said, I can also share many more instances where SSH has downright impressed
+    me, and made my life easier. It's basically the Swiss Army knife of system administration,
+    and not just because it's usually the way you connect to a box.
+  id: totrans-852
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也就是说，我还可以分享更多SSH让我印象深刻，让我的生活更轻松的例子。它基本上是系统管理的瑞士军刀，不仅仅是因为它通常是连接到设备的方式。
+- en: People use SSH for administration, transferring backups, moving files between
+    boxes, automation using tools such as Ansible, wrapping other connections inside,
+    and much more.
+  id: totrans-853
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 人们使用SSH进行管理，传输备份，在不同设备之间移动文件，使用诸如Ansible之类的工具进行自动化，将其他连接包装在其中，以及更多其他用途。
+- en: I once saw an implementation of OpenSSH atop Windows, because the people running
+    the Windows servers were Unix people, and distrusted RDP. They used to SSH to
+    the box, local forwarding the RDP session on `127.0.0.1:3389` and connecting to
+    RDP through the SSH session... it was slow...
+  id: totrans-854
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我曾经看到过在Windows上实现OpenSSH，因为运行Windows服务器的人是Unix人，不信任远程桌面协议（RDP）。他们习惯于通过SSH连接到设备，本地转发RDP会话到`127.0.0.1:3389`，然后通过SSH会话连接到RDP……速度很慢……
+- en: It's solid, secure, and a pleasure to use. It works on Linux, macOS, the BSDs,
+    Solaris, and even Windows!
+  id: totrans-855
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 它稳固、安全，使用起来很愉快。它适用于Linux、macOS、BSD、Solaris，甚至Windows！
+- en: Here's a big thanks to SSH, and OpenSSH specifically.
+  id: totrans-856
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此向SSH和特别是OpenSSH表示衷心的感谢。
+- en: Some things we didn't discuss in this chapter were ciphers, message integrity
+    codes, key exchange algorithms, and so on. Primarily, this is because these subjects
+    are nearly a book in themselves, and are definitely out of scope for what we're
+    doing here. I generally trust the maintainers of the various packages to choose
+    sensible defaults, but there's no harm in reading up on security independently,
+    should you feel compelled.
+  id: totrans-857
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章中我们没有讨论的一些事情包括密码、消息完整性代码、密钥交换算法等。主要是因为这些主题本身几乎就是一本书，而且绝对超出了我们在这里所做的范围。我通常相信各种软件包的维护者会选择明智的默认设置，但如果你感到有必要，独立阅读有关安全性的内容也无妨。

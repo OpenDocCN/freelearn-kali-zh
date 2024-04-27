@@ -1,0 +1,3279 @@
+- en: Chapter 5. Scaling Microservices with Spring Cloud
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第5章。使用Spring Cloud扩展微服务
+- en: In order to manage Internet-scale microservices, one requires more capabilities
+    than what are offered by the Spring Boot framework. The Spring Cloud project has
+    a suite of purpose-built components to achieve these additional capabilities effortlessly.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了管理互联网规模的微服务，需要比Spring Boot框架提供的能力更多。Spring Cloud项目有一套专门构建的组件，可以轻松实现这些额外的能力。
+- en: This chapter will provide a deep insight into the various components of the
+    Spring Cloud project such as Eureka, Zuul, Ribbon, and Spring Config by positioning
+    them against the microservices capability model discussed in [Chapter 3](ch03.html
+    "Chapter 3. Applying Microservices Concepts"), *Applying Microservices Concepts*.
+    It will demonstrate how the Spring Cloud components help to scale the BrownField
+    Airline's PSS microservices system, developed in the previous chapter.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将深入了解Spring Cloud项目的各个组件，如Eureka、Zuul、Ribbon和Spring Config，将它们与[第3章](ch03.html
+    "第3章。应用微服务概念")*应用微服务概念*中讨论的微服务能力模型进行对比。它将演示Spring Cloud组件如何帮助扩展上一章中开发的BrownField航空公司PSS微服务系统。
+- en: 'By the end of this chapter, you will learn about the following:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到本章结束时，您将了解以下内容：
+- en: The Spring Config server for externalizing configuration
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Spring Config服务器用于外部化配置
+- en: The Eureka server for service registration and discovery
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Eureka服务器用于服务注册和发现
+- en: The relevance of Zuul as a service proxy and gateway
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Zuul作为服务代理和网关的相关性
+- en: The implementation of automatic microservice registration and service discovery
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 自动微服务注册和服务发现的实现
+- en: Spring Cloud messaging for asynchronous microservice composition
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Spring Cloud消息传递用于异步微服务组合
+- en: Reviewing microservices capabilities
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 审查微服务能力
+- en: 'The examples in this chapter explore the following microservices capabilities
+    from the microservices capability model discussed in [Chapter 3](ch03.html "Chapter 3. Applying
+    Microservices Concepts"), *Applying Microservices Concepts*:'
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的示例探讨了微服务能力模型中讨论的微服务能力模型中的以下微服务能力，*应用微服务概念* [第3章](ch03.html "第3章。应用微服务概念")：
+- en: '**Software Defined Load Balancer**'
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**软件定义的负载均衡器**'
+- en: '**Service Registry**'
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**服务注册表**'
+- en: '**Configuration Service**'
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**配置服务**'
+- en: '**Reliable Cloud Messaging**'
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**可靠的云消息传递**'
+- en: '**API Gateways**'
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**API网关**'
+- en: '![Reviewing microservices capabilities](img/B05447_05_01.jpg)'
+  id: totrans-16
+  prefs: []
+  type: TYPE_IMG
+  zh: '![审查微服务能力](img/B05447_05_01.jpg)'
+- en: Reviewing BrownField's PSS implementation
+  id: totrans-17
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 审查BrownField的PSS实现
+- en: In [Chapter 4](ch04.html "Chapter 4. Microservices Evolution – A Case Study"),
+    *Microservices Evolution – A Case Study*, we designed and developed a microservice-based
+    PSS system for BrownField Airlines using the Spring framework and Spring Boot.
+    The implementation is satisfactory from the development point of view, and it
+    serves the purpose for low volume transactions. However, this is not good enough
+    for deploying large, enterprise-scale deployments with hundreds or even thousands
+    of microservices.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第4章](ch04.html "第4章。微服务演进-案例研究")*微服务演进-案例研究*中，我们使用Spring框架和Spring Boot为BrownField航空公司设计和开发了基于微服务的PSS系统。从开发的角度来看，实现是令人满意的，并且它可以满足低交易量的需求。然而，这对于部署具有数百甚至数千个微服务的大型企业规模部署来说还不够好。
+- en: 'In [Chapter 4](ch04.html "Chapter 4. Microservices Evolution – A Case Study"),
+    *Microservices Evolution – A Case Study*, we developed four microservices: Search,
+    Booking, Fares, and Check-in. We also developed a website to test the microservices.'
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在[第4章](ch04.html "第4章。微服务演进-案例研究")*微服务演进-案例研究*中，我们开发了四个微服务：搜索、预订、票价和办理登机手续。我们还开发了一个网站来测试这些微服务。
+- en: 'We have accomplished the following items in our microservice implementation
+    so far:'
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们在微服务实现中已经完成了以下工作：
+- en: Each microservice exposes a set of REST/JSON endpoints for accessing business
+    capabilities
+  id: totrans-21
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每个微服务都公开一组REST/JSON端点，用于访问业务能力
+- en: Each microservice implements certain business functions using the Spring framework.
+  id: totrans-22
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每个微服务使用Spring框架实现特定的业务功能。
+- en: Each microservice stores its own persistent data using H2, an in-memory database
+  id: totrans-23
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每个微服务使用H2作为内存数据库存储自己的持久数据
+- en: Microservices are built with Spring Boot, which has an embedded Tomcat server
+    as the HTTP listener
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 微服务使用Spring Boot构建，其中嵌入了Tomcat服务器作为HTTP监听器
+- en: RabbitMQ is used as an external messaging service. Search, Booking, and Check-in
+    interact with each other through asynchronous messaging
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: RabbitMQ被用作外部消息服务。搜索、预订和办理登机手续通过异步消息进行交互
+- en: Swagger is integrated with all microservices for documenting the REST APIs.
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Swagger与所有微服务集成，用于记录REST API。
+- en: An OAuth2-based security mechanism is developed to protect the microservices
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开发了基于OAuth2的安全机制来保护微服务
+- en: What is Spring Cloud?
+  id: totrans-28
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 什么是Spring Cloud？
+- en: The Spring Cloud project is an umbrella project from the Spring team that implements
+    a set of common patterns required by distributed systems, as a set of easy-to-use
+    Java Spring libraries. Despite its name, Spring Cloud by itself is not a cloud
+    solution. Rather, it provides a number of capabilities that are essential when
+    developing applications targeting cloud deployments that adhere to the Twelve-Factor
+    application principles. By using Spring Cloud, developers just need to focus on
+    building business capabilities using Spring Boot, and leverage the distributed,
+    fault-tolerant, and self-healing capabilities available out of the box from Spring
+    Cloud.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud项目是Spring团队的一个总称项目，它实现了分布式系统所需的一组常见模式，作为一组易于使用的Java Spring库。尽管它的名字是Spring
+    Cloud，但它本身并不是一个云解决方案。相反，它提供了在开发应用程序时所需的一些关键能力，这些应用程序遵循十二要素应用程序原则，并且使用Spring Cloud，开发人员只需专注于使用Spring
+    Boot构建业务能力，并利用Spring Cloud提供的分布式、容错和自愈能力。
+- en: The Spring Cloud solutions are agnostic to the deployment environment, and can
+    be developed and deployed in a desktop PC or in an elastic cloud. The cloud-ready
+    solutions that are developed using Spring Cloud are also agnostic and portable
+    across many cloud providers such as Cloud Foundry, AWS, Heroku, and so on. When
+    not using Spring Cloud, developers will end up using services natively provided
+    by the cloud vendors, resulting in deep coupling with the PaaS providers. An alternate
+    option for developers is to write quite a lot of boilerplate code to build these
+    services. Spring Cloud also provides simple, easy-to-use Spring-friendly APIs,
+    which abstract the cloud provider's service APIs such as those APIs coming with
+    AWS Notification Service.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud的解决方案对部署环境是不可知的，可以在桌面PC或弹性云中开发和部署。使用Spring Cloud开发的云就绪解决方案也是不可知的，并且可以在许多云提供商（如Cloud
+    Foundry、AWS、Heroku等）之间进行移植。如果不使用Spring Cloud，开发人员将最终使用云供应商原生提供的服务，导致与PaaS提供商的深度耦合。开发人员的另一个选择是编写大量样板代码来构建这些服务。Spring
+    Cloud还提供了简单易用的Spring友好API，抽象了云提供商的服务API，比如AWS通知服务的API。
+- en: Built on Spring's "convention over configuration" approach, Spring Cloud defaults
+    all configurations, and helps the developers get off to a quick start. Spring
+    Cloud also hides the complexities, and provides simple declarative configurations
+    to build systems. The smaller footprints of the Spring Cloud components make it
+    developer friendly, and also make it easy to develop cloud-native applications.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于Spring的“约定优于配置”方法，Spring Cloud默认所有配置，并帮助开发人员快速启动。Spring Cloud还隐藏了复杂性，并提供简单的声明性配置来构建系统。Spring
+    Cloud组件的较小占用空间使其对开发人员友好，也使其易于开发云原生应用程序。
+- en: Spring Cloud offers many choices of solutions for developers based on their
+    requirements. For example, the service registry can be implemented using popular
+    options such as Eureka, ZooKeeper, or Consul. The components of Spring Cloud are
+    fairly decoupled, hence, developers get the flexibility to pick and choose what
+    is required.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud为开发人员提供了许多解决方案选择。例如，服务注册表可以使用流行的选项，如Eureka、ZooKeeper或Consul来实现。Spring
+    Cloud的组件相当解耦，因此开发人员可以灵活选择所需的内容。
+- en: Note
+  id: totrans-33
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: '**What is the difference between Spring Cloud and Cloud Foundry?**'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**Spring Cloud和Cloud Foundry有什么区别？**'
+- en: Spring Cloud is a developer kit for developing Internet-scale Spring Boot applications,
+    whereas Cloud Foundry is an open-source Platform as a Service for building, deploying,
+    and scaling applications.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud是一个用于开发互联网规模的Spring Boot应用程序的开发工具包，而Cloud Foundry是一个用于构建、部署和扩展应用程序的开源平台即服务。
+- en: Spring Cloud releases
+  id: totrans-36
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Spring Cloud发布
+- en: The Spring Cloud project is an overarching Spring project that includes a combination
+    of different components. The versions of these components are defined in the `spring-cloud-starter-parent`
+    BOM.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud项目是一个包含不同组件组合的Spring项目。这些组件的版本在`spring-cloud-starter-parent` BOM中定义。
+- en: 'In this book, we are relying on the `Brixton.RELEASE` version of the Spring
+    Cloud:'
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本书中，我们依赖于Spring Cloud的`Brixton.RELEASE`版本。
+- en: '[PRE0]'
+  id: totrans-39
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'The `spring-cloud-starter-parent` defines different versions of its subcomponents
+    as follows:'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`spring-cloud-starter-parent`定义了其子组件的不同版本如下：'
+- en: '[PRE1]'
+  id: totrans-41
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Note
+  id: totrans-42
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The names of the Spring Cloud releases are in an alphabetic sequence, starting
+    with A, following the names of the London Tube stations. **Angel** was the first
+    release, and **Brixton** is the second release.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud发布的名称按字母顺序排列，从A开始，遵循伦敦地铁站的名称。**Angel**是第一个发布版本，**Brixton**是第二个发布版本。
+- en: Components of Spring Cloud
+  id: totrans-44
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Spring Cloud组件
+- en: 'Each Spring Cloud component specifically addresses certain distributed system
+    capabilities. The grayed-out boxes at the bottom of the following diagram show
+    the capabilities, and the boxes placed on top of these capabilities showcase the
+    Spring Cloud subprojects addressing these capabilities:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个Spring Cloud组件都专门解决某些分布式系统功能。以下图表底部的灰色框显示了这些功能，放在这些功能上面的框展示了Spring Cloud子项目解决这些功能的能力：
+- en: '![Components of Spring Cloud](img/B05447_05_02.jpg)'
+  id: totrans-46
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Spring Cloud组件](img/B05447_05_02.jpg)'
+- en: 'The Spring Cloud capabilities are explained as follows:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud的能力解释如下：
+- en: '**Distributed configuration**: Configuration properties are hard to manage
+    when there are many microservice instances running under different profiles such
+    as development, test, production, and so on. It is, therefore, important to manage
+    them centrally, in a controlled way. The distributed configuration management
+    module is to externalize and centralize microservice configuration parameters.
+    Spring Cloud Config is an externalized configuration server with Git or SVN as
+    the backing repository. Spring Cloud Bus provides support for propagating configuration
+    changes to multiple subscribers, generally a microservice instance. Alternately,
+    ZooKeeper or HashiCorp''s Consul can also be used for distributed configuration
+    management.'
+  id: totrans-48
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**分布式配置**：当有许多微服务实例在不同的配置文件下运行时，配置属性很难管理，比如开发、测试、生产等。因此，重要的是以受控的方式集中管理它们。分布式配置管理模块是为了外部化和集中微服务配置参数。Spring
+    Cloud Config是一个外部化配置服务器，使用Git或SVN作为后备存储库。Spring Cloud Bus提供了对配置更改的支持，可以传播给多个订阅者，通常是一个微服务实例。另外，ZooKeeper或HashiCorp的Consul也可以用于分布式配置管理。'
+- en: '**Routing**: Routing is an API gateway component, primarily used similar to
+    a reverse proxy that forwards requests from consumers to service providers. The
+    gateway component can also perform software-based routing and filtering. Zuul
+    is a lightweight API gateway solution that offers fine-grained controls to developers
+    for traffic shaping and request/response transformations.'
+  id: totrans-49
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**路由**：路由是一个API网关组件，主要用于类似于反向代理的功能，将消费者的请求转发给服务提供者。网关组件还可以执行基于软件的路由和过滤。Zuul是一个轻量级的API网关解决方案，为开发人员提供了对流量整形和请求/响应转换的精细控制。'
+- en: '**Load balancing**: The load balancer capability requires a software-defined
+    load balancer module which can route requests to available servers using a variety
+    of load balancing algorithms. Ribbon is a Spring Cloud subproject which supports
+    this capability. Ribbon can work as a standalone component, or integrate and work
+    seamlessly with Zuul for traffic routing.'
+  id: totrans-50
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 负载均衡：负载均衡能力需要一个软件定义的负载均衡器模块，它可以使用各种负载均衡算法将请求路由到可用的服务器。Ribbon是一个支持这种能力的Spring
+    Cloud子项目。Ribbon可以作为一个独立的组件工作，也可以与Zuul集成并无缝地进行流量路由。
+- en: '**Service registration and discovery**: The service registration and discovery
+    module enables services to programmatically register with a repository when a
+    service is available and ready to accept traffic. The microservices advertise
+    their existence, and make them discoverable. The consumers can then look up the
+    registry to get a view of the service availability and the endpoint locations.
+    The registry, in many cases, is more or less a dump. But the components around
+    the registry make the ecosystem intelligent. There are many subprojects existing
+    under Spring Cloud which support registry and discovery capability. Eureka, ZooKeeper,
+    and Consul are three subprojects implementing the registry capability.'
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 服务注册和发现：服务注册和发现模块使服务能够在服务可用并准备接受流量时以编程方式向存储库注册。微服务会公布它们的存在，并使它们可以被发现。消费者可以查找注册表以获取服务可用性和端点位置的视图。注册表在许多情况下更多地是一个垃圾场。但是注册表周围的组件使生态系统变得智能。在Spring
+    Cloud下存在许多支持注册和发现能力的子项目。Eureka、ZooKeeper和Consul是实现注册能力的三个子项目。
+- en: '**Service-to-service calls**: The Spring Cloud Feign subproject under Spring
+    Cloud offers a declarative approach for making RESTful service-to-service calls
+    in a synchronous way. The declarative approach allows applications to work with
+    **POJO** (**Plain Old Java Object**) interfaces instead of low-level HTTP client
+    APIs. Feign internally uses reactive libraries for communication.'
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 服务间调用：Spring Cloud下的Spring Cloud Feign子项目提供了一种声明性的方式来以同步方式进行RESTful服务间调用。声明性方法允许应用程序使用POJO（Plain
+    Old Java Object）接口而不是低级HTTP客户端API。Feign在内部使用响应式库进行通信。
+- en: '**Circuit breaker**: The circuit breaker subproject implements the circuit
+    breaker pattern. The circuit breaker breaks the circuit when it encounters failures
+    in the primary service by diverting traffic to another temporary fallback service.
+    It also automatically reconnects back to the primary service when the service
+    is back to normal. It finally provides a monitoring dashboard for monitoring the
+    service state changes. The Spring Cloud Hystrix project and Hystrix Dashboard
+    implement the circuit breaker and the dashboard respectively.'
+  id: totrans-53
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 断路器：断路器子项目实现了断路器模式。当主要服务遇到故障时，断路器会断开电路，将流量转移到另一个临时的备用服务。当服务恢复正常时，它还会自动重新连接到主要服务。最后，它提供了一个监控仪表板，用于监控服务状态的变化。Spring
+    Cloud Hystrix项目和Hystrix Dashboard分别实现了断路器和仪表板。
+- en: '**Global locks, leadership election and cluster state**: This capability is
+    required for cluster management and coordination when dealing with large deployments.
+    It also offers global locks for various purposes such as sequence generation.
+    The Spring Cloud Cluster project implements these capabilities using Redis, ZooKeeper,
+    and Consul.'
+  id: totrans-54
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 全局锁、领导选举和集群状态：在处理大规模部署时，这种能力对于集群管理和协调是必需的。它还为各种目的提供全局锁，如序列生成。Spring Cloud Cluster项目使用Redis、ZooKeeper和Consul实现了这些能力。
+- en: '**Security**: Security capability is required for building security for cloud-native
+    distributed systems using externalized authorization providers such as OAuth2\.
+    The Spring Cloud Security project implements this capability using customizable
+    authorization and resource servers. It also offers SSO capabilities, which are
+    essential when dealing with many microservices.'
+  id: totrans-55
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安全性：安全性能力是为了构建云原生分布式系统的安全性，使用外部授权提供者（如OAuth2）。Spring Cloud Security项目使用可定制的授权和资源服务器实现了这一能力。它还提供了SSO能力，在处理许多微服务时是必不可少的。
+- en: '**Big data support**: The big data support capability is a capability that
+    is required for data services and data flows in connection with big data solutions.
+    The Spring Cloud Streams and the Spring Cloud Data Flow projects implement these
+    capabilities. The Spring Cloud Data Flow is the re-engineered version of Spring
+    XD.'
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 大数据支持：大数据支持能力是与大数据解决方案相关的数据服务和数据流所需的能力。Spring Cloud Streams和Spring Cloud Data
+    Flow项目实现了这些能力。Spring Cloud Data Flow是Spring XD的重新设计版本。
+- en: '**Distributed tracing**: The distributed tracing capability helps to thread
+    and correlate transitions that are spanned across multiple microservice instances.
+    Spring Cloud Sleuth implements this by providing an abstraction on top of various
+    distributed tracing mechanisms such as Zipkin and HTrace with the support of a
+    64-bit ID.'
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 分布式跟踪：分布式跟踪能力有助于跟踪和关联跨多个微服务实例的转换。Spring Cloud Sleuth通过在各种分布式跟踪机制（如Zipkin和HTrace）之上提供64位ID的支持来实现这一点。
+- en: '**Distributed messaging**: Spring Cloud Stream provides declarative messaging
+    integration on top of reliable messaging solutions such as Kafka, Redis, and RabbitMQ.'
+  id: totrans-58
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 分布式消息传递：Spring Cloud Stream在可靠的消息传递解决方案（如Kafka、Redis和RabbitMQ）之上提供了声明性的消息集成。
+- en: '**Cloud support**: Spring Cloud also provides a set of capabilities that offers
+    various connectors, integration mechanisms, and abstraction on top of different
+    cloud providers such as the Cloud Foundry and AWS.'
+  id: totrans-59
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 云支持：Spring Cloud还提供了一组能力，它们在不同的云提供商（如Cloud Foundry和AWS）之上提供各种连接器、集成机制和抽象。
+- en: Spring Cloud and Netflix OSS
+  id: totrans-60
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: Spring Cloud和Netflix OSS
+- en: Many of the Spring Cloud components which are critical for microservices' deployment
+    came from the **Netflix Open Source Software** (**Netflix OSS**) center. Netflix
+    is one of the pioneers and early adaptors in the microservices space. In order
+    to manage large scale microservices, engineers at Netflix came up with a number
+    of homegrown tools and techniques for managing their microservices. These are
+    fundamentally crafted to fill some of the software gaps recognized in the AWS
+    platform for managing Netflix services. Later, Netflix open-sourced these components,
+    and made them available under the Netflix OSS platform for public use. These components
+    are extensively used in production systems, and are battle-tested with large scale
+    microservice deployments at Netflix.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 许多用于微服务部署的Spring Cloud组件来自**Netflix开源软件**（**Netflix OSS**）中心。Netflix是微服务领域的先驱和早期采用者之一。为了管理大规模的微服务，Netflix的工程师们提出了许多自制工具和技术来管理他们的微服务。这些工具和技术基本上是为了填补在AWS平台上管理Netflix服务时认识到的一些软件缺陷。后来，Netflix将这些组件开源，并在Netflix
+    OSS平台上提供给公众使用。这些组件在生产系统中被广泛使用，并在Netflix的大规模微服务部署中经过了实战测试。
+- en: Spring Cloud offers higher levels of abstraction for these Netflix OSS components,
+    making it more Spring developer friendly. It also provides a declarative mechanism,
+    well-integrated and aligned with Spring Boot and the Spring framework.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud为这些Netflix OSS组件提供了更高级别的抽象，使其更适合Spring开发人员使用。它还提供了一种声明性机制，与Spring
+    Boot和Spring框架紧密集成和对齐。
+- en: Setting up the environment for BrownField PSS
+  id: totrans-63
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 为BrownField PSS设置环境
+- en: In this chapter, we will amend the BrownField PSS microservices developed in
+    [Chapter 4](ch04.html "Chapter 4. Microservices Evolution – A Case Study"), *Microservices
+    Evolution – A Case Study*, using Spring Cloud capabilities. We will also examine
+    how to make these services enterprise grade using Spring Cloud components.
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将使用Spring Cloud的功能修改在[第4章](ch04.html "第4章。微服务演进-案例研究")中开发的BrownField
+    PSS微服务。我们还将研究如何使用Spring Cloud组件使这些服务达到企业级水平。
+- en: Subsequent sections of this chapter will explore how to scale the microservices
+    developed in the previous chapter for cloud scale deployments, using some out-of-the-box
+    capabilities provided by the Spring Cloud project. The rest of this chapter will
+    explore Spring Cloud capabilities such as configuration using the Spring Config
+    server, Ribbon-based service load balancing, service discovery using Eureka, Zuul
+    for API gateway, and finally, Spring Cloud messaging for message-based service
+    interactions. We will demonstrate the capabilities by modifying the BrownField
+    PSS microservices developed in [Chapter 4](ch04.html "Chapter 4. Microservices
+    Evolution – A Case Study"), *Microservices Evolution – A Case Study*.
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的后续部分将探讨如何使用Spring Cloud项目提供的一些开箱即用的功能，将在上一章中开发的微服务扩展到云规模部署。本章的其余部分将探讨Spring
+    Cloud的功能，如使用Spring Config服务器进行配置，基于Ribbon的服务负载平衡，使用Eureka进行服务发现，使用Zuul进行API网关，最后，使用Spring
+    Cloud消息传递进行基于消息的服务交互。我们将通过修改在[第4章](ch04.html "第4章。微服务演进-案例研究")中开发的BrownField PSS微服务来演示这些功能，*微服务演进-案例研究*。
+- en: In order to prepare the environment for this chapter, import and rename (`chapter4.*`
+    to `chapter5.*`) projects into a new STS workspace.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了准备本章的环境，将项目导入并重命名（`chapter4.*`为`chapter5.*`）到一个新的STS工作空间中。
+- en: Note
+  id: totrans-67
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The full source code of this chapter is available under the `Chapter 5` projects
+    in the code files.
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的完整源代码可在代码文件的`第5章`项目中找到。
+- en: Spring Cloud Config
+  id: totrans-69
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Spring Cloud Config
+- en: The Spring Cloud Config server is an externalized configuration server in which
+    applications and services can deposit, access, and manage all runtime configuration
+    properties. The Spring Config server also supports version control of the configuration
+    properties.
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud Config服务器是一个外部化的配置服务器，应用程序和服务可以在其中存储、访问和管理所有运行时配置属性。Spring Config服务器还支持配置属性的版本控制。
+- en: In the earlier examples with Spring Boot, all configuration parameters were
+    read from a property file packaged inside the project, either `application.properties`
+    or `application.yaml`. This approach is good, since all properties are moved out
+    of code to a property file. However, when microservices are moved from one environment
+    to another, these properties need to undergo changes, which require an application
+    re-build. This is violation of one of the Twelve-Factor application principles,
+    which advocate one-time build and moving of the binaries across environments.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在之前的Spring Boot示例中，所有配置参数都是从打包在项目内的属性文件（`application.properties`或`application.yaml`）中读取的。这种方法很好，因为所有属性都从代码中移到了属性文件中。然而，当微服务从一个环境移动到另一个环境时，这些属性需要进行更改，这需要重新构建应用程序。这违反了十二要素应用程序原则之一，即倡导一次构建并将二进制文件移动到不同环境中。
+- en: A better approach is to use the concept of profiles. Profiles, as discussed
+    in [Chapter 2](ch02.html "Chapter 2. Building Microservices with Spring Boot"),
+    *Building Microservices with Spring Boot*, is used for partitioning different
+    properties for different environments. The profile-specific configuration will
+    be named `application-{profile}.properties`. For example, `application-development.properties`
+    represents a property file targeted for the development environment.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更好的方法是使用配置文件。如在[第2章](ch02.html "第2章。使用Spring Boot构建微服务")中讨论的，配置文件用于将不同环境的不同属性进行分区。特定于配置文件的配置将被命名为`application-{profile}.properties`。例如，`application-development.properties`表示针对开发环境的属性文件。
+- en: However, the disadvantage of this approach is that the configurations are statically
+    packaged along with the application. Any changes in the configuration properties
+    require the application to be rebuilt.
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，这种方法的缺点是配置静态地打包到应用程序中。对配置属性的任何更改都需要重新构建应用程序。
+- en: 'There are alternate ways to externalize the configuration properties from the
+    application deployment package. Configurable properties can also be read from
+    an external source in a number of ways:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有多种方法可以将应用程序部署包中的配置属性外部化。可通过多种方式从外部源读取可配置属性：
+- en: From an external JNDI server using JNDI namespace (`java:comp/env`)
+  id: totrans-75
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 从使用JNDI命名空间（`java:comp/env`）的外部JNDI服务器
+- en: Using the Java system properties (`System.getProperties()`) or using the `–D`
+    command line option
+  id: totrans-76
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用Java系统属性（`System.getProperties()`）或使用`-D`命令行选项
+- en: 'Using the `PropertySource` configuration:'
+  id: totrans-77
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用`PropertySource`配置：
+- en: '[PRE2]'
+  id: totrans-78
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Using a command-line parameter pointing a file to an external location:'
+  id: totrans-79
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用命令行参数指向外部位置的文件：
+- en: '[PRE3]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: JNDI operations are expensive, lack flexibility, have difficulties in replication,
+    and are not version controlled. `System.properties` is not flexible enough for
+    large-scale deployments. The last two options rely on a local or a shared filesystem
+    mounted on the server.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JNDI操作昂贵，缺乏灵活性，难以复制，并且没有版本控制。`System.properties`对于大规模部署来说不够灵活。最后两个选项依赖于服务器上挂载的本地或共享文件系统。
+- en: 'For large scale deployments, a simple yet powerful centralized configuration
+    management solution is required:'
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于大规模部署，需要一个简单而强大的集中式配置管理解决方案：
+- en: '![Spring Cloud Config](img/B05447_05_03.jpg)'
+  id: totrans-83
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Spring Cloud Config](img/B05447_05_03.jpg)'
+- en: As shown in the preceding diagram, all microservices point to a central server
+    to get the required configuration parameters. The microservices then locally cache
+    these parameters to improve performance. The Config server propagates the configuration
+    state changes to all subscribed microservices so that the local cache's state
+    can be updated with the latest changes. The Config server also uses profiles to
+    resolve values specific to an environment.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前图所示，所有微服务都指向一个中央服务器以获取所需的配置参数。然后，这些微服务在本地缓存这些参数以提高性能。Config服务器将配置状态更改传播给所有订阅的微服务，以便本地缓存的状态可以更新为最新更改。Config服务器还使用配置文件来解析特定于环境的值。
+- en: 'As shown in the following screenshot, there are multiple options available
+    under the Spring Cloud project for building the configuration server. **Config
+    Server**, **Zookeeper Configuration**, and **Consul Configuration** are available
+    as options. However, this chapter will only focus on the Spring Config server
+    implementation:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如下截图所示，Spring Cloud项目下有多个选项可用于构建配置服务器。**Config Server**、**Zookeeper Configuration**和**Consul
+    Configuration**都是可选项。但本章将仅关注Spring Config服务器的实现：
+- en: '![Spring Cloud Config](img/B05447_05_04.jpg)'
+  id: totrans-86
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Spring Cloud Config](img/B05447_05_04.jpg)'
+- en: The Spring Config server stores properties in a version-controlled repository
+    such as Git or SVN. The Git repository can be local or remote. A highly available
+    remote Git server is preferred for large scale distributed microservice deployments.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Config服务器将属性存储在诸如Git或SVN之类的版本控制存储库中。Git存储库可以是本地的或远程的。对于大规模分布式微服务部署，首选高可用的远程Git服务器。
+- en: 'The Spring Cloud Config server architecture is shown in the following diagram:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud Config服务器架构如下图所示：
+- en: '![Spring Cloud Config](img/B05447_05_05.jpg)'
+  id: totrans-89
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Spring Cloud Config](img/B05447_05_05.jpg)'
+- en: As shown in the preceding diagram, the Config client embedded in the Spring
+    Boot microservices does a configuration lookup from a central configuration server
+    using a simple declarative mechanism, and stores properties into the Spring environment.
+    The configuration properties can be application-level configurations such as trade
+    limit per day, or infrastructure-related configurations such as server URLs, credentials,
+    and so on.
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前图所示，嵌入在Spring Boot微服务中的Config客户端使用简单的声明性机制从中央配置服务器进行配置查找，并将属性存储到Spring环境中。配置属性可以是应用级配置，如每日交易限额，也可以是基础设施相关配置，如服务器URL、凭据等。
+- en: Unlike Spring Boot, Spring Cloud uses a bootstrap context, which is a parent
+    context of the main application. Bootstrap context is responsible for loading
+    configuration properties from the Config server. The bootstrap context looks for
+    `bootstrap.yaml` or `bootstrap.properties` for loading initial configuration properties.
+    To make this work in a Spring Boot application, rename the `application.*` file
+    to `bootstrap.*`.
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与Spring Boot不同，Spring Cloud使用一个引导上下文，这是主应用程序的父上下文。引导上下文负责从Config服务器加载配置属性。引导上下文寻找`bootstrap.yaml`或`bootstrap.properties`来加载初始配置属性。要使这在Spring
+    Boot应用程序中工作，将`application.*`文件重命名为`bootstrap.*`。
+- en: What's next?
+  id: totrans-92
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 接下来是什么？
+- en: 'The next few sections demonstrate how to use the Config server in a real-world
+    scenario. In order to do this, we will modify our search microservice (`chapter5.search`)
+    to use the Config server. The following diagram depicts the scenario:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来的几节演示了如何在实际场景中使用Config服务器。为了做到这一点，我们将修改我们的搜索微服务（`chapter5.search`）以使用Config服务器。下图描述了这种情况：
+- en: '![What''s next?](img/B05447_05_06.jpg)'
+  id: totrans-94
+  prefs: []
+  type: TYPE_IMG
+  zh: '![接下来是什么？](img/B05447_05_06.jpg)'
+- en: In this example, the Search service will read the Config server at startup by
+    passing the service name. In this case, the service name of the search service
+    will be `search-service`. The properties configured for the `search-service` include
+    the RabbitMQ properties as well as a custom property.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此示例中，搜索服务将通过传递服务名称在启动时读取Config服务器。在这种情况下，搜索服务的服务名称将是`search-service`。为`search-service`配置的属性包括RabbitMQ属性以及自定义属性。
+- en: Note
+  id: totrans-96
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The full source code of this section is available under the `chapter5.configserver`
+    project in the code files.
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节的完整源代码可在代码文件的`chapter5.configserver`项目中找到。
+- en: Setting up the Config server
+  id: totrans-98
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设置Config服务器
+- en: 'The following steps need to be followed to create a new Config server using
+    STS:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 创建新的Config服务器使用STS需要遵循以下步骤：
+- en: Create a new **Spring Starter Project**, and select **Config Server** and **Actuator**
+    as shown in the following diagram:![Setting up the Config server](img/B05447_05_07.jpg)
+  id: totrans-100
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个新的**Spring Starter Project**，并选择**Config Server**和**Actuator**，如下图所示：![设置Config服务器](img/B05447_05_07.jpg)
+- en: Set up a Git repository. This can be done by pointing to a remote Git configuration
+    repository like the one at [https://github.com/spring-cloud-samples/config-repo](https://github.com/spring-cloud-samples/config-repo).
+    This URL is an indicative one, a Git repository used by the Spring Cloud examples.
+    We will have to use our own Git repository instead.
+  id: totrans-101
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 设置一个Git存储库。这可以通过指向远程Git配置存储库来完成，比如[https://github.com/spring-cloud-samples/config-repo](https://github.com/spring-cloud-samples/config-repo)上的存储库。这个URL是一个指示性的URL，是Spring
+    Cloud示例使用的Git存储库。我们将不得不使用我们自己的Git存储库。
+- en: Alternately, a local filesystem-based Git repository can be used. In a real
+    production scenario, an external Git is recommended. The Config server in this
+    chapter will use a local filesystem-based Git repository for demonstration purposes.
+  id: totrans-102
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 或者，可以使用基于本地文件系统的Git存储库。在真实的生产场景中，建议使用外部Git。本章中的配置服务器将使用基于本地文件系统的Git存储库进行演示。
+- en: 'Enter the commands listed next to set up a local Git repository:'
+  id: totrans-103
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 输入下面列出的命令来设置本地Git存储库：
+- en: '[PRE4]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: '[PRE5]'
+  id: totrans-105
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: The file `application.properties` is created for demonstration purposes. We
+    will change this in the subsequent sections.
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 文件`application.properties`是为演示目的而创建的。我们将在后续章节中更改这一点。
+- en: The next step is to change the configuration in the Config server to use the
+    Git repository created in the previous step. In order to do this, rename the file
+    `application.properties` to `bootstrap.properties`:![Setting up the Config server](img/B05447_05_08.jpg)
+  id: totrans-107
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下一步是更改配置服务器中的配置，以使用在上一步中创建的Git存储库。为了做到这一点，将文件`application.properties`重命名为`bootstrap.properties`：![设置配置服务器](img/B05447_05_08.jpg)
+- en: 'Edit the contents of the new `bootstrap.properties` file to match the following:'
+  id: totrans-108
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 编辑新的`bootstrap.properties`文件的内容，使其与以下内容匹配：
+- en: '[PRE6]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Port `8888` is the default port for the Config server. Even without configuring
+    `server.port`, the Config server should bind to `8888`. In the Windows environment,
+    an extra `/` is required in the file URL.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 端口`8888`是配置服务器的默认端口。即使没有配置`server.port`，配置服务器也应该绑定到`8888`。在Windows环境中，文件URL需要额外的`/`。
+- en: 'Optionally, rename the default package of the auto-generated `Application.java`
+    from `com.example` to `com.brownfield.configserver`. Add `@EnableConfigServer`
+    in `Application.java`:'
+  id: totrans-111
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 可选地，将自动生成的`Application.java`的默认包从`com.example`重命名为`com.brownfield.configserver`。在`Application.java`中添加`@EnableConfigServer`：
+- en: '[PRE7]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Run the Config server by right-clicking on the project, and running it as a
+    Spring Boot app.
+  id: totrans-113
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过右键单击项目并将其作为Spring Boot应用程序运行来运行配置服务器。
+- en: Visit `http://localhost:8888/env` to see whether the server is running. If everything
+    is fine, this will list all environment configurations. Note that `/env` is an
+    actuator endpoint.
+  id: totrans-114
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 访问`http://localhost:8888/env`，以查看服务器是否正在运行。如果一切正常，这将列出所有环境配置。请注意，`/env`是一个执行器端点。
+- en: 'Check `http://localhost:8888/application/default/master` to see the properties
+    specific to `application.properties`, which were added in the earlier step. The
+    browser will display the properties configured in `application.properties`. The
+    browser should display contents similar to the following:'
+  id: totrans-115
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 检查`http://localhost:8888/application/default/master`，以查看特定于`application.properties`的属性，这些属性是在之前的步骤中添加的。浏览器将显示在`application.properties`中配置的属性。浏览器应该显示类似以下内容的内容：
+- en: '[PRE8]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Understanding the Config server URL
+  id: totrans-117
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 理解配置服务器URL
+- en: In the previous section, we used `http://localhost:8888/application/default/master`
+    to explore the properties. How do we interpret this URL?
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节中，我们使用了`http://localhost:8888/application/default/master`来探索属性。我们如何解释这个URL？
+- en: The first element in the URL is the application name. In the given example,
+    the application name should be `application`. The application name is a logical
+    name given to the application, using the `spring.application.name` property in
+    `bootstrap.properties` of the Spring Boot application. Each application must have
+    a unique name. The Config server will use the name to resolve and pick up appropriate
+    properties from the Config server repository. The application name is also sometimes
+    referred to as service ID. If there is an application with the name `myapp`, then
+    there should be a `myapp.properties` in the configuration repository to store
+    all the properties related to that application.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: URL中的第一个元素是应用程序名称。在给定的示例中，应用程序名称应该是`application`。应用程序名称是给定应用程序的逻辑名称，使用Spring
+    Boot应用程序的`bootstrap.properties`中的`spring.application.name`属性。每个应用程序必须有一个唯一的名称。配置服务器将使用名称来解析并从配置服务器存储库中获取适当的属性。应用程序名称有时也被称为服务ID。如果有一个名为`myapp`的应用程序，则配置存储库中应该有一个`myapp.properties`来存储与该应用程序相关的所有属性。
+- en: The second part of the URL represents the profile. There can be more than one
+    profile configured within the repository for an application. The profiles can
+    be used in various scenarios. The two common scenarios are segregating different
+    environments such as `Dev`, `Test`, `Stage`, `Prod`, and the like, or segregating
+    server configurations such as `Primary`, `Secondary`, and so on. The first one
+    represents different environments of an application, whereas the second one represents
+    different servers where an application is deployed.
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: URL的第二部分表示配置文件。可以在存储库中为应用程序配置多个配置文件。配置文件可以在各种场景中使用。两个常见的场景是分隔不同的环境，如`Dev`、`Test`、`Stage`、`Prod`等，或者分隔服务器配置，如`Primary`、`Secondary`等。第一个表示应用程序的不同环境，而第二个表示部署应用程序的不同服务器。
+- en: 'The profile names are logical names that will be used for matching the file
+    name in the repository. The default profile is named `default`. To configure properties
+    for different environments, we have to configure different files as given in the
+    following example. In this example, the first file is for the development environment
+    whereas the second is for the production environment:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置文件名是将用于匹配存储库中文件名的逻辑名称。默认配置文件名为`default`。要为不同的环境配置属性，我们必须根据以下示例配置不同的文件。在这个例子中，第一个文件是为开发环境而设，而第二个文件是为生产环境而设：
+- en: '[PRE9]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'These are accessible using the following URLs respectively:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这些分别可以使用以下URL访问：
+- en: http://localhost:8888/application/development
+  id: totrans-124
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: http://localhost:8888/application/development
+- en: http://localhost:8888/application/production
+  id: totrans-125
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: http://localhost:8888/application/production
+- en: The last part of the URL is the label, and is named `master` by default. The
+    label is an optional Git label that can be used, if required.
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: URL的最后一部分是标签，默认情况下命名为`master`。标签是一个可选的Git标签，如果需要的话可以使用。
+- en: 'In short, the URL is based on the following pattern: `http://localhost:8888/{name}/{profile}/{label}`.'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 简而言之，URL基于以下模式：`http://localhost:8888/{name}/{profile}/{label}`。
+- en: 'The configuration can also be accessed by ignoring the profile. In the preceding
+    example, all the following three URLs point to the same configuration:'
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置也可以通过忽略配置文件来访问。在前面的例子中，以下所有三个URL都指向相同的配置：
+- en: http://localhost:8888/application/default
+  id: totrans-129
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: http://localhost:8888/application/default
+- en: http://localhost:8888/application/master
+  id: totrans-130
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: http://localhost:8888/application/master
+- en: http://localhost:8888/application/default/master
+  id: totrans-131
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: http://localhost:8888/application/default/master
+- en: There is an option to have different Git repositories for different profiles.
+    This makes sense for production systems, since the access to different repositories
+    could be different.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有一个选项可以为不同的配置文件使用不同的Git存储库。这对于生产系统是有意义的，因为对不同存储库的访问可能是不同的。
+- en: Accessing the Config Server from clients
+  id: totrans-133
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 从客户端访问配置服务器
+- en: In the previous section, a Config server is set up and accessed using a web
+    browser. In this section, the Search microservice will be modified to use the
+    Config server. The Search microservice will act as a Config client.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节中，已设置并通过Web浏览器访问了配置服务器。在本节中，将修改搜索微服务以使用配置服务器。搜索微服务将充当配置客户端。
+- en: 'Follow these steps to use the Config server instead of reading properties from
+    the `application.properties` file:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤使用配置服务器而不是从`application.properties`文件中读取属性：
+- en: 'Add the Spring Cloud Config dependency and the actuator (if the actuator is
+    not already in place) to the `pom.xml` file. The actuator is mandatory for refreshing
+    the configuration properties:'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将Spring Cloud Config依赖项和执行器（如果尚未就位）添加到`pom.xml`文件中。执行器对于刷新配置属性是强制性的：
+- en: '[PRE10]'
+  id: totrans-137
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Since we are modifying the Spring Boot Search microservice from the earlier
+    chapter, we will have to add the following to include the Spring Cloud dependencies.
+    This is not required if the project is created from scratch:'
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 由于我们正在修改之前章节的Spring Boot搜索微服务，因此必须添加以下内容以包含Spring Cloud依赖项。如果项目是从头开始创建的，则不需要这样做：
+- en: '[PRE11]'
+  id: totrans-139
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: The next screenshot shows the Cloud starter library selection screen. If the
+    application is built from the ground up, select the libraries as shown in the
+    following screenshot:![Accessing the Config Server from clients](img/B05447_05_09.jpg)
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下一个屏幕截图显示了Cloud starter库选择屏幕。如果应用是从头开始构建的，请按照以下屏幕截图中显示的方式选择库：![从客户端访问配置服务器](img/B05447_05_09.jpg)
+- en: 'Rename `application.properties` to `bootstrap.properties`, and add an application
+    name and a configuration server URL. The configuration server URL is not mandatory
+    if the Config server is running on the default port (`8888`) on the local host:'
+  id: totrans-141
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`application.properties`重命名为`bootstrap.properties`，并添加应用程序名称和配置服务器URL。如果配置服务器在本地主机上的默认端口（`8888`）上运行，则配置服务器URL是非强制性的：
+- en: 'The new `bootstrap.properties` file will look as follows:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 新的`bootstrap.properties`文件将如下所示：
+- en: '[PRE12]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: '`search-service` is a logical name given to the Search microservice. This will
+    be treated as service ID. The Config server will look for `search-service.properties`
+    in the repository to resolve the properties.'
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`search-service`是为搜索微服务指定的逻辑名称。这将被视为服务ID。配置服务器将在存储库中查找`search-service.properties`以解析属性。'
+- en: 'Create a new configuration file for `search-service`. Create a new `search-service.properties`
+    under the `config-repo` folder where the Git repository is created. Note that
+    `search-service` is the service ID given to the Search microservice in the `bootstrap.properties`
+    file. Move service-specific properties from `bootstrap.properties` to the new
+    `search-service.properties` file. The following properties will be removed from
+    `bootstrap.properties`, and added to `search-service.properties`:'
+  id: totrans-145
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为`search-service`创建一个新的配置文件。在创建Git存储库的`config-repo`文件夹下创建一个新的`search-service.properties`。请注意，`search-service`是在`bootstrap.properties`文件中为搜索微服务指定的服务ID。将特定于服务的属性从`bootstrap.properties`移动到新的`search-service.properties`文件中。以下属性将从`bootstrap.properties`中删除，并添加到`search-service.properties`中：
+- en: '[PRE13]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'In order to demonstrate the centralized configuration of properties and propagation
+    of changes, add a new application-specific property to the property file. We will
+    add `originairports.shutdown` to temporarily take out an airport from the search.
+    Users will not get any flights when searching for an airport mentioned in the
+    shutdown list:'
+  id: totrans-147
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了演示属性的集中配置和更改的传播，向属性文件中添加一个新的特定于应用程序的属性。我们将添加`originairports.shutdown`来临时将某个机场从搜索中移除。用户在搜索关闭列表中提到的机场时将不会得到任何航班：
+- en: '[PRE14]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: In this example, we will not return any flights when searching with `SEA` as
+    origin.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此示例中，当使用`SEA`作为起始地进行搜索时，我们将不返回任何航班。
+- en: 'Commit this new file into the Git repository by executing the following commands:'
+  id: totrans-150
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过执行以下命令将此新文件提交到Git存储库中：
+- en: '[PRE15]'
+  id: totrans-151
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'The final `search-service.properties` file should look as follows:'
+  id: totrans-152
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 最终的`search-service.properties`文件应如下所示：
+- en: '[PRE16]'
+  id: totrans-153
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'The `chapter5.search` project''s `bootstrap.properties` should look like the
+    following:'
+  id: totrans-154
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '`chapter5.search`项目的`bootstrap.properties`应如下所示：'
+- en: '[PRE17]'
+  id: totrans-155
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Modify the Search microservice code to use the configured parameter, `originairports.shutdown`.
+    A `RefreshScope` annotation has to be added at the class level to allow properties
+    to be refreshed when there is a change. In this case, we are adding a refresh
+    scope to the `SearchRestController` class:'
+  id: totrans-156
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 修改搜索微服务代码以使用配置参数`originairports.shutdown`。必须在类级别添加`RefreshScope`注解，以允许在更改时刷新属性。在这种情况下，我们将在`SearchRestController`类中添加一个刷新范围：
+- en: '[PRE18]'
+  id: totrans-157
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Add the following instance variable as a place holder for the new property
+    that is just added in the Config server. The property names in the `search-service.properties`
+    file must match:'
+  id: totrans-158
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加以下实例变量作为新属性的占位符，该属性刚刚添加到配置服务器中。`search-service.properties`文件中的属性名称必须匹配：
+- en: '[PRE19]'
+  id: totrans-159
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Change the application code to use this property. This is done by modifying
+    the `search` method as follows:'
+  id: totrans-160
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 更改应用程序代码以使用此属性。这是通过修改`search`方法来完成的：
+- en: '[PRE20]'
+  id: totrans-161
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: The `search` method is modified to read the parameter `originAirportShutdownList`
+    and see whether the requested origin is in the shutdown list. If there is a match,
+    then instead of proceeding with the actual search, the search method will return
+    an empty flight list.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`search`方法被修改为读取参数`originAirportShutdownList`，并查看请求的起始地是否在关闭列表中。如果匹配，则搜索方法将返回一个空的航班列表，而不是继续进行实际搜索。'
+- en: Start the Config server. Then start the Search microservice. Make sure that
+    the RabbitMQ server is running.
+  id: totrans-163
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 启动配置服务器。然后启动Search微服务。确保RabbitMQ服务器正在运行。
+- en: 'Modify the `chapter5.website` project to match the `bootstrap.properties` content
+    as follows to utilize the Config server:'
+  id: totrans-164
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 修改`chapter5.website`项目以匹配`bootstrap.properties`的内容，如下所示，以利用配置服务器：
+- en: '[PRE21]'
+  id: totrans-165
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Change the `run` method of `CommandLineRunner` in `Application.java` to query
+    SEA as the origin airport:'
+  id: totrans-166
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`Application.java`中的`CommandLineRunner`的`run`方法更改为查询SEA作为起始机场：
+- en: '[PRE22]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Run the `chapter5.website` project. The `CommandLineRunner` will now return
+    an empty flight list. The following message will be printed in the server:'
+  id: totrans-168
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行`chapter5.website`项目。`CommandLineRunner`现在将返回一个空的航班列表。服务器将打印以下消息：
+- en: '[PRE23]'
+  id: totrans-169
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: Handling configuration changes
+  id: totrans-170
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 处理配置更改
+- en: 'This section will demonstrate how to propagate configuration properties when
+    there is a change:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节将演示如何在发生更改时传播配置属性：
+- en: 'Change the property in the `search-service.properties` file to the following:'
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`search-service.properties`文件中的属性更改为以下内容：
+- en: '[PRE24]'
+  id: totrans-173
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: Commit the change in the Git repository. Refresh the Config server URL (`http://localhost:8888/search-service/default`)
+    for this service and see whether the property change is reflected. If everything
+    is fine, we will see the property change. The preceding request will force the
+    Config server to read the property file again from the repository.
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Git存储库中提交更改。刷新此服务的配置服务器URL（`http://localhost:8888/search-service/default`），并查看属性更改是否反映出来。如果一切正常，我们将看到属性更改。前面的请求将强制配置服务器再次从存储库中读取属性文件。
+- en: 'Rerun the website project again, and observe the `CommandLineRunner` execution.
+    Note that in this case, we are not restarting the Search microservice nor the
+    Config server. The service returns an empty flight list as earlier, and still
+    complains as follows:'
+  id: totrans-175
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 再次运行网站项目，并观察`CommandLineRunner`的执行。请注意，在这种情况下，我们没有重新启动Search微服务或配置服务器。服务将像以前一样返回一个空的航班列表，并且仍然会报错如下：
+- en: '[PRE25]'
+  id: totrans-176
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: This means the change is not reflected in the Search service, and the service
+    is still working with an old copy of the configuration properties.
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着更改不会反映在Search服务中，服务仍然使用旧版本的配置属性。
+- en: 'In order to force reloading of the configuration properties, call the `/refresh`
+    endpoint of the Search microservice. This is actually the actuator''s refresh
+    endpoint. The following command will send an empty POST to the `/refresh` endpoint:'
+  id: totrans-178
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为了强制重新加载配置属性，请调用Search微服务的`/refresh`端点。这实际上是执行器的刷新端点。以下命令将向`/refresh`端点发送一个空的POST：
+- en: '[PRE26]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: Rerun the website project, and observe the `CommandLineRunner` execution. This
+    should return the list of flights that we have requested from SEA. Note that the
+    website project may fail if the Booking service is not up and running.
+  id: totrans-180
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重新运行网站项目，并观察`CommandLineRunner`的执行。这应该返回我们从SEA请求的航班列表。请注意，如果预订服务没有运行，网站项目可能会失败。
+- en: The `/refresh` endpoint will refresh the locally cached configuration properties,
+    and reload fresh values from the Config server.
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`/refresh`端点将刷新本地缓存的配置属性，并从配置服务器重新加载新值。'
+- en: Spring Cloud Bus for propagating configuration changes
+  id: totrans-182
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 用于传播配置更改的Spring Cloud Bus
+- en: 'With the preceding approach, configuration parameters can be changed without
+    restarting the microservices. This is good when there are only one or two instances
+    of the services running. What happens if there are many instances? For example,
+    if there are five instances, then we have to hit `/refresh` against each service
+    instance. This is definitely a cumbersome activity:'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 采用上述方法，可以在不重新启动微服务的情况下更改配置参数。当服务运行的实例只有一个或两个时，这是很好的。如果有很多实例会发生什么？例如，如果有五个实例，那么我们必须针对每个服务实例进行`/refresh`。这绝对是一项繁琐的活动：
+- en: '![Spring Cloud Bus for propagating configuration changes](img/B05447_05_10.jpg)'
+  id: totrans-184
+  prefs: []
+  type: TYPE_IMG
+  zh: '![用于传播配置更改的Spring Cloud Bus](img/B05447_05_10.jpg)'
+- en: The Spring Cloud Bus provides a mechanism to refresh configurations across multiple
+    instances without knowing how many instances there are, or their locations. This
+    is particularly handy when there are many service instances of a microservice
+    running or when there are many microservices of different types running. This
+    is done by connecting all service instances through a single message broker. Each
+    instance subscribes for change events, and refreshes its local configuration when
+    required. This refresh is triggered by making a call to any one instance by hitting
+    the `/bus/refresh` endpoint, which then propagates the changes through the cloud
+    bus and the common message broker.
+  id: totrans-185
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud Bus提供了一种机制，可以在不知道有多少实例或它们的位置的情况下刷新多个实例之间的配置。当有许多微服务的服务实例运行或有许多不同类型的微服务运行时，这是特别方便的。这是通过将所有服务实例连接到单个消息代理来完成的。每个实例都订阅更改事件，并在需要时刷新其本地配置。通过调用任一实例的`/bus/refresh`端点来触发此刷新，然后通过云总线和公共消息代理传播更改。
+- en: 'In this example, RabbitMQ is used as the AMQP message broker. Implement this
+    by following the steps documented as follows:'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在此示例中，RabbitMQ被用作AMQP消息代理。按照以下记录的步骤来实现这一点：
+- en: 'Add a new dependency in the `chapter5.search` project''s `pom.xml` file to
+    introduce the Cloud Bus dependency:'
+  id: totrans-187
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`chapter5.search`项目的`pom.xml`文件中添加一个新的依赖项，以引入Cloud Bus依赖项：
+- en: '[PRE27]'
+  id: totrans-188
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: The Search microservice also needs connectivity to the RabbitMQ, but this is
+    already provided in `search-service.properties`.
+  id: totrans-189
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: Search微服务还需要连接到RabbitMQ，但这已经在`search-service.properties`中提供了。
+- en: 'Rebuild and restart the Search microservice. In this case, we will run two
+    instances of the Search microservice from a command line, as follows:'
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重建并重新启动搜索微服务。在这种情况下，我们将从命令行运行两个搜索微服务实例，如下所示：
+- en: '[PRE28]'
+  id: totrans-191
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: The two instances of the Search service will be now running, one on port `8090`
+    and another one on `8091`.
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 搜索服务的两个实例现在将运行，一个在端口`8090`上，另一个在`8091`上。
+- en: Rerun the website project. This is just to make sure that everything is working.
+    The Search service should return one flight at this point.
+  id: totrans-193
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重新运行网站项目。这只是为了确保一切正常。此时，搜索服务应返回一个航班。
+- en: 'Now, update `search-service.properties` with the following value, and commit
+    to Git:'
+  id: totrans-194
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，使用以下值更新`search-service.properties`，并提交到Git：
+- en: '[PRE29]'
+  id: totrans-195
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Run the following command to `/bus/refresh`. Note that we are running a new
+    bus endpoint against one of the instances, `8090` in this case:'
+  id: totrans-196
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行以下命令来执行`/bus/refresh`。请注意，我们正在针对一个实例运行新的总线端点，本例中为`8090`：
+- en: '[PRE30]'
+  id: totrans-197
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'Immediately, we will see the following message for both instances:'
+  id: totrans-198
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 立即，我们将看到两个实例的以下消息：
+- en: '[PRE31]'
+  id: totrans-199
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: 'The bus endpoint sends a message to the message broker internally, which is
+    eventually consumed by all instances, reloading their property files. Changes
+    can also be applied to a specific application by specifying the application name
+    like so:'
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 总线端点会将消息内部发送到消息代理，最终被所有实例消耗，重新加载其属性文件。也可以通过指定应用程序名称来对特定应用程序应用更改，如下所示：
+- en: '[PRE32]'
+  id: totrans-201
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: We can also refresh specific properties by setting the property name as a parameter.
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还可以通过将属性名称设置为参数来刷新特定属性。
+- en: Setting up high availability for the Config server
+  id: totrans-203
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 为配置服务器设置高可用性
+- en: The previous sections explored how to set up the Config server, allowing real-time
+    refresh of configuration properties. However, the Config server is a single point
+    of failure in this architecture.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前几节探讨了如何设置配置服务器，允许实时刷新配置属性。但是，在这种架构中，配置服务器是一个单点故障。
+- en: There are three single points of failure in the default architecture that was
+    established in the previous section. One of them is the availability of the Config
+    server itself, the second one is the Git repository, and the third one is the
+    RabbitMQ server.
+  id: totrans-205
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一节建立的默认架构中存在三个单点故障。其中一个是配置服务器本身的可用性，第二个是Git仓库，第三个是RabbitMQ服务器。
+- en: 'The following diagram shows a high availability architecture for the Config
+    server:'
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了配置服务器的高可用性架构：
+- en: '![Setting up high availability for the Config server](img/B05447_05_11.jpg)'
+  id: totrans-207
+  prefs: []
+  type: TYPE_IMG
+  zh: '![为配置服务器设置高可用性](img/B05447_05_11.jpg)'
+- en: 'The architecture mechanisms and rationale are explained as follows:'
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是架构机制和原理的解释：
+- en: The Config server requires high availability, since the services won't be able
+    to bootstrap if the Config server is not available. Hence, redundant Config servers
+    are required for high availability. However, the applications can continue to
+    run if the Config server is unavailable after the services are bootstrapped. In
+    this case, services will run with the last known configuration state. Hence, the
+    Config server availability is not at the same critical level as the microservices
+    availability.
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置服务器需要高可用性，因为如果配置服务器不可用，服务将无法引导。因此，需要冗余的配置服务器以实现高可用性。但是，在服务引导后，如果配置服务器不可用，应用程序可以继续运行。在这种情况下，服务将使用上次已知的配置状态运行。因此，配置服务器的可用性不像微服务的可用性那样关键。
+- en: In order to make the Config server highly available, we need multiple instances
+    of the Config servers. Since the Config server is a stateless HTTP service, multiple
+    instances of configuration servers can be run in parallel. Based on the load on
+    the configuration server, a number of instances have to be adjusted. The `bootstrap.properties`
+    file is not capable of handling more than one server address. Hence, multiple
+    configuration servers should be configured to run behind a load balancer or behind
+    a local DNS with failover and fallback capabilities. The load balancer or DNS
+    server URL will be configured in the microservices' `bootstrap.properties` file.
+    This is with the assumption that the DNS or the load balancer is highly available
+    and capable of handling failovers.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使配置服务器具有高可用性，我们需要多个配置服务器实例。由于配置服务器是一个无状态的HTTP服务，可以并行运行多个配置服务器实例。根据配置服务器的负载，必须调整实例的数量。`bootstrap.properties`文件无法处理多个服务器地址。因此，应配置多个配置服务器以在负载均衡器或本地DNS后运行，并具有故障转移和回退功能。负载均衡器或DNS服务器的URL将配置在微服务的`bootstrap.properties`文件中。这是在假设DNS或负载均衡器具有高可用性并能够处理故障转移的情况下。
+- en: In a production scenario, it is not recommended to use a local file-based Git
+    repository. The configuration server should be typically backed with a highly
+    available Git service. This is possible by either using an external highly available
+    Git service or a highly available internal Git service. SVN can also be considered.
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在生产场景中，不建议使用基于本地文件的Git仓库。配置服务器通常应该由高可用性的Git服务支持。可以通过使用外部高可用性的Git服务或高可用性的内部Git服务来实现。也可以考虑使用SVN。
+- en: Having said that, an already bootstrapped Config server is always capable of
+    working with a local copy of the configuration. Hence, we need a highly available
+    Git only when the Config server needs to be scaled. Therefore, this too is not
+    as critical as the microservices availability or the Config server availability.
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 也就是说，已经引导的配置服务器始终能够使用配置的本地副本进行工作。因此，只有在需要扩展配置服务器时才需要高可用性的Git。因此，这也不像微服务可用性或配置服务器可用性那样重要。
+- en: Note
+  id: totrans-213
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The GitLab example for setting up high availability is available at [https://about.gitlab.com/high-availability/](https://about.gitlab.com/high-availability/).
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设置高可用性的GitLab示例可在[https://about.gitlab.com/high-availability/](https://about.gitlab.com/high-availability/)找到。
+- en: RabbitMQ also has to be configured for high availability. The high availability
+    for RabbitMQ is needed only to push configuration changes dynamically to all instances.
+    Since this is more of an offline controlled activity, it does not really require
+    the same high availability as required by the components.
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: RabbitMQ也必须配置为高可用性。RabbitMQ的高可用性仅需要动态推送配置更改到所有实例。由于这更多是离线受控活动，因此不需要与组件所需的高可用性相同。
+- en: RabbitMQ high availability can be achieved by either using a cloud service or
+    a locally configured highly available RabbitMQ service.
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: RabbitMQ高可用性可以通过使用云服务或本地配置的高可用性RabbitMQ服务来实现。
+- en: Note
+  id: totrans-217
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Setting up high availability for Rabbit MQ is documented at [https://www.rabbitmq.com/ha.html](https://www.rabbitmq.com/ha.html).
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为Rabbit MQ设置高可用性的步骤在[https://www.rabbitmq.com/ha.html](https://www.rabbitmq.com/ha.html)中有记录。
+- en: Monitoring the Config server health
+  id: totrans-219
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 监控配置服务器的健康状况
+- en: 'The Config server is nothing but a Spring Boot application, and is, by default,
+    configured with an actuator. Hence, all actuator endpoints are applicable for
+    the Config server. The health of the server can be monitored using the following
+    actuator URL: `http://localhost:8888/health`.'
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置服务器只是一个Spring Boot应用程序，默认配置有一个执行器。因此，所有执行器端点都适用于配置服务器。可以使用以下执行器URL监控服务器的健康状况：`http://localhost:8888/health`。
+- en: Config server for configuration files
+  id: totrans-221
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 配置服务器用于配置文件
+- en: 'We may run into scenarios where we need a complete configuration file such
+    as `logback.xml` to be externalized. The Config server provides a mechanism to
+    configure and store such files. This is achievable by using the URL format as
+    follows: `/{name}/{profile}/{label}/{path}`.'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可能会遇到需要完整的配置文件（如`logback.xml`）进行外部化的情况。配置服务器提供了一种配置和存储此类文件的机制。通过使用以下URL格式可以实现：`/{name}/{profile}/{label}/{path}`。
+- en: The name, profile, and label have the same meanings as explained earlier. The
+    path indicates the file name such as `logback.xml`.
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 名称、配置文件和标签的含义与之前解释的相同。路径表示文件名，例如`logback.xml`。
+- en: Completing changes to use the Config server
+  id: totrans-224
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 完成使用配置服务器的更改
+- en: In order to build this capability to complete BrownField Airline's PSS, we have
+    to make use of the configuration server for all services. All microservices in
+    the examples given in `chapter5.*` need to make similar changes to look to the
+    Config server for getting the configuration parameters.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了构建完成BrownField航空公司的PSS的能力，我们必须利用配置服务器来完成所有服务。在给定的示例中，`chapter5.*`中的所有微服务都需要进行类似的更改，以便查找配置服务器以获取配置参数。
+- en: 'The following are a few key change considerations:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一些关键的更改考虑：
+- en: 'The Fare service URL in the booking component will also be externalized:'
+  id: totrans-227
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 预订组件中的票价服务URL也将被外部化：
+- en: '[PRE33]'
+  id: totrans-228
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE33]'
+- en: '[PRE34]'
+  id: totrans-229
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE34]'
+- en: We are not externalizing the queue names used in the Search, Booking, and Check-in
+    services at the moment. Later in this chapter, these will be changed to use Spring
+    Cloud Streams.
+  id: totrans-230
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 目前我们没有将搜索、预订和办理登机服务中使用的队列名称外部化。在本章后面，这些将被更改为使用Spring Cloud Streams。
+- en: Feign as a declarative REST client
+  id: totrans-231
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Feign作为声明式REST客户端
+- en: '[PRE35]'
+  id: totrans-232
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE35]'
+- en: 'In order to use Feign, first we need to change the `pom.xml` file to include
+    the Feign dependency as follows:'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使用Feign，首先需要更改`pom.xml`文件以包含Feign依赖项，如下所示：
+- en: '[PRE36]'
+  id: totrans-234
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE36]'
+- en: 'For a new Spring Starter project, **Feign** can be selected from the starter
+    library selection screen, or from [http://start.spring.io/](http://start.spring.io/).
+    This is available under **Cloud Routing** as shown in the following screenshot:'
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于新的Spring Starter项目，可以从starter库选择屏幕或[http://start.spring.io/](http://start.spring.io/)中选择**Feign**。这在**Cloud
+    Routing**下可用，如下截图所示：
+- en: '![Feign as a declarative REST client](img/B05447_05_12.jpg)'
+  id: totrans-236
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Feign作为声明式REST客户端](img/B05447_05_12.jpg)'
+- en: 'The next step is to create a new `FareServiceProxy` interface. This will act
+    as a proxy interface of the actual Fare service:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 下一步是创建一个新的`FareServiceProxy`接口。这将充当实际票价服务的代理接口：
+- en: '[PRE37]'
+  id: totrans-238
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE37]'
+- en: The `FareServiceProxy` interface has a `@FeignClient` annotation. This annotation
+    tells Spring to create a REST client based on the interface provided. The value
+    could be a service ID or a logical name. The `url` indicates the actual URL where
+    the target service is running. Either name or value is mandatory. In this case,
+    since we have `url`, the `name` attribute is irrelevant.
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`FareServiceProxy`接口有一个`@FeignClient`注解。此注解告诉Spring基于提供的接口创建一个REST客户端。值可以是服务ID或逻辑名称。`url`表示目标服务运行的实际URL。`name`或`value`是必需的。在这种情况下，由于我们有`url`，因此`name`属性是无关紧要的。'
+- en: Use this service proxy to call the Fare service. In the Booking microservice,
+    we have to tell Spring that Feign clients exist in the Spring Boot application,
+    which are to be scanned and discovered. This will be done by adding `@EnableFeignClients`
+    at the class level of `BookingComponent`. Optionally, we can also give the package
+    names to scan.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用此服务代理调用票价服务。在预订微服务中，我们必须告诉Spring存在于Spring Boot应用程序中的Feign客户端，这些客户端需要被扫描和发现。这将通过在`BookingComponent`的类级别添加`@EnableFeignClients`来完成。可选地，我们也可以给出要扫描的包名。
+- en: 'Change `BookingComponent`, and make changes to the calling part. This is as
+    simple as calling another Java interface:'
+  id: totrans-241
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更改`BookingComponent`，并对调用部分进行更改。这就像调用另一个Java接口一样简单：
+- en: '[PRE38]'
+  id: totrans-242
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE38]'
+- en: Rerun the Booking microservice to see the effect.
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重新运行预订微服务以查看效果。
+- en: 'The URL of the Fare service in the `FareServiceProxy` interface is hardcoded:
+    `url="localhost:8080/fares"`.'
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`FareServiceProxy`接口中的票价服务的URL是硬编码的：`url="localhost:8080/fares"`。'
+- en: For the time being, we will keep it like this, but we are going to change this
+    later in this chapter.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 目前我们会保持这样，但在本章后面我们会进行更改。
+- en: Ribbon for load balancing
+  id: totrans-246
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 用于负载均衡的Ribbon
+- en: In the previous setup, we were always running with a single instance of the
+    microservice. The URL is hardcoded both in client as well as in the service-to-service
+    calls. In the real world, this is not a recommended approach, since there could
+    be more than one service instance. If there are multiple instances, then ideally,
+    we should use a load balancer or a local DNS server to abstract the actual instance
+    locations, and configure an alias name or the load balancer address in the clients.
+    The load balancer then receives the alias name, and resolves it with one of the
+    available instances. With this approach, we can configure as many instances behind
+    a load balancer. It also helps us to handle server failures transparent to the
+    client.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在以前的设置中，我们总是使用单个微服务实例运行。URL在客户端和服务对服务调用中都是硬编码的。在现实世界中，这不是一种推荐的方法，因为可能会有多个服务实例。如果有多个实例，那么理想情况下，我们应该使用负载均衡器或本地DNS服务器来抽象实际实例位置，并在客户端中配置别名或负载均衡器地址。然后，负载均衡器接收别名，并将其解析为可用实例之一。通过这种方法，我们可以在负载均衡器后面配置尽可能多的实例。这也有助于我们处理对客户端透明的服务器故障。
+- en: This is achievable with Spring Cloud Netflix Ribbon. Ribbon is a client-side
+    load balancer which can do round-robin load balancing across a set of servers.
+    There could be other load balancing algorithms possible with the Ribbon library.
+    Spring Cloud offers a declarative way to configure and use the Ribbon client.
+  id: totrans-248
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可以通过Spring Cloud Netflix Ribbon实现。Ribbon是一个客户端负载均衡器，可以在一组服务器之间进行轮询负载平衡。Ribbon库可能还有其他负载平衡算法。Spring
+    Cloud提供了一种声明性的方式来配置和使用Ribbon客户端。
+- en: '![Ribbon for load balancing](img/B05447_05_13.jpg)'
+  id: totrans-249
+  prefs: []
+  type: TYPE_IMG
+  zh: '![用于负载平衡的Ribbon](img/B05447_05_13.jpg)'
+- en: As shown in the preceding diagram, the Ribbon client looks for the Config server
+    to get the list of available microservice instances, and, by default, applies
+    a round-robin load balancing algorithm.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前图所示，Ribbon客户端会查找配置服务器以获取可用微服务实例列表，并默认应用轮询负载平衡算法。
+- en: 'In order to use the Ribbon client, we will have to add the following dependency
+    to the `pom.xml` file:'
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使用Ribbon客户端，我们将不得不将以下依赖项添加到`pom.xml`文件中：
+- en: '[PRE39]'
+  id: totrans-252
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE39]'
+- en: 'In case of development from ground up, this can be selected from the Spring
+    Starter libraries, or from [http://start.spring.io/](http://start.spring.io/).
+    Ribbon is available under **Cloud Routing**:'
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在从头开始开发的情况下，可以从Spring Starter库或[http://start.spring.io/](http://start.spring.io/)中选择。Ribbon在**Cloud
+    Routing**下可用：
+- en: '![Ribbon for load balancing](img/B05447_05_14.jpg)'
+  id: totrans-254
+  prefs: []
+  type: TYPE_IMG
+  zh: '![用于负载平衡的Ribbon](img/B05447_05_14.jpg)'
+- en: 'Update the Booking microservice configuration file, `booking-service.properties`,
+    to include a new property to keep the list of the Fare microservices:'
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更新预订微服务配置文件`booking-service.properties`，以包含一个新属性，用于保留票价微服务的列表：
+- en: '[PRE40]'
+  id: totrans-256
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE40]'
+- en: 'Going back and editing the `FareServiceProxy` class created in the previous
+    section to use the Ribbon client, we note that the value of the `@RequestMapping`
+    annotations is changed from `/get` to `/fares/get` so that we can move the host
+    name and port to the configuration easily:'
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回到上一节中创建的`FareServiceProxy`类并编辑，以使用Ribbon客户端，我们注意到`@RequestMapping`注解的值从`/get`更改为`/fares/get`，以便我们可以轻松地将主机名和端口移动到配置中：
+- en: '[PRE41]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE41]'
+- en: 'We can now run two instances of the Fares microservices. Start one of them
+    on `8080`, and the other one on `8081`:'
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以运行两个Fares微服务实例。在`8080`上启动一个，另一个在`8081`上启动：
+- en: '[PRE42]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE42]'
+- en: Run the Booking microservice. When the Booking microservice is bootstrapped,
+    the `CommandLineRunner` automatically inserts one booking record. This will go
+    to the first server.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行预订微服务。当预订微服务启动时，`CommandLineRunner`会自动插入一条预订记录。这将进入第一个服务器。
+- en: When running the website project, it calls the Booking service. This request
+    will go to the second server.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行网站项目时，它调用预订服务。这个请求将进入第二个服务器。
+- en: 'On the Booking service, we see the following trace, which says there are two
+    servers enlisted:'
+  id: totrans-263
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在预订服务上，我们看到以下跟踪，其中说有两个服务器被列入：
+- en: '[PRE43]'
+  id: totrans-264
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE43]'
+- en: Eureka for registration and discovery
+  id: totrans-265
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Eureka用于注册和发现
+- en: So far, we have achieved externalizing configuration parameters as well as load
+    balancing across many service instances.
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经实现了外部化配置参数以及在许多服务实例之间的负载平衡。
+- en: 'Ribbon-based load balancing is sufficient for most of the microservices requirements.
+    However, this approach falls short in a couple of scenarios:'
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于Ribbon的负载平衡对于大多数微服务需求是足够的。然而，在一些情况下，这种方法存在一些不足之处：
+- en: If there is a large number of microservices, and if we want to optimize infrastructure
+    utilization, we will have to dynamically change the number of service instances
+    and the associated servers. It is not easy to predict and preconfigure the server
+    URLs in a configuration file.
+  id: totrans-268
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果有大量的微服务，并且我们想要优化基础设施利用率，我们将不得不动态更改服务实例的数量和相关服务器。在配置文件中预测和预配置服务器URL并不容易。
+- en: When targeting cloud deployments for highly scalable microservices, static registration
+    and discovery is not a good solution considering the elastic nature of the cloud
+    environment.
+  id: totrans-269
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 针对高度可扩展的微服务的云部署，静态注册和发现不是一个好的解决方案，考虑到云环境的弹性特性。
+- en: In the cloud deployment scenarios, IP addresses are not predictable, and will
+    be difficult to statically configure in a file. We will have to update the configuration
+    file every time there is a change in address.
+  id: totrans-270
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在云部署方案中，IP地址是不可预测的，并且在文件中静态配置将会很困难。每次地址发生变化时，我们都必须更新配置文件。
+- en: The Ribbon approach partially addresses this issue. With Ribbon, we can dynamically
+    change the service instances, but whenever we add new service instances or shut
+    down instances, we will have to manually update the Config server. Though the
+    configuration changes will be automatically propagated to all required instances,
+    the manual configuration changes will not work with large scale deployments. When
+    managing large deployments, automation, wherever possible, is paramount.
+  id: totrans-271
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Ribbon方法部分地解决了这个问题。使用Ribbon，我们可以动态更改服务实例，但是每当我们添加新的服务实例或关闭实例时，我们将不得不手动更新配置服务器。尽管配置更改将自动传播到所有所需的实例，但手动配置更改在大规模部署中将无法使用。在管理大规模部署时，尽可能地进行自动化是至关重要的。
+- en: To fix this gap, the microservices should self-manage their life cycle by dynamically
+    registering service availability, and provision automated discovery for consumers.
+  id: totrans-272
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了弥补这一差距，微服务应该通过动态注册服务可用性来自我管理其生命周期，并为消费者提供自动化发现。
+- en: Understanding dynamic service registration and discovery
+  id: totrans-273
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 理解动态服务注册和发现
+- en: Dynamic registration is primarily from the service provider's point of view.
+    With dynamic registration, when a new service is started, it automatically enlists
+    its availability in a central service registry. Similarly, when a service goes
+    out of service, it is automatically delisted from the service registry. The registry
+    always keeps up-to-date information of the services available, as well as their
+    metadata.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 动态注册主要是从服务提供者的角度来看的。通过动态注册，当启动新服务时，它会自动在中央服务注册表中列出其可用性。同样，当服务停止服务时，它会自动从服务注册表中删除。注册表始终保持服务的最新信息，以及它们的元数据。
+- en: Dynamic discovery is applicable from the service consumer's point of view. Dynamic
+    discovery is where clients look for the service registry to get the current state
+    of the services topology, and then invoke the services accordingly. In this approach,
+    instead of statically configuring the service URLs, the URLs are picked up from
+    the service registry.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 动态发现适用于服务消费者的角度。动态发现是指客户端查找服务注册表以获取服务拓扑的当前状态，然后相应地调用服务。在这种方法中，不是静态配置服务URL，而是从服务注册表中获取URL。
+- en: The clients may keep a local cache of the registry data for faster access. Some
+    registry implementations allow clients to keep a watch on the items they are interested
+    in. In this approach, the state changes in the registry server will be propagated
+    to the interested parties to avoid using stale data.
+  id: totrans-276
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 客户端可以保留注册表数据的本地缓存，以加快访问速度。一些注册表实现允许客户端监视他们感兴趣的项目。在这种方法中，注册表服务器中的状态更改将传播到感兴趣的各方，以避免使用过时的数据。
+- en: 'There are a number of options available for dynamic service registration and
+    discovery. Netflix Eureka, ZooKeeper, and Consul are available as part of Spring
+    Cloud, as shown in the [http://start.spring.io/](http://start.spring.io/) screenshot
+    given next. Etcd is another service registry available outside of Spring Cloud
+    to achieve dynamic service registration and discovery. In this chapter, we will
+    focus on the Eureka implementation:'
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多选项可用于动态服务注册和发现。Netflix Eureka、ZooKeeper和Consul作为Spring Cloud的一部分可用，如下所示：[http://start.spring.io/](http://start.spring.io/)。Etcd是Spring
+    Cloud之外可用的另一个服务注册表，用于实现动态服务注册和发现。在本章中，我们将重点关注Eureka的实现：
+- en: '![Understanding dynamic service registration and discovery](img/B05447_05_15.jpg)'
+  id: totrans-278
+  prefs: []
+  type: TYPE_IMG
+  zh: '![理解动态服务注册和发现](img/B05447_05_15.jpg)'
+- en: Understanding Eureka
+  id: totrans-279
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 理解Eureka
+- en: 'Spring Cloud Eureka also comes from Netflix OSS. The Spring Cloud project provides
+    a Spring-friendly declarative approach for integrating Eureka with Spring-based
+    applications. Eureka is primarily used for self-registration, dynamic discovery,
+    and load balancing. Eureka uses Ribbon for load balancing internally:'
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud Eureka也来自Netflix OSS。Spring Cloud项目为集成Eureka与基于Spring的应用程序提供了一种Spring友好的声明性方法。Eureka主要用于自注册、动态发现和负载平衡。Eureka在内部使用Ribbon进行负载平衡：
+- en: '![Understanding Eureka](img/B05447_05_16.jpg)'
+  id: totrans-281
+  prefs: []
+  type: TYPE_IMG
+  zh: '![理解Eureka](img/B05447_05_16.jpg)'
+- en: As shown in the preceding diagram, Eureka consists of a server component and
+    a client-side component. The server component is the registry in which all microservices
+    register their availability. The registration typically includes service identity
+    and its URLs. The microservices use the Eureka client for registering their availability.
+    The consuming components will also use the Eureka client for discovering the service
+    instances.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前图所示，Eureka由服务器组件和客户端组件组成。服务器组件是所有微服务注册其可用性的注册表。注册通常包括服务标识和其URL。微服务使用Eureka客户端注册其可用性。消费组件也将使用Eureka客户端来发现服务实例。
+- en: When a microservice is bootstrapped, it reaches out to the Eureka server, and
+    advertises its existence with the binding information. Once registered, the service
+    endpoint sends ping requests to the registry every 30 seconds to renew its lease.
+    If a service endpoint cannot renew its lease in a few attempts, that service endpoint
+    will be taken out of the service registry. The registry information will be replicated
+    to all Eureka clients so that the clients have to go to the remote Eureka server
+    for each and every request. Eureka clients fetch the registry information from
+    the server, and cache it locally. After that, the clients use that information
+    to find other services. This information is updated periodically (every 30 seconds)
+    by getting the delta updates between the last fetch cycle and the current one.
+  id: totrans-283
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当微服务引导启动时，它会联系Eureka服务器，并使用绑定信息宣布自己的存在。注册后，服务端点每30秒向注册表发送ping请求以更新其租约。如果服务端点在几次尝试中无法更新其租约，该服务端点将从服务注册表中移除。注册信息将被复制到所有Eureka客户端，以便客户端必须为每个请求去远程Eureka服务器。Eureka客户端从服务器获取注册信息，并在本地进行缓存。之后，客户端使用该信息来查找其他服务。此信息会定期更新（每30秒），通过获取上次获取周期和当前获取周期之间的增量更新。
+- en: When a client wants to contact a microservice endpoint, the Eureka client provides
+    a list of currently available services based on the requested service ID. The
+    Eureka server is zone aware. Zone information can also be supplied when registering
+    a service. When a client requests for a services instance, the Eureka service
+    tries to find the service running in the same zone. The Ribbon client then load
+    balances across these available service instances supplied by the Eureka client.
+    The communication between the Eureka client and the server is done using REST
+    and JSON.
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当客户端想要联系微服务端点时，Eureka客户端根据请求的服务ID提供当前可用服务的列表。Eureka服务器具有区域感知能力。在注册服务时也可以提供区域信息。当客户端请求服务实例时，Eureka服务会尝试找到在同一区域运行的服务。然后，Ribbon客户端会在Eureka客户端提供的这些可用服务实例之间进行负载均衡。Eureka客户端和服务器之间的通信是使用REST和JSON进行的。
+- en: Setting up the Eureka server
+  id: totrans-285
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设置Eureka服务器
+- en: In this section, we will run through the steps required for setting up the Eureka
+    server.
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将介绍设置Eureka服务器所需的步骤。
+- en: Note
+  id: totrans-287
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The full source code of this section is available under the `chapter5.eurekaserver`
+    project in the code files. Note that the Eureka server registration and refresh
+    cycles take up to 30 seconds. Hence, when running services and clients, wait for
+    40-50 seconds.
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节的完整源代码可在代码文件的`chapter5.eurekaserver`项目中找到。请注意，Eureka服务器的注册和刷新周期需要长达30秒。因此，在运行服务和客户端时，请等待40-50秒。
+- en: Start a new Spring Starter project, and select **Config Client**, **Eureka Server**,
+    and **Actuator**:![Setting up the Eureka server](img/B05447_05_17.jpg)
+  id: totrans-289
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 启动一个新的Spring Starter项目，并选择**Config Client**，**Eureka Server**和**Actuator**：![设置Eureka服务器](img/B05447_05_17.jpg)
+- en: 'The project structure of the Eureka server is shown in the following image:'
+  id: totrans-290
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Eureka服务器的项目结构如下图所示：
+- en: '![Setting up the Eureka server](img/B05447_05_18.jpg)'
+  id: totrans-291
+  prefs: []
+  type: TYPE_IMG
+  zh: '![设置Eureka服务器](img/B05447_05_18.jpg)'
+- en: Note that the main application is named `EurekaserverApplication.java`.
+  id: totrans-292
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，主应用程序的名称为`EurekaserverApplication.java`。
+- en: 'Rename `application.properties` to `bootstrap.properties` since this is using
+    the Config server. As we did earlier, configure the details of the Config server
+    in the `bootsratp.properties` file so that it can locate the Config server instance.
+    The `bootstrap.properties` file will look as follows:'
+  id: totrans-293
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`application.properties`重命名为`bootstrap.properties`，因为这是使用Config服务器。与之前一样，在`bootstrap.properties`文件中配置Config服务器的详细信息，以便它可以找到Config服务器实例。`bootstrap.properties`文件将如下所示：
+- en: '[PRE44]'
+  id: totrans-294
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE44]'
+- en: The Eureka server can be set up in a standalone mode or in a clustered mode.
+    We will start with the standalone mode. By default, the Eureka server itself is
+    another Eureka client. This is particularly useful when there are multiple Eureka
+    servers running for high availability. The client component is responsible for
+    synchronizing state from the other Eureka servers. The Eureka client is taken
+    to its peers by configuring the `eureka.client.serviceUrl.defaultZone` property.
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Eureka服务器可以以独立模式或集群模式设置。我们将从独立模式开始。默认情况下，Eureka服务器本身也是另一个Eureka客户端。当有多个Eureka服务器运行以实现高可用性时，这是特别有用的。客户端组件负责从其他Eureka服务器同步状态。通过配置`eureka.client.serviceUrl.defaultZone`属性，Eureka客户端将其对等方。
+- en: In the standalone mode, we point `eureka.client.serviceUrl.defaultZone` back
+    to the same standalone instance. Later we will see how we can run Eureka servers
+    in a clustered mode.
+  id: totrans-296
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在独立模式中，我们将`eureka.client.serviceUrl.defaultZone`指向同一个独立实例。稍后我们将看到如何以集群模式运行Eureka服务器。
+- en: 'Create a `eureka-server1.properties` file, and update it in the Git repository.
+    `eureka-server1` is the name of the application given in the application''s `bootstrap.properties`
+    file in the previous step. As shown in the following code, `serviceUrl` points
+    back to the same server. Once the following properties are added, commit the file
+    to the Git repository:'
+  id: totrans-297
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个`eureka-server1.properties`文件，并将其更新到Git存储库中。`eureka-server1`是在上一步中应用的`bootstrap.properties`文件中给出的应用程序的名称。如下所示，`serviceUrl`指向同一个服务器。一旦添加了以下属性，就将文件提交到Git存储库中：
+- en: '[PRE45]'
+  id: totrans-298
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE45]'
+- en: 'Change the default `Application.java`. In this example, the package is also
+    renamed as `com.brownfield.pss.eurekaserver`, and the class name changed to `EurekaserverApplication`.
+    In `EurekaserverApplication`, add `@EnableEurekaServer`:'
+  id: totrans-299
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 更改默认的`Application.java`。在这个例子中，包也被重命名为`com.brownfield.pss.eurekaserver`，类名改为`EurekaserverApplication`。在`EurekaserverApplication`中，添加`@EnableEurekaServer`：
+- en: '[PRE46]'
+  id: totrans-300
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE46]'
+- en: We are now ready to start the Eureka server. Ensure that the Config server is
+    also started. Right-click on the application and then choose **Run As** | **Spring
+    Boot App**. Once the application is started, open `http://localhost:8761` in a
+    browser to see the Eureka console.
+  id: totrans-301
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们准备启动Eureka服务器。确保Config服务器也已启动。右键单击应用程序，然后选择**Run As** | **Spring Boot App**。应用程序启动后，在浏览器中打开`http://localhost:8761`以查看Eureka控制台。
+- en: In the console, note that there is no instance registered under **Instances
+    currently registered with Eureka**. Since no services have been started with the
+    Eureka client enabled, the list is empty at this point.
+  id: totrans-302
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在控制台中，请注意**当前在Eureka中注册的实例**下没有实例注册。由于没有启用Eureka客户端的服务，因此此时列表为空。
+- en: Making a few changes to our microservice will enable dynamic registration and
+    discovery using the Eureka service. To do this, first we have to add the Eureka
+    dependencies to the `pom.xml` file. If the services are being built up fresh using
+    the Spring Starter project, then select **Config Client**, **Actuator**, **Web**
+    as well as **Eureka discovery** client as follows:![Setting up the Eureka server](img/B05447_05_19.jpg)
+  id: totrans-303
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 对我们的微服务进行一些更改将启用使用Eureka服务的动态注册和发现。为此，首先我们必须将Eureka依赖项添加到`pom.xml`文件中。如果服务是使用Spring
+    Starter项目新建的，那么选择**Config Client**，**Actuator**，**Web**以及**Eureka discovery**客户端如下所示：![设置Eureka服务器](img/B05447_05_19.jpg)
+- en: 'Since we are modifying our microservices, add the following additional dependency
+    to all microservices in their `pom.xml` files:'
+  id: totrans-304
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 由于我们正在修改我们的微服务，在它们的`pom.xml`文件中添加以下附加依赖项：
+- en: '[PRE47]'
+  id: totrans-305
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE47]'
+- en: 'The following property has to be added to all microservices in their respective
+    configuration files under `config-repo`. This will help the microservices to connect
+    to the Eureka server. Commit to Git once updates are completed:'
+  id: totrans-306
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 必须在各自的配置文件中的`config-repo`下的所有微服务中添加以下属性。这将帮助微服务连接到Eureka服务器。更新完成后提交到Git：
+- en: '[PRE48]'
+  id: totrans-307
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE48]'
+- en: Add `@EnableDiscoveryClient` to all microservices in their respective Spring
+    Boot main classes. This asks Spring Boot to register these services at start up
+    to advertise their availability.
+  id: totrans-308
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在各自的Spring Boot主类中的所有微服务中添加`@EnableDiscoveryClient`。这要求Spring Boot在启动时注册这些服务，以宣传它们的可用性。
+- en: Start all servers except Booking. Since we are using the Ribbon client on the
+    Booking service, the behavior could be different when we add the Eureka client
+    in the class path. We will fix this soon.
+  id: totrans-309
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 启动除预订之外的所有服务器。由于我们在预订服务上使用了Ribbon客户端，当我们将Eureka客户端添加到类路径中时，行为可能会有所不同。我们将很快解决这个问题。
+- en: Going to the Eureka URL (`http://localhost:8761`), you can see that all three
+    instances are up and running:![Setting up the Eureka server](img/B05447_05_20.jpg)
+  id: totrans-310
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 转到Eureka URL（`http://localhost:8761`），您可以看到所有三个实例都正在运行：![设置Eureka服务器](img/B05447_05_20.jpg)
+- en: Time to fix the issue with Booking. We will remove our earlier Ribbon client,
+    and use Eureka instead. Eureka internally uses Ribbon for load balancing. Hence,
+    the load balancing behavior will not change.
+  id: totrans-311
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 是时候解决预订的问题了。我们将删除之前的Ribbon客户端，改用Eureka。Eureka在内部使用Ribbon进行负载平衡。因此，负载平衡行为不会改变。
+- en: 'Remove the following dependency:'
+  id: totrans-312
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 删除以下依赖项：
+- en: '[PRE49]'
+  id: totrans-313
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE49]'
+- en: Also remove the `@RibbonClient(name="fares")` annotation from the `FareServiceProxy`
+    class.
+  id: totrans-314
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 还要从`FareServiceProxy`类中删除`@RibbonClient(name="fares")`注释。
+- en: Update `@FeignClient(name="fares-service")` to match the actual Fare microservices'
+    service ID. In this case, `fare-service` is the service ID configured in the Fare
+    microservices' `bootstrap.properties`. This is the name that the Eureka discovery
+    client sends to the Eureka server. The service ID will be used as a key for the
+    services registered in the Eureka server.
+  id: totrans-315
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`@FeignClient(name="fares-service")`更新为匹配实际票价微服务的服务ID。在这种情况下，`fare-service`是配置在票价微服务的`bootstrap.properties`中的服务ID。这是Eureka发现客户端发送到Eureka服务器的名称。服务ID将用作Eureka服务器中注册的服务的键。
+- en: 'Also remove the list of servers from the `booking-service.properties` file.
+    With Eureka, we are going to dynamically discover this list from the Eureka server:'
+  id: totrans-316
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 还要从`booking-service.properties`文件中删除服务器列表。使用Eureka，我们将从Eureka服务器动态发现此列表：
+- en: '[PRE50]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE50]'
+- en: Start the Booking service. You will see that `CommandLineRunner` successfully
+    created a booking, which involves calling the Fare services using the Eureka discovery
+    mechanism. Go back to the URL to see all the registered services:![Setting up
+    the Eureka server](img/B05447_05_21.jpg)
+  id: totrans-318
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 启动预订服务。您将看到`CommandLineRunner`成功创建了一个预订，其中涉及使用Eureka发现机制调用票价服务。返回URL以查看所有注册的服务：![设置Eureka服务器](img/B05447_05_21.jpg)
+- en: 'Change the website project''s `bootstrap.properties` file to make use of Eureka
+    rather than connecting directly to the service instances. We will not use the
+    Feign client in this case. Instead, for demonstration purposes, we will use the
+    load balanced `RestTemplate`. Commit these changes to the Git repository:'
+  id: totrans-319
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 更改网站项目的`bootstrap.properties`文件，以利用Eureka而不是直接连接到服务实例。在这种情况下，我们将不使用Feign客户端。相反，为了演示目的，我们将使用负载平衡的`RestTemplate`。将这些更改提交到Git存储库：
+- en: '[PRE51]'
+  id: totrans-320
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE51]'
+- en: Add `@EnableDiscoveryClient` to the `Application` class to make the client Eureka-aware.
+  id: totrans-321
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`Application`类中添加`@EnableDiscoveryClient`，使客户端具有Eureka意识。
+- en: 'Edit both `Application.java` as well as `BrownFieldSiteController.java`. Add
+    three `RestTemplate` instances. This time, we annotate them with `@Loadbalanced`
+    to ensure that we use the load balancing features using Eureka and Ribbon. `RestTemplate`
+    cannot be automatically injected. Hence, we have to provide a configuration entry
+    as follows:'
+  id: totrans-322
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 编辑`Application.java`和`BrownFieldSiteController.java`。添加三个`RestTemplate`实例。这次，我们用`@Loadbalanced`对它们进行注释，以确保我们使用Eureka和Ribbon的负载平衡功能。`RestTemplate`无法自动注入。因此，我们必须提供以下配置条目：
+- en: '[PRE52]'
+  id: totrans-323
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE52]'
+- en: 'We use these `RestTemplate` instances to call the microservices. Replace the
+    hardcoded URLs with service IDs that are registered in the Eureka server. In the
+    following code, we use the service names `search-service`, `book-service`, and
+    `checkin-service` instead of explicit host names and ports:'
+  id: totrans-324
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们使用这些`RestTemplate`实例来调用微服务。用在Eureka服务器中注册的服务ID替换硬编码的URL。在下面的代码中，我们使用服务名称`search-service`、`book-service`和`checkin-service`，而不是显式的主机名和端口：
+- en: '[PRE53]'
+  id: totrans-325
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE53]'
+- en: We are now ready to run the client. Run the website project. If everything is
+    fine, the website project's `CommandLineRunner` will successfully perform search,
+    booking, and check-in. The same can also be tested using the browser by pointing
+    the browser to `http://localhost:8001`.
+  id: totrans-326
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们准备运行客户端。运行网站项目。如果一切正常，网站项目的`CommandLineRunner`将成功执行搜索、预订和办理登机手续。也可以通过将浏览器指向`http://localhost:8001`来测试相同的情况。
+- en: High availability for Eureka
+  id: totrans-327
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Eureka的高可用性
+- en: '[PRE54]'
+  id: totrans-328
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE54]'
+- en: '[PRE55]'
+  id: totrans-329
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE55]'
+- en: 'Update the `bootstrap.properties` file of Eureka, and change the application
+    name to `eureka`. Since we are using two profiles, based on the active profile
+    supplied at startup, the Config server will look for either `eureka-server1` or
+    `eureka-server2`:'
+  id: totrans-330
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 更新Eureka的`bootstrap.properties`文件，并将应用程序名称更改为`eureka`。由于我们使用了两个配置文件，根据启动时提供的活动配置文件，配置服务器将寻找`eureka-server1`或`eureka-server2`：
+- en: '[PRE56]'
+  id: totrans-331
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE56]'
+- en: 'Start two instances of the Eureka servers, `server1` on `8761` and `server2`
+    on `8762`:'
+  id: totrans-332
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启动两个Eureka服务器的实例，`server1`在`8761`上，`server2`在`8762`上：
+- en: '[PRE57]'
+  id: totrans-333
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE57]'
+- en: 'All our services still point to the first server, `server1`. Open both the
+    browser windows: `http://localhost:8761` and `http://localhost:8762`.'
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们所有的服务仍然指向第一个服务器`server1`。打开两个浏览器窗口：`http://localhost:8761`和`http://localhost:8762`。
+- en: Start all microservices. The one which opened `8761` will immediately reflect
+    the changes, whereas the other one will take 30 seconds for reflecting the states.
+    Since both the servers are in a cluster, the state is synchronized between these
+    two servers. If we keep these servers behind a load balancer/DNS, then the client
+    will always connect to one of the available servers.
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 启动所有微服务。打开`8761`的那个将立即反映出更改，而另一个将需要30秒才能反映出状态。由于这两个服务器都在一个集群中，状态在这两个服务器之间是同步的。如果我们将这些服务器放在负载均衡器/DNS后面，那么客户端将始终连接到其中一个可用的服务器。
+- en: After completing this exercise, switch back to the standalone mode for the remaining
+    exercises.
+  id: totrans-336
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 完成此练习后，切换回独立模式进行剩余的练习。
+- en: Zuul proxy as the API gateway
+  id: totrans-337
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Zuul代理作为API网关
+- en: 'In most microservice implementations, internal microservice endpoints are not
+    exposed outside. They are kept as private services. A set of public services will
+    be exposed to the clients using an API gateway. There are many reasons to do this:'
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在大多数微服务实现中，内部微服务端点不会暴露在外部。它们被保留为私有服务。一组公共服务将使用API网关向客户端公开。有许多原因可以这样做：
+- en: Only a selected set of microservices are required by the clients.
+  id: totrans-339
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 只有一组精选的微服务是客户端所需的。
+- en: If there are client-specific policies to be applied, it is easy to apply them
+    in a single place rather than in multiple places. An example of such a scenario
+    is the cross-origin access policy.
+  id: totrans-340
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果需要应用特定于客户端的策略，可以在一个地方应用它们，而不是在多个地方。这种情况的一个例子是跨域访问策略。
+- en: It is hard to implement client-specific transformations at the service endpoint.
+  id: totrans-341
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在服务端点上实现特定于客户端的转换很困难。
+- en: If there is data aggregation required, especially to avoid multiple client calls
+    in a bandwidth-restricted environment, then a gateway is required in the middle.
+  id: totrans-342
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果需要数据聚合，特别是在带宽受限的环境中避免多个客户端调用，那么中间需要一个网关。
+- en: 'Zuul is a simple gateway service or edge service that suits these situations
+    well. Zuul also comes from the Netflix family of microservice products. Unlike
+    many enterprise API gateway products, Zuul provides complete control for the developers
+    to configure or program based on specific requirements:'
+  id: totrans-343
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zuul是一个简单的网关服务或边缘服务，非常适合这些情况。Zuul也来自Netflix微服务产品系列。与许多企业API网关产品不同，Zuul为开发人员提供了根据特定要求进行配置或编程的完全控制：
+- en: '![Zuul proxy as the API gateway](img/B05447_05_23.jpg)'
+  id: totrans-344
+  prefs: []
+  type: TYPE_IMG
+  zh: '![Zuul代理作为API网关](img/B05447_05_23.jpg)'
+- en: The Zuul proxy internally uses the Eureka server for service discovery, and
+    Ribbon for load balancing between service instances.
+  id: totrans-345
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zuul代理在内部使用Eureka服务器进行服务发现，并使用Ribbon在服务实例之间进行负载平衡。
+- en: The Zuul proxy is also capable of routing, monitoring, managing resiliency,
+    security, and so on. In simple terms, we can consider Zuul a reverse proxy service.
+    With Zuul, we can even change the behaviors of the underlying services by overriding
+    them at the API layer.
+  id: totrans-346
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zuul代理还能够进行路由、监控、管理弹性、安全等。简单来说，我们可以将Zuul视为反向代理服务。使用Zuul，我们甚至可以通过在API层覆盖它们来改变底层服务的行为。
+- en: Setting up Zuul
+  id: totrans-347
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 设置Zuul
+- en: 'Unlike the Eureka server and the Config server, in typical deployments, Zuul
+    is specific to a microservice. However, there are deployments in which one API
+    gateway covers many microservices. In this case, we are going to add Zuul for
+    each of our microservices: Search, Booking, Fare, and Check-in:'
+  id: totrans-348
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与Eureka服务器和Config服务器不同，在典型的部署中，Zuul是特定于一个微服务的。但是，也有部署方式，其中一个API网关覆盖多个微服务。在这种情况下，我们将为我们的每个微服务添加Zuul：Search、Booking、Fare和Check-in：
+- en: Note
+  id: totrans-349
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The full source code of this section is available under the `chapter5.*-apigateway`
+    project in the code files.
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节的完整源代码可在代码文件的`chapter5.*-apigateway`项目中找到。
+- en: Convert the microservices one by one. Start with Search API Gateway. Create
+    a new Spring Starter project, and select **Zuul**, **Config Client**, **Actuator**,
+    and **Eureka Discovery**:![Setting up Zuul](img/B05447_05_24.jpg)
+  id: totrans-351
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 逐个转换微服务。从Search API Gateway开始。创建一个新的Spring Starter项目，并选择**Zuul**、**Config Client**、**Actuator**和**Eureka
+    Discovery**：![设置Zuul](img/B05447_05_24.jpg)
+- en: 'The project structure for `search-apigateway` is shown in the following diagram:'
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`search-apigateway`的项目结构如下图所示：'
+- en: '![Setting up Zuul](img/B05447_05_25.jpg)'
+  id: totrans-353
+  prefs: []
+  type: TYPE_IMG
+  zh: '![设置Zuul](img/B05447_05_25.jpg)'
+- en: The next step is to integrate the API gateway with Eureka and the Config server.
+    Create a `search-apigateway.property` file with the contents given next, and commit
+    to the Git repository.
+  id: totrans-354
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下一步是将API网关与Eureka和Config服务器集成。创建一个名为`search-apigateway.property`的文件，其中包含下面给出的内容，并提交到Git存储库。
+- en: 'This configuration also sets a rule on how to forward traffic. In this case,
+    any request coming on the `/api` endpoint of the API gateway should be sent to
+    `search-service`:'
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此配置还设置了如何转发流量的规则。在这种情况下，API网关上的任何请求都应该发送到`search-service`的`/api`端点：
+- en: '[PRE58]'
+  id: totrans-356
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE58]'
+- en: '`search-service` is the service ID of the Search service, and it will be resolved
+    using the Eureka server.'
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`search-service`是搜索服务的服务ID，并将使用Eureka服务器进行解析。'
+- en: 'Update the `bootstrap.properties` file of `search-apigateway` as follows. There
+    is nothing new in this configuration—a name to the service, the port, and the
+    Config server URL:'
+  id: totrans-358
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 更新`search-apigateway`的`bootstrap.properties`文件如下。在这个配置中没有什么新的内容——服务的名称、端口和Config服务器的URL：
+- en: '[PRE59]'
+  id: totrans-359
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE59]'
+- en: 'Edit `Application.java`. In this case, the package name and the class name
+    are also changed to `com.brownfield.pss.search.apigateway` and `SearchApiGateway`
+    respectively. Also add `@EnableZuulProxy` to tell Spring Boot that this is a Zuul
+    proxy:'
+  id: totrans-360
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 编辑`Application.java`。在这种情况下，包名和类名也更改为`com.brownfield.pss.search.apigateway`和`SearchApiGateway`。还要添加`@EnableZuulProxy`以告诉Spring
+    Boot这是一个Zuul代理：
+- en: '[PRE60]'
+  id: totrans-361
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE60]'
+- en: Run this as a Spring Boot app. Before that, ensure that the Config server, the
+    Eureka server, and the Search microservice are running.
+  id: totrans-362
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将其作为Spring Boot应用程序运行。在此之前，请确保Config服务器、Eureka服务器和Search微服务正在运行。
+- en: 'Change the website project''s `CommandLineRunner` as well as `BrownFieldSiteController`
+    to make use of the API gateway:'
+  id: totrans-363
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 更改网站项目的`CommandLineRunner`以及`BrownFieldSiteController`以利用API网关：
+- en: '[PRE61]'
+  id: totrans-364
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE61]'
+- en: In this case, the Zuul proxy acts as a reverse proxy which proxies all microservice
+    endpoints to consumers. In the preceding example, the Zuul proxy does not add
+    much value, as we just pass through the incoming requests to the corresponding
+    backend service.
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，Zuul代理充当反向代理，将所有微服务端点代理给消费者。在前面的例子中，Zuul代理并没有增加太多价值，因为我们只是将传入的请求传递给相应的后端服务。
+- en: 'Zuul is particularly useful when we have one or more requirements like the
+    following:'
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们有一个或多个以下要求时，Zuul特别有用：
+- en: Enforcing authentication and other security policies at the gateway instead
+    of doing that on every microservice endpoint. The gateway can handle security
+    policies, token handling, and so on before passing the request to the relevant
+    services behind. It can also do basic rejections based on some business policies
+    such as blocking requests coming from certain black-listed users.
+  id: totrans-367
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 在网关上强制执行身份验证和其他安全策略，而不是在每个微服务端点上执行。网关可以在将请求传递给相关服务之前处理安全策略、令牌处理等。它还可以根据一些业务策略进行基本拒绝，例如阻止来自某些黑名单用户的请求。
+- en: Business insights and monitoring can be implemented at the gateway level. Collect
+    real-time statistical data, and push it to an external system for analysis. This
+    will be handy as we can do this at one place rather than applying it across many
+    microservices.
+  id: totrans-368
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 商业洞察和监控可以在网关级别实施。收集实时统计数据，并将其推送到外部系统进行分析。这将很方便，因为我们可以在一个地方做到这一点，而不是在许多微服务中应用它。
+- en: API gateways are useful in scenarios where dynamic routing is required based
+    on fine-grained controls. For example, send requests to different service instances
+    based on business specific values such as "origin country". Another example is
+    all requests coming from a region to be sent to one group of service instances.
+    Yet another example is all requests requesting for a particular product have to
+    be routed to a group of service instances.
+  id: totrans-369
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: API网关在需要基于细粒度控制的动态路由的场景中非常有用。例如，根据“原始国家”等业务特定值发送请求到不同的服务实例。另一个例子是来自一个地区的所有请求都要发送到一组服务实例。还有一个例子是所有请求特定产品的请求都必须路由到一组服务实例。
+- en: Handling the load shredding and throttling requirements is another scenario
+    where API gateways are useful. This is when we have to control load based on set
+    thresholds such as number of requests in a day. For example, control requests
+    coming from a low-value third party online channel.
+  id: totrans-370
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理负载削减和限流要求是另一种API网关非常有用的场景。这是当我们必须根据设置的阈值来控制负载，例如一天内的请求数。例如，控制来自低价值第三方在线渠道的请求。
+- en: The Zuul gateway is useful for fine-grained load balancing scenarios. The Zuul,
+    Eureka client, and Ribbon together provide fine-grained controls over the load
+    balancing requirements. Since the Zuul implementation is nothing but another Spring
+    Boot application, the developer has full control over the load balancing.
+  id: totrans-371
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Zuul网关在细粒度负载均衡场景中非常有用。Zuul、Eureka客户端和Ribbon共同提供对负载均衡需求的细粒度控制。由于Zuul实现只是另一个Spring
+    Boot应用程序，开发人员可以完全控制负载均衡。
+- en: The Zuul gateway is also useful in scenarios where data aggregation requirements
+    are in place. If the consumer wants higher level coarse-grained services, then
+    the gateway can internally aggregate data by calling more than one service on
+    behalf of the client. This is particularly applicable when the clients are working
+    in low bandwidth environments.
+  id: totrans-372
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Zuul网关在需要数据聚合要求的场景中也非常有用。如果消费者需要更高级别的粗粒度服务，那么网关可以通过代表客户端内部调用多个服务来内部聚合数据。当客户端在低带宽环境中工作时，这是特别适用的。
+- en: 'Zuul also provides a number of filters. These filters are classified as pre
+    filters, routing filters, post filters, and error filters. As the names indicate,
+    these are applied at different stages of the life cycle of a service call. Zuul
+    also provides an option for developers to write custom filters. In order to write
+    a custom filter, extend from the abstract `ZuulFilter`, and implement the following
+    methods:'
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zuul还提供了许多过滤器。这些过滤器分为前置过滤器、路由过滤器、后置过滤器和错误过滤器。正如名称所示，这些过滤器在服务调用的生命周期的不同阶段应用。Zuul还为开发人员提供了编写自定义过滤器的选项。为了编写自定义过滤器，需要从抽象的`ZuulFilter`中扩展，并实现以下方法：
+- en: '[PRE62]'
+  id: totrans-374
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE62]'
+- en: 'Once a custom filter is implemented, add that class to the main context. In
+    our example case, add this to the `SearchApiGateway` class as follows:'
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦实现了自定义过滤器，将该类添加到主上下文中。在我们的示例中，将其添加到`SearchApiGateway`类中，如下所示：
+- en: '[PRE63]'
+  id: totrans-376
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE63]'
+- en: 'As mentioned earlier, the Zuul proxy is a Spring Boot service. We can customize
+    the gateway programmatically in the way we want. As shown in the following code,
+    we can add custom endpoints to the gateway, which, in turn, can call the backend
+    services:'
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，Zuul代理是一个Spring Boot服务。我们可以以我们想要的方式以编程方式定制网关。如下所示，我们可以向网关添加自定义端点，然后可以调用后端服务：
+- en: '[PRE64]'
+  id: totrans-378
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE64]'
+- en: In the preceding case, it just adds a new endpoint, and returns a value from
+    the gateway. We can further use `@Loadbalanced RestTemplate` to call a backend
+    service. Since we have full control, we can do transformations, data aggregation,
+    and so on. We can also use the Eureka APIs to get the server list, and implement
+    completely independent load-balancing or traffic-shaping mechanisms instead of
+    the out-of-the-box load balancing features provided by Ribbon.
+  id: totrans-379
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的情况下，它只是添加了一个新的端点，并从网关返回一个值。我们还可以进一步使用`@Loadbalanced RestTemplate`来调用后端服务。由于我们有完全的控制权，我们可以进行转换、数据聚合等操作。我们还可以使用Eureka
+    API来获取服务器列表，并实现完全独立的负载均衡或流量整形机制，而不是Ribbon提供的开箱即用的负载均衡特性。
+- en: High availability of Zuul
+  id: totrans-380
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: Zuul的高可用性
+- en: Zuul is just a stateless service with an HTTP endpoint, hence, we can have as
+    many Zuul instances as we need. There is no affinity or stickiness required. However,
+    the availability of Zuul is extremely critical as all traffic from the consumer
+    to the provider flows through the Zuul proxy. However, the elastic scaling requirements
+    are not as critical as the backend microservices where all the heavy lifting happens.
+  id: totrans-381
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zuul只是一个无状态的带有HTTP端点的服务，因此我们可以拥有任意数量的Zuul实例。不需要亲和力或粘性。然而，Zuul的可用性非常关键，因为从消费者到提供者的所有流量都通过Zuul代理。然而，弹性扩展要求并不像后端微服务那样关键，那里发生了所有繁重的工作。
+- en: 'The high availability architecture of Zuul is determined by the scenario in
+    which we are using Zuul. The typical usage scenarios are:'
+  id: totrans-382
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zuul的高可用性架构取决于我们使用Zuul的场景。典型的使用场景包括：
+- en: When a client-side JavaScript MVC such as AngularJS accesses Zuul services from
+    a remote browser.
+  id: totrans-383
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当客户端JavaScript MVC（如AngularJS）从远程浏览器访问Zuul服务时。
+- en: Another microservice or non-microservice accesses services via Zuul
+  id: totrans-384
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 另一个微服务或非微服务通过Zuul访问服务
+- en: In some cases, the client may not have the capabilities to use the Eureka client
+    libraries, for example, a legacy application written on PL/SQL. In some cases,
+    organization policies do not allow Internet clients to handle client-side load
+    balancing. In the case of browser-based clients, there are third-party Eureka
+    JavaScript libraries available.
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在某些情况下，客户端可能没有能力使用Eureka客户端库，例如，基于PL/SQL编写的旧应用程序。在某些情况下，组织政策不允许Internet客户端处理客户端负载均衡。对于基于浏览器的客户端，可以使用第三方的Eureka
+    JavaScript库。
+- en: It all boils down to whether the client is using Eureka client libraries or
+    not. Based on this, there are two ways we can set up Zuul for high availability.
+  id: totrans-386
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这一切归结于客户端是否使用Eureka客户端库。基于此，我们可以通过两种方式设置Zuul的高可用性。
+- en: High availability of Zuul when the client is also a Eureka client
+  id: totrans-387
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 当客户端也是Eureka客户端时，Zuul的高可用性
+- en: 'In this case, since the client is also another Eureka client, Zuul can be configured
+    just like other microservices. Zuul registers itself to Eureka with a service
+    ID. The clients then use Eureka and the service ID to resolve Zuul instances:'
+  id: totrans-388
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，由于客户端也是另一个Eureka客户端，因此可以像其他微服务一样配置Zuul。Zuul使用服务ID向Eureka注册自己。然后客户端使用Eureka和服务ID来解析Zuul实例：
+- en: '![High availability of Zuul when the client is also a Eureka client](img/B05447_05_26.jpg)'
+  id: totrans-389
+  prefs: []
+  type: TYPE_IMG
+  zh: '![当客户端也是Eureka客户端时，Zuul的高可用性](img/B05447_05_26.jpg)'
+- en: As shown in the preceding diagram, Zuul services register themselves with Eureka
+    with a service ID, `search-apigateway` in our case. The Eureka client asks for
+    the server list with the ID `search-apigateway`. The Eureka server returns the
+    list of servers based on the current Zuul topology. The Eureka client, based on
+    this list picks up one of the servers, and initiates the call.
+  id: totrans-390
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的图表中显示，Zuul服务使用服务ID在Eureka中注册自己，在我们的情况下是`search-apigateway`。Eureka客户端使用ID
+    `search-apigateway` 请求服务器列表。Eureka服务器根据当前的Zuul拓扑返回服务器列表。基于这个列表，Eureka客户端选择一个服务器并发起调用。
+- en: 'As we saw earlier, the client uses the service ID to resolve the Zuul instance.
+    In the following case, `search-apigateway` is the Zuul instance ID registered
+    with Eureka:'
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，客户端使用服务ID来解析Zuul实例。在下面的情况中，`search-apigateway`是在Eureka中注册的Zuul实例ID：
+- en: '[PRE65]'
+  id: totrans-392
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE65]'
+- en: High availability when the client is not a Eureka client
+  id: totrans-393
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 当客户端不是Eureka客户端时的高可用性
+- en: 'In this case, the client is not capable of handling load balancing by using
+    the Eureka server. As shown in the following diagram, the client sends the request
+    to a load balancer, which in turn identifies the right Zuul service instance.
+    The Zuul instance, in this case, will be running behind a load balancer such as
+    HAProxy or a hardware load balancer like NetScaler:'
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，客户端无法使用Eureka服务器进行负载均衡。如下图所示，客户端将请求发送到负载均衡器，然后负载均衡器识别正确的Zuul服务实例。在这种情况下，Zuul实例将在负载均衡器后面运行，例如HAProxy或类似NetScaler的硬件负载均衡器：
+- en: '![High availability when the client is not a Eureka client](img/B05447_05_27.jpg)'
+  id: totrans-395
+  prefs: []
+  type: TYPE_IMG
+  zh: '![当客户端不是Eureka客户端时的高可用性](img/B05447_05_27.jpg)'
+- en: The microservices will still be load balanced by Zuul using the Eureka server.
+  id: totrans-396
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 微服务仍然会通过Eureka服务器由Zuul进行负载均衡。
+- en: Completing Zuul for all other services
+  id: totrans-397
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 为所有其他服务完成Zuul
+- en: 'In order to complete this exercise, add API gateway projects (name them as
+    `*-apigateway`) for all our microservices. The following steps are required to
+    achieve this task:'
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了完成这个练习，为所有的微服务添加API网关项目（将它们命名为`*-apigateway`）。需要完成以下步骤来实现这个任务：
+- en: Create new property files per service, and check in to the Git repositories.
+  id: totrans-399
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为每个服务创建新的属性文件，并检入Git存储库。
+- en: Change `application.properties` to `bootstrap.properties`, and add the required
+    configurations.
+  id: totrans-400
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`application.properties`更改为`bootstrap.properties`，并添加所需的配置。
+- en: Add `@EnableZuulProxy` to `Application.java` in each of the `*-apigateway` projects.
+  id: totrans-401
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在每个`*-apigateway`项目的`Application.java`中添加`@EnableZuulProxy`。
+- en: Add `@EnableDiscoveryClient` in all the `Application.java` files under each
+    of the `*-apigateway` projects.
+  id: totrans-402
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在每个`*-apigateway`项目的`Application.java`文件中添加`@EnableDiscoveryClient`。
+- en: Optionally, change the package names and file names generated by default.
+  id: totrans-403
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 可选地，更改默认生成的包名和文件名。
+- en: 'In the end, we will have the following API gateway projects:'
+  id: totrans-404
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终，我们将拥有以下API网关项目：
+- en: '`chapter5.fares-apigateway`'
+  id: totrans-405
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`chapter5.fares-apigateway`'
+- en: '`chapter5.search-apigateway`'
+  id: totrans-406
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`chapter5.search-apigateway`'
+- en: '`chapter5.checkin-apigateway`'
+  id: totrans-407
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`chapter5.checkin-apigateway`'
+- en: '`chapter5.book-apigateway`'
+  id: totrans-408
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`chapter5.book-apigateway`'
+- en: Streams for reactive microservices
+  id: totrans-409
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 用于响应式微服务的流
+- en: 'Spring Cloud Stream provides an abstraction over the messaging infrastructure.
+    The underlying messaging implementation can be RabbitMQ, Redis, or Kafka. Spring
+    Cloud Stream provides a declarative approach for sending and receiving messages:'
+  id: totrans-410
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud Stream提供了对消息基础设施的抽象。底层的消息实现可以是RabbitMQ、Redis或Kafka。Spring Cloud
+    Stream提供了一个声明性的方法来发送和接收消息：
+- en: '![Streams for reactive microservices](img/B05447_05_28.jpg)'
+  id: totrans-411
+  prefs: []
+  type: TYPE_IMG
+  zh: '![用于响应式微服务的流](img/B05447_05_28.jpg)'
+- en: As shown in the preceding diagram, Cloud Stream works on the concept of a **source**
+    and a sink. The source represents the sender perspective of the messaging, and
+    sink represents the receiver perspective of the messaging.
+  id: totrans-412
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前图所示，Cloud Stream基于**源**和**接收器**的概念工作。源代表消息发送者的视角，而接收器代表消息接收者的视角。
+- en: In the example shown in the diagram, the sender defines a logical queue called
+    `Source.OUTPUT` to which the sender sends messages. The receiver defines a logical
+    queue called `Sink.INPUT` from which the receiver retrieves messages. The physical
+    binding of `OUTPUT` to `INPUT` is managed through the configuration. In this case,
+    both link to the same physical queue—`MyQueue` on RabbitMQ. So, while at one end,
+    `Source.OUTPUT` points to `MyQueue`, on the other end, `Sink.INPUT` points to
+    the same `MyQueue`.
+  id: totrans-413
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在图中所示的例子中，发送者定义了一个名为`Source.OUTPUT`的逻辑队列，发送者向其发送消息。接收者定义了一个名为`Sink.INPUT`的逻辑队列，从中接收者检索消息。`OUTPUT`到`INPUT`的物理绑定通过配置进行管理。在这种情况下，两者链接到同一个物理队列——RabbitMQ上的`MyQueue`。因此，一端的`Source.OUTPUT`指向`MyQueue`，另一端的`Sink.INPUT`指向相同的`MyQueue`。
+- en: Spring Cloud offers the flexibility to use multiple messaging providers in one
+    application such as connecting an input stream from Kafka to a Redis output stream,
+    without managing the complexities. Spring Cloud Stream is the basis for message-based
+    integration. The Cloud Stream Modules subproject is another Spring Cloud library
+    that provides many endpoint implementations.
+  id: totrans-414
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Spring Cloud提供了在一个应用程序中使用多个消息提供程序的灵活性，例如将来自Kafka的输入流连接到Redis输出流，而无需管理复杂性。Spring
+    Cloud Stream是基于消息的集成的基础。Cloud Stream模块子项目是另一个Spring Cloud库，提供了许多端点实现。
+- en: 'As the next step, rebuild the inter-microservice messaging communication with
+    the Cloud Streams. As shown in the next diagram, we will define a `SearchSink`
+    connected to `InventoryQ` under the Search microservice. Booking will define a
+    `BookingSource` for sending inventory change messages connected to `InventoryQ`.
+    Similarly, Check-in defines a `CheckinSource` for sending the check-in messages.
+    Booking defines a sink, `BookingSink`, for receiving messages, both bound to the
+    `CheckinQ` queue on the RabbitMQ:'
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为下一步，重新构建云流的微服务间消息通信。如下图所示，我们将在搜索微服务下定义一个连接到`InventoryQ`的`SearchSink`。预订将为发送库存更改消息定义一个`BookingSource`连接到`InventoryQ`。类似地，登记定义了一个用于发送登记消息的`CheckinSource`。预订定义了一个接收器`BookingSink`，用于接收消息，都绑定到RabbitMQ上的`CheckinQ`队列：
+- en: '![Streams for reactive microservices](img/B05447_05_29.jpg)'
+  id: totrans-416
+  prefs: []
+  type: TYPE_IMG
+  zh: '![用于响应式微服务的流](img/B05447_05_29.jpg)'
+- en: 'In this example, we will use RabbitMQ as the message broker:'
+  id: totrans-417
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这个例子中，我们将使用RabbitMQ作为消息代理：
+- en: 'Add the following Maven dependency to Booking, Search, and Check-in, as these
+    are the three modules using messaging:'
+  id: totrans-418
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将以下Maven依赖项添加到预订、搜索和登记中，因为这三个模块使用消息传递：
+- en: '[PRE66]'
+  id: totrans-419
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE66]'
+- en: 'Add the following two properties to `booking-service.properties`. These properties
+    bind the logical queue `inventoryQ` to physical `inventoryQ`, and the logical
+    `checkinQ` to the physical `checkinQ`:'
+  id: totrans-420
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将以下两个属性添加到`booking-service.properties`中。这些属性将逻辑队列`inventoryQ`绑定到物理`inventoryQ`，逻辑`checkinQ`绑定到物理`checkinQ`：
+- en: '[PRE67]'
+  id: totrans-421
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE67]'
+- en: 'Add the following property to `search-service.properties`. This property binds
+    the logical queue `inventoryQ` to the physical `inventoryQ`:'
+  id: totrans-422
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将以下属性添加到`search-service.properties`中。这个属性将逻辑队列`inventoryQ`绑定到物理`inventoryQ`：
+- en: '[PRE68]'
+  id: totrans-423
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE68]'
+- en: 'Add the following property to `checkin-service.properties`. This property binds
+    the logical queue `checkinQ` to the physical `checkinQ`:'
+  id: totrans-424
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将以下属性添加到`checkin-service.properties`中。这个属性将逻辑队列`checkinQ`绑定到物理`checkinQ`：
+- en: '[PRE69]'
+  id: totrans-425
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE69]'
+- en: Commit all files to the Git repository.
+  id: totrans-426
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将所有文件提交到Git存储库。
+- en: The next step is to edit the code. The Search microservice consumes a message
+    from the Booking microservice. In this case, Booking is the source and Search
+    is the sink.
+  id: totrans-427
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下一步是编辑代码。搜索微服务从预订微服务中消费消息。在这种情况下，预订是源，搜索是接收器。
+- en: 'Add `@EnableBinding` to the `Sender` class of the Booking service. This enables
+    the Cloud Stream to work on autoconfigurations based on the message broker library
+    available in the class path. In our case, it is RabbitMQ. The parameter `BookingSource`
+    defines the logical channels to be used for this configuration:'
+  id: totrans-428
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在预订服务的`Sender`类中添加`@EnableBinding`。这将使Cloud Stream根据类路径中可用的消息代理库进行自动配置。在我们的情况下，这是RabbitMQ。参数`BookingSource`定义了用于此配置的逻辑通道：
+- en: '[PRE70]'
+  id: totrans-429
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE70]'
+- en: 'In this case, `BookingSource` defines a message channel called `inventoryQ`,
+    which is physically bound to RabbitMQ''s `inventoryQ`, as configured in the configuration.
+    `BookingSource` uses an annotation, `@Output`, to indicate that this is of the
+    output type—a message that is outgoing from a module. This information will be
+    used for autoconfiguration of the message channel:'
+  id: totrans-430
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在这种情况下，`BookingSource`定义了一个名为`inventoryQ`的消息通道，它在配置中与RabbitMQ的`inventoryQ`物理绑定。`BookingSource`使用注解`@Output`来指示这是输出类型的消息，即从模块发出的消息。这些信息将用于消息通道的自动配置：
+- en: '[PRE71]'
+  id: totrans-431
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE71]'
+- en: 'Instead of defining a custom class, we can also use the default `Source` class
+    that comes with Spring Cloud Stream if the service has only one source and sink:'
+  id: totrans-432
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们可以使用Spring Cloud Stream提供的默认`Source`类，而不是定义自定义类，如果服务只有一个源和一个接收器：
+- en: '[PRE72]'
+  id: totrans-433
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE72]'
+- en: 'Define a message channel in the sender, based on `BookingSource`. The following
+    code will inject an output message channel with the name `inventory`, which is
+    already configured in `BookingSource`:'
+  id: totrans-434
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在发送器中定义一个基于`BookingSource`的消息通道。以下代码将注入一个名为`inventory`的输出消息通道，该通道已在`BookingSource`中配置：
+- en: '[PRE73]'
+  id: totrans-435
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE73]'
+- en: 'Reimplement the `send` message method in `BookingSender`:'
+  id: totrans-436
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 重新实现`BookingSender`中的`send`消息方法：
+- en: '[PRE74]'
+  id: totrans-437
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE74]'
+- en: 'Now add the following to the `SearchReceiver` class the same way we did for
+    the Booking service:'
+  id: totrans-438
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在以与预订服务相同的方式将以下内容添加到`SearchReceiver`类中：
+- en: '[PRE75]'
+  id: totrans-439
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE75]'
+- en: 'In this case, the `SearchSink` interface will look like the following. This
+    will define the logical sink queue it is connected with. The message channel in
+    this case is defined as `@Input` to indicate that this message channel is to accept
+    messages:'
+  id: totrans-440
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在这种情况下，`SearchSink`接口将如下所示。这将定义它连接的逻辑接收器队列。在这种情况下，消息通道被定义为`@Input`，以指示该消息通道用于接受消息：
+- en: '[PRE76]'
+  id: totrans-441
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE76]'
+- en: 'Amend the Search service to accept this message:'
+  id: totrans-442
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 修改搜索服务以接受此消息：
+- en: '[PRE77]'
+  id: totrans-443
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE77]'
+- en: 'We will still need the RabbitMQ configurations that we have in our configuration
+    files to connect to the message broker:'
+  id: totrans-444
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '我们仍然需要我们在配置文件中拥有的RabbitMQ配置来连接到消息代理： '
+- en: '[PRE78]'
+  id: totrans-445
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE78]'
+- en: Run all services, and run the website project. If everything is fine, the website
+    project successfully executes the Search, Booking, and Check-in functions. The
+    same can also be tested using the browser by pointing to `http://localhost:8001`.
+  id: totrans-446
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行所有服务，并运行网站项目。如果一切正常，网站项目将成功执行搜索、预订和办理登机手续功能。也可以通过浏览器指向 `http://localhost:8001`
+    进行测试。
+- en: Summarizing the BrownField PSS architecture
+  id: totrans-447
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结BrownField PSS架构
+- en: 'The following diagram shows the overall architecture that we have created with
+    the Config server, Eureka, Feign, Zuul, and Cloud Streams. The architecture also
+    includes the high availability of all components. In this case, we assume that
+    the client uses the Eureka client libraries:'
+  id: totrans-448
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下图表显示了我们使用Config服务器、Eureka、Feign、Zuul和Cloud Streams创建的整体架构。该架构还包括所有组件的高可用性。在这种情况下，我们假设客户端使用Eureka客户端库：
+- en: '![Summarizing the BrownField PSS architecture](img/B05447_05_30.jpg)'
+  id: totrans-449
+  prefs: []
+  type: TYPE_IMG
+  zh: '![总结BrownField PSS架构](img/B05447_05_30.jpg)'
+- en: 'The summary of the projects and the port they are listening on is given in
+    the following table:'
+  id: totrans-450
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下表格给出了项目及其监听的端口的摘要：
+- en: '| Microservice | Projects | Port |'
+  id: totrans-451
+  prefs: []
+  type: TYPE_TB
+  zh: '| 微服务 | 项目 | 端口 |'
+- en: '| --- | --- | --- |'
+  id: totrans-452
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- |'
+- en: '| Book microservice | `chapter5.book` | `8060` to `8064` |'
+  id: totrans-453
+  prefs: []
+  type: TYPE_TB
+  zh: '| 预订微服务 | `chapter5.book` | `8060` 到 `8064` |'
+- en: '| Check-in microservice | `chapter5.checkin` | `8070` to `8074` |'
+  id: totrans-454
+  prefs: []
+  type: TYPE_TB
+  zh: '| 办理登机手续微服务 | `chapter5.checkin` | `8070` 到 `8074` |'
+- en: '| Fare microservice | `chapter5.fares` | `8080` to `8084` |'
+  id: totrans-455
+  prefs: []
+  type: TYPE_TB
+  zh: '| 票价微服务 | `chapter5.fares` | `8080` 到 `8084` |'
+- en: '| Search microservice | `chapter5.search` | `8090` to `8094` |'
+  id: totrans-456
+  prefs: []
+  type: TYPE_TB
+  zh: '| 搜索微服务 | `chapter5.search` | `8090` 到 `8094` |'
+- en: '| Website client | `chapter5.website` | `8001` |'
+  id: totrans-457
+  prefs: []
+  type: TYPE_TB
+  zh: '| 网站客户端 | `chapter5.website` | `8001` |'
+- en: '| Spring Cloud Config server | `chapter5.configserver` | `8888`/`8889` |'
+  id: totrans-458
+  prefs: []
+  type: TYPE_TB
+  zh: '| Spring Cloud Config服务器 | `chapter5.configserver` | `8888`/`8889` |'
+- en: '| Spring Cloud Eureka server | `chapter5.eurekaserver` | `8761`/`8762` |'
+  id: totrans-459
+  prefs: []
+  type: TYPE_TB
+  zh: '| Spring Cloud Eureka服务器 | `chapter5.eurekaserver` | `8761`/`8762` |'
+- en: '| Book API gateway | `chapter5.book-apigateway` | `8095` to `8099` |'
+  id: totrans-460
+  prefs: []
+  type: TYPE_TB
+  zh: '| 预订API网关 | `chapter5.book-apigateway` | `8095` 到 `8099` |'
+- en: '| Check-in API gateway | `chapter5.checkin-apigateway` | `8075` to `8079` |'
+  id: totrans-461
+  prefs: []
+  type: TYPE_TB
+  zh: '| 办理登机手续API网关 | `chapter5.checkin-apigateway` | `8075` 到 `8079` |'
+- en: '| Fares API gateway | `chapter5.fares-apigateway` | `8085` to `8089` |'
+  id: totrans-462
+  prefs: []
+  type: TYPE_TB
+  zh: '| 票价API网关 | `chapter5.fares-apigateway` | `8085` 到 `8089` |'
+- en: '| Search API gateway | `chapter5.search-apigateway` | `8065` to `8069` |'
+  id: totrans-463
+  prefs: []
+  type: TYPE_TB
+  zh: '| 搜索API网关 | `chapter5.search-apigateway` | `8065` 到 `8069` |'
+- en: 'Follow these steps to do a final run:'
+  id: totrans-464
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照以下步骤进行最终运行：
+- en: Run RabbitMQ.
+  id: totrans-465
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 运行RabbitMQ。
+- en: 'Build all projects using `pom.xml` at the root level:'
+  id: totrans-466
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用根级别的 `pom.xml` 构建所有项目：
+- en: '[PRE79]'
+  id: totrans-467
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE79]'
+- en: 'Run the following projects from their respective folders. Remember to wait
+    for 40 to 50 seconds before starting the next service. This will ensure that the
+    dependent services are registered and are available before we start a new service:'
+  id: totrans-468
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从各自的文件夹运行以下项目。在启动下一个服务之前，请记得等待40到50秒。这将确保依赖服务在我们启动新服务之前已注册并可用：
+- en: '[PRE80]'
+  id: totrans-469
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE80]'
+- en: Open the browser window, and point to `http://localhost:8001`. Follow the steps
+    mentioned in the *Running and testing the project* section in [Chapter 4](ch04.html
+    "Chapter 4. Microservices Evolution – A Case Study"), *Microservices Evolution
+    – A Case Study*.
+  id: totrans-470
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 打开浏览器窗口，指向 `http://localhost:8001`。按照[第4章](ch04.html "第4章。微服务演进-案例研究")中的*运行和测试项目*部分中提到的步骤进行操作，*微服务演进-案例研究*。
+- en: Summary
+  id: totrans-471
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 摘要
+- en: In this chapter, you learned how to scale a Twelve-Factor Spring Boot microservice
+    using the Spring Cloud project. What you learned was then applied to the BrownField
+    Airline's PSS microservice that we developed in the previous chapter.
+  id: totrans-472
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您学习了如何使用Spring Cloud项目扩展十二要素Spring Boot微服务。然后，您学到的知识被应用到了我们在上一章中开发的BrownField航空公司的PSS微服务中。
+- en: We then explored the Spring Config server for externalizing the microservices'
+    configuration, and the way to deploy the Config server for high availability.
+    We also discussed the declarative service calls using Feign, examined the use
+    of Ribbon and Eureka for load balancing, dynamic service registration, and discovery.
+    Implementation of an API gateway was examined by implementing Zuul. Finally, we
+    concluded with a reactive style integration of microservices using Spring Cloud
+    Stream.
+  id: totrans-473
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们探讨了Spring Config服务器以外部化微服务的配置，以及部署高可用性的Config服务器的方法。我们还讨论了使用Feign进行声明式服务调用，研究了Ribbon和Eureka用于负载平衡、动态服务注册和发现的用法。通过实现Zuul来检查API网关的实现。最后，我们以使用Spring
+    Cloud Stream进行响应式风格的微服务集成来结束。
+- en: BrownField Airline's PSS microservices are now deployable on the Internet scale.
+    Other Spring Cloud components such as Hyterix, Sleuth, and so on will be covered
+    in [Chapter 7](ch07.html "Chapter 7. Logging and Monitoring Microservices"), *Logging
+    and Monitoring Microservices*. The next chapter will demonstrate autoscaling features,
+    extending the BrownField PSS implementation.
+  id: totrans-474
+  prefs: []
+  type: TYPE_NORMAL
+  zh: BrownField航空公司的PSS微服务现在可以在互联网规模上部署。其他Spring Cloud组件，如Hyterix、Sleuth等，将在[第7章](ch07.html
+    "第7章。微服务的日志记录和监控")中介绍，*微服务的日志记录和监控*。下一章将演示自动缩放功能，扩展BrownField PSS实现。

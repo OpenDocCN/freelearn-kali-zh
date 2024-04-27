@@ -1,0 +1,1729 @@
+- en: '*Chapter 14*: Implementing Movement and Spawning'
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: '*第14章*：实现移动和生成'
+- en: Now that we have prepared our project to start coding, let's create our first
+    behavior. We will see the basics of how to move objects through scripting using
+    the `Transform` component, which will be applied for the movement of our Player
+    with the Keys, the constant movement of bullets, and other objects' movement.
+    Also, we will see how to create and destroy objects during the game, such as bullets
+    our Player and Enemy shoot and the Enemy Wave Spawners. These actions can be used
+    in several other scenarios, so we will explore a few to reinforce the idea.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经准备好开始编码了，让我们创建我们的第一个行为。我们将看到如何通过使用`Transform`组件来移动对象的基础知识，这将应用于我们的玩家的移动，子弹的恒定移动以及其他对象的移动。此外，我们还将看到如何在游戏过程中创建和销毁对象，例如玩家和敌人射击的子弹以及敌人波次生成器。这些操作可以在其他场景中使用，所以我们将探索一些来加强这个想法。
+- en: 'In this chapter, we will examine the following scripting concepts:'
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将探讨以下脚本概念：
+- en: Implementing movement
+  id: totrans-3
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现移动
+- en: Implementing spawning
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 实现生成
+- en: We will start scripting components to do the previously mentioned movement behavior,
+    and then we will continue with object creation and destruction.
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将开始编写脚本来执行先前提到的移动行为，然后我们将继续进行对象的创建和销毁。
+- en: Implementing movement
+  id: totrans-6
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现移动
+- en: Almost every object in the game moves one way or another, the Player character
+    with the keyboard, the Enemies through AI, the bullets simply move forward, and
+    so on. There are several ways of moving objects in Unity, so we will start with
+    the simplest one, that is, through the `Transform` component.
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 几乎游戏中的每个对象都以某种方式移动，玩家角色通过键盘移动，敌人通过AI移动，子弹简单地向前移动，等等。在Unity中有几种移动对象的方式，所以我们将从最简单的方式开始，即通过`Transform`组件。
+- en: 'In this section, we will examine the following movement concepts:'
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将探讨以下移动概念：
+- en: Moving objects through Transform
+  id: totrans-9
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 通过Transform移动对象
+- en: Using Input
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用输入
+- en: Understanding Delta Time
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解Delta Time
+- en: First, we will explore how to access the Transform component in our script to
+    drive the Player movement, to later apply movement based on the Player's keyboard
+    Input. Finally, we are going to explore the concept of Delta Time to make sure
+    the movement speeds are consistent in every computer. We are going to start learning
+    about the Transform API to master simple movement.
+  id: totrans-12
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们将探索如何在我们的脚本中访问Transform组件来驱动玩家的移动，然后根据玩家的键盘输入应用移动。最后，我们将探索Delta Time的概念，以确保在每台电脑上移动速度保持一致。我们将开始学习Transform
+    API来掌握简单的移动。
+- en: Moving objects through Transform
+  id: totrans-13
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 通过Transform移动对象
+- en: '`Transform` is the component that holds the Translation, Rotation, and Scale
+    of an object, so every movement system such as Physics or Pathfinding will affect
+    this component. Anyway, sometimes we want to move an object in a specific way
+    according to our game by creating our own script, which will handle the movement
+    calculations we need and modify Transform to apply them.'
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Transform`是一个持有对象的平移、旋转和缩放的组件，因此每个移动系统，如物理或路径查找，都会影响这个组件。无论如何，有时我们想以特定的方式移动一个对象，根据我们的游戏创建我们自己的脚本，它将处理我们需要的移动计算并修改Transform来应用它们。'
+- en: 'One concept implied here is that components alter other components. The main
+    way of coding in Unity is to create components that interact with other components.
+    Here, the idea is to create one that accesses another and tells it to do something,
+    in this case, to move. To create a script that tells `Transform` to move, do the
+    following:'
+  id: totrans-15
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这里暗示的一个概念是组件改变其他组件。在Unity中编码的主要方式是创建与其他组件交互的组件。在这里，想法是创建一个访问另一个组件并告诉它做某事的组件，这种情况下是移动。要创建一个告诉`Transform`移动的脚本，做如下操作：
+- en: Create and add a script called `Player Movement` to our character. In this case,
+    it would be the animated robot object we created previously. Remember to move
+    the script to the `Scripts` folder after creation:![Figure 14.1 – Creating a Player
+    Movement script for the character
+  id: totrans-16
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建并添加一个名为`Player Movement`的脚本到我们的角色。在这种情况下，它将是我们之前创建的动画机器人对象。记得在创建后将脚本移动到`Scripts`文件夹中：![图14.1
+    - 为角色创建一个玩家移动脚本
+- en: '](img/Figure_14.01_B14199.jpg)'
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.01_B14199.jpg)'
+- en: Figure 14.1 – Creating a Player Movement script for the character
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.1 - 为角色创建一个玩家移动脚本
+- en: Double-click the created script asset to open an IDE to edit the code.
+  id: totrans-19
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 双击创建的脚本资源以打开IDE编辑代码。
+- en: We are moving, and the movement is applied every frame, so this script will
+    use only the `update` function or method, and we can remove `Start` (it is a good
+    practice to remove unused functions):![Figure 14.2 – A component with just the
+    update event function
+  id: totrans-20
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们正在移动，移动是每帧应用的，所以这个脚本只会使用`update`函数或方法，我们可以移除`Start`（移除未使用的函数是一个好习惯）：![图14.2
+    - 一个只有update事件函数的组件
+- en: '](img/Figure_14.02_B14199.jpg)'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.02_B14199.jpg)'
+- en: Figure 14.2 – A component with just the update event function
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.2 - 一个只有update事件函数的组件
+- en: To move our object along its forward axis (Z-axis), add the `transform.Translate(0,0,1);`
+    line to the `update` function as shown in the following image.
+  id: totrans-23
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要沿着对象的前向轴（Z轴）移动我们的对象，将`transform.Translate(0,0,1);`行添加到`update`函数中，如下图所示。
+- en: Important Note
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: 'Every component inherits a `transform` field (to be specific, a getter) that
+    is a reference to the Transform of the GameObject the component is placed, it
+    represents the sibling Transform of our component. Through this field, we can
+    access the `Translate` function of the Transform, which will receive the offset
+    to apply in X, Y, Z local coordinates:'
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个组件都继承了一个`transform`字段（具体来说是一个getter），它是对放置组件的游戏对象的Transform的引用，它代表我们组件的兄弟Transform。通过这个字段，我们可以访问Transform的`Translate`函数，它将接收要在X、Y、Z本地坐标中应用的偏移量：
+- en: '![Figure 14.3 – A simple Move Forward script'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.3 - 一个简单的向前移动脚本'
+- en: '](img/Figure_14.03_B14199.jpg)'
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.03_B14199.jpg)'
+- en: Figure 14.3 – A simple Move Forward script
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.3 - 一个简单的向前移动脚本
+- en: Save the file and play the game to see the movement.
+  id: totrans-29
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 保存文件并播放游戏以查看移动。
+- en: '![Figure 14.4 – Temporarily disabling the Director and increasing the Player
+    Camera priority'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.4 - 暂时禁用导演并增加玩家摄像机优先级'
+- en: '](img/Figure_14.04_B14199.jpg)'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.04_B14199.jpg)'
+- en: Figure 14.4 – Temporarily disabling the Director and increasing the Player Camera
+    priority
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.4 - 暂时禁用导演并增加玩家摄像机优先级
+- en: Important Note
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: I recommend you temporarily disable the Playable Director object and increase
+    the priority of CM vcam1, which will disable the introduction cutScene and make
+    the Character Following Camera activated by default, reducing the time needed
+    to test the game. Another option is to create a secondary Scene just to test the
+    Player Movement, something that is actually done in real projects, but for now,
+    let's keep things simple.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我建议您暂时禁用可播放导演对象并增加CM vcam1的优先级，这将禁用引入过场动画并使角色跟随摄像机默认激活，减少测试游戏所需的时间。另一个选项是创建一个用于测试玩家移动的辅助场景，这实际上在真实项目中是做的，但现在，让我们保持简单。
+- en: 'You will notice that the Player is moving too fast and that''s because we are
+    using a fixed speed of 1 meter, and because `update` is executing all frames,
+    we are moving 1 meter per frame. In a standard 30 FPS game, the Player will move
+    30 meters per second, which is too much. We can control the Player speed by adding
+    a `speed` field and using the value set in the editor instead of the fixed value
+    of 1\. You can see one way to do this in the next screenshot, but remember the
+    other options we discussed in the previous chapter (using the Serialize Field
+    attribute):'
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您会注意到玩家移动得太快了，这是因为我们使用了固定的1米速度，而且因为“update”正在执行所有帧，所以我们每帧移动1米。在标准的30 FPS游戏中，玩家每秒移动30米，这太多了。我们可以通过添加一个“速度”字段并使用编辑器中设置的值来控制玩家速度，而不是固定的1的值。您可以在下一个截图中看到如何做到这一点，但请记住我们在上一章讨论的其他选项（使用Serialize
+    Field属性）：
+- en: '![Figure 14.5 – Creating a speed field and using it as the Z speed of the movement
+    script'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.5 - 创建速度字段并将其用作移动脚本的Z速度'
+- en: '](img/Figure_14.05_B14199.jpg)'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.05_B14199.jpg)'
+- en: Figure 14.5 – Creating a speed field and using it as the Z speed of the movement
+    script
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.5 - 创建速度字段并将其用作移动脚本的Z速度
+- en: 'Now if you save the script to apply the changes and set the `0.1`, but you
+    might need another value (more on this later):'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，如果您保存脚本以应用更改并设置为“0.1”，但您可能需要另一个值（稍后会详细介绍）：
+- en: '![Figure 14.6 – Setting a speed of 0.1 meters per frame'
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.6 - 设置每帧0.1米的速度'
+- en: '](img/Figure_14.06_B14199.jpg)'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.06_B14199.jpg)'
+- en: Figure 14.6 – Setting a speed of 0.1 meters per frame
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.6 - 设置每帧0.1米的速度
+- en: You will notice that the Player will move automatically. Now let's see how to
+    **execute** the movement based on Player Input such as keyboard and mouse input.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您会注意到玩家会自动移动。现在让我们看看如何基于玩家输入（如键盘和鼠标输入）执行移动。
+- en: Using Input
+  id: totrans-44
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用输入
+- en: 'Unlike NPCs, we want the Player movement to be driven by the Player''s Input,
+    based on which keys they press, the mouse movement, and so on. We can recall the
+    original key mapping we designed in [*Chapter 1*](B14199_01_Final_SK_ePub.xhtml#_idTextAnchor015)*,
+    Designing a Game from Scratch*, from the next two tables:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与NPC不同，我们希望玩家的移动是由玩家的输入驱动的，基于他们按下的键，鼠标移动等。我们可以回想我们在[*第1章*](B14199_01_Final_SK_ePub.xhtml#_idTextAnchor015)*从零开始设计游戏*中设计的原始键映射，从下面的两个表中：
+- en: '![Table 14.1 – Keyboard mapping'
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![表14.1 - 键盘映射'
+- en: '](img/Table_14.01_B14199.jpg)'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Table_14.01_B14199.jpg)'
+- en: Table 14.1 – Keyboard mapping
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表14.1 - 键盘映射
+- en: 'Check out the mouse mapping in the following table:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请查看以下表格中的鼠标映射：
+- en: '![Table 14.2 – Mouse mapping'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![表14.2 - 鼠标映射'
+- en: '](img/Table_14.02_B14199.jpg)'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Table_14.02_B14199.jpg)'
+- en: Table 14.2 – Mouse mapping
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表14.2 - 鼠标映射
+- en: Important Note
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: The latest Unity version has a new Input system, but requires some settings
+    before using it. For now we will use the default Input system to simplify our
+    scripts
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最新的Unity版本有一个新的输入系统，但在使用之前需要进行一些设置。现在我们将使用默认的输入系统来简化我们的脚本
+- en: To know whether a certain key is pressed, such as the Up arrow, we can use the
+    `Input.GetKey(KeyCode.W)` line, which will return a Boolean, indicating whether
+    the key specified in the `KeyCode` enum is pressed. We can change the key to check
+    the changing of the `KeyCode` enum value and combine the `GetKey` function with
+    an `If` statement to make the translation execute only when that condition is
+    met (the key is currently.
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要知道是否按下某个特定键，比如上箭头，我们可以使用“Input.GetKey(KeyCode.W)”这一行，它将返回一个布尔值，指示是否按下了“KeyCode”枚举中指定的键。我们可以更改键以检查“KeyCode”枚举值的更改，并将“GetKey”函数与“if”语句结合使用，使翻译仅在满足该条件时执行（当前按下该键时）。
+- en: Important Note
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: The latest Unity version has a new Input system, but requires some settings
+    before using it. For now we will use the default Input system to simplify our
+    scripts.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最新的Unity版本有一个新的输入系统，但在使用之前需要进行一些设置。现在我们将使用默认的输入系统来简化我们的脚本。
+- en: 'Let''s start implementing the keyboard movement by doing the following:'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们通过以下方式开始实现键盘移动：
+- en: Make the forward movement execute only when the *W* key is pressed, as shown
+    in the next screenshot:![Figure 14.7 – Conditioning the movement until the W key
+    is pressed
+  id: totrans-59
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使前进运动仅在按下*W*键时执行，如下截图所示：![图14.7 - 仅在按下W键时执行移动
+- en: '](img/Figure_14.07_B14199.jpg)'
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.07_B14199.jpg)'
+- en: Figure 14.7 – Conditioning the movement until the W key is pressed
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.7 - 仅在按下W键时执行移动
+- en: We can add other movement directions with more `If` statements. We can use *S*
+    to move backward and *A* and *D* to move left and right, as shown in the following
+    screenshot. Notice how we used the minus sign to invert the speed when we needed
+    to move in the opposite axis direction:![Figure 14.8 – Checking the W, A, S, and
+    D keys' pressure
+  id: totrans-62
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们可以通过更多的“If”语句添加其他移动方向。我们可以使用*S*向后移动，*A*和*D*向左和向右移动，如下截图所示。请注意，当需要沿相反轴方向移动时，我们使用减号来反转速度：![图14.8
+    - 检查W、A、S和D键的压力
+- en: '](img/Figure_14.08_B14199.jpg)'
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.08_B14199.jpg)'
+- en: Figure 14.8 – Checking the W, A, S, and D keys' pressure
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.8 - 检查W、A、S和D键的压力
+- en: Important Note
+  id: totrans-65
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: Remember that using `If` without brackets means that only the line inside the
+    `if` statement is going to be the one right next to the `if` statement, in this
+    case, the `transform.Translate` calls. Anyway, in the final code, I recommend
+    keeping the brackets.
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记住，如果不使用括号的`if`语句，意味着只有`if`语句内部的一行将紧跟在`if`语句后面，也就是说，`transform.Translate`的调用。无论如何，在最终的代码中，我建议保留括号。
+- en: If you also want to consider the arrow keys, you can use an OR inside `if`,
+    as shown in the following screenshot:![Figure 14.9 – Checking the W, A, S, D,
+    and arrow keys' pressure
+  id: totrans-67
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果你还想考虑箭头键，可以在`if`语句中使用OR，如下面的截图所示：![图14.9 - 检查W、A、S、D和箭头键的压力
+- en: '](img/Figure_14.09_B14199.jpg)'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.09_B14199.jpg)'
+- en: Figure 14.9 – Checking the W, A, S, D, and arrow keys' pressure
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.9 - 检查W、A、S、D和箭头键的压力
+- en: Save the changes and test the movement in Play Mode.
+  id: totrans-70
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 保存更改并在播放模式下测试移动。
+- en: Something to take into account is that, first, we have another way to map several
+    keys to a single action by configuring the Input Manager, a place where action
+    mappings can be created, and second, at the time of writing this, Unity released
+    an experimental new Input system that will replace this. For now, we will use
+    this one because it is simple enough to start a basic game and because experimental
+    Unity packages can have bugs or changes in the way they work. In games with complex
+    input, controls are recommended to look for more advanced tools.
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 需要考虑的一点是，首先，我们可以通过配置输入管理器来将多个键映射到单个操作的另一种方式，输入管理器是可以创建动作映射的地方；其次，在撰写本文时，Unity发布了一个实验性的新输入系统，将取代这个输入管理器。目前，我们将使用这个输入管理器，因为它足够简单，可以启动一个基本的游戏，而且实验性的Unity软件包可能存在错误或工作方式的变化。在复杂输入的游戏中，建议使用更高级的工具来进行控制。
+- en: Now, let's implement the mouse controls. In this section, we will only cover
+    rotation with mouse movement; we will shoot bullets in the next section. In the
+    case of mouse movement, we can get a value by saying how much the mouse has moved
+    both horizontally or vertically. This value isn't a Boolean but a number, a type
+    of input usually known as Axis, a number that will indicate the intensity of the
+    movement with bigger values, and the direction with the sign of the number. For
+    example, if Unity's `"Mouse X"` axis says 0.5, it means that the mouse moved to
+    the right with a moderate speed, but if it says -1, it moved quickly to the left,
+    and if there is no movement, it will say 0\. The same goes for sticks in gamepads;
+    the **Horizontal** axis represents the horizontal movement of the left stick in
+    common joysticks, so if the Player pulls the stick fully to the left, it will
+    say -1.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们实现鼠标控制。在这一部分，我们只会涵盖鼠标移动的旋转；下一部分我们会讨论射击子弹。在鼠标移动的情况下，我们可以得到一个值，表示鼠标水平或垂直移动的程度。这个值不是布尔值，而是一个数字，通常被称为轴的输入类型，这个数字将表示移动的强度和数字的符号表示方向。例如，如果Unity的`"Mouse
+    X"`轴的值为0.5，意味着鼠标以适度的速度向右移动，但如果值为-1，表示鼠标向左快速移动，如果没有移动，值为0。游戏手柄的摇杆也是一样；**Horizontal**轴表示常见游戏手柄左摇杆的水平移动，所以如果玩家将摇杆完全向左拉，值将为-1。
+- en: 'We can create our own axes to map other common joysticks'' pressure-based controls,
+    but for our game, the default ones are enough. To detect mouse movement, do the
+    following:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以创建自己的轴来映射其他常见游戏手柄的压力控制，但对于我们的游戏来说，默认的足够了。要检测鼠标移动，做如下操作：
+- en: Use the `Input.GetAxis` function inside `update`, next to the movement `if`
+    statements, as shown in the following screenshot, to store the value of this frame's
+    mouse movement into a variable:![Figure 14.10 Getting the horizontal movement
+    of the mouse
+  id: totrans-74
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`update`中使用`Input.GetAxis`函数，紧挨着移动的`if`语句，如下面的截图所示，将这一帧的鼠标移动值存储到一个变量中：![图14.10
+    获取鼠标的水平移动
+- en: '](img/Figure_14.10_B14199.jpg)'
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.10_B14199.jpg)'
+- en: Figure 14.10 Getting the horizontal movement of the mouse
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.10 获取鼠标的水平移动
+- en: Use the `transform.Rotate` function to rotate the character. This function receives
+    the degrees to rotate in the X-, Y-, Z-axis order. In this case, we need to rotate
+    horizontally, so we will use the mouse movement value as the Y-axis rotation,
+    as shown in the next screenshot:![Figure 14.11 – Rotating the object horizontally
+    based on mouse movement
+  id: totrans-77
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`transform.Rotate`函数来旋转角色。这个函数按X、Y、Z轴的顺序接收旋转的度数。在这种情况下，我们需要水平旋转，所以我们将使用鼠标移动值作为Y轴的旋转，如下面的截图所示：![图14.11
+    - 根据鼠标移动水平旋转对象
+- en: '](img/Figure_14.11_B14199.jpg)'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.11_B14199.jpg)'
+- en: Figure 14.11 – Rotating the object horizontally based on mouse movement
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.11 - 根据鼠标移动水平旋转对象
+- en: If you save and test this, you will notice that the Player will rotate but very
+    quickly or slowly, depending on your computer. Remember, this kind of value needs
+    to be configurable, so let's create a `rotationSpeed` field to configure the speed
+    of the Player in the Editor:![Figure 14.12 – Speed and rotation speed fields
+  id: totrans-80
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果你保存并测试这个，你会注意到玩家会旋转，但速度很快或很慢，这取决于你的电脑。记住，这种值需要可配置，所以让我们在编辑器中创建一个`rotationSpeed`字段来配置玩家的速度：![图14.12
+    - 速度和旋转速度字段
+- en: '](img/Figure_14.12_B14199.jpg)'
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.12_B14199.jpg)'
+- en: Figure 14.12 – Speed and rotation speed fields
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.12 - 速度和旋转速度字段
+- en: Now we need to multiply the mouse movement value by the speed, so, depending
+    on `rotationSpeed`, we can increase or reduce the rotation amount. As an example,
+    if we set a value of 0.5 in the rotation speed, multiplying that value by the
+    mouse movement will make the object rotate at half the previous speed, as shown
+    in the following screenshot:![Figure 14.13 – Multiplying the mouse movement by
+    the rotation speed
+  id: totrans-83
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在我们需要将鼠标移动值乘以速度，这样，根据`rotationSpeed`，我们可以增加或减少旋转的量。例如，如果我们将旋转速度设置为0.5，将这个值乘以鼠标移动值将使对象以之前速度的一半旋转，如下面的截图所示：![图14.13
+    - 将鼠标移动乘以旋转速度
+- en: '](img/Figure_14.13_B14199.jpg)'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.13_B14199.jpg)'
+- en: Figure 14.13 – Multiplying the mouse movement by the rotation speed
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.13 - 将鼠标移动乘以旋转速度
+- en: Save the code and go back to the Editor to set the rotation speed value. If
+    you don't do this, the object won't rotate because the default value of the float
+    type fields is 0:![Figure 14.14 – Setting the rotation speed
+  id: totrans-86
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 保存代码，回到编辑器设置旋转速度值。如果不这样做，对象就不会旋转，因为浮点类型字段的默认值是 0：![图14.14 – 设置旋转速度
+- en: '](img/Figure_14.14_B14199.jpg)'
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.14_B14199.jpg)'
+- en: Figure 14.14 – Setting the rotation speed
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.14 – 设置旋转速度
+- en: 'You might also notice that the camera controlled by Cinemachine might have
+    a delay to adapt to the new Player position. You can adjust the interpolation
+    speed as I did in the next screenshot to have more responsive behavior:'
+  id: totrans-89
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您可能还注意到，由 Cinemachine 控制的摄像机可能需要延迟来适应新的玩家位置。您可以像我在下一个截图中所做的那样调整插值速度，以获得更灵敏的行为：
+- en: '![Figure 14.15 – Reduced damping of body and aim sections of the character
+    virtual camera'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.15 – 减少角色虚拟摄像机身体和瞄准部分的阻尼'
+- en: '](img/Figure_14.15_B14199.jpg)'
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.15_B14199.jpg)'
+- en: Figure 14.15 – Reduced damping of body and aim sections of the character virtual
+    camera
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.15 – 减少角色虚拟摄像机身体和瞄准部分的阻尼
+- en: Now that we have completed our movement script, we need to refine it to work
+    in every machine by exploring the concept of Delta Time.
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经完成了我们的移动脚本，我们需要通过探索 Delta Time 的概念来完善它，使其在每台机器上都能工作。
+- en: Understanding Delta Time
+  id: totrans-94
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 理解 Delta Time
+- en: Unity's update loop executes as fast as the computer can. You can specify in
+    Unity the desired frame rate but achieving that depends exclusively on whether
+    your computer can reach that, which depends on lots of factors, not only hardware,
+    so you cannot expect to always have consistent FPS. You must code your scripts
+    to handle every possible scenario. Our current script is moving at a certain speed
+    per frame, and the *per frame* part is important here.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Unity 的更新循环以计算机的速度执行。您可以在 Unity 中指定所需的帧率，但实现这一点完全取决于您的计算机是否能达到这一点，这取决于许多因素，不仅仅是硬件，因此您不能期望始终具有一致的
+    FPS。您必须编写脚本来处理每种可能的情况。我们当前的脚本是以每帧一定的速度移动的，这里的“每帧”部分很重要。
+- en: We have set the movement speed to 0.1, so if my computer runs the game at 120
+    FPS, the Player will move 12 meters per second. Now, what happens in a computer
+    where the game runs at 60 FPS? As you may guess, it will move only 6 meters per
+    second, making our game to have inconsistent behavior across different computers.
+    And here is where Delta Time saves the day.
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经将移动速度设置为0.1，所以如果我的计算机以 120 FPS 运行游戏，玩家将每秒移动 12 米。那么在游戏以 60 FPS 运行的计算机上会发生什么呢？您可能会猜到，它只会每秒移动
+    6 米，使我们的游戏在不同的计算机上具有不一致的行为。这就是 Delta Time 拯救了我们的地方。
+- en: 'Delta Time is a value that tells us how much time has passed since the previous
+    frame. This time depends a lot on our game''s graphics, amount of entities, physics
+    bodies, audio, and countless aspects that will dictate how fast your computer
+    can process a frame. As an example, if your game runs at 10 FPS, it means that,
+    in a second, your computer can process the update loop 10 times, meaning that
+    each loop takes approximately 0.1 seconds; in that frame, Delta Time will provide
+    that value. In the next diagram, you can see an example of 4 frames taking different
+    times to process, which can happen in real-life cases:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Delta Time 是一个告诉我们自上一帧以来经过了多少时间的值。这个时间很大程度上取决于我们游戏的图形、实体数量、物理体、音频和无数方面，这些将决定您的计算机可以处理一帧的速度有多快。例如，如果您的游戏以10
+    FPS运行，这意味着在一秒内，您的计算机可以处理更新循环10次，这意味着每个循环大约需要0.1秒；在那一帧中，Delta Time 将提供该值。在下一个图表中，您可以看到
+    4 帧需要不同的时间来处理的示例，这在现实情况下可能会发生：
+- en: '![Figure 14.16 – Delta Time value varying on different frames of the game'
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.16 – 游戏不同帧的 Delta Time 值变化'
+- en: '](img/Figure_14.16_B14199.jpg)'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.16_B14199.jpg)'
+- en: Figure 14.16 – Delta Time value varying on different frames of the game
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.16 – 游戏不同帧的 Delta Time 值变化
+- en: 'Here, we need to code in such a way to change the *per frame* part of the movement
+    to *per second*; we need to have consistent movement per second across different
+    computers. A way to do that is to move proportionally to Delta Time: the higher
+    the Delta Time value, the longer that frame is, and the greater the movement should
+    be to match the real time that has passed since the last update. We can think
+    about our speed field''s current value in terms of 0.1 meters per second; our
+    Delta Time saying 0.5 means that half a second has passed, so we should move half
+    the speed, 0.05\. After two frames, a second has passed, and the sum of the movements
+    of the frames (2 x 0.05) matches the target speed, 0.1\. Delta Time can be interpreted
+    as the percentage of a second that has passed.'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这里，我们需要以一种方式编码，将移动的“每帧”部分改为“每秒”; 我们需要在不同的计算机上每秒有一致的移动。一种方法是与 Delta Time 成比例地移动：Delta
+    Time 值越高，那一帧就越长，移动量应该越大，以匹配自上次更新以来经过的真实时间。我们可以根据每秒0.1米的速度字段当前值来思考；我们的 Delta Time
+    为0.5，意味着已经过去了半秒，所以我们应该移动一半的速度，0.05。两帧后，一秒已经过去，帧的移动总和（2 x 0.05）与目标速度0.1相匹配。Delta
+    Time 可以被解释为已经过去的秒数的百分比。
+- en: 'To make Delta Time affect our movement, we should simply multiply our speed
+    by Delta Time every frame because Delta Time can be different every frame, so
+    let''s do that:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使 Delta Time 影响我们的移动，我们应该在每一帧简单地将我们的速度乘以 Delta Time，因为 Delta Time 每一帧都可能不同，所以让我们这样做：
+- en: We access Delta Time using `Time.deltaTime`. We can start affecting the movement
+    by multiplying Delta Time in every Translate:![Figure 14.17 – Multiplying speed
+    by Delta Time
+  id: totrans-103
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们使用 `Time.deltaTime` 访问 Delta Time。我们可以通过在每个 Translate 中乘以 Delta Time 来开始影响移动：![图14.17
+    – 通过 Delta Time 乘以速度
+- en: '](img/Figure_14.17_B14199.jpg)'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.17_B14199.jpg)'
+- en: Figure 14.17 – Multiplying speed by Delta Time
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.17 – 通过 Delta Time 乘以速度
+- en: We can do the same with the rotation speed, chaining the mouse and speed multiplications:![Figure
+    14.18 – Applying Delta Time to rotation code
+  id: totrans-106
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们可以对旋转速度做同样的操作，将鼠标和速度相乘：![图14.18 – 将 Delta Time 应用于旋转代码
+- en: '](img/Figure_14.18_B14199.jpg)'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.18_B14199.jpg)'
+- en: Figure 14.18 – Applying Delta Time to rotation code
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.18 – 将 Delta Time 应用于旋转代码
+- en: If you save and play the game, you will notice that the movement will be slower
+    than before and that's because now 0.1 is the movement per second, meaning 10
+    centimeters per second, which is pretty slow; try raising those values. In my
+    case, 10 for speed and 180 for rotation speed was enough, but the rotation speed
+    depends on the Player's preferred sensitivity, which can be configurable, but
+    let's keep that for another time.
+  id: totrans-109
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如果你保存并播放游戏，你会注意到移动速度比以前慢了，这是因为现在每秒移动0.1，意味着每秒10厘米，这相当慢；尝试提高这些值。在我的情况下，速度为10，旋转速度为180就足够了，但旋转速度取决于玩家的首选灵敏度，这是可以配置的，但让我们留到另一个时间。
+- en: We just learned how to mix the Input system of Unity, which tells us about the
+    state of the keyboard, mouse, and other input devices, with the basic Transform
+    movement functions. This way, we can start making our game feel more dynamic.
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们刚学会了如何将Unity的输入系统（告诉我们键盘、鼠标和其他输入设备的状态）与基本的变换移动函数相结合。这样，我们可以开始让我们的游戏感觉更加动态。
+- en: Now that we have finished the Player's movement, let's discuss how to make the
+    Player shoot bullets using Instantiate functions.
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经完成了玩家的移动，让我们讨论如何使用Instantiate函数让玩家发射子弹。
+- en: Implementing spawning
+  id: totrans-112
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 实现生成
+- en: We have created lots of objects in the Editor that define our level, but once
+    the game begins, and according to the Player actions, new objects must be created
+    to better fit the scenarios generated by Player interaction. Enemies might need
+    to appear after a while, or bullets must be created according to the Player input;
+    even when enemies die there's a chance of spawning some power-up. This means that
+    we cannot create all the necessary objects beforehand but should create them dynamically,
+    and that's done through scripting.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在编辑器中创建了许多定义我们级别的对象，但一旦游戏开始，并根据玩家的操作，必须创建新的对象以更好地适应玩家交互生成的场景。敌人可能需要在一段时间后出现，或者根据玩家的输入创建子弹；即使敌人死亡，也有可能生成一些增益道具。这意味着我们不能预先创建所有必要的对象，而应该动态创建它们，这是通过脚本完成的。
+- en: 'In this section, we will examine the following spawning concepts:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将研究以下生成概念：
+- en: Spawning objects
+  id: totrans-115
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 生成对象
+- en: Timing actions
+  id: totrans-116
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 计时动作
+- en: Destroying objects
+  id: totrans-117
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 销毁对象
+- en: We will start seeing the Unity `Instantiate` function, which allows us to create
+    instances of Prefabs on runtime, such as when pressing a key, or in a time-based
+    fashion, such as making our enemy spawn bullets every certain amount of time.
+    Also, we will learn how to destroy these objects to prevent our Scene from starting
+    to perform badly due to too many objects being processed.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将开始看到Unity的`Instantiate`函数，它允许我们在运行时创建预制体的实例，例如按下键时，或者按时间安排，例如使我们的敌人每隔一段时间生成子弹。此外，我们将学习如何销毁这些对象，以防止场景由于处理太多对象而开始表现不佳。
+- en: Let's start with how to shoot bullets according to the Player's Input.
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们从如何根据玩家的输入射击子弹开始。
+- en: Spawning objects
+  id: totrans-120
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 生成对象
+- en: To spawn an Object in runtime or Play Mode, we need a description of the Object,
+    which components it has, and its settings and possible sub-objects. You might
+    be thinking about Prefabs here, and you are right, we will use an instruction
+    that will tell Unity to create an instance of a Prefab via scripting. Remember
+    that an instance of a Prefab is an Object created based on the Prefab, basically
+    a clone of the original one.
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要在运行时或播放模式下生成一个对象，我们需要一个对象的描述，它有哪些组件，它的设置以及可能的子对象。你可能会在这里考虑到预制体，你是对的，我们将使用一条指令告诉Unity通过脚本创建一个预制体的实例。记住，预制体的实例是基于预制体创建的对象，基本上是原始对象的克隆。
+- en: 'We will start shooting the Player''s bullets, so first let''s create the bullet
+    Prefab by doing the following:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将开始射击玩家的子弹，所以首先让我们通过以下步骤创建子弹预制：
+- en: Create a sphere in **GameObject** | **3D Object** | **Sphere**. You can replace
+    the sphere mesh with another bullet model if you want, but we will keep the sphere
+    in this example for now.
+  id: totrans-123
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在**GameObject** | **3D Object** | **Sphere**中创建一个球体。如果你愿意，你可以用另一个子弹模型替换球体网格，但在这个例子中我们暂时保留球体。
+- en: Rename the sphere `Bullet`.
+  id: totrans-124
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将球体重命名为`Bullet`。
+- en: Create a material by clicking on the `Bullet`. Remember to place it inside the
+    `Materials` folder.
+  id: totrans-125
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过单击`Bullet`来创建一个材质。记得将它放在`Materials`文件夹中。
+- en: Check the **Emission** checkbox in the material and set the **emission Map**
+    and **Base Map** colors to red. Remember, the Emission color will make the bullet
+    shine, especially with the bloom effect in our post-processing volume:![Figure
+    14.19 – Creating a red bullet material with emission color
+  id: totrans-126
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在材质中勾选**Emission**复选框，并将**emission Map**和**Base Map**颜色设置为红色。记住，发射颜色会使子弹发光，特别是在我们的后期处理体积中的泛光效果下：![图14.19
+    – 创建一个带发光颜色的红色子弹材质
+- en: '](img/Figure_14.19_B14199.jpg)'
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.19_B14199.jpg)'
+- en: Figure 14.19 – Creating a red bullet material with emission color
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.19 – 创建一个带发光颜色的红色子弹材质
+- en: Apply the Material to the Sphere by dragging the material to it.
+  id: totrans-129
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过将材质拖放到球体上，将材质应用到球体上。
+- en: Set the Scale to a smaller value—(0.3, 0.3, 0.3) worked in my case:![Figure
+    14.20 – Small red-colored bullet
+  id: totrans-130
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将比例设置为较小的值—（0.3, 0.3, 0.3）在我的情况下有效：![图14.20 – 小红色子弹
+- en: '](img/Figure_14.20_B14199.jpg)'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.20_B14199.jpg)'
+- en: Figure 14.20 – Small red-colored bullet
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.20 – 小红色子弹
+- en: Create a script called `ForwardMovement` to make the bullet constantly move
+    forward at a fixed speed.
+  id: totrans-133
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个名为`ForwardMovement`的脚本，以使子弹以固定速度不断向前移动。
+- en: I suggest you try to solve this by yourself first and look at the screenshot
+    in the next step with the solution later as a little challenge to recap the movement
+    concepts we saw previously. If you don't recall how to create a script, please
+    read [*Chapter 13*](B14199_13_Final_SK_ePub.xhtml#_idTextAnchor172)*, Introduction
+    to Unity Scripting with C#*, and check the previous section to see how to move
+    objects.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我建议你先自己尝试解决这个问题，然后在下一步中查看屏幕截图以获取解决方案，这是一个小挑战，可以回顾我们之前看到的运动概念。如果你不记得如何创建脚本，请阅读[*第13章*](B14199_13_Final_SK_ePub.xhtml#_idTextAnchor172)*，使用C#介绍Unity脚本编写*，并检查前一节以了解如何移动对象。
+- en: The next screenshot shows you what the script should look like:![Figure 14.21
+    – A simple Move Forward script
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 下一张截图向你展示了脚本应该是什么样子的：![图14.21 – 简单的向前移动脚本
+- en: '](img/Figure_14.21_B14199.jpg)'
+  id: totrans-136
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.21_B14199.jpg)'
+- en: Figure 14.21 – A simple Move Forward script
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.21 – 简单的向前移动脚本
+- en: Add the script (if not already there) to the bullet, and set the speed to a
+    value you see fit. Usually, bullets are faster than the Player, but that depends
+    on the Player experience you want to get (remember the questions in [*Chapter
+    1*](B14199_01_Final_SK_ePub.xhtml#_idTextAnchor015)*, Designing a Game from Scratch*).
+    In my case, 20 worked fine. Test it by placing the bullet near the Player and
+    playing the game:![Figure 14.22 – Forward Movement script in the bullet
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将脚本（如果尚未存在）添加到子弹上，并将速度设置为您认为合适的值。通常，子弹比玩家更快，但这取决于您想要获得的玩家体验（记住[*第1章*](B14199_01_Final_SK_ePub.xhtml#_idTextAnchor015)*中的问题，从零开始设计游戏*）。在我的情况下，20效果很好。通过将子弹放在玩家附近并播放游戏来进行测试：![图14.22
+    – 子弹中的前进运动脚本
+- en: '](img/Figure_14.22_B14199.jpg)'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.22_B14199.jpg)'
+- en: Figure 14.22 – Forward Movement script in the bullet
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.22 – 子弹中的前进运动脚本
+- en: Drag the bullet `GameObject` instance to the `Prefabs` folder to create a **Bullet**
+    Prefab. Remember that the Prefab is an asset that has a description of the created
+    bullet, like a blueprint of how to create a bullet:![Figure 14.23 – Creating a
+    Prefab
+  id: totrans-141
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将子弹`GameObject`实例拖到`Prefabs`文件夹中创建一个**子弹**Prefab。记住，Prefab是一个描述创建的子弹的资产，就像创建子弹的蓝图：![图14.23
+    – 创建一个Prefab
+- en: '](img/Figure_14.23_B14199.jpg)'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.23_B14199.jpg)'
+- en: Figure 14.23 – Creating a Prefab
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.23 – 创建一个Prefab
+- en: Remove the original bullet from the Scene; we will use the Prefab to create
+    bullets when the Player presses a key (if ever).
+  id: totrans-144
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从场景中移除原始子弹；当玩家按下按键时，我们将使用Prefab来创建子弹（如果需要的话）。
+- en: 'Now that we have our bullet Prefab, it is time to instantiate it (clone it)
+    when the Player presses a key. To do that, do the following:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们有了子弹Prefab，是时候在玩家按下按键时实例化它（克隆它）了。为此，请执行以下操作：
+- en: Create and add a script to the Player's `GameObject` (the Robot) called `PlayerShooting`
+    and open it.
+  id: totrans-146
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建并添加一个脚本到玩家的`GameObject`（机器人）上，名为`PlayerShooting`，然后打开它。
+- en: We need a way for the script to have access to the Prefab to know which Prefab
+    to use from the probably dozens that we will have in our project. All of the data
+    our script needs that depends on the desired game experience is in the form of
+    a field, such as the speed field used so far, so in this case, we need a field
+    of the `GameObject` type, a field that can reference or point to a specific Prefab,
+    which can be set using the Editor.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要一种方式让脚本访问Prefab，以了解从我们项目中可能有的几十个Prefab中使用哪一个。我们脚本所需的所有数据都取决于所需的游戏体验，都以字段的形式存在，比如到目前为止使用的速度字段，因此在这种情况下，我们需要一个`GameObject`类型的字段，一个可以引用或指向特定Prefab的字段，可以使用编辑器进行设置。
+- en: Adding the field code would look like this:![Figure 14.24 – The Prefab reference
+    field
+  id: totrans-148
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 添加字段代码将如下所示：![图14.24 – Prefab引用字段
+- en: '](img/Figure_14.24_B14199.jpg)'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.24_B14199.jpg)'
+- en: Figure 14.24 – The Prefab reference field
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.24 – Prefab引用字段
+- en: Important Note
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: As you might guess, we can use the `GameObject` type to not only reference Prefabs
+    but also other objects. Imagine an Enemy AI needing a reference to the Player
+    object to get its position, using a GameObject to link the two objects. The trick
+    here is considering that Prefabs are just regular Gameobjects that live outside
+    the Scene; you cannot see them but they are in memory, ready to be copied or instantiated.
+    You will only see them through copies or instances that are placed in the Scene
+    with scripting or via the Editor as we have done so far.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你可能会猜到，我们可以使用`GameObject`类型来引用Prefab，也可以引用其他对象。想象一下，敌人AI需要引用玩家对象来获取其位置，使用一个GameObject来链接这两个对象。关键在于考虑Prefab只是场景之外的常规GameObject；你看不到它们，但它们存在于内存中，准备好被复制或实例化。你只能通过脚本或通过编辑器放置在场景中的副本或实例来看到它们，就像我们到目前为止所做的那样。
+- en: 'In the Editor, click on the circle to the right of the property and select
+    the `Bullet` Prefab. Another option is to just drag the `Bullet` Prefab to the
+    property:'
+  id: totrans-153
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在编辑器中，单击属性右侧的圆圈，并选择`Bullet`Prefab。另一个选项是将`Bullet`Prefab直接拖到属性中：
+- en: '![Figure 14.25 – Setting the Prefab reference to point the bullet'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.25 – 设置Prefab引用指向子弹'
+- en: '](img/Figure_14.25_B14199.jpg)'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.25_B14199.jpg)'
+- en: Figure 14.25 – Setting the Prefab reference to point the bullet
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.25 – 设置Prefab引用指向子弹
+- en: This way, we tell our script that the bullet to shoot will be that one. Remember
+    to drag the Prefab and not the bullet in the Scene (that should be deleted by
+    now).
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样，我们告诉我们的脚本要射击的子弹就是这个。记得拖动Prefab而不是场景中的子弹（那应该已经被删除了）。
+- en: 'We will shoot the bullet when the Player presses the left mouse button as specified
+    in the design document, so let''s place the proper `if` statement to handle that
+    in the `update` event function, like the one shown in the next screenshot:'
+  id: totrans-158
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 按照设计文档中指定的方式，当玩家按下鼠标左键时，我们将射击子弹，因此让我们在`update`事件函数中放置适当的`if`语句来处理，就像下一张截图中所示的那样：
+- en: '![Figure 14.26 – Detecting the pressure of the left mouse button'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.26 – 检测鼠标左键的压力'
+- en: '](img/Figure_14.26_B14199.jpg)'
+  id: totrans-160
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.26_B14199.jpg)'
+- en: Figure 14.26 – Detecting the pressure of the left mouse button
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.26 – 检测鼠标左键的压力
+- en: You will notice that this time, we used `GetKeyDown` instead of `GetKey`, the
+    former being a way to detect the exact frame the pressing of the key started;
+    this `if` statement will execute its code only in that frame, and until the key
+    is released and re-pressed, it won't enter again. This is one way to prevent bullets
+    from spawning in every frame, but just for fun, you can try using `GetKey` instead
+    to see how it would behave. Also, zero is the mouse button number that belongs
+    to left-click, one being right-click and two middle-click.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你会注意到这次我们使用了`GetKeyDown`而不是`GetKey`，前者是一种检测按键开始的确切帧的方法；这个`if`语句只会在那一帧执行它的代码，并且直到按键释放并重新按下，它才会再次进入。这是防止子弹在每一帧生成的一种方法，但只是为了好玩，你可以尝试使用`GetKey`来看看它会如何表现。另外，零是属于左键点击的鼠标按钮编号，一是右键点击，二是中键点击。
+- en: 'We can use the `Instantiate` function to clone the Prefab, passing the reference
+    to it as the first parameter. This will create a clone of the mentioned Prefab
+    that will be placed in the Scene:'
+  id: totrans-163
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以使用`Instantiate`函数来克隆预制品，将其引用作为第一个参数传递。这将在场景中创建一个所述预制品的克隆：
+- en: '![Figure 14.27 – Instantiating the Prefab'
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.27 – 实例化预制品
+- en: '](img/Figure_14.27_B14199.jpg)'
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.27_B14199.jpg)'
+- en: Figure 14.27 – Instantiating the Prefab
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.27 – 实例化预制品
+- en: If you save the script and play the game, you will notice that when you press
+    the mouse, a bullet spawn, but probably not in the place you are expecting, and
+    if you don't see it, try to check the Hierarchy for new objects; it will be there.
+    The problem here is that we didn't specify the desired spawn position, and we
+    have two ways of settings that, which we will see in the next steps.
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你保存脚本并播放游戏，你会注意到当你按鼠标时，子弹会生成，但可能不是在你期望的位置，如果你没有看到它，尝试在层次结构中查找新对象；它会在那里。问题在于我们没有指定期望的生成位置，我们有两种设置的方法，我们将在接下来的步骤中看到。
+- en: 'The first way is to use the `transform.position` and `transform.rotation` inherited
+    fields from MonoBehaviour, which will tell us our current position and rotation.
+    We can pass them as the second and third parameters of the `Instantiate` function,
+    which will understand that this is the place we want our bullet to appear. Remember
+    that it is important to set the rotation to make the bullet face the same direction
+    as the Player, so it will move that way:'
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第一种方法是使用从MonoBehaviour继承的`transform.position`和`transform.rotation`字段，它们会告诉我们当前的位置和旋转。我们可以将它们作为`Instantiate`函数的第二个和第三个参数传递，函数会理解这是我们希望子弹出现的地方。记住，设置旋转是很重要的，让子弹面向与玩家相同的方向，这样它就会朝着那个方向移动：
+- en: '![Figure 14.28 – Instantiating the Prefab in our position and rotation'
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.28 – 在我们的位置和旋转实例化预制品
+- en: '](img/Figure_14.28_B14199.jpg)'
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.28_B14199.jpg)'
+- en: Figure 14.28 – Instantiating the Prefab in our position and rotation
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.28 – 在我们的位置和旋转实例化预制品
+- en: 'The second way, which will be longer but will give us more flexibility to change
+    other aspects of the object, is by using the previous version of Instantiate,
+    but saving the reference returned by the function, which will be pointing to the
+    clone of the Prefab. Having a reference to the instantiated bullet allows us to
+    change whatever we want from it, not only position but also rotation, but for
+    now, let''s limit ourselves to position and rotation. In this case, we will need
+    the following three lines; the first will instantiate and capture the clone reference,
+    the second will set the position of the clone, and the third will set the rotation.
+    You will notice we will also use the `transform.position` field of the clone,
+    but this time to change its value by using the `=` (assignment) operator:'
+  id: totrans-172
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 第二种方式会更长，但会让我们有更多的灵活性来改变对象的其他方面，就是使用之前版本的Instantiate，但保存函数返回的引用，这个引用将指向预制品的克隆。拥有实例化子弹的引用允许我们改变任何我们想要的东西，不仅仅是位置，还有旋转，但现在，让我们限制在位置和旋转上。在这种情况下，我们将需要以下三行；第一行将实例化并捕获克隆引用，第二行将设置克隆的位置，第三行将设置旋转。你会注意到我们还将使用克隆的`transform.position`字段，但这次是通过使用`=`（赋值）运算符来改变它的值：
+- en: '![Figure 14.29 – The longer version of instantiating a Prefab in a specific
+    position'
+  id: totrans-173
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.29 – 在特定位置实例化预制品的较长版本
+- en: '](img/Figure_14.29_B14199.jpg)'
+  id: totrans-174
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.29_B14199.jpg)'
+- en: Figure 14.29 – The longer version of instantiating a Prefab in a specific position
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.29 – 在特定位置实例化预制品的较长版本
+- en: Use the version you like the most—both do the same. Remember that you can check
+    the project repository to see the full script finished. Now you can save the file
+    with one of the versions and try to shoot.
+  id: totrans-176
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用你喜欢的版本——两者都是一样的。记住，你可以检查项目存储库以查看完整的脚本。现在你可以用其中一个版本保存文件并尝试射击。
+- en: 'If you try the script so far, you should see the bullet spawn in the Player''s
+    position, but in our case, it will probably be the floor. The problem here is
+    that the robot pivot is there, and usually, every humanoid character has the pivot
+    there. We have several ways to fix that, the most flexible one being to create
+    a shoot point, an empty Player''s child Object placed in the position we want
+    the bullet to spawn. We can use the position of that Object instead of the Player''s
+    position by doing the following:'
+  id: totrans-177
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你尝试到目前为止的脚本，你应该会看到子弹在玩家的位置生成，但在我们的情况下，它可能是在地板上。问题在于机器人的枢轴在那里，通常每个人形角色的枢轴都在那里。我们有几种方法来解决这个问题，最灵活的方法是创建一个射击点，一个空的玩家子对象，放在我们希望子弹生成的位置。我们可以使用该对象的位置而不是玩家的位置，方法如下：
+- en: Create an empty `GameObject` in `ShootPoint`.
+  id: totrans-178
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`ShootPoint`中创建一个空的`GameObject`。
+- en: Make it a child of the Player's Robot Character Object, and place it where you
+    want the bullet to appear, probably a little higher and further forward than the
+    original spawn position:![Figure 14.30 – An empty ShootPoint object placed inside
+    the character
+  id: totrans-179
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将其作为玩家机器人角色对象的子对象，并将其放在你希望子弹出现的位置，可能比原始生成位置稍高和稍向前：![图14.30 – 放置在角色内部的空ShootPoint对象
+- en: '](img/Figure_14.30_B14199.jpg)'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.30_B14199.jpg)'
+- en: Figure 14.30 – An empty ShootPoint object placed inside the character
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.30 – 放置在角色内部的空ShootPoint对象
+- en: As usual, to access the data of another Object, we need a reference to it, such
+    as the Prefab reference, but this time that one needs to point to our `ShootPoint`.
+    We can create another `GameObject` type field, but this time drag `ShootPoint`
+    instead of the Prefab. The script and the Object set would look as shown in the
+    following screenshot:![Figure 14.31 – The Prefab and Shoot Point fields and how
+    they are set in the Editor
+  id: totrans-182
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 像往常一样，要访问另一个对象的数据，我们需要一个对它的引用，比如Prefab引用，但这次需要指向我们的`ShootPoint`。我们可以创建另一个`GameObject`类型的字段，但这次拖动`ShootPoint`而不是Prefab。脚本和对象设置如下截图所示：![图14.31
+    - Prefab和Shoot Point字段以及它们在编辑器中的设置
+- en: '](img/Figure_14.31_B14199.jpg)'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.31_B14199.jpg)'
+- en: Figure 14.31 – The Prefab and Shoot Point fields and how they are set in the
+    Editor
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.31 - Prefab和Shoot Point字段以及它们在编辑器中的设置
+- en: 'We can access the position of `shootPoint` by using the `transform.position`
+    field of it again, as shown in the following screenshot:'
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们可以再次使用`transform.position`字段访问`shootPoint`的位置，如下截图所示：
+- en: '![Figure 14.32 – The Prefab and ShootPoint fields and how they are set in the
+    Editor'
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.32 - Prefab和ShootPoint字段以及它们在编辑器中的设置'
+- en: '](img/Figure_14.32_B14199.jpg)'
+  id: totrans-187
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.32_B14199.jpg)'
+- en: Figure 14.32 – The Prefab and ShootPoint fields and how they are set in the
+    Editor
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.32 - Prefab和ShootPoint字段以及它们在编辑器中的设置
+- en: 'You will notice that now shooting and rotating with the mouse has a problem;
+    when moving the mouse to rotate, the pointer will fall outside the Game View,
+    and when clicking, you will accidentally click the Editor, losing the focus on
+    the Game View, so you will need to click the Game View again to regain focus and
+    use Input again. A way to prevent this is to disable the cursor while playing.
+    To do this, follow these steps:'
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您会注意到现在用鼠标射击和旋转有一个问题；当移动鼠标进行旋转时，指针会落在游戏视图之外，当点击时，您会意外地点击到编辑器，失去了对游戏视图的焦点，因此您需要再次点击游戏视图以恢复焦点并再次使用输入。防止这种情况发生的方法是在游戏进行时禁用鼠标。要做到这一点，请按照以下步骤操作：
+- en: Add a `Start` event function to our Player Movement Script.
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 为我们的Player Movement Script添加一个`Start`事件函数。
+- en: Add the two lines you can see in the following screenshot to your script. The
+    first one will make the cursor visible, and the second one will lock it in the
+    middle of the screen, so it will never abandon the Game View. Consider that latter;
+    you will need to reenable the cursor when you switch back to the main menu or
+    the pause menu, to allow the mouse to click the UI buttons:![Figure 14.33 – Disabling
+    the mouse cursor
+  id: totrans-191
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将您在脚本中看到的两行添加到您的脚本中。第一行将使光标可见，第二行将锁定光标在屏幕中央，因此它永远不会离开游戏视图。请考虑后者；当您切换回主菜单或暂停菜单时，您将需要重新启用光标，以允许鼠标点击UI按钮：![图14.33
+    - 禁用鼠标光标
+- en: '](img/Figure_14.33_B14199.jpg)'
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.33_B14199.jpg)'
+- en: Figure 14.33 – Disabling the mouse cursor
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.33 - 禁用鼠标光标
+- en: Save and test this. If you want to stop the game, you could either press *Ctrl*
+    + *Shift* + *P* (*command* + *Shift* + *P* on Mac) or press the *Esc* key to reenable
+    the mouse. Both only work in the Editor; in the real game, you will need to reenable
+    manually.
+  id: totrans-194
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 保存并测试。如果要停止游戏，您可以按*Ctrl* + *Shift* + *P*（Mac上为*command* + *Shift* + *P*）或按*Esc*键重新启用鼠标。这两种方法只在编辑器中有效；在真实游戏中，您将需要手动重新启用。
+- en: Now that we've covered the basics of object spawning, let's see an advanced
+    example by combining it with timers.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经介绍了对象生成的基础知识，让我们通过将其与定时器结合来看一个高级示例。
+- en: Timing actions
+  id: totrans-196
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 定时动作
+- en: Not entirely related to spawning, but usually used together, timing actions
+    is a common task in videogames. The idea is to schedule something to happen later;
+    maybe we want the bullet to be destroyed after a while to prevent memory overflow,
+    or we want to control the spawn rate of enemies or when they should spawn, and
+    that's exactly what we are going to do in this section, starting with the second,
+    the Enemy waves.
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 与生成不完全相关，但通常一起使用，定时动作是游戏中的常见任务。其思想是安排某些事情在以后发生；也许我们希望子弹在一段时间后被销毁以防止内存溢出，或者我们想控制敌人的生成速率或它们应该何时生成，这正是我们将在本节中要做的事情，从第二个开始，敌人波次。
+- en: The idea is that we want to spawn enemies at a certain rate at different moments
+    of the game; maybe we want to spawn enemies from seconds 1 to 5 at a rate of 2
+    per second, getting 10 enemies, before giving the Player up to 20 seconds to finish
+    them and programming another wave to start at second 25\. Of course, this depends
+    a lot on the exact game you want, and you can start with an idea like this one
+    and modify it after some testing to find the exact way you want the wave system
+    to work. In our case, we will exemplify timing with the previously mentioned logic.
+  id: totrans-198
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的想法是，我们希望在游戏的不同时刻以一定的速率生成敌人；也许我们想在第1到5秒生成敌人，每秒2个，得到10个敌人，然后给玩家20秒的时间来完成它们，并编程另一个波次在第25秒开始。当然，这在很大程度上取决于您想要的确切游戏，您可以从这样的想法开始，并在一些测试后修改它，找到您想要波次系统工作的确切方式。在我们的案例中，我们将用先前提到的逻辑来说明定时。
+- en: 'First of all, we need an Enemy, and for now, we will simply use the same robot
+    character as the Player, but adding a Forward Movement script to simply make it
+    move forward; later in this book, we will add AI behavior to our enemies. I suggest
+    you try to create this Prefab by yourself and look at the next steps once you
+    have tried, to see the correct answer:'
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要一个敌人，目前我们将简单地使用与玩家相同的机器人角色，但添加一个前进运动脚本来使其向前移动；稍后在本书中，我们将为我们的敌人添加AI行为。我建议您尝试自己创建这个Prefab，并在尝试后查看下一步，以查看正确答案：
+- en: Drag the Robot FBX model to the Scene to create another Robot character, but
+    rename it `Enemy` this time.
+  id: totrans-200
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将Robot FBX模型拖到场景中以创建另一个机器人角色，但这次将其重命名为`Enemy`。
+- en: Add the `ForwardMovement` script created for the bullets but this time to `Enemy`
+    and set it at a speed of 10 for now.
+  id: totrans-201
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将为子弹创建的`ForwardMovement`脚本添加到`Enemy`，并将其速度设置为10。
+- en: Drag the `Enemy` GameObject to the Project to create a Prefab based on that
+    one; we will need to spawn it later. Remember to choose Prefab Variant, which
+    will keep the Prefab linked with the original model to make the changes applied
+    to the model automatically apply to the Prefab. Remember also to destroy the original
+    Enemy from the Scene.
+  id: totrans-202
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`Enemy`游戏对象拖到项目中，以创建基于该对象的预制件；我们稍后需要生成它。记得选择预制件变体，这样将保持预制件与原始模型链接，使对模型的更改自动应用到预制件。还记得销毁场景中的原始敌人。
+- en: 'Now, to schedule actions, we will use the `Invoke` functions suite, a set of
+    functions to create timers that are basic but enough for our requirements. Let''s
+    use it by doing the following:'
+  id: totrans-203
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，为了安排行动，我们将使用`Invoke`函数套件，一组用于创建定时器的函数，这些函数基本但足够满足我们的要求。让我们通过以下方式使用它：
+- en: Create an Empty GameObject at one end of the Base and call it `Wave1a`.
+  id: totrans-204
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在基地的一端创建一个空游戏对象，并将其命名为`Wave1a`。
+- en: Create and add a script called `WaveSpawner` to it.
+  id: totrans-205
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建并添加一个名为`WaveSpawner`的脚本。
+- en: 'Our spawner will need four fields: the Enemy Prefab to spawn, the game time
+    to start the wave, the `endTime` to end the wave spawning, and the spawn rate
+    of the enemies—basically, how much time there should be between each spawn during
+    the given spawning period. The script and the settings will look like the following
+    screenshot:![Figure 14.34 – The fields of the wave spawner script'
+  id: totrans-206
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 我们的生成器将需要四个字段：要生成的敌人预制件，开始波浪的游戏时间，结束波浪生成的`endTime`，以及敌人的生成速率 - 基本上，在给定生成期间每次生成之间应该经过多长时间。脚本和设置将如下截图所示：![图14.34
+    - 波浪生成器脚本的字段
+- en: '](img/Figure_14.34_B14199.jpg)'
+  id: totrans-207
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.34_B14199.jpg)'
+- en: Figure 14.34 – The fields of the wave spawner script
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.34 - 波浪生成器脚本的字段
+- en: 'We will use the `InvokeRepeating` function to schedule a custom function to
+    repeat periodically. You will need to schedule the repetition just once; Unity
+    will remember that, so don''t do it every frame. This is a good case to use the
+    `Start` event function instead. The first argument of the function is a string
+    (text between quotation marks) with the name of the other function to execute
+    periodically, and unlike Start or update, you can name the function whatever you
+    want. The second argument is the time to start repeating, our `startTime` field,
+    in this case. Finally, the third argument is the repetition rate of the function,
+    how much time needs to happen between each repetition, this being the `spawnRate`
+    field. You can find how to call that function in the next screenshot, along with
+    the custom `Spawn` function:'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将使用`InvokeRepeating`函数来安排一个自定义函数定期重复。您只需要安排重复一次；Unity会记住这一点，所以不要每帧都这样做。这是使用`Start`事件函数的好时机。函数的第一个参数是一个字符串（引号之间的文本），其中包含要定期执行的其他函数的名称，与Start或update不同，您可以随意命名函数。第二个参数是开始重复的时间，我们的`startTime`字段，在这种情况下。最后，函数的第三个参数是函数的重复率，每次重复之间需要经过多长时间，这是`spawnRate`字段。您可以在下一个截图中找到如何调用该函数，以及自定义的`Spawn`函数：
+- en: '![Figure 14.35 – Scheduling a Spawn function to repeat'
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.35 - 安排生成函数重复'
+- en: '](img/Figure_14.35_B14199.jpg)'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.35_B14199.jpg)'
+- en: Figure 14.35 – Scheduling a Spawn function to repeat
+  id: totrans-212
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.35 - 安排生成函数重复
+- en: Inside the `Spawn` function, we can put the spawning code as we know, using
+    the `Instantiate` function. The idea is to call this function at a certain rate
+    to spawn one Enemy per call. This time, the spawn position will be in the same
+    position as the spawner, so place it carefully:![Figure 14.36 – Instantiating
+    in the Spawn function
+  id: totrans-213
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`Spawn`函数内部，我们可以像我们知道的那样放置生成代码，使用`Instantiate`函数。想法是以一定的速率调用这个函数，每次调用生成一个敌人。这次，生成位置将与生成器的位置相同，所以要小心放置：![图14.36
+    - 在生成函数中实例化
+- en: '](img/Figure_14.36_B14199.jpg)'
+  id: totrans-214
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.36_B14199.jpg)'
+- en: Figure 14.36 – Instantiating in the Spawn function
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.36 - 在生成函数中实例化
+- en: 'If you test this script setting the Prefab `startTime` and `spawnRate` fields
+    to some test values, you will notice that the enemies will start spawning but
+    never stop, and you can see that we haven''t used the `endTime` field so far.
+    The idea is to call the `CancelInvoke` function, one function that will cancel
+    all `InvokeRepeating` calls we made, but after a while to then use the `Invoke`
+    function, which works similarly to `InvokeRepeating`, but this one executes just
+    once. In the next screenshot, you can see how we added an `Invoke` call to the
+    `CancelInvoke` function in `Start`, using the `endTime` field as the time to execute
+    `CancelInvoke`. This will execute `CancelInvoke` after a while, canceling the
+    first `InvokeRepeating` call that spawns the prefab:'
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您测试此脚本，将`startTime`和`spawnRate`字段设置为一些测试值，您会注意到敌人将开始生成但永远不会停止，并且您会看到我们到目前为止还没有使用`endTime`字段。想法是调用`CancelInvoke`函数，一个函数，将取消我们所做的所有`InvokeRepeating`调用，但在一段时间后使用`Invoke`函数，这个函数与`InvokeRepeating`类似，但这个函数只执行一次。在下一个截图中，您可以看到我们如何在`Start`中添加了一个`Invoke`调用到`CancelInvoke`函数，使用`endTime`字段作为执行`CancelInvoke`的时间。这将在一段时间后执行`CancelInvoke`，取消生成预制件的第一个`InvokeRepeating`调用：
+- en: '![Figure 14.37 – Scheduling a Spawn repetition but canceling after a while
+    with CancelInvoke'
+  id: totrans-217
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.37 - 安排生成重复但在一段时间后取消'
+- en: '](img/Figure_14.37_B14199.jpg)'
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.37_B14199.jpg)'
+- en: Figure 14.37 – Scheduling a Spawn repetition but canceling after a while with
+    CancelInvoke
+  id: totrans-219
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.37 - 安排生成重复但在一段时间后取消
+- en: Important Note
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: This time, we used `CancelInvoke`. We didn't use a custom function because `CancelInvoke`
+    doesn't receive arguments. If you need to schedule a function with arguments,
+    you will need to create a parameterless wrapper function that calls the one desired
+    and schedule that one, as we did with `Spawn`, where the only intention is to
+    call Instantiate with specific arguments.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这次，我们使用了`CancelInvoke`。我们没有使用自定义函数，因为`CancelInvoke`不接收参数。如果您需要安排带参数的函数，您需要创建一个无参数的包装函数，调用所需的函数并安排那个函数，就像我们在`Spawn`中所做的那样，那里的唯一目的是使用特定的参数调用`Instantiate`。
+- en: 'Now you can save and set some real values to our spawner. In my case, I used
+    the ones shown in the following screenshot:'
+  id: totrans-222
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在您可以保存并为我们的生成器设置一些真实值。在我的情况下，我使用了以下截图中显示的值：
+- en: '![Figure 14.38 – Spawning enemies from seconds 1 to 5 of gameplay every 0.5
+    seconds, 2 per second'
+  id: totrans-223
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.38 – 在游戏进行的1到5秒内每0.5秒生成一次敌人，每秒2个'
+- en: '](img/Figure_14.38_B14199.jpg)'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.38_B14199.jpg)'
+- en: Figure 14.38 – Spawning enemies from seconds 1 to 5 of gameplay every 0.5 seconds,
+    2 per second
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.38 – 在游戏进行的1到5秒内每0.5秒生成一次敌人，每秒2个
+- en: 'You should see the enemies being spawned one next to the other, and because
+    they move forward, they will form a row of enemies. This behavior will change
+    later with AI:'
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您应该看到敌人一个接一个地生成，因为它们向前移动，它们将形成一排敌人。这种行为稍后将随AI而改变：
+- en: '![Figure 14.39 – Spawning enemies'
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.39 – 生成敌人'
+- en: '](img/Figure_14.39_B14199.jpg)'
+  id: totrans-228
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.39_B14199.jpg)'
+- en: Figure 14.39 – Spawning enemies
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.39 – 生成敌人
+- en: If you want, you can create several Wave Spawner objects, scheduling waves for
+    the later stages of the game. Remember the difficulty balance we discussed in
+    [*Chapter 1*](B14199_01_Final_SK_ePub.xhtml#_idTextAnchor015)*, Designing a Game
+    from Scratch*; you will need to try this with the final AI for the enemies, but
+    the number of waves, times, and spawn rates will determine the difficulty of the
+    game, and that's why it is important to set those values properly. Also, there
+    are plenty of methods to create waves of enemies; this is just the simplest one
+    I could find. You may need to change it according to your game.
+  id: totrans-230
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您愿意，可以创建几个Wave Spawner对象，安排后期游戏的波次。记住我们在[*第1章*]（B14199_01_Final_SK_ePub.xhtml#_idTextAnchor015）中讨论的难度平衡，从零开始设计游戏；您需要尝试使用最终的敌人AI，但波次的数量、时间和生成速率将决定游戏的难度，这就是为什么设置这些值很重要。此外，有很多方法可以创建敌人的波次；这只是我能找到的最简单的方法。您可能需要根据您的游戏进行更改。
+- en: Now that we have discussed timing and spawning, let's discuss timing and destroying
+    objects to prevent our bullets from living forever in memory.
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经讨论了定时和生成，让我们讨论定时和销毁对象，以防止我们的子弹永远存在于内存中。
+- en: Destroying objects
+  id: totrans-232
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 销毁对象
+- en: 'This is going to be super short but is a widely used function, so it deserves
+    its own section. We can use the `Destroy` function to destroy Object instances.
+    The idea is to make the bullets have a script that schedules their own auto-destruction
+    after a while to prevent them from living forever. We will create the script by
+    doing the following:'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将非常简短，但是这是一个广泛使用的功能，因此它值得有自己的部分。我们可以使用`Destroy`函数来销毁对象实例。这个想法是让子弹有一个脚本，在一段时间后安排它们自动销毁，以防止它们永远存在。我们将通过以下步骤创建脚本：
+- en: Select the Prefab of `Bullet` and add a script called `Autodestroy` to it as
+    you did with other objects using the **Add Component** | **New Script** option.
+    This time, the script will be added to the Prefab, and each instance of the Prefab
+    you spawn will have it.
+  id: totrans-234
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 选择`Bullet`的预制件，并像使用**添加组件** | **新脚本**选项一样，为其添加一个名为`Autodestroy`的脚本。这次，脚本将被添加到预制件中，并且您生成的每个预制件实例都将拥有它。
+- en: You can use the `Destroy` function as shown in the next screenshot to destroy
+    the Object just once in `Start`.
+  id: totrans-235
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 您可以使用`Destroy`函数如下一张截图所示，在`Start`中仅一次销毁对象。
+- en: 'The `Destroy` function expects the object to destroy as the first argument,
+    and here, we are using the `gameObject` reference, a way to point to our GameObject
+    to destroy it. If you use the `this` pointer instead, we will be destroying only
+    the `Autodestroy` component; remember that in Unity, you never create Gameobjects
+    but components to add to them:'
+  id: totrans-236
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`Destroy`函数期望将要销毁的对象作为第一个参数，这里，我们使用`gameObject`引用，一种指向我们要销毁的GameObject的方式。如果您使用`this`指针，我们将只销毁`Autodestroy`组件；请记住，在Unity中，您永远不会创建Gameobjects，而是创建要添加到它们的组件：'
+- en: '![Figure 14.40 – Destroying an Object when it starts'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![图14.40 – 当对象启动时销毁对象'
+- en: '](img/Figure_14.40_B14199.jpg)'
+  id: totrans-238
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.40_B14199.jpg)'
+- en: Figure 14.40 – Destroying an Object when it starts
+  id: totrans-239
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.40 – 当对象启动时销毁对象
+- en: Of course, we don't want the bullet to be destroyed as soon as it is spawned,
+    so we need to delay the destruction. You may be thinking about using `Invoke`,
+    but unlike most functions in Unity, `Destroy` can receive a second argument, which
+    is the time to wait until destruction.
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，我们不希望子弹在生成后立即被销毁，因此我们需要延迟销毁。您可能会考虑使用`Invoke`，但与Unity中的大多数函数不同，`Destroy`可以接收第二个参数，即等待销毁的时间。
+- en: Create a `delay` field to use as the second argument of `Destroy`, as shown
+    in the next screenshot:![Figure 14.41 – Using a field to configure the delay to
+    destroy the Object
+  id: totrans-241
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个`delay`字段，用作`Destroy`的第二个参数，如下一张截图所示：![图14.41 – 使用字段配置延迟销毁对象
+- en: '](img/Figure_14.41_B14199.jpg)'
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '](img/Figure_14.41_B14199.jpg)'
+- en: Figure 14.41 – Using a field to configure the delay to destroy the Object
+  id: totrans-243
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图14.41 – 使用字段配置延迟销毁对象
+- en: Set the `delay` field to a proper value; in my case, 5 was enough. Now check
+    how the bullets despawn after a while by looking at them being removed from the
+    Hierarchy.
+  id: totrans-244
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将`delay`字段设置为适当的值；在我的情况下，5就足够了。现在通过查看它们从层次结构中被移除来检查子弹在一段时间后消失。
+- en: Now, we can create and destroy objects at will, which is something very common
+    in Unity scripting.
+  id: totrans-245
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以随意创建和销毁对象，这在Unity脚本中非常常见。
+- en: Important Note
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 重要提示
+- en: Look into the concept of object pooling; you will learn that sometimes creating
+    and destroying objects is not that performant.
+  id: totrans-247
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 研究对象池的概念；您会发现有时创建和销毁对象并不那么高效。
+- en: Summary
+  id: totrans-248
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: We have created our first real scripts, which provide useful behavior. We discussed
+    how to instantiate Prefabs via scripting, to create objects at will according
+    to the game situation. Also, we saw how to schedule actions, in this case, spawning,
+    but this can be used to schedule anything. Finally, we saw how to destroy created
+    objects, to prevent increasing the number of objects to an unmanageable level.
+    We will be using these actions to create other kinds of objects, such as sounds
+    and effects, later in this book.
+  id: totrans-249
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们已经创建了我们的第一个真正的脚本，它提供了有用的行为。我们讨论了如何通过脚本实例化预制件，根据游戏情况随意创建对象。此外，我们还看到了如何安排动作，这种情况下是生成，但这可以用于安排任何事情。最后，我们看到了如何销毁创建的对象，以防止对象数量增加到无法管理的水平。我们将使用这些操作来创建本书后面的其他类型的对象，例如声音和效果。
+- en: Now you are able to create any type of movement or spawning logic your objects
+    will need and make sure those objects are destroyed when needed. You might think
+    that all games move and create shooting systems the same way, and while they are
+    similar, being able to create your own movement and shooting scripts allows you
+    to customize those aspects of the game to behave as intended and create the exact
+    experience you are looking for.
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以创建任何类型的运动或生成逻辑，您的对象将需要确保这些对象在需要时被销毁。您可能会认为所有游戏以相同的方式移动和创建射击系统，虽然它们相似，但能够创建自己的运动和射击脚本使您能够定制游戏的这些方面，使其行为如预期，并创造您所寻找的确切体验。
+- en: In the next chapter, we will be discussing how to detect collisions to prevent
+    the Player and bullets from passing through walls and much more.
+  id: totrans-251
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将讨论如何检测碰撞，以防止玩家和子弹穿过墙壁等等。

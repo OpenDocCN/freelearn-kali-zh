@@ -1,0 +1,1083 @@
+- en: Working with Secure Web
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 处理安全网络
+- en: So far, we have learned about web-development technologies, data-finding techniques,
+    and Python libraries that we can use to access and scrape web content.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 到目前为止，我们已经了解了可以用来访问和抓取网络内容的网络开发技术、数据查找技术和Python库。
+- en: Various forms of web-based security measures exist nowadays that protect us
+    against unauthenticated usage and unauthorized access to sensitive web content.
+    A number of tools and technologies exist that are applied by websites; some target user-based
+    actions, while some target a website's contents and their availability.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现今存在各种形式的基于网络的安全措施，用于保护我们免受未经身份验证的使用和对敏感网络内容的未经授权访问。许多工具和技术被网站应用；有些针对用户行为，而有些针对网站内容及其可用性。
+- en: Secure web (or web-based security-enabled features) is considered to be one
+    of the technologies that's implemented by websites and utilized by end users who
+    want to use or view a website's contents. We will be covering a few basic concepts
+    that deal with such features from a web scraping perspective.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安全网络（或基于网络的安全功能）被认为是由网站实施并被希望使用或查看网站内容的最终用户所利用的技术之一。我们将从网络抓取的角度涵盖一些处理这些功能的基本概念。
+- en: 'In this chapter, we will learn about the following topics:'
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将学习以下主题：
+- en: Introduction to secure web
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 安全网络简介
+- en: HTML `<form>` processing
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: HTML `<form>`处理
+- en: Handling user authentication
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理用户身份验证
+- en: Working with cookies and sessions
+  id: totrans-8
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 处理cookie和会话
+- en: Technical requirements
+  id: totrans-9
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 技术要求
+- en: 'A web browser (Google Chrome or Mozilla Firefox) is required for this chapter.
+    We will be using the following Python libraries:'
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章需要一个网络浏览器（Google Chrome或Mozilla Firefox）。我们将使用以下Python库：
+- en: '`requests`'
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`requests`'
+- en: '`pyquery`'
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`pyquery`'
+- en: If these libraries don't exist in your current Python setup, refer to [Chapter
+    2](b9919ebf-2d5c-4721-aa76-5c1378262473.xhtml), *Python and the Web – Using urllib
+    and Requests*, the *Setting things up* section for more information on their installation
+    and how to set them up.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果这些库在您当前的Python设置中不存在，请参阅[第2章](b9919ebf-2d5c-4721-aa76-5c1378262473.xhtml)，*Python和网络
+    - 使用urllib和Requests*，*设置事物*部分，获取有关其安装和设置的更多信息。
+- en: The code files for this chapter are available in this book's GitHub repository
+    at [https://github.com/PacktPublishing/Hands-On-Web-Scraping-with-Python/tree/master/Chapter06](https://github.com/PacktPublishing/Hands-On-Web-Scraping-with-Python/tree/master/Chapter06).
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章的代码文件可在本书的GitHub存储库中找到：[https://github.com/PacktPublishing/Hands-On-Web-Scraping-with-Python/tree/master/Chapter06](https://github.com/PacktPublishing/Hands-On-Web-Scraping-with-Python/tree/master/Chapter06)。
+- en: Introduction to secure web
+  id: totrans-15
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 安全网络简介
+- en: The implementation of web-based security features (or features that are used
+    to maintain a secure state of access) to access information is rapidly growing,
+    day by day. With ever-growing web-based technologies, websites and web applications
+    deploy secure mechanisms that are basic or highly sophisticated.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实施基于网络的安全功能（或用于维护安全访问状态的功能）以访问信息的方式正在日益增长。随着网络技术的不断发展，网站和网络应用程序部署基本或高度复杂的安全机制。
+- en: Secure web-enabled content is often challenging from a crawling and scraping
+    perspective. In this section, you will be introduced to a few basic security-based
+    concepts. We will explore these concepts, along with their implementation, in
+    the upcoming sections.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安全的网络内容在爬取和抓取的角度上通常具有挑战性。在本节中，您将了解一些基本的基于安全的概念。我们将在接下来的章节中探讨这些概念及其实施。
+- en: The following sections will talk about a few security-enabled concepts or concepts
+    that are vulnerable to security. These concepts can be implemented independently
+    and collaboratively in websites using a number of underlying tools or measures.
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 接下来的章节将讨论一些安全功能概念或容易受到安全威胁的概念。这些概念可以独立或协作地在网站中使用一些基础工具或措施来实施。
+- en: Form processing
+  id: totrans-19
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 表单处理
+- en: This is also known as HTML `<form>` processing, form handling, or form submission.
+    This method processes and handles data inside an HTML `<form>`.
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这也被称为HTML `<form>`处理、表单处理或表单提交。这种方法处理和处理HTML `<form>`内的数据。
+- en: HTML `<form>` or elements inside a `<form>` tag, such as `<input>`, `<option>`,
+    `<button>`, `<textarea>`, and so on, with certain specific attributes, are normally
+    used to collect and submit data. Please visit the W3School HTML form ([https://www.w3schools.com/html/html_forms.asp](https://www.w3schools.com/html/html_forms.asp)) for
+    practical examples and detailed information on HTML form.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HTML `<form>`或`<form>`标签内的元素，如`<input>`、`<option>`、`<button>`、`<textarea>`等，通常用于收集和提交数据。请访问W3School
+    HTML表单（[https://www.w3schools.com/html/html_forms.asp](https://www.w3schools.com/html/html_forms.asp)）获取HTML表单的实际示例和详细信息。
+- en: HTTP methods or request methods, such as `GET`, `POST`, `PUT`, and so on, are
+    used to access or submit data across web pages. For more information on HTTP,
+    please visit [https://www.w3.org/Protocols/](https://www.w3.org/Protocols/).
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: HTTP方法或请求方法，如`GET`、`POST`、`PUT`等，用于在网页之间访问或提交数据。有关HTTP的更多信息，请访问[https://www.w3.org/Protocols/](https://www.w3.org/Protocols/)。
+- en: From a security point of view, HTML `<form>` can contain dynamic and hidden
+    or system-generated values that manage validation, provide value to fields, or
+    perform security-based implementation during form submission. Forms with fields
+    such as `<input type="hidden"...>` might not be visible to users in pages. The
+    user must get help from the page source or browser-based developer tools in such
+    cases.
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从安全角度来看，HTML `<form>` 可以包含动态和隐藏或系统生成的值，用于管理验证、为字段提供值，或在表单提交期间执行基于安全的实现。具有诸如`<input
+    type="hidden"...>`的字段的表单在页面上对用户可能不可见。在这种情况下，用户必须从页面源代码或基于浏览器的开发者工具获取帮助。
+- en: A web page with a form might be displaying in certain fields and asking for
+    input, and can contain a few more fields on the backend or in the source, which
+    can contain user-or system-based information. Such information is collected and
+    processed behind the scenes for web-based analysis, marketing, user and system
+    identification, managing security, and more.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个带有表单的网页可能在某些字段中显示并要求输入，并且可以在后端或源代码中包含一些额外的字段，其中可能包含用户或系统信息。这些信息在幕后被收集和处理，用于基于网页的分析、营销、用户和系统识别、安全管理等。
+- en: For more information on form processing, please refer to [Chapter 3](9e1ad029-726f-4ed3-897a-c68bcd61f71e.xhtml),
+    *Using LXML, XPath, and CSS Selectors*, *Using web browser developer tools for
+    accessing web content* section.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关表单处理的更多信息，请参阅[第3章](9e1ad029-726f-4ed3-897a-c68bcd61f71e.xhtml)，*使用LXML、XPath和CSS选择器*，*使用网页浏览器开发者工具访问网页内容*部分。
+- en: Cookies and sessions
+  id: totrans-26
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Cookies和会话
+- en: To access cookie and session values that have been set by browsed websites,
+    please refer to [Chapter 1](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml), *Web
+    Scraping Fundamentals*, the *Data finding techniques* section of the *Developer
+    tools* section. Now, let's get an idea of what cookies and sessions are.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要访问由浏览网站设置的cookie和会话值，请参阅[第1章](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml)，*网页抓取基础知识*，*开发者工具*部分的*数据查找技术*部分。现在，让我们了解一下cookie和会话是什么。
+- en: Cookies
+  id: totrans-28
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Cookies
+- en: Cookies are data that's generated and stored by websites on your system or computer.
+    Data in cookies helps identify web requests from the user to the website. Data
+    in cookies is stored in `key:value` pairs. Data that's stored in cookies helps
+    websites access that data and transfer certain saved values in the form of a quick
+    interaction.
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Cookie是由网站在您的系统或计算机上生成和存储的数据。Cookie中的数据有助于识别用户对网站的网络请求。Cookie中存储的数据以`键:值`对的形式存储。存储在cookie中的数据有助于网站访问该数据，并以快速交互的形式传输某些保存的值。
+- en: Cookies also allow websites to track user profiles, their web habits, and so
+    on, and use such information for indexing, page ads, and marketing activities.
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Cookie还允许网站跟踪用户资料、他们的网页习惯等，并利用这些信息进行索引、页面广告和营销活动。
+- en: Cookie-based data can last for a session (that is, from the time that a web
+    page is loaded until the browser is closed) forming what are known as a session
+    cookies, or for days, weeks, or months, which are known as permanent or stored
+    cookies. Cookies can also contain expiry values in seconds and are expired or
+    deleted from the system once the period of time expressed in this value elapses.
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基于cookie的数据可以持续一个会话（即从加载网页到关闭浏览器的时间）形成所谓的会话cookie，或者持续几天、几周或几个月，这被称为永久或存储的cookie。Cookie还可以包含以秒为单位的过期值，一旦该值表示的时间段过去，cookie就会过期或从系统中删除。
+- en: For more information on cookies, please refer to [Chapter 1](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml),
+    *Web Scraping Fundamentals*, the *Understanding Web Development and Technologies*
+    section of the *HTTP* section. You can also visit [https://www.aboutcookies.org/](https://www.aboutcookies.org/) and [http://www.allaboutcookies.org/](http://www.allaboutcookies.org/) for
+    more information.
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关cookie的更多信息，请参阅[第1章](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml)，*网页抓取基础知识*，*了解网页开发和技术*部分的*HTTP*部分。您也可以访问[https://www.aboutcookies.org/](https://www.aboutcookies.org/)和[http://www.allaboutcookies.org/](http://www.allaboutcookies.org/)获取更多信息。
+- en: Sessions
+  id: totrans-33
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 会话
+- en: Sessions are properties that enforce state-based communication between two systems.
+    A session is used to store user information temporarily and is also deleted as
+    soon as the user quits the browser or leaves the website.
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 会话是强制两个系统之间基于状态的通信的属性。会话用于临时存储用户信息，并在用户退出浏览器或离开网站时被删除。
+- en: A session is used for maintaining security activity. A unique identification
+    number, also known as a session ID or session key, is generated by the website
+    and is used to track their users or security-based features independently. In
+    most cases of session availability, it can be traced using cookies too.
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 会话用于维护安全活动。网站生成一个唯一的标识号，也称为会话ID或会话密钥，用于独立跟踪他们的用户或基于安全的特性。在大多数情况下，可以使用cookie来跟踪会话的可用性。
+- en: User authentication
+  id: totrans-36
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 用户认证
+- en: User authentication deals with handling and managing user-based identification
+    processes. Websites offer user registration through their registration page and
+    thereby collect user inputs for required or available fields. A user's details
+    are saved in secure places such as the cloud or server-based databases, or any
+    other secure system.
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 用户认证涉及处理和管理基于用户的身份识别过程。网站通过其注册页面提供用户注册，并收集用户对所需或可用字段的输入。用户的详细信息被保存在安全的地方，如云端或基于服务器的数据库，或任何其他安全系统。
+- en: Registered users are verified and are permitted to log in and log out from their
+    system, and are identified by their username, password, and email address.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注册用户经过验证，被允许从他们的系统登录和退出，并通过他们的用户名、密码和电子邮件地址进行识别。
+- en: Form processing, cookies, session management, and other security-based measures
+    can be deployed either individually or collaboratively for this process.
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表单处理、cookies、会话管理和其他基于安全性的措施可以单独或协同部署用于这个过程。
+- en: In the previous chapter, we explored and tackled various scenarios based on
+    information availability, accessing web pages, applying various HTTP methods,
+    and so on to extract data. The sections in this chapter deal with various measures
+    and situations that can be implemented or that might be faced during web scraping.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们探讨并解决了基于信息可用性、访问网页、应用各种HTTP方法等各种情景，以及在网页抓取过程中可能实施或面临的各种措施和情况。本章的各节涉及可以实施或在网页抓取过程中可能面临的各种措施和情况。
+- en: HTML <form> processing
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: HTML <form>处理
+- en: In this section, we will be handling form processing or form submission in order
+    to search for an activity from [http://toscrape.com](http://toscrape.com) (ViewState).
+    ViewState is an AJAX-based filter form.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将处理表单处理或表单提交，以便从[http://toscrape.com](http://toscrape.com)（ViewState）搜索活动。ViewState是基于AJAX的过滤表单。
+- en: 'This particular form submission is performed in multiple steps with the help
+    of AJAX ([https://www.w3schools.com/js/js_ajax_intro.asp](https://www.w3schools.com/js/js_ajax_intro.asp)).
+    For more information on AJAX, please visit [W3Schools AJAX](https://www.w3schools.com/js/js_ajax_intro.asp):'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个特定的表单提交是通过 AJAX（[https://www.w3schools.com/js/js_ajax_intro.asp](https://www.w3schools.com/js/js_ajax_intro.asp)）在多个步骤中执行的。有关
+    AJAX 的更多信息，请访问[W3Schools AJAX](https://www.w3schools.com/js/js_ajax_intro.asp)：
+- en: '![](assets/03ddba00-4ba4-4ab0-8f5d-62a9bcfa6239.png)'
+  id: totrans-44
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/03ddba00-4ba4-4ab0-8f5d-62a9bcfa6239.png)'
+- en: http://toscrape.com with various endpoints in the Quotes section
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: http://toscrape.com 中的引用部分具有各种端点
+- en: Let's set up the code. The `pyquery` and `requests` libraries need to be imported
+    and the required URLs need to be collected so that they can be used. The `processRequests()` function,
+    along with positional and named arguments, is used for processing requests to
+    the provided `url`, with the HTTP `POST` and `GET` methods based on the `params` argument returning a
+    PyQuery object as a response.
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们设置代码。需要导入`pyquery`和`requests`库，并收集所需的 URL，以便可以使用它们。`processRequests()`函数，连同位置参数和命名参数，用于处理对所提供`url`的请求，使用基于`params`参数的
+    HTTP `POST` 和 `GET` 方法返回 PyQuery 对象作为响应。
+- en: 'We are also interested in iterating `authorTags` and collecting the `quoteAuthor`
+    and `message`, respectively. In a similar way, any information that''s obtained
+    from a page can be extracted:'
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们还对迭代`authorTags`感兴趣，并分别收集`quoteAuthor`和`message`。以类似的方式，可以提取从页面获得的任何信息：
+- en: '[PRE0]'
+  id: totrans-48
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'The following screenshot displays the content of the `searchurl` page, as defined
+    in the preceding code. Two separate drop-downs exist, each with options for the
+    author and their tags, respectively:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了在前面的代码中定义的`searchurl`页面的内容。存在两个单独的下拉菜单，分别用于作者和他们的标签的选项：
+- en: '![](assets/6bc86d6b-01ca-4b74-baa0-214515abe53c.png)'
+  id: totrans-50
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/6bc86d6b-01ca-4b74-baa0-214515abe53c.png)'
+- en: http://quotes.toscrape.com/search.aspx searchurl with author and tag
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: http://quotes.toscrape.com/search.aspx 带有作者和标签的`searchurl`
+- en: 'Let''s load `searchurl`, as shown in the following code, and select an author
+    from the Author drop-down. The `<option>` tag is generated using AJAX for the
+    selected `<option>` of the Author:'
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们加载`searchurl`，如下面的代码所示，并从作者下拉菜单中选择一个作者。使用 AJAX 生成`<option>`标签，以供作者的选定`<option>`：
+- en: Please refer to [Chapter 3](9e1ad029-726f-4ed3-897a-c68bcd61f71e.xhtml), *Using
+    LXML, XPath, and CSS Selectors*, the *Using web browser developer tools for accessing
+    web content* section, and [Chapter 1](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml),
+    *Web Scraping Fundamentals*, the *Data finding techniques* and *Developer tools*
+    sections.
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请参阅[第3章](9e1ad029-726f-4ed3-897a-c68bcd61f71e.xhtml)，*使用 LXML、XPath 和 CSS 选择器*，*使用
+    Web 浏览器开发工具访问 Web 内容*部分，以及[第1章](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml)，*Web
+    抓取基础知识*，*数据查找技术*和*开发人员工具*部分。
+- en: '[PRE1]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'As you can see, the `processRequests()` function is called using an HTTP `GET`
+    to `searchurl` and will be returning a response as an object of PyQuery. From
+    `searchResponse`, let''s collect the necessary form fields. Fields such as `author`,
+    `viewstate`, and `tag` are collected, and the values that were obtained for the
+    fields on each iteration are shown in the following output:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所见，使用 HTTP `GET` 调用`processRequests()`函数到`searchurl`，并将返回一个 PyQuery 对象作为响应。从`searchResponse`中，让我们收集必要的表单字段。收集诸如`author`、`viewstate`和`tag`之类的字段，并在每次迭代中获得的字段的值显示在以下输出中：
+- en: '[PRE2]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: From the preceding output, we can see that `viewstate (<input id="__VIEWSTATE"..>)` contains
+    unique values on both iterations for `authorTags`.
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从前面的输出中，我们可以看到`viewstate (<input id="__VIEWSTATE"..>)`在`authorTags`的两次迭代中包含唯一值。
+- en: '`ViewState` is a unique and random value that''s generated by websites to identify
+    individual states of the page, which are often found as a hidden `<input>` value.
+    This `<form>` value exists in most websites that use `<form>` and built-in ASP
+    or ASP.NET technologies. The `ViewState` value is used on the client side, and
+    it preserves or retains the value of the `<form>` elements, alongside page identity.
+    Use of `ViewState` is one of the techniques related to state management. For more
+    information, please visit the article from C#Corner found at [https://www.c-sharpcorner.com/article/Asp-Net-state-management-techniques/](https://www.c-sharpcorner.com/article/Asp-Net-state-management-techniques/).'
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ViewState`是由网站生成的用于识别页面的各个状态的唯一和随机值，通常作为隐藏的`<input>`值。这种`<form>`值存在于大多数使用`<form>`和内置
+    ASP 或 ASP.NET 技术的网站中。`ViewState`值在客户端上使用，它保留或保持了`<form>`元素的值，以及页面的身份。使用`ViewState`是与状态管理相关的技术之一。有关更多信息，请访问来自
+    C#Corner 的文章，网址为[https://www.c-sharpcorner.com/article/Asp-Net-state-management-techniques/](https://www.c-sharpcorner.com/article/Asp-Net-state-management-techniques/)。'
+- en: 'The value of `ViewState` is compulsory for obtaining the `<option>` tag for
+    the selected Author. As we can see in the following code, `params` is created
+    with `author`, `tag`, and `__VIEWSTATE`, and is posted or submitted to `filterurl`
+    using HTTP `POST` and `customheaders` by obtaining `filterResponse`. The following
+    code shows what happens when `filterurl` has been loaded with the author and default
+    tag:'
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`ViewState`的值对于获取所选作者的`<option>`标签是必不可少的。正如我们在下面的代码中所看到的，`params`是使用`author`、`tag`和`__VIEWSTATE`创建的，并通过
+    HTTP `POST` 和`customheaders`提交到`filterurl`，通过获取`filterResponse`。以下代码显示了当`filterurl`加载了作者和默认标签时会发生什么：'
+- en: '[PRE3]'
+  id: totrans-60
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Iterating the preceding code will result in the following output:'
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 迭代前面的代码将产生以下输出：
+- en: '`http://quotes.toscrape.com/filter.aspx` with the selected author (`Thomas
+    A. Edison`) and tag (`inspirational`):'
+  id: totrans-62
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`http://quotes.toscrape.com/filter.aspx` 页面上选择了作者（`托马斯·爱迪生`）和标签（`鼓舞人心`）：'
+- en: '[PRE4]'
+  id: totrans-63
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: '`http://quotes.toscrape.com/filter.aspx` with the selected author (`Albert
+    Einstein`) and tag (`success`):'
+  id: totrans-64
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`http://quotes.toscrape.com/filter.aspx` 页面上选择了作者（`阿尔伯特·爱因斯坦`）和标签（`成功`）：'
+- en: '[PRE5]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Now that we have obtained all the filter `<form>`-based parameters for each
+    `authorTags`, the final step is to submit these parameters—that is, `params` to
+    `filterurl`—using `HTTP POST` and extract the resulting information:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经获得了每个`authorTags`的所有过滤`<form>`参数，最后一步是提交这些参数，即`params`到`filterurl`，使用`HTTP
+    POST`并提取结果信息：
+- en: '[PRE6]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'As we can see, `finalResponse` is a PyQuery object that''s returned by `processRequests()`
+    and is parsed to obtain the `quote`*,* `quoteAuthor`*,* and `message`, as shown
+    in the following screenshot:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们所看到的，`finalResponse`是由`processRequests()`返回的PyQuery对象，并被解析以获取`quote`、`quoteAuthor`和`message`，如下面的屏幕截图所示：
+- en: '![](assets/9643fb0e-196e-454a-9c83-8b5f876c893c.png)'
+  id: totrans-69
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/9643fb0e-196e-454a-9c83-8b5f876c893c.png)'
+- en: http://quotes.toscrape.com/filter.aspx with results for Author and Tag
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: http://quotes.toscrape.com/filter.aspx ，结果为作者和标签
+- en: 'The output from iteration number one using the preceding code with `Author`
+    and `Message` is as follows:'
+  id: totrans-71
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用前面的代码进行第一次迭代的输出，包括`Author`和`Message`，如下所示：
+- en: '[PRE7]'
+  id: totrans-72
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'The following is a screenshot for iteration number two:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是第二次迭代的屏幕截图：
+- en: '![](assets/b0b2458d-0504-46bf-b958-96352d940f17.png)'
+  id: totrans-74
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/b0b2458d-0504-46bf-b958-96352d940f17.png)'
+- en: http://quotes.toscrape.com/filter.aspx with results for Author and Tag
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: http://quotes.toscrape.com/filter.aspx ，结果为作者和标签
+- en: 'The output from iteration number two using the preceding code with `Author`
+    and `Message` is as follows:'
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用前面的代码进行第二次迭代的输出，包括`Author`和`Message`，如下所示：
+- en: '[PRE8]'
+  id: totrans-77
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: Form processing with searching and filtering actions, alongside the use of hidden
+    fields, is shown in the preceding code. The `ViewState` value is used by the system
+    behind the scenes to identify the selected option and filter the tags associated
+    with it, resulting in quotes by the author.
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前面的代码中显示了带有搜索和过滤操作的表单处理，以及使用隐藏字段。`ViewState`值由系统在后台使用，以识别所选选项并过滤与其关联的标签，从而得到作者的引用。
+- en: 'The total number of HTTP `POST` parameters for the final form submission is
+    four, whereas the page only displays or allows you to interact with two options.
+    If any changes are made to a value, such as `viewstate`, or if `viewstate` is
+    missing from `params`*,* it will result in empty quotes, as shown in the following
+    code:'
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最终表单提交的HTTP `POST`参数总数为四个，而页面上只显示或允许与两个选项交互。如果对值进行任何更改，例如`viewstate`，或者如果`viewstate`在`params`中丢失，将导致空引号，如下面的代码所示：
+- en: '[PRE9]'
+  id: totrans-80
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Form submission is not only dependent on the required parameters that are selected
+    from visible `<form>` elements in the page—there can also be hidden values and
+    dynamically generated state representation that should be processed and handled
+    effectively for successful output.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表单提交不仅取决于从页面上可见的`<form>`元素中选择的必需参数，还可能存在隐藏的值和动态生成的状态表示，应该对其进行有效处理以获得成功的输出。
+- en: In the next section, we will be dealing with form submission and user authentication.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将处理表单提交和用户身份验证。
+- en: Handling user authentication
+  id: totrans-83
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 处理用户身份验证
+- en: In this section, we will be exploring a task that's used to process basic user
+    authentication, which is available from [http://testing-ground.scraping.pro/login](http://testing-ground.scraping.pro/login).
+    User authentication is often processed with a unique combination of information,
+    such as username, password, email, and so on, to identify the user on the website.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将探讨用于处理基本用户身份验证的任务，该任务可从[http://testing-ground.scraping.pro/login](http://testing-ground.scraping.pro/login)获得。用户身份验证通常使用一组唯一的信息进行处理，例如用户名、密码、电子邮件等，以在网站上识别用户。
+- en: The code in this section deals with logging in and changing the login credentials,
+    as well as with obtaining the respective messages from the page.
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节中的代码涉及登录和更改登录凭据，以及从页面获取相应的消息。
+- en: 'As we can see in the following screenshot, the HTML `<form>` exists with two
+    `<input>` boxes that accept the username and password (that is, the login credentials)
+    that are required to login. Login credentials are private and secure information,
+    but for this particular testing site, the values are visible, predefined, and
+    provided—namely, `Username = "admin"` and `Password = "12345"`:'
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如下面的屏幕截图所示，HTML `<form>`存在两个`<input>`框，用于接受用户名和密码（即登录凭据），这些是登录所需的。登录凭据是私密和安全的信息，但对于这个特定的测试站点，这些值是可见的，预定义的，并提供的，即`Username
+    = "admin"`和`Password = "12345"`：
+- en: '![](assets/49bb51c9-b821-430e-bca9-d5412494ebb5.png)'
+  id: totrans-87
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/49bb51c9-b821-430e-bca9-d5412494ebb5.png)'
+- en: Login page
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 登录页面
+- en: 'To process logging in with these credentials on [http://testing-ground.scraping.pro/login](http://testing-ground.scraping.pro/login),
+    we need to find the `<form>` attributes—that is, `action` and `method`—that were
+    used on the page to process the entered credentials. As we can see, the HTTP `POST`
+    method will be applied to perform form submission on [http://testing-ground.scraping.pro/login?mode=login](http://testing-ground.scraping.pro/login?mode=login):'
+  id: totrans-89
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用这些凭据在[http://testing-ground.scraping.pro/login](http://testing-ground.scraping.pro/login)上进行登录处理，我们需要找到页面上用于处理输入凭据的`<form>`属性，即`action`和`method`。正如我们所看到的，HTTP
+    `POST`方法将被应用于在[http://testing-ground.scraping.pro/login?mode=login](http://testing-ground.scraping.pro/login?mode=login)上执行表单提交：
+- en: '![](assets/f8794ba7-eb6f-4496-98c5-61887b4e1267.png)'
+  id: totrans-90
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/f8794ba7-eb6f-4496-98c5-61887b4e1267.png)'
+- en: Inspecting <form> elements
+  id: totrans-91
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查`<form>`元素
+- en: 'Let''s move on and set up the code. The `pyquery` and `requests` libraries
+    need to be imported and the required URLs need to be collected so that they can
+    be used:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续设置代码。需要导入`pyquery`和`requests`库，并收集所需的URL，以便可以使用它们：
+- en: '[PRE10]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'As shown in the following code, the `responseCookies()` function will accept
+    response objects that are obtained from `requests.get()` before printing the headers
+    and cookies information. Similarly, the `processParams()` function accepts `<form>`-based
+    parameters that will be posted and prints the message that''s obtained from the
+    page:'
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如下面的代码所示，`responseCookies()`函数将接受从`requests.get()`获得的响应对象，然后打印头信息和cookies信息。同样，`processParams()`函数接受基于`<form>`的参数，将被发布，并打印从页面获得的消息：
+- en: '[PRE11]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'Now, let''s request `logoutUrl` to clean the cookies and sessions, if they
+    exist. Alternatively, for a completely new process, we can request `mainUrl` and
+    `loginUrl`, respectively, and check the message that was received from `responseCookies()`. Here
+    is the output:'
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们请求`logoutUrl`来清除cookies和会话（如果存在）。或者，对于一个全新的过程，我们可以分别请求`mainUrl`和`loginUrl`，并检查从`responseCookies()`接收到的消息。以下是输出：
+- en: '[PRE12]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: As shown in the preceding output, cookies is empty for both `mainUrl` and `loginUrl` and
+    no other unique header pairs are available except `Set-Cookie`, with a value of `tdsess=deleted;
+    expires=Thu, 01-Jan-1970 00:00:01 GMT` from `loginUrl`.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前面的输出所示，“mainUrl”和“loginUrl”的cookies为空，并且除了来自“loginUrl”的值为“tdsess = deleted;
+    expires = Thu, 01-Jan-1970 00:00:01 GMT”的“Set-Cookie”之外，没有其他唯一的标头对可用。
+- en: 'Now that `responseA` from the `loginUrl` `<form>` elements attribute name has
+    been collected as `username` and `password`, this information will be used to
+    create the `paramsCorrect` and `paramsIncorrect` parameter strings, which will
+    be posted to `postUrl`:'
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，“responseA”从“loginUrl”`<form>`元素属性名称已被收集为“username”和“password”，此信息将用于创建“paramsCorrect”和“paramsIncorrect”参数字符串，然后将其发布到“postUrl”：
+- en: '[PRE13]'
+  id: totrans-100
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'A successful form submission with the provided `paramsCorrect` parameter string
+    will result in the following output:'
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用提供的“paramsCorrect”参数字符串成功提交表单将导致以下输出：
+- en: '[PRE14]'
+  id: totrans-102
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'The preceding output is extracted from the response of `postUrl`, which in
+    this test case is actually a redirected page with a URL of [http://testing-ground.scraping.pro/login?mode=welcome](http://testing-ground.scraping.pro/login?mode=welcome):'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的输出是从“postUrl”的响应中提取的，在这个测试案例中实际上是一个重定向页面，URL为[http://testing-ground.scraping.pro/login?mode=welcome](http://testing-ground.scraping.pro/login?mode=welcome)：
+- en: '![](assets/1f353c77-6902-4aa9-9a58-ca1eff7a36ec.png)'
+  id: totrans-104
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/1f353c77-6902-4aa9-9a58-ca1eff7a36ec.png)'
+- en: Successful form submission with valid login credentials
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用有效的登录凭据成功提交表单
+- en: 'Let''s continue with form submission, but with invalid credentials. The `paramsIncorrect` phrase
+    contains an invalid value for `password`:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们继续使用表单提交，但使用无效的凭据。 “paramsIncorrect”短语包含“密码”的无效值：
+- en: '[PRE15]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'The preceding code will result in the following output:'
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述代码将导致以下输出：
+- en: '[PRE16]'
+  id: totrans-109
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: 'The preceding output can also be found in the `loginUrl` itself, and no redirection
+    takes place this time:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前面的输出也可以在“loginUrl”本身找到，这次不会发生重定向：
+- en: '![](assets/e971860f-eeac-4803-849b-e51502af1922.png)'
+  id: totrans-111
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/e971860f-eeac-4803-849b-e51502af1922.png)'
+- en: Access Denied! (processed with wrong credentials)
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 访问被拒绝！（使用错误的凭据处理）
+- en: As you can see, user authentication and form submission work in tandem. With
+    the use of proper login credentials and by being able to handle the form submission
+    process using Python, we can obtain a successful output or deal with the related
+    output that's returned from a website.
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如您所看到的，用户身份验证和表单提交是相辅相成的。通过使用正确的登录凭据，并能够使用Python处理表单提交过程，我们可以获得成功的输出，或者处理从网站返回的相关输出。
+- en: In the next section, we will be performing form submission and user authentication
+    by handling cookies that contain a session.
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一节中，我们将通过处理包含会话的cookie来执行表单提交和用户身份验证。
+- en: Working with cookies and sessions
+  id: totrans-115
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 处理cookie和会话
+- en: In this section, we will be handling form processing for user authentication
+    and managing cookies and sessions for [http://quotes.toscrape.com/login](http://quotes.toscrape.com/login)
+    from [http://toscrape.com](http://toscrape.com)
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本节中，我们将处理用户身份验证的表单处理，并为[http://quotes.toscrape.com/login](http://quotes.toscrape.com/login)从[http://toscrape.com](http://toscrape.com)管理cookie和会话。
+- en: In order to log in, you need to log in with a CSRF token (any username/password
+    works).
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了登录，您需要使用CSRF令牌登录（任何用户名/密码都可以使用）。
+- en: 'Let''s set up the code. The `pyquery` and `requests` libraries need to be imported
+    and the required URLs will be collected and used. The `getCustomHeaders()` function, together
+    with the `cookieHeader` argument, is used to set the cookie value for the URL
+    request headers. The `responseCookies()` function, together with the `response`
+    argument, displays the `headers` and `cookies`, and also returns the `Set-Cookie` value
+    from `cookies`:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们设置代码。需要导入“pyquery”和“requests”库，并收集并使用所需的URL。使用“getCustomHeaders（）”函数，以及“cookieHeader”参数，用于为URL请求标头设置cookie值。使用“responseCookies（）”函数，以及“response”参数，显示“headers”和“cookies”，并从“cookies”返回“Set-Cookie”值：
+- en: '[PRE17]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: For more information on HTTP and HTTP headers, please visit [Chapter 1](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml),
+    *Web Scraping Fundamentals*, the *Understanding Web Development and Technologies* and
+    *HTTP* sections. For more details on cookies, please visit [https://www.aboutcookies.org/](https://www.aboutcookies.org/)
+    or [allaboutcookies.org](http://www.allaboutcookies.org/).
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有关HTTP和HTTP标头的更多信息，请访问[第1章](af7787bb-7fcf-4101-8680-9bad14bf22e1.xhtml)，*网络抓取基础知识*，*了解Web开发和技术*和*HTTP*部分。有关cookie的更多详细信息，请访问[https://www.aboutcookies.org/](https://www.aboutcookies.org/)或[allaboutcookies.org](http://www.allaboutcookies.org/)。
+- en: 'Now, let''s begin by loading `mainUrl` and `loginUrl`, respectively:'
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们分别加载“mainUrl”和“loginUrl”：
+- en: '[PRE18]'
+  id: totrans-122
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'The following screenshot shows what a login page looks like when using `loginUrl`:'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下屏幕截图显示了使用“loginUrl”时登录页面的外观：
+- en: '![](assets/88f29d88-64ba-485a-88da-f87935e8d359.png)'
+  id: totrans-124
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/88f29d88-64ba-485a-88da-f87935e8d359.png)'
+- en: Login page from http://quotes.toscrape.com/login
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从http://quotes.toscrape.com/login登录页面
+- en: 'As soon as  `loginUrl` is loaded, we can inspect or use browser-based developer
+    tools to find the request headers and confirm whether any cookies exist. We receive
+    the following output:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦加载了“loginUrl”，我们可以检查或使用基于浏览器的开发人员工具来查找请求标头，并确认是否存在任何cookie。我们收到以下输出：
+- en: '![](assets/28116440-b923-469d-9963-f06bec877377.png)'
+  id: totrans-127
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](assets/28116440-b923-469d-9963-f06bec877377.png)'
+- en: Network panel Doc-based headers tab from browser developer tools
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来自浏览器开发人员工具的网络面板文档标头选项卡
+- en: 'The following code accepts cookies from `response` and is used in headers:'
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下代码接受来自“response”的cookie，并用于标头：
+- en: '[PRE19]'
+  id: totrans-130
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'As we can see from the preceding screenshot, Request Headers contains `key=Cookie` with
+    a value beginning with `sessio=....`, also known as the session ID. This information
+    is found in both `response.headers` and `response.cookies`, and the `responseCookies()` function
+    returns the cookie value from `response.headers` before printing the details:'
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如我们从前面的屏幕截图中看到的，请求标头包含以“sessio = ....”开头的值为“Cookie”的`key`，也称为会话ID。此信息在`response.headers`和`response.cookies`中找到，并且`responseCookies（）`函数在打印详细信息之前从`response.headers`返回cookie值：
+- en: '[PRE20]'
+  id: totrans-132
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: A session ID is a unique number that a website's server assigns to a specific
+    user for a certain duration or for a session. This ID can be stored in certain
+    `<form>` fields or cookies, or even appended to a URL query string.
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`requests.post()`短语使用HTTP `POST`请求到`loginURL`，并使用已设置的`params`和`customHeaders`。`customHeaders`是使用我们之前收到的`setCookie`值创建的：'
+- en: Now that we've received the cookie-based session value, we need to maintain
+    this value so that we have a successful login procedure.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们已经收到了基于cookie的会话值，我们需要维护这个值，以便进行成功的登录过程。
+- en: 'Let''s collect the `<form>`-based fields and more information on form submission:'
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'Cookies: [https://www.aboutcookies.org/](https://www.aboutcookies.org/) , [http://www.allaboutcookies.org/](http://www.allaboutcookies.org/)'
+- en: '![](assets/4f8f7602-a524-4357-9a0a-79149630efe1.png)'
+  id: totrans-136
+  prefs: []
+  type: TYPE_IMG
+  zh: 在下一章中，我们将使用Python编程语言与Web API进行数据提取交互。
+- en: Elements panel from Browser Developer Tools with page source
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 浏览器开发者工具中的元素面板与页面源
+- en: As we can see from the preceding screenshot, `<form>` is using HTTP `POST` to
+    submit form fields to `loginUrl`, and there's also a hidden `<input>` field with `csrf_token`,
+    along with the fields accepting the login credentials.
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下截图显示了成功的身份验证和验证信息：
+- en: '**Cross-Site Request Forgery **(**CSRF**) or session riding is a security measure
+    that is used to identify each individual request between a user and a website.
+    Generally, `CSRF_TOKEN` or a token is used to manage such a mechanism. A token
+    is a random string generated by websites when a request to the page is made by
+    a user. A token value is required to process any form of HTTP request to the website.
+    The token value keeps changing for each successful request. An HTML `<form>` containing
+    a token value can be processed with either an updated or deleted token, which
+    are not accepted by websites.'
+  id: totrans-139
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在用户和网站之间保持安全措施是一项具有挑战性和危险性的任务。存在不同的安全问题需要加以管理。网络上存在各种新概念，需要有效合法地处理，以便进行网络抓取活动。
+- en: 'In this example, `username` and `password` are open string values, and `test` has
+    been used for both:'
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 浏览器开发者工具：[https://developers.google.com/web/tools/chrome-devtools/](https://developers.google.com/web/tools/chrome-devtools/),
+    [https://developer.mozilla.org/son/docs/Tools](https://developer.mozilla.org/son/docs/Tools)
+- en: '[PRE21]'
+  id: totrans-141
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'The form fields with the existing value and name are collected and `params`
+    is configured, which results in the following output:'
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们收集基于`<form>`的字段以及有关表单提交的更多信息：
+- en: '[PRE22]'
+  id: totrans-143
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: The parameters to be submitted via a form action are built using the `name`
+    attribute of the `<form>` element as a key and default, respectively, and is required
+    to receive values as their value.
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过`<form>`元素的`name`属性作为键和默认值构建要通过表单操作提交的参数，并分别需要接收值作为它们的值。
+- en: 'The `requests.post()` phrase implements a HTTP `POST` request to `loginURL` with the `params` and `customHeaders` that
+    have been setup. A `customHeaders` is created with the `setCookie` value that
+    we received earlier:'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 进一步阅读
+- en: '[PRE23]'
+  id: totrans-146
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Finally, we receive a successful output, along with the redirected URL and
+    information regarding the logout:'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '![](assets/4f8f7602-a524-4357-9a0a-79149630efe1.png)'
+- en: '[PRE24]'
+  id: totrans-148
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'The following screenshot shows the successful authentication with the information
+    verified:'
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后，我们收到了成功的输出，以及重定向的URL和有关注销的信息：
+- en: '![](assets/df2cafab-f73f-449c-804f-546c5b7b2580.png)'
+  id: totrans-150
+  prefs: []
+  type: TYPE_IMG
+  zh: 在这个例子中，`username`和`password`是开放的字符串值，`test`已经被用于两者：
+- en: Successful authentication verified with information from http://quotes.toscrape.com/Empty `customHeaders` or `customHeaders` without
+    a `key` named `Cookie` will not be successful in the authentication process. Similarly,
+    `csrf_token` is also required as the parameter. A posted, updated, or empty `csrf_token`
+    will not be successful in the authentication process, even when `customHeaders` is
+    provided with the required `key:value` pairs of information.
+  id: totrans-151
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 没有`key`命名为`Cookie`的空`customHeaders`或`customHeaders`将无法成功进行身份验证。同样，`csrf_token`也是必需的参数。即使提供了所需的`key:value`信息对，发布的、更新的或空的`csrf_token`也将无法成功进行身份验证。
+- en: Summary
+  id: totrans-152
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, we have explored some basic measures and techniques that are
+    relevant to security concerns, faced often, and are challenging with regards to
+    web scraping.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们探讨了一些与安全问题相关的基本措施和技术，这些问题经常出现，对于网络抓取来说是具有挑战性的。
+- en: Maintaining security measures between a user and a website is quite a challenging
+    and hazardous task. Different security concern exist and need to be managed. Various
+    new concepts exist on the web that need to be processed effectively and legally
+    so that we can perform web scraping activities.
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 'AJAX: [http://api.jquery.com/jquery.ajax/](http://api.jquery.com/jquery.ajax/),
+    [https://www.w3schools.com/js/js_ajax_intro.asp](https://www.w3schools.com/js/js_ajax_intro.asp)'
+- en: In the next chapter, we will be using the Python programming language to interact
+    with the web API for data extraction.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**跨站请求伪造**（**CSRF**）或会话劫持是一种安全措施，用于识别用户和网站之间的每个单独请求。通常，`CSRF_TOKEN`或令牌用于管理这样的机制。当用户向网站发出请求时，网站会生成一个随机字符串的令牌。处理网站的任何形式的HTTP请求都需要令牌值。每个成功请求的令牌值都会发生变化。包含令牌值的HTML
+    `<form>`可以使用已更新或已删除的令牌进行处理，但网站不会接受这些令牌。'
+- en: Further reading
+  id: totrans-156
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 从[http://quotes.toscrape.com/](http://quotes.toscrape.com/)验证的成功身份验证信息
+- en: AJAX: [http://api.jquery.com/jquery.ajax/](http://api.jquery.com/jquery.ajax/),
+    [https://www.w3schools.com/js/js_ajax_intro.asp](https://www.w3schools.com/js/js_ajax_intro.asp)
+  id: totrans-157
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 会话ID是网站服务器为特定用户分配的唯一编号，持续一段时间或一次会话。这个ID可以存储在特定的`<form>`字段或cookies中，甚至可以附加到URL查询字符串中。
+- en: Browser developer tools: [https://developers.google.com/web/tools/chrome-devtools/](https://developers.google.com/web/tools/chrome-devtools/),
+    [https://developer.mozilla.org/son/docs/Tools](https://developer.mozilla.org/son/docs/Tools)
+  id: totrans-158
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 收集具有现有值和名称的表单字段，并配置`params`，得到以下输出：
+- en: Cookies: [https://www.aboutcookies.org/](https://www.aboutcookies.org/) , [http://www.allaboutcookies.org/](http://www.allaboutcookies.org/)
+  id: totrans-159
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 正如我们从前面的截图中可以看到的，`<form>`正在使用HTTP `POST`将表单字段提交到`loginUrl`，还有一个隐藏的`<input>`字段带有`csrf_token`，以及接受登录凭据的字段。
+- en: CSRF: [https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF))
+  id: totrans-160
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'CSRF: [https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF))'
+- en: HTML forms: [https://www.w3schools.com/html/html_forms.asp](https://www.w3schools.com/html/html_forms.asp), [https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms](https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms)
+  id: totrans-161
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'HTML forms: [https://www.w3schools.com/html/html_forms.asp](https://www.w3schools.com/html/html_forms.asp),
+    [https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms](https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms)'
+- en: HTTP: [https://www.w3.org/Protocols/](https://www.w3.org/Protocols/)
+  id: totrans-162
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'HTTP: [https://www.w3.org/Protocols/](https://www.w3.org/Protocols/)'
+- en: HTTP headers: [http://jkorpela.fi/http.html](http://jkorpela.fi/http.html)
+  id: totrans-163
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'HTTP headers: [http://jkorpela.fi/http.html](http://jkorpela.fi/http.html)'
+- en: HTTP session: [https://developer.mozilla.org/en-US/docs/Web/HTTP/Session](https://developer.mozilla.org/en-US/docs/Web/HTTP/Session)
+  id: totrans-164
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'HTTP session: [https://developer.mozilla.org/en-US/docs/Web/HTTP/Session](https://developer.mozilla.org/en-US/docs/Web/HTTP/Session)'
+- en: Web scraping sandbox: [http://toscrape.com/](http://toscrape.com/)
+  id: totrans-165
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'Web scraping sandbox: [http://toscrape.com/](http://toscrape.com/)'
+- en: Web scraper testing ground: [http://testing-ground.scraping.pro/](http://testing-ground.scraping.pro/)
+  id: totrans-166
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 'Web scraper testing ground: [http://testing-ground.scraping.pro/](http://testing-ground.scraping.pro/)'

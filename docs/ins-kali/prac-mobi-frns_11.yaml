@@ -1,0 +1,1651 @@
+- en: Android Data Extraction Techniques
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: Android数据提取技术
+- en: Using any of the screen lock bypass techniques explained in [Chapter 8](b1621e6e-80a3-495e-a288-c8db601149f8.xhtml),
+    *Android Forensic Setup and Pre-Data Extraction Techniques*, an examiner can try
+    to access a locked device. Once the device is accessible, the next task is to
+    extract the information present on the device. This can be achieved by applying
+    various data extraction techniques to the Android device.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用[第8章](b1621e6e-80a3-495e-a288-c8db601149f8.xhtml)中解释的任何屏幕锁定绕过技术，*Android法证设置和数据提取技术*，检查员可以尝试访问被锁定的设备。一旦设备可访问，下一个任务是提取设备上的信息。这可以通过将各种数据提取技术应用于Android设备来实现。
+- en: This chapter will help you to identify the sensitive locations present on an
+    Android device and explain various logical and physical techniques that can be
+    applied to the device to extract the necessary information.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章将帮助您识别Android设备上的敏感位置，并解释可以应用于设备以提取必要信息的各种逻辑和物理技术。
+- en: 'In this chapter, we will cover the following topics:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，我们将涵盖以下主题：
+- en: Understanding data extraction techniques
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 理解数据提取技术
+- en: Manual data extraction
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 手动数据提取
+- en: Logical data extraction
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 逻辑数据提取
+- en: Physical data extraction, which covers imaging an Android device and SD card,
+    JTAG, and chip-off techniques
+  id: totrans-7
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 物理数据提取，包括成像Android设备和SD卡、JTAG和芯片脱落技术
+- en: Understanding data extraction techniques
+  id: totrans-8
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 理解数据提取技术
+- en: 'Data residing on an Android device may be an integral part of civil, criminal,
+    or internal investigations done as part of a corporate company''s internal probe.
+    While dealing with investigations involving Android devices, you, as the forensic
+    examiner, need to be mindful of the issues that need to be taken care of during
+    the forensic process; this includes determining whether root access is permitted
+    (via consent or legal authority) and what data can be extracted and analyzed during
+    the investigation. For example, in a criminal case involving stalking, the court
+    may only allow SMS, call logs, and photos to be extracted and analyzed on the
+    Android device belonging to the suspect. In this case, it may make the most sense
+    to logically capture only those specific items. However, it is best to obtain
+    a full physical data extraction from the device and only examine the areas admissible
+    by the court. You never know where your investigation may lead and it is best
+    to obtain as much data from the device as possible immediately, rather than wishing
+    you had a full image should the scope of consent change. Data extraction techniques
+    on an Android device can be classified into three types:'
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 驻留在Android设备上的数据可能是公司内部调查的一部分，也可能是民事、刑事或内部调查的一部分。在处理涉及Android设备的调查时，作为法证检查员，您需要注意在法证过程中需要处理的问题；这包括确定是否允许root访问（通过同意或法律授权），以及在调查期间可以提取和分析哪些数据。例如，在涉及跟踪的刑事案件中，法院可能只允许提取和分析嫌疑人所拥有的Android设备上的短信、通话记录和照片。在这种情况下，最好只逻辑捕获这些特定项目。然而，最好从设备中获取完整的物理数据提取，并仅检查法院允许的区域。您永远不知道您的调查可能会引向何处，最好立即从设备中获取尽可能多的数据，而不是希望在同意范围发生变化时能够获得完整的图像。Android设备上的数据提取技术可以分为三种类型：
+- en: Manual data extraction
+  id: totrans-10
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 手动数据提取
+- en: Logical data extraction
+  id: totrans-11
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 逻辑数据提取
+- en: Physical data extraction
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 物理数据提取
+- en: As described in Chapter 1, *Introduction to Mobile Forensics*, manual extraction
+    involves browsing through the device normally and capturing any valuable information,
+    while logical extraction deals with accessing the filesystem, and physical extraction
+    is about extracting a bit-by-bit image of the device. The extraction methods for
+    each of these types will be described in detail in the following sections.
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 正如第1章*移动取证简介*中所述，手动提取涉及正常浏览设备并捕获任何有价值的信息，而逻辑提取涉及访问文件系统，物理提取则是提取设备的逐位图像。这些类型的提取方法将在接下来的章节中详细描述。
+- en: Some methods may require the device to be rooted to fully access the data. Each
+    method has different implications and their success rates will depend on the tool
+    and method used as well as the device's make and model.
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有些方法可能需要设备被root才能完全访问数据。每种方法都有不同的影响，其成功率将取决于所使用的工具和方法，以及设备的制造和型号。
+- en: Manual data extraction
+  id: totrans-15
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 手动数据提取
+- en: This method of extraction involves you utilizing the normal user interface of
+    the mobile device to access content present in the memory. You will browse through
+    the device normally by accessing different menus to view details such as call
+    logs, text messages, and IM chats. The content of each screen is captured by taking
+    pictures and can be presented as evidence.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种提取方法涉及您利用移动设备的正常用户界面来访问存储器中的内容。您将通过访问不同的菜单来浏览设备，以查看通话记录、短信和即时通讯聊天等详细信息。每个屏幕的内容都通过拍照来捕获，并可以作为证据呈现。
+- en: The main drawback of this type of examination is that only the files that are
+    accessible via the operating system (in UI mode) can be investigated. Care must
+    be taken when manually examining the device, as it's easy to press the wrong button
+    and erase or add data. Manual extraction should be used as the last resort to
+    verify findings extracted using one of the other methods. Certain circumstances
+    may warrant you to conduct a manual examination as the first step. This may include
+    cases of life or death situations or missing persons where a quick scan of the
+    device may lead the police to the individual.
+  id: totrans-17
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这种类型的考察的主要缺点是只有通过操作系统（在UI模式下）可访问的文件才能被调查。在手动检查设备时必须小心，因为很容易按错按钮而擦除或添加数据。手动提取应该作为验证使用其他方法提取的结果的最后手段。某些情况可能需要您首先进行手动检查。这可能包括生死关头或失踪人员的案件，快速扫描设备可能会引导警方找到个人。
+- en: Logical data extraction
+  id: totrans-18
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 逻辑数据提取
+- en: Logical data extraction techniques extract the data present on the device by
+    interacting with the operating system and accessing the filesystem. These techniques
+    are significant because they provide valuable data, work on most devices, and
+    are easy to use. Once again, the concept of rooting comes into the picture while
+    extracting the data. Logical techniques do not actually require root access for
+    data extraction. However, having root access on a device allows you to access
+    all of the files present on a device. This means that some data may be extracted
+    on a non-rooted device while root access will open the device and provide access
+    to all of the files present on the device. Hence, having root access to a device
+    would greatly influence the amount and kind of data that could be extracted through
+    logical techniques. The following sections explain various techniques that can
+    be used to extract data logically from an Android device.
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 逻辑数据提取技术通过与操作系统交互和访问文件系统来提取设备上的数据。这些技术很重要，因为它们提供有价值的数据，适用于大多数设备，并且易于使用。再次，当提取数据时，root权限的概念再次出现。逻辑技术实际上不需要root权限来提取数据。但是，在设备上具有root权限允许您访问设备上的所有文件。这意味着在非root设备上可能提取一些数据，而root权限将打开设备并提供对设备上所有文件的访问。因此，在设备上具有root权限将极大地影响可以通过逻辑技术提取的数据的数量和类型。以下部分将解释可以用来从安卓设备逻辑提取数据的各种技术。
+- en: ADB pull data extraction
+  id: totrans-20
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: ADB拉取数据提取
+- en: As seen earlier, `adb` is a command-line tool that helps you to communicate
+    with a device to retrieve information. Using `adb`, you can extract data from
+    all of the files on the device or just the relevant files in which you are interested.
+    This is the most widely used technique as part of logical extraction.
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如前所述，`adb`是一个命令行工具，可帮助您与设备通信以检索信息。使用`adb`，您可以从设备上的所有文件或您感兴趣的相关文件中提取数据。这是逻辑提取的最常用技术。
+- en: To access an Android device through `adb`, the USB debugging option must be
+    enabled. From Android 4.2.2, due to secure USB debugging, the host connecting
+    to the device should also be authorized. If the device is locked and USB debugging
+    is not enabled, try to bypass the screen lock using the techniques explained in
+    [Chapter 8](b1621e6e-80a3-495e-a288-c8db601149f8.xhtml), *Android Forensic Setup
+    and Pre-Data Extraction Techniques*.
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要通过`adb`访问安卓设备，必须启用USB调试选项。从安卓4.2.2开始，由于安全的USB调试，连接到设备的主机也必须经过授权。如果设备被锁定且未启用USB调试，请尝试使用[第8章](b1621e6e-80a3-495e-a288-c8db601149f8.xhtml)
+    *安卓取证设置和数据提取前技术*中解释的技术来绕过屏幕锁定。
+- en: 'As a forensic examiner, it''s important for you to know how the data is stored
+    on the Android device and to understand where important and sensitive information
+    is stored so that the data can be extracted accordingly. Application data often
+    contains a wealth of user data that may be relevant to the investigation. All
+    files pertaining to applications of interest should be examined for relevance,
+    as will be explained in [Chapter 10](5bb0cc1b-d89c-408a-b2c9-6b946519151d.xhtml),
+    *Android Data Analysis and Recovery*. The application data can be stored in one
+    of the following locations:'
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为法证检查员，重要的是要了解数据在安卓设备上的存储方式，并理解重要和敏感信息的存储位置，以便相应地提取数据。应用程序数据通常包含大量可能与调查相关的用户数据。应该检查与感兴趣的应用程序相关的所有文件，如[第10章](5bb0cc1b-d89c-408a-b2c9-6b946519151d.xhtml)
+    *安卓数据分析和恢复*中所解释的那样。应用程序数据可以存储在以下位置之一：
+- en: '**Shared preferences**: This stores data in key-value pairs in a lightweight
+    XML format. Shared preference files are stored in the `shared_pref` folder of
+    the application `/data` directory.'
+  id: totrans-24
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**共享偏好**: 这里以轻量级XML格式存储数据的键值对。共享偏好文件存储在应用程序`/data`目录的`shared_pref`文件夹中。'
+- en: '**Internal storage**: This stores data that is private and is present in the
+    device''s internal memory. Files saved to the internal storage are private and
+    cannot be accessed by other applications.'
+  id: totrans-25
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**内部存储**: 这里存储的数据是私有的，存在于设备的内部存储器中。保存在内部存储器中的文件是私有的，其他应用程序无法访问。'
+- en: '**External storage**: This stores data that is public in the device''s external
+    memory, which does not usually enforce security mechanisms. This data is available
+    in the `/sdcard` directory.'
+  id: totrans-26
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**外部存储**: 这里存储的数据是设备外部存储器中的公共数据，通常不实施安全机制。这些数据可以在`/sdcard`目录中找到。'
+- en: '**SQLite database**: This data is available in the `/data/data/PackageName/`
+    database. It is usually stored with the `.db` file extension. The data present
+    in a SQLite file can be viewed using the SQLite browser ([https://sourceforge.net/projects/sqlitebrowser/](https://sourceforge.net/projects/sqlitebrowser/))
+    or by executing the necessary SQLite commands on the respective files.'
+  id: totrans-27
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**SQLite数据库**: 这些数据位于`/data/data/PackageName/`数据库中。通常以`.db`文件扩展名存储。可以使用SQLite浏览器([https://sourceforge.net/projects/sqlitebrowser/](https://sourceforge.net/projects/sqlitebrowser/))查看SQLite文件中的数据，或者通过在相应文件上执行必要的SQLite命令来查看。'
+- en: Every Android application stores data on the device using one or more of the
+    preceding data storage options. So, the Contacts application would store all of
+    the information about the contact details in the `/data/data` folder under its
+    package name. Note that `/data/data` is a part of your device's internal storage,
+    where all of the apps are installed under normal circumstances. Some application
+    data will reside on the SD card and in the `/data/data` partition. Using `adb`,
+    we can pull the data present in this partition for further analysis using the
+    `adb pull` command. Once again, it's important to note that this directory is
+    only accessible on a rooted phone.
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个安卓应用程序都使用前述的一种或多种数据存储选项在设备上存储数据。因此，联系人应用程序将在其包名下的`/data/data`文件夹中存储有关联系人详细信息的所有信息。请注意，`/data/data`是设备内部存储的一部分，在正常情况下，所有应用程序都安装在这里。一些应用程序数据将驻留在SD卡和`/data/data`分区中。使用`adb`，我们可以使用`adb
+    pull`命令提取此分区中的数据以进行进一步分析。再次强调，这个目录只能在具有root权限的手机上访问。
+- en: In Android 7.0 (Nougat), a new storage type called device encrypted storage
+    has been introduced to allow apps to store certain kinds of data in this storage.
+    As a result of this, you will notice new file paths such as `misc_de`, `misc_ce`,
+    `system_de`, and `system_ce` under the `/data` folder. From a forensic perspective,
+    this is a very important change because what this also means is that, on devices
+    running Android Nougat, `/data/data` is *not* the only location where artifacts
+    are stored, for example,
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Android 7.0（Nougat）中，引入了一种新的存储类型，称为设备加密存储，允许应用程序在此存储中存储某些类型的数据。因此，您将注意到新的文件路径，如`misc_de`、`misc_ce`、`system_de`和`system_ce`在`/data`文件夹下。从取证的角度来看，这是一个非常重要的变化，因为这也意味着在运行Android
+    Nougat的设备上，`/data/data`*不是*存储工件的唯一位置，例如，
+- en: 'SMS data location on old devices: `/data/com.android.providers.telephony/databases/smsmms.db` and
+    SMS data location on Nougat devices: `/user_de/0/com.android.providers.telephony/databases/smsmms.db`.'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 旧设备上的短信数据位置：`/data/com.android.providers.telephony/databases/smsmms.db`，Nougat设备上的短信数据位置：`/user_de/0/com.android.providers.telephony/databases/smsmms.db`。
+- en: 'On a rooted phone, the `adb pull` command on the `databases` folder of the
+    Dropbox app can be executed as follows:'
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在rooted手机上，可以执行Dropbox应用程序的`databases`文件夹上的`adb pull`命令，如下所示：
+- en: '![](img/3731c5c6-0015-457d-9ed0-ce4ae1dc9bd0.png)'
+  id: totrans-32
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/3731c5c6-0015-457d-9ed0-ce4ae1dc9bd0.png)'
+- en: The adb pull command
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: adb pull命令
+- en: 'Similarly, on a rooted phone, the entire `/data` folder can be pulled in this
+    manner. As shown in the following screenshot, the complete `/data` directory on
+    the Android device can be copied to the local directory on the machine. The entire
+    `data` directory was extracted in 97 seconds. The extraction time will vary depending
+    on the amount of data residing in `/data`:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，在rooted手机上，整个`/data`文件夹可以以这种方式被拉取。如下截图所示，Android设备上完整的`/data`目录可以被复制到机器上的本地目录。整个`data`目录在97秒内被提取出来。提取时间将取决于`/data`中数据的数量。
+- en: '![](img/c118d6b7-a15a-42f1-9b7a-1224ace5a3a2.png)'
+  id: totrans-35
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/c118d6b7-a15a-42f1-9b7a-1224ace5a3a2.png)'
+- en: The /data directory extracted to a forensic workstation
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从取证工作站提取的/data目录
+- en: 'On a non-rooted device, a `pull` command on the `/data` directory does not
+    extract the files, as shown in the following output, since the shell user does
+    not have permission to access those files:'
+  id: totrans-37
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在非rooted设备上，对`/data`目录的`pull`命令不会提取文件，如下面的输出所示，因为shell用户没有权限访问这些文件：
+- en: '![](img/6f175857-1f6f-4e06-bbaa-93cb07465527.png)'
+  id: totrans-38
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6f175857-1f6f-4e06-bbaa-93cb07465527.png)'
+- en: ADB pull command on non-rooted device
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非rooted设备上的ADB pull命令
+- en: The data copied from a rooted phone through the preceding process maintains
+    its directory structure, hence allowing an investigator to browse through the
+    necessary files to gain access to the information. By analyzing the data of the
+    respective applications, a forensic expert can gather critical information that
+    can influence the outcome of the investigation. Note that examining the folders
+    natively on your forensic workstation will alter the dates and times of the content.
+    You should make a copy of the original output to use for a date/time comparison.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过上述过程从rooted手机复制的数据保持其目录结构，因此允许调查人员浏览必要的文件以获取信息。通过分析各个应用程序的数据，取证专家可以收集影响调查结果的关键信息。请注意，在取证工作站上本地检查文件夹将改变内容的日期和时间。您应该复制原始输出以用于日期/时间比较。
+- en: Using SQLite Browser to view the data
+  id: totrans-41
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用SQLite Browser查看数据
+- en: SQLite Browser is a tool that can help during the course of analyzing extracted
+    data. SQLite Browser allows you to explore database files with the following extensions: `.sqlite`,
+    `.sqlite3`, `.sqlitedb`, `.db`, and `.db3`. The main advantage of using SQLite
+    Browser is that it shows data in a table form.
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SQLite Browser是一个在分析提取的数据过程中有所帮助的工具。SQLite Browser允许您探索具有以下扩展名的数据库文件：`.sqlite`、`.sqlite3`、`.sqlitedb`、`.db`和`.db3`。使用SQLite
+    Browser的主要优势是它以表格形式显示数据。
+- en: Navigate to File | Open Database to open a `.db` file using SQLite Browser.
+    As shown in the following screenshot, there are three main tabs: Database Structure,
+    Browse Data, and Execute SQL. The Browse Data tab allows you to see the information
+    present in different tables within the `.db` files.
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 导航到文件 | 打开数据库，使用SQLite Browser打开`.db`文件。如下截图所示，有三个主要选项卡：数据库结构、浏览数据和执行SQL。浏览数据选项卡允许您查看`.db`文件中不同表中的信息。
+- en: 'We will be mostly using this tab during our analysis. Alternatively, tools
+    such as Oxygen Forensic SQLite Viewer can also be used for the same purpose. Recovering
+    deleted data from database files is possible and will be explained in [Chapter
+    10](5bb0cc1b-d89c-408a-b2c9-6b946519151d.xhtml), *Android Data Analysis* *and
+    Recovery*:'
+  id: totrans-44
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们在分析过程中将主要使用这个选项卡。另外，诸如Oxygen Forensic SQLite Viewer之类的工具也可以用于相同的目的。从数据库文件中恢复已删除的数据是可能的，并将在[第10章](5bb0cc1b-d89c-408a-b2c9-6b946519151d.xhtml)
+    *Android数据分析和恢复*中进行解释。
+- en: '![](img/a8857866-309c-4595-ac02-07cdf0e51b93.png)'
+  id: totrans-45
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a8857866-309c-4595-ac02-07cdf0e51b93.png)'
+- en: SQLite Browser
+  id: totrans-46
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SQLite Browser
+- en: The following sections throw light on identifying important data and manually
+    extracting various details from an Android phone. Gaining access to the Terminal
+    on Android has been covered in earlier chapters. In the following section, we
+    will directly jump into gaining device information from there.
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下部分将介绍如何识别重要数据，并手动从Android手机中提取各种详细信息。在早期章节中已经介绍了如何访问Android终端。在接下来的部分中，我们将直接开始从那里获取设备信息。
+- en: Extracting device information
+  id: totrans-48
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 提取设备信息
+- en: 'Knowing the details of your Android device, such as the model, version, and
+    more, will aid your investigation. For example, when the device is physically
+    damaged and this prohibits the examination of the device information, you can
+    grab details about the device by executing the following command under the `/system`
+    folder:'
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 了解您的Android设备的详细信息，如型号、版本等，将有助于您的调查。例如，当设备受到物理损坏，这会阻止对设备信息的检查时，您可以通过在`/system`文件夹下执行以下命令来获取有关设备的详细信息：
+- en: '[PRE0]'
+  id: totrans-50
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'This can be seen in the following screenshot:'
+  id: totrans-51
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可以在下面的截图中看到：
+- en: '![](img/3378156a-13cf-440a-96e5-77ec39ed16f2.png)'
+  id: totrans-52
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/3378156a-13cf-440a-96e5-77ec39ed16f2.png)'
+- en: The build.prop file
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: build.prop文件
+- en: After extracting device information, we will now extract call logs.
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提取设备信息后，我们现在将提取通话记录。
+- en: Extracting call logs
+  id: totrans-55
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 提取通话记录
+- en: 'Accessing the call logs of a phone is often required during an investigation
+    to confirm certain events. The information about call logs is stored in the `contacts2.db`
+    file located at `/data/data/com.android.providers.contacts/databases/`. As mentioned
+    earlier, you can use SQLite Browser to see the data present in this file after
+    extracting it to a local folder on the forensic workstation. Let''s see how to
+    extract call logs by following these steps:'
+  id: totrans-56
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 访问手机的通话记录通常在调查过程中需要确认某些事件。通话记录的信息存储在位于`/data/data/com.android.providers.contacts/databases/`下的`contacts2.db`文件中。如前所述，您可以使用SQLite
+    Browser在将其提取到取证工作站上的本地文件夹后查看此文件中的数据。让我们看看如何按照以下步骤提取通话记录：
+- en: 'As shown in the following screenshot, using the `adb pull` command, the necessary
+    `.db` files can be extracted to a folder on the forensic workstation:'
+  id: totrans-57
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 如下屏幕截图所示，使用`adb pull`命令可以将必要的`.db`文件提取到取证工作站上的文件夹中：
+- en: '![](img/e701571d-1308-4ed6-b4e5-599300752f2b.png)'
+  id: totrans-58
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/e701571d-1308-4ed6-b4e5-599300752f2b.png)'
+- en: The contacts2.db file copied to a local folder
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将contacts2.db文件复制到本地文件夹
+- en: 'Note that applications used to make calls can store call log details in the
+    respective application folder. All communication applications must be examined
+    for call log details, as follows:'
+  id: totrans-60
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 请注意，用于拨打电话的应用程序可以将通话记录详细信息存储在各自的应用程序文件夹中。必须检查所有通信应用程序以获取通话记录详细信息，如下所示：
+- en: '[PRE1]'
+  id: totrans-61
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'This will give the following output:'
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '![](img/a311a289-ac04-46a8-a94d-80f7913be712.png)'
+  id: totrans-63
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a311a289-ac04-46a8-a94d-80f7913be712.png)'
+- en: 'Now, open the `contacts2.db` file using SQLite Browser (by navigating to File
+    | Open Database) and browse through the data present in different tables. The
+    calls table present in the `contacts2.db` file provides information about the
+    call history. The following screenshot highlights the call history along with
+    the name, number, duration, and date:'
+  id: totrans-64
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，使用SQLite Browser（通过导航到文件|打开数据库）打开`contacts2.db`文件，并浏览不同表中的数据。`contacts2.db`文件中的通话表提供有关通话历史的信息。以下屏幕截图突出显示了通话历史以及名称、号码、持续时间和日期：
+- en: '![](img/6b0a7aa8-f098-4985-8614-d7bf30bdc610.png)'
+  id: totrans-65
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6b0a7aa8-f098-4985-8614-d7bf30bdc610.png)'
+- en: On devices running Android 7.0 (Nougat), call log data has been moved out of
+    the `contacts2.db` file. On these devices, call log data can be accessed at `/data/com.android.providers.contacts/databases/calllog.db`
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在运行Android 7.0（Nougat）的设备上，通话记录数据已从`contacts2.db`文件中移出。在这些设备上，通话记录数据可以在`/data/com.android.providers.contacts/databases/calllog.db`中访问
+- en: Extracting SMS/MMS
+  id: totrans-67
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 提取短信/彩信
+- en: 'During the course of an investigation, you may be asked to retrieve the text
+    messages that were sent by and delivered to a particular mobile device. Hence,
+    it is important to understand where the details are stored and how to access the
+    data. The `mmssms.db` file, which is present under `/data/data/com.android.providers.telephony/databases`,
+    contains the necessary details. As with call logs, you must ensure that applications
+    capable of messaging are examined for relevant message logs by using the following
+    command:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在调查过程中，您可能会被要求检索发送到特定移动设备的文本消息。因此，重要的是要了解详细信息存储在何处以及如何访问数据。`mmssms.db`文件位于`/data/data/com.android.providers.telephony/databases`下，包含必要的详细信息。与通话记录一样，您必须确保检查能够发送消息的应用程序，以便使用以下命令检查相关消息日志：
+- en: '[PRE2]'
+  id: totrans-69
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'This will give the following output:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将产生以下输出：
+- en: '![](img/953d91f5-744b-4ed9-93d8-710bdfe854eb.png)'
+  id: totrans-71
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/953d91f5-744b-4ed9-93d8-710bdfe854eb.png)'
+- en: Extracting SMS data
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提取短信数据
+- en: 'The phone number can be seen under the address column and the corresponding
+    text message can be seen under the body column, as shown in the following screenshot:'
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 电话号码可以在地址列下看到，相应的文本消息可以在正文列下看到，如下屏幕截图所示：
+- en: '![](img/8eb6323e-c01c-4c6e-afe6-46793be9d519.png)'
+  id: totrans-74
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/8eb6323e-c01c-4c6e-afe6-46793be9d519.png)'
+- en: The calls table in the contacts2.db file
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: contacts2.db文件中的通话表
+- en: We will now extract browser history information.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们现在将提取浏览器历史信息。
+- en: Extracting browser history information
+  id: totrans-77
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 提取浏览器历史信息
+- en: 'Extracting browser history information is one task that is often required of
+    a forensic examiner. Apart from the default Android browser, different browser
+    applications can be used on an Android phone, such as Firefox Mobile and Google
+    Chrome. All of these browsers store their browser history in the SQLite `.db`
+    format. For our example, we are extracting data from the default Android browser
+    to our forensic workstation. This data is located at `/data/data/com.android.browser`.
+    The file named `browser2.db` contains the browser history details. The following
+    screenshot shows the browser data, as represented by Oxygen Forensic SQLite Viewer.
+    Note that the trial version will hide certain information:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提取浏览器历史信息通常是取证人员经常需要执行的任务。除了默认的Android浏览器外，Android手机上还可以使用不同的浏览器应用程序，如Firefox
+    Mobile和Google Chrome。所有这些浏览器都以SQLite`.db`格式存储其浏览器历史记录。在我们的示例中，我们正在将数据从默认的Android浏览器提取到我们的取证工作站。这些数据位于`/data/data/com.android.browser`。名为`browser2.db`的文件包含浏览器历史详细信息。以下屏幕截图显示了由Oxygen
+    Forensic SQLite Viewer表示的浏览器数据。请注意，试用版将隐藏某些信息：
+- en: '![](img/0e1c3bcb-e0e5-418f-884f-dd545c30ab6d.png)'
+  id: totrans-79
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/0e1c3bcb-e0e5-418f-884f-dd545c30ab6d.png)'
+- en: The browser2.db file in Oxygen Forensic SQLite Viewer
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Oxygen Forensic SQLite Viewer中的browser2.db文件
+- en: Please note that the aforementioned behavior might change if the browser's incognito
+    mode is used.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意，如果浏览器使用隐身模式，上述行为可能会发生变化。
+- en: Several details covered in the preceding section are not stored on the device
+    if the browser's incognito mode is used. Next, we will be analyzing social networking
+    and IM chats.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在前述部分涵盖的几个细节如果浏览器使用隐身模式，则不会存储在设备上。接下来，我们将分析社交网络和即时通讯聊天。
+- en: Analysis of social networking/IM chats
+  id: totrans-83
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 社交网络/即时通讯聊天的分析
+- en: Social networking and IM chat applications such as Facebook, Twitter, and WhatsApp
+    reveal sensitive data that could be helpful during the investigation of any case.
+    The analysis is pretty much the same as with any other Android application. Download
+    the data to a forensic workstation and analyze the `.db` files to find out whether
+    you can unearth any sensitive information. For example, let's look at the Facebook
+    application and try to see what data can be extracted.
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 社交网络和即时聊天应用程序，如Facebook、Twitter和WhatsApp，会透露可能在调查任何案件时有所帮助的敏感数据。分析过程与任何其他Android应用程序基本相同。将数据下载到法医工作站并分析`.db`文件，以找出是否可以发现任何敏感信息。例如，让我们看看Facebook应用程序，并尝试查看可以提取出哪些数据。
+- en: 'First, we extract the `/data/data/com.facebook.katana` folder and navigate
+    to the `databases` folder. The `fb.db` file present under this folder contains
+    the information that is associated with the user''s account. The `friends_data`
+    table contains information about the user''s friends'' names, along with their
+    phone numbers, email IDs, and dates of birth, as shown in the following screenshot.
+    Similarly, other files can be analyzed to find out whether any sensitive information
+    can be gathered:'
+  id: totrans-85
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们提取`/data/data/com.facebook.katana`文件夹并导航到`databases`文件夹。该文件夹下的`fb.db`文件包含与用户账户相关的信息。`friends_data`表包含用户朋友的姓名，电话号码，电子邮件ID和出生日期等信息，如下截图所示。类似地，可以分析其他文件，以找出是否可以收集到任何敏感信息：
+- en: '![](img/31287bf1-f5b4-47b0-a513-3976365b6902.png)'
+  id: totrans-86
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/31287bf1-f5b4-47b0-a513-3976365b6902.png)'
+- en: The fb.db file in SQLite Browser
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: SQLite浏览器中的fb.db文件
+- en: Similarly, by analyzing the data present in the `/data/data` folder, information
+    about the geolocation, calendar events, user notes, and more can be grabbed.
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 类似地，通过分析`/data/data`文件夹中的数据，可以获取有关地理位置、日历事件、用户笔记等信息。
+- en: ADB backup extraction
+  id: totrans-89
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: ADB备份提取
+- en: 'Starting from Android 4.0, Google implemented the `adb backup` functionality,
+    which allows users to back up application data to a computer using the `adb` tool.
+    This process does not require root access and, hence, can be very useful during
+    forensic examination. The main drawback is that it does not back up every application
+    installed on the device. The backup feature is application dependent, as the owner
+    of the application can choose to allow backups. Backups are allowed by default,
+    but the developer can disable it if they want to. Hence, most third-party apps
+    have this enabled and the `adb backup` command will work for them. Here is the
+    syntax for the `adb backup` command:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从Android 4.0开始，Google实施了`adb backup`功能，允许用户使用`adb`工具将应用程序数据备份到计算机。此过程不需要root访问权限，因此在法医检查期间非常有用。主要缺点是它不会备份设备上安装的每个应用程序。备份功能取决于应用程序，因为应用程序的所有者可以选择允许备份。备份默认是允许的，但开发人员可以禁用它。因此，大多数第三方应用程序都启用了此功能，并且`adb
+    backup`命令将对它们起作用。以下是`adb backup`命令的语法：
+- en: '[PRE3]'
+  id: totrans-91
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Let''s discuss this in detail:'
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们详细讨论一下：
+- en: '`-f`: This is used to choose where the backup file will be stored. If not specified,
+    it defaults to `backup.ab` in the present working directory.'
+  id: totrans-93
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`-f`：用于选择备份文件的存储位置。如果未指定，则默认为当前工作目录中的`backup.ab`。'
+- en: '`[-apk|noapk]`: This is used to choose whether or not to back up the `.apk`
+    file. The default is `-noapk`.'
+  id: totrans-94
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[-apk|noapk]`：用于选择是否备份`.apk`文件。默认为`-noapk`。'
+- en: '`[-obb|-noobb]`: This is used to choose whether or not to back up the `.obb`
+    (APK expansion) files. It defaults to `-noobb`.'
+  id: totrans-95
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[-obb|-noobb]`：用于选择是否备份`.obb`（APK扩展）文件。默认为`-noobb`。'
+- en: '`[-shared|-noshared]`: This is used to choose whether or not to back up data
+    from shared storage and the SD card. The default is `-noshared`.'
+  id: totrans-96
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[-shared|-noshared]`：用于选择是否从共享存储和SD卡备份数据。默认为`-noshared`。'
+- en: '`[-all]`: This includes all applications for which backups are enabled.'
+  id: totrans-97
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[-all]`：包括所有已启用备份的应用程序。'
+- en: '`[-system|-nosystem]`: This is used to choose whether or not to include system
+    applications. It defaults to `-system`.'
+  id: totrans-98
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[-system|-nosystem]`：用于选择是否包括系统应用程序。默认为`-system`。'
+- en: '`[<packages>]`: This is used to list a specific package name to be backed up.'
+  id: totrans-99
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`[<packages>]`：用于列出要备份的特定包名称。'
+- en: 'Once the device is connected to the workstation and `adb` can access it, run
+    the `adb backup -shared -all` command, as shown in the following screenshot:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦设备连接到工作站并且`adb`可以访问它，请运行`adb backup -shared -all`命令，如下截图所示：
+- en: '![](img/a06189c7-2d38-40fa-9af4-d6164ebb7f9c.png)'
+  id: totrans-101
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a06189c7-2d38-40fa-9af4-d6164ebb7f9c.png)'
+- en: The adb backup command
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: adb备份命令
+- en: 'Once the command is run, the user then needs to approve the permission on the
+    device, as shown in the following screenshot. For this reason, if the device is
+    screen locked, it''s not possible to make a backup:'
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 运行命令后，用户需要在设备上批准权限，如下截图所示。因此，如果设备被锁定屏幕，就无法进行备份：
+- en: '![](img/0589699a-734b-4c0a-b2fc-868070038f61.png)'
+  id: totrans-104
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/0589699a-734b-4c0a-b2fc-868070038f61.png)'
+- en: Backup permission on the device
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设备上的备份权限
+- en: 'An Android backup file is stored as a `.ab` file and, by default, it is stored
+    in the `platform- tools` folder of the Android SDK. There are free tools, such
+    as Android Backup Extractor, that can convert the `.ab` file into a `.tar` file,
+    which can then be viewed. Android Backup Extractor can be downloaded from [https://sourceforge.net/projects/adbextractor/](https://sourceforge.net/projects/adbextractor/).
+    This tool is a Java-based application, so ensure that Java is installed on the
+    workstation before using the tool. To convert the backup file into `.tar` format,
+    issue the following command:'
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Android备份文件存储为`.ab`文件，并且默认情况下存储在Android SDK的`platform-tools`文件夹中。有免费工具，如Android
+    Backup Extractor，可以将`.ab`文件转换为`.tar`文件，然后可以查看。可以从[https://sourceforge.net/projects/adbextractor/](https://sourceforge.net/projects/adbextractor/)下载Android
+    Backup Extractor。这个工具是基于Java的应用程序，因此在使用该工具之前，请确保工作站上已安装了Java。要将备份文件转换为`.tar`格式，请发出以下命令：
+- en: '[PRE4]'
+  id: totrans-107
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: This will automatically create a file with the `.tar` extension, which can then
+    be viewed easily using Archive tools such as WinRAR or 7Zip. However, note that
+    if the password was entered on the device when the backup was created, the file
+    will be encrypted and, therefore, you'll need to provide the password as an argument
+    in the preceding command. The backup file contains two main folders—`apps` and
+    `shared`. The `apps` folder contains all of the information that is present under
+    `/data/data` for the applications included in the backup. The `shared` folder
+    contains all of the data present on the SD card.
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将自动创建一个带有`.tar`扩展名的文件，然后可以使用WinRAR或7Zip等存档工具轻松查看。但是，请注意，如果在创建备份时在设备上输入了密码，则文件将被加密，因此您需要在前面的命令中提供密码作为参数。备份文件包含两个主要文件夹——`apps`和`shared`。`apps`文件夹包含备份中包含的应用程序在`/data/data`下的所有信息。`shared`文件夹包含SD卡上存在的所有数据。
+- en: ADB dumpsys extraction
+  id: totrans-109
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: ADB dumpsys提取
+- en: 'The `adb dumpsys` command allows you to gather information about services and
+    applications running on the system. The `adb shell dumpsys` command gives diagnostic
+    output for all system services. The `dumpsys` command does not require root privileges
+    to be executed and requires only USB debugging to be enabled as with any other
+    `adb` command. As shown in the following screenshot, to see the list of all the
+    services that you can use with `dumpsys`, run the `adb.exe shell service list` command:'
+  id: totrans-110
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`adb dumpsys`命令允许您收集有关系统上运行的服务和应用程序的信息。`adb shell dumpsys`命令为所有系统服务提供诊断输出。`dumpsys`命令不需要以root权限执行，并且只需要启用USB调试，就像任何其他`adb`命令一样。如下面的屏幕截图所示，要查看您可以与`dumpsys`一起使用的所有服务的列表，请运行`adb.exe
+    shell service list`命令：'
+- en: '![](img/b00b1090-9432-4e58-93f8-eb5fb55eb31e.png)'
+  id: totrans-111
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/b00b1090-9432-4e58-93f8-eb5fb55eb31e.png)'
+- en: The dumpsys service list command
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: dumpsys服务列表命令
+- en: 'Analyzing certain `dumpsys` services, such as Wi-Fi, user, and notification,
+    can be helpful in certain scenarios. Here are some of the interesting cases where
+    running the `dumpsys` command could be helpful during forensic analysis:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 分析某些`dumpsys`服务，如Wi-Fi、用户和通知，在某些情况下可能会有所帮助。以下是一些有趣的情况，在这些情况下运行`dumpsys`命令可能有助于取证分析：
+- en: 'The `dumpsys iphonesubinfo` service can be used to get information about a
+    device ID or the IMEI number, as shown in the following screenshot:'
+  id: totrans-114
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`dumpsys iphonesubinfo`服务可用于获取有关设备ID或IMEI号码的信息，如下面的屏幕截图所示：'
+- en: '![](img/310dee13-d763-488c-b4c7-3227abebd8d1.png)'
+  id: totrans-115
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/310dee13-d763-488c-b4c7-3227abebd8d1.png)'
+- en: The dumpsys command showing the IMEI number
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显示IMEI号码的dumpsys命令
+- en: 'The `dumpsys wifi` service gives information about Wi-Fi points accessed by
+    the user. It shows the SSIDs of the connections that have been saved. This information
+    can be used to pin down the user to a particular location. Here is the `adb dumpsys`
+    command, which gives this information:'
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`dumpsys wifi`服务提供了用户访问的Wi-Fi点的信息。它显示了已保存连接的SSID。这些信息可以用来确定用户的特定位置。以下是提供此信息的`adb
+    dumpsys`命令：'
+- en: '![](img/7705ecd1-0ce6-4014-aeaf-d565e858aceb.png)'
+  id: totrans-118
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/7705ecd1-0ce6-4014-aeaf-d565e858aceb.png)'
+- en: The dumpsys command showing the last connected Wi-Fi details
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显示最后连接的Wi-Fi详细信息的dumpsys命令
+- en: 'The `dumpsys usagestats` service gives information about recently used applications,
+    along with their date of usage. For example, the following screenshot shows that
+    no apps were used on February 1, 2016, but on January 31, 2016, the Google Chrome
+    browser was used and there was an attempt to back up the phone data:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`dumpsys usagestats`服务提供了关于最近使用的应用程序以及它们的使用日期的信息。例如，以下屏幕截图显示，2016年2月1日未使用任何应用程序，但在2016年1月31日使用了Google
+    Chrome浏览器，并尝试备份手机数据：'
+- en: '![](img/f7d95867-0cf2-4901-82f6-5149ccab2e1b.png)'
+  id: totrans-121
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/f7d95867-0cf2-4901-82f6-5149ccab2e1b.png)'
+- en: The dumpsys command showing recently used apps
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 显示最近使用的应用程序的dumpsys命令
+- en: 'Observe that against `Date 20160201, android: 0` times denotes that no apps
+    were used. But for `Date: 20160131, android: 1 times` confirms that one app was
+    used and the later sections provide more details on what app was used and so on.
+    Depending on the case being investigated, the forensic analyst needs to figure
+    out whether any of the `dumpsys` commands can be of use. Running a `dumpsys` command
+    immediately after a device seizure can be extremely helpful later on. By running
+    the `adb shell dumpsys` command, you can record all of the `dumpsys` service information.'
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '请注意，对于`Date 20160201, android: 0`次表示未使用任何应用程序。但对于`Date: 20160131, android:
+    1 times`确认使用了一个应用程序，后面的部分提供了更多关于使用了哪个应用程序的详细信息。根据正在调查的案件，取证分析师需要确定任何`dumpsys`命令是否有用。在设备扣押后立即运行`dumpsys`命令可能会在以后非常有帮助。通过运行`adb
+    shell dumpsys`命令，您可以记录所有`dumpsys`服务信息。'
+- en: Using content providers
+  id: totrans-124
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 使用内容提供程序
+- en: In Android, the data of one application cannot be accessed by another application
+    under normal circumstances. However, Android provides a mechanism through which
+    data can be shared with other applications. This is precisely achieved through
+    the use of content providers. Content providers present data to external applications
+    in the form of one or more tables. These tables are no different from the tables
+    found in a relational database. They can be used by applications to share data,
+    usually through the URI addressing scheme. They are used by other applications
+    that access the provider using a provider-client object. During the installation
+    of an app, the user determines whether or not the app can gain access to the requested
+    data (content providers). For instance, contacts, SMS/MMS, and a calendar are
+    examples of content providers.
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Android中，一个应用程序的数据在正常情况下无法被另一个应用程序访问。但是，Android提供了一种机制，通过该机制可以与其他应用程序共享数据。这正是通过使用内容提供程序实现的。内容提供程序以一个或多个表的形式向外部应用程序提供数据。这些表与关系数据库中的表没有什么不同。它们可以被应用程序使用，通常通过URI寻址方案共享数据。它们由使用提供程序客户端对象访问提供程序的其他应用程序使用。在安装应用程序时，用户确定应用程序是否可以访问所请求的数据（内容提供程序）。例如，联系人、短信/彩信和日历是内容提供程序的示例。
+- en: 'Hence, by taking advantage of this, we can create an app that can grab all
+    of the information from all of the available content providers. This is precisely
+    how most commercial forensic tools work. The advantage of this method is that
+    it can be used on both rooted and non-rooted devices. For our example, we use
+    AFLogical, which takes advantage of the content provider mechanism to gain access
+    to the information. This tool extracts the data and saves it to an SD card in
+    CSV format. The following steps extract the information from an Android device
+    using AFLogical Open Source Edition 1.5.2:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，通过利用这一点，我们可以创建一个可以从所有可用的内容提供者中获取所有信息的应用程序。这正是大多数商业取证工具的工作原理。这种方法的优势在于它可以用于已root和未root的设备。在我们的示例中，我们使用AFLogical，它利用内容提供者机制来访问信息。该工具提取数据并以CSV格式保存到SD卡中。以下步骤使用AFLogical开源版1.5.2从Android设备中提取信息：
+- en: Download AFLogical OSE 1.5.2 from [https://github.com/nowsecure/android-forensics/downloads](https://github.com/nowsecure/android-forensics/downloads).
+  id: totrans-127
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从[https://github.com/nowsecure/android-forensics/downloads](https://github.com/nowsecure/android-forensics/downloads)下载AFLogical
+    OSE 1.5.2。
+- en: The AFLogical LE edition is capable of extracting a large amount of information
+    and requires registration via forensics using an active law enforcement or government
+    agency email address. AFLogical OSE can pull all available MMSes, SMSes, contacts,
+    and call logs.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AFLogical LE版本能够提取大量信息，并需要通过法证使用活跃的执法部门或政府机构的电子邮件地址进行注册。AFLogical OSE可以提取所有可用的MMS、SMS、联系人和通话记录。
+- en: Ensure that USB debugging mode is enabled and connect the device to the workstation.
+  id: totrans-129
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 确保USB调试模式已启用，并将设备连接到工作站。
+- en: 'Verify that the device is identified by issuing the `adb.exe devices` command:'
+  id: totrans-130
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 通过发出`adb.exe devices`命令来验证设备是否被识别：
+- en: '![](img/9bf7260b-c029-4047-ade4-82af65b65d1a.png)'
+  id: totrans-131
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/9bf7260b-c029-4047-ade4-82af65b65d1a.png)'
+- en: Identify connected device
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 识别连接的设备
+- en: 'Save the AFLogical OSE app in the home directory and issue the `adb.exe install
+    AFLogical-OSE_1.5.2.apk` command to install it on the device:'
+  id: totrans-133
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将AFLogical OSE应用程序保存在主目录中，并发出`adb.exe install AFLogical-OSE_1.5.2.apk`命令将其安装到设备上：
+- en: '![](img/1320ae1a-9c10-46e4-8e94-2f9aa414bfa8.png)'
+  id: totrans-134
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/1320ae1a-9c10-46e4-8e94-2f9aa414bfa8.png)'
+- en: Installing AFLogical app
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装AFLogical应用程序
+- en: 'Once the application is installed, you can run it directly from the device
+    and click on the Capture button present at the bottom of the app, as shown in
+    the following screenshot:'
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 安装应用程序后，可以直接从设备上运行，并单击应用程序底部的捕获按钮，如下面的屏幕截图所示：
+- en: '![](img/c5a35c3a-3deb-41c7-8b33-e553d6f7884d.png)'
+  id: totrans-137
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/c5a35c3a-3deb-41c7-8b33-e553d6f7884d.png)'
+- en: The AFLogical OSE app
+  id: totrans-138
+  prefs: []
+  type: TYPE_NORMAL
+  zh: AFLogical OSE应用程序
+- en: 'The app starts extracting data from the respective content providers and, once
+    the process is complete, a message will be displayed, as shown in the following
+    screenshot:'
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 应用程序开始从相应的内容提供者提取数据，一旦过程完成，将显示一条消息，如下面的屏幕截图所示：
+- en: '![](img/77e3267f-4820-4e69-a728-e331fd6c33f5.png)'
+  id: totrans-140
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/77e3267f-4820-4e69-a728-e331fd6c33f5.png)'
+- en: Message displayed after the extraction is complete
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提取完成后显示的消息
+- en: 'The extracted data is saved to the SD card of the device in a directory named
+    `forensics`. The extracted information is stored in CSV files, as shown in the
+    following screenshot. The CSV files can be viewed using any editor:'
+  id: totrans-142
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 提取的数据保存在设备的SD卡中的一个名为`forensics`的目录中。提取的信息存储在CSV文件中，如下面的屏幕截图所示。可以使用任何编辑器查看CSV文件：
+- en: '![](img/6aa8734c-bdf1-40a2-a472-c471c6170ea0.png)'
+  id: totrans-143
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/6aa8734c-bdf1-40a2-a472-c471c6170ea0.png)'
+- en: Files extracted using AFLogical OSE
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用AFLogical OSE提取的文件
+- en: The `info.xml` file present in the same directory provides information about
+    the device, including the IMEI number, IMSI number, Android version, information
+    about installed applications, and so on.
+  id: totrans-145
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 同一目录中的`info.xml`文件提供有关设备的信息，包括IMEI号、IMSI号、Android版本、已安装应用程序的信息等。
+- en: However, note that third-party app installation should be allowed (by selecting
+    the Unknown Sources option) on the device for this to work. Other tools that can
+    help during an investigation to logically extract data will be covered in [Chapter
+    11](882decf1-336b-416f-98ab-dadecc71efef.xhtml), *Android App Analysis, Malware,
+    a**nd Reverse Engineering*.
+  id: totrans-146
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 但是，请注意，设备必须允许第三方应用程序安装（通过选择“未知来源”选项）才能正常工作。在[第11章](882decf1-336b-416f-98ab-dadecc71efef.xhtml)中将介绍其他在调查中逻辑提取数据的工具，*Android应用程序分析、恶意软件和逆向工程*。
+- en: This section covered various logical acquisition techniques. We will now look
+    into physical data extraction techniques.
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本节涵盖了各种逻辑获取技术。现在我们将研究物理数据提取技术。
+- en: Physical data extraction
+  id: totrans-148
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 物理数据提取
+- en: Physical extraction refers to the process of obtaining an exact bit-by-bit image
+    of a device. It is important to understand that a bit-by-bit image is not the
+    same as copying and pasting the contents of a device. If we copy and paste the
+    contents of a device, it will only copy the available files, such as visible files,
+    hidden files, and system-related files. This method is considered a logical image.
+    With this method, deleted files and files that are not accessible are not copied
+    by the `copy` command. Deleted files can be recovered (based on the circumstances)
+    using certain techniques, which we will see in the following chapters. Unlike
+    logical extraction, physical extraction is an exact copy of the device's memory
+    and includes more information, such as the slack space and unallocated space.
+  id: totrans-149
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 物理提取是指获取设备的精确位对位图像的过程。重要的是要理解，位对位图像与复制和粘贴设备内容并不相同。如果我们复制和粘贴设备的内容，它只会复制可用文件，如可见文件、隐藏文件和系统相关文件。这种方法被认为是逻辑图像。使用这种方法，被`copy`命令删除的文件和无法访问的文件不会被复制。根据情况，可以使用某些技术恢复已删除的文件，我们将在接下来的章节中看到。与逻辑提取不同，物理提取是设备内存的精确副本，并包括更多信息，如松弛空间和未分配空间。
+- en: Android data extraction through physical techniques is commonly performed using
+    the `dd` command, while other advanced techniques such as JTAG and chip-off are
+    also available, but are usually hard to implement and require great precision
+    and experience to try them on real devices during the course of an investigation.
+    As with any other technique, if an individual performs these procedures incorrectly,
+    data on the device can be corrupted or become irretrievable, thereby making it
+    non-admissible in a court of law. JTAG and chip-off techniques are covered in
+    detail in the following sections. However, extracting data through the `dd` command
+    requires root access. The following sections provide an overview of various techniques
+    that can be used to perform physical extraction.
+  id: totrans-150
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过物理技术进行安卓数据提取通常使用`dd`命令进行，而其他高级技术如JTAG和芯片脱焊也可用，但通常难以实施，并需要极大的精度和经验才能在调查过程中尝试在真实设备上使用它们。与任何其他技术一样，如果个人执行这些程序不正确，设备上的数据可能会损坏或变得无法检索，从而使其在法庭上不可接受。JTAG和芯片脱焊技术在接下来的章节中有详细介绍。然而，通过`dd`命令提取数据需要root权限。接下来的章节将概述可以用来执行物理提取的各种技术。
+- en: Imaging an Android phone
+  id: totrans-151
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 成像安卓手机
+- en: Imaging a device is one of the most important steps in mobile device forensics.
+    When possible, it's imperative to obtain a physical image of an Android device
+    before performing any techniques to extract the data directly from the device.
+    In forensics, this process of obtaining a physical acquisition is commonly called
+    *imaging the device*. The terms physical image, forensic image, and raw image
+    are often used to refer to the image captured through this process. Let's first
+    revisit how imaging is done on a desktop computer as it helps us to correlate
+    and realize the problems associated with imaging Android devices. Let's assume
+    that a desktop computer, which is not powered on, is seized from a suspect and
+    sent for forensic examination. In this case, a typical forensic examiner would
+    remove the hard disk, connect it to a write blocker, and obtain a bit-by-bit forensic
+    image using any of the available tools. The original hard disk is then safely
+    protected during the forensic imaging of the data.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 设备成像是移动设备取证中最重要的步骤之一。在可能的情况下，在执行任何直接从设备中提取数据的技术之前，必须先获取安卓设备的物理镜像。在取证中，这个获取物理镜像的过程通常被称为“成像设备”。术语物理镜像、取证镜像和原始镜像经常被用来指代通过这一过程捕获的镜像。让我们首先回顾一下在台式电脑上如何进行成像，因为这有助于我们理解并意识到成像安卓设备所涉及的问题。假设从嫌疑人那里夺取了一台未开机的台式电脑，并送去进行取证检查。在这种情况下，典型的取证员会移除硬盘，连接到写保护器，并使用任何可用的工具获取逐位取证镜像。原始硬盘在数据的取证成像过程中得到安全保护。
+- en: With an Android device, all of the areas that contain data cannot be easily
+    removed. Also, if the device is active at the time of receiving it for examination,
+    it is not possible to analyze the device without making any changes to it, because
+    any interaction would change the state of the device.
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于安卓设备，包含数据的所有区域都不能轻易移除。此外，如果设备在接收检查时处于活动状态，就不可能在不对其进行任何更改的情况下分析设备，因为任何交互都会改变设备的状态。
+- en: 'An Android device may have two file storage areas: internal and external storage.
+    Internal storage refers to the built-in non-volatile memory. External storage
+    refers to the removable storage medium, such as a micro SD card. However, it''s
+    important to note that some devices do not have a removable storage medium such
+    as an SD card, but they divide the available permanent storage space into internal
+    and external storage. Hence, it''s not always true that external storage is removable.
+    When a removable SD card is present, a forensic image of the memory card has to
+    be obtained. As discussed in [Chapter 7](eb3f20e0-270d-4e7d-bb69-3bfd1e707f38.xhtml),
+    *Understanding Android*, these removable cards are generally formatted with the
+    FAT32 filesystem. Some mobile device acquisition methods will acquire the SD card
+    through the Android device. This process, while useful, will be slow due to the
+    speed limitations of USB phone cables.'
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安卓设备可能有两个文件存储区域：内部和外部存储。内部存储指的是内置的非易失性存储器。外部存储指的是可移动存储介质，如micro SD卡。然而，重要的是要注意，一些设备没有可移动的存储介质，如SD卡，而是将可用的永久存储空间划分为内部和外部存储。因此，并不总是外部存储是可移动的。当可移动的SD卡存在时，必须获取存储卡的取证镜像。正如在[第7章](eb3f20e0-270d-4e7d-bb69-3bfd1e707f38.xhtml)中所讨论的，“理解安卓”中所述，这些可移动卡通常使用FAT32文件系统格式化。一些移动设备取证方法将通过安卓设备获取SD卡。这个过程虽然有用，但由于USB手机数据线的速度限制，将会很慢。
+- en: Android, by default, does not provide access to internal directories and system-related
+    files. This restricted access is to ensure the security of the device. For instance,
+    the `/data/data` folder is not accessible on a non-rooted device. This folder
+    is especially of interest to us because it stores most of the user-created data
+    and many applications write valuable data into this folder. Hence, to obtain an
+    image of the device, we need to root the Android device. Rooting a device gives
+    us superuser privileges and access to all of the data. It is important to realize
+    that this book has been stressing that all of the steps taken should be forensically
+    sound and should not make changes to the device whenever possible. Rooting an
+    Android device will make changes to it and should be tested on any device that
+    you have not previously investigated. Rooting is common for Android devices, but
+    getting root access could alter the device in a manner that renders the data changed
+    or—worse yet—wiped. Some Android devices, such as the Nexus 4 and 5, may force
+    the data partition to be wiped before allowing root access. This negates the need
+    to root the device to gain access because all of the user data is lost during
+    the process. Just remember that, while rooting provides access to more data when
+    successfully done, it can also wipe data or destroy the phone. Hence, you must
+    ensure that you have consent or legal rights to manipulate an Android device before
+    proceeding with the root. As rooting techniques have been discussed in [Chapter
+    8](b1621e6e-80a3-495e-a288-c8db601149f8.xhtml), *Android Forensic Setup and Pre-Data
+    Extraction Techniques*, we will proceed with the example assuming that the device
+    is rooted.
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 默认情况下，安卓不提供对内部目录和系统相关文件的访问。这种受限访问是为了确保设备的安全。例如，在非root设备上无法访问`/data/data`文件夹。这个文件夹对我们来说特别重要，因为它存储了大部分用户创建的数据，许多应用程序将有价值的数据写入此文件夹。因此，为了获取设备的图像，我们需要对安卓设备进行root。对设备进行root将赋予我们超级用户权限并访问所有数据。重要的是要意识到，本书一直强调，所有步骤都应该是取证上的，并且在可能的情况下不应该对设备进行更改。对安卓设备进行root将对其进行更改，并且应该在之前未调查过的设备上进行测试。对安卓设备进行root是常见的，但获得root权限可能会改变设备，使数据发生改变，甚至被删除。一些安卓设备，如Nexus
+    4和5，在允许root权限之前可能会强制擦除数据分区。这就消除了对设备进行root以获得访问权限的需要，因为在此过程中所有用户数据都会丢失。只需记住，虽然成功进行root可以访问更多数据，但也可能会擦除数据或销毁手机。因此，在进行root之前，必须确保您有同意或合法权利来操作安卓设备。由于[第8章](b1621e6e-80a3-495e-a288-c8db601149f8.xhtml)中已经讨论了root技术，*安卓取证设置和数据提取前技术*，我们将继续进行示例，假设设备已经root。
+- en: 'The following is a step-by-step process to obtain a forensic image of a rooted
+    Android device:'
+  id: totrans-156
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是获取已root的安卓设备的取证图像的逐步过程：
+- en: 'Connect the Android device to the workstation and verify that the device is
+    identified by issuing the `adb devices` command, as shown here:'
+  id: totrans-157
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 将安卓设备连接到工作站，并通过发出`adb devices`命令来验证设备是否被识别，如下所示：
+- en: '![](img/fb713f1a-4310-4b65-b740-5259e1d54a4b.png)'
+  id: totrans-158
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/fb713f1a-4310-4b65-b740-5259e1d54a4b.png)'
+- en: Identify connected devices
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 识别连接的设备
+- en: 'Once the `adb` access is ready, the partitions can be acquired from the Android
+    device using the following steps:'
+  id: totrans-160
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '一旦`adb`访问准备就绪，可以通过以下步骤从安卓设备中获取分区： '
+- en: '**Using the** `dd` **command**: The `dd` command can be used to create a raw
+    image of the device. This command helps us to create a bit-by-bit image of the
+    Android device by copying low-level data.'
+  id: totrans-161
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**使用**`dd`**命令**：`dd`命令可用于创建设备的原始镜像。此命令帮助我们通过复制低级数据来创建安卓设备的逐位图像。'
+- en: '**Inserting a new SD card**: Insert a new SD card into the device to copy the
+    image file to this card. Make sure that this SD card is wiped and does not contain
+    any other data. You might also need to testify that no additional data is present
+    on the drive.'
+  id: totrans-162
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**插入新的SD卡**：将新的SD卡插入设备，将图像文件复制到该卡中。确保此SD卡已擦除并且不包含任何其他数据。您可能还需要证明驱动器上没有其他数据。'
+- en: '**Executing the command**: The filesystem of an Android device is stored in
+    different locations within the `/dev` partition. A simple `mount` command on a
+    Samsung Galaxy S3 phone returns the following output:'
+  id: totrans-163
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**执行命令**：安卓设备的文件系统存储在`/dev`分区的不同位置。对三星Galaxy S3手机执行简单的`mount`命令返回以下输出：'
+- en: '![](img/a7a902ef-2668-4aaf-9c42-c1ce2dd44c16.png)'
+  id: totrans-164
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/a7a902ef-2668-4aaf-9c42-c1ce2dd44c16.png)'
+- en: mount command output on an Android device
+  id: totrans-165
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安卓设备上的mount命令输出
+- en: 'From the preceding output, we can identify the blocks where the `/system`,
+    `/data`, and `/cache` partitions are mounted. Although it''s important to image
+    all of the files, most of the data is present in the `/data` and `/system` partitions.
+    When time allows, all partitions should be acquired for completeness. Once this
+    is done, execute the following command to image the device:'
+  id: totrans-166
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 从上述输出中，我们可以确定`/system`、`/data`和`/cache`分区被挂载的块。虽然重要的是镜像所有文件，但大部分数据都存在于`/data`和`/system`分区中。如果时间允许，应该获取所有分区以确保完整性。完成此操作后，执行以下命令来镜像设备：
+- en: '[PRE5]'
+  id: totrans-167
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: In the preceding example, the data partition of a Samsung Galaxy S3 was used
+    (where `if` is the input file and `of` is the output file).
+  id: totrans-168
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上述示例中，使用了三星Galaxy S3的数据分区（其中`if`是输入文件，`of`是输出文件）。
+- en: The preceding command will make a bit-by-bit image of the `mmcblk0p12` file
+    (data partition) and copy the image file to an SD card. Once this is done, the
+    `dd` image file can be analyzed using the available forensic software.
+  id: totrans-169
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 上述命令将创建`mmcblk0p12`文件（数据分区）的逐位图像，并将图像文件复制到SD卡中。完成此操作后，可以使用可用的取证软件分析`dd`图像文件。
+- en: You must ensure that the SD card has enough storage space to contain the data
+    partition image. Other methods are available to acquire data from rooted devices.
+  id: totrans-170
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您必须确保SD卡有足够的存储空间来容纳数据分区镜像。还有其他方法可用于从已root的设备中获取数据。
+- en: 'If the image cannot be written to the SD card directly, you can use the `netcat`
+    command to write the output directly to the machine. The `netcat` tool is a Linux-based
+    tool used for transferring data over a network connection. Android devices do
+    not usually come with `netcat` installed. Let''s see how to use this command in
+    the following steps:'
+  id: totrans-171
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果无法直接将图像写入SD卡，则可以使用`netcat`命令将输出直接写入计算机。`netcat`工具是用于在网络连接上传输数据的基于Linux的工具。Android设备通常不会预装`netcat`。让我们看看如何在以下步骤中使用此命令：
+- en: To check whether `netcat` is installed, simply open the ADB shell and type `nc`.
+    If it returns saying nc is not found, `netcat` will have to be installed manually
+    on the device. You can download `netcat` compiled for Android at [https://sourceforge.net/projects/androidforensics-netcat/files/](https://sourceforge.net/projects/androidforensics-netcat/files/).
+  id: totrans-172
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 要检查`netcat`是否已安装，只需打开ADB shell并键入`nc`。如果返回说找不到nc，则必须在设备上手动安装`netcat`。您可以在[https://sourceforge.net/projects/androidforensics-netcat/files/](https://sourceforge.net/projects/androidforensics-netcat/files/)下载为Android编译的`netcat`。
+- en: 'Push `netcat` on to the device using the following command on your computer:'
+  id: totrans-173
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用以下命令将`netcat`推送到设备上：
+- en: '[PRE6]'
+  id: totrans-174
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: The command should have created `Case_Folder` in `/dev` and `nc` should be in
+    it.
+  id: totrans-175
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该命令应该已在`/dev`中创建了`Case_Folder`，并且`nc`应该在其中。
+- en: 'Now, we need to give it permission to execute from the ADB shell. This can
+    be done as follows:'
+  id: totrans-176
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在，我们需要在ADB shell中为其授予执行权限。可以按以下步骤完成：
+- en: '[PRE7]'
+  id: totrans-177
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'Open two Terminal windows with the ADB shell open in one of them. The other
+    will be used to listen to the data being sent from the device. Now, we need to
+    enable port forwarding over ADB from your computer:'
+  id: totrans-178
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在计算机上打开两个终端窗口，其中一个打开ADB shell。另一个将用于监听从设备发送的数据。现在，我们需要在计算机上通过ADB启用端口转发：
+- en: '[PRE8]'
+  id: totrans-179
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: '`9999` is the port we chose to use for `netcat`; it can be any arbitrary port
+    number between `1023` and `65535` on a Linux or Mac system (`1023` and below are
+    reserved for system processes and require root permission to use them). In the
+    other Terminal window, run the following:'
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`9999`是我们选择用于`netcat`的端口；在Linux或Mac系统上，可以是`1023`到`65535`之间的任意端口号（`1023`及以下保留用于系统进程，并且需要root权限才能使用它们）。在另一个终端窗口中，运行以下命令：'
+- en: '[PRE9]'
+  id: totrans-181
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: The `data_partition.img` file should now be created in the current directory
+    of your computer. When the data is finished transferring, `netcat` will terminate
+    in both terminals and return to Command Prompt. The process can take a significant
+    amount of time depending on the size of the image.
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '`data_partition.img`文件现在应该在计算机的当前目录中创建。数据传输完成后，`netcat`将在两个终端中终止并返回到命令提示符。该过程可能需要相当长的时间，具体取决于图像的大小。'
+- en: Imaging a memory (SD) card
+  id: totrans-183
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 成像存储卡（SD卡）
+- en: 'There are many tools available that can image a memory card. The following
+    example uses `WinHex` to create a raw disk image of the SD card. The following
+    is the step-by-step process with which to image a memory card using WinHex:'
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 有许多可用的工具可以对存储卡进行成像。以下示例使用`WinHex`创建SD卡的原始磁盘映像。以下是使用WinHex对存储卡进行成像的逐步过程：
+- en: '**Connecting the memory card**: Remove the SD card from the memory slot and
+    use a card reader to connect the memory card to the forensic workstation.'
+  id: totrans-185
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**连接存储卡**：从存储卡槽中取出SD卡，并使用读卡器将存储卡连接到取证工作站。'
+- en: '**Write-protect the card**: Open the disk using WinHex. Navigate to Options
+    | Edit Mode and select Read-only Mode (=write-protected mode), as shown in the
+    following screenshot. This is to make sure that the device is write-protected
+    and no data can be written on it:'
+  id: totrans-186
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**写保护卡**：使用WinHex打开磁盘。导航到选项|编辑模式，并选择只读模式（=写保护模式），如下图所示。这是为了确保设备是只读的，不能在其上写入任何数据：'
+- en: '![](img/8c84dc71-82dc-40a6-9299-c287d2f8fc20.png)'
+  id: totrans-187
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/8c84dc71-82dc-40a6-9299-c287d2f8fc20.png)'
+- en: WinHex view of Edit Mode (left) and WinHex Read-only Mode enabled (right)
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: WinHex编辑模式视图（左）和启用WinHex只读模式（右）
+- en: '**Calculating the hash value**: Calculate the hash value of the memory card
+    to make sure that no changes are made at any point during the investigation. Navigate
+    to Tools | Compute hash and choose any hashing algorithm.'
+  id: totrans-189
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**计算哈希值**：计算存储卡的哈希值，以确保在调查过程中没有进行任何更改。导航到工具|计算哈希，并选择任何哈希算法。'
+- en: '**Creating the image of the disk**: Navigate to File | Create Disk Image, as
+    shown in the following screenshot. Select the raw image option (`.dd`) to create
+    an image. This completes the imaging of the memory card:'
+  id: totrans-190
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: '**创建磁盘映像**：导航到文件|创建磁盘映像，如下图所示。选择原始图像选项（`.dd`）以创建图像。这完成了存储卡的成像：'
+- en: '![](img/0e6cc2f1-a0ca-47a2-958a-f71bafa8e538.png)'
+  id: totrans-191
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/0e6cc2f1-a0ca-47a2-958a-f71bafa8e538.png)'
+- en: The WinHex disk image option
+  id: totrans-192
+  prefs: []
+  type: TYPE_NORMAL
+  zh: WinHex磁盘映像选项
+- en: Once a forensic image is obtained using any of the methods described previously,
+    it needs to be analyzed to extract the relevant information. There are several
+    commercial tools, such as Cellebrite and XRY, that can analyze image files. Analyzing
+    Android images is covered in detail in Chapter 10, *Android Data Analysis and
+    Recovery*.
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用先前描述的任何方法获得取证图像后，需要对其进行分析以提取相关信息。有几种商业工具，如Cellebrite和XRY，可以分析图像文件。Android图像的分析在第10章“Android数据分析和恢复”中有详细介绍。
+- en: Joint Test Action Group
+  id: totrans-194
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 联合测试行动组
+- en: '**Joint Test Action Group** (**JTAG**) involves using advanced data acquisition
+    methods, which involve connecting to specific ports on the device and instructing
+    the processor to transfer the data stored on the device. Using this method, a
+    full physical image of a device can be acquired. It is always recommended to first
+    try out the other techniques mentioned earlier, as they are easy to implement
+    and require less effort. An analyst must be experienced and properly trained before
+    attempting JTAG as the device may be damaged if not handled properly.'
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '**联合测试行动组**（**JTAG**）涉及使用高级数据采集方法，涉及连接到设备上的特定端口，并指示处理器传输设备上存储的数据。使用此方法可以获取设备的完整物理图像。建议首先尝试先前提到的其他技术，因为它们易于实施并且需要较少的工作。分析人员在尝试JTAG之前必须有经验和适当的培训，因为如果处理不当，设备可能会受到损坏。'
+- en: 'The JTAG process usually involves the following forensic steps:'
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JTAG过程通常涉及以下取证步骤：
+- en: In JTAG, the device **Test Access Ports** (**TAPs**) are used to access the
+    CPU of the device. Identifying the TAPs is the primary and most important step.
+    TAPs are identified and the connection is traced to the CPU to find out which
+    pad is responsible for each function. Although device manufacturers document resources
+    about the JTAG schematics of a particular device, they are not released for general
+    viewing. A good site for JTAG on an Android device is [https://forensicswiki.xyz/wiki/index.php?title=JTAG_Forensics](https://forensicswiki.xyz/wiki/index.php?title=JTAG_Forensics).
+  id: totrans-197
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在JTAG中，设备的**测试访问端口**（**TAPs**）用于访问设备的CPU。识别TAPs是主要且最重要的步骤。 TAPs被识别，并且连接被追踪到CPU以找出哪个接触点负责每个功能。尽管设备制造商会为特定设备的JTAG原理图提供文档资源，但这些资源不会对外公开。一个关于Android设备上JTAG的好网站是[https://forensicswiki.xyz/wiki/index.php?title=JTAG_Forensics](https://forensicswiki.xyz/wiki/index.php?title=JTAG_Forensics)。
+- en: 'Wire leads are then soldered to appropriate connector pins and the other end
+    is connected to the device that can control the CPU, as shown in the following
+    photograph (published by Jim Swauger at [http://www.binaryintel.com/services/jtag-chip-off-forensics/jtag-forensics/](http://www.binaryintel.com/services/jtag-chip-off-forensics/jtag-forensics/) ).
+    JTAG jigs can be used to forgo soldering for certain devices. The use of a jig
+    or JTAG adapter negates the need to solder, as it connects the TAPs to the CPU:'
+  id: totrans-198
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 导线引线然后焊接到适当的连接器引脚，另一端连接到可以控制CPU的设备，如下图所示（由Jim Swauger在[http://www.binaryintel.com/services/jtag-chip-off-forensics/jtag-forensics/](http://www.binaryintel.com/services/jtag-chip-off-forensics/jtag-forensics/)发布）
+    。 JTAG夹具可用于放弃对某些设备的焊接。夹具或JTAG适配器的使用消除了焊接的需要，因为它连接了TAP到CPU：
+- en: '![](img/5acf214d-c2d8-4d2d-bb02-2f5165131b1d.png)'
+  id: totrans-199
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/5acf214d-c2d8-4d2d-bb02-2f5165131b1d.png)'
+- en: The JTAG setup
+  id: totrans-200
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JTAG设置
+- en: Once the preceding steps are complete, power must be applied to boot the CPU.
+    The voltage that must be applied depends on the specifications released by the
+    hardware manufacturer. Do not apply a voltage beyond the number given in the specification.
+  id: totrans-201
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 完成上述步骤后，必须施加电源以启动CPU。必须施加的电压取决于硬件制造商发布的规格。不要施加超出规格中给定数字的电压。
+- en: After applying the power, a full binary memory dump of the NAND flash can be
+    extracted.
+  id: totrans-202
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 施加电源后，可以提取NAND闪存的完整二进制内存转储。
+- en: Analyze the extracted data using the forensic techniques and tools learned in
+    this book. A raw `.bin` file will be obtained during the acquisition; most forensic
+    tools support the ingestion and analysis of this image format.
+  id: totrans-203
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 使用本书学习的取证技术和工具分析提取的数据。在获取期间将获得一个原始的`.bin`文件；大多数取证工具都支持对这种图像格式的摄取和分析。
+- en: 'JTAG may sound complicated (perhaps it is), but it serves many useful purposes
+    and three advantages are listed here:'
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: JTAG可能听起来很复杂（也许是），但它有许多有用的用途，以下列出了三个优点：
+- en: The main advantage of this technique is that it works even if the device is
+    not powered on.
+  id: totrans-205
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这种技术的主要优势是即使设备未开启也可以工作。
+- en: It does not require root, ADB, or USB debugging.
+  id: totrans-206
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 不需要root，ADB或USB调试。
+- en: It can be used to recover device PINs/passwords and so can image the entire
+    flash memory and recover/crack password files.
+  id: totrans-207
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 它可以用于恢复设备的PIN码/密码，因此可以对整个闪存进行成像，并恢复/破解密码文件。
+- en: It is also important to understand that the JTAG technique should not result
+    in the loss of functionality of the device. If reassembled properly, the device
+    should function without any problems. Although the JTAG technique is effective
+    in extracting data, only experienced and qualified personnel should attempt it.
+    Any error in soldering the JTAG pads or applying the wrong voltage could severely
+    damage the device.
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 还需要了解JTAG技术不应导致设备功能丧失。如果正确重新组装，设备应该可以正常运行。尽管JTAG技术在提取数据方面是有效的，但只有经验丰富和合格的人员才能尝试。在焊接JTAG接触点或施加错误电压时出现任何错误可能会严重损坏设备。
+- en: The chip-off technique
+  id: totrans-209
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 芯片脱落技术
+- en: Chip-off, as the name suggests, is a technique where the NAND flash chips are
+    removed from the device and examined to extract information. Hence, this technique
+    will work even when the device is passcode-protected and USB debugging is not
+    enabled. Unlike the JTAG technique, where the device functions normally after
+    examination, the chip-off technique usually results in the destruction of the
+    device, that is, it is more difficult to reattach the NAND flash to the device
+    after examination. The process of reattaching the NAND flash to the device is
+    called re-balling and requires training and practice.
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 芯片脱落，顾名思义，是一种从设备中移除NAND闪存芯片并进行检查以提取信息的技术。因此，即使设备受到密码保护并且未启用USB调试，这种技术也可以工作。与JTAG技术不同，设备在检查后通常会被破坏，也就是说，重新连接NAND闪存到设备后更加困难。重新连接NAND闪存到设备的过程称为重新焊球，需要培训和实践。
+- en: 'Chip-off techniques usually involve the following forensic steps:'
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Chip-off技术通常涉及以下取证步骤：
+- en: All of the chips on the device must be researched to determine which chip contains
+    user data.
+  id: totrans-212
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 必须研究设备上的所有芯片，以确定哪个芯片包含用户数据。
+- en: 'Once determined, the NAND flash is physically removed from the device. This
+    can be done by applying heat to desolder the chip:'
+  id: totrans-213
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 确定后，NAND闪存从设备中物理移除。这可以通过施加热量来去焊接芯片来完成：
+- en: '![](img/29816483-c302-4e11-be48-9cb6ba0517b8.png)'
+  id: totrans-214
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](img/29816483-c302-4e11-be48-9cb6ba0517b8.png)'
+- en: Chip-off technique
+  id: totrans-215
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 芯片脱落技术
+- en: Source: http://www.binaryintel.com/services/jtag-chip-off-forensics/chip-off_forensics/
+  id: totrans-216
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 来源：http://www.binaryintel.com/services/jtag-chip-off-forensics/chip-off_forensics/
+- en: This is a very delicate process and must be done with great care, as it may
+    result in damaging the NAND flash.
+  id: totrans-217
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 这是一个非常细致的过程，必须非常小心，因为可能会损坏NAND闪存。
+- en: The chip is then cleaned and repaired to make sure that the connectors are present
+    and functioning.
+  id: totrans-218
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 然后清洁和修复芯片，以确保连接器存在并且正常工作。
+- en: Using specialized hardware device adapters, the chip can now be read. This is
+    done by inserting the chip into the hardware device, that supports the specific
+    NAND flash chip. In this process, raw data is acquired from the chip, resulting
+    in a `.bin` file.
+  id: totrans-219
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用专门的硬件设备适配器，现在可以读取芯片。这是通过将芯片插入支持特定NAND闪存芯片的硬件设备中来完成的。在这个过程中，从芯片中获取原始数据，生成一个`.bin`文件。
+- en: The data acquired can now be analyzed using forensic techniques and the tools
+    described earlier.
+  id: totrans-220
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 现在可以使用取证技术和之前描述的工具对获取的数据进行分析。
+- en: The chip-off technique is most helpful when a device is damaged severely, locked,
+    or otherwise inaccessible. However, the application of this technique requires
+    not only expertise but also costly equipment and tools. There is always a risk
+    of damaging the NAND flash while removing it and, hence, it is recommended to
+    try out the logical techniques first to extract any data.
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 芯片脱落技术在设备严重损坏、锁定或无法访问时最有帮助。然而，这种技术的应用不仅需要专业知识，还需要昂贵的设备和工具。在取出NAND闪存时总会有损坏的风险，因此建议首先尝试逻辑技术来提取任何数据。
+- en: While root access is a must to perform any of the techniques discussed earlier,
+    it must be noted here that, at the time of writing this book, none of these techniques
+    would work on devices that have **Full Disk Encryption** (**FDE**) enabled. As
+    discussed in [Chapter 7](eb3f20e0-270d-4e7d-bb69-3bfd1e707f38.xhtml), *Understanding
+    Android*, Google has mandated the use of FDE for most devices starting from Android
+    6.0\. Although some techniques were demonstrated and published for decrypting
+    full disk encryption, they are device-specific and are not widely applicable.
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 虽然在执行前面讨论的任何技术时都必须具有根访问权限，但在撰写本书时，必须指出，这些技术中没有一种适用于启用了**全盘加密**（**FDE**）的设备。正如在[第7章](eb3f20e0-270d-4e7d-bb69-3bfd1e707f38.xhtml)中所讨论的*了解Android*，Google已经要求从Android
+    6.0开始，大多数设备都使用FDE。尽管已经演示并发布了一些解密全盘加密的技术，但它们是特定于设备的，不具有普遍适用性。
+- en: Summary
+  id: totrans-223
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: This chapter covered various manual, logical, and physical data extraction techniques.
+    We learned when and how to apply these techniques during the course of an investigation.
+    Logical techniques extract data by interacting with the device using tools such
+    as ADB. Physical techniques, on the other hand, access a larger set of data; they
+    are complex and require a great deal of expertise to perform. Imaging a device
+    produces a bit-by-bit image of the device, which is later analyzed using tools.
+    Imaging a device is one of the primary steps to ensure that the data on the device
+    is not modified. Android 7.0 and above poses a new challenge to forensic investigators
+    by bringing in new security features and file paths that may limit acquisition.
+    With this knowledge, you can perform device acquisition to extract relevant data
+    from an Android device.
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章涵盖了各种手动、逻辑和物理数据提取技术。我们学会了在调查过程中何时以及如何应用这些技术。逻辑技术通过使用ADB等工具与设备交互来提取数据。另一方面，物理技术可以访问更多的数据；它们是复杂的，需要大量的专业知识来执行。对设备进行成像会产生设备的逐位图像，稍后可以使用工具对其进行分析。对设备进行成像是确保设备上的数据未被修改的主要步骤之一。Android
+    7.0及以上版本为取证调查人员带来了新的挑战，引入了新的安全功能和可能限制获取的文件路径。有了这些知识，您可以执行设备获取操作，从Android设备中提取相关数据。
+- en: In the next chapter, we will see how to extract relevant data such as call logs,
+    text messages, and browsing history from an image file. We will also cover data
+    recovery techniques, using which we can recover data deleted from a device.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中，我们将看到如何从图像文件中提取通话记录、短信和浏览历史等相关数据。我们还将介绍数据恢复技术，使用这些技术可以从设备中恢复删除的数据。

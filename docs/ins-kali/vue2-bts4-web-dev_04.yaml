@@ -1,0 +1,976 @@
+- en: Chapter 5. Configuring Your Pomodoro
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 第5章。配置您的番茄钟
+- en: In the previous chapter, we implemented the main feature of our ProFitOro application
+    – the Pomodoro timer. We even added a hardcoded workout, so we can exercise during
+    our breaks. Actually, I already started using ProFitOro. While I'm writing these
+    words, the Pomodoro clock counts down – *tick tick tick tick*.
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们实现了ProFitOro应用程序的主要功能-番茄钟计时器。我们甚至添加了一个硬编码的锻炼，这样我们就可以在休息时间锻炼。实际上，我已经开始使用ProFitOro。当我写下这些文字时，番茄钟正在倒计时-*滴答滴答滴答滴答*。
+- en: In this chapter, we are going to explore the *Firebase Realtime Database's*
+    possibilities and its API. We are going to manage storing, retrieving, and updating
+    usage statistics and configuration of our application. We will use the Vuex store
+    to bring the application's data from the database to the frontend application.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这一章中，我们将探索*Firebase实时数据库*的可能性及其API。我们将管理存储、检索和更新应用程序的使用统计和配置。我们将使用Vuex存储将应用程序的数据从数据库传递到前端应用程序。
+- en: 'To bring this possibility to the UI, we will use Vue''s reactivity combined
+    with the power of Bootstrap. Thus, in this chapter we are going to implement the
+    statistics and settings ProFitOro components using:'
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了将这种可能性带到UI中，我们将使用Vue的响应性结合Bootstrap的强大之处。因此，在这一章中，我们将使用以下内容来实现ProFitOro的统计和设置组件：
+- en: Firebase Realtime Database
+  id: totrans-4
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Firebase实时数据库
+- en: Vue.js reactive data bindings and Vuex state management
+  id: totrans-5
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Vue.js的响应式数据绑定和Vuex状态管理
+- en: The power of Bootstrap to make things responsive
+  id: totrans-6
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: Bootstrap的强大之处在于使事物具有响应性
+- en: Setting up a Vuex store
+  id: totrans-7
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 设置Vuex存储
+- en: Before starting with real data from the database, let's set up the Vuex store
+    for our ProFitOro. We will use it to manage the Pomodoro timer configuration,
+    user settings, such as the username, and a profile picture URL. We will also use
+    it to store and retrieve the application's usage statistics.
+  id: totrans-8
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开始使用数据库中的真实数据之前，让我们为我们的ProFitOro设置Vuex存储。我们将使用它来管理番茄钟计时器的配置，用户设置（如用户名）以及个人资料图片的URL。我们还将使用它来存储和检索应用程序的使用统计。
+- en: From [Chapter 2](part0024_split_000.html#MSDG2-449ee41b57ea4c048225480b41c8dbe3
+    "Chapter 2. Under the Hood – Tutorial Explained"), *Hello User Explained*, you
+    already know how the Vuex store works. We must define data that will represent
+    the application's state and then we must provide all the needed getters to get
+    the data and all the needed mutations to update the data. Once all this is set,
+    we will be able to access this data from the components.
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从[第2章](part0024_split_000.html#MSDG2-449ee41b57ea4c048225480b41c8dbe3 "第2章。底层-教程解释")
+    *Hello User Explained*，您已经知道了Vuex存储的工作原理。我们必须定义代表应用程序状态的数据，然后我们必须提供所有需要的getter来获取数据和所有需要的mutation来更新数据。一旦所有这些都设置好了，我们就能够从组件中访问这些数据。
+- en: After the application's store is ready and set up, we can connect it to the
+    real-time database and slightly adjust the getters and mutations to operate the
+    real data.
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用程序的存储准备就绪并设置好后，我们可以将其连接到实时数据库，并稍微调整getter和mutation以操作真实数据。
+- en: 'First of all, we need to tell our application that it will use the Vuex store.
+    To do that, let''s add the `npm` dependency for `vuex`:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，我们需要告诉我们的应用程序将使用Vuex存储。为此，让我们为`vuex`添加`npm`依赖项：
+- en: '[PRE0]'
+  id: totrans-12
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: 'Now, we need to define a basic structure of our store. Our Vuex store will
+    contain the following:'
+  id: totrans-13
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要定义我们存储的基本结构。我们的Vuex存储将包含以下内容：
+- en: '**State**: The initial state of the application''s data.'
+  id: totrans-14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**State**：应用程序数据的初始状态。'
+- en: '**Getters**: Methods that retrieve the state''s attributes.'
+  id: totrans-15
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Getters**：检索状态属性的方法。'
+- en: '**Mutations**: Methods that provide a way to change the state.'
+  id: totrans-16
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**Mutations**：提供改变状态的方法。'
+- en: '**Actions**: Methods that can be dispatched to invoke mutations. The only difference
+    between actions and mutations is that actions can be asynchronous and we might
+    need them for our application.'
+  id: totrans-17
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**操作**：可以调度以调用突变的方法。操作和突变之间唯一的区别是操作可以是异步的，我们可能需要它们用于我们的应用程序。'
+- en: 'Sounds pretty easy, right? Just create a folder called `store` and create JavaScript
+    files for all the things that we have just indicated. Also create the `index.js`
+    file that will instantiate a Vuex store with all these things. Here is your structure:'
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 听起来很简单，对吧？只需创建一个名为`store`的文件夹，并为我们刚刚指定的所有内容创建JavaScript文件。还要创建`index.js`文件，该文件将使用所有这些内容实例化一个带有所有这些内容的Vuex存储。以下是您的结构：
+- en: '![Setting up a Vuex store](../images/00088.jpeg)'
+  id: totrans-19
+  prefs: []
+  type: TYPE_IMG
+  zh: '![设置Vuex存储](../images/00088.jpeg)'
+- en: The structure of the store folder
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 存储文件夹的结构
+- en: 'When we first mentioned the Vuex store in [Chapter 2](part0024_split_000.html#MSDG2-449ee41b57ea4c048225480b41c8dbe3
+    "Chapter 2. Under the Hood – Tutorial Explained"), *Hello User Explained*, we
+    simplified the structure and introduced all the store''s components in the same
+    file. Now, we will follow the nice modular structure and let everything reside
+    in its own place. We could even go further and separate the state into the modules
+    (one for configuration, another one for settings, and so on) but it would probably
+    be overkill for the complexity level of ProFitOro. However, if you want to check
+    how to separate your store into logical modules, check the section about modules
+    in this great documentation about Vuex: [https://vuex.vuejs.org/en/](https://vuex.vuejs.org/en/).'
+  id: totrans-21
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们在[第2章](part0024_split_000.html#MSDG2-449ee41b57ea4c048225480b41c8dbe3 "第2章。底层-教程解释")中首次提到Vuex存储时，*Hello
+    User Explained*，我们简化了结构，并在同一个文件中介绍了所有存储的组件。现在，我们将遵循良好的模块化结构，并让所有内容都放在自己的位置上。我们甚至可以进一步将状态分离到模块中（一个用于配置，另一个用于设置，依此类推），但对于ProFitOro的复杂级别来说，这可能会有些过度。但是，如果您想了解如何将存储分离为逻辑模块，请查看关于Vuex的这篇出色文档中有关模块的部分：[https://vuex.vuejs.org/en/](https://vuex.vuejs.org/en/)。
+- en: 'Nevertheless, let''s continue with our store. After having created the structure,
+    import all of the store''s components into `index.js` and create a Vuex instance,
+    passing all of them as parameters. Do not forget to import Vuex and to tell Vue
+    to use it! Thus, the entry point of our store will look as follows:'
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管如此，让我们继续使用我们的存储。在创建了结构之后，将所有存储组件导入`index.js`并创建一个Vuex实例，将所有这些组件作为参数传递。不要忘记导入Vuex并告诉Vue使用它！因此，我们的存储入口点将如下所示：
+- en: '[PRE1]'
+  id: totrans-23
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: 'The only thing that matters now, so our setup is totally complete, is to get
+    our application to know that it is now using this store. In this way, the store
+    will become available in all the components. The only thing that you need to do
+    to make it possible is to import our store in the application''s entry point (`main.js`)
+    and to pass it to the Vue instance:'
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在唯一重要的事情，以便我们的设置完全完成，就是让我们的应用程序知道它现在正在使用这个存储。这样，存储将在所有组件中可用。要使其成为可能的唯一事情就是在应用程序的入口点（`main.js`）中导入我们的存储，并将其传递给Vue实例：
+- en: '[PRE2]'
+  id: totrans-25
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: 'Now we are totally ready to start our magic with the store. Have you been missing
+    coding? Well, here you go! Let''s start by replacing the `config` file that we''ve
+    created as a container for the Pomodoro timing properties with the state and the
+    getters of our store. Just copy all the configuration elements of the `config`
+    file to our state and create a getter for it:'
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们已经完全准备好开始使用存储进行魔术了。您是否一直在思念编码？好了，现在可以了！让我们首先用存储的状态和获取器替换我们已经创建的`config`文件，该文件用作番茄钟定时属性的容器。只需将`config`文件的所有配置元素复制到我们的状态中，并为其创建一个获取器：
+- en: '[PRE3]'
+  id: totrans-27
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: 'Let''s now move to getters. Getters are not just regular functions. Behind
+    the scenes, they receive the state as a parameter, so you can access the data
+    of the application''s state, without any effort of dependency injections, because
+    it has already been managed for you by Vuex. So, just create a function that receives
+    the state as a parameter and returns any of the state''s data! If needed, inside
+    the getter, you can perform any operations on the data. So, the getter for the
+    `config` file could look something like this:'
+  id: totrans-28
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们现在转向getter。 Getter不仅仅是普通的函数。在幕后，它们接收状态作为参数，因此您可以访问应用程序状态的数据，而无需进行任何依赖注入的努力，因为Vuex已经为您管理了。因此，只需创建一个接收状态作为参数并返回任何状态数据的函数！如果需要，在getter内部，您可以对数据执行任何操作。因此，“config”文件的getter可能看起来像这样：
+- en: '[PRE4]'
+  id: totrans-29
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'Since we are using ES6, it can be rewritten in a more succinct and elegant
+    way:'
+  id: totrans-30
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于我们使用的是ES6，可以以更简洁和优雅的方式重写：
+- en: '[PRE5]'
+  id: totrans-31
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: 'Then, it can be exported:'
+  id: totrans-32
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，它可以被导出：
+- en: '[PRE6]'
+  id: totrans-33
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: 'Alternatively, we can simply use:'
+  id: totrans-34
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，我们可以简单地使用：
+- en: '[PRE7]'
+  id: totrans-35
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: 'The whole thing can actually be written as:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 整个事情实际上可以写成：
+- en: '[PRE8]'
+  id: totrans-37
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: How amazingly simple is that? At the time I started working with JavaScript
+    (don't ask me when, I don't like to feel old myself), I could barely imagine that
+    such syntax would ever be possible.
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 多么惊人简单啊？当我开始使用JavaScript时（不要问我什么时候，我不想让自己感觉老），我几乎无法想象这样的语法会有可能。
+- en: 'You can now use your new getter inside any application''s component. How? Do
+    you remember how easy it was to access the state using the `this.$store.state`
+    attribute? In the same way, inside the computed data function, you can access
+    your `getters`:'
+  id: totrans-39
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，您可以在任何应用程序组件中使用您的新getter。如何？您还记得使用“this.$store.state”属性轻松访问状态有多容易吗？同样，在计算数据函数内部，您可以访问您的“getter”：
+- en: '[PRE9]'
+  id: totrans-40
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: 'From now on, `this.config` can be used in all the component''s computed values
+    and methods. Let''s imagine now, that inside the same component, we need to use
+    more than one getter. Imagine, for example, that we create getters for each of
+    the config''s values. So, for every value you would have to repeat this tedious
+    code: `this.$store.getters.bla-bla-bla`. Argh! There must an easier way... and
+    there is. Vuex is kind enough to provide us with a helper object which is called
+    `mapGetters`. If you simply import this object into your component, you can invoke
+    your getters using `mapGetters` with the ES6 spread operator:'
+  id: totrans-41
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从现在开始，“this.config”可以在组件的所有计算值和方法中使用。现在想象一下，在同一个组件内，我们需要使用多个getter。例如，假设我们为每个config的值创建getter。因此，对于每个值，您都必须重复这种繁琐的代码：“this.$store.getters.bla-bla-bla”。啊！一定有更简单的方法...而且确实有。Vuex很友好地为我们提供了一个名为“mapGetters”的辅助对象。如果您简单地将此对象导入到组件中，就可以使用ES6扩展运算符使用“mapGetters”调用您的getter：
+- en: '[PRE10]'
+  id: totrans-42
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: 'Alternatively, if you want to map your getters methods to some other names,
+    just use an object:'
+  id: totrans-43
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 或者，如果您想将getter方法映射到其他名称，只需使用一个对象：
+- en: '[PRE11]'
+  id: totrans-44
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: 'So, this is what we are going to do. We are going to use the `mapGetters` helper
+    inside the `PomodoroTimer` component and we will remove the reference to the imported
+    `config` file (also, do not forget to remove the file itself; we don''t want dead
+    code in our code base). We will replace all the references to `config` with `this.config`.
+    So, our `PomodoroTimer` script''s section will look as follows:'
+  id: totrans-45
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所以，这就是我们要做的。我们将在“PomodoroTimer”组件内部使用“mapGetters”助手，并删除对导入的“config”文件的引用（还要记得删除文件本身；我们不希望代码库中有死代码）。我们将用“this.config”替换所有对“config”的引用。因此，我们的“PomodoroTimer”脚本部分将如下所示：
+- en: '[PRE12]'
+  id: totrans-46
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: Check your page, everything should work the same way it has been working before.
+    What is the advantage of this new approach?—someone might ask,—we've been here
+    for half a chapter setting up this store and its methods, getters, actions, whatever…
+    In the end, we have the exact same behavior. What for? Well, do you remember that
+    the whole aim of this chapter is to be able to configure and reconfigure the Pomodoro
+    timing settings and to store them in the database? If we had to introduce the
+    database reference and all the operations of retrieving and storing data inside
+    our components, our life would be harder. Imagine that at some point Firebase
+    does not suit your needs and you wish to switch to another data source, or even
+    a different technology, let's say *Elasticsearch* or even *MongoDB*. You would
+    have to change your component and its methods, as well as its computed values.
+    Doesn't it sound like hell to maintain all that?
+  id: totrans-47
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查你的页面，一切都应该和以前一样。这种新方法的优势是什么？——有人可能会问，我们已经在这里花了半章的时间设置这个商店和它的方法、获取器、操作，等等…最后，我们得到了完全相同的行为。为什么？嗯，你还记得这一章的整个目的是能够配置和重新配置番茄工作法的定时设置，并将它们存储在数据库中吗？如果我们不得不在我们的组件中引入数据库引用和检索和存储数据的所有操作，我们的生活会更加艰难。想象一下，如果某个时候
+    Firebase 不符合你的需求，你希望切换到另一个数据源，甚至是另一种技术，比如 *Elasticsearch* 或者 *MongoDB*。你将不得不改变你的组件和它的方法，以及它的计算值。维护所有这些不是听起来像地狱吗？
+- en: Having your data to reside inside the store and with your getters being responsible
+    for retrieving them will enable you to only have to change your getters if you
+    decide to change the underlying data source. Your components will always be left
+    untouched! It's an abstraction of the data and logic layers of your application.
+    Abstractions are a very cool thing in the software engineering field.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让你的数据驻留在存储中，并且让你的获取器负责检索它们，将使你只需要改变你的获取器，如果你决定改变底层数据源。你的组件将永远不会被触及！这是你的应用程序的数据和逻辑层的抽象。在软件工程领域，抽象是一件非常酷的事情。
+- en: Let's define a basic markup for the `Settings.vue` component. Check our mockups.
+  id: totrans-49
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们为 `Settings.vue` 组件定义一个基本的标记。检查我们的模拟。
+- en: 'This component will contain two main areas:'
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个组件将包含两个主要区域：
+- en: Personal settings configuration area
+  id: totrans-51
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 个人设置配置区域
+- en: Pomodoro timer settings configuration area
+  id: totrans-52
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 番茄工作法定时设置配置区域
+- en: 'Again, I will use Bootstrap grid classes to help me build a nice, responsive
+    layout. I want it to make two stack columns on small devices, two equal-size columns
+    on medium sized devices, and two different sized columns on large devices. Thus,
+    I will use the `row` class for the wrapping `div` and corresponding `col-*-*`
+    classes for the two main areas of our `Settings` component:'
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，我将使用 Bootstrap 栅格类来帮助我构建一个漂亮的、响应式的布局。我希望在小设备上制作两个堆叠列，在中等大小的设备上制作两个相同大小的列，在大设备上制作两个不同大小的列。因此，我将使用
+    `row` 类来包装 `div` 和相应的 `col-*-*` 类来包装我们 `Settings` 组件的两个主要区域。
+- en: '[PRE13]'
+  id: totrans-54
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Let''s concentrate for now only on the Pomodoro timing settings configuration.
+    I created a component called `SetTimer.vue`. This component just contains a number-type
+    input and emits a method whenever its value changes. Within the Pomodoro settings
+    container, I will render this component three times using different values from
+    the imported `mapGetters` helper:'
+  id: totrans-55
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们只集中在番茄工作法定时设置配置上。我创建了一个名为 `SetTimer.vue` 的组件。这个组件只包含一个数字类型的输入，并在其值发生变化时发出一个方法。在番茄工作法设置容器中，我将使用从导入的
+    `mapGetters` 助手中获取的不同值，将这个组件渲染三次：
+- en: '[PRE14]'
+  id: totrans-56
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: 'With some CSS magic for the `SetTimer` component, I am able to render three
+    input circles like the following:'
+  id: totrans-57
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通过一些 CSS 魔法，我能够在 `SetTimer` 组件中渲染三个输入圆圈，如下所示：
+- en: '![Setting up a Vuex store](../images/00089.jpeg)'
+  id: totrans-58
+  prefs: []
+  type: TYPE_IMG
+  zh: '![设置一个 Vuex 存储](../images/00089.jpeg)'
+- en: Input balls that allow us to set timers for different Pomodoro interval
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输入允许我们为不同的番茄钟间隔设置定时器的球
+- en: You can find the corresponding code in the `chapter5/1/profitoro` folder. In
+    particular, check the `SetTimer.vue` component inside the `components/main/sections/timer`
+    folder and how it's being called with the corresponding values inside the `Settings.vue`
+    component.
+  id: totrans-60
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以在`chapter5/1/profitoro`文件夹中找到相应的代码。特别是检查`components/main/sections/timer`文件夹中的`SetTimer.vue`组件以及在`Settings.vue`组件中如何使用相应的值调用它。
+- en: Defining actions and mutations
+  id: totrans-61
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 定义操作和突变
+- en: It's great that our components can now get data from the store, but it would
+    be probably even more interesting if our components were also able to change the
+    data in the store. On the other hand, we all know that we cannot modify the store's
+    state directly.
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 很棒，我们的组件现在可以从存储中获取数据，但如果我们的组件也能够更改存储中的数据，那可能会更有趣。另一方面，我们都知道我们不能直接修改存储的状态。
+- en: The state should not be touched by any of the components. However, you also
+    remember from our chapter about the Vuex store that there are special functions
+    that can mutate the store. They are even called `mutations`. These functions can
+    do whatever they/you want with the Vuex store data. These mutations can be called
+    using the `commit` method applied to the store. Under the hood, they essentially
+    receive two parameters – the state and the value.
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 状态不应该被任何组件触摸。然而，您还记得我们关于Vuex存储的章节中有一些特殊函数可以改变存储。它们甚至被称为`mutations`。这些函数可以对Vuex存储数据做任何它们/你想做的事情。这些突变可以使用应用于存储的`commit`方法来调用。在底层，它们实质上接收两个参数
+    - 状态和值。
+- en: 'I will define three mutations – one for each of the timer''s definitions. These
+    mutations will update the corresponding attribute of the `config` object with
+    a new value. Thus, my mutations look as follows:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我将定义三个突变 - 分别用于定时器的每个定义。这些突变将使用新值更新`config`对象的相应属性。因此，我的突变如下：
+- en: '[PRE15]'
+  id: totrans-65
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: 'Now we can define actions. Actions will basically call our mutations, so it
+    can be considered as duplicate work. However, keep in mind that the difference
+    between actions and mutations is that actions can actually be asynchronous, so
+    it might come in handy when we connect our actions to the database. For now, let''s
+    just tell the actions to verify the received values before committing them. The
+    `actions` method receives the store and a new value. Since the store provides
+    us with the essential method called `commit,` which is called with the name of
+    the needed mutation, we can define each action as follows:'
+  id: totrans-66
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以定义操作。操作基本上会调用我们的突变，因此可以被视为重复的工作。然而，请记住操作和突变之间的区别在于操作实际上可以是异步的，因此当我们将操作连接到数据库时可能会派上用场。现在，让我们告诉操作在提交之前验证接收到的值。`actions`方法接收存储和一个新值。由于存储为我们提供了一个名为`commit`的基本方法，该方法将调用所需的突变的名称，因此我们可以定义每个操作如下：
+- en: '[PRE16]'
+  id: totrans-67
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: Tip
+  id: totrans-68
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 提示
+- en: We can write `{commit}` as a parameter and use the `commit` function right away,
+    because we are using ES6 and object destructing just works perfectly for us ([https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)).
+  id: totrans-69
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以将`{commit}`写为参数，并立即使用`commit`函数，因为我们使用的是ES6和对象解构对我们来说非常完美（[https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)）。
+- en: 'Thus, my actions look like this:'
+  id: totrans-70
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我的操作看起来是这样的：
+- en: '[PRE17]'
+  id: totrans-71
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: 'Now, let''s go back to the `Settings.vue` component. This component should
+    import actions and call them when needed, right? How do we import actions? Do
+    you remember the `mapGetters` helper? There is a similar helper for actions called
+    `mapActions`. So, we can just import it along with the `mapGetters` helper and
+    use it with a spread operator (`…`) inside the `methods` object:'
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们回到`Settings.vue`组件。这个组件应该导入操作并在需要时调用它们，对吧？我们如何导入操作？你还记得`mapGetters`助手吗？有一个类似的助手用于操作，叫做`mapActions`。所以，我们可以和`mapGetters`助手一起导入它，并在`methods`对象内使用扩展操作符(`…`)：
+- en: '[PRE18]'
+  id: totrans-73
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: 'Now, we have to invoke the needed actions whenever the values of the `set-timer`
+    inputs change. In the previous paragraph, we discussed that the `SetTimer` component
+    emits the `changeValue` event. So, the only thing we have to do now is to bind
+    this event to all three `set-timer` components and call the corresponding methods:'
+  id: totrans-74
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们必须在`set-timer`输入框的值发生变化时调用所需的操作。在前一段中，我们讨论了`SetTimer`组件发出`changeValue`事件。所以，我们现在唯一需要做的就是将这个事件绑定到所有三个`set-timer`组件上，并调用相应的方法：
+- en: '[PRE19]'
+  id: totrans-75
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: Open the page and try to change the values of each timer setting.
+  id: totrans-76
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开页面，尝试更改每个计时器设置的值。
+- en: 'If you are using the Chrome browser and still haven''t installed Vue developer
+    tools, please do it. You will see how handy and lovely it is! Just follow this
+    link: [https://goo.gl/22khXD](https://goo.gl/22khXD).'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你正在使用Chrome浏览器，但还没有安装Vue开发者工具，请安装它。你会看到它是多么方便和可爱！只需按照这个链接：[https://goo.gl/22khXD](https://goo.gl/22khXD)。
+- en: 'Having installed the Vue devtools extension, you will immediately see how the
+    values are being changed in the Vuex store:'
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 安装了Vue devtools扩展后，你会立即看到这些值在Vuex存储中是如何变化的：
+- en: '![Defining actions and mutations](../images/00090.jpeg)'
+  id: totrans-79
+  prefs: []
+  type: TYPE_IMG
+  zh: '![定义操作和变异](../images/00090.jpeg)'
+- en: Once the values are changed in the input boxes, they are immediately changed
+    in the Vuex store
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一旦输入框中的值发生变化，它们就会立即在Vuex存储中发生变化
+- en: Check the final code for this section in the `chapter5/2/profitoro` folder.
+    Pay attention to the `actions.js` and `mutations.js` files inside the store folder
+    and to the `Settings.vue` component.
+  id: totrans-81
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 检查`chapter5/2/profitoro`文件夹中的本节最终代码。注意存储文件夹内的`actions.js`和`mutations.js`文件以及`Settings.vue`组件。
+- en: Setting up a Firebase project
+  id: totrans-82
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 建立一个Firebase项目
+- en: 'I hope that you still remember how to set up Firebase projects from the first
+    chapters of this book. Open your Firebase console at [https://console.firebase.google.com](https://console.firebase.google.com),
+    click on the **Add project** button, name it, and choose your country. The Firebase
+    project is ready. Wasn''t that easy? Let''s now prepare our database. The following
+    data will be stored in it:'
+  id: totrans-83
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我希望你还记得如何从本书的前几章中设置Firebase项目。在[https://console.firebase.google.com](https://console.firebase.google.com)打开你的Firebase控制台，点击**添加项目**按钮，命名它，并选择你的国家。Firebase项目已准备好。是不是很容易？现在让我们准备我们的数据库。以下数据将存储在其中：
+- en: '**Configuration**: The configuration of our Pomodoro timer values'
+  id: totrans-84
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**配置**: 我们的Pomodoro计时器值的配置'
+- en: '**Statistics**: Statistical data of the Pomodoro usage'
+  id: totrans-85
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**统计**: Pomodoro使用的统计数据'
+- en: Each of these objects will be accessible via a special key that will correspond
+    to a user's ID; this is because, in the next chapter, we are going to implement
+    an authentication mechanism.
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个这些对象将通过一个特殊的键来访问，该键将对应于用户的ID；这是因为在下一章中，我们将实现一个身份验证机制。
+- en: The configuration object will contain values – `workingPomodoro`, `longBreak`
+    and `shortBreak` – that are already familiar to us.
+  id: totrans-87
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 配置对象将包含值-`workingPomodoro`，`longBreak`和`shortBreak`-这些值对我们来说已经很熟悉了。
+- en: 'Let''s add a configuration object to our database with some fake data:'
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们向我们的数据库添加一个带有一些虚假数据的配置对象：
+- en: '[PRE20]'
+  id: totrans-89
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: 'You can even create this as a simple JSON file and import it to your database:'
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你甚至可以将其创建为一个简单的JSON文件并导入到你的数据库中：
+- en: '![Setting up a Firebase project](../images/00091.jpeg)'
+  id: totrans-91
+  prefs: []
+  type: TYPE_IMG
+  zh: '![设置Firebase项目](../images/00091.jpeg)'
+- en: Import JSON file to your real-time Firebase database
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将JSON文件导入到您的实时Firebase数据库
+- en: 'Congratulations, your real-time database is ready! Keep in mind that, by default,
+    the security rules will not allow you to access your data from the exterior unless
+    you are authenticated. Let''s, for now, remove these rules. We will add them later,
+    once we have implemented our authentication mechanism. Click on the **RULES**
+    tab and replace the existing ones with this object:'
+  id: totrans-93
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 恭喜，您的实时数据库已准备就绪！请记住，默认情况下，安全规则不允许您从外部访问数据，除非您经过身份验证。现在，让我们暂时删除这些规则。一旦我们实现了身份验证机制，我们将稍后添加它们。单击**RULES**选项卡，并用以下对象替换现有规则：
+- en: '[PRE21]'
+  id: totrans-94
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: Now we are ready to access our real-time database from our Vue application.
+  id: totrans-95
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们可以从我们的Vue应用程序访问我们的实时数据库。
+- en: Connecting the Vuex store to the Firebase database
+  id: totrans-96
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 将Vuex存储连接到Firebase数据库
+- en: 'So, now we have to connect our Vuex store to the Firebase database. We could
+    use the native Firebase API for binding the state data to the database data, but
+    why would we deal with promises and stuff if someone already did that for us?
+    This someone is called Eduardo and he has created Vuexfire – Firebase bindings
+    for Vuex ([https://github.com/posva/vuexfire](https://github.com/posva/vuexfire)).
+    If you were at the *vueconf2017 conference* in *Wroclaw*, you probably remember
+    this guy:'
+  id: totrans-97
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们必须将我们的Vuex存储连接到Firebase数据库。我们可以使用本机Firebase API将状态数据绑定到数据库数据，但是如果有人已经为我们做了这些事情，为什么我们要处理承诺和其他东西呢？这个人叫Eduardo，他创建了Vuexfire
+    - Vuex的Firebase绑定（[https://github.com/posva/vuexfire](https://github.com/posva/vuexfire)）。如果您在*Wroclaw*的*vueconf2017大会*上，您可能还记得这个家伙：
+- en: '![Connecting the Vuex store to the Firebase database](../images/00092.jpeg)'
+  id: totrans-98
+  prefs: []
+  type: TYPE_IMG
+  zh: '![将Vuex存储连接到Firebase数据库](../images/00092.jpeg)'
+- en: Eduardo talking about Vue and Firebase during the Vue conference
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Eduardo在Vue大会期间谈到Vue和Firebase
+- en: 'Vuexfire comes with Firebase mutations and actions that will do all the behind
+    the scenes jobs for you, while you just export them within your mutations and
+    actions objects. So, to start with, install both `firebase` and `vuexfire`:'
+  id: totrans-100
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Vuexfire带有Firebase的mutations和actions，这将为您执行所有幕后工作，而您只需在mutations和actions对象中导出它们。因此，首先安装`firebase`和`vuexfire`：
+- en: '[PRE22]'
+  id: totrans-101
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE22]'
+- en: 'Import `firebase` and `firebaseMutations` in your store''s `index.js` entry
+    point:'
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在您的存储的`index.js`入口点中导入`firebase`和`firebaseMutations`：
+- en: '[PRE23]'
+  id: totrans-103
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE23]'
+- en: 'Now, we need to obtain the reference to the Firebase application. Firebase
+    comes with an initialization method, `initializeApp,` which receives an object
+    composed of lots of application settings data – app ID, authentication domain,
+    and so on. For now, we have to at least provide the database URL. In order to
+    get your database URL, just go to your Firebase project settings and click on
+    the **Add Firebase to your web app** button:'
+  id: totrans-104
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们需要获取对Firebase应用程序的引用。Firebase带有一个初始化方法`initializeApp`，它接收由许多应用程序设置数据组成的对象
+    - 应用程序ID，身份验证域等。现在，我们至少必须提供数据库URL。要获取数据库URL，只需转到您的Firebase项目设置，然后单击**将Firebase添加到您的Web应用**按钮：
+- en: '![Connecting the Vuex store to the Firebase database](../images/00093.jpeg)'
+  id: totrans-105
+  prefs: []
+  type: TYPE_IMG
+  zh: '![将Vuex存储连接到Firebase数据库](../images/00093.jpeg)'
+- en: Click on the Add Firebase to your web app button
+  id: totrans-106
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 单击“将Firebase添加到您的Web应用”按钮
+- en: 'Copy the database URL, or even the whole configuration object, and paste it
+    to your store''s `index.js` file:'
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 复制数据库URL，甚至整个配置对象，并将其粘贴到您的存储的`index.js`文件中：
+- en: '[PRE24]'
+  id: totrans-108
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE24]'
+- en: 'You are now ready to obtain the reference to the configuration object. Once
+    we implement the authentication mechanism, we will use the authenticated user''s
+    ID to get the current user''s configuration from the database. For now, let''s
+    use our hardcoded ID `test`:'
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您现在可以获取配置对象的引用。一旦我们实现了身份验证机制，我们将使用经过身份验证的用户ID从数据库中获取当前用户的配置。现在，让我们使用我们硬编码的ID
+    `test`：
+- en: '[PRE25]'
+  id: totrans-110
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE25]'
+- en: 'I will export the `configRef` reference using the spread operator in the state
+    object. So, this reference becomes accessible by the actions:'
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我将使用扩展运算符在状态对象中导出`configRef`引用。因此，这个引用可以被动作访问：
+- en: '[PRE26]'
+  id: totrans-112
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE26]'
+- en: 'In order to make the whole Vuexfire magic work, we have to also export `firebaseMutations`
+    within the `mutations` object:'
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使整个Vuexfire魔术生效，我们还必须在`mutations`对象中导出`firebaseMutations`：
+- en: '[PRE27]'
+  id: totrans-114
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE27]'
+- en: 'So, our whole `store/index.js` now looks like the following:'
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们整个`store/index.js`现在看起来像下面这样：
+- en: '[PRE28]'
+  id: totrans-116
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE28]'
+- en: Let's go to our actions now. It is very important that before doing anything
+    else, we bind our database reference to the corresponding state's attribute. In
+    our case, we must bind the state's `config` object to its corresponding reference
+    `configRef`. For that, our friend Eduardo provides us with the actions enhancer
+    called `firebaseAction` that implements the `bindFirebaseRef` method. Just call
+    this method and you don't have to worry about promises and their callbacks.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们去我们的动作。非常重要的是，在做任何其他事情之前，我们要将我们的数据库引用绑定到相应的状态属性上。在我们的情况下，我们必须将状态的`config`对象绑定到它对应的引用`configRef`上。为此，我们的朋友Eduardo为我们提供了一个叫做`firebaseAction`的动作增强器，它实现了`bindFirebaseRef`方法。只需调用这个方法，你就不必担心承诺和它们的回调。
+- en: 'Open `action.js` and import `firebaseAction` enhancer:'
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 打开`action.js`并导入`firebaseAction`增强器：
+- en: '[PRE29]'
+  id: totrans-119
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE29]'
+- en: 'Let''s now create an action called `bindConfig`, where we will actually bind
+    two things together using the `bindFirebaseRef` method:'
+  id: totrans-120
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们创建一个名为`bindConfig`的动作，我们将使用`bindFirebaseRef`方法实际绑定两个东西在一起：
+- en: '[PRE30]'
+  id: totrans-121
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE30]'
+- en: 'When should this action be dispatched? Probably on the `Settings.vue` component
+    creation, since this component is responsible for rendering the `config` state.
+    Thus, inside the `Settings.vue` we bind the state of the `created` component and
+    inside of it, we just call the `bindConfig` action:'
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这个动作应该在什么时候派发呢？可能是在`Settings.vue`组件创建时，因为这个组件负责渲染`config`状态。因此，在`Settings.vue`内部，我们绑定了`created`组件的状态，并在其中调用了`bindConfig`动作：
+- en: '[PRE31]'
+  id: totrans-123
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE31]'
+- en: If you open the page now, you will see that everything remains the same. The
+    only difference is that, now, we are using the data coming from our real-time
+    database and not from the hardcoded `config` object. You can check it by completely
+    deleting the content of the `config` object inside the state store's object and
+    ensuring that everything is still be working.
+  id: totrans-124
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你现在打开页面，你会发现一切都保持不变。唯一的区别是，现在我们使用的数据来自我们的实时数据库，而不是硬编码的`config`对象。您可以通过完全删除状态存储对象内`config`对象的内容并确保一切仍然正常工作来进行检查。
+- en: 'If you try to change the input values and then refresh the page, you will see
+    that the applied changes are not saved. This happens because we did not update
+    the database reference. So let''s update it! The good thing about it is that we
+    don''t need to change *anything* inside our components; we just have to slightly
+    change our *actions*. We will use the `update` method called on the reference.
+    Please check the Firebase real-time database documentation on reading and writing
+    data: [https://firebase.google.com/docs/database/web/read-and-write](https://firebase.google.com/docs/database/web/read-and-write).'
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你尝试更改输入值，然后刷新页面，你会发现应用的更改没有保存。这是因为我们没有更新数据库引用。所以让我们更新它！好处是我们不需要在组件内部改变*任何*东西；我们只需要稍微改变我们的*动作*。我们将在引用上调用`update`方法。请查看Firebase实时数据库文档以了解读取和写入数据：[https://firebase.google.com/docs/database/web/read-and-write](https://firebase.google.com/docs/database/web/read-and-write)。
+- en: 'So, we will pass the `state` object to each of the actions and call the `update`
+    method on `state.configRef`, passing to it the corresponding changed attribute.
+    So, it might look as simple as the following code snippet:'
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们将`state`对象传递给每个动作，并在`state.configRef`上调用`update`方法，将相应的更改属性传递给它。因此，它可能看起来就像以下代码片段一样简单：
+- en: '[PRE32]'
+  id: totrans-127
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE32]'
+- en: Do not forget to perform the needed checks, parse the updated attribute to an
+    integer, and also check if `configRef` is available. If it's not available, just
+    call the `commit` method with the corresponding mutation's name. Check the final
+    code for this section in the `chapter5/3/profitoro` folder. Pay special attention
+    to the `store/index.js` and `store/actions.js` files and to the `Settings.vue`
+    component.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要忘记执行所需的检查，将更新的属性解析为整数，并检查`configRef`是否可用。如果不可用，只需使用相应的mutation名称调用`commit`方法。检查`chapter5/3/profitoro`文件夹中此部分的最终代码。特别注意`store/index.js`和`store/actions.js`文件以及`Settings.vue`组件。
+- en: If you open your page and change the Pomodoro timer values and keep looking
+    at your Firebase console database tab you will see the differences immediately!
+  id: totrans-129
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果您打开页面并更改番茄钟计时器的值，并继续查看Firebase控制台数据库选项卡，您将立即看到差异！
+- en: '![Connecting the Vuex store to the Firebase database](../images/00094.jpeg)'
+  id: totrans-130
+  prefs: []
+  type: TYPE_IMG
+  zh: '![将Vuex存储连接到Firebase数据库](../images/00094.jpeg)'
+- en: The changes applied to the Pomodoro timer configuration boxes are propagated
+    immediately to the real-time database
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 应用于番茄钟计时器配置框的更改立即传播到实时数据库
+- en: If you change values directly in the database, you will also see that the changes
+    are immediately propagated to your view.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果直接在数据库中更改值，您还将看到更改立即传播到您的视图。
+- en: Exercise
+  id: totrans-133
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 练习
+- en: 'You have learned how to connect the real-time Firebase database to your Vue
+    application and used this knowledge to update the configurations for Pomodoro
+    timers. Now, apply your knowledge to the statistics area. For the sake of simplicity,
+    just display the total amount of Pomodoros executed since the user started using
+    the application. For that you will need to do the following:'
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您已经学会了如何将实时Firebase数据库连接到您的Vue应用程序，并利用这些知识来更新番茄钟计时器的配置。现在，将您的知识应用到统计领域。为了简单起见，只显示自用户开始使用该应用以来执行的番茄钟总数。为此，您需要执行以下操作：
+- en: Add another object called `statistics` containing the `totalPomodoros` attribute
+    that initially equals `0` in your Firebase database.
+  id: totrans-135
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在您的Firebase数据库中添加另一个名为`statistics`的对象，其中包含初始等于`0`的`totalPomodoros`属性。
+- en: Create an entry in the store's `state` to hold the statistics data.
+  id: totrans-136
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在存储的`state`中创建一个条目来保存统计数据。
+- en: Map `totalPomodoros` of the statistics state's object to the Firebase reference
+    using the `firebaseAction` enhancer and the `bindFirebaseRef` method.
+  id: totrans-137
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 使用`firebaseAction`增强器和`bindFirebaseRef`方法将统计状态对象的`totalPomodoros`映射到Firebase引用。
+- en: Create an action that will update the `totalPomodoros` reference.
+  id: totrans-138
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 创建一个动作，将更新`totalPomodoros`的引用。
+- en: Call this action whenever it has to be called inside the `PomodoroTimer` component.
+  id: totrans-139
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 每当必须在`PomodoroTimer`组件内调用此动作时调用此动作。
+- en: Display this value inside the `Statistics.vue` component.
+  id: totrans-140
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+  zh: 在`Statistics.vue`组件内显示此值。
+- en: Try to do it yourself. It shouldn't be difficult. Follow the same logic we applied
+    in the `Settings.vue` component. If in doubt, check the `chapter5/4/profitoro`
+    folder, particularly the store's files – `index.js`, `state.js` and `actions.js`.
+    Then check how the corresponding actions have been used inside the `PomodoroTimer`
+    component and how it is rendered in the `Statistics` component. Good luck!
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试自己做。这不应该很困难。遵循我们在`Settings.vue`组件中应用的相同逻辑。如果有疑问，请查看`chapter5/4/profitoro`文件夹，特别是存储的文件
+    - `index.js`，`state.js`和`actions.js`。然后查看相应的动作如何在`PomodoroTimer`组件内使用，以及它如何在`Statistics`组件中呈现。祝你好运！
+- en: Summary
+  id: totrans-142
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 总结
+- en: In this chapter, you learned how to use the real-time Firebase database with
+    the Vue application. You learned how to use Vuexfire and its methods to correctly
+    bind our Vuex store state to the database reference. We were not only able to
+    read and render the data from the database but we were also able to update it.
+    So, in this chapter, we saw Vuex, Firebase, and Vuexfire in action. I guess we
+    should be proud of ourselves.
+  id: totrans-143
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在本章中，您学会了如何在Vue应用程序中使用实时Firebase数据库。您学会了如何使用Vuexfire及其方法，将我们的Vuex存储状态正确地绑定到数据库引用。我们不仅能够从数据库中读取和渲染数据，还能够更新数据。因此，在本章中，我们看到了Vuex、Firebase和Vuexfire的实际应用。我想我们应该为自己感到自豪。
+- en: However, let's not forget that we have used a hardcoded user ID in order to
+    get the user's data. Also, we had to expose our database to the world by changing
+    the security rules, which doesn't seem right either. It seems that it's time to
+    enable the authentication mechanism!
+  id: totrans-144
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然而，让我们不要忘记，我们已经在获取用户数据时使用了一个硬编码的用户ID。此外，我们还不得不通过更改安全规则来向世界公开我们的数据库，这似乎也不太对。看来是时候启用认证机制了！
+- en: 'And we will do it in the next chapter! In the next chapter, we are going to
+    learn how to set up the authentication mechanism using the Firebase authentication
+    framework. We will learn how to use it in our application using Vuefire (Firebase
+    bindings for Vue: [https://github.com/vuejs/vuefire](https://github.com/vuejs/vuefire)).
+    We will also implement the very initial view of our application responsible for
+    providing a way of registering and performing the login. We will use Bootstrap
+    form elements in order to make this screen responsive and adaptive to all screen
+    sizes. So, let''s move on to the next chapter! Do not forget to do some pushups
+    first!'
+  id: totrans-145
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在下一章中我们将完成这个任务！在下一章中，我们将学习如何使用Firebase认证框架来设置认证机制。我们将学习如何在我们的应用程序中使用它，使用Vuefire（Vue的Firebase绑定：[https://github.com/vuejs/vuefire](https://github.com/vuejs/vuefire)）。我们还将实现我们应用程序的初始视图，负责提供注册和登录的方式。我们将使用Bootstrap表单元素，以使屏幕对所有屏幕尺寸响应和适应。所以，让我们继续下一章吧！不要忘记先做一些俯卧撑！
