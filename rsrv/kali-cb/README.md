@@ -1,4 +1,4 @@
-# Kali Linux 秘籍 中文版
+# Kali Linux 秘籍
 
 原书：[Kali Linux Cookbook](https://www.packtpub.com/networking-and-servers/kali-linux-cookbook)
 

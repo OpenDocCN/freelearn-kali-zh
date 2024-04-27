@@ -1,4 +1,4 @@
-# Kali Linux 网络扫描秘籍 中文版
+# Kali Linux 网络扫描秘籍
 
 原书：[Kali Linux Network Scanning Cookbook](https://www.packtpub.com/networking-and-servers/kali-linux-network-scanning-cookbook)
 
