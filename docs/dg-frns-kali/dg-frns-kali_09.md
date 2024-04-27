@@ -66,7 +66,9 @@ Xplico 配有许多 Linux 版本。根据使用的 Kali 版本，Xplico 通常�
 
 在文件顶部，输入以下存储库位置：
 
-[PRE0]
+```
+deb https://http.kali.org/kali kali-rolling main non-free contrib
+```
 
 输入存储库位置后，单击“文件”，然后单击“保存”，然后关闭列表。
 

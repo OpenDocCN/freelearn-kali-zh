@@ -46,15 +46,25 @@
 
 代码块设置如下：
 
-[PRE0]
+```
+deb http://http.kali.org/kali kali-rolling main contrib non-free
+deb src http://http.kali.org/kali kali-rolling main contrib non-free
+deb http://http.kali.org/kali sana main contrib 
+```
 
 当我们希望引起您对代码块的特定部分的注意时，相关行或项目将以粗体显示：
 
-[PRE1]
+```
+deb http://http.kali.org/kali kali-rolling main contrib non-free
+deb src http://http.kali.org/kali kali-rolling main contrib non-free
+deb http://http.kali.org/kali sana main contrib 
+```
 
 任何命令行输入或输出都写成如下形式：
 
-[PRE2]
+```
+dc3dd if=/dev/sdb hash=sha1 log=dd_split_usb ofsz=500M ofs=split_test_usb.img.ooo
+```
 
 **新术语**和**重要单词**以粗体显示。
 

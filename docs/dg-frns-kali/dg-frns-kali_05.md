@@ -120,11 +120,15 @@ DC3DD 是一个 CLI，可以通过首先打开终端并输入`dc3dd`来轻松在
 
 如前面的屏幕截图所示，使用`dc3dd --help`命令，DC3DD 命令的典型用法如下：
 
-[PRE0]
+```
+dc3dd [option 1] [option 2] ... [option n]
+```
 
 在我们之前的示例中，我使用了以下选项：
 
-[PRE1]
+```
+dc3dd if=/dev/sdb hash=md5 log=dc3ddusb of=test_usb.dd
+```
 
 ![](img/f63d213f-1b3a-4cd4-813b-589c9ba0febc.png)
 
@@ -168,7 +172,9 @@ DC3DD 是一个 CLI，可以通过首先打开终端并输入`dc3dd`来轻松在
 
 例如，我们可以将之前获取的取证图像（`test_usb.dd`）克隆到一个新的被识别为`sdc`的驱动器上。执行此任务的命令是：
 
-[PRE2]
+```
+dc3dd if=test_usb.dd of=/dev/sdc log=drivecopy.log
+```
 
 将图像复制到驱动器时，目标驱动器的大小应与图像文件相等或更大。
 
@@ -192,7 +198,9 @@ DC3DD 是一个 CLI，可以通过首先打开终端并输入`dc3dd`来轻松在
 
 用于实现这一点的命令是：
 
-[PRE3]
+```
+dc3dd if=/dev/sdb  hash=sha1  log=dd_split_usb  ofsz=500M ofs=split_test_usb.img.ooo
+```
 
 ![](img/21f47ecb-5d6d-476c-a27e-444d4ccf5c30.png)
 
@@ -212,13 +220,17 @@ DC3DD 是一个 CLI，可以通过首先打开终端并输入`dc3dd`来轻松在
 
 要验证分割文件的哈希值，可以使用以下命令：
 
-[PRE4]
+```
+cat split_test_usb.img.* | sha1sum
+```
 
 ![](img/42d8b455-6299-45d6-b661-c979bc8aec9d.png)
 
 这也与 2GB 闪存驱动器本身的`sha1sum`输出相匹配，通过使用以下命令显示：
 
-[PRE5]
+```
+sha1sum /dev/sdb
+```
 
 ![](img/38764736-f954-479a-873d-08e7091eb64c.png)
 

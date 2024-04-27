@@ -60,7 +60,9 @@ Volatility 甚至允许在这些格式之间进行转换，并自称能够完成
 
 我们还可以将目录更改为`桌面`，然后从那里运行 Volatility 框架及其插件。为此，我们打开一个新的终端并输入以下命令：
 
-[PRE0]
+```
+cd Desktop
+```
 
 我们还可以查看`桌面`的内容，以确保`cridex.vmem`文件存在，方法是输入`ls -l`：
 
@@ -90,11 +92,15 @@ Volatility 甚至允许在这些格式之间进行转换，并自称能够完成
 
 在 Volatility 中使用插件的格式是：
 
-[PRE1]
+```
+volatility -f [filename] [plugin] [options]
+```
 
 如前一节所示，要使用`imageinfo`插件，我们将键入：
 
-[PRE2]
+```
+volatility -f cridex.vmem imageinfo
+```
 
 # 在 Volatility 中选择配置文件
 
@@ -108,7 +114,9 @@ Volatility 甚至允许在这些格式之间进行转换，并自称能够完成
 
 使用以下命令：
 
-[PRE3]
+```
+volatility -f cridex.vmem imageinfo
+```
 
 ![](img/db2117f6-2736-421f-beca-5bbb24bae972.png)
 
@@ -154,7 +162,9 @@ PID 标识进程，PPID 标识进程的父进程。查看`pslist`输出，我们
 
 使用的`pslist`命令如下：
 
-[PRE4]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem pslist
+```
 
 ![](img/ad198753-e43c-4033-929f-9e55b7baeb2a.png)
 
@@ -170,7 +180,9 @@ PID 标识进程，PPID 标识进程的父进程。查看`pslist`输出，我们
 
 查看运行进程列表后，我们通过输入以下命令运行`psscan`命令：
 
-[PRE5]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem psscan
+```
 
 `psscan`命令显示了可以被恶意软件使用的非活动甚至隐藏的进程，如 rootkits，这些进程以逃避用户和杀毒程序的发现而闻名。
 
@@ -184,7 +196,9 @@ PID 标识进程，PPID 标识进程的父进程。查看`pslist`输出，我们
 
 运行`psxview`插件的命令如下：
 
-[PRE6]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem psxview
+```
 
 ![](img/a80fcda9-a5cc-4aa9-84ad-ab51f81dfed4.png)
 
@@ -204,7 +218,9 @@ Volatility 可以用于识别和分析活动的、终止的和隐藏的连接，
 
 `connections`命令列出了当时的活动连接，显示了本地和远程 IP 地址以及端口和 PID。`connections`命令仅用于 Windows XP 和 2003 服务器（32 位和 64 位）。`connections`命令的使用如下：
 
-[PRE7]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem connections
+```
 
 ![](img/dee486cb-0335-435d-bf86-815dca17796f.png)
 
@@ -212,7 +228,9 @@ Volatility 可以用于识别和分析活动的、终止的和隐藏的连接，
 
 `connections`命令在那个时候只显示了一个活动连接。要显示已终止的连接列表，使用`connscan`命令。`connscan`命令也仅适用于 Windows XP 和 2003 服务器（32 位和 64 位）系统：
 
-[PRE8]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem connscan
+```
 
 ![](img/5e94a550-3a24-4ae2-b76c-d8ffdf292c13.png)
 
@@ -250,7 +268,9 @@ Volatility 可以用于识别和分析活动的、终止的和隐藏的连接，
 
 `verinfo`命令的使用如下：
 
-[PRE9]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem verinfo
+```
 
 ![](img/bde31f48-77de-4ac2-bc1c-82325244887a.png)
 
@@ -260,7 +280,9 @@ Volatility 可以用于识别和分析活动的、终止的和隐藏的连接，
 
 `dlllist`命令的使用如下：
 
-[PRE10]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem dlllist
+```
 
 ![](img/2ae1efeb-ffa2-4ee6-9681-730b5b406ed2.png)
 
@@ -270,11 +292,15 @@ Volatility 可以用于识别和分析活动的、终止的和隐藏的连接，
 
 `getsids`命令输出的格式为：
 
-[PRE11]
+```
+[Process] (PID) [SID] (User)
+```
 
 例如，列表中的第一个结果列出了：
 
-[PRE12]
+```
+System (4) : S – 1 – 5- 18 (User)
+```
 
 +   `System`：进程
 
@@ -288,7 +314,9 @@ Volatility 可以用于识别和分析活动的、终止的和隐藏的连接，
 
 `getsids`命令的使用如下：
 
-[PRE13]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem getsids
+```
 
 ![](img/a048a636-89d0-44fb-9cc7-a451156a8886.png)
 
@@ -318,7 +346,9 @@ Volatility 可以用于识别和分析活动的、终止的和隐藏的连接，
 
 运行`hivelist`的命令如下：
 
-[PRE14]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem hivelist
+```
 
 ![](img/4c251e63-0a56-46f3-a693-94e406d56905.png)
 
@@ -340,7 +370,9 @@ Volatility 可以生成一个带有时间戳的事件列表，这对于任何调
 
 要运行`timeliner`命令，我们输入以下内容：
 
-[PRE15]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem timeliner
+```
 
 ![](img/ffd0f266-7b4b-419d-8524-ff4372d2bdb4.png)
 
@@ -356,7 +388,9 @@ Volatility 可以生成一个带有时间戳的事件列表，这对于任何调
 
 运行`malfind`的命令如下：
 
-[PRE16]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem malfind
+```
 
 ![](img/ae6b2287-56c6-4f2a-a987-9b3a5981ab4c.png)
 
@@ -364,7 +398,9 @@ Volatility 可以生成一个带有时间戳的事件列表，这对于任何调
 
 正如我们发现的那样，`winlogon.exe`被分配了 PID`608`。要在 PID`608`上运行`malfind`，我们输入：
 
-[PRE17]
+```
+volatility --profile=WinXPSP3x86 -f cridex.vmem malfind -p 608
+```
 
 ![](img/6129e6d3-d3fd-44e8-bcd9-85cb2772a63b.png)
 

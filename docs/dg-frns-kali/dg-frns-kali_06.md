@@ -38,19 +38,25 @@ Foremost 是一个简单而有效的 CLI 工具，通过读取文件的头部和
 
 要更好地了解 Foremost 和使用的开关，请尝试浏览 Foremost 的`系统管理手册`。可以通过输入以下命令来完成：
 
-[PRE0]
+```
+man foremost
+```
 
 ![](img/45743965-1b38-4240-918d-6c8e69571163.png)
 
 使用 Foremost 的语法如下：
 
-[PRE1]
+```
+foremost -i (forensic image) -o (output folder) -options
+```
 
 在这个例子中，我们指定了位于桌面上的`11-carve-fat.dd`文件作为输入文件（`-i`），并指定了一个名为`Foremost_recovery`的空文件夹作为输出文件（`-o`）。另外，还可以根据需要指定其他开关。
 
 要开始使用 Foremost 切割`11-carve-fat.dd`图像，我们在终端中输入以下命令：
 
-[PRE2]
+```
+foremost -i 11-carve-fat.dd -o Foremost_recovery
+```
 
 ![](img/86339bd9-e25d-4f99-a86d-a11189df3981.png)
 
@@ -124,7 +130,9 @@ Scalpel 是作为 Foremost 的一个较早版本的改进而创建的。Scalpel 
 
 Scalpel 使用了以下语法：
 
-[PRE3]
+```
+scalpel -o scalpelOutput/ 11-carve-fat.dd
+```
 
 ![](img/3fcc076f-00b8-456f-ac3d-4619a7e76b9b.png)
 
@@ -204,7 +212,9 @@ Bulk_extractor 是本章中我们将介绍的第三个也是最后一个工具�
 
 使用的语法如下：
 
-[PRE4]
+```
+bulk_extractor -o bulk_output terry-work-usb-2009-12-11.E01
+```
 
 ![](img/4a98f349-aad3-4563-b9cb-0e669c88a58a.png)
 

@@ -40,19 +40,28 @@ DFF 还支持以下内容：
 
 在新的终端中，我们可以输入以下内容：
 
-[PRE0]
+```
+echo "deb http://old.kali.org/kali sana main non-free contrib" >
+ /etc/apt/sources.list
+```
 
 ![](img/f53b6707-3dd3-416b-9f58-c5af515138ca.png)
 
 或者，我们可以使用第二种方法，输入以下内容：
 
-[PRE1]
+```
+ nano /etc/apt/sources.list
+```
 
 ![](img/5882fb51-c64a-4b53-a1f5-ab3e6e718c47.png)
 
 然后是存储库的详细信息：
 
-[PRE2]
+```
+deb http://http.kali.org/kali kali-rolling main contrib non-free
+deb src http://http.kali.org/kali kali-rolling main contrib non-free
+deb http://http.kali.org/kali sana main contrib 
+```
 
 1.  然后，按*Ctrl* + *X*退出，按*Y*保存更改到`sources.list`文件中：
 
@@ -64,7 +73,9 @@ DFF 还支持以下内容：
 
 1.  现在，我们通过输入以下内容来安装高级取证格式库：
 
-[PRE3]
+```
+apt-get install libafflib0
+```
 
 ![](img/f47ff4ae-abfc-4c3d-b1c5-f41810c9d2a1.png)
 
@@ -74,7 +85,9 @@ DFF 还支持以下内容：
 
 1.  安装库成功后，我们可以通过输入以下内容来安装 DFF：
 
-[PRE4]
+```
+apt-get install dff
+```
 
 ![](img/90cc48fa-8298-4ed2-bd3c-b0d3d3bdfcc7.png)
 
